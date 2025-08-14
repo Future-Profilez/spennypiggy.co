@@ -48,8 +48,6 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
-import { Tabs } from "react-tabs-scrollable";
-import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
@@ -221,7 +219,7 @@ export default function Dashboard(props) {
     };
 
     useEffect(() => {
-        if (auth?.user?.email && twq) {
+        if (auth?.user?.email && typeof twq !== 'undefined') {
             twq("event", "tw-ozu4h-pt5uc", {
                 conversion_id: auth?.user?.uuid,
                 email_address: auth?.user?.email,
@@ -476,146 +474,137 @@ export default function Dashboard(props) {
                                                         This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
                                                     </div>
                                                 )} */}
-                                            <div className="newnav-tabs flex  justify-between gap-2 mb-4">
-                                                <Tabs
-                                                    activeTab={1}
-                                                    hideNavBtnsOnMobile={false}
-                                                >
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "about",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "about" ||
-                                                            page === false
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        About
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "wishes",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "wishes"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        Wishes
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "feed",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "feed"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        feed
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "memberships",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page ===
-                                                            "memberships"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        memberships
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "bills",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "bills"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        bills
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "shop",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "shop"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        shop
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "gifts",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "gifts"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        gifts
-                                                    </Link>
-                                                </Tabs>
+                                            <div className="newnav-tabs mb-4">
+                                                {/* Custom Tailwind CSS Tabs */}
+                                                <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200">
+                                                    <div className="flex space-x-8 min-w-max">
+                                                        <Link
+                                                            preserveScroll
+                                                            preserveState
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "about",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "about" || page === false
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            About
+                                                        </Link>
+                                                        <Link
+                                                            preserveScroll
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "wishes",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "wishes"
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            Wishes
+                                                        </Link>
+                                                        <Link
+                                                            preserveScroll
+                                                            preserveState
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "feed",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "feed"
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            Feed
+                                                        </Link>
+                                                        <Link
+                                                            preserveScroll
+                                                            preserveState
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "memberships",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "memberships"
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            Memberships
+                                                        </Link>
+                                                        <Link
+                                                            preserveScroll
+                                                            preserveState
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "bills",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "bills"
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            Bills
+                                                        </Link>
+                                                        <Link
+                                                            preserveScroll
+                                                            preserveState
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "shop",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "shop"
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            Shop
+                                                        </Link>
+                                                        <Link
+                                                            preserveScroll
+                                                            preserveState
+                                                            href={route(
+                                                                "user.show",
+                                                                {
+                                                                    username: user.username,
+                                                                    page: "gifts",
+                                                                }
+                                                            )}
+                                                            className={`py-2 px-1 border-b-2 font-medium text-sm uppercase transition-colors duration-200 ${
+                                                                page === "gifts"
+                                                                    ? "border-pink-500 text-pink-600"
+                                                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                                            }`}
+                                                        >
+                                                            Gifts
+                                                        </Link>
+                                                    </div>
+                                                </div>
 
                                                     {IsloggedIn && <Toggle />}
                                                 </div>

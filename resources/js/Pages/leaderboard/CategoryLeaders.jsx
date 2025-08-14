@@ -158,12 +158,14 @@ export default function CategoryLeaders() {
             <div className="category-content">
                 {currentData.length > 0 ? (
                     <>
-                        <div className="flex items-center mb-4">
-                            <currentCategory.icon size={24} className={currentCategory.color} />
-                            <h3 className="text-lg font-semibold ml-2">
-                                Top {currentCategory.label} Creators
-                            </h3>
-                        </div>
+                        {currentCategory && (
+                            <div className="flex items-center mb-4">
+                                <currentCategory.icon size={24} className={currentCategory.color} />
+                                <h3 className="text-lg font-semibold ml-2">
+                                    Top {currentCategory.label} Creators
+                                </h3>
+                            </div>
+                        )}
                         {currentData.map((creator, index) => (
                             <CategoryItem 
                                 key={creator.id} 
@@ -173,7 +175,7 @@ export default function CategoryLeaders() {
                         ))}
                     </>
                 ) : (
-                    <EmptyState category={currentCategory.label} />
+                    <EmptyState category={currentCategory?.label || 'Category'} />
                 )}
             </div>
 

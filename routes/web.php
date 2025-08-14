@@ -169,7 +169,7 @@ Route::get('/new-service-worker.js', function () {
     return response($content, 200, [
         "Content-Type" => "text/javascript",
     ]);
-})->name('service.worker');
+})->name('new.service.worker');
 
 Route::get('/manifest.json', function () {
     $assetRoot = rtrim(asset("/"), "/");
@@ -223,7 +223,7 @@ Route::get('/splashscreen.png', function () {
     return response($content, 200, [
         "Content-Type" => "image/png",
     ]);
-})->name('32.image.file');
+})->name('splash.image.file');
 
 
 
