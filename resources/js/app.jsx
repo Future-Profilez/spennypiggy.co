@@ -10,14 +10,67 @@ import "../css/home.css";
 import React, { Suspense, lazy, Children } from "react";
 import { createRoot } from "react-dom/client";
 
-// Make React globally available for components that expect it
-if (typeof window !== 'undefined') {
-    window.React = React;
-    // Ensure React.Children is available globally to fix production issues
-    if (!React.Children) {
-        React.Children = Children;
+// IMMEDIATE React.Children fix - run at module load time
+// This must happen before any other React code executes
+const fixReactChildren = () => {
+    console.log('🔧 Applying React.Children fix...');
+    
+    // Fix React.Children on the main React object
+    if (typeof React === 'object' && React) {
+        if (!React.Children) {
+            React.Children = Children;
+            console.log('✅ Fixed React.Children on main React object');
+        }
     }
-}
+    
+    // Make React globally available for components that expect it
+    if (typeof window !== 'undefined') {
+        // Ensure React is globally available with proper Children
+        window.React = React;
+        
+        // Double-check and fix React.Children on window.React
+        if (window.React && !window.React.Children) {
+            window.React.Children = Children;
+            console.log('✅ Fixed React.Children on window.React');
+        }
+        
+        // Use Object.defineProperty to ensure it's non-configurable
+        if (window.React && Children) {
+            try {
+                Object.defineProperty(window.React, 'Children', {
+                    value: Children,
+                    writable: false,
+                    enumerable: true,
+                    configurable: false
+                });
+            } catch (e) {
+                // Property might already exist, that's okay
+            }
+        }
+    }
+    
+    // Also check global scope
+    if (typeof global !== 'undefined' && global) {
+        try {
+            if (!global.React) {
+                global.React = React;
+            }
+            if (global.React && !global.React.Children) {
+                global.React.Children = Children;
+            }
+        } catch (e) {
+            // Might not have access to global, that's okay
+        }
+    }
+    
+    console.log('🔧 React.Children fix applied:', {
+        'React.Children': !!React.Children,
+        'window.React.Children': !!(typeof window !== 'undefined' && window.React && window.React.Children)
+    });
+};
+
+// Apply the fix immediately
+fixReactChildren();
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 

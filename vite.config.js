@@ -16,6 +16,8 @@ export default defineConfig({
     define: {
         // Fix React 18 Children undefined issue in production
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+        // Global React Children fix
+        'global': 'globalThis',
     },
     plugins: [
         laravel({
@@ -71,6 +73,10 @@ export default defineConfig({
                     if (id.includes('node_modules')) {
                         // Large libraries get their own chunks
                         if (id.includes('react') || id.includes('react-dom')) {
+                            return 'react-vendor';
+                        }
+                        // Keep scheduler with React to prevent Children issues
+                        if (id.includes('scheduler')) {
                             return 'react-vendor';
                         }
                         if (id.includes('@reduxjs/toolkit') || id.includes('react-redux') || id.includes('redux')) {
