@@ -18,6 +18,8 @@ export default defineConfig({
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
         // Global React Children fix
         'global': 'globalThis',
+        // Ensure React runtime is properly configured
+        '__REACT_DEVTOOLS_GLOBAL_HOOK__': 'undefined'
     },
     plugins: [
         laravel({
@@ -66,6 +68,9 @@ export default defineConfig({
     build: {
         sourcemap: true,
         rollupOptions: {
+            input: {
+                main: 'resources/js/app.jsx',
+            },
             output: {
                 // Manual chunk splitting strategy
                 manualChunks(id) {
@@ -109,6 +114,11 @@ export default defineConfig({
                     // Redux store gets its own chunk
                     if (id.includes('redux/Store')) {
                         return 'app-store';
+                    }
+                    
+                    // Keep React polyfill with the main app bundle to ensure it loads first
+                    if (id.includes('react-polyfill')) {
+                        return 'app';
                     }
                 },
                 // Optimize chunk file names

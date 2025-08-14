@@ -2,6 +2,9 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
+    {{-- EMERGENCY: React Children patch must load before ANY other JavaScript --}}
+    <script src="{{ asset('react-emergency-patch.js') }}"></script>
+    
     <meta charset="utf-8">
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />

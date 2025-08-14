@@ -1,3 +1,6 @@
+// CRITICAL: React polyfill MUST be imported first to prevent Children undefined errors
+import React, { Children } from "./react-polyfill.js";
+
 // Critical CSS imports - loaded synchronously
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
@@ -6,71 +9,12 @@ import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
 
-// React core imports - ensure React is available globally to prevent Children undefined errors
-import React, { Suspense, lazy, Children } from "react";
+// React DOM imports after polyfill
+import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 
-// IMMEDIATE React.Children fix - run at module load time
-// This must happen before any other React code executes
-const fixReactChildren = () => {
-    console.log('🔧 Applying React.Children fix...');
-    
-    // Fix React.Children on the main React object
-    if (typeof React === 'object' && React) {
-        if (!React.Children) {
-            React.Children = Children;
-            console.log('✅ Fixed React.Children on main React object');
-        }
-    }
-    
-    // Make React globally available for components that expect it
-    if (typeof window !== 'undefined') {
-        // Ensure React is globally available with proper Children
-        window.React = React;
-        
-        // Double-check and fix React.Children on window.React
-        if (window.React && !window.React.Children) {
-            window.React.Children = Children;
-            console.log('✅ Fixed React.Children on window.React');
-        }
-        
-        // Use Object.defineProperty to ensure it's non-configurable
-        if (window.React && Children) {
-            try {
-                Object.defineProperty(window.React, 'Children', {
-                    value: Children,
-                    writable: false,
-                    enumerable: true,
-                    configurable: false
-                });
-            } catch (e) {
-                // Property might already exist, that's okay
-            }
-        }
-    }
-    
-    // Also check global scope
-    if (typeof global !== 'undefined' && global) {
-        try {
-            if (!global.React) {
-                global.React = React;
-            }
-            if (global.React && !global.React.Children) {
-                global.React.Children = Children;
-            }
-        } catch (e) {
-            // Might not have access to global, that's okay
-        }
-    }
-    
-    console.log('🔧 React.Children fix applied:', {
-        'React.Children': !!React.Children,
-        'window.React.Children': !!(typeof window !== 'undefined' && window.React && window.React.Children)
-    });
-};
-
-// Apply the fix immediately
-fixReactChildren();
+// React Children polyfill has been applied in react-polyfill.js
+console.log('📦 App.jsx loaded - React polyfill should be active');
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
