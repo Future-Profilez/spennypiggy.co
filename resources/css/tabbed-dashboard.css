@@ -1,0 +1,193 @@
+/* Tabbed Dashboard Styles */
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
+
+/* Tab transition animations */
+.tab-content-enter {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.tab-content-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+}
+
+.tab-content-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tab-content-exit-active {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+}
+
+/* Profile tabs responsive design */
+@media (max-width: 768px) {
+    .profile-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .profile-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .profile-tabs .tab-button {
+        flex-shrink: 0;
+        min-width: 80px;
+    }
+}
+
+/* Bottom navigation sticky positioning */
+.bottom-navigation {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* Profile header gradient overlay */
+.profile-header-overlay {
+    background: linear-gradient(
+        135deg,
+        rgba(139, 69, 19, 0.8) 0%,
+        rgba(255, 140, 0, 0.8) 25%,
+        rgba(255, 215, 0, 0.8) 50%,
+        rgba(255, 69, 0, 0.8) 75%,
+        rgba(255, 20, 147, 0.8) 100%
+    );
+}
+
+/* Custom button hover effects */
+.tab-button-active {
+    position: relative;
+}
+
+.tab-button-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #05EFB8, #00D4AA);
+    border-radius: 1px;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* Loading spinner for tab content */
+.tab-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.tab-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #05EFB8;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+    .mobile-padding {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .mobile-text-sm {
+        font-size: 0.875rem;
+    }
+    
+    .mobile-hidden {
+        display: none;
+    }
+}
+
+@media (min-width: 641px) {
+    .desktop-show {
+        display: block;
+    }
+}
+
+/* Profile card enhancements */
+.profile-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Tab content animations */
+.tab-fade-enter {
+    opacity: 0;
+}
+
+.tab-fade-enter-active {
+    opacity: 1;
+    transition: opacity 200ms;
+}
+
+.tab-fade-exit {
+    opacity: 1;
+}
+
+.tab-fade-exit-active {
+    opacity: 0;
+    transition: opacity 200ms;
+}
+
+/* Add button pulse effect */
+.add-button-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(5, 239, 184, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(5, 239, 184, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(5, 239, 184, 0);
+    }
+}
+
+/* Safe area support for devices with notches */
+@supports (padding: max(0px)) {
+    .bottom-navigation {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+}

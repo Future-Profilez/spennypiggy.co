@@ -29,6 +29,16 @@ use Illuminate\Support\Str;
 | contains the "web" middleware group. Now create something great!
 */
 
+// Health check endpoint for Vapor
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'app' => config('app.name'),
+        'environment' => config('app.env')
+    ], 200);
+})->name('health.check');
+
 Route::get('/send-test-mail', function () {
     Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
         $message->to('prem@futureprofilez.com')
@@ -169,7 +179,7 @@ Route::get('/new-service-worker.js', function () {
     return response($content, 200, [
         "Content-Type" => "text/javascript",
     ]);
-})->name('new.service.worker');
+})->name('new-service-worker');
 
 Route::get('/manifest.json', function () {
     $assetRoot = rtrim(asset("/"), "/");

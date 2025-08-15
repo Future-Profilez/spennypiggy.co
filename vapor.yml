@@ -26,20 +26,20 @@ environments:
     memory: 3008
     queue-memory: 2048
     cli-memory: 2048
-    warm: 10
+    warm: 20
     gateway-version: 2
-    timeout: 30
+    timeout: 60
     cache: spennypiggy-cache
     runtime: "php-8.2:al2"
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
+    health-checks: false
     build:
       - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "php artisan route:cache"
       - "npm ci"
       - "rm -rf public/build" # Linux/mac/OS
       - "npm run build"
@@ -50,4 +50,6 @@ environments:
 
 
 
-# php vendor/bin/vapor asset:clear development
+# php vendor/bin/vapor asset:clear production
+# php vendor/bin/vapor command production --command="php artisan optimize:clear"
+# php vendor/bin/vapor deploy production --message='clean deployment after cache clear'
