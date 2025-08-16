@@ -21,6 +21,8 @@ environments:
       - "rm -rf package-lock.json"   # Linux/macOS
       # - "rd /s /q node_modules"  # Windows/
     deploy:
+      - "mkdir -p /tmp/storage/framework/{cache,sessions,views}"
+      - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
 
   production:
@@ -48,6 +50,8 @@ environments:
       - "rm -rf package-lock.json"   # Linux/macOS
       # - "rd /s /q node_modules" # Windows
     deploy:
+      - "mkdir -p /tmp/storage/framework/{cache,sessions,views}"
+      - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
 
 
