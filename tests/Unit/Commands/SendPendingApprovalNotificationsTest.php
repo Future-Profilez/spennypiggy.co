@@ -30,6 +30,20 @@ class SendPendingApprovalNotificationsTest extends TestCase
         
         // Set test environment URL to trigger email sending
         config(['app.url' => 'https://dev.spennypiggy.co']);
+        
+        // Ensure pending-approval config is loaded
+        config([
+            'pending-approval' => [
+                'development' => [
+                    'domains' => ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'],
+                    'emails'  => ['naveen@internetbusinesssolutionsindia.com', 'prem@futureprofilez.com'],
+                ],
+                'production' => [
+                    'domains' => ['https://spennypiggy.co'],
+                    'emails'  => ['jack@socialvortex.io', 'naveen@internetbusinesssolutionsindia.com'],
+                ],
+            ]
+        ]);
     }
 
     /** @test */

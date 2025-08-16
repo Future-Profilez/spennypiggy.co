@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_verification_status', function (Blueprint $table) {
-            $table->smallInteger('user_profile_status')
-                ->default(0)
-                ->comment('0: locked, 1: pending, 2: unlocked, 3: card verification success for gifter users, 4: card verification pending for gifter users')
-                ->change();
-        });
+        if (Schema::hasColumn('user_verification_status', 'user_profile_status')) {
+            Schema::table('user_verification_status', function (Blueprint $table) {
+                $table->smallInteger('user_profile_status')
+                    ->default(0)
+                    ->comment('0: locked, 1: pending, 2: unlocked, 3: card verification success for gifter users, 4: card verification pending for gifter users')
+                    ->change();
+            });
+        }
     }
 
     /**

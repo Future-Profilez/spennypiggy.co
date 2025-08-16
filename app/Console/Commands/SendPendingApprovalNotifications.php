@@ -40,30 +40,40 @@ class SendPendingApprovalNotifications extends Command
                     'relation' => 'user',
                     'conditions' => ['is_approved' => 0],
                     'label' => 'Wish Items',
+                    'exclude_edit' => function ($query) {
+                        // Exclude items with pending edit requests (edited_status = 0)
+                        $query->where(function ($q) {
+                            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
+                        });
+                    },
                 ],
                 [
                     'model' => \App\Models\Membership::class,
                     'relation' => 'user',
                     'conditions' => ['approved' => 0],
                     'label' => 'Memberships',
+                    // TODO: Add 'exclude_edit' callback if this model has edit status columns
                 ],
                 [
                     'model' => \App\Models\Bills::class,
                     'relation' => 'user',
                     'conditions' => ['approved' => 0],
                     'label' => 'Bills',
+                    // TODO: Add 'exclude_edit' callback if this model has edit status columns
                 ],
                 [
                     'model' => \App\Models\Shop::class,
                     'relation' => 'user',
                     'conditions' => ['approved' => 0],
                     'label' => 'Shops',
+                    // TODO: Add 'exclude_edit' callback if this model has edit status columns
                 ],
                 [
                     'model' => \App\Models\UserIntro::class,
                     'relation' => 'user',
                     'conditions' => ['approved' => 0],
                     'label' => 'User Intros',
+                    // TODO: Add 'exclude_edit' callback if this model has edit status columns
                 ],
                 [
                     'model' => \App\Models\User::class,
@@ -73,6 +83,10 @@ class SendPendingApprovalNotifications extends Command
                         ['avatar_approved', '=', 0],
                     ],
                     'label' => 'User Avatars',
+                    'exclude_edit' => function ($query) {
+                        // Exclude users with bio edit requests
+                        $query->whereNull('edit_bio_reason');
+                    },
                 ],
                 [
                     'model' => \App\Models\UserVerificationStatus::class,
@@ -85,7 +99,8 @@ class SendPendingApprovalNotifications extends Command
                                     ->whereNotNull('avatar')
                                     ->whereNotNull('bio')
                                     ->where('profile_status_lock', 1)
-                                    ->where('is_subscribed', 1);
+                                    ->where('is_subscribed', 1)
+                                    ->whereNull('edit_bio_reason'); // Exclude users with bio edit requests
                             });
                         })->orWhere(function ($q) {
                             // Gifter condition: role = 0
@@ -93,7 +108,8 @@ class SendPendingApprovalNotifications extends Command
                                 $userQuery->where('role', 0)
                                     ->where('is_500_limit_exceeded', 1)
                                     ->where('is_subscribed', 1)
-                                    ->where('profile_status_lock', 1);
+                                    ->where('profile_status_lock', 1)
+                                    ->whereNull('edit_bio_reason'); // Exclude users with bio edit requests
                             });
                         });
                     },
@@ -104,6 +120,7 @@ class SendPendingApprovalNotifications extends Command
                     'relation' => 'user',
                     'conditions' => ['approved' => 0],
                     'label' => 'Posts',
+                    // TODO: Add 'exclude_edit' callback if this model has edit status columns
                 ],
             ];
 
@@ -125,8 +142,13 @@ class SendPendingApprovalNotifications extends Command
                     });
                 }
 
-                // Apply soft deletes check
-                if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses($model))) {
+                // Apply exclude_edit callback if provided
+                if (isset($config['exclude_edit']) && is_callable($config['exclude_edit'])) {
+                    $config['exclude_edit']($query);
+                }
+
+                // Apply soft deletes check using class_uses_recursive to catch all inheritance
+                if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive($model))) {
                     $query->whereNull('deleted_at');
                 }
 
@@ -137,31 +159,32 @@ class SendPendingApprovalNotifications extends Command
                         'label' => $config['label'],
                         'count' => $items->count(),
                         'items' => $items,
+                        'icon' => config('pending-approval.icons.' . $config['label'], '🔔'), // Default to bell if icon not found
                     ];
                 }
             }
 
             if (!empty($pendingSummary)) {
+                // Get application URL and find matching email recipients from config
                 $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
+                $allConfigs = collect(config('pending-approval'));
+                $environmentConfig = $allConfigs->first(fn($config) => in_array($appUrl, $config['domains'])); 
+                $emails = $environmentConfig['emails'] ?? [];
 
-                $toEmail = null;
-                if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                    $toEmail = 'prem@futureprofilez.com';
-                } elseif ($appUrl == 'https://spennypiggy.co') {
-                    $toEmail = 'jack@socialvortex.io';
-                }
-
-                if ($toEmail != null) {
-                    Notification::route('mail', $toEmail)
+                if (!empty($emails)) {
+                    // Send notification to all configured recipients
+                    Notification::route('mail', $emails)
                         ->notify(new PendingApprovalNotification($pendingSummary));
+                    
+                    $this->info('Summary email for pending approvals sent to: ' . implode(', ', $emails));
+                } else {
+                    Log::info('No email recipients configured for URL: ' . $appUrl);
                 }
             } else {
                 Log::info('No pending items found.');
             }
-
-            $this->info('Summary email for pending approvals sent successfully.');
         } catch (Exception $e) {
-            $this->error("Failed to sync: " . $e->getMessage());
+            $this->error("Failed to send notification: " . $e->getMessage());
         }
     }
 }

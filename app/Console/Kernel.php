@@ -18,10 +18,16 @@ class Kernel extends ConsoleKernel
         $schedule->command("app:sync-exchange-rate")->hourly()->withoutOverlapping(4);
 
         $schedule->command("app:auto-suspend-account")->daily()->withoutOverlapping(4);
-        if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-            $schedule->command('app:notifications-pending-approval')->daily()->withoutOverlapping(4);
-        } elseif ($appUrl == 'https://spennypiggy.co') {
-            $schedule->command('app:notifications-pending-approval')->everyThirtyMinutes()->withoutOverlapping(4);
+        
+        // Schedule pending approval notifications based on configuration
+        $allConfigs = collect(config('pending-approval'));
+        $environmentConfig = $allConfigs->first(fn($config) => in_array($appUrl, $config['domains']));
+        
+        if ($environmentConfig) {
+            $scheduleMethod = $environmentConfig['schedule']; // e.g., 'everyThirtyMinutes' or 'daily'
+            $schedule->command('app:notifications-pending-approval')
+                     ->{$scheduleMethod}()
+                     ->withoutOverlapping(4);
         }
     }
 
