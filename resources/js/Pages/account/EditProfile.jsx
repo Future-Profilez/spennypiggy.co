@@ -119,7 +119,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     useEffect(() => {
         if(localAvatar){
             setData('avatar', localAvatar);
-            generateCardAndUpload(e?.uuid);
+            generateCardAndUpload(localAvatar?.uuid);
         }
     },[localAvatar]);
 
@@ -165,14 +165,13 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             }
         });
     };
-
     
     const IsProfileChannged = async() => {
         if(user && user.avatar && !user?.social_image){
             await generateCardAndUpload(user.avatar);
         }
-
     }
+
     return (
         <Popup modalclassName='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}

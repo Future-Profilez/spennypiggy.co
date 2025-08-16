@@ -60,7 +60,7 @@ createInertiaApp({
         const root = createRoot(el);
         root.render(
             <Provider store={store}>
-                <Suspense fallback={<LoadingSkeleton rows={3} />}>
+                <Suspense fallback={<>Loading...</>}>
                     <App {...props} />
                 </Suspense>
             </Provider>

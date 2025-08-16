@@ -39,34 +39,6 @@
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
     <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="keywords" content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
-<<<<<<< HEAD
-    {{-- Comprehensive Resource Preloading & Prefetching --}}
-    @php
-        $pageComponent = 'home';
-        if (isset($page) && is_array($page) && isset($page['component'])) {
-            $pageComponent = $page['component'];
-        }
-    @endphp
-    {{-- @resourceOptimization($pageComponent) --}}
-    
-    {{-- Critical Hero Image Preloading for LCP Optimization --}}
-    @if($pageComponent === 'home' || $pageComponent === 'Welcome')
-        {{-- Preload hero background images in order of format efficiency --}}
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.avif') }}" type="image/avif" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.webp') }}" type="image/webp" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.png') }}" type="image/png" fetchpriority="high">
-        
-        {{-- Mobile-specific preloads for smaller screens --}}
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg-mobile.avif') }}" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg-mobile.webp') }}" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
-        
-        {{-- Preload other critical above-the-fold images --}}
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/img/itsfree.png') }}" type="image/png" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/img/itsfree-mob.png') }}" type="image/png" media="(max-width: 768px)" fetchpriority="high">
-    @endif
-    
-    <!-- Google Fonts - will be loaded asynchronously below -->
-=======
     
     {{-- Minimal critical CSS --}}
     <style>
@@ -79,7 +51,6 @@
     {{-- Optimized Google Fonts loading --}}
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
->>>>>>> 65802cfe9cf3eb1ab0f86ad06cde649a00c91259
     <meta property="og:title" content="Exclusive Content, Memberships & More!" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
@@ -87,89 +58,7 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
-<<<<<<< HEAD
-    {{-- Defer Trustpilot widget loading --}}
-    <script>
-        // Lazy load Trustpilot widget after user interaction or idle time
-        function loadTrustpilot() {
-            if (!window.trustpilotLoaded) {
-                const script = document.createElement('script');
-                script.type = 'text/javascript';
-                script.async = true;
-                script.src = '//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js';
-                script.importance = 'low';
-                document.head.appendChild(script);
-                window.trustpilotLoaded = true;
-            }
-        }
-        
-        // Load after user interaction or idle time
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                setTimeout(loadTrustpilot, 3000);
-            });
-        } else {
-            setTimeout(loadTrustpilot, 3000);
-        }
-        
-        // Also load on user interaction
-        ['mousedown', 'touchstart', 'keydown', 'scroll'].forEach(event => {
-            document.addEventListener(event, loadTrustpilot, { once: true, passive: true });
-        });
-    </script>
-
     <link rel="manifest" href="{{ url('/manifest.json')}}" />
-    <script>
-        // Defer service worker registration
-        if ('serviceWorker' in navigator) {
-            function registerSW() {
-                navigator.serviceWorker.register('/new-service-worker.js')
-                .then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                });
-            }
-            
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(registerSW);
-            } else {
-                setTimeout(registerSW, 100);
-            }
-        }
-    </script>
-    
-    {{-- Defer Twitter ads tracking --}}
-    <script>
-        // Lazy load Twitter ads after user interaction or idle time
-        function loadTwitterAds() {
-            if (!window.twitterAdsLoaded) {
-                !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
-                },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.importance='low',u.src='https://static.ads-twitter.com/uwt.js',
-                a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-                twq('config','ozu4h');
-                window.twitterAdsLoaded = true;
-            }
-        }
-        
-        // Load after user interaction or idle time
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                setTimeout(loadTwitterAds, 5000);
-            });
-        } else {
-            setTimeout(loadTwitterAds, 5000);
-        }
-        
-        // Also load on meaningful user interaction
-        ['click', 'scroll', 'keydown', 'touchstart'].forEach(event => {
-            document.addEventListener(event, loadTwitterAds, { once: true, passive: true });
-        });
-    </script>
-=======
-    <link rel="manifest" href="{{ url('/manifest.json')}}" />
->>>>>>> 65802cfe9cf3eb1ab0f86ad06cde649a00c91259
 
 
     <link rel="apple-touch-startup-image"
