@@ -24,7 +24,7 @@ import { MdClose } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
 import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
-import MagicBellNotification from "@/Pages/webpush/MagicBellNotificationDisabled";
+import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
 export default function Header({classMagicword}) {
     const { global_currency, auth } = usePage().props;
