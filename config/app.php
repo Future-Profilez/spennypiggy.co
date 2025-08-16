@@ -168,9 +168,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\CriticalCssServiceProvider::class,
-        App\Providers\ResourcePreloadServiceProvider::class,
-        // App\Providers\ModernImageServiceProvider::class,
+        App\Providers\PerformanceServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
     ])->toArray(),
 

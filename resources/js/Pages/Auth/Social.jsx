@@ -133,7 +133,7 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
               {[
                 { name: "twitter", label: "X (Twitter)", placeholder: "@username" },
                 { name: "instagram", label: "Instagram", placeholder: "@username" },
-                { name: "facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage" },
+                // { name: "facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage" },
                 { name: "youtube", label: "YouTube", placeholder: "https://youtube.com/yourchannel" },
                 { name: "twitch", label: "Twitch", placeholder: "https://twitch.tv/yourchannel" },
                 { name: "tumblr", label: "Tumblr", placeholder: "@yourname" },

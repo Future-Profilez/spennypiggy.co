@@ -33,10 +33,7 @@ class SendPendingApprovalNotifications extends Command
     public function handle()
     {
         try {
-
             $pendingSummary = [];
-
-            // List of model config
             $models = [
                 [
                     'model' => \App\Models\WishItem::class,
@@ -85,8 +82,8 @@ class SendPendingApprovalNotifications extends Command
                             // Creator condition: role = 1
                             $q->whereHas('user', function ($userQuery) {
                                 $userQuery->where('role', 1)
-                                    ->whereNotNull('avatar')->where('avatar_approved', 0)
-                                    ->whereNotNull('bio')->where('bio_approved', 0)
+                                    ->whereNotNull('avatar')
+                                    ->whereNotNull('bio')
                                     ->where('profile_status_lock', 1)
                                     ->where('is_subscribed', 1);
                             });

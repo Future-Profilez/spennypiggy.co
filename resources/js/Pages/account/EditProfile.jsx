@@ -178,11 +178,12 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editForm  mt-4'>
-                        {UploadingStart ? <div className=''>
-                            <div className='flex items-center justify-between'>
-                                <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
-                                <button onClick={()=>setUploadingStart(false)} className='me-4 mt-4 bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
+                        {UploadingStart ? <div className='p-4 '>
+                            <div className='flex items-center justify-between mb-3'>
+                                <h2 className='pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
+                                <button onClick={()=>setUploadingStart(false)} className='me-4  bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
                             </div>
+                           {user?.role == 1 && <p className=' text-yellow-600'>Your Profile picture must match the person in the ID verification which is the next step, if it doesn’t your account will be blocked and the user banned.</p>}
                             <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
                         </div> : ''}
 

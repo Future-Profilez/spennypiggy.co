@@ -6,35 +6,40 @@
     <script src="{{ asset('react-emergency-patch.js') }}"></script>
     
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
+    
+    {{-- Critical performance hints --}}
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//widget.trustpilot.com">
+    <link rel="dns-prefetch" href="//static.ads-twitter.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    {{-- Basic performance hints --}}
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     {!! \App\SeoMeta::render() !!}
 
-    {{-- <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="Spenny Piggy - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More." />
-    <meta property="twitter:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
-    <meta property="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
-    <meta property="twitter:site" content="@spennypiggy" />
-    <meta property="twitter:image:alt" content="Exclusive Content, Memberships & More!" />
-    <meta property="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" /> --}}
-
+    {{-- PWA and App metadata --}}
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
     <meta name="mobile-web-app-capable" content="yes"/>
-
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="mask-icon" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="apple-touch-icon" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="apple-touch-icon-precomposed" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="shortcut icon" href="{{ URL::asset('/favicon.ico') }}" />
+    <meta name="theme-color" content="#05EFB8" />
+    
+    {{-- Optimized favicon loading --}}
+    <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="any">
+    <link rel="icon" href="{{ URL::asset('/favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ URL::asset('/apple-touch-icon.png') }}">
+    <link rel="mask-icon" href="{{ URL::asset('/favicon.svg') }}" color="#05EFB8">
+    
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
-    <meta name="theme-color" content="#05EFB8" />
     <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="keywords" content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
+<<<<<<< HEAD
     {{-- Comprehensive Resource Preloading & Prefetching --}}
     @php
         $pageComponent = 'home';
@@ -61,6 +66,20 @@
     @endif
     
     <!-- Google Fonts - will be loaded asynchronously below -->
+=======
+    
+    {{-- Minimal critical CSS --}}
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+    </style>
+    
+    {{-- Optimized Google Fonts loading --}}
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
+>>>>>>> 65802cfe9cf3eb1ab0f86ad06cde649a00c91259
     <meta property="og:title" content="Exclusive Content, Memberships & More!" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
@@ -68,6 +87,7 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
+<<<<<<< HEAD
     {{-- Defer Trustpilot widget loading --}}
     <script>
         // Lazy load Trustpilot widget after user interaction or idle time
@@ -147,6 +167,9 @@
             document.addEventListener(event, loadTwitterAds, { once: true, passive: true });
         });
     </script>
+=======
+    <link rel="manifest" href="{{ url('/manifest.json')}}" />
+>>>>>>> 65802cfe9cf3eb1ab0f86ad06cde649a00c91259
 
 
     <link rel="apple-touch-startup-image"

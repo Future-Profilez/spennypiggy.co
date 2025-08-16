@@ -85,7 +85,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                 setTimeout(()=>{
                     setClose();
                 },100);
-                router.visit(route('user.show', { username: auth.user.username, page: 'feed' }), {
+                router.visit(route('user.show', { username: auth.user.username, page: 'about' }), {
                     preserveState: true,
                     preserveScroll: true,
                 });

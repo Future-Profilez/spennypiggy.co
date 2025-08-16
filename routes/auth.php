@@ -327,7 +327,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('shop')->group(function () {
             Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
             Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
-            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('save-category');
+            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
             Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
             Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
             Route::get('orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
@@ -458,7 +458,7 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::get('recent-gifters/{type?}', [LeaderBoardController::class, 'recentGifters'])->name('largest-gifts');
 Route::get('leaderboard/star/lists', [LeaderBoardController::class, 'topGiftersAllTime'])->name('leaderboard.stars');
-Route::get('largest/gifts/alltime', [LeaderBoardController::class, 'top10UniqueBiggestGifters'])->name('leaderboard.stars');
+Route::get('largest/gifts/alltime', [LeaderBoardController::class, 'top10UniqueBiggestGifters'])->name('largest.gifts.alltime');
 Route::get('top-supporters/frequency', [LeaderBoardController::class, 'topSupportersByFrequency'])->name('top-supporters-frequency');
 Route::get('leaderboard/platform-analytics', [LeaderBoardController::class, 'platformAnalytics'])->name('leaderboard.platform-analytics');
 Route::get('leaderboard/growth-trends', [LeaderBoardController::class, 'growthTrends'])->name('leaderboard.growth-trends');
@@ -491,11 +491,11 @@ Route::get('/problem-solving', function () {
         array_push($a, $multiple);
     }
     return $a;
-})->name("test");
+})->name("problem-solving");
 
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
-Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
+Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('username.check');
 
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 

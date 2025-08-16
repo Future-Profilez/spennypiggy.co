@@ -20,6 +20,7 @@ import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
 // Critical app dependencies - loaded immediately
 import { Provider } from "react-redux";
+<<<<<<< HEAD
 import store from "./Pages/redux/Store.jsx";
 
 // Performance components
@@ -66,6 +67,11 @@ const initSentry = async () => {
     
     const Sentry = await import("@sentry/react");
     
+=======
+import store from "./Pages/redux/Store";
+import * as Sentry from "@sentry/react";
+if(import.meta.env.VITE_APP_ENV == 'production'){
+>>>>>>> 65802cfe9cf3eb1ab0f86ad06cde649a00c91259
     console.log("sentry enabled");
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
@@ -84,6 +90,7 @@ const initSentry = async () => {
         replaysSessionSampleRate: 0.1,
         replaysOnErrorSampleRate: 1.0
     });
+<<<<<<< HEAD
     
     sentryInitialized = true;
 };
@@ -97,6 +104,11 @@ const initializeApp = async () => {
         initWebVitals() // Initialize Web Vitals monitoring
     ]);
 };
+=======
+} else {
+    console.log("sentry Disabled");
+}
+>>>>>>> 65802cfe9cf3eb1ab0f86ad06cde649a00c91259
 
 createInertiaApp({
     title: (title) =>
