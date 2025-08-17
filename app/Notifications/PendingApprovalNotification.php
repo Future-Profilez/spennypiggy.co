@@ -28,7 +28,7 @@ class PendingApprovalNotification extends Notification implements ShouldQueue
     public function toMail($notifiable)
     {
         return (new Mailable)
-            ->subject('Summary of Pending Approvals')
+            ->subject('Summary of Pending Approvals - ' . env('APP_NAME'))
             ->view('email.pending_approval_summary', [
                 'pendingSummary' => $this->pendingSummary,
             ]);
