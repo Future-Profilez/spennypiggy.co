@@ -57,6 +57,7 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
+// import CreatorVerification from "./Profile/CreatorVerificationNew";
 import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";

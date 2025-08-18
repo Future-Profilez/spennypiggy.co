@@ -350,7 +350,7 @@ class MembershipController extends Controller
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
 
 
-        if ($membership->user['is_subscribed'] !== 1) {
+        if (!in_array($membership->user->subscription_status, [1, 2])) {
             return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
         }
 

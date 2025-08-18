@@ -10,7 +10,10 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
+use Stripe\Stripe;
+use Stripe\Subscription;
 
 class User extends Authenticatable
 {
@@ -39,6 +42,7 @@ class User extends Authenticatable
     protected $appends = [
         'avatar_url', 'cover_url', 'twitter_username', 
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
+        'subscription_status',
     ];
 
     public static function boot()
@@ -96,6 +100,47 @@ class User extends Authenticatable
 
     public function getIsCreatorAddressFoundAttribute(): bool {
         return $this->creatorShippingAddress()->exists();
+    }
+
+    public function getSubscriptionStatusAttribute()
+    {
+        if ($this->role == 1) { 
+            $subscription = $this->creatorMonthlySubscription;
+            Log::info('Subscription status check for user ID ' . $this->id . ': ' . json_encode($subscription));
+            if (!$subscription) {
+                return 0;
+            }
+            if ($subscription->status === 'trial_ending') {
+                return 2;
+            }
+
+            if ($subscription->status === 'paid' || $subscription->status === 'paid' || $subscription->status === 'trialing') {
+                if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
+                    return 1; 
+                }
+                try {
+                    Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                    $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
+                    
+                    if (isset($stripeSubscription) && $stripeSubscription->status === 'active') {
+                        return 1;
+                    } elseif (isset($stripeSubscription) && $stripeSubscription->status === 'trialing') {
+                        return 2;
+                    } else {
+                        return 0; // canceled, incomplete, etc.
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Stripe subscription check failed: ' . $e->getMessage());
+                    return 1;
+                }
+            }
+            return 0;
+        }
+
+        if ($this->role == 0) { // Gifter
+            return $this->gifterCardVerification ? 1 : 0;
+        }
+        return 'Unknown';
     }
 
 

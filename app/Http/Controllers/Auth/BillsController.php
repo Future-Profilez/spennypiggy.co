@@ -289,7 +289,7 @@ class BillsController extends Controller
         DB::beginTransaction();
         new StripeClient(env('STRIPE_SECRET_KEY'));
         $bill = Bills::with('user')->whereUuid($uuid)->first();
-        if ($bill->user['is_subscribed'] !== 1) {
+        if (!in_array($bill->user->subscription_status, [1, 2])) {
             return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
         }
         if (!$bill) return redirect()->back()->with('error', 'Bill not found!');

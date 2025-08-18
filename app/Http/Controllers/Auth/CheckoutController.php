@@ -40,7 +40,7 @@ class CheckoutController extends Controller
         }
 
         $owner = User::find($id);
-        if (!empty($owner) && $owner['is_subscribed'] !== 1) {
+        if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
             return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
         }
 
@@ -68,7 +68,7 @@ class CheckoutController extends Controller
                     ->get();
             }
 
-            if ($getdata->isNotEmpty() && $getdata->first()->owner->is_subscribed !== 1) {
+            if ($getdata->isNotEmpty() && !in_array($getdata->first()->owner->subscription_status, [1, 2])) {
                 return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
             }
 

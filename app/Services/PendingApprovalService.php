@@ -169,8 +169,7 @@ class PendingApprovalService
     /**
      * Get count of unapproved shops
     */
-    private function getShopsCount(): int
-    {
+    private function getShopsCount(): int {
         $shopscount = \App\Models\Shop::where('approved', 0)->where(function ($q) {
             $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
         })->whereNull('deleted_at')
@@ -194,25 +193,34 @@ class PendingApprovalService
      */
     private function getUserProfilesCount(): int
     {
-        return \App\Models\UserVerificationStatus::query()
-            ->where(function ($q) {
-                $q->where('role', 1)
-                    ->whereHas('user', function ($userQuery) {
-                        $userQuery->whereNotNull('avatar')
-                            ->whereNotNull('bio')
-                            ->where('is_subscribed', 1)
-                            ->where('profile_status_lock', 1);
-                    });
-            })->orWhere(function ($q) {
-                $q->where('role', 0)
-                    ->whereHas('user', function ($userQuery) {
-                        $userQuery->where('is_500_limit_exceeded', 1)
-                        ->where('is_subscribed', 1)
-                            ->where('profile_status_lock', 1);
-                    });
+        // Get all users and filter by subscription_status attribute
+        $users = User::whereNotNull('avatar')
+            ->whereNotNull('bio')
+            ->where('profile_status_lock', 1)
+            ->get();
+        
+        $creatorProfilesCount = $users->where('role', 1)
+            ->filter(function ($user) {
+                $status = $user->subscription_status;
+                // Count as subscribed if status indicates active subscription
+                // 1 = subscribed, 2 = trial ending/under trial period
+                return in_array($status, [1, 2]);
             })
             ->count();
+
+        $gifterProfilesCount = $users->where('role', 0)
+            ->where('is_500_limit_exceeded', 1)
+            ->filter(function ($user) {
+                $status = $user->subscription_status;
+                // For gifters, check if they have paid status (1 = paid)
+                return $status === 1;
+            })
+            ->count();
+
+        return $creatorProfilesCount + $gifterProfilesCount;
     }
+
+     
     
     private function getPostsCount(): int {
         $postsCount = \App\Models\Post::where('approved', 0)->where(function ($q) {
