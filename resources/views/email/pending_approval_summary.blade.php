@@ -130,21 +130,27 @@
 
             <tr>
                 <td style="padding: 0 0 32px 0;">
-                    <div style="text-align: left;">
-                        @foreach ($pendingSummary as $entry)
-                        <div class="pending-item">
-                            <div class="pending-item-left">
-                                <div class="pending-item-icon">
-                                    {{ $entry['icon'] ?? '📋' }}
-                                </div>
-                                <h3 class="pending-item-label">{{ $entry['label'] }}</h3>
-                            </div>
-                            <div class="pending-item-count">
-                                {{ $entry['count'] }}
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
+                    <table width="100%" cellspacing="0" cellpadding="0" border="1" style="border-collapse: collapse; border: 2px solid #8C52FF; border-radius: 12px; overflow: hidden; margin: 20px 0;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #8C52FF 0%, #a855f7 100%);">
+                                <th style="padding: 16px 20px; color: #ffffff; font-weight: 700; font-size: 16px; text-align: left; border: none;">Item Type</th>
+                                <th style="padding: 16px 20px; color: #ffffff; font-weight: 700; font-size: 16px; text-align: center; border: none; width: 100px;">Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($pendingSummary as $entry)
+                            <tr style="{{ $loop->even ? 'background-color: #f8f9ff;' : 'background-color: #ffffff;' }}">
+                                <td style="padding: 16px 20px; border: 1px solid #e2e8f0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                                    <span style="font-size: 20px; margin-right: 10px;">{{ $entry['icon'] ?? '📋' }}</span>
+                                    {{ $entry['label'] }}
+                                </td>
+                                <td style="padding: 16px 20px; border: 1px solid #e2e8f0; text-align: center; font-size: 18px; font-weight: 700; color: #8C52FF;">
+                                    {{ $entry['count'] }}
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </td>
             </tr>
 
