@@ -60,14 +60,14 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   const {auth} = usePage().props;
   const { formatMultiPrice } = PriceFormat();
 
-  const [rewards ,setrewards ] = useState(JSON.parse(item && item?.rewards));
+  const [rewards ,setrewards ] = useState(item?.rewards ? JSON.parse(item.rewards) : []);
   const getRewardTitle = (e) => {
     const item = rewards_lists.filter((item)=> item?.value == e);
     return item && item[0] && item[0].title;
   }
 
   useEffect(()=>{
-    setrewards(JSON.parse(item && item?.rewards));
+    setrewards(item?.rewards ? JSON.parse(item.rewards) : []);
   },[item]);
 
 

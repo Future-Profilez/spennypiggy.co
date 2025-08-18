@@ -18,6 +18,7 @@ import { FaLock } from "react-icons/fa";
 import { empty } from "@apollo/client";
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
+    
     const { auth, user, global_currency, slinks } = usePage().props;
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
@@ -71,7 +72,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     Complete these steps and let your fans fund your lifestyle.
                 </p>
                 <ProgressBar now={filledSteps} max={6} />
-
                 {IsloggedIn && user?.profile_reject_reason != null &&
                 user?.profile_status_lock == 0 ?
                     <>

@@ -53,12 +53,13 @@ use Uploadcare\Uploader\Uploader;
 
 class AuthenticatedSessionController extends Controller
 {
-
     protected $google2FA;
+    protected $profileService;
 
-    public function __construct(Google2FA $google2FA)
+    public function __construct(Google2FA $google2FA, \App\Services\UserProfileService $profileService)
     {
         $this->google2FA = $google2FA;
+        $this->profileService = $profileService;
     }
 
     /**
@@ -173,80 +174,126 @@ class AuthenticatedSessionController extends Controller
     /**
      * Private user profile info
      */
+    /**
+     * Optimized user profile method with better performance
+     */
     public function getUserProfile($username, $page = 'about')
     {
-        $user = User::with([
-            'social_links', 'followers', 'following', 'wishItems', 'user_categories', 'memberships', 'bills', 'shop', 'intro'
-        ])->where('username', $username)->where('is_uk', 0)->first();
-
-        if (!$user){
+        // Preload essential user data using the service
+        $profileData = $this->profileService->preloadUserProfileData($username);
+        
+        if (empty($profileData)) {
             return Inertia::render('NotFound');
         }
 
-        if (!empty($user)) {
-            if ($user->suspended_account == 1) {
-                return Inertia::render('Suspanded');
-            }
+        $user = $profileData['user'];
+
+        // Check for suspended account
+        if ($user->suspended_account == 1) {
+            return Inertia::render('Suspanded');
         }
-         
 
-        $authUser = Auth::id();
-        $notification_count = Cache::remember("notifications_{$authUser}", 60, fn () => Notification::where('notifiable_id', $authUser)->where('is_read', 0)->count());
+        // Get Stripe account capabilities with caching
+        [$isNeedToUpgrade, $cardCapabilities] = $this->getStripeCapabilities($user);
 
-        $support_user_ids = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->pluck('user_id')->filter()->toArray();
-        $guest_emails = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->whereNull('user_id')->pluck('guest_email');
+        // Load page-specific data efficiently
+        $pageData = $this->getPageSpecificData($user->id, $page);
 
-        $guest_ids = User::whereIn('email', $guest_emails)->where('is_uk', 0)->pluck('id')->toArray();
-        $supporters = count(array_unique(array_merge($support_user_ids, $guest_ids, $guest_emails->diff($guest_ids)->toArray())));
-        $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
-        $IsNeedToUpgrade = false;
-        $card_capabilities = true;
-        if (!empty($user->account_id)) {
+        // Set SEO meta tags
+        $this->setSeoMetaTags($user, $username);
+
+        return Inertia::render('Dashboard', [
+            'username' => $username,
+            'user' => $user,
+            'card_capabilities' => $cardCapabilities,
+            'isNeedToUpgrade' => $isNeedToUpgrade,
+            'itemid' => request()->query('item') ?? false,
+            'sociallinks' => $user->social_links,
+            'slinks' => $user->social_links,
+            'page' => $page,
+            'intro' => $user->intro,
+            'supporters' => $profileData['supporters'],
+            'wish_categories' => $user->user_categories,
+            'selectedCategory' => request()->query('category') ?? false,
+            'notification_count' => $profileData['notification_count'],
+            'profile_steps' => null,
+            ...$pageData
+        ]);
+    }
+
+    /**
+     * Get Stripe account capabilities with caching
+     */
+    private function getStripeCapabilities($user): array
+    {
+        if (empty($user->account_id)) {
+            return [false, true];
+        }
+
+        $cacheKey = "stripe_capabilities_{$user->account_id}";
+        
+        return Cache::remember($cacheKey, 300, function () use ($user) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
-                $IsNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
-                $card_capabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
+                $isNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
+                $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
+                
+                return [$isNeedToUpgrade, $cardCapabilities];
             } catch (\Exception $e) {
-                $user->stripe_details_submitted = 0;
-                $user->save();
-                $IsNeedToUpgrade = false;
-                $card_capabilities = true;
+                // Update user if account is invalid
+                $user->update(['stripe_details_submitted' => 0]);
+                return [false, true];
             }
+        });
+    }
+
+    /**
+     * Get page-specific data efficiently
+     */
+    private function getPageSpecificData(int $userId, string $page): array
+    {
+        $data = [
+            'items' => [],
+            'posts' => [],
+            'memberships' => [],
+            'bills' => [],
+            'shops' => []
+        ];
+
+        switch ($page) {
+            case 'wishes':
+                $categoryId = request()->query('category');
+                $data['items'] = $this->profileService->getUserWishItems($userId, $categoryId);
+                break;
+                
+            case 'feed':
+            case 'about':
+                $data['posts'] = $this->profileService->getUserPosts($userId);
+                break;
+                
+            case 'memberships':
+                $data['memberships'] = $this->profileService->getUserMemberships($userId);
+                break;
+                
+            case 'bills':
+                $data['bills'] = $this->profileService->getUserBills($userId);
+                break;
+                
+            case 'shop':
+                $data['shops'] = $this->profileService->getUserShopItems($userId);
+                break;
         }
 
-        $wishitems = [];
-        if ($page === 'wishes') {
-            $category = request()->query('category');
-            $wishitems = WishItem::where('user_id', $user->id)
-                ->when($category && $category !== 'all', function ($query) use ($category) {
-                    $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $category));
-                })
-                ->with('user')
-                ->orderBy('sort')
-                ->get();
-        }
+        return $data;
+    }
 
-        $posts = [];
-        if (in_array($page, ['feed', 'about'])) {
-            $posts = $user->posts()->when(!Auth::check() || Auth::id() !== $user->id, fn ($q) => $q->where('approved', 1))->latest()->get();
-        }
-
-        $memberships = $page === 'memberships'
-            ? $user->memberships()->when(!Auth::check() || Auth::id() !== $user->id, fn ($q) => $q->where('approved', 1))->latest()->get()
-            : [];
-
-        $bills = $page === 'bills'
-            ? $user->bills()->when(!Auth::check() || Auth::id() !== $user->id, fn ($q) => $q->where('approved', 1))->latest()->get()
-            : [];
-
-        $shops = $page === 'shop'
-            ? Shop::where('user_id', $user->id)
-                ->when(!Auth::check() || Auth::id() !== $user->id, fn ($q) => $q->where('approved', 1))
-                ->with(['user', 'shop_varients'])
-                ->latest()
-                ->get()
-            : [];
-
+    /**
+     * Set SEO meta tags
+     */
+    private function setSeoMetaTags($user, string $username): void
+    {
+        $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
+        
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
         SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
@@ -258,66 +305,29 @@ class AuthenticatedSessionController extends Controller
         SeoMeta::addTag('meta', ['property' => 'twitter:image:src', 'content' => $image]);
         SeoMeta::addTag('meta', ['property' => 'og:image', 'content' => $image]);
         SeoMeta::addTag('link', ['rel' => 'canonical', 'href' => "https://spennypiggy.co/{$username}"]);
-
-        return Inertia::render('Dashboard', [
-            'username' => $username,
-            'user' => $user,
-            'card_capabilities' => $card_capabilities,
-            'isNeedToUpgrade' => $IsNeedToUpgrade,
-            'itemid' => request()->query('item') ?? false,
-            'sociallinks' => $user->social_links,
-            'slinks' => $user->social_links,
-            'page' => $page,
-            'intro' => $user->intro,
-            'supporters' => $supporters,
-            'wish_categories' => $user->user_categories,
-            'items' => $wishitems,
-            'selectedCategory' => request()->query('category') ?? false,
-            'posts' => $posts,
-            'memberships' => $memberships,
-            'bills' => $bills,
-            'shops' => $shops,
-            'notification_count' => $notification_count,
-            'profile_steps' => null // optionally re-implement profile step logic if needed
-        ]);
     }
 
 
     public function usergoal($username)
     {
-
-        $user = User::with(['followers', 'following'])->where('username', $username)->where('is_uk', 0)->first();
+        $user = $this->profileService->getUserWithRelations($username);
+        
         if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not found'
             ]);
         }
-        $goalPayment = TipGoalsPayment::where('creator_id', $user->id)->where('status', 'paid')->sum('amount');
-        $bill_payment = BillPayment::whereHas('bill', fn ($q) => $q->where('user_id', $user->id))->where('status', 'paid')->sum('amount');
-        $mem_payment = MembershipPayment::whereHas('membership', fn ($q) => $q->where('user_id', $user->id))->where('status', 'paid')->sum('amount');
-        $wish_payment = StripePaymentDetail::where('owner_id', $user->id)->where('payment_status', 'paid')->sum('amount_subtotal');
-        $sub_payment = WishItemSubscription::whereHas('wish_item', fn ($q) => $q->where('user_id', $user->id))->where('status', 'paid')->sum('amount');
 
-        $total_earnings = $goalPayment + $bill_payment + $mem_payment + $wish_payment + $sub_payment;
-        $target = match (true) {
-            $total_earnings < 100 => 100,
-            $total_earnings < 1000 => 1000,
-            $total_earnings < 10000 => 10000,
-            $total_earnings < 100000 => 100000,
-            $total_earnings < 1000000 => 1000000,
-            default => 10000000,
-        };
-
-        $goal = [
-            'fullfilled' => $total_earnings,
-            'target' => $target,
-            'currency' => $user->default_currency,
-        ];
+        $earnings = $this->profileService->getUserEarnings($user->id);
 
         return response()->json([
             "success" => true,
-            "goal" => $goal ?? null
+            "goal" => [
+                'fullfilled' => $earnings['fulfilled'],
+                'target' => $earnings['target'],
+                'currency' => $user->default_currency,
+            ]
         ]);
     }
 
