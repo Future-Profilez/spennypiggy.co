@@ -2,11 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\Bills;
+use App\Models\User;
+use App\Models\WishItem;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use App\Notifications\PendingApprovalNotification;
 use Exception;
+use Illuminate\Database\Eloquent\Casts\Json;
+use Illuminate\Support\Js;
 
 class PendingApprovalService
 {
@@ -67,7 +72,7 @@ class PendingApprovalService
         $userIntrosCount = $this->getUserIntrosCount();
         if ($userIntrosCount > 0) {
             $pendingSummary[] = [
-                'label' => 'User Intros',
+                'label' => 'User Verification Video',
                 'count' => $userIntrosCount,
                 'items' => [],
                 'icon' => config('pending-approval.icons.User Intros', '👋'),
@@ -78,7 +83,7 @@ class PendingApprovalService
         $userProfilesCount = $this->getUserProfilesCount();
         if ($userProfilesCount > 0) {
             $pendingSummary[] = [
-                'label' => 'User Profiles',
+                'label' => 'User Profiles Approval',
                 'count' => $userProfilesCount,
                 'items' => [],
                 'icon' => config('pending-approval.icons.User Profiles', '👤'),
@@ -109,16 +114,14 @@ class PendingApprovalService
 
         if (!empty($pendingSummary)) {
             // Get application URL and find matching email recipients from config
-            $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
+            $appUrl = env('APP_URL');  
             $allConfigs = collect(config('pending-approval'));
             $environmentConfig = $allConfigs->first(fn($config) => in_array($appUrl, $config['domains'])); 
             $emails = $environmentConfig['emails'] ?? [];
 
             if (!empty($emails)) {
-                // Send notification to all configured recipients
                 Notification::route('mail', $emails)
                     ->notify(new PendingApprovalNotification($pendingSummary));
-                
                 Log::info('Summary email for pending approvals sent to: ' . implode(', ', $emails));
             } else {
                 Log::info('No email recipients configured for URL: ' . $appUrl);
@@ -126,31 +129,28 @@ class PendingApprovalService
         } else {
             Log::info('No pending items found.');
         }
-
         return $pendingSummary;
     }
     
     /**
      * Get count of unapproved wish items
      */
-    private function getWishItemsCount(): int
-    {
-        return \App\Models\WishItem::where('is_approved', 0)
-            ->where(function ($q) {
-                $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
-            })
-            ->whereNull('deleted_at')
-            ->count();
+    private function getWishItemsCount(): int {
+        $wishescount = WishItem::where('is_approved', 0)->where(function ($q) {
+            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
+        })->count();
+        return $wishescount;
     }
-    
+
+   
     /**
      * Get count of unapproved memberships
      */
     private function getMembershipsCount(): int
     {
-        return \App\Models\Membership::whereHas('user')
-            ->where('approved', 0)
-            ->whereNull('deleted_at')
+        return \App\Models\Membership::where('approved', 0)->where(function ($q) {
+            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
+        })->whereNull('deleted_at')
             ->count();
     }
     
@@ -159,32 +159,34 @@ class PendingApprovalService
      */
     private function getBillsCount(): int
     {
-        return \App\Models\Bills::whereHas('user')
-            ->where('approved', 0)
-            ->whereNull('deleted_at')
-            ->count();
+        $billscount = Bills::where('approved', 0)->where(function ($q) {
+            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
+        })->whereNull('deleted_at')
+        ->count();
+        return $billscount;
     }
     
     /**
      * Get count of unapproved shops
-     */
+    */
     private function getShopsCount(): int
     {
-        return \App\Models\Shop::whereHas('user')
-            ->where('approved', 0)
-            ->whereNull('deleted_at')
-            ->count();
+        $shopscount = \App\Models\Shop::where('approved', 0)->where(function ($q) {
+            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
+        })->whereNull('deleted_at')
+        ->count();
+        return $shopscount;
     }
     
     /**
      * Get count of unapproved user intros
-     */
+    */
     private function getUserIntrosCount(): int
     {
-        return \App\Models\UserIntro::whereHas('user')
-            ->where('approved', 0)
-            ->whereNull('deleted_at')
-            ->count();
+        $userIntrosCount = \App\Models\UserIntro::where('approved', 0)
+        ->whereNull('deleted_at')
+        ->count();
+        return $userIntrosCount;
     }
     
     /**
@@ -194,46 +196,40 @@ class PendingApprovalService
     {
         return \App\Models\UserVerificationStatus::query()
             ->where(function ($q) {
-                // Creator condition: role = 1
                 $q->where('role', 1)
                     ->whereHas('user', function ($userQuery) {
                         $userQuery->whereNotNull('avatar')
                             ->whereNotNull('bio')
-                            ->where('profile_status_lock', 1)
-                            ->whereNull('edit_bio_reason'); // Exclude users with bio edit requests
+                            ->where('is_subscribed', 1)
+                            ->where('profile_status_lock', 1);
                     });
             })->orWhere(function ($q) {
-                // Gifter condition: role = 0
                 $q->where('role', 0)
                     ->whereHas('user', function ($userQuery) {
                         $userQuery->where('is_500_limit_exceeded', 1)
-                            ->where('profile_status_lock', 1)
-                            ->whereNull('edit_bio_reason'); // Exclude users with bio edit requests
+                        ->where('is_subscribed', 1)
+                            ->where('profile_status_lock', 1);
                     });
             })
             ->count();
     }
     
-    /**
-     * Get count of unapproved posts
-     */
-    private function getPostsCount(): int
-    {
-        return \App\Models\Post::whereHas('user')
-            ->where('approved', 0)
-            ->whereNull('deleted_at')
+    private function getPostsCount(): int {
+        $postsCount = \App\Models\Post::where('approved', 0)->where(function ($q) {
+            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
+        })
             ->count();
+        return $postsCount;
     }
     
-    /**
-     * Get count of unapproved user avatars
-     */
     private function getUserAvatarsCount(): int
     {
-        return \App\Models\User::whereNotNull('avatar')
+        $avatarsCount = User::whereNotNull('avatar')
             ->where('avatar_approved', 0)
-            ->whereNull('edit_bio_reason') // Exclude users with bio edit requests
             ->whereNull('deleted_at')
             ->count();
+        Log::info('Pending user avatars count: ' . $avatarsCount);
+
+        return $avatarsCount;
     }
 }
