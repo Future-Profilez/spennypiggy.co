@@ -57,3 +57,5 @@ environments:
 # php vendor/bin/vapor asset:clear production
 # php vendor/bin/vapor command production --command="php artisan optimize:clear"
 # php vendor/bin/vapor deploy production --message='clean deployment after cache clear'
+
+# php artisan app:notifications-pending-approval

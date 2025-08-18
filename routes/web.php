@@ -10,7 +10,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestController;
-use App\Http\Controllers\TestMailController;
+use App\Http\Controllers\PendingApprovalController;
 use App\StripeControl;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
@@ -156,12 +156,10 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get("x-1", [TestController::class, 'testX']);
     Route::get("items/{c?}", [TestController::class, 'testItems']);
     Route::get('/ip', [TestController::class, 'testIp']);
-    
-    // Pending Approval Mail Testing Routes
-    Route::get('/send-pending-approval-mail', [TestMailController::class, 'sendPendingApprovalMail'])->name('send-pending-approval');
-    Route::get('/send-test-pending-approval-mail', [TestMailController::class, 'sendTestPendingApprovalMail'])->name('send-test-pending-approval');
-    Route::get('/pending-approval-config', [TestMailController::class, 'getPendingApprovalConfig'])->name('pending-approval-config');
 });
+
+// Manual trigger for pending approval job (accessible in all environments)
+Route::get('/pending-approval/manual-trigger', [PendingApprovalController::class, 'manualTrigger'])->name('pending-approval.trigger');
 
 // create bypass entry for all users in userVerificationEntry
 Route::get("seed-user-verification-status", [TestController::class, "seedUserVerificationStatus"]);
