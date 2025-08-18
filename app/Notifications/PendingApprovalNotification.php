@@ -12,9 +12,7 @@ use Illuminate\Notifications\Messages\MailMessage as Mailable;
 class PendingApprovalNotification extends Notification implements ShouldQueue
 {
     use Queueable;
-
     public $pendingSummary;
-
     public function __construct($pendingSummary)
     {
         $this->pendingSummary = $pendingSummary;
