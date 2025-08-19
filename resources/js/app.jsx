@@ -22,8 +22,9 @@ import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
 import * as Sentry from "@sentry/react";
-if(import.meta.env.VITE_APP_ENV == 'production'){
-    console.log("sentry enabled");
+
+// Only initialize Sentry on the production domain
+if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
         sendDefaultPii: true,
@@ -41,9 +42,8 @@ if(import.meta.env.VITE_APP_ENV == 'production'){
         replaysSessionSampleRate: 0.1,
         replaysOnErrorSampleRate: 1.0
     });
-} else {
-    console.log("sentry Disabled");
 }
+
 
 createInertiaApp({
     title: (title) =>
