@@ -478,116 +478,39 @@ export default function Dashboard(props) {
                                                 )} */}
 
 
-                                                <div className="newnav-tabs mb-4 flex items-center justify-between border-b border-gray-700 py-2">
-                                                    <div className="flex overflow-x-auto scrollbar-hide ">
+                                                <div className="newnav-tabs mb-4 flex items-center justify-between  py-2">
+                                                    <div className="flex overflow-x-auto scrollbar-hide sliderOption">
                                                         <div className="flex space-x-8 min-w-max">
-                                                            <Link
-                                                                preserveScroll
-                                                                preserveState
-                                                                href={route(
-                                                                    "user.show",
-                                                                    {
-                                                                        username: user.username,
-                                                                        page: "about",
-                                                                    }
-                                                                )}
-                                                                className={`py-2 px-0 border-b-2 font-bold text-normal md:text-lg uppercase transition-colors duration-200 ${
-                                                                    page === "about" || page === false
-                                                                        ? "border-pink-500 text-pink-600"
-                                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                About
-                                                            </Link>
-                                                            <Link
-                                                                preserveScroll
-                                                                href={route(
-                                                                    "user.show",
-                                                                    {
-                                                                        username: user.username,
-                                                                        page: "wishes",
-                                                                    }
-                                                                )}
-                                                                className={`py-2 px-0 border-b-2 font-bold text-normal md:text-lg uppercase transition-colors duration-200 ${
-                                                                    page === "wishes"
-                                                                        ? "border-pink-500 text-pink-600"
-                                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                Wishes
-                                                            </Link>
-                                                            <Link
-                                                                preserveScroll
-                                                                preserveState
-                                                                href={route(
-                                                                    "user.show",
-                                                                    {
-                                                                        username: user.username,
-                                                                        page: "memberships",
-                                                                    }
-                                                                )}
-                                                                className={`py-2 px-0 border-b-2 font-bold text-normal md:text-lg uppercase transition-colors duration-200 ${
-                                                                    page === "memberships"
-                                                                        ? "border-pink-500 text-pink-600"
-                                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                Memberships
-                                                            </Link>
-                                                            <Link
-                                                                preserveScroll
-                                                                preserveState
-                                                                href={route(
-                                                                    "user.show",
-                                                                    {
-                                                                        username: user.username,
-                                                                        page: "bills",
-                                                                    }
-                                                                )}
-                                                                className={`py-2 px-0 border-b-2 font-bold text-normal md:text-lg uppercase transition-colors duration-200 ${
-                                                                    page === "bills"
-                                                                        ? "border-pink-500 text-pink-600"
-                                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                Bills
-                                                            </Link>
-                                                            <Link
-                                                                preserveScroll
-                                                                preserveState
-                                                                href={route(
-                                                                    "user.show",
-                                                                    {
-                                                                        username: user.username,
-                                                                        page: "shop",
-                                                                    }
-                                                                )}
-                                                                className={`py-2 px-0 border-b-2 font-bold text-normal md:text-lg uppercase transition-colors duration-200 ${
-                                                                    page === "shop"
-                                                                        ? "border-pink-500 text-pink-600"
-                                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                Shop
-                                                            </Link>
-                                                            <Link
-                                                                preserveScroll
-                                                                preserveState
-                                                                href={route(
-                                                                    "user.show",
-                                                                    {
-                                                                        username: user.username,
-                                                                        page: "gifts",
-                                                                    }
-                                                                )}
-                                                                className={`py-2 px-0 border-b-2 font-bold text-normal md:text-lg uppercase transition-colors duration-200 ${
-                                                                    page === "gifts"
-                                                                        ? "border-pink-500 text-pink-600"
-                                                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                                                }`}
-                                                            >
-                                                                Gifts
-                                                            </Link>
+                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"about",}
+                                                            )}
+                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "about" || page === false ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
+                                                            `}
+                                                            > About </Link>
+                                                            <Link preserveScroll href={route( "user.show",{username:user.username,page:"wishes",}
+                                                            )}
+                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "wishes" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
+                                                            `}
+                                                            > Wishes </Link>
+                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"memberships",}
+                                                            )}
+                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "memberships" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
+                                                            `}
+                                                            > Memberships </Link>
+                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"bills",}
+                                                            )}
+                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "bills" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
+                                                            `}
+                                                            > Bills </Link>
+                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"shop",}
+                                                            )}
+                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "shop" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
+                                                            `}
+                                                            > Shop </Link>
+                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"gifts",}
+                                                            )}
+                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "gifts" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
+                                                            `}
+                                                            > Gifts </Link>
                                                         </div>
                                                     </div>
                                                     {IsloggedIn && <Toggle />}

@@ -272,332 +272,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     return (
         <>
-            <style>{`
-                /* Revolutionary Wizard UI Styles */
-                .wizard-container {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6B73FF 100%);
-                    border-radius: 24px;
-                    overflow: hidden;
-                    position: relative;
-                    box-shadow: 0 25px 50px rgba(102, 126, 234, 0.3);
-                }
-                
-                .wizard-container::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: 
-                        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
-                    animation: shimmer 6s ease-in-out infinite;
-                    pointer-events: none;
-                }
-                
-                @keyframes shimmer {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.8; }
-                }
-                
-                .glassmorphism {
-                    background: rgba(255, 255, 255, 0.25);
-                    backdrop-filter: blur(15px);
-                    border: 1px solid rgba(255, 255, 255, 0.18);
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-                }
-                
-                /* Step Progress Indicators */
-                .status-completed {
-                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                    color: white;
-                    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
-                    animation: successPulse 2s ease-in-out infinite;
-                }
-                
-                .status-pending {
-                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                    color: white;
-                    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-                    animation: pendingSpin 3s linear infinite;
-                }
-                
-                .status-locked {
-                    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
-                    color: white;
-                    opacity: 0.7;
-                }
-                
-                .status-active {
-                    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                    color: white;
-                    box-shadow: 0 0 25px rgba(59, 130, 246, 0.6);
-                    animation: activeGlow 2s ease-in-out infinite alternate;
-                }
-                
-                @keyframes successPulse {
-                    0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
-                    50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
-                }
-                
-                @keyframes pendingSpin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                
-                @keyframes activeGlow {
-                    from { 
-                        box-shadow: 0 0 25px rgba(59, 130, 246, 0.6);
-                        transform: scale(1);
-                    }
-                    to { 
-                        box-shadow: 0 0 35px rgba(59, 130, 246, 0.9);
-                        transform: scale(1.05);
-                    }
-                }
-                
-                /* Step Connector Animation */
-                .step-connector {
-                    height: 3px;
-                    background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.8) 100%);
-                    margin: 0 1rem;
-                    position: relative;
-                    border-radius: 2px;
-                    overflow: hidden;
-                }
-                
-                .step-connector::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%);
-                    animation: connectorFlow 3s ease-in-out infinite;
-                }
-                
-                @keyframes connectorFlow {
-                    0% { left: -100%; }
-                    100% { left: 100%; }
-                }
-                
-                /* Revolutionary Step Cards */
-                .step-card {
-                    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-                    border: 1px solid #e2e8f0;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                    position: relative;
-                    overflow: hidden;
-                }
-                
-                .step-card::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 2px;
-                    background: linear-gradient(90deg, transparent 0%, #3b82f6 50%, transparent 100%);
-                    transition: left 0.5s ease-in-out;
-                }
-                
-                .step-card:hover {
-                    transform: translateY(-8px) scale(1.02);
-                    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-                }
-                
-                .step-card:hover::before {
-                    left: 100%;
-                }
-                
-                .step-completed {
-                    background: linear-gradient(145deg, #ecfdf5 0%, #f0fdf4 100%);
-                    border-color: #10b981;
-                    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
-                }
-                
-                .step-pending {
-                    background: linear-gradient(145deg, #fffbeb 0%, #fefce8 100%);
-                    border-color: #f59e0b;
-                    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.15);
-                }
-                
-                .step-locked {
-                    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
-                    border-color: #e2e8f0;
-                    opacity: 0.7;
-                }
-                
-                .step-todo {
-                    background: linear-gradient(145deg, #ffffff 0%, #fafbff 100%);
-                    border-color: #3b82f6;
-                    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
-                }
-                
-                /* Step Numbers with Revolutionary Design */
-                .step-number {
-                    width: 3.5rem;
-                    height: 3.5rem;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: bold;
-                    font-size: 1.1rem;
-                    margin-right: 1.5rem;
-                    transition: all 0.3s ease;
-                    position: relative;
-                }
-                
-                .step-number.completed {
-                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                    color: white;
-                    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-                    animation: completedBounce 0.6s ease-out;
-                }
-                
-                .step-number.pending {
-                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                    color: white;
-                    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
-                    animation: pendingPulse 2s ease-in-out infinite;
-                }
-                
-                .step-number.locked {
-                    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
-                    color: white;
-                    opacity: 0.6;
-                }
-                
-                .step-number.todo {
-                    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                    color: white;
-                    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
-                    animation: todoGlow 3s ease-in-out infinite;
-                }
-                
-                @keyframes completedBounce {
-                    0% { transform: scale(0.3); }
-                    50% { transform: scale(1.1); }
-                    70% { transform: scale(0.9); }
-                    100% { transform: scale(1); }
-                }
-                
-                @keyframes pendingPulse {
-                    0%, 100% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.05); opacity: 0.8; }
-                }
-                
-                @keyframes todoGlow {
-                    0%, 100% { box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3); }
-                    50% { box-shadow: 0 12px 35px rgba(59, 130, 246, 0.5); }
-                }
-                
-                /* Progress Ring Animation */
-                .progress-ring {
-                    transition: stroke-dasharray 1s ease-in-out;
-                    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-                }
-                
-                /* Category Headers */
-                .category-header {
-                    margin-bottom: 2rem;
-                    padding-bottom: 1rem;
-                    border-bottom: 2px solid #e2e8f0;
-                    position: relative;
-                }
-                
-                .category-header::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -2px;
-                    left: 0;
-                    width: 60px;
-                    height: 2px;
-                    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-                    border-radius: 2px;
-                }
-                
-                /* Floating Animations */
-                .floating-action {
-                    animation: float 4s ease-in-out infinite;
-                }
-                
-                @keyframes float {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-8px); }
-                }
-                
-                /* Modern Button Styles */
-                .modern-button {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border: none;
-                    border-radius: 12px;
-                    color: white;
-                    font-weight: 600;
-                    padding: 0.75rem 1.5rem;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-                    position: relative;
-                    overflow: hidden;
-                }
-                
-                .modern-button::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
-                    transition: left 0.5s ease;
-                }
-                
-                .modern-button:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
-                }
-                
-                .modern-button:hover::before {
-                    left: 100%;
-                }
-                
-                /* Responsive Design */
-                @media (max-width: 768px) {
-                    .wizard-container {
-                        border-radius: 16px;
-                        margin: 1rem;
-                    }
-                    
-                    .step-card {
-                        margin-bottom: 1rem;
-                    }
-                    
-                    .step-number {
-                        width: 3rem;
-                        height: 3rem;
-                        margin-right: 1rem;
-                    }
-                }
-            `}</style>
-
-            {/* Revolutionary Wizard Container */}
-            <div className="wizard-container shadow-2xl">
-                {/* Modern Header with Animated Background */}
+            <div className="bg-white rounded-3xl">
                 <div className="relative p-8 text-white">
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center space-x-4">
-                                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center glassmorphism">
-                                    <BsShieldCheck size={32} className="text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-3xl font-bold mb-1">Creator Verification</h1>
-                                    <p className="text-blue-100 text-lg">Your journey to earning starts here</p>
+                                <div className=" ">
+                                    <h1 className="text-2xl text-black mb-1 font-gulfs uppercase">Creator Verification</h1>
+                                    <p className="text-gray-600 text-lg">Your journey to earning starts here</p>
                                 </div>
                             </div>
                             <div className="text-right">
@@ -619,7 +301,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="text-2xl font-bold">{getProgressPercentage()}%</span>
+                                        <span className="text-2xl text-black font-bold">{getProgressPercentage()}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -650,25 +332,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             })}
                         </div>
                         
-                        {/* Dynamic Status Message */}
-                        <div className="glassmorphism rounded-lg p-4">
-                            {(() => {
-                                const status = getOverallStatus();
-                                return (
-                                    <div className="flex items-center space-x-3">
-                                        <status.icon size={24} className="text-white" />
-                                        <div>
-                                            <h3 className="font-semibold text-lg">{status.title}</h3>
-                                            <p className="text-blue-100 text-sm">{status.message}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })()} 
-                        </div>
                     </div>
                 </div>
                 
-                {/* Content Section */}
                 <div className="p-8">
                     {/* Enhanced Status Banner */}
                     {(() => {
@@ -680,7 +346,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             pending: 'bg-purple-50 border-purple-500 text-purple-800',
                             error: 'bg-red-50 border-red-500 text-red-800'
                         };
-                        
                         return (
                             <div className={`${statusColors[status.type]} border-l-4 p-6 mb-8 rounded-r-lg`}>
                                 <div className="flex items-start">
@@ -692,15 +357,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <p className="mb-4">
                                             {status.message}
                                         </p>
-                                        
-                                        {/* Additional Information Based on Status */}
                                         {auth?.user?.profile_status_lock == 1 && (
-                                            <div className="bg-white bg-opacity-50 p-3 rounded-lg mt-3">
-                                                <p className="text-sm font-medium mb-1">⏱️ Review Timeline:</p>
+                                            <div className="">
                                                 <p className="text-sm">Usually 24-48 hours • You'll receive an email notification when approved</p>
                                             </div>
                                         )}
-                                        
                                         {areBasicStepsCompleted() && auth?.user?.profile_status_lock == 0 && (
                                             <div className="bg-white bg-opacity-50 p-3 rounded-lg mt-3">
                                                 <p className="text-sm font-medium mb-1">🚀 Next Steps:</p>
