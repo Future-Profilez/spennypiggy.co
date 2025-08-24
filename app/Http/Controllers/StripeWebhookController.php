@@ -594,12 +594,27 @@ class StripeWebhookController extends Controller
                 }
                 break;
 
-            case 'review.closed':
-                if ($event->data->object->reason === 'approved') {
-                    $paymentIntentId = $event->data->object->payment_intent;
-                    $stripe->paymentIntents->capture($paymentIntentId);
-                }
-                break;
+                case 'review.closed':
+                    $review = $event->data->object;
+
+                    if ($review->reason === 'approved') {
+                        $paymentIntentId = $review->payment_intent;
+
+                        if ($paymentIntentId) {
+                            try {
+                                $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+                                
+                                // Only capture if it's still requires_capture
+                                if ($paymentIntent->status === 'requires_capture') {
+                                    $stripe->paymentIntents->capture($paymentIntentId);
+                                    Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                    break;
 
             case 'invoice.payment_failed':
                 $subs->status = 'failed';

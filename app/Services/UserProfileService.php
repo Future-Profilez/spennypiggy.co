@@ -32,7 +32,7 @@ class UserProfileService
         
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($username) {
             return User::select([
-                'id', 'name', 'username', 'email', 'role', 'bio', 'bio_approved',
+                'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
                 'avatar', 'avatar_approved', 'cover', 'suspended_account',
                 'social_image', 'account_id', 'stripe_details_submitted',
                 'default_currency', 'country', 'creator_category', 'identity_status',
