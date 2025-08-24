@@ -1115,7 +1115,6 @@ class StripeController extends Controller
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
             ]);
         }
-
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'usd';
         $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
         if (!$creator) {
