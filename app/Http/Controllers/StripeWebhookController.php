@@ -594,6 +594,12 @@ class StripeWebhookController extends Controller
                 }
                 break;
 
+            case 'review.closed':
+                if ($event->data->object->reason === 'approved') {
+                    $paymentIntentId = $event->data->object->payment_intent;
+                    $stripe->paymentIntents->capture($paymentIntentId);
+                }
+                break;
 
             case 'invoice.payment_failed':
                 $subs->status = 'failed';
