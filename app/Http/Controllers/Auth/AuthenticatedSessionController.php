@@ -185,7 +185,6 @@ class AuthenticatedSessionController extends Controller
         if (empty($profileData)) {
             return Inertia::render('NotFound');
         }
-
         $user = $profileData['user'];
 
         // Check for suspended account
