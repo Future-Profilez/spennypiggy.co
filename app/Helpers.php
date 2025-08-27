@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Ramsey\Uuid\Uuid;
 use Image;
 
 class Helpers
@@ -232,5 +233,265 @@ class Helpers
             Log::error('Error retrieving authenticated user: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Build comprehensive Stripe metadata for payments with detailed user and transaction information
+     * 
+     * @param string $type Payment type (support, wishlist, membership, bill, shop, etc.)
+     * @param mixed $paymentModel Payment model instance
+     * @param array $extra Additional metadata fields
+     * @return array Formatted metadata array
+     */
+    public static function buildStripeMetadata(string $type, $paymentModel, array $extra = []): array
+    {
+        $baseMetadata = [];
+        
+        // Common metadata fields for all payment types
+        $commonFields = [
+            'platform' => 'SpennyPiggy',
+            'environment' => env('APP_ENV', 'production'),
+            'payment_uuid' => $paymentModel->uuid ?? Uuid::uuid4(),
+            'created_at' => now()->toISOString(),
+        ];
+        
+        switch ($type) {
+            case 'support':
+            case 'tip_jar':
+                $buyer = $paymentModel->user ?? null;
+                $creator = $paymentModel->creator ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Support Payment',
+                    'payment_category' => 'support_payment',
+                    'product_type' => 'support',
+                    
+                    // Buyer/Gifter Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_username' => $buyer ? $buyer->username : 'guest',
+                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $buyer ? env('APP_URL') . '/' . $buyer->username : '',
+                    
+                    // Creator/Owner Information
+                    'creator_id' => (string) $paymentModel->creator_id,
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    
+                    // Transaction Details
+                    'support_type' => 'leaderboard_unlock',
+                    'transaction_description' => 'Support payment for creator ' . ($creator ? $creator->name : 'Unknown'),
+                ]);
+                break;
+                
+            case 'wishlist':
+            case 'wishlist_contribution':
+                $buyer = $paymentModel->user ?? null;
+                $creator = $paymentModel->owner ?? $paymentModel->creator ?? null;
+                $wishItem = $paymentModel->wish_item ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Wishlist Item Contribution Payment',
+                    'payment_category' => 'wishlist_contribution',
+                    'product_type' => 'wish_item',
+                    
+                    // Buyer/Gifter Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_username' => $buyer ? $buyer->username : 'guest',
+                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $buyer ? env('APP_URL') . '/' . $buyer->username : '',
+                    'is_anonymous_gift' => (string) ($paymentModel->anonymous ?? '0'),
+                    
+                    // Creator/Owner Information
+                    'creator_id' => (string) ($paymentModel->owner_id ?? $paymentModel->creator_id),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    
+                    // Product Details
+                    'wish_item_id' => (string) ($paymentModel->wish_item_id ?? ''),
+                    'wish_item_name' => $wishItem ? $wishItem->name : 'Wishlist Item',
+                    'wish_item_description' => $wishItem ? $wishItem->description : '',
+                    'transaction_description' => 'Wishlist contribution for ' . ($wishItem ? $wishItem->name : 'item'),
+                ]);
+                break;
+                
+            case 'membership':
+            case 'membership_subscription':
+                $subscriber = $paymentModel->user ?? null;
+                $creator = $paymentModel->membership->user ?? $paymentModel->creator ?? null;
+                $membership = $paymentModel->membership ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Creator Membership Subscription Payment',
+                    'payment_category' => 'membership_subscription',
+                    'product_type' => 'membership_level',
+                    
+                    // Subscriber Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $subscriber ? $subscriber->name : ($paymentModel->name ?? $paymentModel->guest_name ?? 'Anonymous'),
+                    'buyer_username' => $subscriber ? $subscriber->username : 'guest',
+                    'buyer_email' => $subscriber ? $subscriber->email : ($paymentModel->guest_email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $subscriber ? env('APP_URL') . '/' . $subscriber->username : '',
+                    
+                    // Creator Information
+                    'creator_id' => (string) ($membership->user_id ?? $paymentModel->creator_id),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    
+                    // Membership Details
+                    'membership_id' => (string) ($paymentModel->membership_id ?? $membership->id ?? ''),
+                    'membership_level' => $membership ? $membership->level : 'Unknown Level',
+                    'membership_description' => $membership ? $membership->description : '',
+                    'subscription_type' => $paymentModel->recurring_type ?? 'monthly',
+                    'membership_price' => (string) ($membership->price ?? $paymentModel->amount ?? '0'),
+                    'transaction_description' => 'Membership subscription: ' . ($membership ? $membership->level : 'Level') . ' for ' . ($creator ? $creator->name : 'creator'),
+                ]);
+                break;
+                
+            case 'wish_subscription':
+            case 'wish_item_subscription':
+                $subscriber = $paymentModel->user ?? null;
+                $creator = $paymentModel->wish_item->user ?? $paymentModel->creator ?? null;
+                $wishItem = $paymentModel->wish_item ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Recurring Wishlist Item Subscription Payment',
+                    'payment_category' => 'wishlist_subscription',
+                    'product_type' => 'wish_item_subscription',
+                    
+                    // Subscriber Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $subscriber ? $subscriber->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_username' => $subscriber ? $subscriber->username : 'guest',
+                    'buyer_email' => $subscriber ? $subscriber->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $subscriber ? env('APP_URL') . '/' . $subscriber->username : '',
+                    
+                    // Creator Information
+                    'creator_id' => (string) ($wishItem->user_id ?? $paymentModel->creator_id),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    
+                    // Subscription Details
+                    'wish_item_id' => (string) ($paymentModel->wish_item_id ?? ''),
+                    'wish_item_name' => $wishItem ? $wishItem->name : 'Wishlist Item',
+                    'subscription_type' => $paymentModel->recurring_type ?? 'monthly',
+                    'subscription_purpose' => $wishItem && $wishItem->subscription ? 'task_request' : 'wishlist_contribution',
+                    'transaction_description' => 'Recurring subscription for wishlist item: ' . ($wishItem ? $wishItem->name : 'item'),
+                ]);
+                break;
+                
+            case 'bill':
+            case 'bill_payment':
+                $payer = $paymentModel->user ?? null;
+                $creator = $paymentModel->bill->user ?? $paymentModel->creator ?? null;
+                $bill = $paymentModel->bill ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Creator Bill Payment',
+                    'payment_category' => 'bill_payment',
+                    'product_type' => 'bill',
+                    
+                    // Payer Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $payer ? $payer->name : ($paymentModel->name ?? $paymentModel->guest_name ?? 'Anonymous'),
+                    'buyer_username' => $payer ? $payer->username : 'guest',
+                    'buyer_email' => $payer ? $payer->email : ($paymentModel->guest_email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $payer ? env('APP_URL') . '/' . $payer->username : '',
+                    
+                    // Bill Creator Information
+                    'creator_id' => (string) ($bill->user_id ?? $paymentModel->creator_id),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    
+                    // Bill Details
+                    'bill_id' => (string) ($paymentModel->bills_id ?? $bill->id ?? ''),
+                    'bill_name' => $bill ? $bill->name : 'Bill Payment',
+                    'bill_description' => $bill ? $bill->description : '',
+                    'subscription_type' => $paymentModel->recurring_type ?? 'one_time',
+                    'recurring_for' => (string) ($paymentModel->recurring_for ?? 'one_time'),
+                    'transaction_description' => 'Bill payment: ' . ($bill ? $bill->name : 'payment') . ' for ' . ($creator ? $creator->name : 'creator'),
+                ]);
+                break;
+                
+            case 'shop':
+            case 'shop_purchase':
+                $buyer = $paymentModel->user ?? null;
+                $creator = $paymentModel->shop->user ?? $paymentModel->creator ?? null;
+                $shopItem = $paymentModel->shop ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Shop Item Purchase Payment',
+                    'payment_category' => 'shop_purchase',
+                    'product_type' => 'shop_item',
+                    
+                    // Buyer Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_username' => $buyer ? $buyer->username : 'guest',
+                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $buyer ? env('APP_URL') . '/' . $buyer->username : '',
+                    'is_anonymous_purchase' => (string) ($paymentModel->anonymous ?? '0'),
+                    
+                    // Shop Owner Information
+                    'creator_id' => (string) ($shopItem->user_id ?? $paymentModel->creator_id),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+                    'creator_profile_url' => $creator ? env('APP_URL') . '/' . $creator->username : '',
+                    
+                    // Shop Item Details
+                    'shop_item_id' => (string) ($paymentModel->shop_id ?? $shopItem->id ?? ''),
+                    'shop_item_name' => $shopItem ? $shopItem->name : 'Shop Item',
+                    'shop_item_description' => $shopItem ? $shopItem->description : '',
+                    'shop_item_type' => $shopItem ? $shopItem->type : 'digital',
+                    'quantity_purchased' => (string) ($paymentModel->quantity ?? '1'),
+                    'variant_id' => (string) ($paymentModel->varient_id ?? ''),
+                    'transaction_description' => 'Shop purchase: ' . ($shopItem ? $shopItem->name : 'item') . ' from ' . ($creator ? $creator->name : 'creator'),
+                ]);
+                break;
+                
+            default:
+                Log::warning('Unknown payment type for metadata builder', ['type' => $type]);
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'General Payment Transaction',
+                    'payment_category' => 'general_payment',
+                    'product_type' => 'unknown',
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'transaction_description' => 'General payment transaction',
+                ]);
+                break;
+        }
+        
+        // Merge with extra metadata and ensure all values are strings
+        $metadata = array_merge($baseMetadata, $extra);
+        
+        // Convert all values to strings and sanitize
+        foreach ($metadata as $key => $value) {
+            if (is_bool($value)) {
+                $metadata[$key] = $value ? '1' : '0';
+            } elseif (is_null($value)) {
+                $metadata[$key] = 'null';
+            } elseif (is_array($value) || is_object($value)) {
+                $metadata[$key] = json_encode($value);
+            } else {
+                $metadata[$key] = (string) $value;
+            }
+            
+            // Truncate if too long (Stripe limit: 500 chars per value)
+            if (strlen($metadata[$key]) > 500) {
+                $metadata[$key] = substr($metadata[$key], 0, 497) . '...';
+                Log::warning('Stripe metadata value truncated', [
+                    'key' => $key,
+                    'original_length' => strlen((string) $value)
+                ]);
+            }
+        }
+        
+        return $metadata;
     }
 }

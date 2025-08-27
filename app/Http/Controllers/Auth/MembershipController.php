@@ -498,13 +498,10 @@ class MembershipController extends Controller
                     $payload['subscription_data'] = [
                         'application_fee_percent' => $applicationFeePercent,
                         'description' => "Monthly Membership for {$membership->user->username}",
-                        'metadata' => [
-                            'user_id' => $user->id ?? 0,
-                            'email' => $user->email ?? $request->email,
-                            'creator_id' => $membership->user->id,
-                            'membership_id' => $membership->id,
-                            'type' => 'membership',
-                        ],
+                        'metadata' => \App\Helpers::buildStripeMetadata('membership', $sub, [
+                            'membership_level' => $membership->level,
+                            'anonymous' => (string) ($request->anonymous ?? 0),
+                        ]),
                     ];
                 }
 

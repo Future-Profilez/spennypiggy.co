@@ -826,12 +826,10 @@ class StripeController extends Controller
                 $payload['subscription_data'] = [
                     'application_fee_percent' => round($applicationFeePercent, 2),
                     'description' => 'Wish Item Subscription Content Purchase.',
-                    'metadata' => [
-                        'user_id' => $user->id,
-                        'creator_id' => $wish->user->id,
-                        'wish_item_id' => $wish->id,
-                        'type' => 'wish',
-                    ],
+                    'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
+                        'wishlist_item_id' => (string) $wish->id,
+                        'anonymous' => (string) ($sub->anonymous ?? 0),
+                    ]),
                 ];
             }
 

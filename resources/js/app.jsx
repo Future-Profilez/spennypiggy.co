@@ -25,6 +25,7 @@ import * as Sentry from "@sentry/react";
 
 // Only initialize Sentry on the production domain
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
+    console.log("Sentry Enabled");
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
         sendDefaultPii: true,
@@ -49,7 +50,6 @@ createInertiaApp({
     title: (title) =>
         `${title || "Spenny Piggy"} - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More.`,
     resolve: (name) => {
-        // Implement route-level code splitting with lazy loading
         return resolvePageComponent(
             `./Pages/${name}.jsx`,
             // Use eager: false for better code splitting

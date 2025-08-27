@@ -184,14 +184,15 @@ class CheckoutController extends Controller
                 'payment_intent_data' => [
                     'application_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
                     'description' => "Platform Fee.",
-                    "metadata" => [
-                        "guest_name" => $request->name ?? null,
-                        "user_id" => Auth::id() ?? null,
-                        "gifter_id" => Auth::id() ?? null,
-                        "purpose" => "wishlist_contribution",
-                        "wishlist_creator_id" => $owner->id,
-                        "creator_profile" => env('APP_URL'). '/' . $owner->username ?? null,
-                    ],
+                    "metadata" => \App\Helpers::buildStripeMetadata('wishlist', (object) [
+                        'user_id' => Auth::id(),
+                        'owner_id' => $owner->id,
+                        'owner' => $owner,
+                        'uuid' => 'checkout-session-' . time(),
+                    ], [
+                        "anonymous" => request()->query('anonymous') ?? '0',
+                        "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
+                    ]),
                 ],
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];

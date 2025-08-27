@@ -748,6 +748,12 @@ class ShopsController extends Controller
                     'payment_intent_data' => [
                         'application_fee_amount' => (int) round($ConvertedTotalTaxAmount * $multiplier),
                         'description' => "Shop Payment for {$shop->user->username}",
+                        'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
+                            'shop_item_id' => $shop->id,
+                            'quantity' => $shopPaymentDetail->quantity,
+                            'anonymous' => $shopPaymentDetail->anonymous,
+                            'varient_id' => $shopPaymentDetail->varient_id,
+                        ]),
                     ],
 
                 ];
