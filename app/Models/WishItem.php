@@ -68,8 +68,8 @@ class WishItem extends Model
     }
 
     protected $hidden = [
-        'thumbnail',
-        'is_pin',
+        // 'thumbnail',
+        // 'is_pin',
         "created_at",
         "updated_at",
         "deleted_at"

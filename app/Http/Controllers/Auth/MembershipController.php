@@ -350,9 +350,9 @@ class MembershipController extends Controller
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
 
 
-        if (!in_array($membership->user->subscription_status, [1, 2])) {
-            return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
-        }
+        // if (!in_array($membership->user->subscription_status, [1, 2])) {
+        //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
+        // }
 
         if ($user != null && $membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
         $currency = strtolower($request->cookie("currency", "GBP"));

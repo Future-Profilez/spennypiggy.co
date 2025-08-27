@@ -41,10 +41,9 @@ class CheckoutController extends Controller
 
         $owner = User::find($id);
 
-        // dd($owner->subscription_status);
-        if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
-            return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
-        }
+        // if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
+        //     return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
+        // }
 
         $user = Auth::user();  
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
@@ -70,9 +69,9 @@ class CheckoutController extends Controller
                     ->get();
             }
 
-            if ($getdata->isNotEmpty() && !in_array($getdata->first()->owner->subscription_status, [1, 2])) {
-                return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
-            }
+            // if ($getdata->isNotEmpty() && !in_array($getdata->first()->owner->subscription_status, [1, 2])) {
+            //     return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
+            // }
 
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
