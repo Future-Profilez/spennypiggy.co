@@ -113,8 +113,7 @@ class User extends Authenticatable
             if ($subscription->status === 'trial_ending') {
                 return 2;
             }
-
-            if ($subscription->status === 'paid' || $subscription->status === 'paid' || $subscription->status === 'trialing') {
+            if ($subscription->status === 'paid' || $subscription->status === 'renew' || $subscription->status === 'trialing') {
                 if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
                     return 1; 
                 }

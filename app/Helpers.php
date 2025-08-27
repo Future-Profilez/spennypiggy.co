@@ -455,6 +455,38 @@ class Helpers
                 ]);
                 break;
                 
+            case 'site_subscription':
+            case 'mandatory_subscription':
+                $subscriber = $paymentModel->user ?? null;
+                
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Mandatory Platform Access Subscription',
+                    'payment_category' => 'site_subscription',
+                    'product_type' => 'platform_subscription',
+                    
+                    // Subscriber Information
+                    'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $subscriber ? $subscriber->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_username' => $subscriber ? $subscriber->username : 'guest',
+                    'buyer_email' => $subscriber ? $subscriber->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+                    'buyer_profile_url' => $subscriber ? env('APP_URL') . '/' . $subscriber->username : '',
+                    
+                    // Platform Information (SpennyPiggy is both platform and "creator")
+                    'creator_id' => 'platform',
+                    'creator_name' => 'SpennyPiggy Platform',
+                    'creator_username' => 'spennypiggy',
+                    'creator_profile_url' => env('APP_URL'),
+                    
+                    // Subscription Details
+                    'subscription_type' => 'monthly',
+                    'subscription_amount' => (string) ($paymentModel->amount ?? '4.00'),
+                    'currency' => (string) ($paymentModel->currency ?? 'GBP'),
+                    'trial_period_days' => '3',
+                    'subscription_description' => 'Mandatory monthly subscription for platform access',
+                    'transaction_description' => 'Monthly platform access subscription for ' . ($subscriber ? $subscriber->name : 'user'),
+                ]);
+                break;
+                
             default:
                 Log::warning('Unknown payment type for metadata builder', ['type' => $type]);
                 $baseMetadata = array_merge($commonFields, [

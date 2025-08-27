@@ -1461,9 +1461,15 @@ class StripeController extends Controller
                     ]
                 ]
             ]],
-            'subscription_data' =>  [
+            'subscription_data' => [
                 'trial_period_days' => $trial_period_days, 
-                'description' => "Subscription for using site through Stripe."
+                'description' => "Subscription for using site through Stripe.",
+                'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
+                    'subscription_amount' => (string) $price,
+                    'tax_amount' => (string) $tax,
+                    'trial_period_days' => (string) $trial_period_days,
+                    'subscription_purpose' => 'mandatory_platform_access',
+                ]),
             ],
             'customer_email' => $user->email,
             'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
