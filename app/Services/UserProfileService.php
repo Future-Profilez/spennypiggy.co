@@ -20,9 +20,16 @@ use Illuminate\Support\Facades\Auth;
 
 class UserProfileService
 {
-    private const CACHE_TTL = 300; // 5 minutes
-    private const LONG_CACHE_TTL = 3600; // 1 hour
-    
+     
+    private function getCacheTtl(): int
+    {
+        return (int) env('CACHE_TTL', 150);
+    }
+
+    private function getLongCacheTtl(): int
+    {
+        return (int) env('LONG_CACHE_TTL', 3600);
+    }
     /**
      * Get user with optimized relationships
      */
@@ -30,7 +37,7 @@ class UserProfileService
     {
         $cacheKey = "user_profile_{$username}";
         
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($username) {
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($username) {
             return User::select([
                 'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
                 'avatar', 'avatar_approved', 'cover', 'suspended_account',
@@ -55,13 +62,9 @@ class UserProfileService
     public function getUserWishItems(int $userId, ?int $categoryId = null, int $perPage = 20): array
     {
         $cacheKey = "user_wishes_{$userId}_{$categoryId}_{$perPage}";
-        
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($userId, $categoryId, $perPage) {
-            $query = WishItem::select([
-                'id', 'uuid', 'user_id', 'wishname', 'price', 'thumbnail', 'currency',
-                'reward', 'item_url', 'is_approved', 'is_pin', 'sort', 'created_at', 'updated_at'
-            ])
-            ->where('user_id', $userId)
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $categoryId, $perPage) {
+            $query = WishItem::where('user_id', $userId)
             ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
                 $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
             });
@@ -85,13 +88,9 @@ class UserProfileService
     public function getUserPosts(int $userId, int $limit = 10): array
     {
         $cacheKey = "user_posts_{$userId}_{$limit}";
-        
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($userId, $limit) {
-            $query = Post::select([
-                'id', 'user_id', 'title', 'content', 'image', 'approved',
-                'created_at', 'updated_at'
-            ])
-            ->where('user_id', $userId);
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $limit) {
+            $query = Post::where('user_id', $userId);
 
             // Apply approval filter for non-owners
             if (!Auth::check() || Auth::id() !== $userId) {
@@ -111,13 +110,9 @@ class UserProfileService
     public function getUserMemberships(int $userId): array
     {
         $cacheKey = "user_memberships_{$userId}";
-        
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($userId) {
-            $query = Membership::select([
-                'id', 'uuid', 'user_id', 'level', 'price', 'thumbnail',
-                'rewards', 'currency', 'approved', 'created_at'
-            ])
-            ->where('user_id', $userId);
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
+            $query = Membership::where('user_id', $userId);
 
             if (!Auth::check() || Auth::id() !== $userId) {
                 $query->where('approved', 1);
@@ -133,13 +128,9 @@ class UserProfileService
     public function getUserBills(int $userId): array
     {
         $cacheKey = "user_bills_{$userId}";
-        
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($userId) {
-            $query = Bills::select([
-                'id', 'uuid', 'user_id', 'name', 'price', 'thumbnail', 'currency',
-                'period', 'approved', 'created_at'
-            ])
-            ->where('user_id', $userId);
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
+            $query = Bills::where('user_id', $userId);
 
             if (!Auth::check() || Auth::id() !== $userId) {
                 $query->where('approved', 1);
@@ -155,19 +146,14 @@ class UserProfileService
     public function getUserShopItems(int $userId): array
     {
         $cacheKey = "user_shop_{$userId}";
-        
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($userId) {
-            $query = Shop::select([
-                'id', 'uuid', 'user_id', 'name', 'description', 'price', 'image', 'currency',
-                'type', 'approved', 'created_at'
-            ])
-            ->where('user_id', $userId)
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
+            $query = Shop::where('user_id', $userId)
             ->with(['shop_varients:id,shop_id,name,price']);
 
             if (!Auth::check() || Auth::id() !== $userId) {
                 $query->where('approved', 1);
             }
-
             return $query->latest()->get()->toArray();
         });
     }
@@ -179,7 +165,7 @@ class UserProfileService
     {
         $cacheKey = "supporters_count_{$userId}";
         
-        return Cache::remember($cacheKey, self::LONG_CACHE_TTL, function () use ($userId) {
+        return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
             // Use raw SQL for better performance
             $query = "
                 SELECT COUNT(DISTINCT supporter) as count FROM (
@@ -210,7 +196,7 @@ class UserProfileService
     {
         $cacheKey = "user_earnings_{$userId}";
         
-        return Cache::remember($cacheKey, self::LONG_CACHE_TTL, function () use ($userId) {
+        return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
             $goalPayment = TipGoalsPayment::where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->sum('amount');

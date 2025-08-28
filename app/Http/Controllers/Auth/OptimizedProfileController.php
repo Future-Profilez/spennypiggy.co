@@ -40,7 +40,7 @@ class OptimizedProfileController extends Controller
         }
 
         // Get Stripe account capabilities with caching
-        [$isNeedToUpgrade, $cardCapabilities] = $this->getStripeCapabilities($user);
+        [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
 
         // Load page-specific data efficiently
         $pageData = $this->getPageSpecificData($user->id, $page);
@@ -53,6 +53,7 @@ class OptimizedProfileController extends Controller
             'user' => $user,
             'card_capabilities' => $cardCapabilities,
             'isNeedToUpgrade' => $isNeedToUpgrade,
+            'stripe_requirements' => $stripeRequirements,
             'itemid' => request()->query('item') ?? false,
             'sociallinks' => $user->social_links,
             'slinks' => $user->social_links,
@@ -73,7 +74,7 @@ class OptimizedProfileController extends Controller
     private function getStripeCapabilities($user): array
     {
         if (empty($user->account_id)) {
-            return [false, true];
+            return [false, true, []];
         }
 
         $cacheKey = "stripe_capabilities_{$user->account_id}";
@@ -84,11 +85,25 @@ class OptimizedProfileController extends Controller
                 $isNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
                 $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
                 
-                return [$isNeedToUpgrade, $cardCapabilities];
+                // Get comprehensive account requirements
+                $requirements = StripeControl::getAccountRequirements($user->account_id);
+                
+                return [$isNeedToUpgrade, $cardCapabilities, $requirements];
             } catch (\Exception $e) {
                 // Update user if account is invalid
                 $user->update(['stripe_details_submitted' => 0]);
-                return [false, true];
+                return [false, true, [
+                    'has_requirements' => true,
+                    'requirements' => [[
+                        'type' => 'connection_error',
+                        'severity' => 'critical',
+                        'title' => 'Account Connection Issue',
+                        'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
+                        'action' => 'Refresh the page or contact support.',
+                        'action_url' => null
+                    ]],
+                    'account_status' => []
+                ]];
             }
         });
     }

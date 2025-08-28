@@ -110,7 +110,9 @@ export default function Wishlistbox(props) {
             </div>
           : '' }
 
-          {itm && itm.subscription == '1' ? <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> : ''}
+          {itm && itm.subscription == 1 ? 
+          <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">Subscribable</div> 
+          : ''}
           <div className="absolute top-1 left-1 text-xl">👀</div>
           <div className="absolute bottom-2 right-2 text-xl">⭐</div>
           <div className='flex justify-center items-center mt-3'  >

@@ -821,6 +821,10 @@ class StripeController extends Controller
             if ($reccure === 'onetime') {
                 $payload['payment_intent_data'] = [
                     'application_fee_amount' => round($platformTotal * $multiplier),
+                    'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
+                        'wishlist_item_id' => (string) $wish->id,
+                        'anonymous' => (string) ($sub->anonymous ?? 0),
+                    ]),
                 ];
             } else {
                 $payload['subscription_data'] = [

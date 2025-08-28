@@ -62,6 +62,7 @@ import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
 import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
+import ActionRequired from "./stripe/ActionRequired";
 
 export default function Dashboard(props) {
 
@@ -80,6 +81,7 @@ export default function Dashboard(props) {
         items,
         page,
         selectedCategory,
+        stripe_requirements,
     } = props;
     const [wishitems, setWishitems] = useState(
         useMemo(() => items || [], [items])
@@ -523,6 +525,10 @@ export default function Dashboard(props) {
                                                             <div className="row about-sec align-self-start">
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
+
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.length > 0 && AuthUserStripeConnected ?
+                                                                            <ActionRequired requirements={stripe_requirements} />
+                                                                        : ''}
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
