@@ -143,12 +143,16 @@ class CheckoutController extends Controller
                 $storeTax = $platformFeeAmount + $StoreAdminsFees * $dd->quantity;
                 $storeTaxWithQuantity = $storeTax * $dd->quantity;
 
-                // Add items to line items array instead of overwriting
+                // Create product data dynamically for platform account (products exist in connected accounts)
+                $productName = $dd->wish->wishname ?? 'Wish Item';
                 $lineItems[] = [
                     'quantity' => $dd->quantity,
                     'price_data' => [
                         'currency' => $currency,
-                        'product' => $dd->wish_item_id == null || (isset($dd->wish->subscription) && ($dd->wish->subscription == 2)) ? $dd->priceid : $dd->wish->stripe_product_id,
+                        'product_data' => [
+                            'name' => $productName,
+                            'description' => 'Item from ' . ($dd->owner->name ?? 'Creator'),
+                        ],
                         'unit_amount_decimal' => round($totalAmount * $multiplier),
                     ]
                 ];
@@ -176,32 +180,52 @@ class CheckoutController extends Controller
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
+            // Calculate transfer amount (what creator receives = item + their VAT if applicable)
+            $creatorVatAmount = 0;
+            if (isset($owner->vat_amount_percentage) && $owner->vat_amount_percentage > 0) {
+                $creatorVatAmount = round(($subtotal * $owner->vat_amount_percentage / 100) * $multiplier);
+            }
+            $transferAmount = round($subtotal * $multiplier) + $creatorVatAmount;
+            $totalChargeAmount = $transferAmount + round($totalShowTaxWithQuantity * $multiplier);
+
             $payload = [
                 'success_url' => route('checkout.success', [$id]),
                 'cancel_url' => route('checkout.cancel', [$id]),
                 "mode"  =>  "payment",
-                'line_items' => $lineItems,
-                // 'customer_email' => $user->email ?? request()->query('email'),
+                'line_items' => $lineItems, // This determines the total amount automatically
                 'payment_intent_data' => [
-                    'application_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
-                    'description' => "Platform Fee.",
+                    // Platform payment with centralized visibility (no amount here - determined by line_items)
+                    'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
+                    'transfer_data' => [
+                        'destination' => $connectedAccountId, // Creator's connected account
+                        'amount' => $transferAmount, // What creator receives (item + VAT)
+                    ],
+                    // Note: application_fee_amount is calculated automatically (total - transfer_amount)
+                    'description' => "Spenny Piggy - Item purchase with platform fee",
                     "metadata" => \App\Helpers::buildStripeMetadata('wishlist', (object) [
                         'user_id' => Auth::id(),
                         'owner_id' => $owner->id,
                         'owner' => $owner,
                         'uuid' => 'checkout-session-' . time(),
+                        // Additional breakdown for reconciliation
+                        'item_amount' => round($subtotal * $multiplier),
+                        'creator_vat_amount' => $creatorVatAmount,
+                        'transfer_amount' => $transferAmount,
+                        'platform_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
+                        'total_charge_amount' => $totalChargeAmount,
                     ], [
                         "anonymous" => request()->query('anonymous') ?? '0',
                         "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
+                        "payment_type" => "direct_charge_with_transfer", // For tracking
                     ]),
                 ],
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
-            $connectedAccount = $connectedAccountId;
-
+            // Create session on PLATFORM account (no connected account parameter)
+            // This ensures payments show in platform dashboard while using on_behalf_of
             try {
-                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccount);
+                $sessionCreate = StripeControl::createCheckoutSession($payload); // Removed $connectedAccount parameter
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage());
                 return redirect()->back()->with('error', 'Payment failed. Please try again.');
