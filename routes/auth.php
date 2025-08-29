@@ -89,6 +89,9 @@ Route::middleware('guest')->group(function () {
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 
+// Debug checkout route - temporary for testing (no middleware)
+Route::get('/debug-checkout/{id}', [CheckoutController::class, 'debugCheckout'])->name('debug.checkout');
+
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');
 })->name("discover");

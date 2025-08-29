@@ -39,12 +39,6 @@ class CheckoutController extends Controller
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        $owner = User::find($id);
-
-        // if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
-        //     return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
-        // }
-
         $user = Auth::user();  
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
@@ -56,18 +50,42 @@ class CheckoutController extends Controller
                     return redirect()->back()->with("error", "Max limit for message is 100 words");
                 }
             }
+            
+            // Get cart data first, then determine owner
             if (Auth::check()) {
                 $getdata = UserCart::where('user_id', Auth::id())
-                    ->where('owner_id', $id)
+                    ->where('owner_id', $id)  // For authenticated users, $id is owner_id
                     ->where('status', 1)
-                    ->with(['wish'])
+                    ->with(['wish', 'owner'])
                     ->get();
             } else {
-                $getdata = UserCart::where('device_id', $id)
+                $getdata = UserCart::where('device_id', $id)  // For guests, $id is device_id
                     ->where('status', 1)
-                    ->with(['wish'])
+                    ->with(['wish', 'owner'])
                     ->get();
             }
+            
+            if ($getdata->isEmpty()) {
+                return redirect()->back()->with('error', 'No items in cart to checkout.');
+            }
+            
+            // Get owner from cart data (for guests) or find by ID (for authenticated users)
+            if (Auth::check()) {
+                $owner = User::find($id);
+                if (!$owner) {
+                    return redirect()->back()->with('error', 'Creator not found.');
+                }
+            } else {
+                // For guests, get owner from the first cart item
+                $owner = $getdata->first()->owner;
+                if (!$owner) {
+                    return redirect()->back()->with('error', 'Creator not found.');
+                }
+            }
+            
+            // if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
+            //     return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
+            // }
 
             // if ($getdata->isNotEmpty() && !in_array($getdata->first()->owner->subscription_status, [1, 2])) {
             //     return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
@@ -228,7 +246,12 @@ class CheckoutController extends Controller
                 $sessionCreate = StripeControl::createCheckoutSession($payload); // Removed $connectedAccount parameter
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage());
-                return redirect()->back()->with('error', 'Payment failed. Please try again.');
+                Log::error("Stripe Error Details: ", ['error' => $e->getJsonBody()]);
+                return redirect()->back()->with('error', 'Payment failed: ' . $e->getMessage());
+            } catch (\Exception $e) {
+                Log::error("General Checkout Error: " . $e->getMessage());
+                Log::error("Error trace: " . $e->getTraceAsString());
+                return redirect()->back()->with('error', 'Checkout failed: ' . $e->getMessage());
             }
 
             session()->forget('session_id');
@@ -433,6 +456,38 @@ class CheckoutController extends Controller
         ]);
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', 'Payment Cancel.');
         // return view('cancel');
+    }
+
+    /**
+     * Debug Checkout - Simple test endpoint
+     *
+     * @return mixed
+     */
+    public function debugCheckout($id) {
+        try {
+            Log::info('Debug checkout called with ID: ' . $id);
+            
+            $user = Auth::user();
+            Log::info('User authenticated: ' . ($user ? 'Yes - ID: ' . $user->id : 'No'));
+            
+            $owner = User::find($id);
+            Log::info('Owner found: ' . ($owner ? 'Yes - Name: ' . $owner->name : 'No'));
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Checkout controller is working',
+                'user_id' => $user ? $user->id : null,
+                'owner_id' => $owner ? $owner->id : null,
+                'timestamp' => now()->toISOString()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Debug checkout error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
 
     /**

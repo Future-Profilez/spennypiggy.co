@@ -195,7 +195,7 @@ class Helpers
     {
         $user = Auth::user();
         if (!$user) {
-            Log::error('No authenticated user found.');
+            // No user logged in - this is normal for guest checkouts
             return false;
         }
         try {
