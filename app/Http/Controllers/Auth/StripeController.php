@@ -110,7 +110,7 @@ class StripeController extends Controller
                     'email' => $user->email,
                     'capabilities' => [
                         'card_payments' => ['requested' => true],  // Allow for all creators
-                        'transfers' => ['requested' => true], // Always request transfers
+                        // 'transfers' => ['requested' => true], // Removed per client request
                     ],
                     'tos_acceptance' => ['service_agreement' => 'full'],
                     // 'business_type' => 'individual',
@@ -190,7 +190,7 @@ class StripeController extends Controller
                     'email'         => $user->email,
                     'capabilities'  => [
                         'card_payments' => ['requested' => true],
-                        'transfers'     => ['requested' => true],
+                        // 'transfers'     => ['requested' => true], // Removed per client request
                     ],
                     'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
@@ -269,7 +269,7 @@ class StripeController extends Controller
                 [
                     'capabilities' => [
                         'card_payments' => ['requested' => true],
-                        'transfers'     => ['requested' => true],
+                        // 'transfers'     => ['requested' => true], // Removed per client request
                     ],
                 ]
             );

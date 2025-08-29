@@ -2,242 +2,209 @@
 
 namespace App\Services;
 
-use App\Models\Bills;
-use App\Models\User;
 use App\Models\WishItem;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Schema;
-use App\Notifications\PendingApprovalNotification;
+use App\Models\Membership;
+use App\Models\Bills;
+use App\Models\Shop;
+use App\Models\UserIntro;
+use App\Models\Post;
+use App\Models\User;
 use Exception;
-use Illuminate\Database\Eloquent\Casts\Json;
-use Illuminate\Support\Js;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PendingApprovalSummary;
 
 class PendingApprovalService
 {
     /**
-     * Build the pending approval summary and send the notification email
-     * 
-     * @return array The pending summary data that was processed
+     * Build and send pending approval summary
+     *
+     * @return array|null
      */
-    public function buildAndSend(): array
+    public function buildAndSend()
     {
-        $pendingSummary = [];
-        
-        // 1. Fetch Wish Items count
-        $wishItemsCount = $this->getWishItemsCount();
-        if ($wishItemsCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'Wish Items',
-                'count' => $wishItemsCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.Wish Items', '🎁'),
-            ];
-        }
-        
-        // 2. Fetch Memberships count
-        $membershipsCount = $this->getMembershipsCount();
-        if ($membershipsCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'Memberships',
-                'count' => $membershipsCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.Memberships', '👥'),
-            ];
-        }
-        
-        // 3. Fetch Bills count
-        $billsCount = $this->getBillsCount();
-        if ($billsCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'Bills',
-                'count' => $billsCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.Bills', '🧾'),
-            ];
-        }
-        
-        // 4. Fetch Shops count
-        $shopsCount = $this->getShopsCount();
-        if ($shopsCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'Shops',
-                'count' => $shopsCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.Shops', '🏪'),
-            ];
-        }
-        
-        // 5. Fetch User Intros count
-        $userIntrosCount = $this->getUserIntrosCount();
-        if ($userIntrosCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'User Verification Video',
-                'count' => $userIntrosCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.User Intros', '👋'),
-            ];
-        }
-        
-        // 6. Fetch User Profiles count
-        $userProfilesCount = $this->getUserProfilesCount();
-        if ($userProfilesCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'User Profiles Approval',
-                'count' => $userProfilesCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.User Profiles', '👤'),
-            ];
-        }
-        
-        // 7. Fetch Posts count
-        $postsCount = $this->getPostsCount();
-        if ($postsCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'Posts',
-                'count' => $postsCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.Posts', '📝'),
-            ];
-        }
-        
-        // 8. Fetch User Avatars count
-        $userAvatarsCount = $this->getUserAvatarsCount();
-        if ($userAvatarsCount > 0) {
-            $pendingSummary[] = [
-                'label' => 'User Avatars',
-                'count' => $userAvatarsCount,
-                'items' => [],
-                'icon' => config('pending-approval.icons.User Avatars', '🖼️'),
-            ];
-        }
+        try {
+            // Collect all pending items
+            $pendingItems = $this->collectPendingItems();
 
-        if (!empty($pendingSummary)) {
-            // Get application URL and find matching email recipients from config
-            $appUrl = env('APP_URL');  
-            $allConfigs = collect(config('pending-approval'));
-            $environmentConfig = $allConfigs->first(fn($config) => in_array($appUrl, $config['domains'])); 
-            $emails = $environmentConfig['emails'] ?? [];
-
-            if (!empty($emails)) {
-                Notification::route('mail', $emails)
-                    ->notify(new PendingApprovalNotification($pendingSummary));
-                Log::info('Summary email for pending approvals sent to: ' . implode(', ', $emails));
-            } else {
-                Log::info('No email recipients configured for URL: ' . $appUrl);
+            if (empty($pendingItems) || $this->isEmpty($pendingItems)) {
+                Log::info('No pending approval items found');
+                return null;
             }
-        } else {
-            Log::info('No pending items found.');
+
+            // Send email notification
+            $this->sendApprovalEmail($pendingItems);
+
+            return $pendingItems;
+        } catch (Exception $e) {
+            Log::error('Failed to build and send pending approval summary: ' . $e->getMessage());
+            throw $e;
         }
-        return $pendingSummary;
-    }
-    
-    /**
-     * Get count of unapproved wish items
-     */
-    private function getWishItemsCount(): int {
-        $wishescount = WishItem::where('is_approved', 0)->where(function ($q) {
-            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
-        })->count();
-        return $wishescount;
     }
 
-   
     /**
-     * Get count of unapproved memberships
+     * Collect all pending approval items
+     *
+     * @return array
      */
-    private function getMembershipsCount(): int
+    private function collectPendingItems(): array
     {
-        return \App\Models\Membership::where('approved', 0)->where(function ($q) {
-            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
-        })->whereNull('deleted_at')
-            ->count();
+        return [
+            'wish_items' => $this->getPendingWishItems(),
+            'memberships' => $this->getPendingMemberships(),
+            'bills' => $this->getPendingBills(),
+            'shops' => $this->getPendingShops(),
+            'user_intros' => $this->getPendingUserIntros(),
+            'posts' => $this->getPendingPosts(),
+            'user_profiles' => $this->getPendingUserProfiles(),
+            'user_avatars' => $this->getPendingUserAvatars(),
+        ];
     }
-    
+
     /**
-     * Get count of unapproved bills
+     * Check if all collections are empty
+     *
+     * @param array $items
+     * @return bool
      */
-    private function getBillsCount(): int
+    private function isEmpty(array $items): bool
     {
-        $billscount = Bills::where('approved', 0)->where(function ($q) {
-            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
-        })->whereNull('deleted_at')
-        ->count();
-        return $billscount;
+        foreach ($items as $collection) {
+            if (!empty($collection) && count($collection) > 0) {
+                return false;
+            }
+        }
+        return true;
     }
-    
+
     /**
-     * Get count of unapproved shops
-    */
-    private function getShopsCount(): int {
-        $shopscount = \App\Models\Shop::where('approved', 0)->where(function ($q) {
-            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
-        })->whereNull('deleted_at')
-        ->count();
-        return $shopscount;
-    }
-    
-    /**
-     * Get count of unapproved user intros
-    */
-    private function getUserIntrosCount(): int
-    {
-        $userIntrosCount = \App\Models\UserIntro::where('approved', 0)
-        ->whereNull('deleted_at')
-        ->count();
-        return $userIntrosCount;
-    }
-    
-    /**
-     * Get count of pending user profiles
+     * Get pending wish items
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    private function getUserProfilesCount(): int
+    private function getPendingWishItems()
     {
-        // Get all users and filter by subscription_status attribute
-        $users = User::whereNotNull('avatar')
+        return WishItem::where('is_approved', false)
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'wishname', 'price', 'currency', 'created_at']);
+    }
+
+    /**
+     * Get pending memberships
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingMemberships()
+    {
+        return Membership::where('status', 0)
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'level', 'price', 'created_at']);
+    }
+
+    /**
+     * Get pending bills
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingBills()
+    {
+        return Bills::where('status', 0)
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'name', 'price', 'currency', 'created_at']);
+    }
+
+    /**
+     * Get pending shops
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingShops()
+    {
+        return Shop::where('approved', 0)
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'name', 'price', 'currency', 'created_at']);
+    }
+
+    /**
+     * Get pending user intros
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingUserIntros()
+    {
+        return UserIntro::where('approved', false)
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'title', 'created_at']);
+    }
+
+    /**
+     * Get pending posts
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingPosts()
+    {
+        return Post::where('approved', false)
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'title', 'created_at']);
+    }
+
+    /**
+     * Get pending user profiles (bio approval)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingUserProfiles()
+    {
+        return User::where('bio_approved', false)
             ->whereNotNull('bio')
-            ->where('profile_status_lock', 1)
-            ->get();
-        
-        $creatorProfilesCount = $users->where('role', 1)
-            ->filter(function ($user) {
-                $status = $user->subscription_status;
-                // Count as subscribed if status indicates active subscription
-                // 1 = subscribed, 2 = trial ending/under trial period
-                return in_array($status, [1, 2]);
-            })
-            ->count();
-
-        $gifterProfilesCount = $users->where('role', 0)
-            ->where('is_500_limit_exceeded', 1)
-            ->filter(function ($user) {
-                $status = $user->subscription_status;
-                // For gifters, check if they have paid status (1 = paid)
-                return $status === 1;
-            })
-            ->count();
-
-        return $creatorProfilesCount + $gifterProfilesCount;
+            ->where('bio', '!=', '')
+            ->orderBy('updated_at', 'desc')
+            ->get(['id', 'uuid', 'name', 'username', 'email', 'bio', 'updated_at']);
     }
 
-     
-    
-    private function getPostsCount(): int {
-        $postsCount = \App\Models\Post::where('approved', 0)->where(function ($q) {
-            $q->whereNull('edited_status')->orWhere('edited_status', '!=', 0);
-        })
-            ->count();
-        return $postsCount;
-    }
-    
-    private function getUserAvatarsCount(): int
+    /**
+     * Get pending user avatars (avatar approval)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingUserAvatars()
     {
-        $avatarsCount = User::whereNotNull('avatar')
-            ->where('avatar_approved', 0)
-            ->whereNull('deleted_at')
-            ->count();
-        Log::info('Pending user avatars count: ' . $avatarsCount);
+        return User::where('avatar_approved', false)
+            ->whereNotNull('avatar')
+            ->where('avatar', '!=', '')
+            ->orderBy('updated_at', 'desc')
+            ->get(['id', 'uuid', 'name', 'username', 'email', 'avatar', 'updated_at']);
+    }
 
-        return $avatarsCount;
+    /**
+     * Send approval email notification
+     *
+     * @param array $pendingItems
+     * @return void
+     */
+    private function sendApprovalEmail(array $pendingItems): void
+    {
+        try {
+            $recipients = [
+                'admin@spennypiggy.co',
+                'support@spennypiggy.co'
+            ];
+
+            foreach ($recipients as $email) {
+                Mail::to($email)->send(new PendingApprovalSummary($pendingItems));
+            }
+
+            Log::info('Pending approval summary email sent to: ' . implode(', ', $recipients));
+        } catch (Exception $e) {
+            Log::error('Failed to send pending approval email: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }
