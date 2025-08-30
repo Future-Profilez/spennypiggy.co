@@ -3,6 +3,7 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
+import InputError from '@/Components/InputError';
 import EnterOTP from './EnterOTP';
 import axios from 'axios';
 import { useState } from 'react';
@@ -22,7 +23,13 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
     });
 
-    const [loading, setLoading] = useState(processing)
+    const [loading, setLoading] = useState(false);
+    
+    // Update loading state when processing changes
+    useEffect(() => {
+        setLoading(processing);
+    }, [processing]);
+    
     useEffect(() => {
         return () => {
             reset("password");
@@ -41,50 +48,82 @@ export default function Login({ status, canResetPassword }) {
         
         post(route('login-user'), loginData, {
             preserveScroll: true,
+            onStart: () => {
+                setLoading(true);
+            },
+            onFinish: () => {
+                setLoading(false);
+            },
             onSuccess: (resp) => {
+                // Only show toast for flash errors (server errors)
                 if (resp.props.flash.error) {
                     errorAlert(resp.props.flash.error);
+                    setLoading(false);
+                    return;
                 }
+                
+                // Don't show toast for validation errors - they will be shown inline
+                // These are handled by Inertia's error handling automatically
+                console.log("Login response:", resp.props.errors);
+                
                 // Show cart transfer success message if available
                 if (resp.props.flash.cart_transfer_success) {
                     successAlert(resp.props.flash.cart_transfer_success);
                 }
                 localStorage.removeItem("cart");
                 reset();
+                setLoading(false);
                 if(paramValue){
                     router.visit(paramValue);
                 }
             },
             onError: (err) => {
                 reset("password");
-                Object.keys(err).map((key) => {
-                    errorAlert(err[key]);
-                });
+                // Don't show toast for validation errors - they will be shown inline by Inertia
+                console.log("Login err:", err);
+                setLoading(false);
             },
         });
     };
 
     const checkTFA = (e) => {
         e.preventDefault();
-        setLoading(true)
-        axios.post('/verify-user', data).then((resp) => {
-           if (resp.data.status) {
-               if (resp.data.is_2fa) {
-                   setOpen("open");
-                   setTimeout(() => {
-                    setOpen(false);
-                   },1000);
+        setLoading(true);
+        
+        axios.post('/verify-user', data)
+            .then((resp) => {
+                if (resp.data.status) {
+                    if (resp.data.is_2fa) {
+                        setOpen("open");
+                        setLoading(false); // Reset loading state when opening 2FA modal
+                        setTimeout(() => {
+                            setOpen(false);
+                        }, 1000);
+                    } else {
+                        // Don't reset loading here, let submit() handle it
+                        submit();
+                    }
                 } else {
-                    submit();
+                    errorAlert(resp.data.msg);
+                    setLoading(false);
                 }
-                setLoading(true);
-           } else {
-               errorAlert(resp.data.msg);
-               setLoading(false);
-           }
-        }).catch((err) => {
-            console.error("err", err);
-        });
+            })
+            .catch((err) => {
+                console.error("Verify user error:", err);
+                
+                // Handle different types of errors
+                if (err.response && err.response.data && err.response.data.message) {
+                    errorAlert(err.response.data.message);
+                } else if (err.response && err.response.data && err.response.data.msg) {
+                    errorAlert(err.response.data.msg);
+                } else if (err.message) {
+                    errorAlert(err.message);
+                } else {
+                    errorAlert('An error occurred during login. Please try again.');
+                }
+                
+                setLoading(false);
+            });
     };
 
     return (
@@ -125,6 +164,9 @@ export default function Login({ status, canResetPassword }) {
                                             setData("email", e.target.value)
                                         }
                                     />
+                                    <div className='p-2'>
+                                        <InputError message={errors.email} className="mt-2" />
+                                    </div>
                                 </li>
                                 <li className="formfield mb-6">
                                     <label>Password</label>
@@ -139,9 +181,12 @@ export default function Login({ status, canResetPassword }) {
                                             setData("password", e.target.value)
                                         }
                                     />
+                                    <div className='p-2'>
+                                        <InputError message={errors.password} className="mt-2" />
+                                    </div>
 
                                     {canResetPassword && (
-                                        <div className=" mt-4 m-auto d-table ">
+                                        <div className=" mt-2 m-auto d-table ">
                                             <Link
                                                 href={route("password.request")}
                                                 className="text-sm text-gray-600 hover:text-gray-900"
@@ -152,9 +197,6 @@ export default function Login({ status, canResetPassword }) {
                                     )}
                                 </li>
                             </ul>
-
-                            {/* <InputError message={errors.email} className="mt-2" />
-                            <InputError message={errors.password} className="mt-2" /> */}
 
                             <div className="  text-center flex justify-center ">
                                 {/* <button type='submit' className='btn-pink lg'>Login</button> */}

@@ -172,10 +172,10 @@ export default function Cart(props) {
                 !loading &&
                 !loading2 && (
                     <div className="py-5 text-center">
-                        <div className="containerbox h-[70vh]">
+                        <div className="containerbox h-[50vh] flex items-center justify-center">
                             <div className="p-6">
-                                <h1 className="text-2xl mt-4 font-bold">Your Cart is Empty</h1>
-                                <p className="mt-2 text-gray-600">Looks like you haven't added anything to your cart yet.</p>
+                                <h1 className="text-xl md:text-3xl text-black mt-4 font-bold">Your Cart is Empty</h1>
+                                <p className="mt-2 text-normal md:text-xl text-gray-500">Looks like you haven't added anything to your cart yet.</p>
                             </div>
                             {/* <Nocontent  
                                 classes={`py-5`}

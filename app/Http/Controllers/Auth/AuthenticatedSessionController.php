@@ -78,13 +78,15 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
+
+    // Handle the login request
     public function store(LoginRequest $request)
     {
         //saving the google secret of an particular user
 
         $request->authenticate();
         $request->session()->regenerate();
-        $user = Auth::user();
+        $user = Auth::user(); 
 
         $secret = $this->google2FA->generateSecretKey();
         if (empty($user->tfa_key) && $user->role == 1) {
@@ -686,11 +688,16 @@ class AuthenticatedSessionController extends Controller
         $password = $request->query('password');
 
         $user = User::where('email', $email)->where('is_uk', 0)->first();
+        
+        // Check if user exists
+        if (!$user) {
+            return back()->with('error', 'No account exists with this email.');
+        }
 
         $otp = $request->query('otp');
         $backup_code = $request->query('backup_code');
 
-
+        $valid = false;
 
         if (!empty($otp)) {
             $valid = $this->google2FA->verifyKey($user->tfa_key, $otp);
