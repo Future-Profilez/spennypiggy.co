@@ -1218,6 +1218,18 @@ class StripeController extends Controller
             
             $applicationFeeAmount = round($totalTaxForPay * $multiplier);
             $unitAmount = round($amount * $multiplier);
+            
+            // Calculate creator VAT amount if applicable
+            $creatorVatAmount = 0;
+            if (isset($creator->vat_amount_percentage) && $creator->vat_amount_percentage > 0) {
+                $creatorVatAmount = round(($amount * $creator->vat_amount_percentage / 100) * $multiplier);
+            }
+            
+            // Transfer amount = item amount + creator's VAT (what creator receives)
+            $transferAmount = $unitAmount + $creatorVatAmount;
+            
+            // Total charge amount = item amount + creator's VAT + platform fees
+            $totalChargeAmount = $unitAmount + $creatorVatAmount + $applicationFeeAmount;
 
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
@@ -1232,51 +1244,79 @@ class StripeController extends Controller
                 'anonymous' => $request->anonymous ?? 0,
             ]);
 
+            // Use destination charges pattern like createCheckout - create line items that sum to total charge
+            $lineItems = [
+                [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => "Support payment to {$creator->name}",
+                            'description' => "Some support to {$creator->name} to help them create more content.",
+                        ],
+                        'unit_amount' => $unitAmount,
+                    ]
+                ]
+            ];
+            
+            // Add creator VAT as separate line item if applicable
+            if ($creatorVatAmount > 0) {
+                $lineItems[] = [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => 'Creator VAT',
+                        ],
+                        'unit_amount' => $creatorVatAmount,
+                        'tax_behavior' => 'exclusive',
+                    ],
+                ];
+            }
+            
+            // Add platform fee as separate line item
+            $lineItems[] = [
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => 'Platform Fee - Support Payment',
+                    ],
+                    'unit_amount' => $applicationFeeAmount,
+                    'tax_behavior' => 'exclusive',
+                ],
+            ];
+
             $payload = [
                 "mode" => 'payment',
                 'payment_method_types' => ['card'],
-                'line_items' => [
-                    [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product_data' => ['name' => "Support payment to {$creator->name}"],
-                            'unit_amount' => $unitAmount,
-                        ]
-                    ],
-                    [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product_data' => [
-                                'name' => 'Platform Fee',
-                            ],
-                            'unit_amount' => $applicationFeeAmount,
-                            'tax_behavior' => 'exclusive',
-                        ],
-                    ],
-                ],
+                'line_items' => $lineItems, // Total amount determined by line items
                 'payment_intent_data' => [
-                    'application_fee_amount' => $applicationFeeAmount,
-                    'description' => "Platform Fee.",
-                    "metadata" => [
-                        "purpose" => "support_payment",
-                        "badge" => 'Leaderboard Star	',
-                        "support_type" => 'leaderboard_unlock',
-                        "guest_name" => $request->name ?? null,
-                        "user_id" => Auth::id() ?? null,
-                        "creator_id" => $creator->id,
-                        "creator_profile" => env('APP_URL'). '/' . $creator->username ?? null,
+                    'on_behalf_of' => $creator->account_id, // Shows creator as seller-of-record
+                    'transfer_data' => [
+                        'destination' => $creator->account_id, // Creator's connected account
+                        'amount' => $transferAmount, // What creator receives (item + VAT)
                     ],
-                    "description" => "Support payment to {$creator->name}",
+                    'description' => "Spenny Piggy - Support payment with platform fee",
+                    "metadata" => \App\Helpers::buildStripeMetadata('support_payment', $pay, [
+                        'support_goal_id' => (string) ($goal->id ?? ''),
+                        'item_amount' => (string) $unitAmount,
+                        'creator_vat_amount' => (string) $creatorVatAmount,
+                        'transfer_amount' => (string) $transferAmount,
+                        'platform_fee_amount' => (string) $applicationFeeAmount,
+                        'total_charge_amount' => (string) $totalChargeAmount,
+                        'payment_type' => 'Support Payment - Destination Charges with transfers',
+                        'anonymous' => (string) ($request->anonymous ?? 0),
+                    ]),
                 ],
-                'customer_email' =>  $user->email ?? $request->email,
+                'customer_email' => $user->email ?? $request->email,
                 'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
                 'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];
 
             try {
-                $session = StripeControl::createCheckoutSession($payload, $creator->account_id);
+                // Create session on PLATFORM account (no connected account parameter)
+                $session = StripeControl::createCheckoutSession($payload);
                 $pay->update(['session_id' => $session->id]);
 
                 return response()->json([
@@ -1307,7 +1347,8 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         try {
-            $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
+            // Since we're using destination charges, session is created on platform account (no connected account parameter)
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id);
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
@@ -1361,7 +1402,7 @@ class StripeController extends Controller
                 $userPayment = new UserPayment();
                 $userPayment->from_user_id = $tip_pay->user_id ?? null;
                 $userPayment->to_user_id = $tip_pay->creator_id ?? null;
-                $userPayment->product_type = 'tip jar';
+                $userPayment->product_type = 'support payment';
                 $userPayment->amount = $tip_pay->amount;
                 $userPayment->currency = $tip_pay->currency;
                 $userPayment->payment_method = 'stripe';

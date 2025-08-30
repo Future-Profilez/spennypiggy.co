@@ -672,6 +672,9 @@ class WishitemController extends Controller
             }
         }])
         ->select('user_intros.*'); // make sure we select proper columns
+        $query->whereHas('user', function ($q) {
+            $q->where('deleted_at', null);
+        });
 
     if ($order === 'new') {
         $query->orderBy('user_intros.created_at', 'desc');
