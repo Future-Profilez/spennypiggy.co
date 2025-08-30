@@ -654,35 +654,42 @@ class WishitemController extends Controller
 
 
     public function discover_all_creators($order, $gender)
-    {
+{
+    // Subquery to get latest approved intro id per creator
+    $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
+        ->whereNull('deleted_at')
+        ->where('approved', 1)
+        ->groupBy('user_id');
 
-        $query = UserIntro::where('deleted_at', null)
-            ->with(['user'])
-            ->whereHas('user', function ($q) use ($gender) {
-                $q->where('is_uk', 0);
-                // $q->where(function ($s) {
-                //     $s->whereNot('country', 'GB')->orWhereNull('country');
-                // });
+    $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
+            $join->on('user_intros.id', '=', 'latest_intros.latest_id');
+        })
+        ->with(['user' => function ($q) use ($gender) {
+            $q->where('is_uk', 0);
 
-                if ($gender != 'all') {
-                    $q->where('gender', $gender);
-                }
-            });
+            if ($gender != 'all') {
+                $q->where('gender', $gender);
+            }
+        }])
+        ->select('user_intros.*'); // make sure we select proper columns
 
-        if ($order == 'new') {
-            $query->latest();
-        }
-
-        $intros = $query->paginate(30);
-        return response()->json([
-            'success'   => true,
-            'intro' => $intros,
-            "last_page" => $intros->lastPage() ?? null,
-            "current_page" => $intros->currentPage() ?? null,
-            "total" => $intros->total() ?? null,
-            "per_page" => $intros->perPage() ?? null,
-        ]);
+    if ($order === 'new') {
+        $query->orderBy('user_intros.created_at', 'desc');
     }
+
+    $intros = $query->paginate(30);
+
+    return response()->json([
+        'success'       => true,
+        'intro'         => $intros,
+        "last_page"     => $intros->lastPage(),
+        "current_page"  => $intros->currentPage(),
+        "total"         => $intros->total(),
+        "per_page"      => $intros->perPage(),
+    ]);
+}
+
+
 
     public function all_creators_categories()
     {
