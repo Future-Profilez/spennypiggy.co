@@ -190,7 +190,7 @@ class CheckoutController extends Controller
                         'currency' => $currency,
                         'product_data' => [
                             'name' => $productName,
-                            'description' => 'Item from ' . ($dd->owner->name ?? 'Creator'),
+                            'description' => 'Content from ' . ($dd->owner->name ?? 'Creator'),
                         ],
                         'unit_amount_decimal' => round($totalAmount * $multiplier),
                     ]
@@ -202,7 +202,7 @@ class CheckoutController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => 'Platform Fee - ' . ($dd->wish->wishname ?? 'Item'),
+                            'name' => 'Platform Fee - ' . ($dd->wish->wishname ?? 'Content'),
                         ],
                         'unit_amount' => round($showTaxWithQuantity * $multiplier),
                         'tax_behavior' => 'exclusive',
@@ -234,26 +234,7 @@ class CheckoutController extends Controller
             // Total charged to customer = item amount + platform fees
             $totalChargeAmount = round($subtotal * $multiplier) + $creatorVatAmount + round($totalShowTaxWithQuantity * $multiplier);
             
-            // Debug logging for amount calculations
-            Log::info('Checkout amount calculations', [
-                'subtotal' => $subtotal,
-                'subtotal_with_multiplier' => round($subtotal * $multiplier),
-                'creator_vat_amount' => $creatorVatAmount,
-                'platform_fees' => $totalShowTaxWithQuantity,
-                'platform_fees_with_multiplier' => round($totalShowTaxWithQuantity * $multiplier),
-                'transfer_amount' => $transferAmount,
-                'total_charge_amount' => $totalChargeAmount,
-                'multiplier' => $multiplier
-            ]);
-            
-            // Ensure transfer amount doesn't exceed total
             if ($transferAmount > $totalChargeAmount) {
-                Log::error('Transfer amount exceeds total charge', [
-                    'transfer_amount' => $transferAmount,
-                    'total_charge' => $totalChargeAmount,
-                    'subtotal' => $subtotal,
-                    'platform_fees' => $totalShowTaxWithQuantity
-                ]);
                 $transferAmount = $totalChargeAmount - round($totalShowTaxWithQuantity * $multiplier);
             }
 
@@ -263,20 +244,17 @@ class CheckoutController extends Controller
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
                 'payment_intent_data' => [
-                    // Platform payment with centralized visibility (no amount here - determined by line_items)
                     'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
                     'transfer_data' => [
                         'destination' => $connectedAccountId, // Creator's connected account
                         'amount' => $transferAmount, // What creator receives (item + VAT)
                     ],
-                    // Note: application_fee_amount is calculated automatically (total - transfer_amount)
                     'description' => "Spenny Piggy - Item purchase with platform fee",
                     "metadata" => \App\Helpers::buildStripeMetadata('wishlist', (object) [
                         'user_id' => Auth::id(),
                         'owner_id' => $owner->id,
                         'owner' => $owner,
                         'uuid' => 'checkout-session-' . time(),
-                        // Additional breakdown for reconciliation
                         'item_amount' => round($subtotal * $multiplier),
                         'creator_vat_amount' => $creatorVatAmount,
                         'transfer_amount' => $transferAmount,
@@ -285,14 +263,12 @@ class CheckoutController extends Controller
                     ], [
                         "anonymous" => request()->query('anonymous') ?? '0',
                         "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
-                        "payment_type" => "direct_charge_with_transfer", // For tracking
+                        "payment_type" => "Destination Charges with transfers",
                     ]),
                 ],
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
-            // Create session on PLATFORM account (no connected account parameter)
-            // This ensures payments show in platform dashboard while using on_behalf_of
             try {
                 $sessionCreate = StripeControl::createCheckoutSession($payload); // Removed $connectedAccount parameter
             } catch (\Stripe\Exception\InvalidRequestException $e) {
@@ -495,18 +471,50 @@ class CheckoutController extends Controller
 
     public function cancelCheckout($id)
     {
+        Log::info('Cancel checkout called', [
+            'creator_id' => $id,
+            'is_authenticated' => Auth::check(),
+            'auth_user_id' => Auth::id()
+        ]);
+        
         if (Auth::check()) {
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with(['wish'])->get();
         } else {
             $getdata = UserCart::where('device_id', $id)->where('status', 1)->with(['wish'])->get();
         }
-        $sessionId = session('session_id');
-        StripePaymentDetail::where('session_id', $sessionId)->update([
-            'payment_status' => 'unpaid',
-            'updated_at' => Carbon::now(),
+        
+        Log::info('Cart data found for cancellation', [
+            'cart_items_count' => $getdata->count(),
+            'creator_id' => $id
         ]);
-        return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', 'Payment Cancel.');
-        // return view('cancel');
+        
+        $sessionId = session('session_id');
+        if ($sessionId) {
+            StripePaymentDetail::where('session_id', $sessionId)->update([
+                'payment_status' => 'unpaid',
+                'updated_at' => Carbon::now(),
+            ]);
+            Log::info('Payment status updated to unpaid', ['session_id' => $sessionId]);
+        }
+        
+        // Handle case where no cart data is found
+        if ($getdata->isEmpty()) {
+            Log::warning('No cart data found for cancel checkout', [
+                'creator_id' => $id,
+                'is_authenticated' => Auth::check()
+            ]);
+            
+            // Try to find the creator by ID to get their username
+            $creator = User::find($id);
+            if ($creator) {
+                return redirect(route('user.show', [$creator->username]))->with('error', 'Payment cancelled - no active cart items found.');
+            } else {
+                // If creator not found, redirect to home or cart
+                return redirect(route('cart'))->with('error', 'Payment cancelled.');
+            }
+        }
+        
+        return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', 'Payment cancelled.');
     }
 
     /**

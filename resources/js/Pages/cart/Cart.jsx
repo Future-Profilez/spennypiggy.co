@@ -23,7 +23,15 @@ export default function Cart(props) {
     const fetchCartItem = useCallback(() => {
         console.log("fetchCartItem called for anonymous user with deviceid:", deviceid);
         setLoading(true);
-        Axios.get(`anonymous-cart/${deviceid}`)
+        const timestamp = new Date().getTime();
+        const config = {
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        };
+        Axios.get(`anonymous-cart/${deviceid}?_t=${timestamp}`, config)
             .then((resp) => {
                 console.log("Anonymous cart response:", resp.data);
                 setCartItems(resp.data.carts);
@@ -138,7 +146,7 @@ export default function Cart(props) {
             <div className="bg-white">
                 <Head title={"Cart"} />
                 {/* Debug information - remove in production */}
-                <div style={{padding: '10px', background: '#f0f0f0', margin: '10px', fontSize: '12px'}}>
+                {/* <div style={{padding: '10px', background: '#f0f0f0', margin: '10px', fontSize: '12px'}}>
                     <strong>Debug Info:</strong><br/>
                     Auth User ID: {auth?.user?.id || 'null'}<br/>
                     Is Authenticated: {isAuthenticated.toString()}<br/>
@@ -162,7 +170,7 @@ export default function Cart(props) {
                     >
                         {loading || loading2 ? 'Refreshing...' : 'Refresh Cart'}
                     </button>
-                </div>
+                </div> */}
                 {ryeItems && ryeItems.length ? (
                     <CartListing
                         loading2={loading2}

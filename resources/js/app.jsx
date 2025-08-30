@@ -58,7 +58,15 @@ function setupGlobalCartFunctions(props) {
     const fetchAnonymousCartItems = async () => {
         console.log("Global fetchAnonymousCartItems called with deviceid:", deviceid);
         try {
-            const response = await axios.get(`anonymous-cart/${deviceid}`);
+            const timestamp = new Date().getTime();
+            const config = {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            };
+            const response = await axios.get(`anonymous-cart/${deviceid}?_t=${timestamp}`, config);
             console.log("Global anonymous cart response:", response.data);
             // Dispatch event for components to listen to
             window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
@@ -119,7 +127,15 @@ function setupGlobalCartFunctions(props) {
     const fetchCartCounter = async () => {
         console.log("Global fetchCartCounter called with deviceid:", deviceid);
         try {
-            const response = await axios.get(`/counter/${deviceid}`);
+            const timestamp = new Date().getTime();
+            const config = {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            };
+            const response = await axios.get(`/counter/${deviceid}?_t=${timestamp}`, config);
             console.log("Global cart counter response:", response.data.counter);
             // Dispatch event for components to listen to
             window.dispatchEvent(new CustomEvent('cartCounterRefreshed', {

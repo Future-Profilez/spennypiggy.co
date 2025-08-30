@@ -292,9 +292,9 @@ class Helpers
                 $wishItem = $paymentModel->wish_item ?? null;
                 
                 $baseMetadata = array_merge($commonFields, [
-                    'purpose' => 'Wishlist Item Contribution Payment',
+                    'purpose' => 'Wishlist Content Contribution Payment',
                     'payment_category' => 'wishlist_contribution',
-                    'product_type' => 'wish_item',
+                    'product_type' => 'wish_content',
                     
                     // Buyer/Gifter Information
                     'buyer_id' => (string) ($paymentModel->user_id ?? 'guest'),
@@ -312,9 +312,9 @@ class Helpers
                     
                     // Product Details
                     'wish_item_id' => (string) ($paymentModel->wish_item_id ?? ''),
-                    'wish_item_name' => $wishItem ? $wishItem->name : 'Wishlist Item',
+                    'wish_item_name' => $wishItem ? $wishItem->name : 'Wishlist Content',
                     'wish_item_description' => $wishItem ? $wishItem->description : '',
-                    'transaction_description' => 'Wishlist contribution for ' . ($wishItem ? $wishItem->name : 'item'),
+                    'transaction_description' => 'Wishlist content contribution for ' . ($wishItem ? $wishItem->name : 'item'),
                 ]);
                 break;
                 

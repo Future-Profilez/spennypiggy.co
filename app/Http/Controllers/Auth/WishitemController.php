@@ -744,11 +744,15 @@ class WishitemController extends Controller
             'subscription_type' => $sub,
             'amount'            => $amount,
             'is_authenticated'  => Auth::check(),
-            'auth_user_id'      => Auth::id()
+            'auth_user_id'      => Auth::id(),
+            'timestamp'         => now()
         ]);
 
         // ✅ Check gifter status
         if (Helpers::checkGifterCardVerificationStatus()) {
+            Log::info('AddToCart blocked - gifter verification required', [
+                'user_id' => Auth::id()
+            ]);
             return response()->json([
                 'success' => false,
                 'msg'     => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
@@ -784,10 +788,12 @@ class WishitemController extends Controller
             }
         }
 
-        // ✅ Find existing cart item for this user/device
+        // ✅ Find existing cart item for this user/device with proper filtering
         $cart = UserCart::where('wish_item_id', $wishitem->id)
-            ->when(Auth::check(), fn($q) => $q->where('user_id', Auth::id()))
-            ->when(!Auth::check(), fn($q) => $q->where('device_id', $device_id))
+            ->where('country', 'global')
+            ->where('status', 1) // Only look for active cart items
+            ->when(Auth::check(), fn($q) => $q->where('user_id', Auth::id())->whereNull('device_id'))
+            ->when(!Auth::check(), fn($q) => $q->where('device_id', $device_id)->whereNull('user_id'))
             ->first();
 
         // ✅ Calculate product details (refactored block)
@@ -823,39 +829,120 @@ class WishitemController extends Controller
         );
 
         if ($cart) {
-            // ✅ Update existing cart
-            $cart->quantity      = $cart->status == 1 ? $cart->quantity + 1 : 1;
-            $cart->status        = 1;
+            // ✅ Update existing cart - increment quantity
+            Log::info('About to update existing cart item', [
+                'existing_cart_id' => $cart->id,
+                'current_quantity' => $cart->quantity,
+                'current_status' => $cart->status
+            ]);
+            
+            $cart->quantity      = $cart->quantity + 1;
+            $cart->status        = 1; // Ensure it stays active
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             $cart->amount        = $fullfillAmount;
             $cart->tax           = $tax;
             $cart->priceid       = $priceId;
             $cart->country       = 'global';
-            $cart->save();
+            $cart->updated_at    = now(); // Update timestamp
+            
+            $saveResult = $cart->save();
+            
+            Log::info('Existing cart item save result', [
+                'cart_id' => $cart->id,
+                'save_result' => $saveResult,
+                'new_quantity' => $cart->quantity,
+                'status' => $cart->status,
+                'wasRecentlyCreated' => $cart->wasRecentlyCreated,
+                'exists' => $cart->exists
+            ]);
+            
+            // Verify the save worked by checking database directly
+            $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
+            Log::info('Database verification after update', [
+                'cart_id' => $cart->id,
+                'found_in_db' => $dbVerification ? true : false,
+                'db_quantity' => $dbVerification->quantity ?? 'N/A',
+                'db_status' => $dbVerification->status ?? 'N/A'
+            ]);
         } else {
-            // ✅ Create new cart entry
-            $cart = UserCart::create([
+            // ✅ Create new cart entry with all required fields
+            $cartData = [
                 "user_id"      => Auth::check() ? Auth::id() : null,
                 "device_id"    => !Auth::check() ? $device_id : null,
                 "owner_id"     => $wishitem->user_id,
                 'wish_item_id' => $wishitem->id,
                 'quantity'     => 1,
-                'status'       => 1,
+                'status'       => 1, // CRITICAL: Always set status to 1 (active)
                 'amount'       => $fullfillAmount,
                 'tax'          => $tax,
-                'country'      => 'global',
+                'country'      => 'global', // CRITICAL: Always set country
                 'is_subscribed'=> ($sub == false || $sub == 'onetime') ? 0 : 1,
                 'priceid'      => $priceId,
+            ];
+            
+            Log::info('About to create new cart item', [
+                'cart_data' => $cartData,
+                'database_connection' => \DB::connection()->getDatabaseName()
+            ]);
+            
+            try {
+                $cart = UserCart::create($cartData);
+                
+                Log::info('New cart item create result', [
+                    'cart_id' => $cart->id,
+                    'cart_uuid' => $cart->uuid,
+                    'cart_data' => $cartData,
+                    'final_status' => $cart->status,
+                    'wasRecentlyCreated' => $cart->wasRecentlyCreated,
+                    'exists' => $cart->exists
+                ]);
+                
+                // Immediately verify the cart was saved to database
+                $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
+                Log::info('Database verification after create', [
+                    'cart_id' => $cart->id,
+                    'found_in_db' => $dbVerification ? true : false,
+                    'db_user_id' => $dbVerification->user_id ?? 'N/A',
+                    'db_status' => $dbVerification->status ?? 'N/A',
+                    'db_created_at' => $dbVerification->created_at ?? 'N/A'
+                ]);
+                
+                // Also check if we can query it via UserCart model
+                $modelVerification = UserCart::find($cart->id);
+                Log::info('Model verification after create', [
+                    'cart_id' => $cart->id,
+                    'found_via_model' => $modelVerification ? true : false,
+                    'model_user_id' => $modelVerification->user_id ?? 'N/A',
+                    'model_status' => $modelVerification->status ?? 'N/A'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Cart creation failed', [
+                    'error' => $e->getMessage(),
+                    'cart_data' => $cartData,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
+        }
+
+        // ✅ Verify cart was saved correctly
+        $cart->refresh(); // Reload from database to verify
+        if ($cart->status !== 1) {
+            Log::error('Cart status inconsistency detected', [
+                'cart_id' => $cart->id,
+                'expected_status' => 1,
+                'actual_status' => $cart->status
             ]);
         }
 
         // ✅ Always return consistent response
-        Log::info('Cart item saved', [
+        Log::info('Cart item operation completed', [
             'cart_id'     => $cart->id,
             'cart_uuid'   => $cart->uuid,
             'user_id'     => $cart->user_id,
             'device_id'   => $cart->device_id,
-            'wish_item_id'=> $cart->wish_item_id
+            'wish_item_id'=> $cart->wish_item_id,
+            'final_status'=> $cart->status
         ]);
 
         return response()->json([
@@ -2049,19 +2136,14 @@ class WishitemController extends Controller
     public function removeSurpriseFromCart($uuid, $device_id = null)
     {
         $query = UserCart::where('country', 'global')->whereUuid($uuid);
-        
-        // Add security check for ownership
         if (Auth::check()) {
-            // For authenticated users, verify they own the cart item
             $query->where('user_id', Auth::id());
         } else {
-            // For guests, try to get device_id from request if not provided in URL
             if (!$device_id) {
                 $device_id = request()->get('device_id') ?? request()->header('X-Device-ID');
             }
             
             if (!$device_id) {
-                // If still no device_id, check if this is an Inertia request
                 if (request()->header('X-Inertia')) {
                     return redirect()->route('cart')->with('error', 'Unable to remove item from cart. Please try again.');
                 }
@@ -2072,7 +2154,6 @@ class WishitemController extends Controller
             }
             $query->where('device_id', $device_id);
         }
-        
         $cart = $query->first();
         
         if (!$cart) {
@@ -2313,7 +2394,9 @@ class WishitemController extends Controller
             "success" => true,
             "carts" => $cart,
             'hcaptchakey' => env('HCAPTCHA', null)
-        ]);
+        ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+          ->header('Pragma', 'no-cache')
+          ->header('Expires', '0');
     }
 
     /**
@@ -2562,6 +2645,7 @@ class WishitemController extends Controller
                 'message' => $request->message,
                 'quantity' => 1,
                 'status' => 1,
+                'country' => 'global', // CRITICAL: Always set country
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
         } else {
@@ -2574,6 +2658,7 @@ class WishitemController extends Controller
                 'message' => $request->message,
                 'quantity' => 1,
                 'status' => 1,
+                'country' => 'global', // CRITICAL: Always set country
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
         }
@@ -2620,6 +2705,9 @@ class WishitemController extends Controller
                 "success" => true,
                 "counter" => $items,
             ]);
+            // ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            //   ->header('Pragma', 'no-cache')
+            //   ->header('Expires', '0');
         } else {
             $user = Auth::user();
             $items = UserCart::whereHas('wish')->where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
@@ -2627,6 +2715,9 @@ class WishitemController extends Controller
                 "success" => true,
                 "counter" => $items,
             ]);
+            // ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            //   ->header('Pragma', 'no-cache')
+            //   ->header('Expires', '0');
         }
     }
 

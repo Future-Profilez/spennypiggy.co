@@ -70,14 +70,18 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        router.get(`/remove-from-cart/${id}`, {
+        const removeUrl = auth && auth.id 
+            ? `/remove-from-cart/${id}` 
+            : `/remove-from-cart/${id}/${deviceid}`;
+        router.get(removeUrl, {
             preserveScroll: true,
             onSuccess: (resp) => {
+                console.log("Cart item removed successfully:", resp);
                 const updatedItems = items.filter((item) => item.uuid !== id);
                 setItems(updatedItems ||[]);
             },
             onError: (_err) => {
-                console.error("error", _err);
+                console.error("Error removing cart item:", _err);
             },
         });
     };

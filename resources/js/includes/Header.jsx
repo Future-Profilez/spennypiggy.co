@@ -46,9 +46,7 @@ export default function Header({classMagicword}) {
     const fetchCounter = useCallback(async () => {
         try {
             const resp = await axios.get(`/counter/${deviceid}`);
-            setCount(resp.data.counter);
-            dispatch(add_to_cart(resp.data.counter));
-            console.log("Cart counter updated:", resp.data.counter);
+            setCount(Number(resp.data.counter));
         } catch (_err) {
             console.error("Error fetching cart counter:", _err);
         }
@@ -57,10 +55,9 @@ export default function Header({classMagicword}) {
     // Listen to global cart counter refresh events
     useEffect(() => {
         const handleCartCounterRefresh = (event) => {
-            console.log("Header received cartCounterRefreshed event:", event.detail);
             if (event.detail.counter !== undefined) {
-                setCount(event.detail.counter);
-                dispatch(add_to_cart(event.detail.counter));
+                // setCount(event.detail.counter);
+                // dispatch(add_to_cart(event.detail.counter));
             }
         };
         
@@ -185,9 +182,8 @@ export default function Header({classMagicword}) {
                                 <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <LiaShoppingCartSolid color="#ffffff"  size={32} />
                                 </div>
-                                {count ?  <span className="site-counter d-block">{cart}</span> : ''}
+                                {count > 0 ?  <span className="site-counter d-block">{count}</span> : ''}
                             </Link>
-
 
                             {auth?.user?.username || false ? (
                                 ""
