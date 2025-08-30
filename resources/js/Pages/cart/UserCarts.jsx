@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import CartItem from "./CartItem";
 import { Link, router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
@@ -11,10 +11,18 @@ import HCaptcha from "@hcaptcha/react-hcaptcha";
 export default function UserCarts(props) {
     const hcaptchaRef = useRef(null);
     const { hcaptchakey } = usePage().props;
-    const deviceid = DeviceID();
+    // Memoize deviceid to prevent re-computation on every render
+    const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
     const datas = props.data;
+    
+    // Debug logging
+    console.log("UserCarts component data:", datas);
+    console.log("UserCarts auth:", auth);
+    console.log("DeviceID:", deviceid);
+    console.log("Creator ID from datas:", datas?.user?.id);
+    
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
@@ -24,17 +32,12 @@ export default function UserCarts(props) {
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
         if (auth && auth.id) {
-            window.location.href = `/create-checkout-session/${
-                datas?.user?.id || ""
-            }?message=${message}&from=${name}&email=${email}&anonymous=${
-                keepAnonmyous ? 1 : 0
-            }`;
+            window.location.href = `/create-checkout-session/${datas?.user?.id}/${datas?.user?.id || "notid"}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         } else {
-            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${
-                keepAnonmyous ? 1 : 0
-            }`;
+            window.location.href = `/create-checkout-session/${datas?.user?.id}/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
         }
     };
+    console.log("device id, owner id", deviceid, datas?.user?.id);
     const onVerify = (token) => {
         handleSubmit();
     };
@@ -71,7 +74,7 @@ export default function UserCarts(props) {
             preserveScroll: true,
             onSuccess: (resp) => {
                 const updatedItems = items.filter((item) => item.uuid !== id);
-                setItems(updatedItems);
+                setItems(updatedItems ||[]);
             },
             onError: (_err) => {
                 console.error("error", _err);
@@ -125,6 +128,7 @@ export default function UserCarts(props) {
                         <span className=' border-black border-2 bg-yellow-400 me-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-mint me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                     </div>
+                    {/* dfdf - ${ownerid}/${deviceid} */}
                     <div className="cartMain p-4 m-2 md:p-12">
                         <h2 className="pb-1 wishtitle">
                             Your Basket for {datas?.user?.name || ""}
@@ -207,11 +211,11 @@ export default function UserCarts(props) {
                                                             : ""
                                                     } form-input w-100 rounded`}
                                                     value={auth && auth.email}
-                                                    // disabled={
-                                                    //     auth && auth.email
-                                                    //         ? true
-                                                    //         : false
-                                                    // }
+                                                    disabled={
+                                                        auth && auth.email
+                                                            ? true
+                                                            : false
+                                                    }
                                                     onChange={(e) =>
                                                         setEmail(e.target.value)
                                                     }
@@ -268,7 +272,7 @@ export default function UserCarts(props) {
                                                     setIsChecked(e.target.checked)
                                                 }
                                                 type="checkbox"
-                                                id="agreeterm"
+                                                // id="agreeterm"
                                                 name="agreeterm"
                                                 className="me-2"
                                                 value="agreeterm"

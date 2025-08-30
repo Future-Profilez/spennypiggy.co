@@ -1,6 +1,6 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import spennypiggy from "../../assets/img/logo.png";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
 import { LazyLoadImage } from "react-lazy-load-image-component";
@@ -42,20 +42,39 @@ export default function Header({classMagicword}) {
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
-    async function fetchCounter() {
-        axios
-            .get(`/counter/${deviceid}`)
-            .then((resp) => {
-                setCount(resp.data.counter);
-                dispatch(add_to_cart(resp.data.counter));
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
-    }
+    
+    const fetchCounter = useCallback(async () => {
+        try {
+            const resp = await axios.get(`/counter/${deviceid}`);
+            setCount(resp.data.counter);
+            dispatch(add_to_cart(resp.data.counter));
+            console.log("Cart counter updated:", resp.data.counter);
+        } catch (_err) {
+            console.error("Error fetching cart counter:", _err);
+        }
+    }, [deviceid, dispatch, auth?.user?.id]);
+
+    // Listen to global cart counter refresh events
     useEffect(() => {
+        const handleCartCounterRefresh = (event) => {
+            console.log("Header received cartCounterRefreshed event:", event.detail);
+            if (event.detail.counter !== undefined) {
+                setCount(event.detail.counter);
+                dispatch(add_to_cart(event.detail.counter));
+            }
+        };
+        
+        // Add event listener for global cart counter refresh
+        window.addEventListener('cartCounterRefreshed', handleCartCounterRefresh);
+        
+        // Initial fetch
         fetchCounter();
-    }, [cart]);
+        
+        // Cleanup event listener
+        return () => {
+            window.removeEventListener('cartCounterRefreshed', handleCartCounterRefresh);
+        };
+    }, [fetchCounter, dispatch]);
 
     return (
         <>

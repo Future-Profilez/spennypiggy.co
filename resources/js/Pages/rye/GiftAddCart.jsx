@@ -112,11 +112,34 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                 creator_id: user?.id,
             });
             if(addCart?.data?.status){
-            successAlert(addCart?.data?.message);
-            setClose(false);
-            {navigate && router.visit("cart")}
-            {navigate ? setCheckoutLoading(false) : setLoading(false)}
-        }
+                successAlert(addCart?.data?.message);
+                setClose(false);
+                
+                // Refresh cart items, rye items, and cart counter
+                if (typeof window !== 'undefined') {
+                    if (window.refreshCartItems) {
+                        console.log("Refreshing cart items after successful gift add-to-cart");
+                        setTimeout(() => {
+                            window.refreshCartItems();
+                        }, 500);
+                    }
+                    if (window.refreshRyeItems) {
+                        console.log("Refreshing rye items after successful gift add-to-cart");
+                        setTimeout(() => {
+                            window.refreshRyeItems();
+                        }, 500);
+                    }
+                    if (window.refreshCartCounter) {
+                        console.log("Refreshing cart counter after successful gift add-to-cart");
+                        setTimeout(() => {
+                            window.refreshCartCounter();
+                        }, 100); // Refresh counter immediately
+                    }
+                }
+                
+                {navigate && router.visit("cart")}
+                {navigate ? setCheckoutLoading(false) : setLoading(false)}
+            }
         else{
             errorAlert(response.data.message);
         }

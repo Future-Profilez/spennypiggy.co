@@ -38,18 +38,22 @@ export default function ToCart({
     const {auth} = usePage().props;
     const { usdtogbp } = PriceFormat();
     const gbpprice = usdtogbp(item.price);
-    const addtocart = async () => {
-        if(auth && !auth.user && gbpprice > 50){
-            router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
-            errorAlert("You must login first.");
-            return false;
-        }
-
-        function check() {
+    function check() {
             if (checkoutbtn) {
                 window.location = "/cart";
             }
         }
+        
+    const addtocart = async () => {
+       
+        // Uncomment if you want to enforce login for payments over £50 for anonymous users
+        // if(!auth?.user && gbpprice > 50){
+        //     router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
+        //     errorAlert("You must login first.");
+        //     return false;
+        // }
+
+        
         if (item && item.subscription == "2" && isEqual) {
             toast.error(`Wish item funding is completed.`);
             return false;
@@ -66,12 +70,41 @@ export default function ToCart({
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : "/onetime"}${amount ? `/${amount}/` : ""}`)
             .then((resp) => {
+                console.log("Add to cart response:", resp.data);
                 if (resp.data.success) {
                     if (resp.data.added == true) {
                         successAlert(resp.data.msg);
                         ItemAdded && ItemAdded("added");
+                        
+                        // Refresh cart items, rye items, and cart counter
+                        if (typeof window !== 'undefined') {
+                            if (window.refreshCartItems) {
+                                console.log("Refreshing cart items after successful add-to-cart");
+                                setTimeout(() => {
+                                    window.refreshCartItems();
+                                }, 500); // Small delay to ensure backend has processed the addition
+                            } else {
+                                console.warn("window.refreshCartItems function not found - Cart component may not be loaded");
+                            }
+                            if (window.refreshRyeItems) {
+                                console.log("Refreshing rye items after successful add-to-cart");
+                                setTimeout(() => {
+                                    window.refreshRyeItems();
+                                }, 500);
+                            } else {
+                                console.warn("window.refreshRyeItems function not found - Cart component may not be loaded");
+                            }
+                            if (window.refreshCartCounter) {
+                                console.log("Refreshing cart counter after successful add-to-cart");
+                                setTimeout(() => {
+                                    window.refreshCartCounter();
+                                }, 100); // Refresh counter immediately
+                            } else {
+                                console.warn("window.refreshCartCounter function not found - Header component may not be loaded");
+                            }
+                        }
+                        
                         check();
-                        dispatch(add_to_cart(cart + 1));
                     } else {
                         successAlert(resp.data.msg);
                     }

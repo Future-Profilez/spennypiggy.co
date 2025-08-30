@@ -7,7 +7,10 @@ const cartSlice = createSlice({
     },
     reducers: {
         add_to_cart: (state, action) => {
-            state.cart = action.payload;
+            // Disabled cart caching to prevent stale data
+            // Cart data should always be fetched fresh from API
+            console.log('Cart Redux action disabled - use API calls instead');
+            // state.cart = action.payload;
         },
     },
 });

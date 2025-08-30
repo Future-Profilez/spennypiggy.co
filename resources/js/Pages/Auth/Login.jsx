@@ -6,6 +6,7 @@ import { useAlerts } from '@/Components/Alerts';
 import EnterOTP from './EnterOTP';
 import axios from 'axios';
 import { useState } from 'react';
+import DeviceID from '@/includes/DeviceID';
 
 export default function Login({ status, canResetPassword }) {
 
@@ -29,11 +30,24 @@ export default function Login({ status, canResetPassword }) {
     }, []);
 
     const submit = (e) => {
-        post(route('login-user'), {
+        // Get device ID for cart transfer during login
+        const deviceId = DeviceID();
+        
+        // Include device_id in login request
+        const loginData = {
+            ...data,
+            device_id: deviceId
+        };
+        
+        post(route('login-user'), loginData, {
             preserveScroll: true,
             onSuccess: (resp) => {
                 if (resp.props.flash.error) {
                     errorAlert(resp.props.flash.error);
+                }
+                // Show cart transfer success message if available
+                if (resp.props.flash.cart_transfer_success) {
+                    successAlert(resp.props.flash.cart_transfer_success);
                 }
                 localStorage.removeItem("cart");
                 reset();

@@ -41,6 +41,20 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
+// Debug route to test cart API
+Route::get('/debug-cart-api', function () {
+    $controller = new App\Http\Controllers\Auth\WishitemController();
+    $response = $controller->authenticatedCartItems();
+    
+    return response()->json([
+        'timestamp' => now(),
+        'auth_id' => Auth::id(),
+        'auth_user' => Auth::user() ? Auth::user()->only(['id', 'name', 'email']) : null,
+        'cart_api_response' => json_decode($response->getContent(), true),
+        'db_cart_count' => App\Models\UserCart::count()
+    ]);
+})->name('debug.cart.api');
+
 Route::get('/send-test-mail', function () {
     Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
         $message->to('prem@futureprofilez.com')

@@ -22,27 +22,138 @@ import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
 import * as Sentry from "@sentry/react";
+import axios from "axios";
+import DeviceID from "./includes/DeviceID";
 
 // Only initialize Sentry on the production domain
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
-    console.log("Sentry Enabled");
-    Sentry.init({
-        dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
-        sendDefaultPii: true,
-        integrations: [
-            Sentry.replayIntegration({
-                networkDetailAllowUrls: [window.location.origin],
-                networkRequestHeaders: ["Cache-Control"],
-                networkResponseHeaders: ["Referrer-Policy"],
-            }),
-            Sentry.feedbackIntegration({
-                colorScheme: "system",
-                autoInject: false,
-            }),
-        ],
-        replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0
-    });
+    // console.log("Sentry Enabled");
+    // Sentry.init({
+    //     dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
+    //     sendDefaultPii: true,
+    //     integrations: [
+    //         Sentry.replayIntegration({
+    //             networkDetailAllowUrls: [window.location.origin],
+    //             networkRequestHeaders: ["Cache-Control"],
+    //             networkResponseHeaders: ["Referrer-Policy"],
+    //         }),
+    //         Sentry.feedbackIntegration({
+    //             colorScheme: "system",
+    //             autoInject: false,
+    //         }),
+    //     ],
+    //     replaysSessionSampleRate: 0.1,
+    //     replaysOnErrorSampleRate: 1.0
+    // });
+}
+
+// Global cart refresh functions setup
+function setupGlobalCartFunctions(props) {
+    const auth = props?.page?.props?.auth;
+    const deviceid = DeviceID();
+    
+    console.log("Setting up global cart refresh functions, auth:", !!auth?.user);
+    
+    // Anonymous cart refresh function
+    const fetchAnonymousCartItems = async () => {
+        console.log("Global fetchAnonymousCartItems called with deviceid:", deviceid);
+        try {
+            const response = await axios.get(`anonymous-cart/${deviceid}`);
+            console.log("Global anonymous cart response:", response.data);
+            // Dispatch event for components to listen to
+            window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
+                detail: { carts: response.data.carts, isAuthenticated: false }
+            }));
+        } catch (error) {
+            console.error("Global error fetching anonymous cart:", error);
+        }
+    };
+    
+    // Authenticated cart refresh function
+    const fetchAuthenticatedCartItems = async () => {
+        console.log("Global fetchAuthenticatedCartItems called");
+        try {
+            // Include device_id for potential cart merging fallback
+            const config = {
+                headers: {
+                    'X-Device-ID': deviceid
+                }
+            };
+            // Add cache-busting parameter
+            const timestamp = new Date().getTime();
+            const response = await axios.get(`authenticated-cart?_t=${timestamp}`, config);
+            console.log("Global authenticated cart response:", response.data);
+            console.log("Authenticated cart items count:", response.data.carts ? response.data.carts.length : 0);
+            if (response.data.success) {
+                // Dispatch event for components to listen to
+                window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
+                    detail: { carts: response.data.carts, isAuthenticated: true }
+                }));
+                console.log("Dispatched cartItemsRefreshed event for authenticated user");
+            } else {
+                console.error("Authenticated cart API returned success=false:", response.data);
+            }
+        } catch (error) {
+            console.error("Global error fetching authenticated cart:", error);
+            console.error("Error details:", error.response?.data);
+        }
+    };
+    
+    // Rye items refresh function
+    const fetchRyeItems = async () => {
+        console.log("Global fetchRyeItems called");
+        try {
+            const response = await axios.get(`get-cart-details`);
+            if (response?.data?.status) {
+                // Dispatch event for components to listen to
+                window.dispatchEvent(new CustomEvent('ryeItemsRefreshed', {
+                    detail: { ryeItems: response.data.data }
+                }));
+            }
+        } catch (error) {
+            console.error("Global error fetching rye items:", error);
+        }
+    };
+    
+    // Cart counter refresh function 
+    const fetchCartCounter = async () => {
+        console.log("Global fetchCartCounter called with deviceid:", deviceid);
+        try {
+            const response = await axios.get(`/counter/${deviceid}`);
+            console.log("Global cart counter response:", response.data.counter);
+            // Dispatch event for components to listen to
+            window.dispatchEvent(new CustomEvent('cartCounterRefreshed', {
+                detail: { counter: response.data.counter }
+            }));
+        } catch (error) {
+            console.error("Global error fetching cart counter:", error);
+        }
+    };
+    
+    // Set up global refresh functions based on authentication status
+    if (typeof window !== 'undefined') {
+        if (auth?.user) {
+            console.log("Setting up authenticated cart refresh functions");
+            window.refreshCartItems = fetchAuthenticatedCartItems;
+        } else {
+            console.log("Setting up anonymous cart refresh functions");
+            window.refreshCartItems = fetchAnonymousCartItems;
+        }
+        window.refreshRyeItems = fetchRyeItems;
+        window.refreshCartCounter = fetchCartCounter;
+        
+        // Update functions when auth state changes (on Inertia navigation)
+        document.addEventListener('inertia:success', (event) => {
+            const newAuth = event?.detail?.page?.props?.auth;
+            if (newAuth?.user) {
+                console.log("Auth state changed to authenticated - updating refresh functions");
+                window.refreshCartItems = fetchAuthenticatedCartItems;
+            } else {
+                console.log("Auth state changed to anonymous - updating refresh functions");
+                window.refreshCartItems = fetchAnonymousCartItems;
+            }
+        });
+    }
 }
 
 
@@ -66,24 +177,27 @@ createInertiaApp({
             </Provider>
         );
         
+        // Set up global cart refresh functions
+        setupGlobalCartFunctions(props);
+        
         // Initialize non-critical resources after the app is mounted
         // Use setTimeout to ensure this runs after the current event loop
-        setTimeout(() => {
-            initializeApp().catch(console.error);
+        // setTimeout(() => {
+        //     // initializeApp().catch(console.error);
             
-            // Initialize intelligent chunk preloading
-            const currentPage = props?.page?.component;
-            if (currentPage) {
-                chunkPreloader.preloadCriticalChunks(currentPage);
-            }
+        //     // Initialize intelligent chunk preloading
+        //     const currentPage = props?.page?.component;
+        //     if (currentPage) {
+        //         // chunkPreloader.preloadCriticalChunks(currentPage);
+        //     }
             
-            // Re-observe links after Inertia navigation
-            document.addEventListener('inertia:success', () => {
-                setTimeout(() => {
-                    chunkPreloader.observeLinks();
-                }, 100);
-            });
-        }, 0);
+        //     // Re-observe links after Inertia navigation
+        //     document.addEventListener('inertia:success', () => {
+        //         setTimeout(() => {
+        //             chunkPreloader.observeLinks();
+        //         }, 100);
+        //     });
+        // }, 0);
     },
     progress: {
         color: "var(--pink)",

@@ -31,11 +31,21 @@ use Stripe\Stripe;
 class CheckoutController extends Controller
 {
     /* create checkout */
-    public function createCheckout($id) {
+    public function createCheckout($creator_id, $user_id_or_device = null) {
+        Log::info('Checkout createCheckout called', [
+            'creator_id' => $creator_id,
+            'user_id_or_device' => $user_id_or_device,
+            'auth_user_id' => Auth::id(),
+            'request_method' => request()->method(),
+            'request_url' => request()->url(),
+            'query_params' => request()->query()
+        ]);
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        Log::info('Gifter card verification status', ['status' => $checkGifterStatus]);
         if ($checkGifterStatus == true) {
             $user = Auth::user();
+            Log::info('Redirecting for card verification', ['user_id' => $user->id]);
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
@@ -51,36 +61,47 @@ class CheckoutController extends Controller
                 }
             }
             
-            // Get cart data first, then determine owner
+            // Get cart data filtered by specific creator
             if (Auth::check()) {
+                // For authenticated users, filter by user_id AND owner_id (creator_id)
                 $getdata = UserCart::where('user_id', Auth::id())
-                    ->where('owner_id', $id)  // For authenticated users, $id is owner_id
+                    ->where('owner_id', $creator_id)  // Filter by specific creator
                     ->where('status', 1)
                     ->with(['wish', 'owner'])
                     ->get();
             } else {
-                $getdata = UserCart::where('device_id', $id)  // For guests, $id is device_id
+                // For guests, filter by device_id AND owner_id (creator_id)
+                $device_id = $user_id_or_device ?? request()->get('device_id');
+                Log::info('Guest checkout - device ID check', [
+                    'user_id_or_device' => $user_id_or_device,
+                    'request_device_id' => request()->get('device_id'),
+                    'final_device_id' => $device_id,
+                    'all_request_data' => request()->all()
+                ]);
+                if (!$device_id) {
+                    Log::error('Device ID is missing for guest checkout', [
+                        'creator_id' => $creator_id,
+                        'user_id_or_device' => $user_id_or_device,
+                        'request_params' => request()->all()
+                    ]);
+                    return redirect()->back()->with('error', 'Device ID is required for guest checkout.');
+                }
+                
+                $getdata = UserCart::where('device_id', $device_id)
+                    ->where('owner_id', $creator_id)  // Filter by specific creator
                     ->where('status', 1)
                     ->with(['wish', 'owner'])
                     ->get();
             }
             
             if ($getdata->isEmpty()) {
-                return redirect()->back()->with('error', 'No items in cart to checkout.');
+                return redirect()->back()->with('error', 'No items in cart to checkout for this creator.');
             }
             
-            // Get owner from cart data (for guests) or find by ID (for authenticated users)
-            if (Auth::check()) {
-                $owner = User::find($id);
-                if (!$owner) {
-                    return redirect()->back()->with('error', 'Creator not found.');
-                }
-            } else {
-                // For guests, get owner from the first cart item
-                $owner = $getdata->first()->owner;
-                if (!$owner) {
-                    return redirect()->back()->with('error', 'Creator not found.');
-                }
+            // Get creator by ID
+            $owner = User::find($creator_id);
+            if (!$owner) {
+                return redirect()->back()->with('error', 'Creator not found.');
             }
             
             // if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
@@ -198,17 +219,47 @@ class CheckoutController extends Controller
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
-            // Calculate transfer amount (what creator receives = item + their VAT if applicable)
+            // Calculate transfer amount (what creator receives = item amount only, no platform fees)
+            // Total charge = item amount + platform fees
+            // Transfer amount = item amount (what creator gets)
+            // Platform keeps = platform fees
             $creatorVatAmount = 0;
             if (isset($owner->vat_amount_percentage) && $owner->vat_amount_percentage > 0) {
                 $creatorVatAmount = round(($subtotal * $owner->vat_amount_percentage / 100) * $multiplier);
             }
+            
+            // Transfer amount = only the item amount (subtotal) + creator's VAT
             $transferAmount = round($subtotal * $multiplier) + $creatorVatAmount;
-            $totalChargeAmount = $transferAmount + round($totalShowTaxWithQuantity * $multiplier);
+            
+            // Total charged to customer = item amount + platform fees
+            $totalChargeAmount = round($subtotal * $multiplier) + $creatorVatAmount + round($totalShowTaxWithQuantity * $multiplier);
+            
+            // Debug logging for amount calculations
+            Log::info('Checkout amount calculations', [
+                'subtotal' => $subtotal,
+                'subtotal_with_multiplier' => round($subtotal * $multiplier),
+                'creator_vat_amount' => $creatorVatAmount,
+                'platform_fees' => $totalShowTaxWithQuantity,
+                'platform_fees_with_multiplier' => round($totalShowTaxWithQuantity * $multiplier),
+                'transfer_amount' => $transferAmount,
+                'total_charge_amount' => $totalChargeAmount,
+                'multiplier' => $multiplier
+            ]);
+            
+            // Ensure transfer amount doesn't exceed total
+            if ($transferAmount > $totalChargeAmount) {
+                Log::error('Transfer amount exceeds total charge', [
+                    'transfer_amount' => $transferAmount,
+                    'total_charge' => $totalChargeAmount,
+                    'subtotal' => $subtotal,
+                    'platform_fees' => $totalShowTaxWithQuantity
+                ]);
+                $transferAmount = $totalChargeAmount - round($totalShowTaxWithQuantity * $multiplier);
+            }
 
             $payload = [
-                'success_url' => route('checkout.success', [$id]),
-                'cancel_url' => route('checkout.cancel', [$id]),
+                'success_url' => route('checkout.success', [$creator_id]),
+                'cancel_url' => route('checkout.cancel', [$creator_id]),
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
                 'payment_intent_data' => [

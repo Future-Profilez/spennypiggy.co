@@ -157,6 +157,9 @@
             }
         </script>
 
+    {{-- hCaptcha Script --}}
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    
     {{-- @laravelPWA --}}
     @routes
     @viteReactRefresh

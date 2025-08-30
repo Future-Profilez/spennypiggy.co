@@ -92,6 +92,57 @@ Route::post('stripe/identity/verify', [StripeController::class, 'createVerificat
 // Debug checkout route - temporary for testing (no middleware)
 Route::get('/debug-checkout/{id}', [CheckoutController::class, 'debugCheckout'])->name('debug.checkout');
 
+// Debug cart data structure
+Route::get('/debug-cart', function() {
+    $deviceId = request()->get('device_id') ?: 'test-device-123';
+    
+    if (Auth::check()) {
+        $user = Auth::user();
+        $cartMethod = new \App\Http\Controllers\Auth\WishitemController();
+        
+        // Get the cart data the same way it's retrieved in cartItems()
+        $carts = \App\Models\UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+        
+        $cartData = [];
+        $groupedWishes = [];
+        foreach ($carts as $wish) {
+            $owner_id = $wish->owner_id;
+            if (!isset($groupedWishes[$owner_id])) {
+                $groupedWishes[$owner_id] = [];
+            }
+            $groupedWishes[$owner_id][] = [
+                'user' => $wish->user->toArray(),
+                'wish' => $wish->wish ? $wish->wish->toArray() : [],
+                'owner' => $wish->owner->toArray(),
+            ];
+        }
+        
+        $key = 0;
+        foreach ($groupedWishes as $value) {
+            $cartData[$key] = [
+                'user' => [
+                    'id' => $value[0]['owner']['id'],
+                    'name' => $value[0]['owner']['name'],
+                    'username' => $value[0]['owner']['username'],
+                ],
+                'items' => $value
+            ];
+            $key++;
+        }
+        
+        return response()->json([
+            'auth_user' => $user,
+            'cart_data_structure' => $cartData,
+            'raw_carts' => $carts->toArray()
+        ]);
+    } else {
+        return response()->json([
+            'error' => 'Not authenticated',
+            'device_id' => $deviceId
+        ]);
+    }
+})->name('debug.cart');
+
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');
 })->name("discover");
@@ -363,7 +414,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
 
-        Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
         // rye product routes start
         Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
@@ -403,7 +453,7 @@ Route::prefix('shop')->group(function () {
     Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
 });
 
-    Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
+    Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
 
 Route::get('/success-checkout/{id}', [CheckoutController::class, 'successCheckout'])->name('checkout.success');
 
@@ -415,11 +465,15 @@ Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemControlle
 
 Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
 
+Route::get('authenticated-cart', [WishitemController::class, 'authenticatedCartItems'])->name('authenticated-cart');
+
 Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
 Route::get('cart-update-quantity/{uuid}/{quantity}', [WishitemController::class, 'updateCartQuantity'])->name('cart.updatequantity');
 
 Route::get('cart', [WishitemController::class, 'cartItems'])->name('cart');
+
+Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
 Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::post('pay/{creator_uid}/', [StripeController::class, 'tipToJar'])->name("pay");
