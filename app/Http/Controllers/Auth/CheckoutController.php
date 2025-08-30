@@ -249,19 +249,19 @@ class CheckoutController extends Controller
                         'destination' => $connectedAccountId, // Creator's connected account
                         'amount' => $transferAmount, // What creator receives (item + VAT)
                     ],
-                    'description' => "Spenny Piggy - Item purchase with platform fee",
+                    'description' => "Spenny Piggy - Content purchase with platform fee",
                     "metadata" => \App\Helpers::buildStripeMetadata('wishlist', (object) [
                         'user_id' => Auth::id(),
                         'owner_id' => $owner->id,
                         'owner' => $owner,
                         'uuid' => 'checkout-session-' . time(),
-                        'item_amount' => round($subtotal * $multiplier),
-                        'creator_vat_amount' => $creatorVatAmount,
-                        'transfer_amount' => $transferAmount,
-                        'platform_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
+                        // 'item_amount' => round($subtotal * $multiplier),
+                        // 'creator_vat_amount' => $creatorVatAmount,
+                        // 'transfer_amount' => $transferAmount,
+                        // 'platform_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
                         'total_charge_amount' => $totalChargeAmount,
                     ], [
-                        "anonymous" => request()->query('anonymous') ?? '0',
+                        // "anonymous" => request()->query('anonymous') ?? '0',
                         "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
                         "payment_type" => "Destination Charges with transfers",
                     ]),

@@ -22,7 +22,7 @@ export default function Thankyou(props) {
             `}</style>
 
              <div className='p-4 text-center text-mint thankyou-wrap flex justify-content-center items-center'>
-              <div>
+              <div className='max-w-[500px]'>
                 <h2 className='text-[25px] ' >Your gift has been sent.</h2>
                 <p className='pt-2 pb-4' >Check your email for a receipt.</p>
                 <div className='giftthank p-4' >

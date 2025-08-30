@@ -1297,7 +1297,7 @@ class StripeController extends Controller
                         'destination' => $creator->account_id, // Creator's connected account
                         'amount' => $transferAmount, // What creator receives (item + VAT)
                     ],
-                    'description' => "Spenny Piggy - Support payment with platform fee",
+                    'description' => "Spenny Piggy - Support payment to {$creator->name} with platform fee",
                     "metadata" => \App\Helpers::buildStripeMetadata('support_payment', $pay, [
                         'support_goal_id' => (string) ($goal->id ?? ''),
                         'item_amount' => (string) $unitAmount,
