@@ -6,7 +6,7 @@
         "livebuild": "php vendor/bin/vapor deploy production --message='implementing stripe identity verification' --commit='619ad66b'",
         "devbuild": "php vendor/bin/vapor deploy development --message='implementing stripe identity verification' --commit='619ad66b'",
         "build": "vite build && npm run sw:build",
-        "build:analyze": "ANALYZE=true vite build && npm run sw:build",
+        "clear": "php artisan cache:clear && php artisan optimize:clear && php artisan config:clear && php artisan route:clear",
         "build:critical": "./scripts/build-with-critical-css.sh && npm run sw:build",
         "build:production": "npm run build && npm run sw:build",
         "sw:build": "node scripts/build-sw.js",
