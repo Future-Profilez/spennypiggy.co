@@ -51,12 +51,13 @@ export default function IntroVideos(props) {
 
 
     const Intro = ({w}) => {
-      return  <> <ProfileIntro data={w}  text={<>
-        <div className='' >
-            <div className='introvideobox overflow-hidden h-[350px] rounded-[25px] border-3 !border-[#F94F97] position-relative' >
+      return  <div className="relative  overflow-hidden h-[350px] rounded-[25px] border-3 !border-[#F94F97]"> 
+      <ProfileIntro data={w}  text={<div  >
+        <div className='relative' >
+            <div className='bg-black introvideobox overflow-hidden  position-relative' >
               <LazyLoadImage
               alt={"image"}  effect="blur"
-              height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full h-full object-cover' width={260} />
+              height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full h-full max-h-[340px] object-cover' width={260} />
               <div  className='cursor-pointer playicon ' >
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="32" cy="32" r="32" fill="#F94F97"/>
@@ -66,14 +67,14 @@ export default function IntroVideos(props) {
               
             </div>
         </div>
-        <div className='absolute bg-[#0004] bottom-0 left-0  p-3 z-[10px]  w-100 text-white transition-colors hover:bg-[#000] ' >
-          <Link href={`/${w && w.user && w.user.username}`}  >
-            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
-            <p className='text-normal' >@{w && w.user && w.user.username}</p>
-          </Link>
-        </div>
-      </>} />
-      </>
+      </div>} />
+      <div className='absolute bg-[#000] bottom-0 left-0  p-3 z-[10px]  w-100 text-white transition-colors hover:bg-[#000] ' >
+        <Link href={`/${w && w.user && w.user.username}`}  >
+          <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
+          <p className='text-normal' >@{w && w.user && w.user.username}</p>
+        </Link>
+      </div>
+      </div>
     }
 
     return <>
