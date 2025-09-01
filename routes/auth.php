@@ -504,6 +504,7 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 // Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
 Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
+
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
