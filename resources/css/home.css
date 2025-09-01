@@ -272,7 +272,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .creatorslider .swiper-pagination-bullet{width:16px;height:16px;background:var(--voilet);}
 .howWorkTab .nav-tabs li{margin:0 10px;display:inline-block;}
 .howWorkTab .nav-tabs{margin-bottom:40px !important;justify-content:center;border:0;}
-.howWorkTab .nav-tabs button{padding:11px 26px;border-radius:15px;border:1px solid var(--black) !important;background:#7c7885;box-shadow:5px 5px 0 0 var(--black);color:#e6e6e6;font-family:var(--heading-font);font-size:20px;font-style:normal;font-weight:300;letter-spacing:1px;line-height:normal;text-transform:uppercase;}
+.howWorkTab .nav-tabs button{padding:11px 26px;border-radius:15px;border:1px solid var(--black) !important;background:#7c7885;box-shadow:5px 5px 0 0 var(--black);color:#ffffff;font-family:var(--heading-font);font-size:20px;font-style:normal;font-weight:300;letter-spacing:1px;line-height:normal;text-transform:uppercase;}
 .howWorkTab .nav-tabs button.active,.howWorkTab .nav-tabs button:focus,.howWorkTab .nav-tabs button:hover{background:#8c52ff;color:var(--white) !important;}
 .socialmedia li:last-child{margin-right:0;}
 .noresultimg{max-width:110px;margin-bottom:10px !important;}

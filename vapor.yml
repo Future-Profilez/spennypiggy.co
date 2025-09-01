@@ -17,6 +17,7 @@ environments:
       - "npm ci"
       - "rm -rf public/build"
       - "npm run build"
+      # - "npm run clear"
       - "rm -rf node_modules"   # Linux/macOS
       - "rm -rf package-lock.json"   # Linux/macOS
       # - "rd /s /q node_modules"  # Windows/
@@ -45,6 +46,7 @@ environments:
       - "npm ci"
       - "rm -rf public/build" # Linux/mac/OS
       - "npm run build"
+      # - "npm run clear"
       - "rm -rf node_modules" # Linux/mac/OS
       - "rm -rf package-lock.json"   # Linux/macOS
       # - "rd /s /q node_modules" # Windows

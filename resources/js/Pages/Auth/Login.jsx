@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
 import InputError from '@/Components/InputError';
@@ -14,7 +14,6 @@ export default function Login({ status, canResetPassword }) {
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get('redirect');
     const redirectmessage = urlParams.get('message');
-
     const [open, setOpen] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -24,8 +23,6 @@ export default function Login({ status, canResetPassword }) {
     });
 
     const [loading, setLoading] = useState(false);
-    
-    // Update loading state when processing changes
     useEffect(() => {
         setLoading(processing);
     }, [processing]);
@@ -36,16 +33,34 @@ export default function Login({ status, canResetPassword }) {
         };
     }, []);
 
+
+    const { flash } = usePage().props;
+    useEffect(() => {
+        if(errors){
+            Object.entries(errors).forEach(([key, value]) => {
+                errorAlert(value);
+            });
+        }
+        if (flash?.error) {
+            errorAlert(flash.error);
+        }
+        if (flash?.success) {
+            successAlert(flash.success);
+        }
+        if (flash?.warning) {
+            warningAlert(flash.warning);
+        }
+        if (flash?.info) {
+            successAlert(flash.info);
+        }
+    },[]);
+
     const submit = (e) => {
-        // Get device ID for cart transfer during login
         const deviceId = DeviceID();
-        
-        // Include device_id in login request
         const loginData = {
             ...data,
             device_id: deviceId
         };
-        
         post(route('login-user'), loginData, {
             preserveScroll: true,
             onStart: () => {
@@ -55,18 +70,13 @@ export default function Login({ status, canResetPassword }) {
                 setLoading(false);
             },
             onSuccess: (resp) => {
-                // Only show toast for flash errors (server errors)
+                // Only sow toast for flash errors (server errors)
                 if (resp.props.flash.error) {
                     errorAlert(resp.props.flash.error);
                     setLoading(false);
                     return;
                 }
-                
-                // Don't show toast for validation errors - they will be shown inline
-                // These are handled by Inertia's error handling automatically
                 console.log("Login response:", resp.props.errors);
-                
-                // Show cart transfer success message if available
                 if (resp.props.flash.cart_transfer_success) {
                     successAlert(resp.props.flash.cart_transfer_success);
                 }
@@ -79,7 +89,6 @@ export default function Login({ status, canResetPassword }) {
             },
             onError: (err) => {
                 reset("password");
-                // Don't show toast for validation errors - they will be shown inline by Inertia
                 console.log("Login err:", err);
                 setLoading(false);
             },
@@ -89,18 +98,16 @@ export default function Login({ status, canResetPassword }) {
     const checkTFA = (e) => {
         e.preventDefault();
         setLoading(true);
-        
         axios.post('/verify-user', data)
             .then((resp) => {
                 if (resp.data.status) {
                     if (resp.data.is_2fa) {
                         setOpen("open");
-                        setLoading(false); // Reset loading state when opening 2FA modal
+                        setLoading(false);
                         setTimeout(() => {
                             setOpen(false);
                         }, 1000);
                     } else {
-                        // Don't reset loading here, let submit() handle it
                         submit();
                     }
                 } else {
@@ -110,8 +117,6 @@ export default function Login({ status, canResetPassword }) {
             })
             .catch((err) => {
                 console.error("Verify user error:", err);
-                
-                // Handle different types of errors
                 if (err.response && err.response.data && err.response.data.message) {
                     errorAlert(err.response.data.message);
                 } else if (err.response && err.response.data && err.response.data.msg) {
@@ -121,7 +126,6 @@ export default function Login({ status, canResetPassword }) {
                 } else {
                     errorAlert('An error occurred during login. Please try again.');
                 }
-                
                 setLoading(false);
             });
     };

@@ -20,7 +20,6 @@ class WishItem extends Model
         "user_id",
         "stripe_product_id",
         "wishname",
-        // Deprecated monetary fields - use supporterCount and social metrics instead
         "price",
         "currency",
         "fullfill_amount",

@@ -51,8 +51,8 @@ export default function IntroVideos(props) {
 
 
     const Intro = ({w}) => {
-      return   <ProfileIntro data={w}   text={<>
-        <div className=' ' >
+      return  <> <ProfileIntro data={w}  text={<>
+        <div className='' >
             <div className='introvideobox overflow-hidden h-[350px] rounded-[25px] border-3 !border-[#F94F97] position-relative' >
               <LazyLoadImage
               alt={"image"}  effect="blur"
@@ -63,15 +63,17 @@ export default function IntroVideos(props) {
                 <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
                 </svg>
               </div>
-              <div className='absolute bg-[#0004] bottom-0 left-0  p-3  w-100 text-white transition-colors hover:bg-[#000] ' >
-                <Link href={`/${w && w.user && w.user.username}`}  >
-                  <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
-                  <p className='text-normal' >@{w && w.user && w.user.username}</p>
-                </Link>
-              </div>
+              
             </div>
         </div>
+        <div className='absolute bg-[#0004] bottom-0 left-0  p-3 z-[10px]  w-100 text-white transition-colors hover:bg-[#000] ' >
+          <Link href={`/${w && w.user && w.user.username}`}  >
+            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
+            <p className='text-normal' >@{w && w.user && w.user.username}</p>
+          </Link>
+        </div>
       </>} />
+      </>
     }
 
     return <>

@@ -63,9 +63,9 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
+    Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user');
 
-    Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA')->middleware('mustHaveToVerify');
+    Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
     Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
 
@@ -89,59 +89,6 @@ Route::middleware('guest')->group(function () {
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 
-// Debug checkout route - temporary for testing (no middleware)
-Route::get('/debug-checkout/{id}', [CheckoutController::class, 'debugCheckout'])->name('debug.checkout');
-
-// Debug cart data structure
-Route::get('/debug-cart', function() {
-    $deviceId = request()->get('device_id') ?: 'test-device-123';
-    
-    if (Auth::check()) {
-        $user = Auth::user();
-        $cartMethod = new \App\Http\Controllers\Auth\WishitemController();
-        
-        // Get the cart data the same way it's retrieved in cartItems()
-        $carts = \App\Models\UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
-        
-        $cartData = [];
-        $groupedWishes = [];
-        foreach ($carts as $wish) {
-            $owner_id = $wish->owner_id;
-            if (!isset($groupedWishes[$owner_id])) {
-                $groupedWishes[$owner_id] = [];
-            }
-            $groupedWishes[$owner_id][] = [
-                'user' => $wish->user->toArray(),
-                'wish' => $wish->wish ? $wish->wish->toArray() : [],
-                'owner' => $wish->owner->toArray(),
-            ];
-        }
-        
-        $key = 0;
-        foreach ($groupedWishes as $value) {
-            $cartData[$key] = [
-                'user' => [
-                    'id' => $value[0]['owner']['id'],
-                    'name' => $value[0]['owner']['name'],
-                    'username' => $value[0]['owner']['username'],
-                ],
-                'items' => $value
-            ];
-            $key++;
-        }
-        
-        return response()->json([
-            'auth_user' => $user,
-            'cart_data_structure' => $cartData,
-            'raw_carts' => $carts->toArray()
-        ]);
-    } else {
-        return response()->json([
-            'error' => 'Not authenticated',
-            'device_id' => $deviceId
-        ]);
-    }
-})->name('debug.cart');
 
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');

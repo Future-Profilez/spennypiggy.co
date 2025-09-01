@@ -43,7 +43,7 @@ export default function Thankyou(props) {
                   </div>
                 </div>
 
-                <p className='my-2 text-center'>Please create an account to see the content you have purchased. Or can we e-mail the gifter the item?</p>
+                <p className='my-2 text-center'>Please create an account to see the content you have purchased.</p>
                 <div className='w-full mt-4' >
                   {auth && auth.user ?
                       <Link className='button lg mt-4' href={`/${owner && owner.username}`}>

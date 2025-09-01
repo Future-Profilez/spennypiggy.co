@@ -24,12 +24,10 @@ use App\Models\TwitterToken;
 use App\Models\User;
 use App\Models\UserBackupCode;
 use App\Models\UserCategory;
-use App\Models\UserCart;
 use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
-use App\Services\CartTransferService;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
 use App\StripeControl;
@@ -78,15 +76,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-
-    // Handle the login request
     public function store(LoginRequest $request)
     {
         //saving the google secret of an particular user
 
         $request->authenticate();
         $request->session()->regenerate();
-        $user = Auth::user(); 
+        $user = Auth::user();
 
         $secret = $this->google2FA->generateSecretKey();
         if (empty($user->tfa_key) && $user->role == 1) {
@@ -99,9 +95,6 @@ class AuthenticatedSessionController extends Controller
             $user->ip_address = $ipAddress;
             $user->save();
         }
-
-        // Transfer guest cart items to authenticated user's cart
-        $this->transferGuestCart($request, $user);
 
         // $auth = AuthRedirect::create([
         //     "user_id"   =>  $user->id,
@@ -165,45 +158,6 @@ class AuthenticatedSessionController extends Controller
             'status' => true,
             'is_2fa' => $is_2fa
         ]);
-    }
-
-    /**
-     * Transfer guest cart items to authenticated user's cart
-     * 
-     * @param Request $request
-     * @param User $user
-     * @return void
-     */
-    private function transferGuestCart(Request $request, User $user): void
-    {
-        try {
-            $cartTransferService = new CartTransferService();
-            $deviceId = $cartTransferService->extractDeviceIdFromRequest($request);
-            
-            if (!empty($deviceId)) {
-                $result = $cartTransferService->transferGuestCartToUser($user, $deviceId);
-                
-                Log::info('Login cart transfer completed', [
-                    'user_id' => $user->id,
-                    'device_id' => $deviceId,
-                    'transferred_count' => $result['transferred_count'],
-                    'merged_count' => $result['merged_count'],
-                    'issues_count' => count($result['issues'])
-                ]);
-                
-                if ($result['transferred_count'] > 0 || $result['merged_count'] > 0) {
-                    $totalItems = $result['transferred_count'] + $result['merged_count'];
-                    $request->session()->flash('cart_transfer_success', 
-                        "Welcome back! {$totalItems} cart item(s) have been transferred to your account.");
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error('Login cart transfer failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage()
-            ]);
-            // Don't interrupt login process if cart transfer fails
-        }
     }
 
     /**
@@ -688,16 +642,11 @@ class AuthenticatedSessionController extends Controller
         $password = $request->query('password');
 
         $user = User::where('email', $email)->where('is_uk', 0)->first();
-        
-        // Check if user exists
-        if (!$user) {
-            return back()->with('error', 'No account exists with this email.');
-        }
 
         $otp = $request->query('otp');
         $backup_code = $request->query('backup_code');
 
-        $valid = false;
+
 
         if (!empty($otp)) {
             $valid = $this->google2FA->verifyKey($user->tfa_key, $otp);
@@ -725,9 +674,6 @@ class AuthenticatedSessionController extends Controller
 
                 $request->session()->regenerate();
                 $user = Auth::user();
-
-                // Transfer guest cart items to authenticated user's cart
-                $this->transferGuestCart($request, $user);
 
                 if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
                     // return Inertia::location("https://spennypiggy.com/{$user->username}");

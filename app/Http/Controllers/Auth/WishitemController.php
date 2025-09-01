@@ -595,39 +595,36 @@ class WishitemController extends Controller
     public function discover_all_wishes($order, $type, $price)
     {
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
+        $query = WishItem::with("user")->whereHas('user', function ($q) use ($tag) {
+            $q->whereNull('deleted_at')
+                ->where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0);
+            if ($tag) {
+                $q->whereJsonContains('creator_category', $tag);
+            }
+        });
 
-        $query = WishItem::query()
-            ->whereHas('user', function ($q) use ($tag) {
-                $q->where('is_uk', 0)
-                ->where('profile_status_lock', 2)
-                ->whereNull('profile_reject_reason');
+        // return $query->get();
 
-                if ($tag) {
-                    $q->whereJsonContains('creator_category', $tag);
-                }
-            });
-
-        // Ordering
         if ($order === 'new') {
             $query->latest();
         } elseif ($order === 'trending' && method_exists(WishItem::class, 'scopeTrending')) {
             $query->trending();
         }
 
-        // Price filter
         $priceRanges = [
             '5to10' => [4.99, 9.99],
             '10to30' => [9.99, 29.99],
             '30to50' => [29.99, 49.99],
             '50to100' => [49.99, 99.99],
         ];
+
         if (isset($priceRanges[$price])) {
             $query->whereBetween('price', $priceRanges[$price]);
         } elseif ($price === '100plus') {
             $query->where('price', '>', 99.99);
         }
 
-        // Subscription filter
         $subscriptionTypes = [
             'subscription' => 1,
             'crowdfund' => 2,
@@ -655,7 +652,6 @@ class WishitemController extends Controller
 
     public function discover_all_creators($order, $gender)
 {
-    // Subquery to get latest approved intro id per creator
     $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
         ->whereNull('deleted_at')
         ->where('approved', 1)
