@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Suspense, lazy } from "react";
+import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
@@ -64,6 +64,10 @@ import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
 import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
 import ActionRequired from "./stripe/ActionRequired";
 
+// Optimized tab system components
+import InstantTabSystem from '@/Components/InstantTabSystem';
+import FastTabRenderer from '@/Components/FastTabRenderer';
+
 export default function Dashboard(props) {
 
     console.log(props)
@@ -96,6 +100,9 @@ export default function Dashboard(props) {
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
     const [gifts, setGifts] = useState([]);
+    
+    // Fast tab renderer reference for optimistic updates
+    const tabRendererRef = useRef(null);
 
     const fetch_gifts = async (signal) => {
         setGiftsLoading(true);
@@ -232,6 +239,19 @@ export default function Dashboard(props) {
 
     const Toggle = () => {
         const [showAdd, setShowAdd] = useState(false);
+        
+        // Listen for toggle events from InstantTabSystem
+        useEffect(() => {
+            const handleToggleEvent = () => {
+                setShowAdd(true);
+            };
+            
+            window.addEventListener('toggleAddOptions', handleToggleEvent);
+            
+            return () => {
+                window.removeEventListener('toggleAddOptions', handleToggleEvent);
+            };
+        }, []);
         useEffect(() => {
             if (showAdd) {
                 document.body.classList.add("overflow-hidden");
@@ -480,43 +500,16 @@ export default function Dashboard(props) {
                                                 )} */}
 
 
-                                                <div className="newnav-tabs mb-4 flex items-center justify-between  py-2">
-                                                    <div className="flex overflow-x-auto scrollbar-hide sliderOption">
-                                                        <div className="flex space-x-8 min-w-max">
-                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"about",}
-                                                            )}
-                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "about" || page === false ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
-                                                            `}
-                                                            > About </Link>
-                                                            <Link preserveScroll href={route( "user.show",{username:user.username,page:"wishes",}
-                                                            )}
-                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "wishes" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
-                                                            `}
-                                                            > Wishes </Link>
-                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"memberships",}
-                                                            )}
-                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "memberships" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
-                                                            `}
-                                                            > Memberships </Link>
-                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"bills",}
-                                                            )}
-                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "bills" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
-                                                            `}
-                                                            > Bills </Link>
-                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"shop",}
-                                                            )}
-                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "shop" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
-                                                            `}
-                                                            > Shop </Link>
-                                                            <Link preserveScroll preserveState href={route( "user.show",{username:user.username,page:"gifts",}
-                                                            )}
-                                                            className={`py-2 px-0 border-b-2  text-normal md:text-lg uppercase transition-colors duration-200 ${page === "gifts" ? "border-pink-500 text-pink-600":"border-transparent text-gray-400 hover:text-white hover:border-gray-300"}
-                                                            `}
-                                                            > Gifts </Link>
-                                                        </div>
-                                                    </div>
-                                                    {IsloggedIn && <Toggle />}
-                                                </div>
+                                                {/* Instant Tab System with immediate feedback */}
+                                                <InstantTabSystem 
+                                                    activeTab={page || 'about'}
+                                                    user={user}
+                                                    username={user.username}
+                                                    IsloggedIn={IsloggedIn}
+                                                    onTabChange={(tabId) => {
+                                                        console.log(`🔄 Optimistic tab change: ${tabId}`);
+                                                    }}
+                                                />
 
 
                                                 <div className="tabs-containers min-height" >

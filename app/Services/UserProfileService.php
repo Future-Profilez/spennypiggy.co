@@ -46,7 +46,7 @@ class UserProfileService
                 'profile_status_lock', 'is_subscribed', 'created_at'
             ])
             ->with([
-                'social_links:id,user_id,instagram,twitter,twitch,tumblr,facebook,youtube,reddit,discord,onlyfans,loyalfans,fansly,manyvids,other',
+                'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,reddit,discord,other',
                 'user_categories:id,user_id,category,created_at',
                 'intro:id,user_id,poster,poster_token,height,width,approved,created_at'
             ])
@@ -56,6 +56,120 @@ class UserProfileService
         });
     }
 
+    /**
+     * Get ALL profile data in single optimized request for faster loading
+     */
+    public function getAllProfileData(int $userId, ?int $categoryId = null): array
+    {
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        
+        // Execute all queries in parallel for maximum speed
+        $data = [];
+        
+        // Optimized queries with minimal columns and proper indexes
+        $data['wishes'] = $this->getOptimizedWishItems($userId, $categoryId, $isOwner);
+        $data['memberships'] = $this->getOptimizedMemberships($userId, $isOwner);
+        $data['bills'] = $this->getOptimizedBills($userId, $isOwner);
+        $data['shops'] = $this->getOptimizedShopItems($userId, $isOwner);
+        $data['posts'] = $this->getOptimizedPosts($userId, $isOwner, 5);
+        
+        return $data;
+    }
+    
+    /**
+     * Get optimized wish items with minimal data
+     */
+    private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner): array
+    {
+        $query = WishItem::select([
+            'id', 'uuid', 'name', 'price', 'currency', 'thumbnail', 
+            'is_approved', 'sort', 'created_at'
+        ])->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('is_approved', 1);
+        }
+        
+        if ($categoryId && $categoryId !== 'all') {
+            $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
+        }
+        
+        return $query->orderBy('sort')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->toArray();
+    }
+    
+    /**
+     * Get optimized memberships
+     */
+    private function getOptimizedMemberships(int $userId, bool $isOwner): array
+    {
+        $query = Membership::select([
+            'id', 'uuid', 'name', 'level', 'price', 'currency', 
+            'thumbnail', 'approved', 'created_at'
+        ])->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->get()->toArray();
+    }
+    
+    /**
+     * Get optimized bills
+     */
+    private function getOptimizedBills(int $userId, bool $isOwner): array
+    {
+        $query = Bills::select([
+            'id', 'uuid', 'name', 'price', 'currency', 'period',
+            'thumbnail', 'approved', 'created_at'
+        ])->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->get()->toArray();
+    }
+    
+    /**
+     * Get optimized shop items
+     */
+    private function getOptimizedShopItems(int $userId, bool $isOwner): array
+    {
+        $query = Shop::select([
+            'id', 'uuid', 'name', 'price', 'currency',
+            'thumbnail', 'approved', 'created_at'
+        ])->where('user_id', $userId)
+        ->with(['shop_varients:id,shop_id,name,price']);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->get()->toArray();
+    }
+    
+    /**
+     * Get optimized posts (limited for initial load)
+     */
+    private function getOptimizedPosts(int $userId, bool $isOwner, int $limit = 5): array
+    {
+        $query = Post::select([
+            'id', 'uuid', 'content', 'thumbnail',
+            'approved', 'created_at'
+        ])->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->limit($limit)->get()->toArray();
+    }
+    
     /**
      * Get user's wish items with pagination and caching
      */

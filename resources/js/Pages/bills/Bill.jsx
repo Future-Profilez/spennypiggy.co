@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, memo, useMemo } from "react";
 import { useState } from 'react';
 import uploadedimg from '../../../assets/img/uploadedimg.png';
 import { useEffect } from 'react';
@@ -12,41 +12,61 @@ import DropdownButton from 'react-bootstrap/DropdownButton';
 import RemoveBill from './RemoveBill';
 import { useAlerts } from '@/Components/Alerts';
 
-export default function Bill(props) {
-
+function Bill(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const {auth} = usePage().props;
+    const { format, formatMultiPrice } = PriceFormat();
+    const { itm, itemid, IsloggedIn, classes, key } = props;
+    
+    const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
+    
+    // Memoize expensive calculations
+    const style = useMemo(() => ({
+        transform: CSS.Translate.toString(transform)
+    }), [transform]);
 
-  const {auth} = usePage().props;
-  const { format, formatMultiPrice } = PriceFormat();
-  const { itm, itemid, IsloggedIn, classes, key   } = props;
-  const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
-  const style = {
-    transform: CSS.Translate.toString(transform)
-  };
+    const stylenone = useMemo(() => ({
+        transform: '',
+    }), []);
 
-  const stylenone = {
-    transform: '',
-  };
+    const [itemUID, setItemUID] = useState(itemid);
+    const [open, setOpen] = useState();
+    
+    const openAddtocart = useMemo(() => () => {
+        setOpen(true);
+        setTimeout(() => {
+            setOpen();
+        }, 1000);
+    }, []);
 
-  const [itemUID, setItemUID] = useState(itemid);
-  const [open, setOpen] = useState();
-  const openAddtocart = () => {
-    setOpen(true);
-    setTimeout(()=>{
-      setOpen();
-    },1000);
-  }
+    useEffect(() => {
+        if(itemUID == itm.uuid) {
+            setOpen(true);
+        }
+    }, [itemUID, itm.uuid]);
 
-  useEffect(()=>{
-    if(itemUID == itm.uuid){
-      setOpen(true);
-    }
-  },[itemUID]);
-
-  const gotologin = () => {
-    errorAlert("You must login first.");
-    router.visit(`/login?redirect=${`/bill/checkout/${itm.uuid}`}`);
-  }
+    const gotologin = useMemo(() => () => {
+        errorAlert("You must login first.");
+        router.visit(`/login?redirect=${`/bill/checkout/${itm.uuid}`}`);
+    }, [errorAlert, itm.uuid]);
+    
+    // Memoize formatted price to avoid recalculation
+    const formattedPrice = useMemo(() => 
+        formatMultiPrice(itm.price, itm?.currency || 'GBP'), 
+        [formatMultiPrice, itm.price, itm?.currency]
+    );
+    
+    // Memoize image source
+    const imageSrc = useMemo(() => 
+        itm?.perma_link || uploadedimg, 
+        [itm?.perma_link]
+    );
+    
+    // Memoize period display
+    const periodDisplay = useMemo(() => 
+        (itm && itm.period) || "Monthly", 
+        [itm?.period]
+    );
 
   return <>
     <div key={key} style={IsloggedIn ? style : stylenone}  className={` position-relative billbox wish-item-box ${classes} ${isDragging ? 'dragging' : ''}`}>
@@ -60,9 +80,9 @@ export default function Bill(props) {
               <LazyLoadImage
               alt={"image"}  effect="blur"
               height={193}
-              src={itm?.perma_link ? itm?.perma_link : uploadedimg} className=''
+              src={imageSrc} className=''
               width={243} />
-              <div className='bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full capitalize absolute bottom-3 right-3' >{itm && itm.period || "Monthly"} Subscribable </div>
+              <div className='bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full capitalize absolute bottom-3 right-3' >{periodDisplay} Subscribable </div>
               {IsloggedIn ?
                 <DropdownButton
                 className='edit-post pe-0 absolute top-2 m-1 right-3 z-1 ' id="dropdown-basic-button"
@@ -79,7 +99,7 @@ export default function Bill(props) {
             <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
               <div>
                 <h4 className={`text-lg  !text-gray-800 text-center el1 `} >{itm.name}</h4>
-                <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formatMultiPrice(itm.price, itm?.currency || 'GBP')}
+                <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formattedPrice}
                     <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
                 </h5>
               </div>
@@ -107,3 +127,20 @@ export default function Bill(props) {
     </div>
   </>
 }
+
+// Export with memo and comparison function
+export default memo(Bill, (prevProps, nextProps) => {
+    // Only re-render if these specific props change
+    return (
+        prevProps.itm?.id === nextProps.itm?.id &&
+        prevProps.itm?.name === nextProps.itm?.name &&
+        prevProps.itm?.price === nextProps.itm?.price &&
+        prevProps.itm?.currency === nextProps.itm?.currency &&
+        prevProps.itm?.period === nextProps.itm?.period &&
+        prevProps.itm?.approved === nextProps.itm?.approved &&
+        prevProps.itm?.perma_link === nextProps.itm?.perma_link &&
+        prevProps.IsloggedIn === nextProps.IsloggedIn &&
+        prevProps.itemid === nextProps.itemid &&
+        prevProps.classes === nextProps.classes
+    );
+});

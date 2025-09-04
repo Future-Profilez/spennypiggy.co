@@ -179,16 +179,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username, $page = 'about')
     {
-        $profileData = $this->profileService->preloadUserProfileData($username);
+        $profileData = $this->profileService->preloadUserProfileData($username); 
         
         if (empty($profileData)) {
             return Inertia::render('NotFound');
-        }
-        $user = $profileData['user'];
+        } 
+
+        $user = $profileData['user']; 
 
         if ($user->suspended_account == 1) {
-            return Inertia::render('Suspanded');
-        }
+            return Inertia::render('Suspanded'); 
+        } 
 
         
         $pageData = $this->getPageSpecificData($user->id, $page);
@@ -224,6 +225,9 @@ class AuthenticatedSessionController extends Controller
             ...$pageData
         ]);
     }
+
+
+    
 
     /**
      * Get Stripe account capabilities with caching

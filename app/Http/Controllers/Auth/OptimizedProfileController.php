@@ -42,8 +42,12 @@ class OptimizedProfileController extends Controller
         // Get Stripe account capabilities with caching
         [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
 
-        // Load page-specific data efficiently
-        $pageData = $this->getPageSpecificData($user->id, $page);
+        // Load ALL profile data at once for fastest loading
+        $categoryId = request()->query('category');
+        $allProfileData = $this->profileService->getAllProfileData($user->id, $categoryId);
+        
+        // Extract data for current page while keeping all data available
+        $pageData = $this->extractPageData($allProfileData, $page);
 
         // Set SEO meta tags
         $this->setSeoMetaTags($user, $username);
@@ -109,7 +113,25 @@ class OptimizedProfileController extends Controller
     }
 
     /**
-     * Get page-specific data efficiently
+     * Extract page-specific data from preloaded profile data
+     */
+    private function extractPageData(array $allProfileData, string $page): array
+    {
+        // Return ALL data to frontend for instant tab switching
+        return [
+            'items' => $allProfileData['wishes'] ?? [],
+            'posts' => $allProfileData['posts'] ?? [],
+            'memberships' => $allProfileData['memberships'] ?? [],
+            'bills' => $allProfileData['bills'] ?? [],
+            'shops' => $allProfileData['shops'] ?? [],
+            // Add metadata for frontend optimization
+            '_preloaded' => true,
+            '_loadTime' => microtime(true)
+        ];
+    }
+
+    /**
+     * Get page-specific data efficiently (legacy method - kept for compatibility)
      */
     private function getPageSpecificData(int $userId, string $page): array
     {
