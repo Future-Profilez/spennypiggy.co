@@ -8,7 +8,7 @@ export default function CategoryLeaders() {
     const { formatMultiPrice } = PriceFormat();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('wishes');
+    const [activeTab, setActiveTab] = useState('tips');
     const [data, setData] = useState({
         wishes: [],
         subscriptions: [],
@@ -39,19 +39,19 @@ export default function CategoryLeaders() {
     }, []);
 
     const categories = [
+        { key: 'tips', label: 'Supports', icon: RiStarLine, color: 'text-yellow-600' },
         { key: 'wishes', label: 'Wishes', icon: RiHeartLine, color: 'text-pink-600' },
         { key: 'subscriptions', label: 'Subscriptions', icon: RiGroupLine, color: 'text-purple-600' },
-        { key: 'tips', label: 'Piggy Bank', icon: RiStarLine, color: 'text-yellow-600' },
         { key: 'memberships', label: 'Memberships', icon: RiBankCardLine, color: 'text-blue-600' },
         { key: 'bills', label: 'Bills', icon: RiBankCardLine, color: 'text-green-600' },
         { key: 'shop', label: 'Shop', icon: RiShoppingBagLine, color: 'text-orange-600' }
     ];
 
     const CategoryItem = ({ creator, rank }) => (
-        <div className="category-item relative bg-white rounded-xl p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="category-item relative bg-white rounded-xl p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <div className="flex items-center ">
-                    <div className="absolute top-4 left-4 z-1 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                    <div className="absolute top-2 left-2 z-1 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
                         {rank}
                     </div>
                     <Avatar

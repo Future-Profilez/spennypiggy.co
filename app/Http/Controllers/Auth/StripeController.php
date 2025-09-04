@@ -746,10 +746,11 @@ class StripeController extends Controller
 
             $priceId = $existingPrice->price_id ?? null;
 
+            // Get currency metadata to handle zero-decimal currencies properly
+            $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
             if (!$priceId) {
-                // Get currency metadata to handle zero-decimal currencies properly
-                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
-                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
                 
                 $priceParams = [
                     'unit_amount' => round($finalTotalAmount * $multiplier),
@@ -804,41 +805,139 @@ class StripeController extends Controller
                 ]);
             }
 
+            // Calculate creator VAT amount if applicable
+            $creatorVatAmount = 0;
+            if (isset($wish->user->vat_amount_percentage) && $wish->user->vat_amount_percentage > 0) {
+                $creatorVatAmount = round(($basePrice * $wish->user->vat_amount_percentage / 100) * $multiplier);
+            }
+            
+            // Use destination charges pattern like cart/tip payments - create line items that sum to total charge
+            $lineItems = [
+                [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => $wish->wishname ?? 'Wish Item Subscription',
+                            'description' => "Subscription content from {$wish->user->name}",
+                        ],
+                        'unit_amount' => round($basePrice * $multiplier),
+                    ]
+                ]
+            ];
+            
+            // Add recurring data for non-onetime subscriptions
+            if ($reccure !== 'onetime') {
+                $lineItems[0]['price_data']['recurring'] = [
+                    'interval' => StripeControl::$periods[$wish->subscription_period],
+                    'interval_count' => 1,
+                ];
+            }
+            
+            // Add creator VAT as separate line item if applicable
+            if ($creatorVatAmount > 0) {
+                $vatLineItem = [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => 'Creator VAT',
+                        ],
+                        'unit_amount' => $creatorVatAmount,
+                        'tax_behavior' => 'exclusive',
+                    ],
+                ];
+                
+                // Add recurring data for VAT if not onetime
+                if ($reccure !== 'onetime') {
+                    $vatLineItem['price_data']['recurring'] = [
+                        'interval' => StripeControl::$periods[$wish->subscription_period],
+                        'interval_count' => 1,
+                    ];
+                }
+                
+                $lineItems[] = $vatLineItem;
+            }
+            
+            // Add platform fee as separate line item
+            $platformFeeLineItem = [
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => 'Platform Fee - Wish Subscription',
+                    ],
+                    'unit_amount' => round($platformTotal * $multiplier),
+                    'tax_behavior' => 'exclusive',
+                ],
+            ];
+            
+            // Add recurring data for platform fee if not onetime
+            if ($reccure !== 'onetime') {
+                $platformFeeLineItem['price_data']['recurring'] = [
+                    'interval' => StripeControl::$periods[$wish->subscription_period],
+                    'interval_count' => 1,
+                ];
+            }
+            
+            $lineItems[] = $platformFeeLineItem;
+            
+            // Transfer amount = wish price + creator's VAT (what creator receives)
+            $transferAmount = round($basePrice * $multiplier) + $creatorVatAmount;
+            
+            // Total charge amount = wish price + creator's VAT + platform fees
+            $totalChargeAmount = round($basePrice * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
+
             $payload = [
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
-                'currency' => $currency,
-                'line_items' => [
-                    [
-                        'price' => $priceId,
-                        'quantity' => 1,
-                    ],
-                ],
-                'customer' => $customer_id,
+                'payment_method_types' => ['card'],
+                'line_items' => $lineItems, // Total amount determined by line items
+                'customer_email' => $user->email,
                 'success_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
 
             if ($reccure === 'onetime') {
                 $payload['payment_intent_data'] = [
-                    'application_fee_amount' => round($platformTotal * $multiplier),
+                    'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
+                    'transfer_data' => [
+                        'destination' => $connectedAccountId, // Creator's connected account
+                        'amount' => $transferAmount, // What creator receives (wish + VAT)
+                    ],
+                    'description' => "One-time Wish Subscription for {$wish->user->username} with platform fee",
                     'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
                         'wishlist_item_id' => (string) $wish->id,
+                        'item_amount' => (string) round($basePrice * $multiplier),
+                        'creator_vat_amount' => (string) $creatorVatAmount,
+                        'transfer_amount' => (string) $transferAmount,
+                        'platform_fee_amount' => (string) round($platformTotal * $multiplier),
+                        'total_charge_amount' => (string) $totalChargeAmount,
+                        'payment_type' => 'One-time Wish Subscription - Destination Charges with transfers',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
                     ]),
                 ];
             } else {
                 $payload['subscription_data'] = [
-                    'application_fee_percent' => round($applicationFeePercent, 2),
                     'description' => 'Wish Item Subscription Content Purchase.',
                     'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
                         'wishlist_item_id' => (string) $wish->id,
+                        'item_amount' => (string) round($basePrice * $multiplier),
+                        'creator_vat_amount' => (string) $creatorVatAmount,
+                        'transfer_amount' => (string) $transferAmount,
+                        'platform_fee_amount' => (string) round($platformTotal * $multiplier),
+                        'total_charge_amount' => (string) $totalChargeAmount,
+                        'payment_type' => 'Recurring Wish Subscription - Destination Charges with transfers',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
                     ]),
+                    'transfer_data' => [
+                        'destination' => $connectedAccountId, // Creator's connected account
+                        'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
+                    ],
                 ];
             }
 
             try {
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
                 $sub->update(['session_id' => $session->id]);
                 return Inertia::location($session->url);
             } catch (Exception $e) {
@@ -872,7 +971,8 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
         try {
-            $session = StripeControl::getCheckoutSession($sub->session_id, $sub->wish_item->user->account_id);
+            // Since we're using destination charges, session is created on platform account (no connected account parameter)
+            $session = StripeControl::getCheckoutSession($sub->session_id);
 
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {

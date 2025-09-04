@@ -79,7 +79,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <>
          <Dropdown>
             <Dropdown.Toggle variant="info" id="pricebasic">
-               <span className="mb-0 px-2 text-white display-inline" > {selectedCurrency ? selectedCurrency : "$N/A"}</span>
+               <span className="mb-0 px-2 text-white display-inline" > {selectedCurrency ? selectedCurrency : "N/A"}</span>
             </Dropdown.Toggle>
             <Dropdown.Menu>
                {currencies && currencies.map((c, i)=>{

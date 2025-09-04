@@ -456,27 +456,101 @@ class BillsController extends Controller
                     ]);
                 }
 
-                $items = [['price' => $priceId, 'quantity' => 1]];
+                // Calculate creator VAT amount if applicable
+                $creatorVatAmount = 0;
+                if (isset($bill->user->vat_amount_percentage) && $bill->user->vat_amount_percentage > 0) {
+                    $creatorVatAmount = round(($bill->price * $bill->user->vat_amount_percentage / 100) * $multiplier);
+                }
+                
+                // Use destination charges pattern like cart/tip payments - create line items that sum to total charge
+                $lineItems = [
+                    [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => $bill->name,
+                                'description' => "Recurring Bill from {$bill->user->name}",
+                            ],
+                            'unit_amount' => round($bill->price * $multiplier),
+                            'recurring' => [
+                                'interval' => StripeControl::$periods[$bill->period],
+                                'interval_count' => 1,
+                            ],
+                        ]
+                    ]
+                ];
+                
+                // Add creator VAT as separate line item if applicable
+                if ($creatorVatAmount > 0) {
+                    $lineItems[] = [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => 'Creator VAT',
+                            ],
+                            'unit_amount' => $creatorVatAmount,
+                            'tax_behavior' => 'exclusive',
+                            'recurring' => [
+                                'interval' => StripeControl::$periods[$bill->period],
+                                'interval_count' => 1,
+                            ],
+                        ],
+                    ];
+                }
+                
+                // Add platform fee as separate line item
+                $lineItems[] = [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => 'Platform Fee - Bill Payment',
+                        ],
+                        'unit_amount' => round($totalPaymentTaxAmount * $multiplier),
+                        'tax_behavior' => 'exclusive',
+                        'recurring' => [
+                            'interval' => StripeControl::$periods[$bill->period],
+                            'interval_count' => 1,
+                        ],
+                    ],
+                ];
+                
+                // Transfer amount = bill amount + creator's VAT (what creator receives)
+                $transferAmount = round($bill->price * $multiplier) + $creatorVatAmount;
+                
+                // Total charge amount = bill amount + creator's VAT + platform fees
+                $totalChargeAmount = round($bill->price * $multiplier) + $creatorVatAmount + round($totalPaymentTaxAmount * $multiplier);
 
                 $payload = [
-                    'currency' => $currency,
-                    'line_items' => $items,
-                    'customer' => $customer_id ?? null,
-                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                     'mode' => 'subscription',
+                    'payment_method_types' => ['card'],
+                    'line_items' => $lineItems, // Total amount determined by line items
                     'subscription_data' => [
-                        'application_fee_percent' => $applicationFeePercent,
                         'description' => "Recurring Bill for {$bill->user->username}",
                         'metadata' => \App\Helpers::buildStripeMetadata('bill', $sub, [
                             'bill_id' => (string) $bill->id,
                             'recurring_for' => $reccure,
+                            'item_amount' => (string) round($bill->price * $multiplier),
+                            'creator_vat_amount' => (string) $creatorVatAmount,
+                            'transfer_amount' => (string) $transferAmount,
+                            'platform_fee_amount' => (string) round($totalPaymentTaxAmount * $multiplier),
+                            'total_charge_amount' => (string) $totalChargeAmount,
+                            'payment_type' => 'Bill Payment - Destination Charges with transfers',
                             'anonymous' => (string) ($sub->anonymous ?? 0),
                         ]),
+                        'transfer_data' => [
+                            'destination' => $connectedAccountId, // Creator's connected account
+                            'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
+                        ],
                     ],
+                    'customer_email' => $user->email ?? $request->email,
+                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
 
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
 
                 $sub->update([
                     'session_id' => $session->id,
@@ -520,7 +594,8 @@ class BillsController extends Controller
         }
 
         try {
-            $session = StripeControl::getCheckoutSession($bill_pay->session_id, $bill_pay->bill->user->account_id);
+            // Since we're using destination charges, session is created on platform account (no connected account parameter)
+            $session = StripeControl::getCheckoutSession($bill_pay->session_id);
             $bill_pay->status = $session->payment_status;
 
             if ($session->payment_status === 'paid') {

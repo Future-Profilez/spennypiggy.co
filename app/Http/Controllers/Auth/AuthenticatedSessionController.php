@@ -179,7 +179,6 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username, $page = 'about')
     {
-        // Preload essential user data using the service
         $profileData = $this->profileService->preloadUserProfileData($username);
         
         if (empty($profileData)) {
@@ -187,35 +186,41 @@ class AuthenticatedSessionController extends Controller
         }
         $user = $profileData['user'];
 
-        // Check for suspended account
         if ($user->suspended_account == 1) {
             return Inertia::render('Suspanded');
         }
 
-        // Get Stripe account capabilities with caching
-        [$isNeedToUpgrade, $cardCapabilities] = $this->getStripeCapabilities($user);
-
-        // Load page-specific data efficiently
+        
         $pageData = $this->getPageSpecificData($user->id, $page);
-
-        // Set SEO meta tags
+        
         $this->setSeoMetaTags($user, $username);
+        
+        $sociallinks = null;
+        $userIntro = null;
+        $isNeedToUpgrade = null;
+        $cardCapabilities = null;
+        if($page == 'about'){
+            $sociallinks = $user->social_links;
+            $userIntro = $user->intro;
+            [$isNeedToUpgrade, $cardCapabilities] = $this->getStripeCapabilities($user);
+        }
 
         return Inertia::render('Dashboard', [
             'username' => $username,
             'user' => $user,
+            'itemid' => request()->query('item') ?? false,
+            // About Page Data
             'card_capabilities' => $cardCapabilities,
             'isNeedToUpgrade' => $isNeedToUpgrade,
-            'itemid' => request()->query('item') ?? false,
-            'sociallinks' => $user->social_links,
-            'slinks' => $user->social_links,
-            'page' => $page,
-            'intro' => $user->intro,
+            'sociallinks' => $sociallinks,
+            'slinks' => $sociallinks,
+            'intro' => $userIntro,
             'supporters' => $profileData['supporters'],
             'wish_categories' => $user->user_categories,
             'selectedCategory' => request()->query('category') ?? false,
-            'notification_count' => $profileData['notification_count'],
-            'profile_steps' => null,
+            'page' => $page,
+            // 'notification_count' => $profileData['notification_count'],
+            // 'profile_steps' => null,
             ...$pageData
         ]);
     }
