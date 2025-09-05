@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Subscription;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -42,7 +43,7 @@ class User extends Authenticatable
     protected $appends = [
         'avatar_url', 'cover_url', 'twitter_username', 
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
-        'subscription_status',
+        'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
     ];
 
     public static function boot()
@@ -142,8 +143,76 @@ class User extends Authenticatable
         return 'Unknown';
     }
 
+    // ───────────────────────
+    // Grace Period Accessors (Virtual Fields)
+    // ───────────────────────
 
+    /**
+     * Get when grace period started (virtual calculation)
+     */
+    public function getGracePeriodStartedAtAttribute()
+    {
+        if (!$this->isFullyVerified()) {
+            return null;
+        }
+        
+        // Use identity_verified_at as the primary grace period start date
+        if ($this->identity_verified_at) {
+            return Carbon::parse($this->identity_verified_at);
+        }
+        
+        // Fallback to updated_at if identity_verified_at is not set
+        return $this->updated_at ? Carbon::parse($this->updated_at) : null;
+    }
 
+    /**
+     * Get when grace period ends (15 days after start)
+     */
+    public function getGracePeriodEndsAtAttribute()
+    {
+        $startDate = $this->grace_period_started_at;
+        return $startDate ? $startDate->copy()->addDays(15) : null;
+    }
+
+    /**
+     * Check if creator is currently in grace period
+     */
+    public function getIsInGracePeriodAttribute()
+    {
+        if (!$this->grace_period_ends_at) {
+            return false;
+        }
+        
+        return Carbon::now()->lessThan($this->grace_period_ends_at);
+    }
+
+    /**
+     * Get days remaining in grace period
+     */
+    public function getGracePeriodDaysRemainingAttribute()
+    {
+        if (!$this->is_in_grace_period || !$this->grace_period_ends_at) {
+            return 0;
+        }
+        
+        return max(0, Carbon::now()->diffInDays($this->grace_period_ends_at, false));
+    }
+
+    /**
+     * Check if creator is fully verified and ready to receive payments
+     */
+    private function isFullyVerified()
+    {
+        // Skip verification check - always return true for creators
+        return $this->role == 1;
+        
+        // Original verification logic (commented out):
+        // return $this->role == 1 && // Is creator
+        //        $this->is_subscribed == 1 && // Has subscription
+        //        $this->profile_status_lock == 2 && // Profile approved
+        //        $this->identity_status == 1 && // Identity verified
+        //        $this->stripe_details_submitted == 1; // Stripe connected
+    }
 
     // ───────────────────────
     // Scopes

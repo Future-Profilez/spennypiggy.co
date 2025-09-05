@@ -31,11 +31,30 @@ export default function UserCarts(props) {
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
-        if (auth && auth.id) {
-            window.location.href = `/create-checkout-session/${datas?.user?.id}/${datas?.user?.id || "notid"}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
-        } else {
-            window.location.href = `/create-checkout-session/${datas?.user?.id}/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${keepAnonmyous ? 1 : 0}`;
-        }
+        setChecking(true);
+        const checkoutUrl = auth && auth.id 
+            ? `/create-checkout-session/${datas?.user?.id}/${datas?.user?.id || "notid"}`
+            : `/create-checkout-session/${datas?.user?.id}/${deviceid}`;
+        
+        const queryParams = {
+            message: message || '',
+            from: name || '',
+            email: email || '',
+            anonymous: keepAnonmyous ? 1 : 0
+        };
+        
+        // Use Inertia navigation instead of window.location.href to properly handle flash messages
+        router.visit(checkoutUrl, {
+            method: 'get',
+            data: queryParams,
+            onError: (errors) => {
+                console.error('Checkout error:', errors);
+                setChecking(false);
+            },
+            onFinish: () => {
+                setChecking(false);
+            }
+        });
     };
     console.log("device id, owner id", deviceid, datas?.user?.id);
     const onVerify = (token) => {

@@ -15,9 +15,12 @@ use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\User;
+use App\Models\UserCart;
 use App\Models\UserPayment;
 use App\StripeControl;
 use Carbon\Carbon;
+use App\Services\CreatorActivityService;
+use App\Notifications\PaymentBlockedNotification;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -293,6 +296,42 @@ class BillsController extends Controller
         //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
         // }
         if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
+
+        // NEW: Check creator activity eligibility
+        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($bill->user);
+        
+        if (!$activityCheck['eligible']) {
+            DB::rollBack(); // Rollback the transaction before early return
+            
+            // Send notification to creator about blocked payment
+            $bill->user->notify(new PaymentBlockedNotification($activityCheck, $bill->price));
+            
+            // Log the blocked payment for analytics
+            Log::info('Bill payment blocked due to insufficient creator activity', [
+                'creator_id' => $bill->user->id,
+                'creator_username' => $bill->user->username,
+                'bill_id' => $bill->id,
+                'bill_price' => $bill->price,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+        
+        // Log successful activity check for analytics
+        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+            Log::info('Payment allowed - creator activity check passed', [
+                'creator_id' => $bill->user->id,
+                'creator_username' => $bill->user->username,
+                'bill_id' => $bill->id,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+        }
 
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));

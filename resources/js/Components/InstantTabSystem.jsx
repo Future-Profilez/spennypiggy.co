@@ -8,7 +8,7 @@ import { Link, router } from '@inertiajs/react';
 function InstantTabSystem({ 
     activeTab, 
     user, 
-    username, 
+    username, Toggle,
     IsloggedIn,
     onTabChange = null 
 }) {
@@ -243,17 +243,7 @@ function InstantTabSystem({
             
             {IsloggedIn && (
                 <div className="ml-4">
-                    <div
-                        className="addoption-action cursor-pointer ps-3 "
-                        onClick={() => {
-                            const event = new CustomEvent('toggleAddOptions');
-                            window.dispatchEvent(event);
-                        }}
-                    >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 6V18M6 12H18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 hover:text-white transition-colors"/>
-                        </svg>
-                    </div>
+                    <Toggle />
                 </div>
             )}
             

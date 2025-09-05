@@ -13,6 +13,8 @@ use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
+use App\Services\CreatorActivityService;
+use App\Notifications\PaymentBlockedNotification;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
@@ -349,6 +351,39 @@ class MembershipController extends Controller
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
 
+        // NEW: Check creator activity eligibility
+        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($membership->user);
+        
+        if (!$activityCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $membership->user->notify(new PaymentBlockedNotification($activityCheck, $membership->price));
+            
+            // Log the blocked payment for analytics
+            Log::info('Membership payment blocked due to insufficient creator activity', [
+                'creator_id' => $membership->user->id,
+                'creator_username' => $membership->user->username,
+                'membership_id' => $membership->id,
+                'membership_price' => $membership->price,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+        
+        // Log successful activity check for analytics
+        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+            Log::info('Membership payment allowed - creator activity check passed', [
+                'creator_id' => $membership->user->id,
+                'creator_username' => $membership->user->username,
+                'membership_id' => $membership->id,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+        }
 
         // if (!in_array($membership->user->subscription_status, [1, 2])) {
         //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");

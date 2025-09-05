@@ -58,6 +58,8 @@ use Stripe\Identity\VerificationSession;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
+use App\Services\CreatorActivityService;
+use App\Notifications\PaymentBlockedNotification;
 
 class StripeController extends Controller
 {
@@ -523,9 +525,52 @@ class StripeController extends Controller
     {
         try {
             // \Log::info(request()->query('name'));
-            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
+            $cart = UserCart::where('device_id', $device_id)->where('status', 1)->with('owner')->get();
 
             if (!empty($cart)) {
+                // Get the creator from the first cart item to validate activity
+                $creator = $cart[0]->owner;
+                if (!$creator) {
+                    return redirect()->back()->with('error', 'Creator not found.');
+                }
+                
+                // NEW: Check creator activity eligibility for anonymous checkout
+                $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
+                
+                if (!$activityCheck['eligible']) {
+                    // Send notification to creator about blocked payment
+                    $preliminaryTotal = $cart->sum(function ($item) {
+                        return $item->amount * $item->quantity;
+                    });
+                    $creator->notify(new PaymentBlockedNotification($activityCheck, $preliminaryTotal));
+                    
+                    // Log the blocked payment for analytics
+                    Log::info('Anonymous cart payment blocked due to insufficient creator activity', [
+                        'creator_id' => $creator->id,
+                        'creator_username' => $creator->username,
+                        'device_id' => $device_id,
+                        'cart_items_count' => $cart->count(),
+                        'preliminary_total' => $preliminaryTotal,
+                        'activity_status' => $activityCheck['status'],
+                        'content_count' => $activityCheck['content_count'] ?? 0
+                    ]);
+                    
+                    // Return user-friendly error to fan
+                    return redirect()->back()->with('error', 
+                        'This creator is temporarily unavailable. Please try again later.'
+                    );
+                }
+                
+                // Log successful activity check for analytics
+                if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+                    Log::info('Anonymous cart payment allowed - creator activity check passed', [
+                        'creator_id' => $creator->id,
+                        'creator_username' => $creator->username,
+                        'device_id' => $device_id,
+                        'activity_status' => $activityCheck['status'],
+                        'content_count' => $activityCheck['content_count'] ?? 0
+                    ]);
+                }
 
                 $lineItems = [];
                 foreach ($cart as $key => $value) {
@@ -650,6 +695,41 @@ class StripeController extends Controller
         $user = Auth::user();
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
         if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
+        if (!$wish->user) return redirect()->back()->with('error', 'Creator not found!');
+
+        // NEW: Check creator activity eligibility
+        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($wish->user);
+        
+        if (!$activityCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $wish->user->notify(new PaymentBlockedNotification($activityCheck, $wish->price));
+            
+            // Log the blocked payment for analytics
+            Log::info('Wish subscription payment blocked due to insufficient creator activity', [
+                'creator_id' => $wish->user->id,
+                'creator_username' => $wish->user->username,
+                'wish_item_id' => $wish->id,
+                'wish_price' => $wish->price,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+        
+        // Log successful activity check for analytics
+        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+            Log::info('Wish subscription payment allowed - creator activity check passed', [
+                'creator_id' => $wish->user->id,
+                'creator_username' => $wish->user->username,
+                'wish_item_id' => $wish->id,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+        }
 
         if ($wish->user['is_subscribed'] !== 1) {
             return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please again later when gift payments are active.');
@@ -1229,6 +1309,39 @@ class StripeController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => "Currently creator has paused gift payments. Please try again later when gift payments are active."
+            ]);
+        }
+        
+        // NEW: Check creator activity eligibility
+        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
+        
+        if (!$activityCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $creator->notify(new PaymentBlockedNotification($activityCheck, $request->amount ?? 0));
+            
+            // Log the blocked payment for analytics
+            Log::info('Tip jar payment blocked due to insufficient creator activity', [
+                'creator_id' => $creator->id,
+                'creator_username' => $creator->username,
+                'payment_amount' => $request->amount ?? 0,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+            
+            // Return user-friendly error to fan
+            return response()->json([
+                'status' => false,
+                'msg' => 'This creator is temporarily unavailable. Please try again later.'
+            ]);
+        }
+        
+        // Log successful activity check for analytics
+        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+            Log::info('Tip jar payment allowed - creator activity check passed', [
+                'creator_id' => $creator->id,
+                'creator_username' => $creator->username,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
             ]);
         }
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();

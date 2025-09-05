@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
+use App\Services\CreatorActivityService;
+use App\Notifications\PaymentBlockedNotification;
 
 class CheckoutController extends Controller
 {
@@ -102,6 +104,44 @@ class CheckoutController extends Controller
             $owner = User::find($creator_id);
             if (!$owner) {
                 return redirect()->back()->with('error', 'Creator not found.');
+            }
+            
+            // Calculate preliminary total for activity check notification
+            $preliminaryTotal = $getdata->sum(function ($item) {
+                return $item->amount * $item->quantity;
+            });
+            
+            // NEW: Check creator activity eligibility
+            $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($owner);
+            
+            if (!$activityCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $owner->notify(new PaymentBlockedNotification($activityCheck, $preliminaryTotal));
+                
+                // Log the blocked payment for analytics
+                Log::info('Cart payment blocked due to insufficient creator activity', [
+                    'creator_id' => $owner->id,
+                    'creator_username' => $owner->username,
+                    'cart_items_count' => $getdata->count(),
+                    'preliminary_total' => $preliminaryTotal,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
+                ]);
+                
+                // Return user-friendly error to fan
+                return redirect()->back()->with('error', 
+                    'This creator is temporarily unavailable. Please try again later.'
+                );
+            }
+            
+            // Log successful activity check for analytics
+            if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+                Log::info('Cart payment allowed - creator activity check passed', [
+                    'creator_id' => $owner->id,
+                    'creator_username' => $owner->username,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
+                ]);
             }
             
             // if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {

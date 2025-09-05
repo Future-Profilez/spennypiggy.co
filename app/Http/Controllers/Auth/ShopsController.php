@@ -30,6 +30,8 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
+use App\Services\CreatorActivityService;
+use App\Notifications\PaymentBlockedNotification;
 
 use function Termwind\render;
 
@@ -565,6 +567,42 @@ class ShopsController extends Controller
             }
 
             $shop = Shop::where('uuid', $shop_id)->first();
+            
+            // NEW: Check creator activity eligibility
+            $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($shop->user);
+            
+            if (!$activityCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $shop->user->notify(new PaymentBlockedNotification($activityCheck, $shop->price));
+                
+                // Log the blocked payment for analytics
+                Log::info('Shop payment blocked due to insufficient creator activity', [
+                    'creator_id' => $shop->user->id,
+                    'creator_username' => $shop->user->username,
+                    'shop_id' => $shop->id,
+                    'shop_price' => $shop->price,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
+                ]);
+                
+                // Return user-friendly error to fan
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                ]);
+            }
+            
+            // Log successful activity check for analytics
+            if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+                Log::info('Shop payment allowed - creator activity check passed', [
+                    'creator_id' => $shop->user->id,
+                    'creator_username' => $shop->user->username,
+                    'shop_id' => $shop->id,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
+                ]);
+            }
+
             $amount = $shop->price;
             $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
 

@@ -182,6 +182,14 @@ Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey'])
 Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
 Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
 
+// Creator Activity Routes
+Route::middleware('auth')->prefix('creator')->name('creator.')->group(function () {
+    Route::get('/activity', [\App\Http\Controllers\CreatorActivityController::class, 'index'])->name('activity');
+    Route::get('/activity/status', [\App\Http\Controllers\CreatorActivityController::class, 'getActivityStatus'])->name('activity.status');
+    Route::post('/activity/refresh', [\App\Http\Controllers\CreatorActivityController::class, 'refreshActivity'])->name('activity.refresh');
+    Route::get('/activity/suggestions', [\App\Http\Controllers\CreatorActivityController::class, 'getSuggestions'])->name('activity.suggestions');
+});
+
 Route::get('/service-worker.js', function () {
     $assetRoot = rtrim(asset("/"), "/");
     $content = file_get_contents(resource_path("proxy/service-worker.js"));

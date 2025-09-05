@@ -30,7 +30,7 @@ export default function Authenticated(props){
         if (flash?.info) {
             successAlert(flash.info);
         }
-    },[]);
+    },[flash, errors]); // Watch for changes in flash and errors
 
     return <>
         <Header auth={auth} user={user}  />

@@ -68,10 +68,10 @@ import ActionRequired from "./stripe/ActionRequired";
 import InstantTabSystem from '@/Components/InstantTabSystem';
 import FastTabRenderer from '@/Components/FastTabRenderer';
 
+// Creator Activity Components
+const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWidget'));
+
 export default function Dashboard(props) {
-
-    console.log(props)
-
 
     const w = useWidthCount();
     const {
@@ -100,8 +100,9 @@ export default function Dashboard(props) {
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
     const [gifts, setGifts] = useState([]);
+    const [activityStatus, setActivityStatus] = useState(null);
+    const [activityLoading, setActivityLoading] = useState(false);
     
-    // Fast tab renderer reference for optimistic updates
     const tabRendererRef = useRef(null);
 
     const fetch_gifts = async (signal) => {
@@ -125,6 +126,30 @@ export default function Dashboard(props) {
         return () => controller.abort();
     }, [tab]);
 
+    // Fetch creator activity status
+    const fetchActivityStatus = async () => {
+        if (!IsloggedIn || !auth?.user || auth?.user?.role !== 1) {
+            return;
+        }
+        setActivityLoading(true);
+        try {
+            const response = await axios.get('/creator/activity/status');
+            setActivityStatus(response.data);
+        } catch (error) {
+            console.error('Failed to fetch activity status:', error);
+        } finally {
+            setActivityLoading(false);
+        }
+    };
+
+    // Fetch activity status on component mount for logged-in creators
+    useEffect(() => {
+        if (IsloggedIn && auth?.user?.role === 1) {
+            fetchActivityStatus();
+        }
+    }, [IsloggedIn, auth?.user?.role]);
+
+
     const currencyaction = (e) => {
         if (e == "open") {
             setOpenCurrency(true);
@@ -132,12 +157,15 @@ export default function Dashboard(props) {
             setOpenCurrency(false);
         }
     };
+
+
     const [openCurrency, setOpenCurrency] = useState(null);
     useEffect(() => {
         if (global_currency == null) {
             setOpenCurrency(true);
         }
     });
+
 
     const updateMovement = async (updated) => {
         const array = [];
@@ -162,6 +190,7 @@ export default function Dashboard(props) {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
 
     const handleDragEnd = (event) => {
         if (!IsloggedIn) {
@@ -212,6 +241,7 @@ export default function Dashboard(props) {
         }
     }, [errors, flash]);
 
+
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
         const dismissedAt = localStorage.getItem("stripeAlertDismissedAt");
@@ -223,6 +253,8 @@ export default function Dashboard(props) {
             }
         }
     }, []);
+
+
     const handleDismiss = () => {
         localStorage.setItem("stripeAlertDismissedAt", Date.now().toString());
         setShowAlert(false);
@@ -239,15 +271,12 @@ export default function Dashboard(props) {
 
     const Toggle = () => {
         const [showAdd, setShowAdd] = useState(false);
-        
-        // Listen for toggle events from InstantTabSystem
         useEffect(() => {
             const handleToggleEvent = () => {
                 setShowAdd(true);
             };
             
             window.addEventListener('toggleAddOptions', handleToggleEvent);
-            
             return () => {
                 window.removeEventListener('toggleAddOptions', handleToggleEvent);
             };
@@ -471,7 +500,7 @@ export default function Dashboard(props) {
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
 
-                            {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
+                            {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
                                 <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
@@ -484,7 +513,9 @@ export default function Dashboard(props) {
                                         </button>
                                     </div>
                                 </div>
-                            : ''}
+                            : ''} */}
+
+                            
 
 
                             {user && user.role == 1 ?
@@ -502,6 +533,7 @@ export default function Dashboard(props) {
 
                                                 {/* Instant Tab System with immediate feedback */}
                                                 <InstantTabSystem 
+                                                    Toggle={Toggle}
                                                     activeTab={page || 'about'}
                                                     user={user}
                                                     username={user.username}
@@ -510,6 +542,8 @@ export default function Dashboard(props) {
                                                         console.log(`🔄 Optimistic tab change: ${tabId}`);
                                                     }}
                                                 />
+
+                                               
 
 
                                                 <div className="tabs-containers min-height" >
@@ -522,6 +556,8 @@ export default function Dashboard(props) {
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.length > 0 && AuthUserStripeConnected ?
                                                                             <ActionRequired requirements={stripe_requirements} />
                                                                         : ''}
+
+                                                                        
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
@@ -539,6 +575,7 @@ export default function Dashboard(props) {
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
 
+                                                                        
 
                                                                         <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
                                                                             <p className="font-bold">About me</p>
@@ -623,6 +660,15 @@ export default function Dashboard(props) {
 
                                                             <div className="ps-md-4 col-md-6">
                                                                 
+                                                                {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>
+                                                                        <CreatorActivityWidget 
+                                                                            activityStatus={activityStatus}
+                                                                            className="mb-4"
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
+
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected !==
                                                                     1 ? (
