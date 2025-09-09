@@ -3,7 +3,36 @@ import { useEffect, useState, useRef } from 'react';
 export default function PwaInstallPrompt() {
   const [visible, setVisible] = useState(false);
   const [browserType, setBrowserType] = useState('');
+  const [showChromeHelp, setShowChromeHelp] = useState(false);
   const deferredPromptRef = useRef(null);
+
+  // Helper functions for localStorage with error handling
+  const getLastShownDate = () => {
+    try {
+      const lastShown = localStorage.getItem('pwa_install_last_shown');
+      return lastShown ? new Date(lastShown) : null;
+    } catch (error) {
+      console.error('Error reading PWA install date from localStorage:', error);
+      return null;
+    }
+  };
+
+  const setLastShownDate = () => {
+    try {
+      localStorage.setItem('pwa_install_last_shown', new Date().toISOString());
+    } catch (error) {
+      console.error('Error saving PWA install date to localStorage:', error);
+    }
+  };
+
+  const shouldShowPrompt = () => {
+    const lastShown = getLastShownDate();
+    if (!lastShown) return true; // Never shown before
+    
+    const now = new Date();
+    const daysSinceShown = (now - lastShown) / (1000 * 60 * 60 * 24);
+    return daysSinceShown >= 30; // Show if 30+ days have passed
+  };
 
   useEffect(() => {
     // Detect browser type
@@ -18,34 +47,120 @@ export default function PwaInstallPrompt() {
     else if (isSafari || isIOS) setBrowserType('safari');
     else setBrowserType('other');
 
-    // Show popup after 3 seconds for all users
+    // Show popup after 3 seconds, but only if enough time has passed
     const timer = setTimeout(() => {
       // Check if already installed
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      if (!isStandalone) {
+      
+      // Check if we should show based on frequency limit
+      if (!isStandalone && shouldShowPrompt()) {
         setVisible(true);
       }
     }, 3000);
 
     // Listen for beforeinstallprompt (Chrome/Edge)
     const onBeforeInstallPrompt = (e) => {
+      console.log('🎆 beforeinstallprompt event fired!');
       e.preventDefault();
       deferredPromptRef.current = e;
-      console.log('💾 PWA install prompt available');
+      console.log('💾 PWA install prompt captured and ready for use');
     };
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+    
+    // For localhost testing: Try to trigger service worker registration
+    // This can help Chrome recognize the site as a PWA
+    if (isChrome && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      // Force service worker registration check
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          console.log('Service workers registered:', registrations.length);
+          if (registrations.length === 0) {
+            // Try to register service worker
+            navigator.serviceWorker.register('/service-worker.js').catch(err => {
+              console.log('Service worker registration failed:', err);
+            });
+          }
+        });
+      }
+    }
+
+    // Debug utilities for development/testing
+    window.PwaPromptDebug = {
+      getLastShownDate: () => {
+        const date = getLastShownDate();
+        return date ? date.toISOString() : null;
+      },
+      getDaysSinceShown: () => {
+        const lastShown = getLastShownDate();
+        if (!lastShown) return 'Never shown';
+        const now = new Date();
+        const daysSinceShown = (now - lastShown) / (1000 * 60 * 60 * 24);
+        return Math.round(daysSinceShown * 100) / 100; // Round to 2 decimal places
+      },
+      shouldShow: () => shouldShowPrompt(),
+      resetTimer: () => {
+        try {
+          localStorage.removeItem('pwa_install_last_shown');
+          console.log('✅ PWA install timer reset. Refresh page to see prompt.');
+        } catch (error) {
+          console.error('Error resetting PWA timer:', error);
+        }
+      },
+      forceShow: () => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        if (!isStandalone) {
+          setVisible(true);
+          console.log('✅ PWA prompt forced to show');
+        } else {
+          console.log('❌ Cannot show prompt - app is already installed');
+        }
+      },
+      checkInstallCapability: () => {
+        console.log('=== PWA Install Debug Info ===');
+        console.log('Browser type:', browserType);
+        console.log('Deferred prompt available:', !!deferredPromptRef.current);
+        console.log('Service worker support:', 'serviceWorker' in navigator);
+        console.log('Is standalone:', window.matchMedia('(display-mode: standalone)').matches);
+        console.log('Hostname:', window.location.hostname);
+        
+        if (deferredPromptRef.current) {
+          console.log('✅ Native installation should work!');
+        } else {
+          console.log('⚠️ No native install prompt - will show instructions');
+        }
+      },
+      testInstall: async () => {
+        if (deferredPromptRef.current) {
+          try {
+            console.log('🚀 Testing native install...');
+            await deferredPromptRef.current.prompt();
+            const { outcome } = await deferredPromptRef.current.userChoice;
+            console.log('Test install result:', outcome);
+          } catch (error) {
+            console.error('Test install failed:', error);
+          }
+        } else {
+          console.log('❌ No deferred prompt available for testing');
+        }
+      }
+    };
 
     return () => {
       clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+      // Clean up debug utilities
+      delete window.PwaPromptDebug;
     };
   }, []);
 
   // Also hide the prompt if the app gets installed via any means
   useEffect(() => {
     const onAppInstalled = () => {
+      console.log('✅ PWA app installed successfully!');
+      setLastShownDate(); // Track successful installation
       setVisible(false);
+      setShowChromeHelp(false);
     };
 
     window.addEventListener('appinstalled', onAppInstalled);
@@ -53,65 +168,131 @@ export default function PwaInstallPrompt() {
   }, []);
 
   const handleInstall = async () => {
-    // Chrome/Edge: Try to show native install prompt
+    // Try installation for Chrome/Edge
     if (browserType === 'chrome' || browserType === 'edge') {
       const dp = deferredPromptRef.current;
+      
       if (dp) {
+        // Use real browser install prompt if available
         try {
-          await dp.prompt(); // Shows browser's native install dialog
+          console.log('🚀 Triggering native PWA install...');
+          await dp.prompt();
           const { outcome } = await dp.userChoice;
           
-          if (outcome === 'accepted') {
-            console.log('✅ PWA installed successfully!');
-          } else {
-            console.log('❌ User dismissed install');
-          }
+          console.log(`PWA install result: ${outcome}`);
           
+          // Track interaction regardless of outcome
+          setLastShownDate();
           setVisible(false);
           deferredPromptRef.current = null;
           return;
         } catch (err) {
-          console.error('Error with PWA install:', err);
+          console.error('Native PWA install failed:', err);
         }
-      } else {
-        // Chrome/Edge but no prompt available
-        console.log('💻 Chrome/Edge: No install prompt available yet');
-        setVisible(false);
-        return;
       }
+      
+      // No native prompt available - show instructions
+      console.log('💻 No native install available, showing instructions');
+      setLastShownDate(); // Track that we showed instructions
+      setShowChromeHelp(true);
+      return;
     }
     
-    // Safari: This will be handled by the render logic below
+    // For Safari, show instructions immediately
+    if (browserType === 'safari') {
+      setLastShownDate(); 
+      setVisible(false);
+      return;
+    }
+    
+    // For other browsers, just close
+    setLastShownDate();
     setVisible(false);
   };
+  
 
   const handleDismiss = () => {
+    setLastShownDate(); // Track interaction - don't show again for 30 days
     setVisible(false);
+    setShowChromeHelp(false);
   };
 
-  if (!visible) return null;
+  if (!visible && !showChromeHelp) return null;
 
   const isSafari = browserType === 'safari';
   const isChromium = browserType === 'chrome' || browserType === 'edge';
 
+  // Chrome Help Instructions
+  if (showChromeHelp) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40">
+        <div className="w-full sm:max-w-md sm:rounded-2xl sm:shadow-xl sm:mx-auto bg-white  border-t sm:border border-neutral-200 ">
+          <div className="p-4 sm:p-6">
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">💻</div>
+              <h3 className="text-lg font-semibold text-neutral-900 ">
+                Install Spenny Piggy 🐷💖
+              </h3>
+            </div>
+            
+            <div className="space-y-3 text-sm text-neutral-700 ">
+              <div className="p-3 rounded bg-green-50 /20 border border-green-200 ">
+                <p className="font-medium mb-2">Chrome Install Steps:</p>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                    <div>
+                      <p className="font-medium">Look for install icon in address bar</p>
+                      <p className="text-xs text-neutral-500">Click the <span className="font-mono bg-neutral-200  px-1 rounded">⊕</span> or <span className="font-mono bg-neutral-200   px-1 rounded">Install</span> button</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center text-xs text-neutral-500">OR</div>
+                  
+                  <div className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                    <div>
+                      <p className="font-medium">Use Chrome menu</p>
+                      <p className="text-xs text-neutral-500">Click <span className="font-mono bg-neutral-200   px-1 rounded">⋮</span> → "Install Spenny Piggy..."</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={handleDismiss}
+                className="px-6 py-2 rounded-md bg-pink-600 hover:bg-pink-700 text-white font-medium"
+              >
+                Got it! 🐷
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main PWA Install Prompt
   return (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40">
-      <div className="rounded-[30px] w-full sm:max-w-md shadow-xl sm:mx-auto bg-white dark:bg-neutral-900 border-t sm:border border-neutral-200 dark:border-neutral-800">
+      <div className="w-full sm:max-w-md sm:rounded-[30px] sm:shadow-xl sm:mx-auto bg-white  border-t sm:border border-neutral-200  ">
         <div className="p-4 sm:p-6">
-          <h3 className="text-2xl  font-gulfs uppercase text-neutral-900 dark:text-neutral-100">
+          <h3 className="text-2xl font-gulfs uppercase text-neutral-900  ">
             Add Spenny Piggy to Your Home Screen 🐷💖
           </h3>
-          <p className="mt-2 text-normal text-neutral-700 dark:text-neutral-300">
+          <p className="mt-2 text-sm text-neutral-700  ">
             Never miss a tribute, task, or juicy update again.
-            <br />
             <br />
             📲 Install the app to get push notifications — including when your favourite creators message you (or demand payment 👀).
           </p>
 
           {isSafari ? (
-            <div className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
-              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
-                <p className="font-medium font-bold text-black">Safari Install Steps</p>
+            <div className="mt-4 space-y-2 text-sm text-neutral-700  ">
+              <div className="p-3 rounded bg-blue-50  border border-blue-200  ">
+                <p className="font-medium">Safari Install Steps</p>
                 <ol className="list-decimal ml-5 mt-2 space-y-1 text-xs">
                   <li>Tap the Share button (□↑) at the bottom</li>
                   <li>Scroll down and tap "Add to Home Screen"</li>
@@ -126,7 +307,7 @@ export default function PwaInstallPrompt() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="px-4 py-2 rounded-[30px] border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+              className="px-4 py-2 rounded-[30px] border border-neutral-300   text-neutral-700  bg-white   hover:bg-neutral-50  "
             >
               Not now
             </button>
@@ -135,7 +316,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleInstall}
-                className="px-4 py-2 !rounded-[30px] bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                className="px-4 py-2 rounded-[30px] bg-pink-600 hover:bg-pink-700 text-white font-medium"
               >
                 Install
               </button>
