@@ -25,6 +25,9 @@ import * as Sentry from "@sentry/react";
 import axios from "axios";
 import DeviceID from "./includes/DeviceID";
 
+// PWA Debug utilities (development only)
+import "./utils/pwaDebug";
+
 // Only initialize Sentry on the production domain
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     // console.log("Sentry Enabled");

@@ -172,6 +172,11 @@ Route::prefix("test")->name("test.")->group(function () {
     Route::get('/ip', [TestController::class, 'testIp']);
 });
 
+// PWA Test Route (authenticated)
+Route::middleware('auth')->get('/pwa-test', function () {
+    return Inertia::render('PwaTest');
+})->name('pwa.test');
+
 // Manual trigger for pending approval job (accessible in all environments)
 Route::get('/pending-approval/manual-trigger', [PendingApprovalController::class, 'manualTrigger'])->name('pending-approval.trigger');
 

@@ -2,6 +2,7 @@ import { Toaster } from 'react-hot-toast';
 import { lazy } from 'react';
 import Header from '@/includes/Header'; 
 import BottomBar from './BottomBar';
+import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
 const Footer = lazy(() => import('@/includes/Footer'));
 export default function Guest({children, auth}) {
     return <>
@@ -10,6 +11,7 @@ export default function Guest({children, auth}) {
         <Footer auth={auth ||''} />
         <Toaster  />
         <BottomBar />
+        <PwaInstallPrompt />
     </>
 }
 

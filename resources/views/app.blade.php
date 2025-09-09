@@ -58,7 +58,7 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
-    <link rel="manifest" href="{{ url('/manifest.json')}}" />
+    <link rel="manifest" href="{{ url('/site.webmanifest')}}" />
 
 
     <link rel="apple-touch-startup-image"
