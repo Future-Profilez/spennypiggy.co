@@ -63,13 +63,15 @@ import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
 import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
 import ActionRequired from "./stripe/ActionRequired";
+import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
 
 // Optimized tab system components
 import InstantTabSystem from '@/Components/InstantTabSystem';
 import FastTabRenderer from '@/Components/FastTabRenderer';
 
-// Creator Activity Components
+// Creator Activity and Subscription Components
 const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWidget'));
+const CreatorSubscriptionWidget = lazy(() => import('@/Components/CreatorSubscriptionWidget'));
 
 export default function Dashboard(props) {
 
@@ -86,6 +88,7 @@ export default function Dashboard(props) {
         page,
         selectedCategory,
         stripe_requirements,
+        migration_status,
     } = props;
     const [wishitems, setWishitems] = useState(
         useMemo(() => items || [], [items])
@@ -496,9 +499,12 @@ export default function Dashboard(props) {
                                 ) : (
                                     ""
                                 )}
-                            </div>
+                        </div>
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
+                        
+                        {/* Stripe Account Migration Warning */}
+                        <DashboardStripeMigrationWarning migrationStatus={migration_status} />
 
                             {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
                                 <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
@@ -659,6 +665,14 @@ export default function Dashboard(props) {
                                                             </div>
 
                                                             <div className="ps-md-4 col-md-6">
+                                                                
+                                                                {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
+                                                                        <CreatorSubscriptionWidget 
+                                                                            className="mb-4"
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
                                                                 
                                                                 {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
                                                                     <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>

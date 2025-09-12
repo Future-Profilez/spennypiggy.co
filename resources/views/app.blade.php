@@ -6,7 +6,7 @@
     <script src="{{ asset('react-emergency-patch.js') }}"></script>
     
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
     
@@ -26,8 +26,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
-    <meta name="mobile-web-app-capable" content="yes"/>
-    <meta name="theme-color" content="#05EFB8" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#05EFB8">
+    <meta name="application-name" content="Spenny Piggy">
     
     {{-- Optimized favicon loading --}}
     <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="any">
@@ -58,14 +59,15 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
-    <link rel="manifest" href="{{ url('/site.webmanifest')}}" />
+    <link rel="manifest" href="{{ url('/manifest.json')}}" />
 
 
-    <link rel="apple-touch-startup-image"
-      href="/splash-640x1136.png"
-      media="(device-width: 320px) and (device-height: 568px)
-             and (-webkit-device-pixel-ratio: 2)
-             and (orientation: portrait)">
+    {{-- iOS splash screens for different devices --}}
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 
     <script>
         const css1 = [
@@ -75,6 +77,43 @@
             "width: 100%",
             "padding:30px 30px",
         ];
+        
+        // PWA detection and behavior
+        (function() {
+            // Detect if running as PWA
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone || 
+                                document.referrer.includes('android-app://');
+            
+            // Add PWA class to body for styling
+            if (isStandalone) {
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.body.classList.add('pwa-mode');
+                    console.log('✅ Running in PWA mode');
+                });
+            }
+            
+            // iOS PWA viewport fix
+            if (isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Fix iOS PWA viewport issues
+                    const viewport = document.querySelector('meta[name="viewport"]');
+                    if (viewport) {
+                        viewport.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+                    }
+                    
+                    // Add iOS PWA specific styling
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        body.pwa-mode {
+                            padding-top: env(safe-area-inset-top);
+                            padding-bottom: env(safe-area-inset-bottom);
+                        }
+                    `;
+                    document.head.appendChild(style);
+                });
+            }
+        })();
     </script>
     <script type="application/ld+json">
         {

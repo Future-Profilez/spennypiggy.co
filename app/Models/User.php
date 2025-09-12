@@ -15,6 +15,7 @@ use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Subscription;
 use Carbon\Carbon;
+use App\Models\MonthlyCharge;
 
 class User extends Authenticatable
 {

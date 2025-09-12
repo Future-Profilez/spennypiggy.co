@@ -28,6 +28,7 @@ use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use App\Services\CreatorActivityService;
+use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 
 class CheckoutController extends Controller
@@ -111,7 +112,27 @@ class CheckoutController extends Controller
                 return $item->amount * $item->quantity;
             });
             
-            // NEW: Check creator activity eligibility
+            // NEW: Check creator subscription eligibility first
+            $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($owner);
+            
+            if (!$subscriptionCheck['eligible']) {
+                // Log the blocked payment for subscription issues
+                Log::warning('Cart payment blocked due to subscription issue', [
+                    'creator_id' => $owner->id,
+                    'creator_username' => $owner->username,
+                    'cart_items_count' => $getdata->count(),
+                    'preliminary_total' => $preliminaryTotal,
+                    'subscription_status' => $subscriptionCheck['status'],
+                    'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                ]);
+                
+                // Return user-friendly error to fan
+                return redirect()->back()->with('error', 
+                    'This creator is temporarily unavailable. Please try again later.'
+                );
+            }
+            
+            // Check creator activity eligibility
             $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($owner);
             
             if (!$activityCheck['eligible']) {
@@ -144,13 +165,6 @@ class CheckoutController extends Controller
                 ]);
             }
             
-            // if (!empty($owner) && !in_array($owner->subscription_status, [1, 2])) {
-            //     return redirect()->back()->with("error", "Currently creator has paused gift payments. Please try again later when gift payments are active.");
-            // }
-
-            // if ($getdata->isNotEmpty() && !in_array($getdata->first()->owner->subscription_status, [1, 2])) {
-            //     return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
-            // }
 
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();

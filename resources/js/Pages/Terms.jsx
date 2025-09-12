@@ -16,7 +16,7 @@ export default function Dashboard(props) {
                 <p>Spenny Piggy accessed at spennypiggy.co ("Spenny Piggy" or the "Website" or the “Site”) is a social
                 media Wishlist website and application service that allows users to receive funds
                 for gifts from their fans. "Users" or "Wishers" post items on their wishlist and "Gifters" sponsor the
-                purchase of the item through the spenny piggy website. Spenny Piggy does not purchase any items on
+                purchase of the item through the Spenny Piggy website. Spenny Piggy does not purchase any items on
                 behalf of our Users ("Wishers"). Spenny Piggy sends the funds for the item directly to the User, through
                 our third-party payment gateway, and the User may complete the purchase on their own behalf. For
                 Clarity these are the services provided:</p>
@@ -68,14 +68,14 @@ export default function Dashboard(props) {
                   information we collect from you, how and why we collect, store, use and share such information,
                   your rights in relation to your personal information and how to contact us and supervisory
                   authorities if you have a query or complaint about the use of your personal information.</p>
-                                  <p>2.3. By using Spenny piggy, you consent to receiving communications from us electronically,
+                                  <p>2.3. By using Spenny Piggy, you consent to receiving communications from us electronically,
                   including emails and messages posted to your Spenny Piggy account. You acknowledge and
                   agree that all communications that we provide to you electronically satisfy any legal
                   requirement that such communications be in writing. If you wish to withdraw our consent to
                   receiving communications from us at any time, please email support@spennypiggy.co,
                   notifying us of your withdrawal of consent.</p>
                                   <p><strong>3. Account Registration</strong></p>
-                                  <p>3.1. To register and create an account on spenny piggy, you must be over the age of 18 and provide
+                                  <p>3.1. To register and create an account on Spenny Piggy, you must be over the age of 18 and provide
                   a valid email address, a username, and a password or a valid gmail account. It is a condition of
                   your use of the Website that all the information you provide on the Website is correct, current,
                   and complete.</p>
@@ -100,9 +100,9 @@ export default function Dashboard(props) {
                   name on the account. All details are stored within our business account on stripe.com.</p>
                                   <p>3.5. Your TAX Status and compliance you are solely responsible for. By using the Service, you
                   acknowledge that you are solely responsible for all applicable local or equivalent taxation
-                  required by your local laws and governance. Spenny piggy is not responsible for providing any
+                  required by your local laws and governance. Spenny Piggy is not responsible for providing any
                   information to you, other than, upon request, a document displaying all funds transferred to
-                  you by our third-party payment processor. If Spenny piggy is required to provide a tax
+                  you by our third-party payment processor. If Spenny Piggy is required to provide a tax
                   document on Your behalf, the cost to generate such document shall be Your responsibility, and
                   You will be billed and shall reimburse Spenny Piggy for that fee. You acknowledge and accept
                   that Spenny Piggy is not responsible for providing any taxation.</p>
@@ -151,7 +151,7 @@ export default function Dashboard(props) {
                   <p>
                       3.10. We seek to make the Site as accessible as possible. If you have any difficulties using the Site,
                       please contact us at <a href="mailto:support@spennypiggy.co">support@spennypiggy.co</a> and/or use the website accessibility tools
-                      available at Spennypiggy.co.
+                      available at Spenny Piggy.
                   </p>
 
 
@@ -339,7 +339,7 @@ export default function Dashboard(props) {
                       6.9. Our fees are chargeable in United States Dollars (USD), and any exchange fees/settlements will
                       be determined by the agreement between you, and your bank or credit or debit card issuer.
                   </p>
-                  <p>6.10. All successful transactions incur payment processing fees that are covered by spenny piggy</p>
+                  <p>6.10. All successful transactions incur payment processing fees that are covered by Spenny Piggy</p>
                   <p>
                       6.11. We accept the following credit cards and debit cards: VISA, MASTERCARD, AMEX, JCB and
                       various other methods of payment, and reserve the right to change this list at anytime.
@@ -415,12 +415,12 @@ export default function Dashboard(props) {
                   </p>
 
                   <strong>11. Social Media</strong>
-                  <p>11.1. Spenny piggy allows Users to connect to various social media companies including and not
+                  <p>11.1. Spenny Piggy allows Users to connect to various social media companies including and not
                   limited too: Spotify, Facebook, Twitter, Instagram and Snapchat. By using this feature, you must
                   fully comply with and respect the Terms of Service for Spotify, Facebook and Twitter, Instagram
                   and Snapchat. Spenny Piggy holds no business relationship with any of the aforementioned
                   social media companies and holds no licences to any of the logos in use on the site. There may
-                  be other social media sites allowed on Spenny piggy to which the same policy applies.</p>
+                  be other social media sites allowed on Spenny Piggy to which the same policy applies.</p>
 
 
                   <strong>12. Account Deactivation</strong>
@@ -607,7 +607,7 @@ export default function Dashboard(props) {
 
                   <p>17.1 Every user with a Spenny Piggy account has a unique referral URL that allows users to earn
                   income from any other user who signs up via their referral link. In order to ensure the referral
-                  is successful, the new user must register with spenny piggy using the same browser that they
+                  is successful, the new user must register with Spenny Piggy using the same browser that they
 
                   13
                   used to click the referral link. More information on how the Referral Scheme works can be
@@ -623,7 +623,7 @@ export default function Dashboard(props) {
                   </p>
                   <p>
                       17.3 For a User to be successfully added to another User's referral scheme, that user must sign up
-                      to Spenny Piggy via a unique referral URL. In no event will Spenny piggy be liable to add a user
+                      to Spenny Piggy via a unique referral URL. In no event will Spenny Piggy be liable to add a user
                       to a referral account if that user has not signed up via the correct referral link.
                   </p>
                   <p>

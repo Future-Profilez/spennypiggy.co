@@ -640,8 +640,22 @@ class StripeWebhookController extends Controller
                 SendRenewMail::dispatch($array, 'cancelled', 'site');
                 break;
 
+            case 'customer.subscription.deleted':
+                Log::info("Subscription deleted: {$subscriptionId}");
+                $subs->status = 'cancelled';
+                $subs->cancelled_at = now();
+                $subs->upcoming_payment = null;
+                $subs->save();
+                if ($user) {
+                    $user->is_subscribed = 0;
+                    $user->save();
+                }
+                Helpers::sendNotification('Subscription has been cancelled 🛑', 'We\'re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
+                SendRenewMail::dispatch($array, 'cancelled', 'site');
+                break;
+
             default:
-                Log::info('Unhandled event type: {$eventType}');
+                Log::info("Unhandled event type: {$eventType}");
                 break;
         }
 

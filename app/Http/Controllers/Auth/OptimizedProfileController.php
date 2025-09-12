@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Auth\StripeController;
 use App\Services\UserProfileService;
 use App\SeoMeta;
 use App\StripeControl;
@@ -41,6 +42,9 @@ class OptimizedProfileController extends Controller
 
         // Get Stripe account capabilities with caching
         [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
+        
+        // Check if account needs migration for cross-border payments
+        $migrationStatus = $this->getMigrationStatus($user);
 
         // Load ALL profile data at once for fastest loading
         $categoryId = request()->query('category');
@@ -58,6 +62,7 @@ class OptimizedProfileController extends Controller
             'card_capabilities' => $cardCapabilities,
             'isNeedToUpgrade' => $isNeedToUpgrade,
             'stripe_requirements' => $stripeRequirements,
+            'migration_status' => $migrationStatus,
             'itemid' => request()->query('item') ?? false,
             'sociallinks' => $user->social_links,
             'slinks' => $user->social_links,
@@ -108,6 +113,41 @@ class OptimizedProfileController extends Controller
                     ]],
                     'account_status' => []
                 ]];
+            }
+        });
+    }
+
+    /**
+     * Check if user's Stripe account needs migration for cross-border payments
+     */
+    private function getMigrationStatus($user): array
+    {
+        // Only check for logged-in users viewing their own profile
+        if (!Auth::check() || Auth::id() !== $user->id) {
+            return ['needs_migration' => false, 'show_warning' => false];
+        }
+
+        // Use caching to avoid repeated Stripe API calls
+        $cacheKey = "migration_status_{$user->id}";
+        
+        return Cache::remember($cacheKey, 600, function () use ($user) {
+            try {
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+                
+                return [
+                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
+                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
+                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
+                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
+                    'country' => $migrationCheck['country'] ?? $user->country,
+                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+                ];
+            } catch (\Exception $e) {
+                return [
+                    'needs_migration' => false,
+                    'show_warning' => false,
+                    'error' => 'Unable to check migration status'
+                ];
             }
         });
     }

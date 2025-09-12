@@ -4,16 +4,19 @@ namespace App\Helpers;
 
 use App\Models\User;
 use App\Services\CreatorActivityService;
+use App\Services\CreatorSubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PaymentValidationHelper
 {
     protected $activityService;
+    protected $subscriptionService;
 
-    public function __construct(CreatorActivityService $activityService)
+    public function __construct(CreatorActivityService $activityService, CreatorSubscriptionService $subscriptionService)
     {
         $this->activityService = $activityService;
+        $this->subscriptionService = $subscriptionService;
     }
 
     /**
@@ -22,20 +25,38 @@ class PaymentValidationHelper
      */
     public function validatePaymentEligibility(User $creator, array $paymentData): ?JsonResponse
     {
-        // Validate creator activity and log if blocked
-        $validation = $this->activityService->validatePaymentAndLog($creator, $paymentData);
-
-        // If not eligible, return error response
-        if (!$validation['eligible']) {
+        // First check subscription status
+        $subscriptionValidation = $this->subscriptionService->validatePaymentSubscription($creator, $paymentData);
+        
+        // If subscription is not valid, block payment
+        if (!$subscriptionValidation['eligible']) {
             return response()->json([
                 'success' => false,
                 'error' => 'payment_blocked',
-                'message' => $validation['message'],
+                'message' => $subscriptionValidation['message'],
                 'details' => [
-                    'blocked_reason' => $validation['status'],
-                    'content_count' => $validation['content_count'] ?? 0,
-                    'needed_content' => $validation['needed'] ?? 0,
-                    'suggestions' => $validation['suggestions'] ?? [],
+                    'blocked_reason' => $subscriptionValidation['status'],
+                    'subscription_status' => $subscriptionValidation['subscription_status'] ?? 'unknown',
+                    'action_required' => $subscriptionValidation['action_required'] ?? null,
+                    'suggestions' => $subscriptionValidation['suggestions'] ?? [],
+                ]
+            ], 402); // Payment Required
+        }
+
+        // Then validate creator activity and log if blocked
+        $activityValidation = $this->activityService->validatePaymentAndLog($creator, $paymentData);
+
+        // If activity is not sufficient, block payment
+        if (!$activityValidation['eligible']) {
+            return response()->json([
+                'success' => false,
+                'error' => 'payment_blocked',
+                'message' => $activityValidation['message'],
+                'details' => [
+                    'blocked_reason' => $activityValidation['status'],
+                    'content_count' => $activityValidation['content_count'] ?? 0,
+                    'needed_content' => $activityValidation['needed'] ?? 0,
+                    'suggestions' => $activityValidation['suggestions'] ?? [],
                 ]
             ], 402); // Payment Required
         }

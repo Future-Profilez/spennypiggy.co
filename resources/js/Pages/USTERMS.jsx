@@ -16,7 +16,7 @@ export default function Dashboard(props) {
                 <p>Spenny Piggy accessed at spennypiggy.co ("Spenny Piggy" or the "Website" or the “Site”) is a social
                 media Wishlist website and application service that allows users to receive funds
                 for gifts from their fans. "Users" or "Wishers" post items on their wishlist and "Gifters" sponsor the
-                purchase of the item through the spenny piggy website. Spenny Piggy does not purchase any items on
+                purchase of the item through the Spenny Piggy website. Spenny Piggy does not purchase any items on
                 behalf of our Users ("Wishers"). Spenny Piggy sends the funds for the item directly to the User, through
                 our third-party payment gateway, and the User may complete the purchase on their own behalf. For
                 Clarity these are the services provided:</p>
@@ -68,14 +68,14 @@ export default function Dashboard(props) {
                   information we collect from you, how and why we collect, store, use and share such information,
                   your rights in relation to your personal information and how to contact us and supervisory
                   authorities if you have a query or complaint about the use of your personal information.</p>
-                                  <p>2.3. By using Spenny piggy, you consent to receiving communications from us electronically,
+                                  <p>2.3. By using Spenny Piggy, you consent to receiving communications from us electronically,
                   including emails and messages posted to your Spenny Piggy account. You acknowledge and
                   agree that all communications that we provide to you electronically satisfy any legal
                   requirement that such communications be in writing. If you wish to withdraw our consent to
                   receiving communications from us at any time, please email support@spennypiggy.co,
                   notifying us of your withdrawal of consent.</p>
                                   <p><strong>3. Account Registration</strong></p>
-                                  <p>3.1. To register and create an account on spenny piggy, you must be over the age of 18 and provide
+                                  <p>3.1. To register and create an account on Spenny Piggy, you must be over the age of 18 and provide
                   a valid email address, a username, and a password or a valid gmail account. It is a condition of
                   your use of the Website that all the information you provide on the Website is correct, current,
                   and complete.</p>

@@ -547,6 +547,10 @@ Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 
 Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
 Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'deleteConnectedAccount']);
 
+// Stripe Service Agreement Migration Routes
+Route::post('/stripe/migrate-account/{userId?}', [StripeController::class, 'migrateAccount'])->name('stripe.migrate-account');
+Route::get('/stripe/check-migration/{userId?}', [StripeController::class, 'checkMigrationNeeds'])->name('stripe.check-migration');
+
 Route::get('/force-error/error/file', function () {
     throw new \Exception("Testing Handler.php");
 });

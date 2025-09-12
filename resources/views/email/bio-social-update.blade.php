@@ -5,10 +5,16 @@
 $bio = $updatedFields['bio'] ?? false;
 $social = $updatedFields['social'] ?? false;
 
-if ($bio) {
-$updateText = 'Bio';
+// Check if bio was updated AND user has content in bio
+$hasBioContent = !empty($user->bio);
+
+if ($bio && $hasBioContent) {
+    $updateText = 'Bio';
 } elseif ($social) {
-$updateText = 'Social Media handle';
+    $updateText = 'Social Media handle';
+} else {
+    // Fallback - shouldn't happen with our controller fix, but defensive programming
+    $updateText = 'Profile';
 }
 @endphp
 

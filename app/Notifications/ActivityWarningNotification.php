@@ -78,7 +78,7 @@ class ActivityWarningNotification extends Notification implements ShouldQueue
             ->line("")
             ->line("Your supporters are waiting to support your amazing work!")
             ->action('View Dashboard', url('/dashboard'))
-            ->salutation("Keep creating! 🎨\nThe SpennypPiggy Team");
+            ->salutation("Keep creating! 🎨\nThe Spenny Piggy Team");
     }
 
     public function toDatabase($notifiable)

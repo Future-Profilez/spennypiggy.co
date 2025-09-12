@@ -177,7 +177,10 @@ class ProfileController extends Controller
                     'social' => $request->social_handle !== $user->social_handle,
                 ];
 
-                if ($updatedFields['bio'] || $updatedFields['social']) {
+                // Only send email if:
+                // - Bio was updated AND has content (not empty)
+                // - OR social handle was updated
+                if (($updatedFields['bio'] && !empty($request->bio)) || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
                 $user->bio = $request->bio;

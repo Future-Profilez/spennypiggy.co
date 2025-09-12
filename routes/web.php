@@ -177,6 +177,22 @@ Route::middleware('auth')->get('/pwa-test', function () {
     return Inertia::render('PwaTest');
 })->name('pwa.test');
 
+// PWA debugging route
+Route::get('/pwa-debug', function () {
+    return response()->json([
+        'manifest_url' => url('/site.webmanifest'),
+        'service_worker_url' => url('/service-worker.js'),
+        'manifest_exists' => file_exists(public_path('site.webmanifest')),
+        'service_worker_exists' => file_exists(public_path('service-worker.js')),
+        'is_https' => request()->isSecure(),
+        'host' => request()->getHost(),
+        'user_agent' => request()->userAgent(),
+        'manifest_content' => file_exists(public_path('site.webmanifest')) 
+            ? json_decode(file_get_contents(public_path('site.webmanifest')), true) 
+            : null
+    ]);
+})->name('pwa.debug');
+
 // Manual trigger for pending approval job (accessible in all environments)
 Route::get('/pending-approval/manual-trigger', [PendingApprovalController::class, 'manualTrigger'])->name('pending-approval.trigger');
 
@@ -193,6 +209,12 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     Route::get('/activity/status', [\App\Http\Controllers\CreatorActivityController::class, 'getActivityStatus'])->name('activity.status');
     Route::post('/activity/refresh', [\App\Http\Controllers\CreatorActivityController::class, 'refreshActivity'])->name('activity.refresh');
     Route::get('/activity/suggestions', [\App\Http\Controllers\CreatorActivityController::class, 'getSuggestions'])->name('activity.suggestions');
+    
+    // Creator Subscription Routes
+    Route::get('/subscription/status', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getSubscriptionStatus'])->name('subscription.status');
+    Route::post('/subscription/validate-payment', [\App\Http\Controllers\CreatorSubscriptionController::class, 'validatePaymentSubscription'])->name('subscription.validate-payment');
+    Route::get('/subscription/dashboard', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getDashboardInfo'])->name('subscription.dashboard');
+    Route::get('/subscription/warnings', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getCreatorsNeedingWarnings'])->name('subscription.warnings');
 });
 
 Route::get('/service-worker.js', function () {
@@ -212,6 +234,15 @@ Route::get('/new-service-worker.js', function () {
         "Content-Type" => "text/javascript",
     ]);
 })->name('new-service-worker');
+
+Route::get('/site.webmanifest', function () {
+    $assetRoot = rtrim(asset("/"), "/");
+    $content = file_get_contents(resource_path("proxy/site.webmanifest.json"));
+    $content = Str::replace("[ASSET_ROOT]", $assetRoot, $content);
+    return response($content, 200, [
+        "Content-Type" => "text/json",
+    ]);
+})->name('site.manifest.file');
 
 Route::get('/manifest.json', function () {
     $assetRoot = rtrim(asset("/"), "/");
@@ -273,3 +304,8 @@ Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('hea
 
 
 require __DIR__ . '/auth.php';
+
+// Test subscription routes (remove in production)
+if (config('app.env') !== 'production') {
+    require __DIR__ . '/test-subscription.php';
+}

@@ -60,12 +60,280 @@ use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
 use App\Services\CreatorActivityService;
 use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\StripeAccountMigrationNotification;
 
 class StripeController extends Controller
 {
     public function __construct()
     {
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+    }
+
+    /**
+     * Determine the appropriate service agreement type based on country
+     * to handle cross-border payment restrictions
+     *
+     * @param string $country Country code (e.g., 'IT', 'FR', 'DE')
+     * @return string 'recipient' or 'full'
+     */
+    private static function getServiceAgreementType($country)
+    {
+        // Countries that require 'recipient' service agreement for cross-border payments
+        // These are primarily EU countries that have restrictions with full service agreements
+        $recipientCountries = [
+            'IT', // Italy - confirmed issue
+            'FR', // France
+            'DE', // Germany
+            'ES', // Spain
+            'PT', // Portugal
+            'NL', // Netherlands
+            'BE', // Belgium
+            'AT', // Austria
+            'IE', // Ireland
+            'FI', // Finland
+            'DK', // Denmark
+            'SE', // Sweden
+            'NO', // Norway
+            'PL', // Poland
+            'CZ', // Czech Republic
+            'HU', // Hungary
+            'RO', // Romania
+            'BG', // Bulgaria
+            'HR', // Croatia
+            'SI', // Slovenia
+            'SK', // Slovakia
+            'LT', // Lithuania
+            'LV', // Latvia
+            'EE', // Estonia
+            'GR', // Greece
+            'CY', // Cyprus
+            'MT', // Malta
+            'LU', // Luxembourg
+        ];
+
+        return in_array(strtoupper($country), $recipientCountries) ? 'recipient' : 'full';
+    }
+
+    /**
+     * Check if an existing Stripe account needs migration to recipient service agreement
+     *
+     * @param User $user
+     * @return array
+     */
+    public static function checkAccountMigrationNeeds(User $user)
+    {
+        if (empty($user->account_id)) {
+            return ['needs_migration' => false, 'reason' => 'No Stripe account connected'];
+        }
+
+        try {
+            $account = StripeControl::getAccount($user->account_id);
+            $currentServiceAgreement = $account->tos_acceptance->service_agreement ?? null;
+            $requiredServiceAgreement = self::getServiceAgreementType($user->country);
+
+            $needsMigration = (
+                $currentServiceAgreement === 'full' && 
+                $requiredServiceAgreement === 'recipient'
+            );
+
+            return [
+                'needs_migration' => $needsMigration,
+                'current_agreement' => $currentServiceAgreement,
+                'required_agreement' => $requiredServiceAgreement,
+                'country' => $user->country,
+                'account_id' => $user->account_id,
+                'charges_enabled' => $account->charges_enabled ?? false,
+                'reason' => $needsMigration ? 'Country requires recipient agreement for cross-border payments' : 'Account is correctly configured'
+            ];
+        } catch (Exception $e) {
+            Log::error('Failed to check account migration needs', [
+                'user_id' => $user->id,
+                'account_id' => $user->account_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'needs_migration' => false, 
+                'reason' => 'Error checking account: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Migrate an existing account from full to recipient service agreement
+     * Note: This requires creating a new account as service agreements cannot be changed
+     *
+     * @param User $user
+     * @return array
+     */
+    public static function migrateExistingAccount(User $user)
+    {
+        $migrationCheck = self::checkAccountMigrationNeeds($user);
+        
+        if (!$migrationCheck['needs_migration']) {
+            return [
+                'success' => false,
+                'message' => 'Account does not need migration: ' . $migrationCheck['reason']
+            ];
+        }
+
+        $oldAccountId = $user->account_id;
+
+        try {
+            Log::info('Starting account migration', [
+                'user_id' => $user->id,
+                'old_account_id' => $oldAccountId,
+                'country' => $user->country,
+                'from_agreement' => $migrationCheck['current_agreement'],
+                'to_agreement' => $migrationCheck['required_agreement']
+            ]);
+
+            // Create new account with recipient service agreement
+            $serviceAgreementType = self::getServiceAgreementType($user->country);
+            
+            $newAccount = StripeControl::createAccount([
+                'country' => $user->country,
+                'type' => 'express',
+                'email' => $user->email,
+                'capabilities' => [
+                    'card_payments' => ['requested' => true],
+                ],
+                'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
+                'business_profile' => [
+                    'url' => "https://spennypiggy.co/{$user->username}",
+                    'mcc' => '7278',
+                ],
+                'tos_acceptance' => [
+                    'service_agreement' => $serviceAgreementType,
+                ],
+            ]);
+
+            // Update user with new account ID
+            $user->account_id = $newAccount->id;
+            $user->stripe_details_submitted = 0; // They'll need to complete onboarding again
+            $user->save();
+
+            // Note: We don't delete the old account automatically to avoid data loss
+            // It can be cleaned up manually later if needed
+
+            Log::info('Account migration completed successfully', [
+                'user_id' => $user->id,
+                'old_account_id' => $oldAccountId,
+                'new_account_id' => $newAccount->id,
+                'new_agreement' => $serviceAgreementType
+            ]);
+
+            $migrationResult = [
+                'success' => true,
+                'message' => 'Account migrated successfully',
+                'old_account_id' => $oldAccountId,
+                'new_account_id' => $newAccount->id,
+                'new_service_agreement' => $serviceAgreementType,
+                'onboarding_required' => true
+            ];
+
+            // Send notification to creator
+            try {
+                $user->notify(new StripeAccountMigrationNotification($migrationResult));
+            } catch (Exception $e) {
+                Log::warning('Failed to send migration notification', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Account migrated successfully',
+                'old_account_id' => $oldAccountId,
+                'new_account_id' => $newAccount->id,
+                'new_service_agreement' => $serviceAgreementType,
+                'onboarding_required' => true
+            ];
+
+        } catch (Exception $e) {
+            Log::error('Account migration failed', [
+                'user_id' => $user->id,
+                'old_account_id' => $oldAccountId,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Migration failed: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Manual migration endpoint for individual account
+     * Useful for customer support or admin panel
+     */
+    public function migrateAccount(Request $request, $userId = null)
+    {
+        $userId = $userId ?? $request->get('user_id');
+        
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User ID is required'
+            ], 400);
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // Check if migration is needed first
+        $migrationCheck = self::checkAccountMigrationNeeds($user);
+        
+        if (!$migrationCheck['needs_migration']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Account migration not needed',
+                'details' => $migrationCheck
+            ]);
+        }
+
+        // Perform the migration
+        $result = self::migrateExistingAccount($user);
+        
+        return response()->json($result);
+    }
+
+    /**
+     * Check if account needs migration (endpoint version)
+     */
+    public function checkMigrationNeeds(Request $request, $userId = null)
+    {
+        $userId = $userId ?? $request->get('user_id');
+        
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User ID is required'
+            ], 400);
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        $migrationCheck = self::checkAccountMigrationNeeds($user);
+        
+        return response()->json([
+            'success' => true,
+            'user_id' => $userId,
+            'migration_check' => $migrationCheck
+        ]);
     }
 
     /**
@@ -106,6 +374,16 @@ class StripeController extends Controller
         if (empty($user->account_id)) {
             $country = strtoupper($country);
             try {
+                // Determine service agreement type based on country to handle cross-border payment restrictions
+                $serviceAgreementType = self::getServiceAgreementType($country);
+                
+                Log::info('Creating Stripe account with service agreement', [
+                    'user_id' => $user->id,
+                    'country' => $country,
+                    'service_agreement' => $serviceAgreementType,
+                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
+                ]);
+                
                 $payload = [
                     "country" => $country,
                     "type" => "express",
@@ -114,7 +392,7 @@ class StripeController extends Controller
                         'card_payments' => ['requested' => true],  // Allow for all creators
                         // 'transfers' => ['requested' => true], // Removed per client request
                     ],
-                    'tos_acceptance' => ['service_agreement' => 'full'],
+                    'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
                     // 'business_type' => 'individual',
                     "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
@@ -186,6 +464,16 @@ class StripeController extends Controller
             $newAccount = null;
 
             try {
+                // Determine service agreement type based on country to handle cross-border payment restrictions
+                $serviceAgreementType = self::getServiceAgreementType($user->country);
+                
+                Log::info('Upgrading Stripe account with service agreement', [
+                    'user_id' => $user->id,
+                    'country' => $user->country,
+                    'service_agreement' => $serviceAgreementType,
+                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
+                ]);
+                
                 $newAccount = StripeControl::createAccount([
                     'country'       => $user->country,
                     'type'          => 'express',
@@ -200,7 +488,7 @@ class StripeController extends Controller
                         'mcc' => '7278',
                     ],
                     'tos_acceptance' => [
-                        'service_agreement' => 'full',
+                        'service_agreement' => $serviceAgreementType,
                     ],
                 ]);
             } catch (ApiErrorException $e) {
