@@ -21,6 +21,7 @@ class MonthlyCharge extends Model
         'currency',
         'amount',
         'tax',
+        'status',
         'current_start_trial_date',
         'current_end_trial_date',
         'current_start_subscription_date',
@@ -40,6 +41,14 @@ class MonthlyCharge extends Model
     }
 
     public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    
+    /**
+     * Get user relationship excluding UK users (for backwards compatibility)
+     */
+    public function nonUkUser()
     {
         return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
     }

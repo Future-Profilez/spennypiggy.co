@@ -89,8 +89,7 @@ class User extends Authenticatable
         return $this->twitter_token->username ?? false;
     }
 
-    public function getMonthlyChargeEnabledAttribute()
-    {
+    public function getMonthlyChargeEnabledAttribute() {
         if (Auth::check() && $this->id === Auth::id()) {
             return MonthlyCharge::where('user_id', $this->id)
                 ->whereIn('status', ['paid', 'trialing', 'active'])
@@ -108,15 +107,74 @@ class User extends Authenticatable
     {
         if ($this->role == 1) { 
             $subscription = $this->creatorMonthlySubscription;
-            Log::info('Subscription status check for user ID ' . $this->id . ': ' . json_encode($subscription));
             if (!$subscription) {
-                return 0;
+                try {
+                    $createdAt = Carbon::parse($this->created_at);
+                    $trialEndDate = $createdAt->copy()->addDays(3); // 3-day trial - use copy() to avoid mutating original
+                    $now = Carbon::now();
+                    
+                    \Log::info('Subscription Status Debug - No MonthlyCharge record', [
+                        'user_id' => $this->id,
+                        'created_at' => $this->created_at,
+                        'trial_end_date' => $trialEndDate->toDateTimeString(),
+                        'now' => $now->toDateTimeString(),
+                        'is_within_trial' => $now->lessThan($trialEndDate)
+                    ]);
+                    
+                    // If within trial period, return trial status
+                    if ($now->lessThan($trialEndDate)) {
+                        return 2; // FREE_TRIAL
+                    }
+                    
+                    // If trial expired and not subscribed, return expired
+                    return 0; // EXPIRED
+                } catch (\Exception $e) {
+                    \Log::error('Error parsing subscription dates for user without MonthlyCharge', [
+                        'user_id' => $this->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return 0; // EXPIRED on error
+                }
             }
+            
+            // Use the same logic as account settings route
+            $trial_start = $subscription->current_start_trial_date;
+            $trial_end = $subscription->current_end_trial_date;
+            $subscription_start = $subscription->current_start_subscription_date;
+            $subscription_end = $subscription->current_end_subscription_date;
+
+            $now = Carbon::now();
+            $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+            $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
+
+            $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+            // Check subscription status from MonthlyCharge table instead of is_subscribed column
+            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+            $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
+
+            // Check for trialing status first, before other conditions
+            if ($subscription->status === 'trialing') {
+                return 2; // FREE_TRIAL
+            }
+            
+            // Return status based on subscription table status
+            if ($isSubscriptionActive) {
+                return 1; // ACTIVE
+            } elseif ($isTrialOngoing) {
+                return 2; // FREE_TRIAL
+            } elseif ($isExpired || !in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
+                return 0; // EXPIRED
+            }
+            
+            // Fallback to original Stripe API logic for edge cases
             if ($subscription->status === 'trial_ending') {
                 return 2;
             }
             if ($subscription->status === 'paid' || $subscription->status === 'renew' || $subscription->status === 'trialing') {
                 if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
+                    if ($subscription->status === 'trialing') {
+                        return 2;
+                    }
                     return 1; 
                 }
                 try {
@@ -128,11 +186,46 @@ class User extends Authenticatable
                     } elseif (isset($stripeSubscription) && $stripeSubscription->status === 'trialing') {
                         return 2;
                     } else {
-                        return 0; // canceled, incomplete, etc.
+                        // Fallback: Check local trial dates if Stripe status is different
+                        if ($subscription->status === 'trialing') {
+                            // Check if we have trial dates and if trial is still active
+                            if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
+                                $now = \Carbon\Carbon::now();
+                                $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                                if ($now->lessThan($trialEnd)) {
+                                    return 2; // Still in trial
+                                }
+                            }
+                            // If no trial dates or trial expired, check if user is within 3-day grace period
+                            $userCreated = \Carbon\Carbon::parse($this->created_at);
+                            $trialEndDate = $userCreated->copy()->addDays(3);
+                            if (\Carbon\Carbon::now()->lessThan($trialEndDate)) {
+                                return 2; // Within 3-day trial period
+                            }
+                        }
+                        return 0;
                     }
                 } catch (\Exception $e) {
                     Log::error('Stripe subscription check failed: ' . $e->getMessage());
-                    return 1;
+                    // Fallback when Stripe API fails
+                    if ($subscription->status === 'trialing') {
+                        // Check trial dates first
+                        if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
+                            $now = \Carbon\Carbon::now();
+                            $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                            if ($now->lessThan($trialEnd)) {
+                                return 2; // Still in trial
+                            }
+                        }
+                        // Fallback to 3-day grace period from user creation
+                        $userCreated = \Carbon\Carbon::parse($this->created_at);
+                        $trialEndDate = $userCreated->copy()->addDays(3);
+                        if (\Carbon\Carbon::now()->lessThan($trialEndDate)) {
+                            return 2; // Within 3-day trial period
+                        }
+                        return 0; // Trial expired
+                    }
+                    return 1; // Default to active for other statuses when API fails
                 }
             }
             return 0;
@@ -167,12 +260,12 @@ class User extends Authenticatable
     }
 
     /**
-     * Get when grace period ends (15 days after start)
+     * Get when grace period ends (0 days after start)
      */
     public function getGracePeriodEndsAtAttribute()
     {
         $startDate = $this->grace_period_started_at;
-        return $startDate ? $startDate->copy()->addDays(15) : null;
+        return $startDate ? $startDate->copy()->addDays(\App\Services\CreatorActivityService::GRACE_PERIOD_DAYS) : null;
     }
 
     /**
@@ -320,7 +413,7 @@ class User extends Authenticatable
 
     public function creatorMonthlySubscription()
     {
-        return $this->hasOne(MonthlyCharge::class, 'user_id');
+        return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany();
     }
 
  public function followers()

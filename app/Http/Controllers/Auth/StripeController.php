@@ -45,6 +45,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use League\ISO3166\ISO3166;
@@ -59,7 +60,9 @@ use Stripe\Exception\SignatureVerificationException;
 use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
 use App\Services\CreatorActivityService;
+use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
 
 class StripeController extends Controller
@@ -132,9 +135,19 @@ class StripeController extends Controller
             $requiredServiceAgreement = self::getServiceAgreementType($user->country);
 
             $needsMigration = (
-                $currentServiceAgreement === 'full' && 
+                ($currentServiceAgreement === 'full' || $currentServiceAgreement === null) && 
                 $requiredServiceAgreement === 'recipient'
             );
+
+            // Log migration check for debugging
+            Log::info('Stripe migration check completed', [
+                'user_id' => $user->id,
+                'country' => $user->country,
+                'current_agreement' => $currentServiceAgreement,
+                'required_agreement' => $requiredServiceAgreement,
+                'needs_migration' => $needsMigration,
+                'account_id' => $user->account_id
+            ]);
 
             return [
                 'needs_migration' => $needsMigration,
@@ -191,13 +204,19 @@ class StripeController extends Controller
             // Create new account with recipient service agreement
             $serviceAgreementType = self::getServiceAgreementType($user->country);
             
+            // Set capabilities based on service agreement type
+            $capabilities = [];
+            if ($serviceAgreementType === 'recipient') {
+                $capabilities['transfers'] = ['requested' => true];
+            } else {
+                $capabilities['card_payments'] = ['requested' => true];
+            }
+            
             $newAccount = StripeControl::createAccount([
                 'country' => $user->country,
                 'type' => 'express',
                 'email' => $user->email,
-                'capabilities' => [
-                    'card_payments' => ['requested' => true],
-                ],
+                'capabilities' => $capabilities,
                 'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
                 'business_profile' => [
                     'url' => "https://spennypiggy.co/{$user->username}",
@@ -384,14 +403,19 @@ class StripeController extends Controller
                     'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
                 ]);
                 
+                // Set capabilities based on service agreement type
+                $capabilities = [];
+                if ($serviceAgreementType === 'recipient') {
+                    $capabilities['transfers'] = ['requested' => true];
+                } else {
+                    $capabilities['card_payments'] = ['requested' => true];
+                }
+                
                 $payload = [
                     "country" => $country,
                     "type" => "express",
                     'email' => $user->email,
-                    'capabilities' => [
-                        'card_payments' => ['requested' => true],  // Allow for all creators
-                        // 'transfers' => ['requested' => true], // Removed per client request
-                    ],
+                    'capabilities' => $capabilities,
                     'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
                     // 'business_type' => 'individual',
                     "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
@@ -451,12 +475,16 @@ class StripeController extends Controller
                 );
             }
 
-            $isLegacy      = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
-            $cardPayments  = $account->capabilities->card_payments ?? null;
-
-            if (!$isLegacy && $cardPayments === 'active') {
+            // Check if account actually needs migration using our migration check logic
+            $migrationCheck = self::checkAccountMigrationNeeds($user);
+            
+            // If no migration is needed, account is already properly configured
+            if (!$migrationCheck['needs_migration']) {
                 return back()->with('success', 'Your Stripe account is already fully upgraded.');
             }
+
+            // Clear migration status cache before creating new account
+            Cache::forget("migration_status_{$user->id}");
 
             // ── 2. Delete legacy + create brand‑new Express account ───────
             // (Optional) Stripe::Account::delete($user->account_id);
@@ -474,14 +502,19 @@ class StripeController extends Controller
                     'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
                 ]);
                 
+                // Set capabilities based on service agreement type
+                $capabilities = [];
+                if ($serviceAgreementType === 'recipient') {
+                    $capabilities['transfers'] = ['requested' => true];
+                } else {
+                    $capabilities['card_payments'] = ['requested' => true];
+                }
+                
                 $newAccount = StripeControl::createAccount([
                     'country'       => $user->country,
                     'type'          => 'express',
                     'email'         => $user->email,
-                    'capabilities'  => [
-                        'card_payments' => ['requested' => true],
-                        // 'transfers'     => ['requested' => true], // Removed per client request
-                    ],
+                    'capabilities'  => $capabilities,
                     'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
                         'url' => "https://spennypiggy.co/{$user->username}",
@@ -1086,7 +1119,7 @@ class StripeController extends Controller
             }
 
             $basePrice = Helpers::priceFormat($wish->currency, $wish->price, $currency);
-            $platformFeePercentage = config('app.subs_tax');
+            $platformFeePercentage = config('app.platform_fee_percentage');
             $adminFeeGBP = config('app.administration_fee');
             $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
 
@@ -1233,7 +1266,7 @@ class StripeController extends Controller
                 'price_data' => [
                     'currency' => $currency,
                     'product_data' => [
-                        'name' => 'Platform Fee - Wish Subscription',
+                        'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Wish Subscription',
                     ],
                     'unit_amount' => round($platformTotal * $multiplier),
                     'tax_behavior' => 'exclusive',
@@ -1600,6 +1633,29 @@ class StripeController extends Controller
             ]);
         }
         
+        // NEW: Check creator subscription eligibility first
+        $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
+        
+        if (!$subscriptionCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+            
+            // Log the blocked payment for subscription issues
+            Log::warning('Tip jar payment blocked due to subscription issue', [
+                'creator_id' => $creator->id,
+                'creator_username' => $creator->username,
+                'payment_amount' => $request->amount ?? 0,
+                'subscription_status' => $subscriptionCheck['status'],
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+            ]);
+            
+            // Return user-friendly error to fan
+            return response()->json([
+                'status' => false,
+                'msg' => 'This creator is temporarily unavailable. Please try again later.'
+            ]);
+        }
+        
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
         
@@ -1703,7 +1759,7 @@ class StripeController extends Controller
             $isZeroDecimalCurrency = in_array(strtolower($currency), ['jpy', 'krw', 'vnd']);
             $amount = $request->amount;
             $adminFeeAmount = config('app.administration_fee', 1);
-            $taxPercentage = config('app.jar_tax');
+            $taxPercentage = config('app.platform_fee_percentage');
             $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
 
             $tax = round(($price * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
@@ -1781,7 +1837,7 @@ class StripeController extends Controller
                 'price_data' => [
                     'currency' => $currency,
                     'product_data' => [
-                        'name' => 'Platform Fee - Support Payment',
+                        'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Support Payment',
                     ],
                     'unit_amount' => $applicationFeeAmount,
                     'tax_behavior' => 'exclusive',

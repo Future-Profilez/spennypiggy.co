@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Notification;
+use App\Channels\MagicBellChannel;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +34,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register custom notification channel for MagicBell push notifications
+        Notification::extend('push', function ($app) {
+            return new MagicBellChannel();
+        });
+        
         // Ensure storage directories exist in Lambda environment
         if (app()->environment('production')) {
             $this->ensureLambdaStorageDirectories();

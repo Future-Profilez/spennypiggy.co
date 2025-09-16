@@ -15,6 +15,8 @@ use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
 use App\Services\CreatorActivityService;
 use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\CreatorSubscriptionService;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
@@ -351,6 +353,29 @@ class MembershipController extends Controller
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
 
+        // NEW: Check creator subscription eligibility first
+        $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($membership->user);
+        
+        if (!$subscriptionCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));
+            
+            // Log the blocked payment for subscription issues
+            Log::warning('Membership payment blocked due to subscription issue', [
+                'creator_id' => $membership->user->id,
+                'creator_username' => $membership->user->username,
+                'membership_id' => $membership->id,
+                'membership_price' => $membership->price,
+                'subscription_status' => $subscriptionCheck['status'],
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($membership->user);
         
@@ -571,7 +596,7 @@ class MembershipController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => 'Platform Fee - Membership Payment',
+                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Membership Payment',
                         ],
                         'unit_amount' => round($platformTotal * $multiplier),
                         'tax_behavior' => 'exclusive',

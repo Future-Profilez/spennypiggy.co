@@ -150,6 +150,28 @@ Route::middleware('auth')->group(function () {
             ->orderByDesc('created_at')
             ->first();
 
+        // Get complete subscription history for the user
+        $subscription_history = MonthlyCharge::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($charge) {
+                return [
+                    'id' => $charge->id,
+                    'uuid' => $charge->uuid,
+                    'stripe_id' => $charge->stripe_id,
+                    'amount' => $charge->amount ?? 0,
+                    'currency' => $charge->currency ?? 'GBP',
+                    'status' => $charge->status ?? 'pending',
+                    'trial_start_date' => $charge->current_start_trial_date,
+                    'trial_end_date' => $charge->current_end_trial_date,
+                    'subscription_start_date' => $charge->current_start_subscription_date,
+                    'subscription_end_date' => $charge->current_end_subscription_date,
+                    'upcoming_payment' => $charge->upcoming_payment,
+                    'created_at' => $charge->created_at,
+                    'updated_at' => $charge->updated_at,
+                ];
+            });
+
         $site_subscription = [
             'status' => 'INACTIVE',
             'trial_status' => null,
@@ -199,12 +221,37 @@ Route::middleware('auth')->group(function () {
             } elseif ($isExpired || $user->is_subscribed == 0) {
                 $site_subscription['status'] = 'EXPIRED';
             }
+        } else {
+            // Handle users without subscription records (new users)
+            // This matches the logic in User model's getSubscriptionStatusAttribute method
+            if ($user->role == 1) {
+                $createdAt = Carbon::parse($user->created_at);
+                $trialEndDate = $createdAt->copy()->addDays(3); // 3-day trial - use copy() to avoid mutating original
+                $now = Carbon::now();
+                
+                // If within trial period and not subscribed, show as trial
+                if ($now->lessThan($trialEndDate) && $user->is_subscribed == 0) {
+                    $site_subscription['status'] = 'FREE_TRIAL';
+                    $site_subscription['trial_status'] = 'active';
+                    $site_subscription['trial_start'] = $createdAt->format('d F Y');
+                    $site_subscription['trial_end_in'] = $trialEndDate->diffForHumans($now);
+                } else {
+                    // Trial expired and not subscribed
+                    $site_subscription['status'] = 'EXPIRED';
+                    $site_subscription['trial_status'] = 'ended';
+                }
+            } else {
+                // Non-creator users default to inactive
+                $site_subscription['status'] = 'INACTIVE';
+            }
         }
 
         return Inertia::render('accountsetting/Accountsetting', [
             'auto_tweet' => $auto_tweet,
             'site_subscription' => $site_subscription,
+            'subscription_history' => $subscription_history,
             'pwa_notification_details' => $pwaNotificationDetails ?? null,
+            'subscription_status' => $user->subscription_status, // Add numeric status for debugging
         ]);
     });
 

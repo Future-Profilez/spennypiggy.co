@@ -336,7 +336,7 @@ export default function BuyShopItem({
                                         <button className="tooltipbtn flex justify-center items-center !font-normal">
                                             ?
                                             <p className="!text-start">
-                                                15% Card Fees and £1
+                                                {window.platformFeePercentage || 20}% Card Fees and £1
                                                 administrative fee of applies to
                                                 all transactions.
                                             </p>

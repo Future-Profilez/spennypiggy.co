@@ -14,6 +14,30 @@ export default function Userprofile({ IsloggedIn }) {
     const { auth, user, global_currency, supporters, follow_status } = usePage().props;
     const opponantUser = auth?.opposite_user;
 
+    // Console log for debugging creator activity status and content information
+    console.log('=== USER PROFILE DEBUG INFO ===');
+    console.log('User Object:', user);
+    console.log('User Role:', user?.role);
+    console.log('Is Creator:', user?.role === 1);
+    console.log('Profile Status Lock:', user?.profile_status_lock);
+    console.log('Identity Status:', user?.identity_status);
+    console.log('Stripe Details Submitted:', user?.stripe_details_submitted);
+    console.log('Is Subscribed:', user?.is_subscribed);
+    console.log('Grace Period Info:', {
+        is_in_grace_period: user?.is_in_grace_period,
+        grace_period_days_remaining: user?.grace_period_days_remaining,
+        grace_period_ends_at: user?.grace_period_ends_at
+    });
+    console.log('Activity Status:', user?.activity_status);
+    console.log('Content Counts:', {
+        posts_count: user?.posts_count,
+        wishes_count: user?.wishes_count,
+        memberships_count: user?.memberships_count,
+        shops_count: user?.shops_count
+    });
+    console.log('All Props:', usePage().props);
+    console.log('=== END USER PROFILE DEBUG ===');
+
     return (
         <div className="userprofilesec mb-2 ">
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">

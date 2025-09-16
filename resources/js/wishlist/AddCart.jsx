@@ -47,7 +47,7 @@ export default function AddCart(props) {
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ""}`;
         router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
     };
-    const processingFee = (item?.price||0) * 0.15;
+    const processingFee = (item?.price||0) * (window.platformFeePercentage || 20) / 100;
 
     return (
         <Popup

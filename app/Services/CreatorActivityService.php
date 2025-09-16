@@ -11,7 +11,7 @@ class CreatorActivityService
 {
     const REQUIRED_CONTENT_COUNT = 3;
     const ACTIVITY_PERIOD_DAYS = 28;
-    const GRACE_PERIOD_DAYS = 15;
+    const GRACE_PERIOD_DAYS = 0;
 
     /**
      * Main method to validate creator's payment eligibility

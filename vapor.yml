@@ -24,6 +24,16 @@ environments:
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
+      - "php artisan cache:clear"
+      - "php artisan config:clear"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan optimize:clear"
+      - "php artisan cache:clear"
+      - "php artisan config:clear"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan optimize:clear"
 
   production:
     memory: 3008
@@ -53,6 +63,11 @@ environments:
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
+      - "php artisan cache:clear"
+      - "php artisan config:clear"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan optimize:clear"
 
 
 

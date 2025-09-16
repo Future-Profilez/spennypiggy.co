@@ -23,7 +23,7 @@ class PaymentBlockedNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['mail']; // Temporarily removed 'database' to focus on email
+        return ['mail', 'push'];
     }
 
     public function toMail($notifiable)
@@ -49,6 +49,17 @@ class PaymentBlockedNotification extends Notification implements ShouldQueue
             'payment_amount' => $this->paymentAmount,
             'action_url' => '/dashboard',
             'priority' => 'high'
+        ];
+    }
+
+    public function toPush($notifiable)
+    {
+        $paymentText = $this->paymentAmount ? "£" . number_format($this->paymentAmount, 2) : "a payment";
+        $needed = $this->activityData['needed'] ?? 1;
+        
+        return [
+            'title' => '🚨 Payment Alert - Content Needed',
+            'content' => "Someone tried to pay you {$paymentText}, but you need {$needed} more content item" . ($needed > 1 ? 's' : '') . " from the last 28 days to receive payments. Add content now to unlock payments!"
         ];
     }
 

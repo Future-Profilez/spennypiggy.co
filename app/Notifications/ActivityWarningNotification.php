@@ -22,7 +22,7 @@ class ActivityWarningNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['mail', 'database'];
+        return ['mail', 'database', 'push'];
     }
 
     public function toMail($notifiable)
@@ -107,6 +107,36 @@ class ActivityWarningNotification extends Notification implements ShouldQueue
             'action_url' => '/dashboard',
             'priority' => 'medium'
         ];
+    }
+
+    public function toPush($notifiable)
+    {
+        switch ($this->warningType) {
+            case 'grace_period_ending':
+                $daysRemaining = $this->activityData['days_remaining'] ?? 0;
+                $currentContent = $this->activityData['current_content'] ?? 0;
+                $needed = 3 - $currentContent;
+                
+                return [
+                    'title' => '⏰ Grace Period Ending Soon',
+                    'content' => "Your grace period ends in {$daysRemaining} days. You have {$currentContent}/3 content items. Add {$needed} more to ensure uninterrupted payments!"
+                ];
+                
+            case 'insufficient_content':
+                $needed = $this->activityData['needed'] ?? 1;
+                $currentContent = $this->activityData['content_count'] ?? 0;
+                
+                return [
+                    'title' => '📝 Content Update Needed',
+                    'content' => "You have {$currentContent}/3 content items from the last 28 days. Add {$needed} more item" . ($needed > 1 ? 's' : '') . " to continue receiving payments!"
+                ];
+                
+            default:
+                return [
+                    'title' => '📊 Activity Reminder',
+                    'content' => $this->activityData['message'] ?? 'Please check your content activity status to ensure payment eligibility.'
+                ];
+        }
     }
 
     public function toArray($notifiable)

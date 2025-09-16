@@ -30,6 +30,7 @@ use Stripe\Stripe;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
 
 class CheckoutController extends Controller
 {
@@ -116,6 +117,9 @@ class CheckoutController extends Controller
             $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($owner);
             
             if (!$subscriptionCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
+                
                 // Log the blocked payment for subscription issues
                 Log::warning('Cart payment blocked due to subscription issue', [
                     'creator_id' => $owner->id,
@@ -194,7 +198,7 @@ class CheckoutController extends Controller
                 $adminFee = config('app.administration_fee');
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
-                $taxPercentage = config('app.single_tax');
+                $taxPercentage = config('app.platform_fee_percentage');
 
                 $connectedAccountId = $getdata[0]->owner->account_id;
 
@@ -256,7 +260,7 @@ class CheckoutController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => 'Platform Fee - ' . ($dd->wish->wishname ?? 'Content'),
+                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - ' . ($dd->wish->wishname ?? 'Content'),
                         ],
                         'unit_amount' => round($showTaxWithQuantity * $multiplier),
                         'tax_behavior' => 'exclusive',

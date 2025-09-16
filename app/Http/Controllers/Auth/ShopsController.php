@@ -32,6 +32,8 @@ use Ramsey\Uuid\Uuid;
 use Stripe\StripeClient;
 use App\Services\CreatorActivityService;
 use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\CreatorSubscriptionService;
 
 use function Termwind\render;
 
@@ -567,6 +569,30 @@ class ShopsController extends Controller
             }
 
             $shop = Shop::where('uuid', $shop_id)->first();
+            
+            // NEW: Check creator subscription eligibility first
+            $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($shop->user);
+            
+            if (!$subscriptionCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $shop->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $shop->price));
+                
+                // Log the blocked payment for subscription issues
+                Log::warning('Shop payment blocked due to subscription issue', [
+                    'creator_id' => $shop->user->id,
+                    'creator_username' => $shop->user->username,
+                    'shop_id' => $shop->id,
+                    'shop_price' => $shop->price,
+                    'subscription_status' => $subscriptionCheck['status'],
+                    'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                ]);
+                
+                // Return user-friendly error to fan
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                ]);
+            }
             
             // NEW: Check creator activity eligibility
             $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($shop->user);

@@ -366,8 +366,8 @@ export default function Dashboard(props) {
                   <ul>
                   <li>- Tip Jar = 8%</li>
                   <li>- Surprise Gifts / Crowdfunding = 10%</li>
-                  <li>- Memberships = 15%</li>
-                  <li>- Subscriptions, Single Purchases and Bills = 20%</li>
+                  <li>- Memberships = {window.platformFeePercentage || 20}%</li>
+<li>- Subscriptions, Single Purchases and Bills = {window.platformFeePercentage || 20}%</li>
                   <li>This fee is on top of the User-set product price. This fee covers the expenses of our payment
                   merchant and associated administrative costs. For absolute clarity, this additional fee covers
                   payment processing fess globally.</li>

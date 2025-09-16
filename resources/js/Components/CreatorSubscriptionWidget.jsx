@@ -94,6 +94,8 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
         }
     };
 
+    console.log("sdhjfkhd")
+
     const alertStyle = getAlertStyle();
     if (!alertStyle) return null;
 

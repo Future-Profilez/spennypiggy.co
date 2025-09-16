@@ -106,7 +106,7 @@ export default function UserCarts(props) {
     };
 
     const [subtotal, setsubtotal] = useState();
-    const [fee, setFee] = useState(0.15 * subtotal);
+    const [fee, setFee] = useState((window.platformFeePercentage || 20) / 100 * subtotal);
 
     function updateTotals(p) {
         const value =
@@ -190,7 +190,7 @@ export default function UserCarts(props) {
                                     {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
                                         <p className="max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                            15% Card Fees and £1 administrative fee of applies to
+                                            {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
                                             all transactions.
                                         </p>
                                     </button>

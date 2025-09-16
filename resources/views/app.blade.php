@@ -114,6 +114,9 @@
                 });
             }
         })();
+        
+        // Global platform fee configuration
+        window.platformFeePercentage = {{ config('app.platform_fee_percentage', 20) }};
     </script>
     <script type="application/ld+json">
         {
@@ -218,6 +221,123 @@
 </head>
 
 <body className="font-sans antialiased">
+    <!-- Initial loading screen for PWA -->
+    <div id="initial-loading-screen" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: #000000;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+    ">
+        <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out;
+        ">
+            <img 
+                src="{{ URL::asset('/siteicon.png') }}" 
+                alt="Spenny Piggy Logo" 
+                style="
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 20px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 24px;
+                    animation: pulse 2s ease-in-out infinite;
+                "
+            />
+            <h1 style="
+                font-family: 'Anton', sans-serif;
+                font-size: 28px;
+                color: #ffffff;
+                margin: 0 0 12px 0;
+                text-align: center;
+                font-weight: 400;
+                letter-spacing: 1px;
+            ">Spenny Piggy</h1>
+            <div style="
+                width: 40px;
+                height: 4px;
+                background: linear-gradient(90deg, #F94F96, #5D25FD);
+                border-radius: 2px;
+                margin-bottom: 20px;
+                animation: loadingBar 1.5s ease-in-out infinite;
+            "></div>
+            <p style="
+                font-family: 'Poppins', sans-serif;
+                font-size: 14px;
+                color: #ffffff;
+                margin: 0;
+                text-align: center;
+            ">Loading your experience...</p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes loadingBar {
+            0% {
+                transform: scaleX(0.3);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scaleX(0.3);
+                opacity: 0.5;
+            }
+        }
+        
+        /* Hide loading screen when app is ready */
+        .app-loaded #initial-loading-screen {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+
+    <script>
+        // Show loading screen only in PWA mode
+        function isPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true ||
+                   document.referrer.includes('android-app://');
+        }
+
+        if (isPWA()) {
+            document.getElementById('initial-loading-screen').style.display = 'flex';
+        }
+    </script>
+
     @inertia
 </body>
 

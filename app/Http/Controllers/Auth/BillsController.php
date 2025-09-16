@@ -21,6 +21,8 @@ use App\StripeControl;
 use Carbon\Carbon;
 use App\Services\CreatorActivityService;
 use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\CreatorSubscriptionService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -297,6 +299,31 @@ class BillsController extends Controller
         // }
         if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
 
+        // NEW: Check creator subscription eligibility first
+        $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);
+        
+        if (!$subscriptionCheck['eligible']) {
+            DB::rollBack(); // Rollback the transaction before early return
+            
+            // Send notification to creator about blocked payment
+            $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
+            
+            // Log the blocked payment for subscription issues
+            Log::warning('Bill payment blocked due to subscription issue', [
+                'creator_id' => $bill->user->id,
+                'creator_username' => $bill->user->username,
+                'bill_id' => $bill->id,
+                'bill_price' => $bill->price,
+                'subscription_status' => $subscriptionCheck['status'],
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($bill->user);
         
@@ -545,7 +572,7 @@ class BillsController extends Controller
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => 'Platform Fee - Bill Payment',
+                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Bill Payment',
                         ],
                         'unit_amount' => round($totalPaymentTaxAmount * $multiplier),
                         'tax_behavior' => 'exclusive',

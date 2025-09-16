@@ -95,9 +95,9 @@ const CreatorActivityWidget = (props) => {
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
 
     return (
-        <div className={`rounded-2xl border-2 p-3 ${getStatusColor(activityStatus.status)} ${className}`}>
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 max-w-[70%]">
+        <div className={`rounded-2xl shadow-pink border-2 p-3 ${getStatusColor(activityStatus.status)} ${className}`}>
+            <div className="lg:flex items-center justify-between">
+                <div className="md:flex items-center gap-3 lg:max-w-[70%] me-3">
                     <div>
                         <h3 className=" text-xl font-gulfs uppercase">
                         <span className="me-2" role="img" aria-label="status">
@@ -111,12 +111,14 @@ const CreatorActivityWidget = (props) => {
                         </p>
                     </div>
                 </div>
-                <Link
-                    href="/creator/activity"
-                    className="text-normal  hover:underline opacity-80 hover:opacity-100"
-                >
-                    View Details
-                </Link>
+                <div className='!mt-3'>
+                    <Link
+                        href="/creator/activity"
+                        className="text-center block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-3 py-2 rounded-xl text-sm  hover:underline opacity-80 hover:opacity-100"
+                    >
+                        View Details
+                    </Link>
+                </div>
             </div>
 
             {activityStatus.status === 'insufficient_content' && (

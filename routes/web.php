@@ -41,6 +41,43 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
+// Debug route to test subscription status
+Route::get('/debug-subscription/{userId}', function ($userId) {
+    $user = App\Models\User::find($userId);
+    if (!$user) {
+        return response()->json(['error' => 'User not found']);
+    }
+    
+    $subscription = $user->creatorMonthlySubscription;
+    
+    return response()->json([
+        'user_id' => $user->id,
+        'username' => $user->username,
+        'role' => $user->role,
+        'is_subscribed' => $user->is_subscribed,
+        'created_at' => $user->created_at,
+        'subscription_status_accessor' => $user->subscription_status,
+        'has_monthly_charge_record' => $subscription ? true : false,
+        'monthly_charge_data' => $subscription ? [
+            'id' => $subscription->id,
+            'status' => $subscription->status,
+            'stripe_id' => $subscription->stripe_id,
+            'current_start_trial_date' => $subscription->current_start_trial_date,
+            'current_end_trial_date' => $subscription->current_end_trial_date,
+            'current_start_subscription_date' => $subscription->current_start_subscription_date,
+            'current_end_subscription_date' => $subscription->current_end_subscription_date,
+            'created_at' => $subscription->created_at,
+        ] : null,
+        'trial_calculation' => [
+            'user_created_at' => $user->created_at,
+            'trial_end_date' => \Carbon\Carbon::parse($user->created_at)->addDays(3),
+            'now' => \Carbon\Carbon::now(),
+            'is_within_trial' => \Carbon\Carbon::now()->lessThan(\Carbon\Carbon::parse($user->created_at)->addDays(3)),
+        ],
+        'timestamp' => now(),
+    ]);
+})->middleware('auth');
+
 // Debug route to test cart API
 Route::get('/debug-cart-api', function () {
     $controller = new App\Http\Controllers\Auth\WishitemController();

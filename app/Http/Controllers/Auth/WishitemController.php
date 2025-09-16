@@ -1302,6 +1302,29 @@ class WishitemController extends Controller
                 ], 404);
             }
 
+            // Check creator subscription eligibility
+            $subscriptionCheck = app(\App\Services\CreatorSubscriptionService::class)->validateCreatorSubscription($orderDetails->creator);
+            
+            if (!$subscriptionCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $orderDetails->creator->notify(new \App\Notifications\SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+                
+                // Log the blocked payment for subscription issues
+                \Log::warning('Rye product payment blocked due to subscription issue', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'creator_username' => $orderDetails->creator->username,
+                    'cart_id' => $request->cart_id,
+                    'subscription_status' => $subscriptionCheck['status'],
+                    'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                ]);
+                
+                // Return user-friendly error to fan
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                ]);
+            }
+
             $currency = 'usd';
             $totalAmount = 0;
             $lineItems = [];

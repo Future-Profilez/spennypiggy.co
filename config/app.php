@@ -208,6 +208,7 @@ return [
 
 
     'administration_fee' => 1,
+    'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 20),
 
     // 'surprise_tax' => 10,
     // 'single_tax' => 20,

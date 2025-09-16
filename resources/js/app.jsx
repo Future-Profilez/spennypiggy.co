@@ -196,6 +196,18 @@ createInertiaApp({
             </Provider>
         );
         
+        // Hide initial loading screen once React app is mounted
+        setTimeout(() => {
+            document.body.classList.add('app-loaded');
+            // Remove the loading screen element after transition
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('initial-loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.remove();
+                }
+            }, 500); // Wait for CSS transition to complete
+        }, 100); // Small delay to ensure app is rendered
+        
         // Set up global cart refresh functions
         setupGlobalCartFunctions(props);
         

@@ -47,7 +47,7 @@ export default function Wishlistbox(props) {
     return r.toFixed(1);
   }
 
-  const processingFee = (itm?.price||0) * 0.15;
+  const processingFee = (itm?.price||0) * (window.platformFeePercentage || 20) / 100;
 
   return <div key={key}
   style={IsloggedIn ? style : stylenone}

@@ -206,6 +206,9 @@ class AuthenticatedSessionController extends Controller
             [$isNeedToUpgrade, $cardCapabilities] = $this->getStripeCapabilities($user);
         }
 
+        // Check if account needs migration for cross-border payments
+        $migrationStatus = $this->getMigrationStatus($user);
+
         return Inertia::render('Dashboard', [
             'username' => $username,
             'user' => $user,
@@ -213,6 +216,7 @@ class AuthenticatedSessionController extends Controller
             // About Page Data
             'card_capabilities' => $cardCapabilities,
             'isNeedToUpgrade' => $isNeedToUpgrade,
+            'migration_status' => $migrationStatus,
             'sociallinks' => $sociallinks,
             'slinks' => $sociallinks,
             'intro' => $userIntro,
@@ -251,6 +255,41 @@ class AuthenticatedSessionController extends Controller
                 // Update user if account is invalid
                 $user->update(['stripe_details_submitted' => 0]);
                 return [false, true];
+            }
+        });
+    }
+
+    /**
+     * Check if user's Stripe account needs migration for cross-border payments
+     */
+    private function getMigrationStatus($user): array
+    {
+        // Only check for logged-in users viewing their own profile
+        if (!Auth::check() || Auth::id() !== $user->id) {
+            return ['needs_migration' => false, 'show_warning' => false];
+        }
+
+        // Use caching to avoid repeated Stripe API calls
+        $cacheKey = "migration_status_{$user->id}";
+        
+        return Cache::remember($cacheKey, 600, function () use ($user) {
+            try {
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+                
+                return [
+                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
+                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
+                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
+                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
+                    'country' => $migrationCheck['country'] ?? $user->country,
+                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+                ];
+            } catch (\Exception $e) {
+                return [
+                    'needs_migration' => false,
+                    'show_warning' => false,
+                    'error' => 'Unable to check migration status'
+                ];
             }
         });
     }

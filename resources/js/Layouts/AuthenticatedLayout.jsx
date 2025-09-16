@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAlerts } from '@/Components/Alerts';
 import BottomBar from './BottomBar';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
+import PullToRefresh from '@/Components/PullToRefresh';
 const Footer = lazy(() => import('@/includes/Footer'));
 const Header = lazy(() => import('@/includes/Header'));
 
@@ -60,6 +61,7 @@ export default function Authenticated(props){
         <Footer auth={auth} />
         <BottomBar />
         <PwaInstallPrompt />
+        <PullToRefresh />
     
     </>
 }

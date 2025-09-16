@@ -504,7 +504,6 @@ export default function Dashboard(props) {
                         </div>
                         
                         {/* Stripe Account Migration Warning */}
-                        <DashboardStripeMigrationWarning migrationStatus={migration_status} />
 
                             {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
                                 <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
@@ -559,11 +558,12 @@ export default function Dashboard(props) {
                                                                 <div className="col-md-6  h-auto">
                                                                     <div className="about-sticky" >
 
+                                                                        <DashboardStripeMigrationWarning migrationStatus={migration_status} />
+
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.length > 0 && AuthUserStripeConnected ?
                                                                             <ActionRequired requirements={stripe_requirements} />
                                                                         : ''}
 
-                                                                        
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
@@ -666,13 +666,14 @@ export default function Dashboard(props) {
 
                                                             <div className="ps-md-4 col-md-6">
                                                                 
-                                                                {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
+                                                                
+                                                                {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                                                     <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
                                                                         <CreatorSubscriptionWidget 
                                                                             className="mb-4"
                                                                         />
                                                                     </Suspense>
-                                                                )}
+                                                                )} */}
                                                                 
                                                                 {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
                                                                     <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>
