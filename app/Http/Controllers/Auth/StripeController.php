@@ -1307,6 +1307,11 @@ class StripeController extends Controller
                     ],
                     'description' => "One-time Wish Subscription for {$wish->user->username} with platform fee",
                     'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
+                        'creator_id' => (string) $wish->user->id,
+                        'wish_id' => (string) $wish->id,
+                        'deliverable_type' => $reccure === 'onetime' ? 'media_bundle' : 'access',
+                        'certificate' => 'true',
+                        'product_type' => $reccure === 'onetime' ? 'wish_onetime' : 'wish_subscription',
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
                         'creator_vat_amount' => (string) $creatorVatAmount,
@@ -1321,6 +1326,11 @@ class StripeController extends Controller
                 $payload['subscription_data'] = [
                     'description' => 'Wish Item Subscription Content Purchase.',
                     'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
+                        'creator_id' => (string) $wish->user->id,
+                        'wish_id' => (string) $wish->id,
+                        'deliverable_type' => $reccure === 'onetime' ? 'media_bundle' : 'access',
+                        'certificate' => 'true',
+                        'product_type' => $reccure === 'onetime' ? 'wish_onetime' : 'wish_subscription',
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
                         'creator_vat_amount' => (string) $creatorVatAmount,

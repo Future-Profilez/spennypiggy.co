@@ -26,6 +26,7 @@ use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\DeliveriesController;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Jobs\SendRenewMail;
 use App\Models\Bills;
@@ -308,6 +309,10 @@ Route::middleware('auth')->group(function () {
                 Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
                 Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
                 Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
+            });
+            Route::prefix("deliveries")->name("deliveries.")->group(function () {
+                Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
+                Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
             });
             Route::prefix("post")->name("post.")->group(function () {
                 Route::post('save', [PostsController::class, 'savePost'])->name('save');

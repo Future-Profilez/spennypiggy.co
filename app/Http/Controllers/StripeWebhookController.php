@@ -211,6 +211,11 @@ class StripeWebhookController extends Controller
         $metadata = $event->data->object->metadata ?? null;
 
         switch ($type) {
+            case 'checkout.session.completed':
+                Log::info("Handling Checkout Session Completed");
+                $this->handleCheckoutSessionCompleted($data, $metadata);
+                break;
+
             case 'customer.subscription.updated':
                 $productType = $metadata->type ?? null;
 
@@ -268,6 +273,89 @@ class StripeWebhookController extends Controller
                 Log::info("Unhandled event type: " . $type);
         }
         return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Handle checkout session completed event
+     */
+    public function handleCheckoutSessionCompleted($session, $metadata)
+    {
+        try {
+            Log::info("Processing checkout session completed", [
+                'session_id' => $session->id,
+                'metadata' => $metadata
+            ]);
+
+            // Check if this is a wish item purchase
+            if (isset($metadata->deliverable_type) && $metadata->deliverable_type === 'media_bundle') {
+                $this->processWishItemDeliverable($session, $metadata);
+            }
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error("Error processing checkout session completed", [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Process wish item deliverable creation
+     */
+    private function processWishItemDeliverable($session, $metadata)
+    {
+        // Get wish item to check for content file
+        $wishItem = null;
+        $deliverableType = $metadata->deliverable_type ?? 'media_bundle';
+        $contentUrl = null;
+        
+        if (isset($metadata->wish_id)) {
+            $wishItem = \App\Models\WishItem::find($metadata->wish_id);
+            if ($wishItem && $wishItem->content_file) {
+                $deliverableType = 'content_file';
+                $contentUrl = $wishItem->content_file_url; // Use Uploadcare URL
+            }
+        }
+
+        // Create deliverable record
+        $deliverable = \App\Models\Deliverable::create([
+            'uuid' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
+            'gifter_id' => $metadata->user_id ?? null,
+            'creator_id' => $metadata->creator_id ?? null,
+            'wish_id' => $metadata->wish_id ?? null,
+            'price_id' => $metadata->price_id ?? null,
+            'payment_intent_id' => $session->payment_intent ?? null,
+            'session_id' => $session->id,
+            'deliverable_type' => $deliverableType,
+            'status' => 'pending',
+            'metadata' => json_encode([
+                'certificate' => $metadata->certificate ?? 'true',
+                'product_type' => $metadata->product_type ?? 'wish_one_off',
+                'content_url' => $contentUrl, // Real content URL instead of zip
+                'content_file_name' => $wishItem->content_file_name ?? null,
+                'content_file_type' => $wishItem->content_file_type ?? null,
+                'session_data' => [
+                    'amount_total' => $session->amount_total,
+                    'currency' => $session->currency,
+                    'customer_email' => $session->customer_details->email ?? null,
+                    'payment_status' => $session->payment_status
+                ]
+            ])
+        ]);
+
+        Log::info("Created deliverable record", [
+            'deliverable_id' => $deliverable->id,
+            'uuid' => $deliverable->uuid,
+            'session_id' => $session->id,
+            'deliverable_type' => $deliverableType,
+            'has_content_file' => $wishItem && $wishItem->content_file ? true : false
+        ]);
+
+        // Dispatch job to process the deliverable (media bundle creation, etc.)
+        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
     }
 
     public function handleBillSubscriptionUpdate($data, $metadata)

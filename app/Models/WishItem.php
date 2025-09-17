@@ -28,6 +28,9 @@ class WishItem extends Model
         "item_url",
         "thumbnail",
         'reward',
+        'content_file',
+        'content_file_type',
+        'content_file_name',
         'ai_generated',
         "subscription",
         "subscription_period",
@@ -53,6 +56,7 @@ class WishItem extends Model
         "perma_link",
         'is_cart',
         'reward_url',
+        'content_file_url',
         'real_category'
     ];
 
@@ -111,6 +115,22 @@ class WishItem extends Model
         $url = false;
         if (!empty($this->reward)) {
             $url = "https://ucarecdn.com/" . $this->reward . "/-/format/jpeg/";
+        }
+
+        return $url;
+    }
+
+    public function getContentFileUrlAttribute()
+    {
+        $url = null;
+        if (!empty($this->content_file)) {
+            // If it's a full Uploadcare URL (with modifiers), return as is
+            if (strpos($this->content_file, 'https://ucarecdn.com/') === 0) {
+                $url = $this->content_file;
+            } else {
+                // If it's just a UUID, construct the Uploadcare URL
+                $url = "https://ucarecdn.com/" . $this->content_file . "/";
+            }
         }
 
         return $url;

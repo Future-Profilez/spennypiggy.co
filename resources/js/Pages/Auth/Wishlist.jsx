@@ -48,7 +48,7 @@ export default function Wishlist(props) {
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
     const [repeat, setRepeat] = useState(true);
-    const [thumbnail, setThumbnail] = useState("");
+    const [thumbnail, setThumbnail] = useState(item?.thumbnail || "");
     const [adding, setAdding] = useState(false);
     const [rewardImage, setRewardImage] = useState("");
     const [isAiImage, setIsAiImage] = useState();
@@ -65,6 +65,9 @@ export default function Wishlist(props) {
         }
         if (uploaderRef1.current) {
             uploaderRef1.current.reset();
+        }
+        if (contentUploaderRef.current) {
+            contentUploaderRef.current.reset();
         }
     };
 
@@ -109,8 +112,9 @@ export default function Wishlist(props) {
         wishname: item && item.wishname ? item.wishname : "",
         price: item && item.price ? item.price : "",
         item_url: item && item.item_url ? item.item_url : "",
-        thumbnail: item && item.thumbnail ? item.thumbnail : imageLinks[0],
+        thumbnail: item && item.thumbnail ? item.thumbnail : (editpop ? "" : imageLinks[0]),
         reward_file: item && item.reward_file ? item.reward_file : "",
+        content_file: item?.content_file || "",
         subscription: item && item.subscription ? item.subscription : "",
         subscription_period:
             item && item.subscription_period ? item.subscription_period : "",
@@ -147,18 +151,33 @@ export default function Wishlist(props) {
         }
     };
 
+    const [contentFile, setContentFile] = useState(item?.content_file || "");
+    const contentUploaderRef = useRef();
+
+    const getContentFileUID = async (data) => {
+        let uuid = data?.uuid;
+        setContentFile(uuid);
+        setData("content_file", uuid);
+        console.log("getContentFileUID",data)
+    };
+
+    useEffect(() => {
+        setData("content_file", contentFile);
+    }, [contentFile]);
+
     const [isEditable, setIsEditable] = useState(false);
     const getFileUID = async (data) => {
         let ss = data?.uuid;
         setThumbnail(ss);
-        setIsEditable(true);
+        // setIsEditable(true);
     };
 
-    const wishImageEdited = async (d, uuid) => {
-        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
-        setThumbnail(url);
-        setIsEditable(false);
-    };
+
+    // const wishImageEdited = async (d, uuid) => {
+    //     const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
+    //     setThumbnail(url);
+    //     setIsEditable(false);
+    // };
 
     const getAIImage = (e) => {
         setRewardImage(
@@ -176,9 +195,6 @@ export default function Wishlist(props) {
         setData("ai_generated", 0);
     };
 
-    useEffect(() => {
-        setData("reward_file", rewardImage);
-    }, [rewardImage]);
 
     const rpValue = (e) => {
         setRepeat(e.target.checked);
@@ -196,7 +212,26 @@ export default function Wishlist(props) {
 
     useEffect(() => {
         setData("thumbnail", thumbnail);
+        console.log("thumbnail",thumbnail);
     }, [thumbnail]);
+
+    useEffect(() => {
+        setData("content_file", contentFile);
+    }, [contentFile]);
+
+    // Initialize thumbnail state when editing an item
+    useEffect(() => {
+        if (editpop && item?.thumbnail) {
+            setThumbnail(item.thumbnail);
+        }
+    }, [editpop, item]);
+
+    // Initialize contentFile state when editing an item
+    useEffect(() => {
+        if (editpop && item?.content_file) {
+            setContentFile(item.content_file);
+        }
+    }, [editpop, item]);
 
     const createWishList = async (e) => {
         e.preventDefault();
@@ -434,27 +469,12 @@ export default function Wishlist(props) {
                                         OR{" "}
                                     </h4>
 
-                                    <div
-                                        className={`${
-                                            !isEditable ? "" : "d-none"
-                                        } editable`}
-                                    >
+                                    <div className={`${ !isEditable ? "" : "d-none" } editable`} >
                                         <GlobalUploader
                                             type="minimal" ctxName="wishlist"
                                             ref={uploaderRef}
                                             sendFile={getFileUID}
                                             options={st.wishitemUploader}
-                                        />
-                                    </div>
-
-                                    <div
-                                        className={`${
-                                            isEditable ? "" : "d-none"
-                                        } editable`}
-                                    >
-                                        <UploadcareEditor
-                                            uuid={thumbnail}
-                                            updateFile={wishImageEdited}
                                         />
                                     </div>
                                 </li>
@@ -576,6 +596,67 @@ export default function Wishlist(props) {
                                                 </Accordion.Body>
                                             </Accordion.Item> */}
                                 </Accordion>
+                            </div>
+
+                            <div className="pt-4 pb-3">
+                                <strong className="text-start d-block">
+                                    Content File (Optional)
+                                </strong>
+                                <p className="text-small mb-3">
+                                    Upload a single file that buyers will receive after purchase. 
+                                    This can be an image, video, audio, PDF, or document file.
+                                </p>
+                                <p className="text-small mb-3">
+                                    Supported formats: JPEG, PNG, GIF, MP4, MOV, AVI, MP3, WAV, PDF, DOC, DOCX (Max: 50MB)
+                                </p>
+                                
+                                {item && item.content_file && (
+                                    <div className="mb-3 p-3 border rounded">
+                                        <p className="text-sm text-gray-600 mb-2">
+                                            Current file: {item.content_file_name || 'Uploaded file'}
+                                        </p>
+                                        {item.content_file_type && item.content_file_type.startsWith('image/') && (
+                                            <div className="default-wish-img mb-2">
+                                                <img
+                                                    src={item.content_file_url || `https://ucarecdn.com/${item.content_file}/`}
+                                                    className="img-fluid"
+                                                    style={{ maxHeight: '200px', objectFit: 'contain' }}
+                                                    alt="Content file preview"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {contentFile && (
+                                    <div className="mb-3 p-3 border rounded">
+                                        <p className="text-sm text-gray-600 mb-2">
+                                            File uploaded successfully
+                                        </p>
+                                        <div className="default-wish-img mb-2">
+                                            <img
+                                                src={`https://ucarecdn.com/${contentFile}/`}
+                                                className="img-fluid"
+                                                style={{ maxHeight: '200px', objectFit: 'contain' }}
+                                                alt="Content file preview"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <GlobalUploader
+                                    type="minimal"
+                                    ctxName="wishlistcontent"
+                                    ref={contentUploaderRef}
+                                    sendFile={getContentFileUID}
+                                    options={st.wishlistcontent}
+                                />
+                                
+                                {errors.content_file && (
+                                    <div className="text-red-500 text-sm mt-1">
+                                        {errors.content_file}
+                                    </div>
+                                )}
                             </div>
 
                             {/* <div className="pt-4 pb-3">

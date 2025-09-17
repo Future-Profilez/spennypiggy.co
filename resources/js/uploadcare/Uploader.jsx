@@ -28,34 +28,45 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
 
   useEffect(() => {
     const finishHandler = e => {
+      // Check if this event is for our specific context
+      const eventCtx = e.detail?.ctx || e.target?.getAttribute?.('ctx-name');
+      if (eventCtx && eventCtx !== ctxName) return;
+      
       const data = e.detail.data; // final files array
-      console.log('Upload finished', data);
+      console.log('Upload finished', data, 'for context:', ctxName);
       checkAdult(data);
       // sendFile(data[0]);
       // setFiles(data);
       handleResetUploader();
     };
-    window.addEventListener('LR_UPLOAD_FINISH', finishHandler);
-    return () => window.removeEventListener('LR_UPLOAD_FINISH', finishHandler);
-  }, []);
-
-
-  useEffect(() => {
-    window.addEventListener('LR_UPLOAD_START', () => {
+    
+    const startHandler = () => {
       setCheckIsUploading(true);
       isUploading && isUploading(true);
-    });
-
-    window.addEventListener('LR_UPLOAD_FINISH', () => {
+    };
+    
+    const finishGlobalHandler = () => {
       setCheckIsUploading(false);
       isUploading && isUploading(false);
-    });
-
-    window.addEventListener('LR_REMOVE', () => {
+    };
+    
+    const removeHandler = () => {
       setCheckIsUploading(false);
       isUploading && isUploading(false);
-    });
-  }, []);
+    };
+    
+    window.addEventListener('LR_UPLOAD_FINISH', finishHandler);
+    window.addEventListener('LR_UPLOAD_START', startHandler);
+    window.addEventListener('LR_UPLOAD_FINISH', finishGlobalHandler);
+    window.addEventListener('LR_REMOVE', removeHandler);
+    
+    return () => {
+      window.removeEventListener('LR_UPLOAD_FINISH', finishHandler);
+      window.removeEventListener('LR_UPLOAD_START', startHandler);
+      window.removeEventListener('LR_UPLOAD_FINISH', finishGlobalHandler);
+      window.removeEventListener('LR_REMOVE', removeHandler);
+    };
+  }, [ctxName]);
 
   const checkAdult = async (d) => {
     const f = d[0];

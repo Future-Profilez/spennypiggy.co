@@ -15,30 +15,25 @@ class Deliverable extends Model
 
     protected $fillable = [
         'uuid',
-        'transaction_id',
-        'stripe_session_id',
-        'buyer_id',
-        'creator_id',
-        'product_type',
         'product_id',
+        'price_id',
+        'creator_id',
+        'gifter_id',
+        'payment_intent_id',
+        'session_id',
+        'deliverable_type',
         'deliverable_url',
-        'receipt_url',
-        'certificate_url',
+        'metadata',
         'status',
-        'sla_deadline',
-        'sla_status',
         'delivered_at',
-        'metadata'
     ];
 
     protected $casts = [
-        'sla_deadline' => 'datetime',
         'delivered_at' => 'datetime',
         'metadata' => 'array'
     ];
 
     protected $dates = [
-        'sla_deadline',
         'delivered_at'
     ];
 
@@ -50,20 +45,15 @@ class Deliverable extends Model
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
             }
-            
-            // Set SLA deadline based on product type
-            if (empty($model->sla_deadline)) {
-                $model->sla_deadline = $model->calculateSlaDeadline();
-            }
         });
     }
 
     /**
-     * Get the buyer who purchased this deliverable
+     * Get the gifter who purchased this deliverable
      */
-    public function buyer(): BelongsTo
+    public function gifter(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'buyer_id');
+        return $this->belongsTo(User::class, 'gifter_id');
     }
 
     /**
@@ -74,134 +64,79 @@ class Deliverable extends Model
         return $this->belongsTo(User::class, 'creator_id');
     }
 
-    /**
-     * Get all SLA violations for this deliverable
-     */
-    public function slaViolations(): HasMany
-    {
-        return $this->hasMany(SlaViolation::class);
-    }
+    // Deliverable types enum
+    const DELIVERABLE_TYPES = [
+        'digital_file',
+        'pdf_receipt',
+        'badge',
+        'cert',
+        'access',
+        'post',
+        'media_bundle',
+        'content_file'
+    ];
 
-    /**
-     * Get all notifications for this deliverable
-     */
-    public function notifications(): HasMany
-    {
-        return $this->hasMany(DeliverableNotification::class);
-    }
-
-    /**
-     * Calculate SLA deadline based on product type
-     */
-    public function calculateSlaDeadline(): Carbon
-    {
-        $now = Carbon::now();
-        
-        return match ($this->product_type) {
-            'piggy_bank', 'membership', 'wish_subscription' => $now, // Instant (0h)
-            'bill_subscription' => $now->addDay(), // 1 day
-            'wish', 'shop_item' => $now->addHours(12), // 0.5 day (12 hours)
-            default => $now->addDay()
-        };
-    }
-
-    /**
-     * Check if deliverable is overdue
-     */
-    public function isOverdue(): bool
-    {
-        return $this->sla_deadline && 
-               Carbon::now()->isAfter($this->sla_deadline) && 
-               $this->status !== 'delivered';
-    }
-
-    /**
-     * Check if deliverable is approaching deadline (within 2 hours)
-     */
-    public function isApproachingDeadline(): bool
-    {
-        return $this->sla_deadline && 
-               Carbon::now()->addHours(2)->isAfter($this->sla_deadline) && 
-               $this->status !== 'delivered';
-    }
+    // Status enum
+    const STATUSES = [
+        'pending',
+        'delivered',
+        'failed'
+    ];
 
     /**
      * Mark deliverable as delivered
      */
-    public function markAsDelivered(string $deliverableUrl = null, string $receiptUrl = null): void
+    public function markAsDelivered(string $deliverableUrl = null): void
     {
         $this->update([
             'status' => 'delivered',
-            'sla_status' => $this->isOverdue() ? 'late' : 'on_time',
             'delivered_at' => Carbon::now(),
             'deliverable_url' => $deliverableUrl ?? $this->deliverable_url,
-            'receipt_url' => $receiptUrl ?? $this->receipt_url
         ]);
     }
 
     /**
-     * Mark deliverable as late
+     * Mark deliverable as failed
      */
-    public function markAsLate(): void
+    public function markAsFailed(): void
     {
         $this->update([
-            'status' => 'late',
-            'sla_status' => 'late'
+            'status' => 'failed'
         ]);
     }
 
     /**
-     * Mark deliverable as escalated
+     * Check if deliverable is for wish items
      */
-    public function markAsEscalated(): void
+    public function isWishItem(): bool
     {
-        $this->update([
-            'status' => 'escalated',
-            'sla_status' => 'escalated'
-        ]);
+        return $this->deliverable_type === 'media_bundle';
     }
 
     /**
-     * Revoke deliverable (for refunds)
+     * Get metadata value by key
      */
-    public function revoke(): void
+    public function getMetadataValue($key, $default = null)
     {
-        $this->update([
-            'status' => 'revoked'
-        ]);
+        return $this->metadata[$key] ?? $default;
     }
 
     /**
-     * Get human-readable product type
+     * Get human-readable deliverable type
      */
-    public function getProductTypeDisplayAttribute(): string
+    public function getDeliverableTypeDisplayAttribute(): string
     {
-        return match ($this->product_type) {
-            'piggy_bank' => 'Piggy Bank',
-            'membership' => 'Membership',
-            'wish_subscription' => 'Wish Subscription',
-            'bill_subscription' => 'Bill Subscription',
-            'wish' => 'Wish',
-            'shop_item' => 'Shop Item',
-            default => ucfirst(str_replace('_', ' ', $this->product_type))
+        return match ($this->deliverable_type) {
+            'digital_file' => 'Digital File',
+            'pdf_receipt' => 'PDF Receipt',
+            'badge' => 'Badge',
+            'cert' => 'Certificate',
+            'access' => 'Access',
+            'post' => 'Post',
+            'media_bundle' => 'Media Bundle',
+            'content_file' => 'Content File',
+            default => ucfirst(str_replace('_', ' ', $this->deliverable_type))
         };
-    }
-
-    /**
-     * Get time remaining until SLA deadline
-     */
-    public function getTimeRemainingAttribute(): ?string
-    {
-        if (!$this->sla_deadline || $this->status === 'delivered') {
-            return null;
-        }
-
-        $now = Carbon::now();
-        if ($now->isAfter($this->sla_deadline)) {
-            return 'Overdue';
-        }
-
-        return $now->diffForHumans($this->sla_deadline, true);
     }
 
     /**
@@ -213,22 +148,27 @@ class Deliverable extends Model
     }
 
     /**
-     * Scope for overdue deliverables
+     * Scope for delivered deliverables
      */
-    public function scopeOverdue($query)
+    public function scopeDelivered($query)
     {
-        return $query->where('status', '!=', 'delivered')
-                    ->where('sla_deadline', '<', Carbon::now());
+        return $query->where('status', 'delivered');
     }
 
     /**
-     * Scope for deliverables approaching deadline
+     * Scope for failed deliverables
      */
-    public function scopeApproachingDeadline($query)
+    public function scopeFailed($query)
     {
-        return $query->where('status', '!=', 'delivered')
-                    ->where('sla_deadline', '>', Carbon::now())
-                    ->where('sla_deadline', '<=', Carbon::now()->addHours(2));
+        return $query->where('status', 'failed');
+    }
+
+    /**
+     * Scope for specific deliverable type
+     */
+    public function scopeOfType($query, $type)
+    {
+        return $query->where('deliverable_type', $type);
     }
 
     /**
@@ -240,10 +180,10 @@ class Deliverable extends Model
     }
 
     /**
-     * Scope for buyer's deliverables
+     * Scope for gifter's deliverables
      */
-    public function scopeForBuyer($query, $buyerId)
+    public function scopeForGifter($query, $gifterId)
     {
-        return $query->where('buyer_id', $buyerId);
+        return $query->where('gifter_id', $gifterId);
     }
 }
