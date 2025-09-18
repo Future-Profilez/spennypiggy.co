@@ -29,6 +29,10 @@ class Deliverable extends Model
         'metadata',
         'status',
         'delivered_at',
+        'customer_email',
+        'customer_name',
+        'payment_status',
+        'payment_currency',
     ];
 
     protected $casts = [

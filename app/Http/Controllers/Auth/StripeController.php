@@ -826,7 +826,8 @@ class StripeController extends Controller
                 // }
             }
 
-            CheckoutMailToUser::dispatch($stripeid);
+            // CheckoutMailToUser::dispatch($stripeid);
+            // NOTE: Disabled to prevent duplicate emails - CheckoutController handles this with proper currency
 
             if (!empty($getdata[0]->owner->username)) {
                 return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');

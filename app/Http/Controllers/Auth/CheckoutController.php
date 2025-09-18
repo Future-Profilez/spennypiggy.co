@@ -856,25 +856,8 @@ class CheckoutController extends Controller
                     throw $e;
                 }
 
-                Log::info("About to dispatch jobs and create UserPayment");
-                
-                Log::info("Before job dispatch - checking Auth status");
-                if (Auth::check()) {
-                    Log::info("Dispatching CheckoutUser job for authenticated user");
-                    Log::info("About to check wish_item_id", ['wish_item_id' => $dd->wish_item_id]);
-                    if ($dd->wish_item_id == NULL) {
-                        Log::info("Dispatching CheckoutUser with dd parameter");
-                        CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol, $vat_amount);
-                    } else {
-                        Log::info("Dispatching CheckoutUser without dd parameter");
-                        CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol, $vat_amount);
-                    }
-                    Log::info("CheckoutUser job dispatched successfully");
-                } else {
-                    Log::info("Dispatching CheckoutUser job for guest user");
-                    CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol, $vat_amount);
-                    Log::info("CheckoutUser job dispatched successfully for guest");
-                }
+                Log::info("Skipping individual CheckoutUser job dispatch - will be handled by consolidated email");
+                // NOTE: CheckoutUser jobs have been moved outside the loop to prevent multiple creator emails
                 
                 Log::info("Jobs dispatched, continuing with auto_tweet check");
 
@@ -921,13 +904,15 @@ class CheckoutController extends Controller
 
 
                 Log::info("About to dispatch checkout email (authenticated or guest)");
-                $curr = Currency::where('iso', strtoupper($currency))->first();
+                // Use actual payment currency instead of cookie currency
+                $actualCurrency = $stripeid->currency ?? $currency;
+                $curr = Currency::where('iso', strtoupper($actualCurrency))->first();
                 if ($curr) {
-                    Log::info("Currency found, dispatching CheckoutMailToUser", ['currency' => $currency, 'symbol' => $curr->symbol]);
+                    Log::info("Currency found, dispatching CheckoutMailToUser", ['currency' => $actualCurrency, 'symbol' => $curr->symbol]);
                     CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
                     Log::info("CheckoutMailToUser job dispatched successfully");
                 } else {
-                    Log::warning("Currency not found for checkout email: " . strtoupper($currency));
+                    Log::warning("Currency not found for checkout email: " . strtoupper($actualCurrency));
                     CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
                     Log::info("CheckoutMailToUser job dispatched with default symbol");
                 }

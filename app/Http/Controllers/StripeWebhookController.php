@@ -368,13 +368,14 @@ class StripeWebhookController extends Controller
                     $currency = \App\Models\Currency::where('iso', strtoupper($session->currency))->first();
                     $currencySymbol = $currency ? $currency->symbol : '£';
                     
-                    Log::info("Dispatching CheckoutMailToUser for wish purchase", [
+                    Log::info("Skipping CheckoutMailToUser dispatch in webhook - already handled by checkout controller", [
                         'payment_id' => $payment->id,
                         'user_id' => $metadata->user_id,
                         'currency' => $currencySymbol
                     ]);
                     
-                    \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
+                    // \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
+                    // NOTE: Disabled to prevent duplicate emails - checkout controller handles this
                 } else {
                     Log::info('User not eligible for email (is_uk != 0 or user not found)', [
                         'user_id' => $metadata->user_id

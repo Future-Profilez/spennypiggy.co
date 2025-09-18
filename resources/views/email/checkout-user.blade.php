@@ -68,19 +68,30 @@
                      <td style="padding: 0 0 20px 0; font-family: Arial; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
                          Go to <a href="https://spennypiggy.co/">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
                      </tr>
-                 @php
+                @php
                      // Get content deliverables for this payment
                      $contentDeliverables = [];
                      try {
-                         if (isset($data->id)) {
-                             $contentDeliverables = \App\Models\Deliverable::where('session_id', $data->session_id ?? null)
-                                 ->where('deliverable_type', '!=', 'email')
-                                 ->where('status', 'delivered')
-                                 ->whereNotNull('deliverable_url')
-                                 ->get();
+                         // First check if consolidated deliverables are passed directly (new approach)
+                         if (isset($data->consolidated_email) && $data->consolidated_email && isset($data->deliverables)) {
+                             $contentDeliverables = collect($data->deliverables)->filter(function($d) {
+                                 return !empty($d->deliverable_url) && $d->deliverable_type !== 'email';
+                             });
+                             \Log::info('Email template: Using consolidated deliverables', ['count' => $contentDeliverables->count()]);
+                         } else {
+                             // Fallback to database query (legacy approach)
+                             if (isset($data->id)) {
+                                 $contentDeliverables = \App\Models\Deliverable::where('session_id', $data->session_id ?? null)
+                                     ->where('deliverable_type', '!=', 'email')
+                                     ->where('status', 'delivered')
+                                     ->whereNotNull('deliverable_url')
+                                     ->get();
+                                 \Log::info('Email template: Using database query deliverables', ['count' => $contentDeliverables->count()]);
+                             }
                          }
                      } catch (\Exception $e) {
                          \Log::warning('Email template: Failed to load deliverables', ['error' => $e->getMessage()]);
+                         $contentDeliverables = collect();
                      }
                  @endphp
                  
@@ -92,8 +103,22 @@
                          
                          @foreach($contentDeliverables as $deliverable)
                              @php
-                                 $metadata = json_decode($deliverable->metadata, true);
-                                 $wishName = $metadata['wish_name'] ?? 'Digital Content';
+                                 // Handle both consolidated deliverables (objects) and legacy deliverables (models)
+                                 if (is_object($deliverable) && isset($deliverable->metadata)) {
+                                     $metadata = is_array($deliverable->metadata) ? $deliverable->metadata : json_decode($deliverable->metadata, true);
+                                 } else {
+                                     $metadata = [];
+                                 }
+                                 
+                                 // Get wish name - try multiple sources
+                                 $wishName = 'Digital Content';
+                                 if (isset($deliverable->wish_item) && $deliverable->wish_item->wishname) {
+                                     $wishName = $deliverable->wish_item->wishname;
+                                 } elseif (isset($metadata['wish_name'])) {
+                                     $wishName = $metadata['wish_name'];
+                                 }
+                                 
+                                 // Get media type information
                                  $mediaType = $metadata['media_type'] ?? $metadata['content_file_type'] ?? 'file';
                                  $fileName = $metadata['content_file_name'] ?? null;
                                  $contentSource = $metadata['content_source'] ?? 'unknown';
@@ -117,6 +142,9 @@
                                          $contentDescription = 'PDF Document';
                                      }
                                  }
+                                 
+                                 // Get deliverable URL
+                                 $contentUrl = $deliverable->deliverable_url ?? '#';
                              @endphp
                              <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF;">
                                  <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">{{ $wishName }}</p>
@@ -126,7 +154,7 @@
                                          <br><span style="font-size: 12px; color: #999;">📁 {{ $fileName }}</span>
                                      @endif
                                  </p>
-                                 <a href="{{ $deliverable->deliverable_url }}" 
+                                 <a href="{{ $contentUrl }}" 
                                     style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold; transition: background-color 0.3s;"
                                     target="_blank">🎁 Access Your Content</a>
                              </div>

@@ -283,33 +283,8 @@ class CheckoutMailToUser implements ShouldQueue
     }
     
     /**
-     * Process individual deliverables - creates separate emails and notifications for each wish item
+     * REMOVED: Old individual deliverables method - replaced with consolidated approach
      */
-    private function processIndividualDeliverables()
-    {
-        try {
-            // Get payment items with their wish data
-            $paymentItems = $this->payment->stripePaymentItems()->with('wish')->get();
-            
-            \Log::info('CheckoutMailToUser: Processing individual deliverables', [
-                'payment_id' => $this->payment->id,
-                'items_count' => $paymentItems->count()
-            ]);
-            
-            // Try to use comprehensive metadata if available
-            $paymentMetadata = $this->getPaymentMetadata();
-            
-            foreach ($paymentItems as $item) {
-                $this->processItemDeliverable($item, $paymentMetadata);
-            }
-            
-        } catch (\Exception $e) {
-            \Log::error('CheckoutMailToUser: Failed to process individual deliverables', [
-                'payment_id' => $this->payment->id,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
     
     /**
      * Get comprehensive payment metadata from database or Stripe
@@ -417,48 +392,8 @@ class CheckoutMailToUser implements ShouldQueue
     }
     
     /**
-     * Process individual item deliverable with email and notification
+     * REMOVED: Old individual item deliverable method - replaced with consolidated approach
      */
-    private function processItemDeliverable($paymentItem, $paymentMetadata = null)
-    {
-        try {
-            $wish = $paymentItem->wish;
-            
-            if (!$wish) {
-                \Log::warning('CheckoutMailToUser: No wish found for payment item', [
-                    'payment_item_id' => $paymentItem->id
-                ]);
-                return;
-            }
-            
-            \Log::info('CheckoutMailToUser: Processing item deliverable', [
-                'wish_id' => $wish->id,
-                'wish_name' => $wish->wishname,
-                'payment_item_id' => $paymentItem->id,
-                'has_metadata' => !is_null($paymentMetadata)
-            ]);
-            
-            // Get content info from metadata if available
-            $contentInfo = $this->getContentInfoFromMetadata($wish->id, $paymentMetadata);
-            
-            // Create deliverable record with enhanced content info
-            $deliverable = $this->createItemDeliverableRecord($paymentItem, $wish, $contentInfo);
-            
-            if ($deliverable) {
-                // Send individual email for this item
-                $this->sendItemEmail($deliverable, $paymentItem, $wish, $contentInfo);
-                
-                // Create deliverable notification
-                $this->createDeliverableNotification($deliverable);
-            }
-            
-        } catch (\Exception $e) {
-            \Log::error('CheckoutMailToUser: Failed to process item deliverable', [
-                'payment_item_id' => $paymentItem->id,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
     
     /**
      * Extract content info for specific wish from comprehensive metadata
@@ -546,6 +481,18 @@ class CheckoutMailToUser implements ShouldQueue
                 return null;
             }
             
+            // Determine customer email and name
+            $customerEmail = null;
+            $customerName = null;
+            
+            if ($this->payment->user) {
+                $customerEmail = $this->payment->user->email;
+                $customerName = $this->payment->user->name;
+            } else {
+                $customerEmail = $this->payment->guest_email;
+                $customerName = $this->payment->name ?? 'Guest';
+            }
+            
             $deliverable = \App\Models\Deliverable::create([
                 'uuid' => \Str::uuid(),
                 'product_id' => (string) $wish->id, // Use actual wish_id from database, not Stripe product_id
@@ -559,6 +506,10 @@ class CheckoutMailToUser implements ShouldQueue
                 'product_type' => 'wish',
                 'transaction_amount' => $paymentItem->amount * $paymentItem->quantity,
                 'deliverable_url' => $deliverableUrl,
+                'customer_email' => $customerEmail,
+                'customer_name' => $customerName,
+                'payment_status' => $this->payment->payment_status ?? 'paid',
+                'payment_currency' => $this->payment->currency ?? 'USD',
                 'metadata' => json_encode([
                     'wish_id' => $wish->id, // Database wish_id
                     'stripe_product_id' => $wish->stripe_product_id, // Stripe product_id for reference
@@ -594,51 +545,8 @@ class CheckoutMailToUser implements ShouldQueue
     }
     
     /**
-     * Send individual email for specific item
+     * REMOVED: Old individual email sender - replaced with consolidated approach
      */
-    private function sendItemEmail($deliverable, $paymentItem, $wish, $contentInfo = null)
-    {
-        try {
-            \Log::info('CheckoutMailToUser: Sending individual item email', [
-                'deliverable_id' => $deliverable->id,
-                'wish_name' => $wish->wishname
-            ]);
-            
-            // Create individual email data for this specific item
-            $itemEmailData = (object) [
-                'id' => $this->payment->id,
-                'session_id' => $this->payment->session_id,
-                'amount_subtotal' => $paymentItem->amount * $paymentItem->quantity,
-                'amount_total' => ($paymentItem->amount + $paymentItem->tax) * $paymentItem->quantity,
-                'currency' => $this->payment->currency,
-                'user_id' => $this->payment->user_id,
-                'user' => $this->payment->user,
-                'owner_id' => $wish->user_id,
-                'owner' => $wish->user,
-                'guest_email' => $this->payment->guest_email,
-                'deliverable' => $deliverable,
-                'wish_item' => $wish,
-                'payment_item' => $paymentItem,
-                'content_info' => $contentInfo, // Enhanced content information
-                'has_enhanced_content' => !is_null($contentInfo),
-                'content_delivery_ready' => $contentInfo && $contentInfo['delivery_status'] === 'ready'
-            ];
-            
-            // Send email using existing service
-            EmailService::checkOutToUser($itemEmailData, $this->curr);
-            
-            \Log::info('CheckoutMailToUser: Individual item email sent', [
-                'deliverable_id' => $deliverable->id,
-                'wish_name' => $wish->wishname
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('CheckoutMailToUser: Failed to send item email', [
-                'deliverable_id' => $deliverable->id,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
     
     /**
      * Create deliverable notification record
@@ -853,25 +761,158 @@ class CheckoutMailToUser implements ShouldQueue
         }
         
         if ($shouldSendEmail) {
-            \Log::info('CheckoutMailToUser: Calling EmailService::checkOutToUser', [
+            \Log::info('CheckoutMailToUser: Sending consolidated email with all wish items', [
                 'payment_id' => $this->payment->id,
                 'currency' => $this->curr
             ]);
             
-            EmailService::checkOutToUser($this->payment,$this->curr);
+            // Create individual deliverables first (for tracking)
+            $deliverables = $this->createConsolidatedDeliverables();
             
-            \Log::info('CheckoutMailToUser: EmailService::checkOutToUser completed', [
-                'payment_id' => $this->payment->id
+            // Send single consolidated email with all wish items
+            $this->sendConsolidatedEmail($deliverables);
+            
+            \Log::info('CheckoutMailToUser: Consolidated email sent', [
+                'payment_id' => $this->payment->id,
+                'deliverables_count' => count($deliverables)
             ]);
-
-            // Create individual deliverable notifications for each purchased item
-            $this->processIndividualDeliverables();
         } else {
             \Log::info('CheckoutMailToUser: Email not sent', [
                 'payment_id' => $this->payment->id,
                 'has_user' => isset($this->payment->user) ? 'yes' : 'no',
                 'user_notification_send' => $this->payment->user->notification_send ?? 'null',
                 'guest_email' => $this->payment->guest_email ?? 'null'
+            ]);
+        }
+    }
+    
+    /**
+     * Create all deliverables and return them for consolidated email
+     */
+    private function createConsolidatedDeliverables()
+    {
+        try {
+            $deliverables = [];
+            
+            // Get payment items with their wish data
+            $paymentItems = $this->payment->stripePaymentItems()->with('wish')->get();
+            
+            \Log::info('CheckoutMailToUser: Creating consolidated deliverables', [
+                'payment_id' => $this->payment->id,
+                'items_count' => $paymentItems->count()
+            ]);
+            
+            // Try to use comprehensive metadata if available
+            $paymentMetadata = $this->getPaymentMetadata();
+            
+            foreach ($paymentItems as $item) {
+                $deliverable = $this->processItemDeliverableForConsolidation($item, $paymentMetadata);
+                if ($deliverable) {
+                    $deliverables[] = $deliverable;
+                }
+            }
+            
+            return $deliverables;
+            
+        } catch (\Exception $e) {
+            \Log::error('CheckoutMailToUser: Failed to create consolidated deliverables', [
+                'payment_id' => $this->payment->id,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+    
+    /**
+     * Process item deliverable for consolidation (creates deliverable record but no individual email)
+     */
+    private function processItemDeliverableForConsolidation($paymentItem, $paymentMetadata = null)
+    {
+        try {
+            $wish = $paymentItem->wish;
+            
+            if (!$wish) {
+                \Log::warning('CheckoutMailToUser: No wish found for payment item', [
+                    'payment_item_id' => $paymentItem->id
+                ]);
+                return null;
+            }
+            
+            \Log::info('CheckoutMailToUser: Processing item for consolidation', [
+                'wish_id' => $wish->id,
+                'wish_name' => $wish->wishname,
+                'payment_item_id' => $paymentItem->id
+            ]);
+            
+            // Get content info from metadata if available
+            $contentInfo = $this->getContentInfoFromMetadata($wish->id, $paymentMetadata);
+            
+            // Create deliverable record
+            $deliverable = $this->createItemDeliverableRecord($paymentItem, $wish, $contentInfo);
+            
+            if ($deliverable) {
+                // Create deliverable notification (but no individual email)
+                $this->createDeliverableNotification($deliverable);
+                
+                // Add wish and content info to deliverable for email template
+                $deliverable->wish_item = $wish;
+                $deliverable->payment_item = $paymentItem;
+                $deliverable->content_info = $contentInfo;
+            }
+            
+            return $deliverable;
+            
+        } catch (\Exception $e) {
+            \Log::error('CheckoutMailToUser: Failed to process item for consolidation', [
+                'payment_item_id' => $paymentItem->id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Send single consolidated email with all wish items
+     */
+    private function sendConsolidatedEmail($deliverables)
+    {
+        try {
+            \Log::info('CheckoutMailToUser: Sending consolidated email', [
+                'payment_id' => $this->payment->id,
+                'deliverables_count' => count($deliverables)
+            ]);
+            
+            // Create consolidated email data
+            $consolidatedEmailData = (object) [
+                'id' => $this->payment->id,
+                'session_id' => $this->payment->session_id,
+                'amount_subtotal' => $this->payment->amount_subtotal,
+                'amount_total' => $this->payment->amount_total,
+                'currency' => $this->payment->currency,
+                'user_id' => $this->payment->user_id,
+                'user' => $this->payment->user,
+                'owner_id' => $this->payment->owner_id,
+                'owner' => $this->payment->owner,
+                'guest_email' => $this->payment->guest_email,
+                'deliverables' => $deliverables, // All deliverables for consolidated display
+                'total_items' => count($deliverables),
+                'has_content' => count(array_filter($deliverables, function($d) { return !empty($d->deliverable_url); })) > 0,
+                'consolidated_email' => true // Flag to identify this as consolidated email
+            ];
+            
+            // Send email using existing service
+            EmailService::checkOutToUser($consolidatedEmailData, $this->curr);
+            
+            \Log::info('CheckoutMailToUser: Consolidated email sent successfully', [
+                'payment_id' => $this->payment->id,
+                'total_amount' => $this->payment->amount_total,
+                'items_with_content' => count(array_filter($deliverables, function($d) { return !empty($d->deliverable_url); }))
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('CheckoutMailToUser: Failed to send consolidated email', [
+                'payment_id' => $this->payment->id,
+                'error' => $e->getMessage()
             ]);
         }
     }
