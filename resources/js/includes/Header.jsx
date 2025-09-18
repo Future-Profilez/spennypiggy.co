@@ -126,8 +126,6 @@ export default function Header({classMagicword}) {
                                     src={spennypiggy}
                                     loading="eager"
                                 />
-                        <h2 className="text-white">{auth?.user?.subscription_status ? "Active" : 'Free'}</h2>
-
                             </Link>
                         </div>
 
@@ -394,6 +392,25 @@ export default function Header({classMagicword}) {
                                                 ""
                                             )}
 
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/purchases`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SlCalculator
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span
+                                                        className="ml-2 text-[17px]
+                                tracking-wide truncate text-white"
+                                                    >
+                                                    </span>
+                                                </Link>
+                                            </li>
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}

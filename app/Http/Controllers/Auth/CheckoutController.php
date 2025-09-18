@@ -780,7 +780,9 @@ class CheckoutController extends Controller
                     'media_type' => !empty($dd->wish->reward) ? 'image' : null,
                     'thank_you_approved' => !empty($dd->wish->reward) ? 1 : 0,
                     'tax' => $dd->tax,
-                    'quantity' => $dd->quantity
+                    'quantity' => $dd->quantity,
+                    'anonymous' => $dd->anonymous ?? false,
+                    'message' => $dd->message ?? null
                 ]);
                 $payment_data->refresh();
                 

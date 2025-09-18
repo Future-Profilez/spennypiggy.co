@@ -33,6 +33,8 @@ class Deliverable extends Model
         'customer_name',
         'payment_status',
         'payment_currency',
+        'anonymous',
+        'message',
     ];
 
     protected $casts = [
@@ -77,6 +79,33 @@ class Deliverable extends Model
     public function wishItem(): BelongsTo
     {
         return $this->belongsTo(WishItem::class, 'item_id');
+    }
+    
+    /**
+     * Get the membership this deliverable is for
+     */
+    public function membership(): BelongsTo
+    {
+        return $this->belongsTo(Membership::class, 'item_id');
+    }
+    
+    /**
+     * Get the item based on product_type
+     * 
+     * @return mixed
+     */
+    public function getItemByType()
+    {
+        switch ($this->product_type) {
+            case 'wish':
+                return $this->wishItem;
+            case 'membership':
+                return $this->membership;
+            case 'shop_item':
+                return $this->belongsTo(Shop::class, 'item_id')->first();
+            default:
+                return null;
+        }
     }
 
     // Deliverable types enum

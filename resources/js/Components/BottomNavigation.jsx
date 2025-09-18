@@ -8,7 +8,9 @@ import {
     HiUserGroup,
     HiOutlineUserGroup,
     HiUser,
-    HiOutlineUser
+    HiOutlineUser,
+    HiShoppingBag,
+    HiOutlineShoppingBag
 } from 'react-icons/hi2';
 
 export default function BottomNavigation({ activeTab = 'home' }) {
@@ -23,18 +25,18 @@ export default function BottomNavigation({ activeTab = 'home' }) {
             activeIcon: HiHome,
         },
         {
+            key: 'purchases',
+            label: 'Purchases',
+            href: '/purchases',
+            icon: HiOutlineShoppingBag,
+            activeIcon: HiShoppingBag,
+        },
+        {
             key: 'notifications',
             label: 'Notifications',
             href: '/notifications',
             icon: HiOutlineBell,
             activeIcon: HiBell,
-        },
-        {
-            key: 'groups',
-            label: 'Groups',
-            href: '/groups',
-            icon: HiOutlineUserGroup,
-            activeIcon: HiUserGroup,
         },
         {
             key: 'profile',

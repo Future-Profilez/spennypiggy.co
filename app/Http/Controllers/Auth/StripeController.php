@@ -814,6 +814,8 @@ class StripeController extends Controller
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
                     'tax' => $dd->tax,
+                    'anonymous' => $dd->anonymous ?? false,
+                    'message' => $dd->message ?? null,
                 ]);
                 $payment_data->refresh();
                 $message = $stripeid->message;
@@ -946,6 +948,7 @@ class StripeController extends Controller
                     'session_created' => $callbackData->created,
                     'name' => request()->query('from') ?? null,
                     'message' => request()->query('message') ?? null,
+                    'anonymous' => request()->query('anonymous') ?? 0,
                     'session_expires_at' => $callbackData->expires_at,
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
@@ -987,6 +990,8 @@ class StripeController extends Controller
                     'wish_item_id' => $value->wish_item_id ?? null,
                     'amount' => $amount,
                     'tax' => $tax,
+                    'anonymous' => $value->anonymous ?? false,
+                    'message' => $value->message ?? null,
                 ]);
                 $data->refresh();
                 $value->status = 0;

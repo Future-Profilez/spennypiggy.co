@@ -1438,6 +1438,7 @@ class WishitemController extends Controller
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
+            $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
             $ryeProductPayment->save();
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));

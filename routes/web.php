@@ -181,6 +181,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Purchases route
+    Route::get('/purchases', [\App\Http\Controllers\PurchasesController::class, 'index'])->name('purchases');
 });
 
 // Select Default Currency
@@ -348,3 +351,6 @@ require __DIR__.'/test-date.php';
 if (config('app.env') !== 'production') {
     require __DIR__ . '/test-subscription.php';
 }
+
+// Routes already defined above
+// Removed duplicate purchases route

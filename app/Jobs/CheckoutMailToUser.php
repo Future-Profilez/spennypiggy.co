@@ -510,6 +510,8 @@ class CheckoutMailToUser implements ShouldQueue
                 'customer_name' => $customerName,
                 'payment_status' => $this->payment->payment_status ?? 'paid',
                 'payment_currency' => $this->payment->currency ?? 'USD',
+                'anonymous' => $paymentItem->anonymous ?? false,
+                'message' => $paymentItem->message ?? null,
                 'metadata' => json_encode([
                     'wish_id' => $wish->id, // Database wish_id
                     'stripe_product_id' => $wish->stripe_product_id, // Stripe product_id for reference
