@@ -386,6 +386,9 @@ class WishitemController extends Controller
             }
         }
 
+        // Clear activity cache to ensure real-time updates
+        app(\App\Services\CreatorActivityService::class)->clearActivityCache(Auth::user());
+
         return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
 

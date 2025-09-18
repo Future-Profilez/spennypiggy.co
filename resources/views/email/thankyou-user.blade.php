@@ -12,7 +12,9 @@
                 </tr>
                 <tr>
                     <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 22px; line-height: 30px; color:#F94F97; text-align: center;">
-                        <strong style="color:#F94F97; text-transform: capitalize;">{{ $payment->payment->owner->name }}</strong> sent you<br><br>a Thank You message! ✨
+                        <strong style="color:#F94F97; text-transform: capitalize;">
+                        {{ (isset($payment->payment) && isset($payment->payment->owner) && isset($payment->payment->owner->name)) ? $payment->payment->owner->name : 'A creator' }}
+                        </strong> sent you<br><br>a Thank You message! ✨
                     </td>
                 </tr>
                 <tr>
@@ -46,7 +48,7 @@
                             @if ($payment->media_type == 'video')
                             <tr>
                                 <td style="padding: 0 0 15px 0; font-family: Arial; font-weight: bold; font-size: 18px; line-height: 27px; color:#000000; text-align: center;">
-                                    <strong>{{ $payment->payment->owner->name }}</strong> has attached a video message.<br><br>Click "See Message" below to view the video message.
+                                    <strong>{{ (isset($payment->payment) && isset($payment->payment->owner) && isset($payment->payment->owner->name)) ? $payment->payment->owner->name : 'The creator' }}</strong> has attached a video message.<br><br>Click "See Message" below to view the video message.
                                 </td>
                             </tr>
                             @endif

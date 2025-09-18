@@ -126,6 +126,8 @@ export default function Header({classMagicword}) {
                                     src={spennypiggy}
                                     loading="eager"
                                 />
+                        <h2 className="text-white">{auth?.user?.subscription_status ? "Active" : 'Free'}</h2>
+
                             </Link>
                         </div>
 

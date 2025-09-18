@@ -132,13 +132,7 @@ export default function Accountsetting(props) {
                                 >
                                     <h2 className="text-black text-start font-gulfs text-xl mb-3">SPENNY PIGGY SUBSCRIPTION</h2>
                                     
-                                    {/* Debug Info */}
-                                    <div className="bg-gray-100 p-3 rounded mb-4 text-sm">
-                                        <p><strong>Debug Info:</strong></p>
-                                        <p>Numeric subscription_status: {subscription_status}</p>
-                                        <p>String site_subscription.status: {site_subscription?.status}</p>
-                                        <p>Trial status: {site_subscription?.trial_status}</p>
-                                    </div>
+                                    
 
                                     {site_subscription?.trial_status === "active" ? <>
                                             <h2>Subscription Status : <span className="text-green-600 font-bold text-lg uppercase">Free Trial</span></h2>

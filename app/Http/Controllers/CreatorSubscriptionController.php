@@ -30,18 +30,25 @@ class CreatorSubscriptionController extends Controller
                 'eligible' => true,
                 'status' => 'not_creator',
                 'message' => 'Subscription validation only applies to creators'
-            ]);
+            ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
         }
 
         try {
             $status = $this->subscriptionService->getSubscriptionStatus($user);
-            return response()->json($status);
+            return response()->json($status)
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
         } catch (\Exception $e) {
             return response()->json([
                 'eligible' => true,
                 'status' => 'error',
                 'message' => 'Unable to check subscription status at this time'
-            ], 500);
+            ], 500)->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
         }
     }
 

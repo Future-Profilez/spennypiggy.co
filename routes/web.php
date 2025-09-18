@@ -252,6 +252,7 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     Route::post('/subscription/validate-payment', [\App\Http\Controllers\CreatorSubscriptionController::class, 'validatePaymentSubscription'])->name('subscription.validate-payment');
     Route::get('/subscription/dashboard', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getDashboardInfo'])->name('subscription.dashboard');
     Route::get('/subscription/warnings', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getCreatorsNeedingWarnings'])->name('subscription.warnings');
+    Route::post('/subscription/sync', [\App\Http\Controllers\SubscriptionSyncController::class, 'syncCurrentUser'])->name('subscription.sync');
 });
 
 Route::get('/service-worker.js', function () {
@@ -340,7 +341,8 @@ Route::get('/health', [HealthController::class, 'index'])->name('health.check');
 Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');
 
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
+require __DIR__.'/test-date.php';
 
 // Test subscription routes (remove in production)
 if (config('app.env') !== 'production') {

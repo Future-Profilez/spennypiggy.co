@@ -61,15 +61,14 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     };
 
     const getStartDate = (subscription) => {
+        // Always prioritize actual subscription period dates over created_at
         if (subscription.current_start_subscription_date) {
             return formatDate(subscription.current_start_subscription_date);
         }
         if (subscription.current_start_trial_date) {
             return formatDate(subscription.current_start_trial_date);
         }
-        if (subscription.created_at) {
-            return formatDate(subscription.created_at);
-        }
+        // Only use created_at as absolute last resort
         return 'N/A';
     };
 

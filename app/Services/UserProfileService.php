@@ -35,25 +35,22 @@ class UserProfileService
      */
     public function getUserWithRelations(string $username): ?User
     {
-        $cacheKey = "user_profile_{$username}";
-        
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($username) {
-            return User::select([
-                'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
-                'avatar', 'avatar_approved', 'cover', 'suspended_account',
-                'social_image', 'account_id', 'stripe_details_submitted',
-                'default_currency', 'country', 'creator_category', 'identity_status',
-                'profile_status_lock', 'is_subscribed', 'created_at'
-            ])
-            ->with([
-                'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,reddit,discord,other',
-                'user_categories:id,user_id,category,created_at',
-                'intro:id,user_id,poster,poster_token,height,width,approved,created_at'
-            ])
-            ->where('username', $username)
-            ->where('is_uk', 0)
-            ->first();
-        });
+        // NO CACHE - REAL TIME DATA
+        return User::select([
+            'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
+            'avatar', 'avatar_approved', 'cover', 'suspended_account',
+            'social_image', 'account_id', 'stripe_details_submitted',
+            'default_currency', 'country', 'creator_category', 'identity_status',
+            'profile_status_lock', 'is_subscribed', 'created_at'
+        ])
+        ->with([
+            'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,reddit,discord,other',
+            'user_categories:id,user_id,category,created_at',
+            'intro:id,user_id,poster,poster_token,height,width,approved,created_at'
+        ])
+        ->where('username', $username)
+        ->where('is_uk', 0)
+        ->first();
     }
 
     /**
@@ -306,7 +303,7 @@ class UserProfileService
     {
         $cacheKey = "user_earnings_{$userId}";
         
-        return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
+        // NO CACHE - REAL TIME DATA
             $goalPayment = TipGoalsPayment::where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->sum('amount');
@@ -347,7 +344,6 @@ class UserProfileService
                 'wish_payments' => $wishPayment,
                 'subscription_payments' => $subPayment
             ];
-        });
     }
 
     /**
@@ -361,11 +357,10 @@ class UserProfileService
 
         $cacheKey = "notifications_{$userId}";
         
-        return Cache::remember($cacheKey, 60, function () use ($userId) {
-            return Notification::where('notifiable_id', $userId)
-                ->where('is_read', 0)
-                ->count();
-        });
+        // NO CACHE - REAL TIME DATA
+        return Notification::where('notifiable_id', $userId)
+            ->where('is_read', 0)
+            ->count();
     }
 
     /**

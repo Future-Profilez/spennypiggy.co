@@ -15,31 +15,16 @@ class CacheInertiaResponse
      */
     public function handle(Request $request, Closure $next): SymfonyResponse
     {
-        // Skip caching for non-GET requests and authenticated users with write operations
-        if (!$request->isMethod('GET') || $this->shouldSkipCache($request)) {
-            return $next($request);
-        }
-
-        // Generate cache key based on request
-        $cacheKey = $this->generateCacheKey($request);
-
-        // Try to get cached response
-        $cachedResponse = Cache::get($cacheKey);
-        
-        if ($cachedResponse) {
-            return $this->createResponseFromCache($cachedResponse);
-        }
-
-        // Process request
+        // CACHING DISABLED FOR REAL-TIME DATA
+        // Just pass through without any caching
         $response = $next($request);
-
-        // Cache the response if it's successful
-        if ($response->isSuccessful() && $this->shouldCache($response)) {
-            $this->cacheResponse($cacheKey, $response);
-        }
-
-        // Add compression headers
-        return $this->addCompressionHeaders($response);
+        
+        // Add no-cache headers for real-time data
+        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+        
+        return $response;
     }
 
     /**

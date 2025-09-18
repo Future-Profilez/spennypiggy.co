@@ -19,15 +19,12 @@ class CacheService
     const VERY_LONG_CACHE = 604800; // 7 days
 
     /**
-     * Cache a database query result
+     * Cache a database query result (DISABLED - NO CACHING)
      */
     public static function remember(string $key, $ttl, callable $callback, array $tags = [])
     {
-        if (!empty($tags)) {
-            return Cache::tags($tags)->remember($key, $ttl, $callback);
-        }
-
-        return Cache::remember($key, $ttl, $callback);
+        // CACHING DISABLED - just execute callback directly
+        return $callback();
     }
 
     /**
@@ -82,14 +79,7 @@ class CacheService
      */
     public static function invalidateTags(array $tags)
     {
-        if (config('cache.default') === 'redis') {
-            Cache::tags($tags)->flush();
-        } else {
-            // Fallback for non-taggable cache drivers
-            foreach ($tags as $tag) {
-                Cache::forget($tag);
-            }
-        }
+        // CACHING DISABLED - Nothing to invalidate
     }
 
     /**
@@ -118,7 +108,8 @@ class CacheService
         $paramHash = md5(serialize($params));
         $cacheKey = "paginated:{$key}:{$paramHash}";
         
-        return Cache::remember($cacheKey, $ttl, $callback);
+        // CACHING DISABLED - just execute callback directly
+        return $callback();
     }
 
     /**

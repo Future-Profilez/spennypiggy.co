@@ -106,7 +106,7 @@ class CreatorSubscriptionService
                 'type' => 'subscribe',
                 'title' => 'Activate Subscription',
                 'description' => 'Get your mandatory creator subscription to start receiving payments',
-                'action_url' => '/subscription/plans',
+                'action_url' => '/activate-subscription',
                 'estimated_time' => '5 minutes',
                 'priority' => 'high'
             ],
@@ -114,7 +114,7 @@ class CreatorSubscriptionService
                 'type' => 'contact_support',
                 'title' => 'Need Help?',
                 'description' => 'Contact our support team for assistance with subscription setup',
-                'action_url' => '/contact',
+                'action_url' => 'https://spennypiggy.co',
                 'estimated_time' => 'Immediate',
                 'priority' => 'medium'
             ]

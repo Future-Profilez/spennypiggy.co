@@ -356,6 +356,34 @@ class StripeWebhookController extends Controller
 
         // Dispatch job to process the deliverable (media bundle creation, etc.)
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+        // Send thank you email to the purchaser
+        if (isset($metadata->user_id)) {
+            $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
+            if ($payment) {
+                // Check if user exists and has is_uk = 0 (to match the relationship constraint)
+                $user = \App\Models\User::where('id', $metadata->user_id)->where('is_uk', 0)->first();
+                
+                if ($user) {
+                    $currency = \App\Models\Currency::where('iso', strtoupper($session->currency))->first();
+                    $currencySymbol = $currency ? $currency->symbol : '£';
+                    
+                    Log::info("Dispatching CheckoutMailToUser for wish purchase", [
+                        'payment_id' => $payment->id,
+                        'user_id' => $metadata->user_id,
+                        'currency' => $currencySymbol
+                    ]);
+                    
+                    \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
+                } else {
+                    Log::info('User not eligible for email (is_uk != 0 or user not found)', [
+                        'user_id' => $metadata->user_id
+                    ]);
+                }
+            } else {
+                Log::warning("Payment record not found for session", ['session_id' => $session->id]);
+            }
+        }
     }
 
     public function handleBillSubscriptionUpdate($data, $metadata)

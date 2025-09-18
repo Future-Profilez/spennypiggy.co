@@ -10,9 +10,15 @@ class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
-     */
     protected function schedule(Schedule $schedule)
     {
+        // Sync subscription status from Stripe every hour
+        $schedule->command('subscription:sync')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+                 
+        //
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour
         $schedule->command("app:sync-exchange-rate")->hourly()->withoutOverlapping(4);

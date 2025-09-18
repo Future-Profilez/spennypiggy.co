@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('product_id')->index(); // Stripe product.id
-            $table->string('price_id')->index(); // Stripe price.id
-            $table->unsignedBigInteger('creator_id')->index();
+            $table->string('price_id')->nullable()->index(); // Stripe price.id
+            $table->unsignedBigInteger('creator_id')->nullable()->index();
             $table->unsignedBigInteger('gifter_id')->index(); // Buyer/Gifter user
-            $table->string('payment_intent_id')->index(); // Stripe payment intent
-            $table->string('session_id')->index(); // Stripe checkout.session.id
+            $table->string('payment_intent_id')->nullable()->index(); // Stripe payment intent
+            $table->string('session_id')->nullable()->index(); // Stripe checkout.session.id
             $table->enum('deliverable_type', [
                 'digital_file',
                 'pdf_receipt', 
@@ -27,7 +27,8 @@ return new class extends Migration
                 'cert',
                 'access',
                 'post',
-                'media_bundle'
+                'media_bundle',
+                'email'
             ]);
             $table->text('deliverable_url')->nullable(); // File URL / S3 link / generated PDF path
             $table->json('metadata')->nullable(); // Copy of Stripe metadata payload

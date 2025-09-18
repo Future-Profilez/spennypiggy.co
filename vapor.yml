@@ -24,16 +24,10 @@ environments:
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
-      - "php artisan cache:clear"
       - "php artisan config:clear"
       - "php artisan route:clear"
       - "php artisan view:clear"
-      - "php artisan optimize:clear"
-      - "php artisan cache:clear"
-      - "php artisan config:clear"
-      - "php artisan route:clear"
-      - "php artisan view:clear"
-      - "php artisan optimize:clear"
+      - "php artisan event:clear"
 
   production:
     memory: 3008
@@ -68,11 +62,4 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan optimize:clear"
-
-
-
-# php vendor/bin/vapor asset:clear production
-# php vendor/bin/vapor command production --command="php artisan optimize:clear"
-# php vendor/bin/vapor deploy production --message='clean deployment after cache clear'
-
-# php artisan app:notifications-pending-approval
+      - "php artisan subscription:sync --all"

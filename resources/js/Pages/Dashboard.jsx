@@ -525,6 +525,16 @@ export default function Dashboard(props) {
 
                             {user && user.role == 1 ?
                                 <div className="wishManage sticky top-8 ">
+                                    
+                                    {/* Creator Subscription Widget - Show on all tabs for creators */}
+                                    {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
+                                        <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
+                                            <CreatorSubscriptionWidget 
+                                                className="mb-4"
+                                            />
+                                        </Suspense>
+                                    )} */}
+                                    
                                     <div className="userManageRt mt-4 ">
                                         <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
                                             <div className="inlinetab ">
@@ -560,10 +570,9 @@ export default function Dashboard(props) {
 
                                                                         <DashboardStripeMigrationWarning migrationStatus={migration_status} />
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.length > 0 && AuthUserStripeConnected ?
+                                                                        {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.length > 0 && AuthUserStripeConnected ?
                                                                             <ActionRequired requirements={stripe_requirements} />
-                                                                        : ''}
-
+                                                                            : ''} */}
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
@@ -573,7 +582,7 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status !== 1  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         : ''}
                                                                         
@@ -665,16 +674,6 @@ export default function Dashboard(props) {
                                                             </div>
 
                                                             <div className="ps-md-4 col-md-6">
-                                                                
-                                                                
-                                                                {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
-                                                                    <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
-                                                                        <CreatorSubscriptionWidget 
-                                                                            className="mb-4"
-                                                                        />
-                                                                    </Suspense>
-                                                                )} */}
-                                                                
                                                                 {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
                                                                     <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>
                                                                         <CreatorActivityWidget 

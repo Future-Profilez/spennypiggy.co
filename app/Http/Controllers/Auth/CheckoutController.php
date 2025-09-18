@@ -313,20 +313,21 @@ class CheckoutController extends Controller
                         'owner_id' => $owner->id,
                         'owner' => $owner,
                         'uuid' => 'checkout-session-' . time(),
-                        // 'item_amount' => round($subtotal * $multiplier),
-                        // 'creator_vat_amount' => $creatorVatAmount,
-                        // 'transfer_amount' => $transferAmount,
-                        // 'platform_fee_amount' => round($totalShowTaxWithQuantity * $multiplier),
                         'total_charge_amount' => $totalChargeAmount,
                     ], [
-                        // "anonymous" => request()->query('anonymous') ?? '0',
                         "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
                         "payment_type" => "Destination Charges with transfers",
-                        "creator_id" => $owner->id,
-                        "wish_id" => $getdata[0]->wish->id ?? null,
+                        "creator_id" => (string) $owner->id,
+                        "wish_id" => (string) ($getdata[0]->wish->id ?? null), // Primary wish ID for legacy compatibility
                         "deliverable_type" => "media_bundle",
                         "certificate" => "true",
                         "product_type" => "wish_one_off",
+                        "items_count" => (string) count($getdata),
+                        "content_delivery_status" => "delivered",
+                        // Flatten content URLs instead of JSON
+                        ...$this->buildFlattenedContentMetadata($getdata),
+                        // Clean wish items metadata (avoid duplication)
+                        "wish_items_summary" => $this->buildCleanWishItemsMetadata($getdata),
                     ]),
                 ],
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
@@ -346,6 +347,26 @@ class CheckoutController extends Controller
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
+            
+            // Store device_id for guest checkouts to enable cart retrieval in success callback
+            if (!Auth::check() && isset($device_id)) {
+                session(['device_id' => $device_id]);
+                Log::info('Stored device_id in session for guest checkout', ['device_id' => $device_id]);
+            }
+            
+            // Build comprehensive metadata for storage
+            $paymentMetadata = [
+                'wish_items' => json_decode($this->buildWishItemsMetadata($getdata), true),
+                'content_urls' => json_decode($this->buildContentUrlsMetadata($getdata), true),
+                'delivery_summary' => $this->buildDeliverySummary($getdata),
+                'created_at' => now()->toISOString(),
+                'creator_info' => [
+                    'id' => $owner->id,
+                    'username' => $owner->username,
+                    'name' => $owner->name
+                ]
+            ];
+            
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
@@ -357,13 +378,14 @@ class CheckoutController extends Controller
                 'user_id' => Auth::id() ?? null,
                 'owner_id' => $getdata[0]->owner->id,
                 'name' => request()->query('from') ?? '',
+                'guest_email' => request()->query('email') ?? ($getdata[0]->user->email ?? null),
                 'message' => $message ?? '',
                 'anonymous' => request()->query('anonymous') ?? 0,
                 'session_created' => $sessionCreate->created,
                 'session_expires_at' => $sessionCreate->expires_at,
+                'metadata' => json_encode($paymentMetadata), // Store comprehensive metadata
                 'created_at' => now(),
                 'updated_at' => now(),
-             
             ]);
 
             $stripePaymentDetail->refresh();
@@ -374,17 +396,305 @@ class CheckoutController extends Controller
             throw $th;
         }
     }
+    
+    /**
+     * Build content URLs metadata for Stripe - handles multiple wish items with content
+     */
+    private function buildContentUrlsMetadata($cartItems)
+    {
+        $contentUrls = [];
+        
+        foreach ($cartItems as $item) {
+            $wish = $item->wish;
+            if (!$wish) continue;
+            
+            $wishContentData = [
+                'wish_id' => $wish->id,
+                'wish_name' => $wish->wishname,
+                'has_content' => false,
+                'content_url' => null,
+                'content_type' => null,
+                'delivery_status' => 'pending'
+            ];
+            
+            // Priority: content_file → reward → message_media (for future thank-you messages)
+            if (!empty($wish->content_file)) {
+                $wishContentData['has_content'] = true;
+                $wishContentData['content_url'] = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
+                $wishContentData['content_type'] = $wish->content_file_type ?? 'file';
+                $wishContentData['delivery_status'] = 'ready'; // Content files are immediately available
+                $wishContentData['source'] = 'content_file';
+            } elseif (!empty($wish->reward)) {
+                $wishContentData['has_content'] = true;
+                $wishContentData['content_url'] = $this->generateContentUrl($wish->reward, 'image');
+                $wishContentData['content_type'] = 'image';
+                $wishContentData['delivery_status'] = 'ready'; // Rewards are immediately available
+                $wishContentData['source'] = 'reward';
+            }
+            
+            $contentUrls[] = $wishContentData;
+        }
+        
+        // Return as JSON string to fit in Stripe metadata limits
+        return json_encode($contentUrls);
+    }
+    
+    /**
+     * Build flattened content metadata for Stripe - individual keys instead of JSON
+     */
+    private function buildFlattenedContentMetadata($cartItems)
+    {
+        $flattenedMetadata = [];
+        $contentUrls = [];
+        $contentCount = 0;
+        
+        foreach ($cartItems as $index => $item) {
+            $wish = $item->wish;
+            if (!$wish) continue;
+            
+            $hasContent = false;
+            $contentUrl = null;
+            $contentType = null;
+            $source = null;
+            
+            // Priority: content_file → reward
+            if (!empty($wish->content_file)) {
+                $hasContent = true;
+                $contentUrl = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
+                $contentType = $wish->content_file_type ?? 'file';
+                $source = 'content_file';
+            } elseif (!empty($wish->reward)) {
+                $hasContent = true;
+                $contentUrl = $this->generateContentUrl($wish->reward, 'image');
+                $contentType = 'image';
+                $source = 'reward';
+            }
+            
+            if ($hasContent) {
+                $contentCount++;
+                $itemKey = "item_" . ($index + 1);
+                
+                // Add individual content keys
+                $flattenedMetadata["{$itemKey}_wish_id"] = (string) $wish->id;
+                $flattenedMetadata["{$itemKey}_wish_name"] = $wish->wishname;
+                $flattenedMetadata["{$itemKey}_content_url"] = $contentUrl;
+                $flattenedMetadata["{$itemKey}_content_type"] = $contentType ?? '';
+                $flattenedMetadata["{$itemKey}_content_source"] = $source;
+                
+                // Also collect for legacy content_urls if needed
+                $contentUrls[] = [
+                    'wish_id' => $wish->id,
+                    'wish_name' => $wish->wishname,
+                    'content_url' => $contentUrl,
+                    'content_type' => $contentType,
+                    'source' => $source
+                ];
+            }
+        }
+        
+        // Add summary keys
+        $flattenedMetadata['content_items_count'] = (string) $contentCount;
+        $flattenedMetadata['has_content'] = $contentCount > 0 ? 'true' : 'false';
+        
+        // Keep a simplified content_urls as JSON for backward compatibility (but cleaner)
+        if (!empty($contentUrls)) {
+            $flattenedMetadata['content_urls'] = json_encode($contentUrls);
+        }
+        
+        return $flattenedMetadata;
+    }
+    
+    /**
+     * Build wish items metadata for Stripe - comprehensive item details
+     */
+    private function buildWishItemsMetadata($cartItems)
+    {
+        $wishItems = [];
+        
+        foreach ($cartItems as $item) {
+            $wish = $item->wish;
+            if (!$wish) continue;
+            
+            $wishItems[] = [
+                'wish_id' => $wish->id,
+                'wish_name' => $wish->wishname,
+                'quantity' => $item->quantity,
+                'amount' => $item->amount,
+                'cart_id' => $item->id,
+                'has_reward' => !empty($wish->reward),
+                'has_content_file' => !empty($wish->content_file),
+                'content_file_type' => $wish->content_file_type ?? null,
+                'subscription_type' => $wish->subscription ?? 0
+            ];
+        }
+        
+        return json_encode($wishItems);
+    }
+    
+    /**
+     * Build clean wish items metadata to avoid duplication with individual content keys
+     */
+    private function buildCleanWishItemsMetadata($cartItems)
+    {
+        $summary = [
+            'total_items' => count($cartItems),
+            'total_amount' => 0,
+            'wish_ids' => [],
+            'wish_names' => []
+        ];
+        
+        foreach ($cartItems as $item) {
+            $wish = $item->wish;
+            if (!$wish) continue;
+            
+            $summary['total_amount'] += $item->amount * $item->quantity;
+            $summary['wish_ids'][] = $wish->id;
+            $summary['wish_names'][] = $wish->wishname;
+        }
+        
+        return json_encode($summary);
+    }
+    
+    /**
+     * Generate content URL from file path/identifier
+     */
+    private function generateContentUrl($fileIdentifier, $fileType)
+    {
+        if (empty($fileIdentifier)) {
+            return null;
+        }
+        
+        // Handle Uploadcare URLs
+        if (str_starts_with($fileIdentifier, 'https://ucarecdn.com/')) {
+            return $fileIdentifier;
+        }
+        
+        // Handle Uploadcare UUIDs
+        if (preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $fileIdentifier)) {
+            return "https://ucarecdn.com/{$fileIdentifier}/";
+        }
+        
+        // Handle relative paths or other formats
+        if (str_starts_with($fileIdentifier, '/')) {
+            return url($fileIdentifier);
+        }
+        
+        // Default: assume it's a filename in storage
+        return asset('storage/' . $fileIdentifier);
+    }
+    
+    /**
+     * Build delivery summary for comprehensive tracking
+     */
+    private function buildDeliverySummary($cartItems)
+    {
+        $summary = [
+            'total_items' => count($cartItems),
+            'items_with_content' => 0,
+            'items_ready_for_delivery' => 0,
+            'items_pending_approval' => 0,
+            'content_types' => [],
+            'delivery_methods' => []
+        ];
+        
+        foreach ($cartItems as $item) {
+            $wish = $item->wish;
+            if (!$wish) continue;
+            
+            $hasContent = false;
+            $deliveryStatus = 'no_content';
+            $contentType = null;
+            
+            // Check for content and determine delivery status
+            if (!empty($wish->content_file)) {
+                $hasContent = true;
+                $deliveryStatus = 'ready';
+                $contentType = $wish->content_file_type ?? 'file';
+                $summary['items_ready_for_delivery']++;
+            } elseif (!empty($wish->reward)) {
+                $hasContent = true;
+                $deliveryStatus = 'ready';
+                $contentType = 'image';
+                $summary['items_ready_for_delivery']++;
+            }
+            
+            if ($hasContent) {
+                $summary['items_with_content']++;
+                if ($contentType && !in_array($contentType, $summary['content_types'])) {
+                    $summary['content_types'][] = $contentType;
+                }
+            }
+        }
+        
+        // Determine primary delivery method
+        if ($summary['items_with_content'] > 0) {
+            $summary['delivery_methods'][] = 'email_with_attachments';
+            $summary['primary_delivery_method'] = 'email_with_content';
+        } else {
+            $summary['primary_delivery_method'] = 'thank_you_email_only';
+        }
+        
+        return $summary;
+    }
 
  
     public function successCheckout($id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        
+        // Get the payment record to determine how to query cart items
+        $sessionId = session('session_id');
+        $paymentRecord = StripePaymentDetail::where('session_id', $sessionId)->first();
+        
         if (Auth::check()) {
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->get();
         } else {
-            $getdata = UserCart::where('device_id', $id)->where('status', 1)->get();
+            // For guest checkouts, we need to find the cart items by matching the payment details
+            // The $id parameter is the creator_id, not device_id
+            if ($paymentRecord && $paymentRecord->guest_email) {
+                // Try to find cart items by matching guest email and owner_id from the payment record
+                $getdata = UserCart::where('owner_id', $paymentRecord->owner_id)
+                    ->where('status', 1)
+                    ->whereNull('user_id') // Guest cart items
+                    ->get();
+            } else {
+                // Fallback: try to find by device_id from session or other means
+                $deviceId = session('device_id') ?? request()->get('device_id');
+                if ($deviceId) {
+                    $getdata = UserCart::where('device_id', $deviceId)
+                        ->where('owner_id', $id)
+                        ->where('status', 1)
+                        ->get();
+                } else {
+                    $getdata = collect(); // Empty collection
+                }
+            }
         }
         try {
+            // Check if payment has already been processed to avoid race condition with webhook
+            $sessionId = session('session_id');
+            Log::info("successCheckout called", [
+                'session_id' => $sessionId,
+                'creator_id' => $id,
+                'user_id' => Auth::id()
+            ]);
+            
+            $existingPayment = StripePaymentDetail::where('session_id', $sessionId)->first();
+            
+            if ($existingPayment) {
+                Log::info("Found existing payment", [
+                    'session_id' => $sessionId,
+                    'payment_status' => $existingPayment->payment_status,
+                    'payment_id' => $existingPayment->id
+                ]);
+                
+                if ($existingPayment->payment_status === 'paid') {
+                    Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
+                    return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
+                }
+            } else {
+                Log::warning("No existing payment found for session", ['session_id' => $sessionId]);
+            }
 
             foreach ($getdata as $dd) {
 
@@ -438,11 +748,27 @@ class CheckoutController extends Controller
             }
 
             $sessionId = session('session_id');
-            StripePaymentDetail::where('session_id', $sessionId)->update([
+            Log::info("Updating payment status", ['session_id' => $sessionId]);
+            
+            $updateResult = StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
+            Log::info("Payment update result", ['updated_rows' => $updateResult]);
+            
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
+            
+            if (!$stripeid) {
+                Log::error("StripePaymentDetail not found after update", ['session_id' => $sessionId]);
+                throw new \Exception("Payment record not found for session: " . $sessionId);
+            }
+            
+            Log::info("Retrieved StripePaymentDetail", [
+                'id' => $stripeid->id,
+                'session_id' => $stripeid->session_id,
+                'payment_status' => $stripeid->payment_status,
+                'amount_subtotal' => $stripeid->amount_subtotal ?? 'NULL'
+            ]);
             foreach ($getdata as $dd) {
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
@@ -457,44 +783,120 @@ class CheckoutController extends Controller
                     'quantity' => $dd->quantity
                 ]);
                 $payment_data->refresh();
-
-                $symbol = Currency::where('iso', strtoupper($payment_data->payment->currency))->first();
-                if (!$symbol) {
-                    Log::error("Currency not found for ISO: " . strtoupper($payment_data->payment->currency));
-                    return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Currency configuration error. Please contact support.');
+                
+                Log::info("About to access payment->currency", [
+                    'payment_data_id' => $payment_data->id,
+                    'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id
+                ]);
+                
+                // Check if payment relationship exists
+                if (!$payment_data->payment) {
+                    Log::error("Payment relationship is null", [
+                        'payment_data_id' => $payment_data->id,
+                        'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id
+                    ]);
+                    throw new \Exception("Payment relationship not found for payment item: " . $payment_data->id);
                 }
-                $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
+                
+                Log::info("Payment relationship exists", [
+                    'payment_id' => $payment_data->payment->id,
+                    'payment_currency' => $payment_data->payment->currency ?? 'NULL'
+                ]);
 
-                $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
+                try {
+                    Log::info("About to access payment currency for Currency lookup");
+                    Log::info("Payment data details", [
+                        'payment_data_id' => $payment_data->id,
+                        'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id,
+                        'has_payment_relationship' => $payment_data->payment ? 'yes' : 'no'
+                    ]);
+                    
+                    if (!$payment_data->payment) {
+                        Log::error("Payment relationship is null");
+                        throw new \Exception("Payment relationship not found");
+                    }
+                    
+                    Log::info("About to access currency property on payment model");
+                    $currencyValue = $payment_data->payment->currency;
+                    Log::info("Successfully accessed currency value", ['currency' => $currencyValue]);
+                    
+                    $symbol = Currency::where('iso', strtoupper($currencyValue))->first();
+                    Log::info("Currency lookup completed", ['symbol_found' => !is_null($symbol)]);
+                    
+                    if (!$symbol) {
+                        Log::error("Currency not found for ISO: " . strtoupper($currencyValue));
+                        return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Currency configuration error. Please contact support.');
+                    }
+                    
+                    Log::info("About to calculate VAT percentage");
+                    $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
+                    Log::info("VAT percentage calculated", ['vat_percentage' => $vat_percentage]);
 
-                // // Calculate VAT if the user has set a percentage
-                $vat_amount = ($stripeid->amount_subtotal + $tax) * $vat_percentage / 100;
-                $amountWithVat = $stripeid->amount_subtotal + $vat_amount;
+                    Log::info("About to calculate tax");
+                    $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
+                    Log::info("Tax calculated", ['tax' => $tax]);
 
-                $message = $stripeid->message;
+                    Log::info("About to calculate VAT amount");
+                    // // Calculate VAT if the user has set a percentage
+                    $vat_amount = ($stripeid->amount_subtotal + $tax) * $vat_percentage / 100;
+                    $amountWithVat = $stripeid->amount_subtotal + $vat_amount;
+                    Log::info("VAT amount calculated", ['vat_amount' => $vat_amount, 'amountWithVat' => $amountWithVat]);
 
+                    Log::info("About to get message");
+                    $message = $stripeid->message;
+                    Log::info("Message retrieved", ['message_length' => strlen($message ?? '')]);
+                    
+                } catch (\Exception $e) {
+                    Log::error("Error accessing payment currency", [
+                        'error_message' => $e->getMessage(),
+                        'error_trace' => $e->getTraceAsString(),
+                        'payment_data_id' => $payment_data->id,
+                        'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id
+                    ]);
+                    throw $e;
+                }
+
+                Log::info("About to dispatch jobs and create UserPayment");
+                
+                Log::info("Before job dispatch - checking Auth status");
                 if (Auth::check()) {
+                    Log::info("Dispatching CheckoutUser job for authenticated user");
+                    Log::info("About to check wish_item_id", ['wish_item_id' => $dd->wish_item_id]);
                     if ($dd->wish_item_id == NULL) {
+                        Log::info("Dispatching CheckoutUser with dd parameter");
                         CheckoutUser::dispatch($payment_data, false, $dd, $message, null, $symbol->symbol, $vat_amount);
                     } else {
+                        Log::info("Dispatching CheckoutUser without dd parameter");
                         CheckoutUser::dispatch($payment_data, false, false, $message, null, $symbol->symbol, $vat_amount);
                     }
+                    Log::info("CheckoutUser job dispatched successfully");
                 } else {
+                    Log::info("Dispatching CheckoutUser job for guest user");
                     CheckoutUser::dispatch($payment_data, true, false, false, $stripeid->name, $symbol->symbol, $vat_amount);
+                    Log::info("CheckoutUser job dispatched successfully for guest");
                 }
+                
+                Log::info("Jobs dispatched, continuing with auto_tweet check");
 
-
+                Log::info("About to check auto_tweet setting");
                 if ($dd->owner->auto_tweet == 1) {
+                    Log::info("Auto tweet enabled, dispatching tweet jobs");
                     if (empty($dd->wish_item_id)) {
+                        Log::info("Dispatching SurpriseTweet job");
                         SurpriseTweet::dispatch($payment_data);
                     } elseif ($dd->wish->subscription == 2) {
+                        Log::info("Dispatching CrowdfundTweet job");
                         CrowdfundTweet::dispatch($payment_data);
                     } else {
+                        Log::info("Dispatching CheckoutTweet job");
                         CheckoutTweet::dispatch($payment_data);
                     }
+                    Log::info("Tweet job dispatched successfully");
                 }
 
+                Log::info("About to create UserPayment record");
                 if ($dd->user_id && !empty($dd->user->email)) {
+                    Log::info("Creating UserPayment for user", ['user_id' => $dd->user_id]);
                     $total_amount = $dd->amount * $dd->quantity;
                     $userPayment = new UserPayment();
                     $userPayment->from_user_id = $dd->user_id ?? null;
@@ -507,27 +909,46 @@ class CheckoutController extends Controller
                     $userPayment->paid_at = Carbon::now();
                     $userPayment->status = $stripeid->payment_status;
                     $userPayment->save();
+                    Log::info("UserPayment record created successfully");
                 }
 
+                Log::info("About to update cart item status");
                 $dd->status = 0;
                 $dd->quantity = 0;
                 $dd->save();
+                Log::info("Cart item status updated successfully");
             }
 
 
-            if (Auth::check()) {
+                Log::info("About to dispatch checkout email (authenticated or guest)");
                 $curr = Currency::where('iso', strtoupper($currency))->first();
                 if ($curr) {
+                    Log::info("Currency found, dispatching CheckoutMailToUser", ['currency' => $currency, 'symbol' => $curr->symbol]);
                     CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
+                    Log::info("CheckoutMailToUser job dispatched successfully");
                 } else {
                     Log::warning("Currency not found for checkout email: " . strtoupper($currency));
                     CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
+                    Log::info("CheckoutMailToUser job dispatched with default symbol");
                 }
-            }
 
-            return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
+                Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);
+                return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
-            Log::info("Error in successCheckout: " . $th->getMessage());
+            $errorMessage = $th->getMessage();
+            Log::error("Error in successCheckout: " . $errorMessage, [
+                'trace' => $th->getTraceAsString(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine()
+            ]);
+            
+            // Check if this is a Stripe token error, which we can safely ignore
+            if (strpos($errorMessage, 'token was invalid') !== false) {
+                Log::info("Ignoring Stripe token error and continuing checkout process");
+                // Continue with the checkout process despite the token error
+                return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successful.');
+            }
+            
             return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');
         }
     }

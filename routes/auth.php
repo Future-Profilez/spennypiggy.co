@@ -147,13 +147,34 @@ Route::middleware('auth')->group(function () {
         $auto_tweet = $user->auto_tweet == 1;
         $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
+        // Find the currently active subscription period
+        $now = Carbon::now();
         $subscription = MonthlyCharge::where('user_id', $user->id)
-            ->orderByDesc('created_at')
+            ->where(function($query) use ($now) {
+                $query->where(function($q) use ($now) {
+                    // Active subscription period
+                    $q->whereDate('current_start_subscription_date', '<=', $now)
+                      ->whereDate('current_end_subscription_date', '>=', $now);
+                })->orWhere(function($q) use ($now) {
+                    // Active trial period
+                    $q->whereDate('current_start_trial_date', '<=', $now)
+                      ->whereDate('current_end_trial_date', '>=', $now);
+                });
+            })
+            // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
+            ->orderByDesc('current_start_subscription_date')
             ->first();
+        
+        // If no active period found, get the most recent one
+        if (!$subscription) {
+            $subscription = MonthlyCharge::where('user_id', $user->id)
+                ->orderByDesc('current_start_subscription_date')
+                ->first();
+        }
 
         // Get complete subscription history for the user
         $subscription_history = MonthlyCharge::where('user_id', $user->id)
-            ->orderByDesc('created_at')
+            ->orderByDesc('current_start_subscription_date')
             ->get()
             ->map(function ($charge) {
                 return [
@@ -163,10 +184,10 @@ Route::middleware('auth')->group(function () {
                     'amount' => $charge->amount ?? 0,
                     'currency' => $charge->currency ?? 'GBP',
                     'status' => $charge->status ?? 'pending',
-                    'trial_start_date' => $charge->current_start_trial_date,
-                    'trial_end_date' => $charge->current_end_trial_date,
-                    'subscription_start_date' => $charge->current_start_subscription_date,
-                    'subscription_end_date' => $charge->current_end_subscription_date,
+                    'current_start_trial_date' => $charge->current_start_trial_date,
+                    'current_end_trial_date' => $charge->current_end_trial_date,
+                    'current_start_subscription_date' => $charge->current_start_subscription_date,
+                    'current_end_subscription_date' => $charge->current_end_subscription_date,
                     'upcoming_payment' => $charge->upcoming_payment,
                     'created_at' => $charge->created_at,
                     'updated_at' => $charge->updated_at,

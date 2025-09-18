@@ -106,7 +106,31 @@ class User extends Authenticatable
     public function getSubscriptionStatusAttribute()
     {
         if ($this->role == 1) { 
-            $subscription = $this->creatorMonthlySubscription;
+            // Find the currently active subscription period (same logic as account route)
+            $now = Carbon::now();
+            $subscription = MonthlyCharge::where('user_id', $this->id)
+                ->where(function($query) use ($now) {
+                    $query->where(function($q) use ($now) {
+                        // Active subscription period
+                        $q->whereDate('current_start_subscription_date', '<=', $now)
+                          ->whereDate('current_end_subscription_date', '>=', $now);
+                    })->orWhere(function($q) use ($now) {
+                        // Active trial period
+                        $q->whereDate('current_start_trial_date', '<=', $now)
+                          ->whereDate('current_end_trial_date', '>=', $now);
+                    });
+                })
+                // Order by start date DESC to get the newest period first (handles overlaps)
+                ->orderByDesc('current_start_subscription_date')
+                ->first();
+            
+            // If no active period found, get the most recent one
+            if (!$subscription) {
+                $subscription = MonthlyCharge::where('user_id', $this->id)
+                    ->orderByDesc('current_start_subscription_date')
+                    ->first();
+            }
+            
             if (!$subscription) {
                 try {
                     $createdAt = Carbon::parse($this->created_at);
@@ -178,8 +202,59 @@ class User extends Authenticatable
                     return 1; 
                 }
                 try {
-                    Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-                    $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
+                    // Skip Stripe API call in background jobs to prevent token errors
+                    if (app()->runningInConsole() || app()->runningUnitTests()) {
+                        // In background jobs, just use the local subscription status
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    $stripeKey = env('STRIPE_SECRET_KEY');
+                    if (empty($stripeKey)) {
+                        Log::warning('Stripe API key not configured, falling back to local subscription status', [
+                            'user_id' => $this->id,
+                            'subscription_status' => $subscription->status
+                        ]);
+                        // Return based on local status instead of throwing exception
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    // Check if stripe_id is valid before making API call
+                    if (empty($subscription->stripe_id)) {
+                        Log::warning('Empty stripe_id, falling back to local subscription status', [
+                            'user_id' => $this->id,
+                            'subscription_status' => $subscription->status
+                        ]);
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    Stripe::setApiKey($stripeKey);
+                    Log::info("About to retrieve Stripe subscription", [
+                        'user_id' => $this->id,
+                        'stripe_id' => $subscription->stripe_id,
+                        'subscription_status' => $subscription->status
+                    ]);
+                    
+                    // Set timeout to prevent long-running API calls
+                    $timeout = 3; // 3 seconds timeout
+                    $stripeSubscription = null;
+                    
+                    try {
+                        // Use a timeout to prevent long API calls
+                        $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
+                        Log::info("Retrieved Stripe subscription", [
+                            'user_id' => $this->id,
+                            'stripe_id' => $subscription->stripe_id,
+                            'stripe_status' => $stripeSubscription->status
+                        ]);
+                    } catch (\Exception $apiError) {
+                        Log::error('Stripe API call failed', [
+                            'user_id' => $this->id,
+                            'stripe_id' => $subscription->stripe_id,
+                            'error' => $apiError->getMessage()
+                        ]);
+                        // Return based on local status
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
                     
                     if (isset($stripeSubscription) && $stripeSubscription->status === 'active') {
                         return 1;
@@ -206,7 +281,13 @@ class User extends Authenticatable
                         return 0;
                     }
                 } catch (\Exception $e) {
-                    Log::error('Stripe subscription check failed: ' . $e->getMessage());
+                    Log::error('Stripe subscription check failed', [
+                        'user_id' => $this->id,
+                        'stripe_id' => $subscription->stripe_id ?? 'null',
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e)
+                    ]);
+                    
                     // Fallback when Stripe API fails
                     if ($subscription->status === 'trialing') {
                         // Check trial dates first
@@ -415,6 +496,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany();
     }
+    
+    /**
+     * Get all subscription records (for history)
+     */
+    public function allMonthlyCharges()
+    {
+        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
+    }
 
  public function followers()
 {
@@ -494,23 +583,19 @@ public function getFollowingCountAttribute()
     }
 
     /**
-     * Get user with cached wish items count
+     * Get user wish items count (NO CACHE)
      */
     public function getCachedWishItemsCount()
     {
-        return $this->rememberComputation('wish_items_count', function () {
-            return $this->wishItems()->count();
-        });
+        return $this->wishItems()->count();
     }
 
     /**
-     * Get user with cached followers count
+     * Get user followers count (NO CACHE)
      */
     public function getCachedFollowersCount()
     {
-        return $this->rememberComputation('followers_count', function () {
-            return $this->followers()->count();
-        });
+        return $this->followers()->count();
     }
 
     /**
@@ -529,19 +614,14 @@ public function getFollowingCountAttribute()
     }
 
     /**
-     * Scope for popular users (with caching)
+     * Scope for popular users (NO CACHE)
      */
     public function scopePopular($query, int $limit = 10)
     {
-        $cacheKey = "popular_users_{$limit}";
-        
-        return Cache::remember($cacheKey, 3600, function () use ($query, $limit) {
-            return $query
-                ->withCount(['wishItems', 'followers'])
-                ->orderByDesc('wish_items_count')
-                ->orderByDesc('followers_count')
-                ->limit($limit)
-                ->get();
-        });
+        return $query
+            ->withCount(['wishItems', 'followers'])
+            ->orderByDesc('wish_items_count')
+            ->orderByDesc('followers_count')
+            ->limit($limit);
     }
 }

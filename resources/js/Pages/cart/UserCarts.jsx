@@ -63,6 +63,13 @@ export default function UserCarts(props) {
 
     const executeCaptcha = (e) => {
         e.preventDefault();
+        
+        // If no hCaptcha key is configured, skip captcha
+        if (!hcaptchakey || hcaptchakey === '') {
+            handleSubmit();
+            return;
+        }
+        
         hcaptchaRef.current.execute();
         setChecking(true);
     };
@@ -401,14 +408,16 @@ export default function UserCarts(props) {
                                         {checking ? "Wait.." : "Checkout"}{" "}
                                     </button>
                                 </div>
-                                <HCaptcha
-                                    ref={hcaptchaRef}
-                                    sitekey={hcaptchakey || ""}
-                                    data-theme="light"
-                                    size="invisible"
-                                    onVerify={onVerify}
-                                    required
-                                />
+                                {hcaptchakey && hcaptchakey !== '' && (
+                                    <HCaptcha
+                                        ref={hcaptchaRef}
+                                        sitekey={hcaptchakey}
+                                        data-theme="light"
+                                        size="invisible"
+                                        onVerify={onVerify}
+                                        required
+                                    />
+                                )}
                             </form>
                         </div>
                     </div>

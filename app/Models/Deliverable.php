@@ -16,12 +16,15 @@ class Deliverable extends Model
     protected $fillable = [
         'uuid',
         'product_id',
+        'item_id', // NEW: Database wish item ID
         'price_id',
         'creator_id',
         'gifter_id',
         'payment_intent_id',
         'session_id',
         'deliverable_type',
+        'product_type',
+        'transaction_amount',
         'deliverable_url',
         'metadata',
         'status',
@@ -62,6 +65,14 @@ class Deliverable extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creator_id');
+    }
+    
+    /**
+     * Get the wish item this deliverable is for
+     */
+    public function wishItem(): BelongsTo
+    {
+        return $this->belongsTo(WishItem::class, 'item_id');
     }
 
     // Deliverable types enum
@@ -185,5 +196,13 @@ class Deliverable extends Model
     public function scopeForGifter($query, $gifterId)
     {
         return $query->where('gifter_id', $gifterId);
+    }
+    
+    /**
+     * Scope for specific wish item deliverables
+     */
+    public function scopeForWishItem($query, $wishItemId)
+    {
+        return $query->where('item_id', $wishItemId);
     }
 }

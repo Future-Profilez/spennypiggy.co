@@ -720,6 +720,14 @@ class StripeController extends Controller
                     'receipt_email' => $user->email,
                 ],
                 'customer_email' => $user->email,
+                'metadata' => [
+                    'user_id' => Auth::id(),
+                    'creator_id' => $owner_id,
+                    'wish_id' => $getdata[0]->wish_item_id ?? null,
+                    'deliverable_type' => 'media_bundle',
+                    'certificate' => 'true',
+                    'product_type' => 'wish_one_off',
+                ],
             ]);
 
             $stripePaymentDetail = StripePaymentDetail::create([
@@ -908,6 +916,15 @@ class StripeController extends Controller
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
+                    'metadata' => [
+                        'user_id' => null, // Anonymous purchase
+                        'creator_id' => $cart[0]->owner_id,
+                        'wish_id' => $cart[0]->wish_item_id ?? null,
+                        'deliverable_type' => 'media_bundle',
+                        'certificate' => 'true',
+                        'product_type' => 'wish_one_off',
+                        'device_id' => $device_id,
+                    ],
                 ]);
 
                 $callbackData = $sessioncreate;
@@ -2344,7 +2361,7 @@ class StripeController extends Controller
     public function deleteConnectedAccount($accountId)
     {
         try {
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET')); // move your secret to .env
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY')); // move your secret to .env
 
             $deleted = $stripe->accounts->delete($accountId, []);
 

@@ -31,11 +31,33 @@ class ThankyouUser extends Mailable
     public function build()
     {
         try {
-            $subject = 'Thank You from ' . $this->payment->payment->owner->name . ' !!';
+            // Safely get creator name for subject
+            $creatorName = 'Spenny Piggy';
+            if (isset($this->payment->payment) && 
+                isset($this->payment->payment->owner) && 
+                isset($this->payment->payment->owner->name) &&
+                !empty($this->payment->payment->owner->name)) {
+                $creatorName = $this->payment->payment->owner->name;
+            }
+            
+            $subject = 'Thank You from ' . $creatorName . ' !!';
+            
             return $this->view('email.thankyou-user')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'Noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'SPENNY PIGGY'))
                 ->subject($subject);
         } catch (\Exception $e) {
+            \Log::error('ThankyouUser email build error', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'payment_id' => $this->payment->id ?? 'null',
+                'payment_structure' => [
+                    'payment_exists' => isset($this->payment->payment),
+                    'owner_exists' => isset($this->payment->payment->owner) ? true : false,
+                    'owner_name_exists' => isset($this->payment->payment->owner->name) ? true : false
+                ]
+            ]);
+            throw $e; // Re-throw to ensure error is properly handled
         }
     }
 }

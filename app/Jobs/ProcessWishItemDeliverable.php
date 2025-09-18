@@ -73,6 +73,11 @@ class ProcessWishItemDeliverable implements ShouldQueue
                 'delivered_at' => now()
             ]);
 
+            // Clear activity cache to ensure real-time updates
+            if ($wishItem && $wishItem->user) {
+                app(\App\Services\CreatorActivityService::class)->clearActivityCache($wishItem->user);
+            }
+
             Log::info("Successfully processed deliverable", [
                 'deliverable_id' => $this->deliverable->id,
                 'type' => $this->deliverable->deliverable_type

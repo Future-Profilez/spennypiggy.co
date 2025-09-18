@@ -43,14 +43,14 @@ export default function Thankyou(props) {
                   </div>
                 </div>
 
-                <p className='my-2 text-center'>Please create an account to see the content you have purchased.</p>
+                <p className='py-6 text-center px-6'>Please create an account to see the content you have purchased.</p>
                 <div className='w-full mt-4' >
                   {auth && auth.user ?
                       <Link className='button lg mt-4' href={`/${owner && owner.username}`}>
                         Back to profile
                       </Link>
                     :
-                    <Link className='button lg mt-4' href={route("register")}>
+                    <Link className='button  mt-4' href={route("register")}>
                       Create a Gifter account
                     </Link>
                   }

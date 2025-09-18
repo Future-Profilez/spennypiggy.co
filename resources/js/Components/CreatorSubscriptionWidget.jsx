@@ -12,6 +12,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
             setLoading(true);
             const response = await axios.get('/creator/subscription/status');
             setStatus(response.data);
+            console.log('🔔 Subscription Status Response:', response.data);
             
             // Notify parent component if callback provided
             if (onStatusChange) {
@@ -28,6 +29,8 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
     useEffect(() => {
         fetchSubscriptionStatus();
     }, []);
+
+    console.log('🔔 CreatorSubscriptionWidget render - Status:', status, 'Loading:', loading, 'Error:', error);
 
     if (loading) {
         return (
@@ -52,14 +55,14 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                     </svg>
                     {error}
                 </div>
+                <div className="mt-2 text-xs">
+                    Debug: Component loaded with error state
+                </div>
             </div>
         );
     }
 
-    if (!status || status.eligible) {
-        // Don't show widget if subscription is valid
-        return null;
-    }
+     
 
     // Determine alert style based on status
     const getAlertStyle = () => {
@@ -94,13 +97,12 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
         }
     };
 
-    console.log("sdhjfkhd")
-
     const alertStyle = getAlertStyle();
     if (!alertStyle) return null;
 
     return (
         <div className={`${alertStyle.bgColor} border ${alertStyle.borderColor} rounded-lg p-4 ${className}`}>
+            
             <div className="flex items-start">
                 <div className="flex-shrink-0">
                     <svg className={`w-5 h-5 ${alertStyle.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,20 +143,18 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                         
                         {status.status === 'no_subscription' && (
                             <Link
-                                href="/subscription/plans"
+                                href="/activate-subscription"
                                 className={`inline-flex items-center px-3 py-2 text-xs font-medium text-white ${alertStyle.buttonColor} rounded-md transition-colors duration-200`}
                             >
-                                View Plans
+                                Start Free Trial
                             </Link>
                         )}
                     </div>
 
-                    {/* Additional info for specific statuses */}
-                    {status.subscription_status !== undefined && (
-                        <div className="mt-2 text-xs opacity-75">
-                            Status Code: {status.subscription_status}
-                        </div>
-                    )}
+                    {/* Debug info */}
+                    <div className="mt-2 text-xs opacity-75">
+                        Debug - Status: {status.subscription_status}, Eligible: {status.eligible ? 'Y' : 'N'}
+                    </div>
                 </div>
                 
                 {/* Dismiss button (optional) */}

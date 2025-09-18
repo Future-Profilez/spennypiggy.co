@@ -138,7 +138,7 @@ class CreatorActivityService
     {
         $cacheKey = "creator_content_breakdown_{$creator->id}";
         
-        return Cache::remember($cacheKey, 300, function () use ($creator) {
+        // NO CACHE - REAL TIME DATA
             $since = Carbon::now()->subDays(self::ACTIVITY_PERIOD_DAYS);
             
             return [
@@ -162,7 +162,6 @@ class CreatorActivityService
                     ->where('created_at', '>=', $since)
                     ->count(),
             ];
-        });
     }
 
     /**
@@ -236,8 +235,7 @@ class CreatorActivityService
      */
     public function clearActivityCache(User $creator): void
     {
-        Cache::forget("creator_content_count_{$creator->id}");
-        Cache::forget("creator_content_breakdown_{$creator->id}");
+        // NO CACHE - Nothing to clear
     }
 
     /**

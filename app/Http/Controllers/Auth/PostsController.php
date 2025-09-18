@@ -57,6 +57,9 @@ class PostsController extends Controller
                 "ai_generated" => $request->ai_generated ?? 0,
             ]);
 
+            // Clear activity cache to ensure real-time updates
+            app(\App\Services\CreatorActivityService::class)->clearActivityCache(Auth::user());
+
             return response()->json([
                 'status' => true,
                 'msg' => "Post saved successfully, your upload will be approved shortly."

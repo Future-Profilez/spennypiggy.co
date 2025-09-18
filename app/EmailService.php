@@ -124,19 +124,134 @@ class EmailService
 
     public static function checkOutToUser($data, $curr)
     {
+        \Log::info('EmailService::checkOutToUser started', [
+            'payment_id' => $data->id ?? 'null',
+            'session_id' => $data->session_id ?? 'null',
+            'currency' => $curr,
+            'user_exists' => isset($data->user) ? 'yes' : 'no',
+            'guest_email' => $data->guest_email ?? 'null'
+        ]);
+
+        // Determine recipient (logged-in user or guest email)
+        $recipientEmail = null;
+        $recipientName = null;
+        $recipientUsername = null;
+        $recipientPhone = null;
+        $recipientUuid = null;
+
+        if (isset($data->user)) {
+            \Log::info('EmailService::checkOutToUser - Using authenticated user for recipient', [
+                'user_id' => $data->user->id ?? 'null',
+                'user_email' => $data->user->email ?? 'null'
+            ]);
+            $recipientEmail = $data->user->email ?? null;
+            $recipientName = $data->user->name ?? null;
+            $recipientUsername = $data->user->username ?? null;
+            $recipientPhone = $data->user->phone ?? null;
+            $recipientUuid = $data->user->uuid ?? null;
+        } else {
+            \Log::info('EmailService::checkOutToUser - Falling back to guest email', [
+                'guest_email' => $data->guest_email ?? 'null'
+            ]);
+            $recipientEmail = $data->guest_email ?? null;
+            // Attempt to populate optional fields from stored name if available
+            $recipientName = $data->name ?? null;
+        }
+
+        if (empty($recipientEmail)) {
+            \Log::error('EmailService::checkOutToUser - No recipient email available');
+            return; // Cannot proceed without a recipient
+        }
+
         try {
             $emailData = [
-                'to' => $data->user->email,
-                'name' => $data->user->name,
-                'username' => $data->user->username,
-                'phone' => $data->user->phone,
-                'email' => $data->user->email,
-                'uuid' => $data->user->uuid,
+                'to' => $recipientEmail,
+                'name' => $recipientName,
+                'username' => $recipientUsername,
+                'phone' => $recipientPhone,
+                'email' => $recipientEmail,
+                'uuid' => $recipientUuid,
             ];
-            Mail::to($emailData['to'])
-                ->send(new CheckoutToUser($data, $curr));
+
+            \Log::info('EmailService::checkOutToUser - About to send email', [
+                'to' => $emailData['to'],
+                'payment_id' => $data->id,
+                'mail_config' => [
+                    'driver' => config('mail.default'),
+                    'host' => config('mail.mailers.smtp.host'),
+                    'from_address' => config('mail.from.address'),
+                    'from_name' => config('mail.from.name')
+                ]
+            ]);
+
+            // Test email configuration first
+            try {
+                $testMail = Mail::to($emailData['to']);
+                \Log::info('EmailService::checkOutToUser - Mail facade initialized successfully');
+            } catch (\Exception $e) {
+                \Log::error('EmailService::checkOutToUser - Mail facade initialization failed', [
+                    'error' => $e->getMessage()
+                ]);
+                throw $e;
+            }
+
+            // Create and send the email
+            try {
+                $checkoutEmail = new CheckoutToUser($data, $curr);
+                \Log::info('EmailService::checkOutToUser - CheckoutToUser email object created successfully');
+                
+                Mail::to($emailData['to'])->send($checkoutEmail);
+                \Log::info('EmailService::checkOutToUser - Mail::send() completed without exceptions');
+                \Log::info('EmailService::checkOutToUser - Email dispatched to mail system successfully');
+                
+            } catch (\Swift_TransportException $e) {
+                \Log::error('EmailService::checkOutToUser - Swift Transport Exception', [
+                    'error' => $e->getMessage(),
+                    'code' => $e->getCode(),
+                    'to' => $emailData['to']
+                ]);
+                throw $e;
+            } catch (\Swift_RfcComplianceException $e) {
+                \Log::error('EmailService::checkOutToUser - Swift RFC Compliance Exception', [
+                    'error' => $e->getMessage(),
+                    'to' => $emailData['to']
+                ]);
+                throw $e;
+            }
+
+            \Log::info('EmailService::checkOutToUser - Email process completed successfully', [
+                'to' => $emailData['to'],
+                'payment_id' => $data->id
+            ]);
+
         } catch (TransportException $e) {
+            \Log::error('EmailService::checkOutToUser - TransportException', [
+                'error' => $e->getMessage(),
+                'payment_id' => $data->id ?? 'null',
+                'to' => $emailData['to'] ?? 'null',
+                'trace' => $e->getTraceAsString()
+            ]);
             AppService::setStatus('email', 0, $e->getMessage());
+            throw $e; // Re-throw to ensure job fails if email fails
+        } catch (\Swift_TransportException $e) {
+            \Log::error('EmailService::checkOutToUser - Swift TransportException', [
+                'error' => $e->getMessage(),
+                'payment_id' => $data->id ?? 'null',
+                'to' => $emailData['to'] ?? 'null',
+                'trace' => $e->getTraceAsString()
+            ]);
+            AppService::setStatus('email', 0, $e->getMessage());
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('EmailService::checkOutToUser - General Exception', [
+                'error' => $e->getMessage(),
+                'payment_id' => $data->id ?? 'null',
+                'to' => $emailData['to'] ?? 'null',
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e; // Re-throw to ensure job fails if email fails
         }
     }
 
@@ -206,6 +321,11 @@ class EmailService
     public static function thankyouUser($payment)
     {
         try {
+            Log::info('EmailService::thankyouUser - Starting to send thank you email', [
+                'payment_id' => $payment->id ?? 'null',
+                'user_id' => $payment->payment->user->id ?? 'null'
+            ]);
+            
             $emailData = [
                 'to' => $payment->payment->user->email,
                 'name' => $payment->payment->user->name,
@@ -214,9 +334,59 @@ class EmailService
                 'email' => $payment->payment->user->email,
                 'uuid' => $payment->payment->user->uuid,
             ];
+            
+            Log::info('EmailService::thankyouUser - Email data prepared', [
+                'to' => $emailData['to'],
+                'name' => $emailData['name']
+            ]);
+            
             Mail::to($emailData['to'])->send(new ThankyouUser($payment));
+            
+            Log::info('EmailService::thankyouUser - Email sent successfully', [
+                'to' => $emailData['to'],
+                'payment_id' => $payment->id ?? 'null'
+            ]);
+            
+            // Create deliverable record for email tracking
+            try {
+                \App\Models\Deliverable::create([
+                    'uuid' => \Str::uuid(),
+                    'product_id' => $payment->payment->stripe_product_id ?? 'thank_you_email',
+                    'price_id' => $payment->payment->stripe_price_id ?? null,
+                    'creator_id' => $payment->payment->owner->id ?? null,
+                    'gifter_id' => $payment->payment->user->id ?? null,
+                    'payment_intent_id' => $payment->payment->stripe_payment_intent_id ?? null,
+                    'session_id' => $payment->payment->stripe_session_id ?? null,
+                    'deliverable_type' => 'email',
+                    'product_type' => 'thank_you',
+                    'transaction_amount' => ($payment->payment->amount ?? 0) / 100,
+                    'deliverable_url' => null,
+                    'metadata' => json_encode([
+                        'email_type' => 'thank_you',
+                        'payment_id' => $payment->payment->id ?? null
+                    ]),
+                    'status' => 'delivered',
+                    'delivered_at' => now()
+                ]);
+                
+                Log::info('EmailService::thankyouUser - Deliverable record created');
+            } catch (\Exception $e) {
+                Log::error('EmailService::thankyouUser - Failed to create deliverable record', [
+                    'error' => $e->getMessage()
+                ]);
+            }
         } catch (TransportException $e) {
+            Log::error('EmailService::thankyouUser - Transport Exception', [
+                'error' => $e->getMessage(),
+                'to' => $emailData['to'] ?? 'null'
+            ]);
             AppService::setStatus('email', 0, $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('EmailService::thankyouUser - General Exception', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
         }
     }
 
