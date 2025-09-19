@@ -69,7 +69,7 @@ class OptimizedProfileController extends Controller
             'page' => $page,
             'intro' => $user->intro,
             'supporters' => $profileData['supporters'],
-            'wish_categories' => $user->user_categories,
+            'wish_categories' => $this->getCategoriesWithItems($user),
             'selectedCategory' => request()->query('category') ?? false,
             'notification_count' => $profileData['notification_count'],
             'profile_steps' => null,
@@ -150,6 +150,26 @@ class OptimizedProfileController extends Controller
                 ];
             }
         });
+    }
+    
+    /**
+     * Get only categories that have at least one wishitem
+     * 
+     * @param \App\Models\User $user
+     * @return \Illuminate\Support\Collection
+     */
+    private function getCategoriesWithItems($user)
+    {
+        // Get all wishitems for this user
+        $wishitems = \App\Models\WishItem::where('user_id', $user->id)->get();
+        
+        // Get the category IDs that have items
+        $categoryIds = $wishitems->pluck('category_id')->unique()->filter()->values();
+        
+        // Filter the user categories to only include those with items
+        return $user->user_categories->filter(function($category) use ($categoryIds) {
+            return $categoryIds->contains($category->id);
+        })->values();
     }
 
     /**

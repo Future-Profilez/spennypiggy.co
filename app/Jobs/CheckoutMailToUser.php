@@ -58,6 +58,8 @@ class CheckoutMailToUser implements ShouldQueue
                 'product_type' => 'checkout',
                 'transaction_amount' => $this->payment->amount_subtotal ?? 0,
                 'deliverable_url' => null,
+                'anonymous' => $this->payment->anonymous ?? false,
+                'message' => $this->payment->message ?? null,
                 'metadata' => json_encode([
                     'email_type' => 'checkout_notification',
                     'currency' => $this->curr,
@@ -196,6 +198,8 @@ class CheckoutMailToUser implements ShouldQueue
                 'product_type' => 'wish',
                 'transaction_amount' => $paymentItem->amount * $paymentItem->quantity,
                 'deliverable_url' => $deliverableUrl,
+                'anonymous' => $this->payment->anonymous ?? false,
+                'message' => $this->payment->message ?? null,
                 'metadata' => json_encode([
                     'wish_id' => $wish->id, // Database wish_id
                     'stripe_product_id' => $wish->stripe_product_id, // Stripe product_id for reference
@@ -686,6 +690,8 @@ class CheckoutMailToUser implements ShouldQueue
                 'product_type' => $productType,
                 'transaction_amount' => $amount / 100, // Convert from cents to dollars
                 'deliverable_url' => null,
+                'anonymous' => $this->payment->anonymous ?? false,
+                'message' => $this->payment->message ?? null,
                 'metadata' => json_encode([
                     'email_type' => 'checkout_notification',
                     'wish_item_id' => $wishItemId,

@@ -122,7 +122,7 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
             $user = User::find(Auth::id());
-            $taxamount = $request->price * config('app.single_tax') / 100;
+            $taxamount = $request->price * config('app.platform_fee_percentage') / 100;
             $adminFee = config('app.administration_fee');
             $adminFees = Helpers::priceFormat('GBP', $adminFee, $user->default_currency);
             // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
@@ -273,9 +273,9 @@ class WishitemController extends Controller
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
         if ($request->subscription == 0) {
-            $tax_percent = config('app.single_tax');
+            $tax_percent = config('app.platform_fee_percentage');
         } elseif ($request->subscription == 1) {
-            $tax_percent = config('app.subs_tax');
+            $tax_percent = config('app.platform_fee_percentage');
         } elseif ($request->subscription == 2) {
             $tax_percent = config('app.crowd_tax');
         }
@@ -409,9 +409,9 @@ class WishitemController extends Controller
         $new_price = $request->price;
         if (!empty($request->price)) {
             if ($request->subscription == 0) {
-                $tax_percent = config('app.single_tax');
+                $tax_percent = config('app.platform_fee_percentage');
             } elseif ($request->subscription == 1) {
-                $tax_percent = config('app.subs_tax');
+                $tax_percent = config('app.platform_fee_percentage');
             } elseif ($request->subscription == 2) {
                 $tax_percent = config('app.crowd_tax');
             }
@@ -786,21 +786,8 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
-        Log::info('AddToCart called', [
-            'uuid'              => $uuid,
-            'device_id'         => $device_id,
-            'subscription_type' => $sub,
-            'amount'            => $amount,
-            'is_authenticated'  => Auth::check(),
-            'auth_user_id'      => Auth::id(),
-            'timestamp'         => now()
-        ]);
-
-        // ✅ Check gifter status
+           
         if (Helpers::checkGifterCardVerificationStatus()) {
-            Log::info('AddToCart blocked - gifter verification required', [
-                'user_id' => Auth::id()
-            ]);
             return response()->json([
                 'success' => false,
                 'msg'     => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
@@ -877,43 +864,20 @@ class WishitemController extends Controller
         );
 
         if ($cart) {
-            // ✅ Update existing cart - increment quantity
-            Log::info('About to update existing cart item', [
-                'existing_cart_id' => $cart->id,
-                'current_quantity' => $cart->quantity,
-                'current_status' => $cart->status
-            ]);
             
-            $cart->quantity      = $cart->quantity + 1;
+            // $cart->quantity      = $cart->quantity + 1;
+            $cart->quantity      = 1;
             $cart->status        = 1; // Ensure it stays active
             $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
             $cart->amount        = $fullfillAmount;
             $cart->tax           = $tax;
             $cart->priceid       = $priceId;
             $cart->country       = 'global';
-            $cart->updated_at    = now(); // Update timestamp
+            $cart->updated_at    = now();
             
             $saveResult = $cart->save();
-            
-            Log::info('Existing cart item save result', [
-                'cart_id' => $cart->id,
-                'save_result' => $saveResult,
-                'new_quantity' => $cart->quantity,
-                'status' => $cart->status,
-                'wasRecentlyCreated' => $cart->wasRecentlyCreated,
-                'exists' => $cart->exists
-            ]);
-            
-            // Verify the save worked by checking database directly
             $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
-            Log::info('Database verification after update', [
-                'cart_id' => $cart->id,
-                'found_in_db' => $dbVerification ? true : false,
-                'db_quantity' => $dbVerification->quantity ?? 'N/A',
-                'db_status' => $dbVerification->status ?? 'N/A'
-            ]);
         } else {
-            // ✅ Create new cart entry with all required fields
             $cartData = [
                 "user_id"      => Auth::check() ? Auth::id() : null,
                 "device_id"    => !Auth::check() ? $device_id : null,
@@ -927,25 +891,9 @@ class WishitemController extends Controller
                 'is_subscribed'=> ($sub == false || $sub == 'onetime') ? 0 : 1,
                 'priceid'      => $priceId,
             ];
-            
-            Log::info('About to create new cart item', [
-                'cart_data' => $cartData,
-                'database_connection' => \DB::connection()->getDatabaseName()
-            ]);
-            
             try {
                 $cart = UserCart::create($cartData);
                 
-                Log::info('New cart item create result', [
-                    'cart_id' => $cart->id,
-                    'cart_uuid' => $cart->uuid,
-                    'cart_data' => $cartData,
-                    'final_status' => $cart->status,
-                    'wasRecentlyCreated' => $cart->wasRecentlyCreated,
-                    'exists' => $cart->exists
-                ]);
-                
-                // Immediately verify the cart was saved to database
                 $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
                 Log::info('Database verification after create', [
                     'cart_id' => $cart->id,
@@ -955,14 +903,8 @@ class WishitemController extends Controller
                     'db_created_at' => $dbVerification->created_at ?? 'N/A'
                 ]);
                 
-                // Also check if we can query it via UserCart model
                 $modelVerification = UserCart::find($cart->id);
-                Log::info('Model verification after create', [
-                    'cart_id' => $cart->id,
-                    'found_via_model' => $modelVerification ? true : false,
-                    'model_user_id' => $modelVerification->user_id ?? 'N/A',
-                    'model_status' => $modelVerification->status ?? 'N/A'
-                ]);
+               
             } catch (\Exception $e) {
                 Log::error('Cart creation failed', [
                     'error' => $e->getMessage(),
@@ -2207,6 +2149,11 @@ class WishitemController extends Controller
 
     public function removeSurpriseFromCart($uuid, $device_id = null)
     {
+        // Check if this is an AJAX request
+        $isAjax = request()->header('X-Requested-With') === 'XMLHttpRequest' || 
+                  request()->header('Accept') === 'application/json' ||
+                  request()->wantsJson();
+        
         $query = UserCart::where('country', 'global')->whereUuid($uuid);
         if (Auth::check()) {
             $query->where('user_id', Auth::id());
@@ -2216,13 +2163,13 @@ class WishitemController extends Controller
             }
             
             if (!$device_id) {
-                if (request()->header('X-Inertia')) {
-                    return redirect()->route('cart')->with('error', 'Unable to remove item from cart. Please try again.');
+                if ($isAjax) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Device ID required for guest users'
+                    ], 400);
                 }
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Device ID required for guest users'
-                ], 400);
+                return redirect()->route('cart')->with('error', 'Unable to remove item from cart. Please try again.');
             }
             $query->where('device_id', $device_id);
         }
@@ -2230,15 +2177,15 @@ class WishitemController extends Controller
         
         if (!$cart) {
             // Handle not found case based on request type
-            if (request()->header('X-Inertia')) {
-                return redirect()->route('cart')->with('error', 'Cart item not found or you do not have permission to remove it.');
-            }
-            
-            if (request()->wantsJson()) {
+            if ($isAjax) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cart item not found or you do not have permission to remove it'
                 ], 404);
+            }
+            
+            if (request()->header('X-Inertia')) {
+                return redirect()->route('cart')->with('error', 'Cart item not found or you do not have permission to remove it.');
             }
             
             return back()->with('error', 'Cart item not found or you do not have permission to remove it.');
@@ -2248,15 +2195,15 @@ class WishitemController extends Controller
         $cart->save();
         
         // Return appropriate response based on request type
-        if (request()->header('X-Inertia')) {
-            return redirect()->route('cart')->with('success', 'Item removed from cart');
-        }
-        
-        if (request()->wantsJson()) {
+        if ($isAjax) {
             return response()->json([
                 'success' => true,
                 'message' => 'Item removed from cart'
             ]);
+        }
+        
+        if (request()->header('X-Inertia')) {
+            return redirect()->route('cart')->with('success', 'Item removed from cart');
         }
         
         return back()->with('success', 'Item removed from cart');

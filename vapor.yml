@@ -28,6 +28,7 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
+      - "php artisan subscription:sync --all"
 
   production:
     memory: 3008

@@ -36,14 +36,7 @@ class CheckoutController extends Controller
 {
     /* create checkout */
     public function createCheckout($creator_id, $user_id_or_device = null) {
-        Log::info('Checkout createCheckout called', [
-            'creator_id' => $creator_id,
-            'user_id_or_device' => $user_id_or_device,
-            'auth_user_id' => Auth::id(),
-            'request_method' => request()->method(),
-            'request_url' => request()->url(),
-            'query_params' => request()->query()
-        ]);
+       
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         Log::info('Gifter card verification status', ['status' => $checkGifterStatus]);
@@ -76,18 +69,9 @@ class CheckoutController extends Controller
             } else {
                 // For guests, filter by device_id AND owner_id (creator_id)
                 $device_id = $user_id_or_device ?? request()->get('device_id');
-                Log::info('Guest checkout - device ID check', [
-                    'user_id_or_device' => $user_id_or_device,
-                    'request_device_id' => request()->get('device_id'),
-                    'final_device_id' => $device_id,
-                    'all_request_data' => request()->all()
-                ]);
+                 
                 if (!$device_id) {
-                    Log::error('Device ID is missing for guest checkout', [
-                        'creator_id' => $creator_id,
-                        'user_id_or_device' => $user_id_or_device,
-                        'request_params' => request()->all()
-                    ]);
+                     
                     return redirect()->back()->with('error', 'Device ID is required for guest checkout.');
                 }
                 
@@ -120,15 +104,7 @@ class CheckoutController extends Controller
                 // Send notification to creator about blocked payment
                 $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
                 
-                // Log the blocked payment for subscription issues
-                Log::warning('Cart payment blocked due to subscription issue', [
-                    'creator_id' => $owner->id,
-                    'creator_username' => $owner->username,
-                    'cart_items_count' => $getdata->count(),
-                    'preliminary_total' => $preliminaryTotal,
-                    'subscription_status' => $subscriptionCheck['status'],
-                    'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
-                ]);
+                
                 
                 // Return user-friendly error to fan
                 return redirect()->back()->with('error', 
@@ -143,23 +119,13 @@ class CheckoutController extends Controller
                 // Send notification to creator about blocked payment
                 $owner->notify(new PaymentBlockedNotification($activityCheck, $preliminaryTotal));
                 
-                // Log the blocked payment for analytics
-                Log::info('Cart payment blocked due to insufficient creator activity', [
-                    'creator_id' => $owner->id,
-                    'creator_username' => $owner->username,
-                    'cart_items_count' => $getdata->count(),
-                    'preliminary_total' => $preliminaryTotal,
-                    'activity_status' => $activityCheck['status'],
-                    'content_count' => $activityCheck['content_count'] ?? 0
-                ]);
+                 
                 
                 // Return user-friendly error to fan
                 return redirect()->back()->with('error', 
                     'This creator is temporarily unavailable. Please try again later.'
                 );
-            }
-            
-            // Log successful activity check for analytics
+            } 
             if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
                 Log::info('Cart payment allowed - creator activity check passed', [
                     'creator_id' => $owner->id,
@@ -835,7 +801,7 @@ class CheckoutController extends Controller
                     Log::info("VAT percentage calculated", ['vat_percentage' => $vat_percentage]);
 
                     Log::info("About to calculate tax");
-                    $tax = $stripeid->amount_subtotal * config('app.single_tax') / 100;
+                    $tax = $stripeid->amount_subtotal * config('app.platform_fee_percentage') / 100;
                     Log::info("Tax calculated", ['tax' => $tax]);
 
                     Log::info("About to calculate VAT amount");

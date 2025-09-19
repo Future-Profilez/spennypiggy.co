@@ -320,6 +320,9 @@ class StripeWebhookController extends Controller
             }
         }
 
+        // Get payment details to retrieve message and anonymous data
+        $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
+        
         // Create deliverable record
         $deliverable = \App\Models\Deliverable::create([
             'uuid' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
@@ -331,6 +334,8 @@ class StripeWebhookController extends Controller
             'session_id' => $session->id,
             'deliverable_type' => $deliverableType,
             'status' => 'pending',
+            'anonymous' => $payment ? $payment->anonymous : false,
+            'message' => $payment ? $payment->message : null,
             'metadata' => json_encode([
                 'certificate' => $metadata->certificate ?? 'true',
                 'product_type' => $metadata->product_type ?? 'wish_one_off',

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WebVitalsController;
 use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
 use Illuminate\Http\Request;
@@ -26,6 +27,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/products', [ProductController::class, 'index']);
 Route::post('/create-product', [ProductController::class, 'store']);
 Route::put('/products/{id}', [ProductController::class, 'update']);
+
+// Cart API routes - using web middleware to maintain session authentication
+Route::middleware('web')->group(function () {
+    Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('api.remove-from-cart');
+});
 
 // Web Vitals Analytics & Monitoring
 Route::prefix('analytics')->group(function () {

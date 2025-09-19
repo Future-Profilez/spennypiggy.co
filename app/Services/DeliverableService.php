@@ -27,6 +27,8 @@ class DeliverableService
                 'product_type' => $metadata['product_type'] ?? 'unknown',
                 'product_id' => $metadata['product_id'] ?? null,
                 'status' => 'pending',
+                'anonymous' => $metadata['anonymous'] ?? false,
+                'message' => $metadata['message'] ?? null,
                 'metadata' => [
                     'amount' => $sessionData['amount_total'] ?? 0,
                     'currency' => $sessionData['currency'] ?? 'gbp',

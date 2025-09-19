@@ -17,22 +17,16 @@ export default function UserCarts(props) {
     const { format, formatMultiPrice } = PriceFormat();
     const datas = props.data;
     
-    // Debug logging
-    console.log("UserCarts component data:", datas);
-    console.log("UserCarts auth:", auth);
-    console.log("DeviceID:", deviceid);
-    console.log("Creator ID from datas:", datas?.user?.id);
-    
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
-    const [name, setName] = useState((auth && auth.name) || "");
-    const [email, setEmail] = useState((auth && auth.email) || "");
+    const [name, setName] = useState((auth && auth.user && auth.user.name) || "");
+    const [email, setEmail] = useState((auth && auth.user && auth.user.email) || "");
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
         setChecking(true);
-        const checkoutUrl = auth && auth.id 
+        const checkoutUrl = auth && auth.user && auth.user.id 
             ? `/create-checkout-session/${datas?.user?.id}/${datas?.user?.id || "notid"}`
             : `/create-checkout-session/${datas?.user?.id}/${deviceid}`;
         
@@ -56,8 +50,7 @@ export default function UserCarts(props) {
             }
         });
     };
-    console.log("device id, owner id", deviceid, datas?.user?.id);
-    const onVerify = (token) => {
+     const onVerify = (token) => {
         handleSubmit();
     };
 
@@ -96,58 +89,67 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        const removeUrl = auth && auth.id 
-            ? `/remove-from-cart/${id}` 
-            : `/remove-from-cart/${id}/${deviceid}`;
-        router.get(removeUrl, {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                console.log("Cart item removed successfully:", resp);
+        console.log("Auth status:", auth, "Auth user:", auth?.user, "Auth user ID:", auth?.user?.id);
+        const removeUrl = auth && auth.user && auth.user.id 
+            ? `/api/remove-from-cart/${id}` 
+            : `/api/remove-from-cart/${id}/${deviceid}`;
+        
+        console.log("Remove URL:", removeUrl);
+        
+        axios.get(removeUrl, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then((response) => {
+            console.log("Cart item removed successfully:", response.data);
+            if (response.data.success) {
                 const updatedItems = items.filter((item) => item.uuid !== id);
-                setItems(updatedItems ||[]);
-            },
-            onError: (_err) => {
-                console.error("Error removing cart item:", _err);
-            },
+                setItems(updatedItems || []);
+            } else {
+                console.error("Failed to remove cart item:", response.data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("Error removing cart item:", error);
+            if (error.response && error.response.data && error.response.data.message) {
+                console.error("Server error:", error.response.data.message);
+            }
         });
     };
 
     const [subtotal, setsubtotal] = useState();
     const [fee, setFee] = useState((window.platformFeePercentage || 20) / 100 * subtotal);
 
-    function updateTotals(p) {
-        const value =
+     function updateTotals() {
+        const subtotalValue =
             items &&
             items.reduce(
                 (total, item) => +total + +item.price * (+item.quantity || 1),
                 0
-            ) + p;
-        setsubtotal(value);
-        const fees =
+            );
+        setsubtotal(subtotalValue);
+        
+        const feesValue =
             items &&
             items.reduce(
                 (total, item) => +total + +item.tax * (+item.quantity || 1),
                 0
-            ) + p;
-        setFee(fees);
+            );
+        setFee(feesValue);
     }
 
     const quantityUpdate = (type, amount, tax) => {
-        if (type == "add") {
-            const updated = subtotal + amount;
-            setsubtotal(updated);
-            const totalfee = fee + tax;
-            setFee(totalfee);
-        } else {
-            const updated = subtotal - amount;
-            setsubtotal(updated);
-            const totalfee = fee - tax;
-            setFee(totalfee);
-        }
+        // Instead of manually updating totals, let the useEffect handle it
+        // This prevents double calculations and ensures consistency
+        setTimeout(() => {
+            updateTotals();
+        }, 100); // Small delay to ensure cart update API call completes
     };
 
     useEffect(() => {
-        updateTotals(0);
+        updateTotals();
     }, [items]);
 
     return (
@@ -193,7 +195,7 @@ export default function UserCarts(props) {
                             </div>
                             <div className="cartSubTotal whitespace-nowrap text-right mt-1">
                                 <span className="sm:ps-[5px]">Platform Fee :</span>{" "}
-                                <strong className="text-end text-black">
+                                <strong className="text-end text-black">  
                                     {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
                                         <p className="max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
@@ -329,8 +331,7 @@ export default function UserCarts(props) {
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
-                                                <li>
-                                                    {" "}
+                                                <li> 
                                                     For Memberships and
                                                     subscriptions, I understand I am
                                                     making a non-refundable purchase
