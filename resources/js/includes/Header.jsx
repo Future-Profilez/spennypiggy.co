@@ -3,6 +3,8 @@ import spennypiggy from "../../assets/img/logo.png";
 import { useState, useEffect, useCallback } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
+import { SiBuymeacoffee } from "react-icons/si";
+
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
@@ -399,7 +401,7 @@ export default function Header({classMagicword}) {
                                                     className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
-                                                        <SlCalculator
+                                                        <SiBuymeacoffee
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
@@ -408,6 +410,7 @@ export default function Header({classMagicword}) {
                                                         className="ml-2 text-[17px]
                                 tracking-wide truncate text-white"
                                                     >
+                                                        All Purchases
                                                     </span>
                                                 </Link>
                                             </li>

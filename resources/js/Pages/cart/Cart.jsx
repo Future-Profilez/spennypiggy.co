@@ -7,7 +7,7 @@ import Axios from "axios";
 import CartListing from "../rye/CartListing";
 import WhiteLoading from "@/includes/LoadingScreen";
 const UserCarts = lazy(() => import("../cart/UserCarts"));
-const Nocontent = lazy(() => import("@/includes/Nocontent"));
+import { GiCardboardBox } from "react-icons/gi";
 
 export default function Cart(props) {
     const deviceid = useMemo(() => DeviceID(), []);
@@ -172,15 +172,16 @@ export default function Cart(props) {
                 !loading &&
                 !loading2 && (
                     <div className="py-5 text-center">
-                        <div className="containerbox h-[50vh] flex items-center justify-center">
+                        <div className="containerbox h-[70vh] flex items-center justify-center">
                             <div className="p-6">
-                                <h1 className="text-xl md:text-3xl text-black mt-4 font-bold">Your Cart is Empty</h1>
+                                <div className="flex justify-center ">
+                                    <GiCardboardBox className="text-center text-gray-500" size={100} />
+                                </div>
+
+                                <h1 className="text-xl md:text-3xl text-black mt-4 font-gulfs uppercase">Your Cart is Empty</h1>
                                 <p className="mt-2 text-normal md:text-xl text-gray-500">Looks like you haven't added anything to your cart yet.</p>
                             </div>
-                            {/* <Nocontent  
-                                classes={`py-5`}
-                                text={"Cart is empty."}
-                            /> */}
+                            
                         </div>
                     </div>
                 )}

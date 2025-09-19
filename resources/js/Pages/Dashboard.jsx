@@ -74,7 +74,7 @@ const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWid
 const CreatorSubscriptionWidget = lazy(() => import('@/Components/CreatorSubscriptionWidget'));
 
 export default function Dashboard(props) {
-
+    
     const w = useWidthCount();
     const {
         auth,
@@ -90,9 +90,8 @@ export default function Dashboard(props) {
         stripe_requirements,
         migration_status,
     } = props;
-    const [wishitems, setWishitems] = useState(
-        useMemo(() => items || [], [items])
-    );
+
+    const [wishitems, setWishitems] = useState(items);
     const [tab, setTab] = useState(0);
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
