@@ -91,8 +91,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                             )}
                         </span>
                         {itemImage ? (
-                            <img 
-                                src={itemImage} 
+                            <img  src={itemImage} 
                                 alt={itemName} 
                                 className="h-12 w-12 object-cover rounded-md"
                             />
@@ -106,7 +105,6 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                     {/* Right side - Details */}
                     <div className="w-full p-4">
                         <div className="t">
-                                
                                 <div className='flex items-center justify-between  mb-2'>
                                     <div>
                                         <h3 className="text-xl font-gulfs uppercase text-gray-800"> {itemName} </h3>
