@@ -736,8 +736,53 @@ class MembershipController extends Controller
 
                 $amountWithcurrency = $symbol->symbol . $mem->amount;
 
-                // this job is for fan
-                MembershipMailToUser::dispatch($mem, $amountWithcurrency);
+                \Log::info('MembershipController: Starting membership email handling', [
+                    'membership_payment_id' => $mem->id,
+                    'membership_id' => $mem->membership->id,
+                    'membership_level' => $mem->membership->level,
+                    'recurring_for' => $mem->recurring_for,
+                    'guest_email' => $mem->guest_email
+                ]);
+                
+                // ✅ NEW: Use CheckoutMailToUser system for membership emails with deliverable tracking
+                // This ensures consistent email delivery and deliverable creation like wish items
+                try {
+                    // Create actual StripePaymentDetail record that works with CheckoutMailToUser
+                    $stripePayment = $this->createStripePaymentForMembership($mem, $session);
+                    
+                    \Log::info('MembershipController: Created StripePaymentDetail for membership', [
+                        'membership_payment_id' => $mem->id,
+                        'stripe_payment_id' => $stripePayment->id,
+                        'session_id' => $stripePayment->session_id,
+                        'user_id' => $stripePayment->user_id,
+                        'owner_id' => $stripePayment->owner_id
+                    ]);
+                    
+                    // Get currency symbol for email
+                    $currency = \App\Models\Currency::where('iso', strtoupper($mem->currency))->first();
+                    $currencySymbol = $currency ? $currency->symbol : '£';
+                    
+                    // Dispatch CheckoutMailToUser with real StripePaymentDetail - this will create deliverables and send email
+                    \App\Jobs\CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
+                    
+                    \Log::info('MembershipController: CheckoutMailToUser dispatched for membership', [
+                        'membership_payment_id' => $mem->id,
+                        'stripe_payment_id' => $stripePayment->id,
+                        'currency_symbol' => $currencySymbol,
+                        'email_address' => $mem->guest_email
+                    ]);
+                    
+                } catch (\Exception $e) {
+                    \Log::error('MembershipController: Failed to dispatch CheckoutMailToUser for membership', [
+                        'membership_payment_id' => $mem->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Fallback to old system if CheckoutMailToUser fails
+                    MembershipMailToUser::dispatch($mem, $amountWithcurrency);
+                    \Log::info('MembershipController: Fallback - used old MembershipMailToUser');
+                }
 
                 /**************************MEMBERSHIP**PWA**START****************************************************/
                 // below is membership pwa for fans
@@ -978,5 +1023,74 @@ class MembershipController extends Controller
             'message' => 'success',
         ]);
         // return true;
+    }
+    
+    /**
+     * Create actual StripePaymentDetail and StripePaymentItems records for membership
+     * This ensures memberships work with the existing CheckoutMailToUser system
+     */
+    private function createStripePaymentForMembership($membershipPayment, $stripeSession)
+    {
+        \Log::info('MembershipController: Creating StripePaymentDetail for membership', [
+            'membership_payment_id' => $membershipPayment->id,
+            'membership_id' => $membershipPayment->membership->id,
+            'session_id' => $membershipPayment->session_id
+        ]);
+        
+        // Create actual StripePaymentDetail record
+        $stripePayment = \App\Models\StripePaymentDetail::create([
+            'session_id' => $membershipPayment->session_id,
+            'amount_subtotal' => $membershipPayment->amount,
+            'amount_total' => $membershipPayment->amount + ($membershipPayment->tax ?? 0),
+            'currency' => $membershipPayment->currency,
+            'user_id' => $membershipPayment->user_id,
+            'owner_id' => $membershipPayment->membership->user_id,
+            'name' => $membershipPayment->guest_name,
+            'guest_email' => $membershipPayment->guest_email,
+            'message' => $membershipPayment->surprise_message ?? null,
+            'anonymous' => $membershipPayment->anonymous ?? false,
+            'tax' => $membershipPayment->tax ?? 0,
+            'payment_status' => 'paid',
+            'payment_method_type' => 'card'
+        ]);
+        
+        // Create a temporary wish item in the database that represents the membership
+        // This allows the existing CheckoutMailToUser system to work without modification
+        $tempWishItem = \App\Models\WishItem::create([
+            'user_id' => $membershipPayment->membership->user_id,
+            'wishname' => $membershipPayment->membership->level . ' Membership Access',
+            'description' => 'Membership access with exclusive benefits - ' . json_encode(json_decode($membershipPayment->membership->rewards, true) ?? []),
+            'price' => $membershipPayment->amount,
+            'currency' => $membershipPayment->currency,
+            'reward' => $membershipPayment->membership->perma_link, // Use membership thumbnail as reward
+            'price_id' => $membershipPayment->price_id,
+            'stripe_product_id' => $membershipPayment->membership->product_id,
+            'is_approved' => 1, // Auto-approve membership access items
+            'content_file' => null, // Memberships don't have content files
+            'content_file_type' => null,
+            'content_file_name' => null
+        ]);
+        
+        // Create corresponding StripePaymentItems record linked to the temp wish item
+        $stripePaymentItem = \App\Models\StripePaymentItems::create([
+            'uuid' => \Illuminate\Support\Str::uuid()->toString(),
+            'stripe_payment_detail_id' => $stripePayment->id,
+            'wish_item_id' => $tempWishItem->id, // Use the temporary wish item ID
+            'amount' => $membershipPayment->amount,
+            'quantity' => 1,
+            'anonymous' => $membershipPayment->anonymous ?? false,
+            'message' => $membershipPayment->surprise_message ?? null
+        ]);
+        
+        \Log::info('MembershipController: StripePaymentDetail created successfully', [
+            'stripe_payment_id' => $stripePayment->id,
+            'payment_item_id' => $stripePaymentItem->id,
+            'temp_wish_item_id' => $tempWishItem->id,
+            'membership_id' => $membershipPayment->membership->id,
+            'membership_level' => $membershipPayment->membership->level,
+            'guest_email' => $membershipPayment->guest_email
+        ]);
+        
+        return $stripePayment;
     }
 }

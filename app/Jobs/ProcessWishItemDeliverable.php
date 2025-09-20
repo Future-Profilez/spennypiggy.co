@@ -38,32 +38,51 @@ class ProcessWishItemDeliverable implements ShouldQueue
                 'uuid' => $this->deliverable->uuid
             ]);
 
-            // Get the wish item
-            $wishItem = WishItem::find($this->deliverable->wish_id);
-            if (!$wishItem) {
-                throw new \Exception("Wish item not found for deliverable {$this->deliverable->id}");
+            // Determine the item type and get the appropriate item
+            $item = null;
+            $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+            
+            if ($this->deliverable->product_type === 'membership_onetime' || $this->deliverable->product_type === 'membership_subscription') {
+                // Handle membership deliverable
+                $item = \App\Models\Membership::find($this->deliverable->item_id);
+                if (!$item) {
+                    throw new \Exception("Membership not found for deliverable {$this->deliverable->id}");
+                }
+                $this->processMembershipDeliverable($item);
+                return;
+            } else {
+                // Handle wish item deliverable (existing logic)
+                $wishItem = \App\Models\WishItem::find($this->deliverable->item_id);
+                if (!$wishItem && isset($metadata['wish_id'])) {
+                    // Fallback to metadata wish_id for backwards compatibility
+                    $wishItem = \App\Models\WishItem::find($metadata['wish_id']);
+                }
+                if (!$wishItem) {
+                    throw new \Exception("Wish item not found for deliverable {$this->deliverable->id}");
+                }
+                $item = $wishItem;
             }
 
-            // Process based on deliverable type
+            // Process based on deliverable type for wish items
             switch ($this->deliverable->deliverable_type) {
                 case 'media_bundle':
-                    $this->processMediaBundle($wishItem);
+                    $this->processMediaBundle($item);
                     break;
                 
                 case 'content_file':
-                    $this->processContentFile($wishItem);
+                    $this->processContentFile($item);
                     break;
                 
                 case 'subscription_content':
-                    $this->processSubscriptionContent($wishItem);
+                    $this->processSubscriptionContent($item);
                     break;
                 
                 default:
                     // Default to content file if wish item has content_file, otherwise media bundle
-                    if ($wishItem->content_file) {
-                        $this->processContentFile($wishItem);
+                    if ($item->content_file) {
+                        $this->processContentFile($item);
                     } else {
-                        $this->processMediaBundle($wishItem);
+                        $this->processMediaBundle($item);
                     }
             }
 
@@ -74,8 +93,8 @@ class ProcessWishItemDeliverable implements ShouldQueue
             ]);
 
             // Clear activity cache to ensure real-time updates
-            if ($wishItem && $wishItem->user) {
-                app(\App\Services\CreatorActivityService::class)->clearActivityCache($wishItem->user);
+            if ($item && $item->user) {
+                app(\App\Services\CreatorActivityService::class)->clearActivityCache($item->user);
             }
 
             Log::info("Successfully processed deliverable", [
@@ -103,16 +122,16 @@ class ProcessWishItemDeliverable implements ShouldQueue
     /**
      * Process media bundle deliverable
      */
-    private function processMediaBundle(WishItem $wishItem): void
+    private function processMediaBundle($item): void
     {
         // Create media bundle (ZIP file with wish item content)
-        $bundlePath = $this->createMediaBundle($wishItem);
+        $bundlePath = $this->createMediaBundle($item);
         
         // Generate certificate if requested
         $certificatePath = null;
         $metadata = json_decode($this->deliverable->metadata, true);
         if (($metadata['certificate'] ?? 'true') === 'true') {
-            $certificatePath = $this->generateCertificate($wishItem);
+            $certificatePath = $this->generateCertificate($item);
         }
 
         // Update deliverable with file paths
@@ -129,20 +148,20 @@ class ProcessWishItemDeliverable implements ShouldQueue
     /**
      * Process content file deliverable
      */
-    private function processContentFile(WishItem $wishItem): void
+    private function processContentFile($item): void
     {
-        if (!$wishItem->content_file) {
-            throw new \Exception("No content file found for wish item {$wishItem->id}");
+        if (!$item->content_file) {
+            throw new \Exception("No content file found for item {$item->id}");
         }
 
         // Get the content file URL from Uploadcare
-        $contentUrl = $wishItem->content_file_url;
+        $contentUrl = $item->content_file_url;
         
         // Generate certificate if requested
         $certificatePath = null;
         $metadata = json_decode($this->deliverable->metadata, true);
         if (($metadata['certificate'] ?? 'true') === 'true') {
-            $certificatePath = $this->generateCertificate($wishItem);
+            $certificatePath = $this->generateCertificate($item);
         }
 
         // Update deliverable with file paths
@@ -150,9 +169,9 @@ class ProcessWishItemDeliverable implements ShouldQueue
             'content_url' => $contentUrl,
             'certificate_url' => $certificatePath,
             'metadata' => json_encode(array_merge($metadata, [
-                'content_file_name' => $wishItem->content_file_name,
-                'content_file_type' => $wishItem->content_file_type,
-                'content_file_uuid' => $wishItem->content_file,
+                'content_file_name' => $item->content_file_name,
+                'content_file_type' => $item->content_file_type,
+                'content_file_uuid' => $item->content_file,
                 'content_processed_at' => now()->toISOString(),
                 'delivery_type' => 'uploadcare_file'
             ]))
@@ -162,10 +181,10 @@ class ProcessWishItemDeliverable implements ShouldQueue
     /**
      * Create media bundle ZIP file
      */
-    private function createMediaBundle(WishItem $wishItem): string
+    private function createMediaBundle($item): string
     {
         $zip = new ZipArchive();
-        $bundleName = "wish_item_{$wishItem->id}_{$this->deliverable->uuid}.zip";
+        $bundleName = "item_{$item->id}_{$this->deliverable->uuid}.zip";
         $bundlePath = "deliverables/bundles/{$bundleName}";
         $fullPath = Storage::path($bundlePath);
 
@@ -176,23 +195,27 @@ class ProcessWishItemDeliverable implements ShouldQueue
             throw new \Exception("Cannot create ZIP file: {$fullPath}");
         }
 
-        // Add wish item images/videos to bundle
-        if ($wishItem->image_url) {
-            $this->addFileToZip($zip, $wishItem->image_url, 'main_image.jpg');
+        // Add item images/videos to bundle
+        if (isset($item->image_url) && $item->image_url) {
+            $this->addFileToZip($zip, $item->image_url, 'main_image.jpg');
         }
 
-        if ($wishItem->video_url) {
-            $this->addFileToZip($zip, $wishItem->video_url, 'main_video.mp4');
+        if (isset($item->video_url) && $item->video_url) {
+            $this->addFileToZip($zip, $item->video_url, 'main_video.mp4');
         }
 
         // Add metadata file
+        $itemName = $item->wishname ?? $item->name ?? 'Item';
+        $itemDescription = $item->description ?? 'No description';
+        $creatorName = $item->user->name ?? 'Unknown';
+        
         $metadataContent = json_encode([
-            'wish_item' => [
-                'id' => $wishItem->id,
-                'name' => $wishItem->wishname,
-                'description' => $wishItem->description,
-                'creator' => $wishItem->user->name ?? 'Unknown',
-                'created_at' => $wishItem->created_at->toISOString()
+            'item' => [
+                'id' => $item->id,
+                'name' => $itemName,
+                'description' => $itemDescription,
+                'creator' => $creatorName,
+                'created_at' => $item->created_at->toISOString()
             ],
             'deliverable' => [
                 'uuid' => $this->deliverable->uuid,
@@ -229,7 +252,7 @@ class ProcessWishItemDeliverable implements ShouldQueue
     /**
      * Generate certificate for the deliverable
      */
-    private function generateCertificate(WishItem $wishItem): string
+    private function generateCertificate($item): string
     {
         $certificateName = "certificate_{$this->deliverable->uuid}.pdf";
         $certificatePath = "deliverables/certificates/{$certificateName}";
@@ -238,7 +261,7 @@ class ProcessWishItemDeliverable implements ShouldQueue
         Storage::makeDirectory('deliverables/certificates');
 
         // Simple certificate content (in a real implementation, you'd use a PDF library)
-        $certificateContent = $this->generateCertificateContent($wishItem);
+        $certificateContent = $this->generateCertificateContent($item);
         
         Storage::put($certificatePath, $certificateContent);
         
@@ -248,12 +271,14 @@ class ProcessWishItemDeliverable implements ShouldQueue
     /**
      * Generate certificate content
      */
-    private function generateCertificateContent(WishItem $wishItem): string
+    private function generateCertificateContent($item): string
     {
+        $itemName = $item->wishname ?? $item->name ?? 'Digital Content';
+        
         return "CERTIFICATE OF AUTHENTICITY\n\n" .
                "This certifies that the digital content for:\n" .
-               "'{$wishItem->wishname}'\n\n" .
-               "Created by: {$wishItem->user->name}\n" .
+               "'{$itemName}'\n\n" .
+               "Created by: {$item->user->name}\n" .
                "Deliverable ID: {$this->deliverable->uuid}\n" .
                "Generated on: " . now()->format('Y-m-d H:i:s') . "\n\n" .
                "This certificate validates the authenticity of the digital deliverable.";
@@ -262,22 +287,129 @@ class ProcessWishItemDeliverable implements ShouldQueue
     /**
      * Process subscription content deliverable
      */
-    private function processSubscriptionContent(WishItem $wishItem): void
+    private function processSubscriptionContent($item): void
     {
         // For subscription content, we might handle differently
         // This is a placeholder for subscription-specific logic
         Log::info("Processing subscription content", [
-            'wish_item_id' => $wishItem->id,
+            'item_id' => $item->id,
             'deliverable_id' => $this->deliverable->id
         ]);
 
         // Update deliverable with subscription-specific data
+        $contentUrl = $item->image_url ?? null;
         $this->deliverable->update([
-            'content_url' => $wishItem->image_url, // Direct link for subscriptions
+            'content_url' => $contentUrl, // Direct link for subscriptions
             'metadata' => json_encode([
                 'subscription_processed_at' => now()->toISOString(),
                 'content_type' => 'subscription_access'
             ])
         ]);
+    }
+    
+    /**
+     * Process membership deliverable (access certificate)
+     */
+    private function processMembershipDeliverable(\App\Models\Membership $membership): void
+    {
+        Log::info("Processing membership deliverable", [
+            'membership_id' => $membership->id,
+            'deliverable_id' => $this->deliverable->id
+        ]);
+        
+        // Generate membership access certificate
+        $certificatePath = $this->generateMembershipCertificate($membership);
+        
+        // Create access URL (could be a direct link to membership benefits page)
+        $accessUrl = env('APP_URL') . '/' . $membership->user->username . '/memberships';
+        
+        // Get metadata
+        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+        
+        // Update deliverable with membership-specific data
+        $this->deliverable->update([
+            'deliverable_url' => $accessUrl, // Link to membership benefits page
+            'content_url' => $certificatePath, // Certificate download link
+            'certificate_url' => $certificatePath,
+            'metadata' => json_encode(array_merge($metadata, [
+                'membership_processed_at' => now()->toISOString(),
+                'content_type' => 'membership_access',
+                'access_url' => $accessUrl,
+                'certificate_generated' => !empty($certificatePath),
+                'membership_thumbnail' => $membership->perma_link ?? null,
+                'creator_username' => ($membership->user->username ?? 'Unknown')
+            ]))
+        ]);
+    }
+    
+    /**
+     * Generate membership access certificate
+     */
+    private function generateMembershipCertificate(\App\Models\Membership $membership): ?string
+    {
+        try {
+            $certificateName = "membership_certificate_{$this->deliverable->uuid}.pdf";
+            $certificatePath = "deliverables/certificates/{$certificateName}";
+            
+            // Ensure directory exists
+            Storage::makeDirectory('deliverables/certificates');
+            
+            // Generate certificate content for membership
+            $certificateContent = $this->generateMembershipCertificateContent($membership);
+            
+            Storage::put($certificatePath, $certificateContent);
+            
+            return Storage::url($certificatePath);
+        } catch (\Exception $e) {
+            Log::error("Failed to generate membership certificate", [
+                'membership_id' => $membership->id,
+                'deliverable_id' => $this->deliverable->id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Generate membership certificate content
+     */
+    private function generateMembershipCertificateContent(\App\Models\Membership $membership): string
+    {
+        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+        $membershipLevel = $metadata['membership_level'] ?? ($membership->level ?? 'Member');
+        $creatorName = $membership->user->name ?? 'Creator';
+        $buyerName = $this->deliverable->customer_name ?? ($this->deliverable->gifter->name ?? 'Member');
+        
+        return "🏆 MEMBERSHIP ACCESS CERTIFICATE 🏆\n\n" .
+               "This certifies that:\n" .
+               "'{$buyerName}'\n\n" .
+               "Has successfully subscribed to:\n" .
+               "'{$creatorName}'s {$membershipLevel} Membership'\n\n" .
+               "Membership Benefits Included:\n" .
+               $this->formatMembershipRewards($membership) . "\n\n" .
+               "Certificate ID: {$this->deliverable->uuid}\n" .
+               "Generated on: " . now()->format('Y-m-d H:i:s') . "\n\n" .
+               "Access your membership benefits at:\n" .
+               env('APP_URL') . '/' . $membership->user->username . "/memberships\n\n" .
+               "This certificate validates your membership access and benefits.";
+    }
+    
+    /**
+     * Format membership rewards for certificate
+     */
+    private function formatMembershipRewards(\App\Models\Membership $membership): string
+    {
+        $rewards = json_decode($membership->rewards, true) ?? [];
+        
+        if (empty($rewards)) {
+            return "• Exclusive membership benefits";
+        }
+        
+        $formattedRewards = "";
+        foreach ($rewards as $index => $reward) {
+            $formattedRewards .= "• " . $reward . "\n";
+        }
+        
+        return trim($formattedRewards);
     }
 }

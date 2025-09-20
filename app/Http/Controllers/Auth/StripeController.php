@@ -1422,8 +1422,54 @@ class StripeController extends Controller
                 $creator_name = $sub->wish_item->user->name;
                 $mailToSend = $sub->guest_email;
 
-                // wish subscription mail send to user
-                WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
+                \Log::info('StripeController: Starting subscription email handling', [
+                    'subscription_id' => $sub->id,
+                    'wish_item_id' => $sub->wish_item->id,
+                    'recurring_for' => $sub->recurring_for,
+                    'has_content_file' => !empty($sub->wish_item->content_file),
+                    'has_reward' => !empty($sub->wish_item->reward),
+                    'guest_email' => $sub->guest_email
+                ]);
+                
+                // ✅ NEW: Use CheckoutMailToUser system for ALL subscriptions (both one-time and recurring)
+                // This ensures consistent email delivery with content URLs like wish items
+                try {
+                    // Create actual StripePaymentDetail record that works with CheckoutMailToUser
+                    $stripePayment = $this->createStripePaymentForSubscription($sub, $session);
+                    
+                    \Log::info('StripeController: Created StripePaymentDetail for subscription', [
+                        'subscription_id' => $sub->id,
+                        'stripe_payment_id' => $stripePayment->id,
+                        'session_id' => $stripePayment->session_id,
+                        'user_id' => $stripePayment->user_id,
+                        'owner_id' => $stripePayment->owner_id
+                    ]);
+                    
+                    // Get currency symbol for email
+                    $currency = \App\Models\Currency::where('iso', strtoupper($sub->currency))->first();
+                    $currencySymbol = $currency ? $currency->symbol : '£';
+                    
+                    // Dispatch CheckoutMailToUser with real StripePaymentDetail - this will create deliverables and send email with content
+                    \App\Jobs\CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
+                    
+                    \Log::info('StripeController: CheckoutMailToUser dispatched for subscription', [
+                        'subscription_id' => $sub->id,
+                        'stripe_payment_id' => $stripePayment->id,
+                        'currency_symbol' => $currencySymbol,
+                        'email_address' => $sub->guest_email
+                    ]);
+                    
+                } catch (\Exception $e) {
+                    \Log::error('StripeController: Failed to dispatch CheckoutMailToUser for subscription', [
+                        'subscription_id' => $sub->id,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Fallback to old system if CheckoutMailToUser fails
+                    WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
+                    \Log::info('StripeController: Fallback - used old WishSubscriptionMailToUser');
+                }
 
                 $sub->stripe_id = $session->subscription;
                 $current = Carbon::now();
@@ -1444,6 +1490,8 @@ class StripeController extends Controller
                 } else {
                     SubscribedMail::dispatch($sub, $creatorFinalAmount);
                 }
+
+                // ❌ REMOVED: Duplicate deliverable creation - CheckoutMailToUser will handle this properly
 
                 if ($sub->wish_item->user->auto_tweet == 1) {
                     // MakeAutoTweets::dispatch($user);
@@ -1582,6 +1630,87 @@ class StripeController extends Controller
                 }
             }
 
+            // Handle invoice.paid events for wish item subscriptions
+            if ($event->type == "invoice.paid" && !empty($subs)) {
+                // Find the subscription to get wish item info
+                $subscriptionId = $event->data->object->subscription ?? null;
+                if ($subscriptionId) {
+                    $wishSubscription = WishItemSubscription::where('stripe_id', $subscriptionId)->where('status', 'paid')->first();
+                    
+                    if ($wishSubscription && $wishSubscription->wish_item) {
+                        Log::info('Processing invoice.paid for wish subscription', [
+                            'subscription_id' => $subscriptionId,
+                            'wish_item_id' => $wishSubscription->wish_item->id,
+                            'event_type' => $event->type
+                        ]);
+                        
+                        // Check if wish item has content to deliver
+                        if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
+                            
+                            // Create deliverable record for tracking
+                            $deliverable = \App\Models\Deliverable::create([
+                                'uuid' => \Illuminate\Support\Str::uuid(),
+                                'product_id' => (string) $wishSubscription->wish_item->id,
+                                'item_id' => $wishSubscription->wish_item->id,
+                                'creator_id' => $wishSubscription->wish_item->user_id,
+                                'gifter_id' => $wishSubscription->user_id,
+                                'session_id' => $wishSubscription->session_id,
+                                'payment_intent_id' => $event->data->object->payment_intent ?? null,
+                                'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                                'product_type' => 'wish_subscription_content',
+                                'transaction_amount' => $wishSubscription->amount,
+                                'status' => 'pending',
+                                'customer_email' => $wishSubscription->guest_email,
+                                'customer_name' => $wishSubscription->guest_name,
+                                'anonymous' => $wishSubscription->anonymous ?? false,
+                                'message' => $wishSubscription->surprise_message,
+                                'metadata' => json_encode([
+                                    'wish_id' => $wishSubscription->wish_item->id,
+                                    'subscription_id' => $wishSubscription->id,
+                                    'stripe_subscription_id' => $subscriptionId,
+                                    'subscription_payment' => true,
+                                    'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                                    'invoice_id' => $event->data->object->id,
+                                    'billing_reason' => $event->data->object->billing_reason ?? null
+                                ])
+                            ]);
+                            
+                            // Dispatch ProcessWishItemDeliverable job for content processing
+                            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                            
+                            Log::info('Subscription content delivery job dispatched', [
+                                'deliverable_id' => $deliverable->id,
+                                'subscription_id' => $subscriptionId,
+                                'wish_item_id' => $wishSubscription->wish_item->id,
+                                'has_content_file' => !empty($wishSubscription->wish_item->content_file),
+                                'has_reward' => !empty($wishSubscription->wish_item->reward)
+                            ]);
+                            
+                            // Also dispatch CheckoutMailToUser for email notification with deliverable info
+                            $mockPayment = (object) [
+                                'id' => $wishSubscription->id,
+                                'user_id' => $wishSubscription->user_id,
+                                'owner_id' => $wishSubscription->wish_item->user_id,
+                                'session_id' => $wishSubscription->session_id,
+                                'guest_email' => $wishSubscription->guest_email,
+                                'name' => $wishSubscription->guest_name,
+                                'anonymous' => $wishSubscription->anonymous ?? false,
+                                'amount_subtotal' => $wishSubscription->amount,
+                                'amount_total' => $wishSubscription->amount + ($wishSubscription->tax ?? 0),
+                                'owner' => $wishSubscription->wish_item->user,
+                                'currency' => $wishSubscription->currency ?? 'gbp'
+                            ];
+                            
+                            // Get currency symbol for email
+                            $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
+                            $currencySymbol = $currency ? $currency->symbol : '£';
+                            
+                            \App\Jobs\CheckoutMailToUser::dispatch($mockPayment, $currencySymbol);
+                        }
+                    }
+                }
+            }
+            
             // if ($event->type == "invoice.updated" && !empty($subs)) {
 
             //     $array = [
@@ -2517,4 +2646,55 @@ class StripeController extends Controller
     //         'message' => 'success',
     //     ]);
     // }
+    
+    /**
+     * Create actual StripePaymentDetail and StripePaymentItems records for subscription
+     * This ensures subscriptions work with the existing CheckoutMailToUser system
+     */
+    private function createStripePaymentForSubscription($subscription, $stripeSession)
+    {
+        \Log::info('StripeController: Creating StripePaymentDetail for subscription', [
+            'subscription_id' => $subscription->id,
+            'wish_item_id' => $subscription->wish_item->id,
+            'session_id' => $subscription->session_id
+        ]);
+        
+        // Create actual StripePaymentDetail record
+        $stripePayment = \App\Models\StripePaymentDetail::create([
+            'session_id' => $subscription->session_id,
+            'amount_subtotal' => $subscription->amount,
+            'amount_total' => $subscription->amount + ($subscription->tax ?? 0),
+            'currency' => $subscription->currency,
+            'user_id' => $subscription->user_id,
+            'owner_id' => $subscription->wish_item->user_id,
+            'name' => $subscription->guest_name,
+            'guest_email' => $subscription->guest_email,
+            'message' => $subscription->surprise_message,
+            'anonymous' => $subscription->anonymous ?? false,
+            'tax' => $subscription->tax ?? 0,
+            'payment_status' => 'paid',
+            'payment_method_type' => 'card'
+        ]);
+        
+        // Create corresponding StripePaymentItems record
+        $stripePaymentItem = \App\Models\StripePaymentItems::create([
+            'uuid' => \Illuminate\Support\Str::uuid()->toString(),
+            'stripe_payment_detail_id' => $stripePayment->id,
+            'wish_item_id' => $subscription->wish_item->id,
+            'amount' => $subscription->amount,
+            'quantity' => 1,
+            'anonymous' => $subscription->anonymous ?? false,
+            'message' => $subscription->surprise_message
+        ]);
+        
+        \Log::info('StripeController: StripePaymentDetail created successfully', [
+            'stripe_payment_id' => $stripePayment->id,
+            'payment_item_id' => $stripePaymentItem->id,
+            'wish_item_id' => $subscription->wish_item->id,
+            'wish_name' => $subscription->wish_item->wishname ?? 'Unknown',
+            'guest_email' => $subscription->guest_email
+        ]);
+        
+        return $stripePayment;
+    }
 }

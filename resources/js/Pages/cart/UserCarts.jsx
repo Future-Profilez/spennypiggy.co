@@ -154,21 +154,20 @@ export default function UserCarts(props) {
 
     return (
         <div className={`${cartCleared ? "d-none" : ""} px-2 containerbox`}>
-            <div className="my-4 cartPage overflow-hidden bg-white border-pink shadow-black border-black rounded-[35px]">
-                    <div className='p-3 md:p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+            <div className="my-4 pb-12 mb-16 border-b border-[#000] cartPage overflow-hidden bg-white md:shadow-black md:border md:border-black md:rounded-[35px]">
+                    <div className='hidden md:flex p-3 md:p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                         <span className=' border-black border-2 bg-red-700 me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-yellow-400 me-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-mint me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                     </div>
-                    {/* dfdf - ${ownerid}/${deviceid} */}
-                    <div className="cartMain p-4 m-2 md:p-12">
+                    <div className="cartMain md:p-4 m-2 md:p-12">
                         <h2 className="pb-1 wishtitle">
                             Your Basket for {datas?.user?.name || ""}
                             <Link className="text-voilet" href={`/${datas?.user?.username || ""}`}>
                                 (@{datas?.user?.username || ""})
                             </Link>
                         </h2>
-                        <p className="pb-4 text-lg mt-2 mb-4">
+                        <p className="md:pb-4 text-lg mt-2 mb-4">
                             You are about to send a payout to <strong> {datas?.user?.name || ""} </strong> to fund their lifestyle.
                         </p>
                         <div className="CartItemBox">

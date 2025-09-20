@@ -247,10 +247,10 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        // if ((!editpop && data && data.reward_file == "") || null || undefined) {
-        //     errorAlert("Please choose a exclusive reward for this wish item.");
-        //     return false;
-        // }
+        if ((!editpop && data && data.reward_file == "") || null || undefined) {
+            errorAlert("Please choose a exclusive reward content for this wish item.");
+            return false;
+        }
         if (editpop) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
@@ -600,7 +600,7 @@ export default function Wishlist(props) {
 
                             <div className="pt-4 pb-3">
                                 <strong className="text-start d-block">
-                                    Content File (Optional)
+                                    Content File 
                                 </strong>
                                 <p className="text-small mb-3">
                                     Upload a single file that buyers will receive after purchase. 
@@ -610,7 +610,7 @@ export default function Wishlist(props) {
                                     Supported formats: JPEG, PNG, GIF, MP4, MOV, AVI, MP3, WAV, PDF, DOC, DOCX (Max: 50MB)
                                 </p>
                                 
-                                {item && item.content_file && (
+                                {/* {item && item.content_file && (
                                     <div className="mb-3 p-3 border rounded">
                                         <p className="text-sm text-gray-600 mb-2">
                                             Current file: {item.content_file_name || 'Uploaded file'}
@@ -626,13 +626,10 @@ export default function Wishlist(props) {
                                             </div>
                                         )}
                                     </div>
-                                )}
+                                )} */}
                                 
                                 {contentFile && (
                                     <div className="mb-3 p-3 border rounded">
-                                        <p className="text-sm text-gray-600 mb-2">
-                                            File uploaded successfully
-                                        </p>
                                         <div className="default-wish-img mb-2">
                                             <img
                                                 src={`https://ucarecdn.com/${contentFile}/`}

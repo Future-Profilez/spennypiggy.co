@@ -734,7 +734,11 @@ class CheckoutMailToUser implements ShouldQueue
         \Log::info('CheckoutMailToUser job started', [
             'payment_id' => $this->payment->id ?? 'null',
             'session_id' => $this->payment->session_id ?? 'null',
-            'currency' => $this->curr
+            'currency' => $this->curr,
+            'guest_email' => $this->payment->guest_email ?? 'null',
+            'user_id' => $this->payment->user_id ?? 'null',
+            'owner_id' => $this->payment->owner_id ?? 'null',
+            'amount_subtotal' => $this->payment->amount_subtotal ?? 'null'
         ]);
 
         // Check if payment has user relationship

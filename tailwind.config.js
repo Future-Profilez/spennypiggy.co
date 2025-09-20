@@ -16,7 +16,9 @@ export default {
                 sans: ['CeraGRMedium', ...defaultTheme.fontFamily.sans],
             },
         },
+        boxShadow: {
+            black: '5px 5px 0 0 rgba(0,0,0,1)',
+        },
     },
-
     plugins: [forms],
 };

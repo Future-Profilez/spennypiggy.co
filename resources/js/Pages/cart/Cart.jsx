@@ -136,7 +136,7 @@ export default function Cart(props) {
                 {cartsItems && cartsItems.length ? (
                     <div className=" ">
                         <div className="container pb-5 ">
-                            <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-2xl uppercase text-whites">
+                            <h2 className="text-bl font-GillSans pt-5 pt-3 pb-0 text-center text-3xl uppercase text-whites">
                                 Cart
                             </h2>
                             {loading ? <WhiteLoading /> : ""}
@@ -146,11 +146,18 @@ export default function Cart(props) {
                                         <>
                                             {cartsItems.map((c, i) => {
                                                 return (
-                                                    <UserCarts
-                                                        auth={auth && auth.user}
-                                                        key={`user-cart-${i}`}
-                                                        data={c}
-                                                    />
+                                                    <>
+                                                        <UserCarts
+                                                            auth={auth && auth.user}
+                                                            key={`user-cart-${i}`}
+                                                            data={c}
+                                                        />
+                                                        <UserCarts
+                                                            auth={auth && auth.user}
+                                                            key={`user-cart-${i}`}
+                                                            data={c}
+                                                        />
+                                                    </>
                                                 );
                                             })}
                                         </>

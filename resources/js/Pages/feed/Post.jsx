@@ -58,7 +58,7 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className="post-wrap bg-light rounded-[30px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pink border-2 border-[#F94F97]">
+      <div className="post-wrap bg-light rounded-[20px] md:rounded-[35px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pinks sborder-2 sborder-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img alt='spenny piggy' className="author-img" src={item?.user?.avatar_url || userphoto} />
@@ -100,9 +100,18 @@ export default function Post({item}) {
               <LazyLoadImage
               effect="blur"
               width='400' height='400' alt='spenny piggy'
-              className="post-img w-full max-h-[400px] object-cover" src={posturl()} />
+              className="post-img rounded-[20px]  md:!rounded-[35px] w-full max-h-[400px] object-cover" src={posturl()} />
 
-              {item.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
+              <div className='absolute bottom-3 right-3 z-1 bg-[color:var(--pink)] shadow-sm rounded-xl px-2 py-1 text-[10px] text-white'>
+                {item && item.for_module === 'membership' ? "Members Only" : ""}
+                {item && item.for_module === 'subscription' ? "Subscriber Only" : ""}
+                {item && item.for_module === 'support' ? "Supporters Only" : ""}
+              </div>
+              
+              
+              {item.ai_generated == 1 ? 
+              <div className='absolute bottom-3 left-3 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
+               : ""}
           </div>
         : ''}
 

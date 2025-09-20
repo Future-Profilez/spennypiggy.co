@@ -216,6 +216,11 @@ class StripeWebhookController extends Controller
                 $this->handleCheckoutSessionCompleted($data, $metadata);
                 break;
 
+            case 'invoice.paid':
+                Log::info("Handling Invoice Paid");
+                $this->handleInvoicePaid($data, $metadata);
+                break;
+
             case 'customer.subscription.updated':
                 $productType = $metadata->type ?? null;
 
@@ -510,6 +515,138 @@ class StripeWebhookController extends Controller
         SendRenewMail::dispatch($array, 'renew', 'membership');
 
         Log::info("Membership subscription updated: {$subscriptionId}, Status: {$status}");
+    }
+
+    /**
+     * Handle invoice.paid events for all subscription types
+     */
+    public function handleInvoicePaid($data, $metadata)
+    {
+        $subscriptionId = $data->subscription ?? null;
+        
+        if (!$subscriptionId) {
+            Log::info("Invoice paid but no subscription ID found", ['invoice_id' => $data->id]);
+            return;
+        }
+
+        Log::info("Processing invoice.paid for subscription", [
+            'invoice_id' => $data->id,
+            'subscription_id' => $subscriptionId,
+            'billing_reason' => $data->billing_reason ?? null
+        ]);
+
+        // Check if this is a wish item subscription
+        $wishSubscription = \App\Models\WishItemSubscription::where('stripe_id', $subscriptionId)
+            ->where('status', 'paid')
+            ->first();
+        
+        if ($wishSubscription && $wishSubscription->wish_item) {
+            $this->handleWishSubscriptionInvoicePaid($data, $wishSubscription);
+        } else {
+            Log::info("Invoice paid for non-wish subscription or subscription not found", [
+                'subscription_id' => $subscriptionId
+            ]);
+        }
+    }
+
+    /**
+     * Handle invoice.paid events specifically for wish item subscriptions
+     */
+    private function handleWishSubscriptionInvoicePaid($invoiceData, $wishSubscription)
+    {
+        try {
+            Log::info('Processing wish subscription invoice.paid', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'wish_item_id' => $wishSubscription->wish_item->id,
+                'invoice_id' => $invoiceData->id
+            ]);
+            
+            // Check if wish item has content to deliver
+            if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
+                
+                // Create deliverable record for tracking
+                $deliverable = \App\Models\Deliverable::create([
+                    'uuid' => \Illuminate\Support\Str::uuid(),
+                    'product_id' => (string) $wishSubscription->wish_item->id,
+                    'item_id' => $wishSubscription->wish_item->id,
+                    'creator_id' => $wishSubscription->wish_item->user_id,
+                    'gifter_id' => $wishSubscription->user_id,
+                    'session_id' => $wishSubscription->session_id,
+                    'payment_intent_id' => $invoiceData->payment_intent ?? null,
+                    'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                    'product_type' => 'wish_subscription_content',
+                    'transaction_amount' => $wishSubscription->amount,
+                    'status' => 'pending',
+                    'customer_email' => $wishSubscription->guest_email,
+                    'customer_name' => $wishSubscription->guest_name,
+                    'anonymous' => $wishSubscription->anonymous ?? false,
+                    'message' => $wishSubscription->surprise_message,
+                    'metadata' => json_encode([
+                        'wish_id' => $wishSubscription->wish_item->id,
+                        'subscription_id' => $wishSubscription->id,
+                        'stripe_subscription_id' => $wishSubscription->stripe_id,
+                        'subscription_payment' => true,
+                        'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                        'invoice_id' => $invoiceData->id,
+                        'billing_reason' => $invoiceData->billing_reason ?? null,
+                        'deliverable_url' => !empty($wishSubscription->wish_item->content_file) ? 
+                            $wishSubscription->wish_item->content_file_url : 
+                            ($wishSubscription->wish_item->reward_url ?? null)
+                    ])
+                ]);
+                
+                // Dispatch ProcessWishItemDeliverable job for content processing
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                
+                Log::info('Wish subscription content delivery job dispatched', [
+                    'deliverable_id' => $deliverable->id,
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id,
+                    'has_content_file' => !empty($wishSubscription->wish_item->content_file),
+                    'has_reward' => !empty($wishSubscription->wish_item->reward)
+                ]);
+                
+                // Also dispatch CheckoutMailToUser for email notification with deliverable info
+                $mockPayment = (object) [
+                    'id' => $wishSubscription->id,
+                    'user_id' => $wishSubscription->user_id,
+                    'owner_id' => $wishSubscription->wish_item->user_id,
+                    'session_id' => $wishSubscription->session_id,
+                    'guest_email' => $wishSubscription->guest_email,
+                    'name' => $wishSubscription->guest_name,
+                    'anonymous' => $wishSubscription->anonymous ?? false,
+                    'amount_subtotal' => $wishSubscription->amount,
+                    'amount_total' => $wishSubscription->amount + ($wishSubscription->tax ?? 0),
+                    'owner' => $wishSubscription->wish_item->user,
+                    'currency' => $wishSubscription->currency ?? 'gbp'
+                ];
+                
+                // Get currency symbol for email
+                $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
+                $currencySymbol = $currency ? $currency->symbol : '£';
+                
+                \App\Jobs\CheckoutMailToUser::dispatch($mockPayment, $currencySymbol);
+                
+                Log::info('Wish subscription email notification dispatched', [
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id,
+                    'customer_email' => $wishSubscription->guest_email
+                ]);
+            } else {
+                Log::info('Wish subscription has no content to deliver', [
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to process wish subscription invoice.paid', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'wish_item_id' => $wishSubscription->wish_item->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     public function handleWishSubscriptionUpdate($data, $metadata)
