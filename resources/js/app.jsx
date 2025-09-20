@@ -189,11 +189,13 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
-            <Provider store={store}>
-                <Suspense fallback={<>Loading...</>}>
-                    <App {...props} />
-                </Suspense>
-            </Provider>
+            <React.StrictMode>
+                <Provider store={store}>
+                    <Suspense fallback={<>Loading...</>}>
+                        <App {...props} />
+                    </Suspense>
+                </Provider>
+            </React.StrictMode>
         );
         
         // Hide initial loading screen once React app is mounted

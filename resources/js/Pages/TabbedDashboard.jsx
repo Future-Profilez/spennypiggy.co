@@ -151,6 +151,10 @@ export default function TabbedDashboard(props) {
                     wish_categories={wish_categories}
                     gifts={gifts}
                     giftsloading={giftsloading}
+                    currency={global_currency}
+                    auth={auth?.user}
+                    itemid={null}
+                    setuped={auth?.user?.stripe_details_submitted === 1}
                 />
 
                 {/* Bottom Navigation */}

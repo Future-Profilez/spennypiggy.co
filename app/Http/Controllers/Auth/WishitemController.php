@@ -763,47 +763,64 @@ class WishitemController extends Controller
             'total' => $wishes->total(),
             'per_page' => $wishes->perPage(),
         ];
-
         return response()->json($result);
     }
 
 
-    public function discover_all_creators($order, $gender)
-{
-    $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
-        ->whereNull('deleted_at')
-        ->where('approved', 1)
-        ->groupBy('user_id');
+    public function discover_all_creators($order, $gender) {
+        $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
+            ->whereNull('deleted_at')
+            ->where('approved', 1)
+            ->groupBy('user_id');
 
-    $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
-            $join->on('user_intros.id', '=', 'latest_intros.latest_id');
-        })
-        ->with(['user' => function ($q) use ($gender) {
-            $q->where('is_uk', 0)->where('stripe_details_submitted', 1)->where('suspended_account', 0);
+        $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
+                $join->on('user_intros.id', '=', 'latest_intros.latest_id');
+            })
+            ->with(['user' => function ($q) use ($gender) {
+                $q->where('is_uk', 0)
+                  ->where('stripe_details_submitted', 1)
+                  ->where('suspended_account', 0)
+                  ->whereNotNull('username')
+                  ->where('username', '!=', '');
+                if ($gender != 'all') {
+                    $q->where('gender', $gender);
+                }
+            }])
+            ->select('user_intros.*'); // make sure we select proper columns
+            
+        // Double-check to ensure we only get intros with valid users
+        $query->whereHas('user', function ($q) use ($gender) {
+            $q->whereNull('deleted_at')
+              ->where('is_uk', 0)
+              ->where('stripe_details_submitted', 1)
+              ->where('suspended_account', 0)
+              ->where('username', '!=', '');
             if ($gender != 'all') {
                 $q->where('gender', $gender);
             }
-        }])
-        ->select('user_intros.*'); // make sure we select proper columns
-        $query->whereHas('user', function ($q) {
-            $q->where('deleted_at', null);
         });
 
-    if ($order === 'new') {
-        $query->orderBy('user_intros.created_at', 'desc');
+        if ($order === 'new') {
+            $query->orderBy('user_intros.created_at', 'desc');
+        }
+
+        $intros = $query->paginate(30);
+        
+        // Filter out any intro records where user is still null (safety check)
+        $filteredIntros = $intros->getCollection()->filter(function ($intro) {
+            return $intro->user !== null && !empty($intro->user->username);
+        });
+        $intros->setCollection($filteredIntros);
+
+        return response()->json([
+            'success'       => true,
+            'intro'         => $intros,
+            "last_page"     => $intros->lastPage(),
+            "current_page"  => $intros->currentPage(),
+            "total"         => $intros->total(),
+            "per_page"      => $intros->perPage(),
+        ]);
     }
-
-    $intros = $query->paginate(30);
-
-    return response()->json([
-        'success'       => true,
-        'intro'         => $intros,
-        "last_page"     => $intros->lastPage(),
-        "current_page"  => $intros->currentPage(),
-        "total"         => $intros->total(),
-        "per_page"      => $intros->perPage(),
-    ]);
-}
 
 
 

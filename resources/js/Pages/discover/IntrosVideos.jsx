@@ -68,10 +68,17 @@ export default function IntroVideos(props) {
         </div>
       </>} />
       <div className='absolute bottom-0 bg-black  left-0 w-full p-4 z-[99px] text-white transition-colors   ' >
-        <Link href={`/${w && w.user && w.user.username}`}  >
-          <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
-          <p className='text-normal mt-0' >@{w && w.user && w.user.username}</p>
-        </Link> 
+        {w && w.user && w.user.username ? (
+          <Link href={`/${w.user.username}`}  >
+            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
+            <p className='text-normal mt-0' >@{w.user.username}</p>
+          </Link>
+        ) : (
+          <div>
+            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name || 'Unknown User'}</p>
+            <p className='text-normal mt-0 text-gray-400' >@unavailable</p>
+          </div>
+        )}
       </div>
       </div>
     }

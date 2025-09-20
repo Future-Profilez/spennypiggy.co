@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import LoadingScreen from '@/includes/LoadingScreen';
 
 // Lazy load existing components from your codebase
-const Wishlistbox = React.lazy(() => import('@/wishlist/Wishlistbox'));
+const WishlistGrid = React.lazy(() => import('@/Components/WishlistGrid'));
 const MembershipsLists = React.lazy(() => import('@/Pages/membership/MembershipsLists'));
 const Billslist = React.lazy(() => import('@/Pages/bills/Billslist'));
 const ProfileProductLists = React.lazy(() => import('@/Pages/shop/profile/ProfileProductLists'));
@@ -44,15 +44,19 @@ const AboutTab = ({ user, sLinks }) => (
 );
 
 // Wishes Tab Component  
-const WishesTab = ({ wishitems, IsloggedIn, username, selectedCategory, wish_categories }) => (
+const WishesTab = ({ wishitems, IsloggedIn, username, selectedCategory, wish_categories, currency, auth, itemid, setuped }) => (
     <div className="min-h-screen bg-gray-50">
         <Suspense fallback={<LoadingScreen />}>
-            <Wishlistbox
+            <WishlistGrid
                 wishitems={wishitems}
                 IsloggedIn={IsloggedIn}
                 username={username}
                 selectedCategory={selectedCategory}
                 wish_categories={wish_categories}
+                currency={currency}
+                auth={auth}
+                itemid={itemid}
+                setuped={setuped}
             />
         </Suspense>
     </div>
@@ -105,7 +109,11 @@ export default function TabContent({
     selectedCategory, 
     wish_categories,
     gifts,
-    giftsloading 
+    giftsloading,
+    currency,
+    auth,
+    itemid,
+    setuped
 }) {
     const renderTabContent = () => {
         switch (activeTab) {
@@ -119,6 +127,10 @@ export default function TabContent({
                         username={username}
                         selectedCategory={selectedCategory}
                         wish_categories={wish_categories}
+                        currency={currency}
+                        auth={auth}
+                        itemid={itemid}
+                        setuped={setuped}
                     />
                 );
             case 'memberships':

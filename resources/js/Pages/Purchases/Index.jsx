@@ -118,7 +118,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                                         </p>
                                         {deliverable.customer_email && (
                                             <p className="text-normal text-gray-500 break-long-words">
-                                                Sender Email: {deliverable.customer_email}
+                                               {deliverable.customer_email}
                                             </p>
                                         )}
                                     </div>
