@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Popup from '@/Components/Popup';
 import { FiPackage, FiGift, FiClock, FiCheck, FiX, FiArrowUp, FiArrowDown, FiEye } from 'react-icons/fi';
 import PriceFormat from '@/includes/PriceFormat';
 
 export default function Index({ auth, sentDeliverables, receivedDeliverables }) {
+    console.log("Sent Deliverables:", sentDeliverables);
+    console.log("Received Deliverables:", receivedDeliverables);
+
     const [selectedDeliverable, setSelectedDeliverable] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
     const { formatMultiPrice } = PriceFormat();
@@ -80,9 +83,9 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
         
         return (
             <div key={deliverable.id} className={`bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-pink-400`}>
-                <div className="flex flex-col md:flex-row">
+                <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
-                    <div className="relative w-full max-w-[200px] bg-pink-50 flex items-center justify-center p-4">
+                    <div className="relative w-full h-[200px] lg:h-full lg:max-w-[200px] bg-pink-50 flex items-center justify-center p-4">
                         <span className='absolute top-4 left-4'>
                             {type === 'sent' ? (
                                 <FiArrowUp size={'30px'} className="mr-2 text-blue-500" />
@@ -105,7 +108,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                     {/* Right side - Details */}
                     <div className="w-full p-4">
                         <div className="t">
-                                <div className='flex items-center justify-between  mb-2'>
+                                <div className='lg:flex items-center justify-between  mb-2'>
                                     <div>
                                         <h3 className="text-xl font-gulfs uppercase text-gray-800"> {itemName} </h3>
 
@@ -113,25 +116,36 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                                             {type === 'sent' ? `To: ${person?.name || 'Unknown'}` : `From: ${person?.name || 'Unknown'}`}
                                         </p>
                                         {deliverable.customer_email && (
-                                            <p className="text-normal text-gray-500">
+                                            <p className="text-normal text-gray-500 break-long-words">
                                                 Sender Email: {deliverable.customer_email}
                                             </p>
                                         )}
                                     </div>
                                     
                                     <h2 className='text-lg font-bold  '>
-                                        <div className='flex items-center justify-center'>
+                                        <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
                                             <p className='me-4 text-lg font-bold'>{formatMultiPrice(deliverable.transaction_amount, deliverable.payment_currency || auth.user.default_currency || global_currency)}</p>
                                             <span className={`capitalize px-3 py-1 text-sm font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
                                                 Content {deliverable.status || 'Processing'}
                                             </span>
                                         </div>
-                                        <div className="flex mt-4 n justify-center">
-                                            <Popup space="2 md:p-4"  
-                                                classes="text-sm underline text-pink"
-                                                text={<>View Content</>} >
-                                                    <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
-                                            </Popup>
+                                        <div className="mt-4">
+                                            <ul>
+                                                <li className='flex items-center flex-wrap'>
+                                                    <Popup space="2 md:p-4"  
+                                                        classes="text-[15px] text-pink ms-2"
+                                                        text={<>🎉 View Exclusive Content</>} >
+                                                            <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
+                                                    </Popup>
+                                                </li>
+                                                {deliverable?.wish_item?.subscription == 1 ?
+                                                    <li className='flex items-center flex-wrap'>
+                                                        <Link href={`/${deliverable?.creator?.username}`} 
+                                                        className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
+                                                    </li>
+                                                : ''}
+                                            </ul>
+                                            <p></p>
                                         </div>
 
                                     </h2>
@@ -190,9 +204,9 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
             <div className="py-12">
                 <div className="containerbox mx-auto ">
                     <div className="py-8">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="md:flex justify-between items-center mb-6">
                             <h1 className="text-3xl text-white font-gulfs uppercase">All Purchases</h1>
-                            <div className="flex space-x-2">
+                            <div className="mt-4 md:mt-0 flex space-x-2">
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     <FiArrowUp className="mr-1" /> Sent
                                 </span>

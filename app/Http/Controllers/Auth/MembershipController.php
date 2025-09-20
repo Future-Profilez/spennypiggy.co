@@ -765,7 +765,7 @@ class MembershipController extends Controller
                     // Dispatch CheckoutMailToUser with real StripePaymentDetail - this will create deliverables and send email
                     \App\Jobs\CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
                     
-                    \Log::info('MembershipController: CheckoutMailToUser dispatched for membership', [
+                    \Log::info('MembershipController: CheckoutMailToUser dispatched for membership deliverables', [
                         'membership_payment_id' => $mem->id,
                         'stripe_payment_id' => $stripePayment->id,
                         'currency_symbol' => $currencySymbol,
@@ -778,11 +778,17 @@ class MembershipController extends Controller
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
-                    
-                    // Fallback to old system if CheckoutMailToUser fails
-                    MembershipMailToUser::dispatch($mem, $amountWithcurrency);
-                    \Log::info('MembershipController: Fallback - used old MembershipMailToUser');
                 }
+                
+                // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
+                // This should be sent regardless of CheckoutMailToUser success/failure
+                MembershipMailToUser::dispatch($mem, $amountWithcurrency);
+                \Log::info('MembershipController: MembershipMailToUser dispatched for gifter confirmation', [
+                    'membership_payment_id' => $mem->id,
+                    'gifter_email' => $mem->guest_email,
+                    'amount_with_currency' => $amountWithcurrency,
+                    'membership_level' => $mem->membership->level
+                ]);
 
                 /**************************MEMBERSHIP**PWA**START****************************************************/
                 // below is membership pwa for fans

@@ -11,6 +11,9 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
   const [files, setFiles] = useState([]);
   const [checkIsUploading, setCheckIsUploading] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState('');
+  const [uploadStartTime, setUploadStartTime] = useState(null);
   const dataOutputRef = useRef();
   const controller = useRef(new AbortController());
 
@@ -18,11 +21,40 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     const ctxProvider = dataOutputRef.current;
     if (!ctxProvider) return;
     ctxProvider.uploadCollection.clearAll();
+    // Reset progress states
+    setUploadProgress(0);
+    setTimeRemaining('');
+    setUploadStartTime(null);
   };
 
   useImperativeHandle(ref, () => ({
     reset: () => handleResetUploader(),
   }));
+
+  // Calculate time remaining based on upload progress
+  const calculateTimeRemaining = (progress, startTime) => {
+    if (!startTime || progress <= 0) return '';
+    
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - startTime;
+    const progressPercent = progress / 100;
+    
+    if (progressPercent >= 1) return 'Complete';
+    
+    const estimatedTotalTime = elapsedTime / progressPercent;
+    const remainingTime = estimatedTotalTime - elapsedTime;
+    
+    if (remainingTime <= 0) return 'Almost done';
+    
+    const minutes = Math.floor(remainingTime / 60000);
+    const seconds = Math.floor((remainingTime % 60000) / 1000);
+    
+    if (minutes > 0) {
+      return `${minutes}m${seconds.toString().padStart(2, '0')}s Remaining`;
+    } else {
+      return `${seconds}s Remaining`;
+    }
+  };
 
    
 
@@ -40,33 +72,59 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
       handleResetUploader();
     };
     
-    const startHandler = () => {
+    const startHandler = e => {
+      // Check if this event is for our specific context
+      const eventCtx = e.detail?.ctx || e.target?.getAttribute?.('ctx-name');
+      if (eventCtx && eventCtx !== ctxName) return;
+      
       setCheckIsUploading(true);
+      setUploadStartTime(Date.now());
+      setUploadProgress(0);
+      setTimeRemaining('Calculating...');
       isUploading && isUploading(true);
+    };
+    
+    const progressHandler = e => {
+      // Check if this event is for our specific context
+      const eventCtx = e.detail?.ctx || e.target?.getAttribute?.('ctx-name');
+      if (eventCtx && eventCtx !== ctxName) return;
+      
+      const progress = e.detail?.uploadProgress || 0;
+      setUploadProgress(progress);
+      
+      if (uploadStartTime) {
+        const timeRemainingText = calculateTimeRemaining(progress, uploadStartTime);
+        setTimeRemaining(timeRemainingText);
+      }
     };
     
     const finishGlobalHandler = () => {
       setCheckIsUploading(false);
+      setUploadProgress(100);
+      setTimeRemaining('Complete');
       isUploading && isUploading(false);
     };
     
     const removeHandler = () => {
       setCheckIsUploading(false);
       isUploading && isUploading(false);
+      handleResetUploader();
     };
     
     window.addEventListener('LR_UPLOAD_FINISH', finishHandler);
     window.addEventListener('LR_UPLOAD_START', startHandler);
+    window.addEventListener('LR_UPLOAD_PROGRESS', progressHandler);
     window.addEventListener('LR_UPLOAD_FINISH', finishGlobalHandler);
     window.addEventListener('LR_REMOVE', removeHandler);
     
     return () => {
       window.removeEventListener('LR_UPLOAD_FINISH', finishHandler);
       window.removeEventListener('LR_UPLOAD_START', startHandler);
+      window.removeEventListener('LR_UPLOAD_PROGRESS', progressHandler);
       window.removeEventListener('LR_UPLOAD_FINISH', finishGlobalHandler);
       window.removeEventListener('LR_REMOVE', removeHandler);
     };
-  }, [ctxName]);
+  }, [ctxName, uploadStartTime]);
 
   const checkAdult = async (d) => {
     const f = d[0];
@@ -167,6 +225,16 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
         <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`}>
           <ProgressBar animated now={100} />
           <p className='text-center mt-2'>Adult content scanning...</p>
+        </div>
+      )}
+
+      {checkIsUploading && uploadProgress > 0 && (
+        <div className={`upload-progress rounded bg-light shadow-sm border p-3 my-2 mb-4`}>
+          <ProgressBar animated now={uploadProgress} />
+          <p className='text-center mt-2'>
+            Uploading... {Math.round(uploadProgress)}%
+            {timeRemaining && <span className="ms-2">{timeRemaining}</span>}
+          </p>
         </div>
       )}
     </>

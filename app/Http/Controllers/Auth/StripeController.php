@@ -1432,7 +1432,7 @@ class StripeController extends Controller
                 ]);
                 
                 // ✅ NEW: Use CheckoutMailToUser system for ALL subscriptions (both one-time and recurring)
-                // This ensures consistent email delivery with content URLs like wish items
+                // This ensures consistent email delivery with content URLs and deliverable creation
                 try {
                     // Create actual StripePaymentDetail record that works with CheckoutMailToUser
                     $stripePayment = $this->createStripePaymentForSubscription($sub, $session);
@@ -1452,7 +1452,7 @@ class StripeController extends Controller
                     // Dispatch CheckoutMailToUser with real StripePaymentDetail - this will create deliverables and send email with content
                     \App\Jobs\CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
                     
-                    \Log::info('StripeController: CheckoutMailToUser dispatched for subscription', [
+                    \Log::info('StripeController: CheckoutMailToUser dispatched for subscription deliverables', [
                         'subscription_id' => $sub->id,
                         'stripe_payment_id' => $stripePayment->id,
                         'currency_symbol' => $currencySymbol,
@@ -1465,11 +1465,17 @@ class StripeController extends Controller
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
-                    
-                    // Fallback to old system if CheckoutMailToUser fails
-                    WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
-                    \Log::info('StripeController: Fallback - used old WishSubscriptionMailToUser');
                 }
+                
+                // ✅ ALWAYS send WishSubscriptionMailToUser - this is the confirmation email to the gifter
+                // This should be sent regardless of CheckoutMailToUser success/failure
+                WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
+                \Log::info('StripeController: WishSubscriptionMailToUser dispatched for gifter confirmation', [
+                    'subscription_id' => $sub->id,
+                    'gifter_email' => $mailToSend,
+                    'amount_total' => $amountTotal,
+                    'creator_name' => $creator_name
+                ]);
 
                 $sub->stripe_id = $session->subscription;
                 $current = Carbon::now();
