@@ -93,7 +93,6 @@ const CreatorActivityWidget = (props) => {
     };
 
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
-
     return (
         <>
         <div className={`rounded-2xl shadow-pinks border-2 p-3 ${getStatusColor(activityStatus.status)} ${className}`}>

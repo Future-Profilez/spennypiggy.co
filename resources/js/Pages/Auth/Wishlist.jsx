@@ -247,7 +247,7 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        if ((!editpop && data && data.reward_file == "") || null || undefined) {
+        if ((!editpop && data && data.content_file == "") || null || undefined) {
             errorAlert("Please choose a exclusive reward content for this wish item.");
             return false;
         }
