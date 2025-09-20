@@ -6,7 +6,6 @@ export default function PwaInstallPrompt() {
   const [showChromeHelp, setShowChromeHelp] = useState(false);
   const deferredPromptRef = useRef(null);
 
-  // Helper functions for localStorage with error handling
   const getLastShownDate = () => {
     try {
       const lastShown = localStorage.getItem('pwa_install_last_shown');
@@ -49,10 +48,7 @@ export default function PwaInstallPrompt() {
 
     // Show popup after 3 seconds, but only if enough time has passed
     const timer = setTimeout(() => {
-      // Check if already installed
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      
-      // Check if we should show based on frequency limit
       if (!isStandalone && shouldShowPrompt()) {
         setVisible(true);
       }
@@ -63,7 +59,6 @@ export default function PwaInstallPrompt() {
       console.log('🎆 beforeinstallprompt event fired!');
       e.preventDefault();
       deferredPromptRef.current = e;
-      console.log('💾 PWA install prompt captured and ready for use');
     };
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
@@ -117,26 +112,17 @@ export default function PwaInstallPrompt() {
         }
       },
       checkInstallCapability: () => {
-        console.log('=== PWA Install Debug Info ===');
-        console.log('Browser type:', browserType);
-        console.log('Deferred prompt available:', !!deferredPromptRef.current);
-        console.log('Service worker support:', 'serviceWorker' in navigator);
-        console.log('Is standalone:', window.matchMedia('(display-mode: standalone)').matches);
-        console.log('Hostname:', window.location.hostname);
-        
         if (deferredPromptRef.current) {
-          console.log('✅ Native installation should work!');
+          console.warn('✅ Native installation should work!');
         } else {
-          console.log('⚠️ No native install prompt - will show instructions');
+          console.warn('⚠️ No native install prompt - will show instructions');
         }
       },
       testInstall: async () => {
         if (deferredPromptRef.current) {
           try {
-            console.log('🚀 Testing native install...');
             await deferredPromptRef.current.prompt();
             const { outcome } = await deferredPromptRef.current.userChoice;
-            console.log('Test install result:', outcome);
           } catch (error) {
             console.error('Test install failed:', error);
           }
@@ -149,7 +135,6 @@ export default function PwaInstallPrompt() {
     return () => {
       clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-      // Clean up debug utilities
       delete window.PwaPromptDebug;
     };
   }, []);
@@ -157,8 +142,7 @@ export default function PwaInstallPrompt() {
   // Also hide the prompt if the app gets installed via any means
   useEffect(() => {
     const onAppInstalled = () => {
-      console.log('✅ PWA app installed successfully!');
-      setLastShownDate(); // Track successful installation
+      setLastShownDate();
       setVisible(false);
       setShowChromeHelp(false);
     };
@@ -168,20 +152,13 @@ export default function PwaInstallPrompt() {
   }, []);
 
   const handleInstall = async () => {
-    // Try installation for Chrome/Edge
     if (browserType === 'chrome' || browserType === 'edge') {
       const dp = deferredPromptRef.current;
       
       if (dp) {
-        // Use real browser install prompt if available
         try {
-          console.log('🚀 Triggering native PWA install...');
           await dp.prompt();
           const { outcome } = await dp.userChoice;
-          
-          console.log(`PWA install result: ${outcome}`);
-          
-          // Track interaction regardless of outcome
           setLastShownDate();
           setVisible(false);
           deferredPromptRef.current = null;
@@ -191,8 +168,6 @@ export default function PwaInstallPrompt() {
         }
       }
       
-      // No native prompt available - show instructions
-      console.log('💻 No native install available, showing instructions');
       setLastShownDate(); // Track that we showed instructions
       setShowChromeHelp(true);
       return;

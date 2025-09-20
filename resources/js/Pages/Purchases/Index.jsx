@@ -4,6 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Popup from '@/Components/Popup';
 import { FiPackage, FiGift, FiClock, FiCheck, FiX, FiArrowUp, FiArrowDown, FiEye } from 'react-icons/fi';
 import PriceFormat from '@/includes/PriceFormat';
+import Nocontent from '@/includes/Nocontent';
 
 export default function Index({ auth, sentDeliverables, receivedDeliverables }) {
     console.log("Sent Deliverables:", sentDeliverables);
@@ -216,13 +217,13 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                             </div>
                         </div>
                         
-                        {allDeliverables.length > 0 ? (
+                        {!allDeliverables.length > 0 ? (
                             <div className="space-y-4">
                                 {allDeliverables.map(deliverable => renderDeliverableCard(deliverable))}
                             </div>
                         ) : (
                             <div className="text-center py-8">
-                                <p className="text-gray-500">No transactions found.</p>
+                                <Nocontent text="No purchases found." subheading={"Support your favorite creators by making a purchase. And don't forget to check back later for new content!"} />
                             </div>
                         )}
                     </div>
@@ -251,16 +252,16 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                                 <div>
                                     <p className="text-gray-500">Date:</p>
                                     <p className="font-medium" style={{ fontFamily: 'var(--para-font)', color: 'var(--pink)' }}>
-    {new Date(selectedDeliverable.created_at).toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    })} {new Date(selectedDeliverable.created_at).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    })}
-</p>
+                                        {new Date(selectedDeliverable.created_at).toLocaleDateString('en-US', {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric',
+                                        })} {new Date(selectedDeliverable.created_at).toLocaleTimeString('en-US', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        })}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Status:</p>

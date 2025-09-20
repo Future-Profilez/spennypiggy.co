@@ -345,6 +345,19 @@ Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('hea
 
 
 require __DIR__.'/auth.php';
+
+// Debug routes for wish creation issue
+require __DIR__.'/debug-wish.php';
+
+// Quick middleware test
+Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])
+    ->get('/debug-middleware-test', function() {
+        return response()->json([
+            'success' => true,
+            'message' => 'Middleware passed successfully',
+            'user' => auth()->user()->only(['id', 'email', 'role', 'subscription_status']),
+        ]);
+    });
 require __DIR__.'/test-date.php';
 
 // Test subscription routes (remove in production)

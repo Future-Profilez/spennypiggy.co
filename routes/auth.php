@@ -112,6 +112,55 @@ Route::middleware('auth')->group(function () {
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
+    // Content creation routes - NO subscription requirements
+    Route::middleware(['mustHaveToVerify'])->group(function () {
+        // Wish item routes - accessible without subscription
+        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
+        Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
+        Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
+        
+        // Bills - accessible without subscription
+        Route::prefix("bill")->name("bill.")->group(function () {
+            Route::post('save', [BillsController::class, 'billSave'])->name('save');
+            Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
+            Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
+        });
+        
+        // Memberships - accessible without subscription
+        Route::prefix("membership")->name("membership.")->group(function () {
+            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
+            Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
+            Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
+            Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
+            Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
+        });
+        
+        // Shop items - accessible without subscription
+        Route::prefix('shop')->group(function () {
+            Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
+            Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
+            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
+            Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
+            Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
+        });
+        
+        // Posts - accessible without subscription
+        Route::prefix("post")->name("post.")->group(function () {
+            Route::post('save', [PostsController::class, 'savePost'])->name('save');
+            Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
+            Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
+            Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
+            Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
+            Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
+        });
+        
+        // Categories and basic functionality
+        Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
+        Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
+        Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
+        Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
+    });
+
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
 
@@ -122,10 +171,6 @@ Route::middleware('auth')->group(function () {
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-            Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
-            Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
-            Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
-            Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
             Route::prefix("stripe")->name("stripe.")->group(function () {
                 Route::get("authorize", [StripeController::class, "index"])->name("index");
                 Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
@@ -324,31 +369,11 @@ Route::middleware('auth')->group(function () {
                 Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
                 // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
             });
-            Route::prefix("membership")->name("membership.")->group(function () {
-                Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
-                Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
-                Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
-                Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
-                Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
-            });
             Route::prefix("deliveries")->name("deliveries.")->group(function () {
                 Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
                 Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
             });
-            Route::prefix("post")->name("post.")->group(function () {
-                Route::post('save', [PostsController::class, 'savePost'])->name('save');
-                Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
-                Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
-                Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
-                Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
-                Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
-            });
 
-            Route::prefix("bill")->name("bill.")->group(function () {
-                Route::post('save', [BillsController::class, 'billSave'])->name('save');
-                Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
-                Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
-            });
 
             Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
@@ -398,14 +423,8 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('shop/ShopPage');
         })->name('shop');
 
-        Route::prefix('shop')->group(function () {
-            Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
-            Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
-            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
-            Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
-            Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
-            Route::get('orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
-        });
+        // Keep orders-list in subscription middleware (requires payment features)
+        Route::get('shop/orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
 
         Route::get('create-applicant', [TestController::class, 'createApplicant']);
         Route::get('generate-verification-link', [TestController::class, 'generateVerificationLink']);

@@ -200,60 +200,65 @@ class WishitemController extends Controller
      * @param Request $request
      * @return mixed
      */
-    public function addWishItem(Request $request)
+    public function addWishItem(Request $request): RedirectResponse
     {
-        $request->validate(
-            [
-                "wishname" => [
-                    "required",
-                    "string",
-                    "min:4",
-                    "max:255"
-                ],
-                "price" => [
-                    "required",
-                    "numeric",
-                    "min:0"
-                ],
-                "item_url" => [
-                    "nullable"
-                ],
-                "fullfill_amount" => [
-                    "nullable"
-                ],
-                "thumbnail" => [
-                    "sometimes",
-                    "nullable"
-                ],
-                "content_file" => [
-                    "nullable",
-                    "string" // Uploadcare UUID
-                ],
-                // 'reward_file' => [
-                //     'required'
-                // ],
-                "subscription" => [
-                    "required",
-                    "integer",
-                    Rule::in([0, 1, 2])
-                ],
-                "subscription_period" => [
-                    "required_if:subscription,1",
-                    new ValidSubscriptionPeriod
-                ],
-                "repeat_purchase" => [
-                    "sometimes",
-                    "nullable"
-                ],
-                "category" => [
-                    "sometimes",
-                    "nullable"
-                ]
+        // Temporary debug logging
+        \Log::info('Wish creation attempt', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->except(['password', '_token']),
+            'user_role' => Auth::user()?->role,
+            'subscription_status' => Auth::user()?->subscription_status,
+        ]);
+        
+        $request->validate([
+            "wishname" => [
+                "required",
+                "string",
+                "min:4",
+                "max:255"
             ],
-            [
-                'subscription_period.required_if'   =>  'Please select subscription period'
+            "price" => [
+                "required",
+                "numeric",
+                "min:0"
+            ],
+            "item_url" => [
+                "nullable"
+            ],
+            "fullfill_amount" => [
+                "nullable"
+            ],
+            "thumbnail" => [
+                "sometimes",
+                "nullable"
+            ],
+            "content_file" => [
+                "nullable",
+                "string" // Uploadcare UUID
+            ],
+            // 'reward_file' => [
+            //     'required'
+            // ],
+            "subscription" => [
+                "required",
+                "integer",
+                Rule::in([0, 1, 2])
+            ],
+            "subscription_period" => [
+                "required_if:subscription,1",
+                new ValidSubscriptionPeriod
+            ],
+            "repeat_purchase" => [
+                "sometimes",
+                "nullable"
+            ],
+            "category" => [
+                "sometimes",
+                "nullable"
             ]
-        );
+        ], [
+            'subscription_period.required_if'   =>  'Please select subscription period'
+        ]);
 
         // return response()->json([
         //     "data" => $request->all()
@@ -492,49 +497,86 @@ class WishitemController extends Controller
                 }
 
                 try {
-
                     $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                    // Always update the product name and image
-                    $productUpdatePayload = [
-                        'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
-                        'images' => [$wish->perma_link],
-                    ];
-
-                    $stripeProduct = (object)['id' => $wish->stripe_product_id];
-
-                    if ($old_price != $new_price || $request->subscription != $old_wish || $request->wishname != $old_wish_name) {
-                        // Create new price
-                        $newPricePayload = [
-                            "currency" => $user->default_currency,
-                            "unit_amount_decimal" => round($createpriceid * 100, 2),
-                            "product" => $wish->stripe_product_id,
-                        ];
-
-                        if ($request->subscription == 1) {
-                            $newPricePayload["recurring"] = [
-                                "interval" => StripeControl::$periods[$request->subscription_period],
-                                "interval_count" => 1
-                            ];
+                    // Check if Stripe product exists, if not create a new one
+                    $stripeProduct = null;
+                    if (!empty($wish->stripe_product_id)) {
+                        try {
+                            $stripeProduct = StripeControl::getProduct($wish->stripe_product_id, $wish->user->account_id);
+                        } catch (Exception $e) {
+                            Log::warning('Stripe product not found during update', [
+                                'wish_id' => $wish->id,
+                                'stripe_product_id' => $wish->stripe_product_id,
+                                'error' => $e->getMessage()
+                            ]);
+                            $stripeProduct = null;
                         }
-
-                        $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
-
-                        $wish->price_id = $newPrice->id;
-
-                        // Update product default price
-                        $productUpdatePayload['default_price'] = $newPrice->id;
-                        $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
-
-                        $stripeClient->prices->update($old_price_id, [
-                            'active' => false
-                        ], [
-                            'stripe_account' => $user->account_id
-                        ]);
                     }
 
-                    // Save updated product ID
-                    $wish->stripe_product_id = $stripeProduct->id;
+                    // If product doesn't exist, create a new one
+                    if (!$stripeProduct) {
+                        $productPayload['metadata'] = [
+                            'creator_id' => $user->id,
+                            'wish_id' => $wish->id,
+                            'deliverable_type' => 'media_bundle',
+                            'certificate' => 'true',
+                            'product_type' => 'wish_onetime',
+                        ];
+
+                        $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
+                        
+                        // Save the new product and price IDs
+                        $wish->stripe_product_id = $stripeProduct->id;
+                        $wish->price_id = $stripeProduct->default_price;
+                        $wish->save();
+                    } else {
+                        // Product exists, handle price updates if needed
+                        if ($old_price != $new_price || $request->subscription != $old_wish || $request->wishname != $old_wish_name) {
+                            // Create new price only if product exists
+                            $newPricePayload = [
+                                "currency" => $user->default_currency,
+                                "unit_amount_decimal" => round($createpriceid * 100, 2),
+                                "product" => $wish->stripe_product_id,
+                            ];
+
+                            if ($request->subscription == 1) {
+                                $newPricePayload["recurring"] = [
+                                    "interval" => StripeControl::$periods[$request->subscription_period],
+                                    "interval_count" => 1
+                                ];
+                            }
+
+                            $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
+                            $wish->price_id = $newPrice->id;
+
+                            // Update product details
+                            $productUpdatePayload = [
+                                'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
+                                'images' => [$wish->perma_link],
+                                'default_price' => $newPrice->id
+                            ];
+                            
+                            $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
+
+                            // Deactivate old price if it exists
+                            if (!empty($old_price_id)) {
+                                try {
+                                    $stripeClient->prices->update($old_price_id, [
+                                        'active' => false
+                                    ], [
+                                        'stripe_account' => $user->account_id
+                                    ]);
+                                } catch (Exception $e) {
+                                    Log::warning('Could not deactivate old price', [
+                                        'old_price_id' => $old_price_id,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+
                     $wish->is_approved = 0;
                     $wish->save();
 
@@ -566,33 +608,67 @@ class WishitemController extends Controller
             ]);
         }
 
-        WishCategory::where('wish_item_id', $wishitem->id)->delete();
-
-        UserCart::where('wish_item_id', $wishitem->id)->delete();
-
-        $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
-
-        foreach ($si as $key => $value) {
-            StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
-            $value->delete();
+        try {
+            // Delete related database records first
+            WishCategory::where('wish_item_id', $wishitem->id)->delete();
+            UserCart::where('wish_item_id', $wishitem->id)->delete();
+            
+            $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
+            
+            foreach ($si as $key => $value) {
+                StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
+                $value->delete();
+            }
+            
+            WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
+            
+            // Try to delete Stripe product if it exists
+            if (!empty($wishitem->stripe_product_id)) {
+                try {
+                    $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
+                    
+                    if ($stripeProduct) {
+                        StripeControl::deleteProductAndPrices($stripeProduct->id, $wishitem->user->account_id);
+                        Log::info('Deleted Stripe product during wish deletion', [
+                            'wish_id' => $wishitem->id,
+                            'stripe_product_id' => $wishitem->stripe_product_id
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    Log::warning('Could not delete Stripe product during wish deletion', [
+                        'wish_id' => $wishitem->id,
+                        'stripe_product_id' => $wishitem->stripe_product_id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with deletion even if Stripe fails
+                }
+            }
+            
+            // Delete the wish item from database
+            $wishitem->delete();
+            
+            Log::info('Wish item deleted successfully', [
+                'wish_id' => $wishitem->id,
+                'user_id' => $wishitem->user_id
+            ]);
+            
+            return response()->json([
+                'status' => true,
+                'msg' => "Wishitem removed successfully."
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error deleting wish item', [
+                'wish_id' => $wishitem->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => false,
+                'msg' => "Error deleting wish item: " . $e->getMessage()
+            ]);
         }
-
-        WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
-
-        $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
-
-        if ($stripeProduct) {
-            // Delete the product and prices from Stripe
-            StripeControl::deleteProductAndPrices($stripeProduct->id, $wishitem->user->account_id);
-        }
-        // StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
-
-        $wishitem->delete();
-
-        return response()->json([
-            'status' => true,
-            'msg' => "Wishitem removed successfully."
-        ]);
     }
 
     public function saveUserCategory(Request $request)
@@ -637,7 +713,7 @@ class WishitemController extends Controller
     public function discover_all_wishes($order, $type, $price)
     {
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
-        $query = WishItem::with("user")->whereHas('user', function ($q) use ($tag) {
+        $query = WishItem::whereNull('deleted_at')->where('is_approved', 1)->with("user")->whereHas('user', function ($q) use ($tag) {
             $q->whereNull('deleted_at')
                 ->where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0);
@@ -703,8 +779,7 @@ class WishitemController extends Controller
             $join->on('user_intros.id', '=', 'latest_intros.latest_id');
         })
         ->with(['user' => function ($q) use ($gender) {
-            $q->where('is_uk', 0);
-
+            $q->where('is_uk', 0)->where('stripe_details_submitted', 1)->where('suspended_account', 0);
             if ($gender != 'all') {
                 $q->where('gender', $gender);
             }
