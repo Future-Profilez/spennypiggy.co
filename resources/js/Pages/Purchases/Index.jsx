@@ -85,7 +85,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
             <div key={deliverable.id} className={`bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-pink-400`}>
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
-                    <div className="relative w-full h-[200px] lg:h-full lg:max-w-[200px] bg-pink-50 flex items-center justify-center p-4">
+                    <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-pink-50 flex items-center justify-center p-4">
                         <span className='absolute top-4 left-4'>
                             {type === 'sent' ? (
                                 <FiArrowUp size={'30px'} className="mr-2 text-blue-500" />
