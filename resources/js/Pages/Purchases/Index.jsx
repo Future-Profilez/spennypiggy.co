@@ -216,7 +216,6 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                                 </span>
                             </div>
                         </div>
-                        
                         {allDeliverables.length > 0 ? (
                             <div className="space-y-4">
                                 {allDeliverables.map(deliverable => renderDeliverableCard(deliverable))}
