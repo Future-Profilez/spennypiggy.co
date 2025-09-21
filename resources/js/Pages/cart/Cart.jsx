@@ -151,12 +151,7 @@ export default function Cart(props) {
                                                             auth={auth && auth.user}
                                                             key={`user-cart-${i}`}
                                                             data={c}
-                                                        />
-                                                        <UserCarts
-                                                            auth={auth && auth.user}
-                                                            key={`user-cart-${i}`}
-                                                            data={c}
-                                                        />
+                                                        /> 
                                                     </>
                                                 );
                                             })}
