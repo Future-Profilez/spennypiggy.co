@@ -163,36 +163,34 @@ export default function Wishlist(props) {
     });
     const contentUploaderRef = useRef();
 
-    const getContentFileUID = async (data) => {
-        let uuid = data?.uuid;
+    const getContentFileUID = async (uploadData) => {
+        let uuid = uploadData?.uuid;
         setContentFile(uuid);
         
         // Store complete file metadata
         const metadata = {
-            name: data?.name || 'Content file',
-            type: data?.mimeType ? `${data.mimeType}/${data.mimeSubtype}` : 'file',
-            size: data?.size || 0,
-            isImage: data?.isImage || false,
-            isVideo: data?.isVideo || false,
-            isAudio: data?.isAudio || false
+            name: uploadData?.name || 'Content file',
+            type: uploadData?.mimeType ? `${uploadData.mimeType}/${uploadData.mimeSubtype}` : 'file',
+            size: uploadData?.size || 0,
+            isImage: uploadData?.isImage || false,
+            isVideo: uploadData?.isVideo || false,
+            isAudio: uploadData?.isAudio || false
         };
         setContentFileMetadata(metadata);
         
-        // Update form data with all file information
-        setData({
-            ...data,
+        // Update only the content file fields, preserving existing form data
+        setData(prevData => ({
+            ...prevData,
             content_file: uuid,
             content_file_name: metadata.name,
             content_file_type: metadata.type,
             content_file_size: metadata.size
-        });
+        }));
         
-        console.log("getContentFileUID", data, metadata);
+        console.log("getContentFileUID", uploadData, metadata);
     };
 
-    useEffect(() => {
-        setData("content_file", contentFile);
-    }, [contentFile]);
+    // Content file updates are handled in getContentFileUID function
 
 
     const [isEditable, setIsEditable] = useState(false);
@@ -245,9 +243,6 @@ export default function Wishlist(props) {
         console.log("thumbnail",thumbnail);
     }, [thumbnail]);
 
-    useEffect(() => {
-        setData("content_file", contentFile);
-    }, [contentFile]);
 
     // Initialize thumbnail state when editing an item
     useEffect(() => {
@@ -660,7 +655,7 @@ export default function Wishlist(props) {
                                {item && item.content_file ? (
                                      <div className="border !border-green-600 p-3 rounded-xl flex justify-between items-center">
                                         <p className="text-green-600">Content File Added Successfully</p>
-                                        <a className="text-green-600" href={`https://ucarecdn.com/${item && item.content_file}/`}>View</a>
+                                        <a target="_blank" className="text-green-600" href={`https://ucarecdn.com/${item && item.content_file}/`}>View</a>
                                      </div>
                                 ) : (
                                     <>

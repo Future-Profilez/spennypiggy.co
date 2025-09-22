@@ -133,11 +133,15 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                                         <div className="mt-4">
                                             <ul>
                                                 <li className='flex items-center flex-wrap'>
-                                                    <Popup space="2 md:p-4"  
+                                                    {/* <Popup space="2 md:p-4"  
                                                         classes="text-[15px] text-pink ms-2"
                                                         text={<>🎉 View Exclusive Content</>} >
                                                             <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
-                                                    </Popup>
+                                                    </Popup> */}
+                                                    <li className='flex items-center flex-wrap'>
+                                                        <a target='_blank' href={`${deliverable.deliverable_url}`} 
+                                                        className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
+                                                    </li>
                                                 </li>
                                                 {deliverable?.wish_item?.subscription == 1 ?
                                                     <li className='flex items-center flex-wrap'>
