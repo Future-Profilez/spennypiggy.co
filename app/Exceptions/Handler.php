@@ -55,35 +55,41 @@ class Handler extends ExceptionHandler
      */
 
 
-//     public function render($request, Throwable $e){
+    public function render($request, Throwable $e){
 
-//         $status = 500;
-//         if ($e instanceof HttpExceptionInterface) {
-//             $status = $e->getStatusCode();
-//         }
+        $status = 500;
+        if ($e instanceof HttpExceptionInterface) {
+            $status = $e->getStatusCode();
+        }
 
-//         // Render Inertia ErrorPage for Inertia requests
-//         if ($request->header('X-Inertia')) {
-//             return Inertia::render('ErrorPage', [
-//                 'status' => $status,
-//                 'message' => $e->getMessage()
-//             ])
-//                 ->toResponse($request)
-//                 ->setStatusCode($status);
-//         }
+        // Use the new enhanced 404 page for 404 errors
+        if ($status === 404) {
+            $errorController = new \App\Http\Controllers\ErrorController();
+            return $errorController->show404();
+        }
 
-//         // Render Inertia ErrorPage even for full-page browser loads
-//         if ($request->isMethod('GET') && $request->acceptsHtml()) {
-//             return Inertia::render('ErrorPage', [
-//                 'status' => $status,
-//                 'message' => $e->getMessage()
-//             ])
-//                 ->toResponse($request)
-//                 ->setStatusCode($status);
-//         }
-//         // Fallback for API or JSON
-//         return parent::render($request, $e ?? 'Something went wrong');
-// }
+        // Render Inertia ErrorPage for Inertia requests
+        if ($request->header('X-Inertia')) {
+            return Inertia::render('ErrorPage', [
+                'status' => $status,
+                'message' => $e->getMessage()
+            ])
+                ->toResponse($request)
+                ->setStatusCode($status);
+        }
+
+        // Render Inertia ErrorPage even for full-page browser loads
+        if ($request->isMethod('GET') && $request->acceptsHtml()) {
+            return Inertia::render('ErrorPage', [
+                'status' => $status,
+                'message' => $e->getMessage()
+            ])
+                ->toResponse($request)
+                ->setStatusCode($status);
+        }
+        // Fallback for API or JSON
+        return parent::render($request, $e ?? 'Something went wrong');
+    }
 
 
 

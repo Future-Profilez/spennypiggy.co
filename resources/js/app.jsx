@@ -30,25 +30,25 @@ import "./utils/pwaDebug";
 
 // Only initialize Sentry on the production domain
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
-    // console.log("Sentry Enabled");
-    // Sentry.init({
-    //     dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
-    //     sendDefaultPii: true,
-    //     integrations: [
-    //         Sentry.replayIntegration({
-    //             networkDetailAllowUrls: [window.location.origin],
-    //             networkRequestHeaders: ["Cache-Control"],
-    //             networkResponseHeaders: ["Referrer-Policy"],
-    //         }),
-    //         Sentry.feedbackIntegration({
-    //             colorScheme: "system",
-    //             autoInject: false,
-    //         }),
-    //     ],
-    //     replaysSessionSampleRate: 0.1,
-    //     replaysOnErrorSampleRate: 1.0
-    // });
-}
+    console.log("Sentry Enabled");
+    Sentry.init({
+        dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
+        sendDefaultPii: true,
+        integrations: [
+            Sentry.replayIntegration({
+                networkDetailAllowUrls: [window.location.origin],
+                networkRequestHeaders: ["Cache-Control"],
+                networkResponseHeaders: ["Referrer-Policy"],
+            }),
+            Sentry.feedbackIntegration({
+                colorScheme: "system",
+                autoInject: false,
+            }),
+        ],
+        replaysSessionSampleRate: 0.1,
+        replaysOnErrorSampleRate: 1.0
+    });
+} 
 
 // Global cart refresh functions setup
 function setupGlobalCartFunctions(props) {

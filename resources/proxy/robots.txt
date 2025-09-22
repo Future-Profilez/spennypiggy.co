@@ -1,0 +1,19 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/webhooks/
+Disallow: /*.json
+Disallow: /staging/
+Disallow: /test/
+Disallow: /debug*/
+Disallow: /seed*/
+Disallow: /*-test
+Disallow: /pwa-debug
+
+# Allow main content
+Allow: /
+Allow: /discover
+Allow: /leaderboard
+Allow: /how-it-works
+
+# Sitemap location
+Sitemap: [SITE_URL]/seo/sitemap.xml

@@ -1,0 +1,20 @@
+# 1. Clear cache (REQUIRED)
+curl https://spennypiggy.co/seo/clear-cache
+
+# 2. Test main sitemap
+curl https://spennypiggy.co/sitemap.xml
+
+# 3. Test creators sitemap (should show real users)
+curl https://spennypiggy.co/sitemap/creators.xml
+
+# 4. Test wishlists sitemap (should show real wish items)  
+curl https://spennypiggy.co/sitemap/wishlists.xml
+
+# 5. Submit to Google
+curl "https://www.google.com/ping?sitemap=https://spennypiggy.co/sitemap.xml"
+
+# 6. Submit to Bing  
+curl "https://www.bing.com/ping?sitemap=https://spennypiggy.co/sitemap.xml"
+
+# 7. Check robots.txt
+curl https://spennypiggy.co/robots.txt

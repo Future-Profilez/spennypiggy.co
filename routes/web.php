@@ -339,6 +339,162 @@ Route::get('/splashscreen.png', function () {
     ]);
 })->name('splash.image.file');
 
+// SEO Routes - Completely different paths to bypass all caching
+Route::withoutMiddleware([])->group(function () {
+    // New robots route with different name
+    Route::get('/app-robots-file', [\App\Http\Controllers\SeoController::class, 'robotsTxt'])->name('app.robots');
+    
+    // New sitemap routes with different names
+    Route::get('/app-sitemap-index', [\App\Http\Controllers\SitemapController::class, 'index'])->name('app.sitemap.index');
+    Route::get('/app-sitemap-pages', [\App\Http\Controllers\SitemapController::class, 'static'])->name('app.sitemap.static');
+    Route::get('/app-sitemap-users', [\App\Http\Controllers\SitemapController::class, 'creators'])->name('app.sitemap.creators');
+    Route::get('/app-sitemap-items', [\App\Http\Controllers\SitemapController::class, 'wishlists'])->name('app.sitemap.wishlists');
+    
+    // Inline robots.txt that bypasses all file systems
+    Route::get('/dynamic-robots', function () {
+        $siteUrl = config('app.url');
+        $content = "User-agent: *\n";
+        $content .= "Disallow: /admin/\n";
+        $content .= "Disallow: /api/webhooks/\n";
+        $content .= "Disallow: /*.json\n";
+        $content .= "Disallow: /staging/\n";
+        $content .= "Disallow: /test/\n";
+        $content .= "Disallow: /debug*/\n";
+        $content .= "Disallow: /seed*/\n";
+        $content .= "Disallow: /*-test\n";
+        $content .= "Disallow: /pwa-debug\n";
+        $content .= "\n# Allow main content\n";
+        $content .= "Allow: /\n";
+        $content .= "Allow: /discover\n";
+        $content .= "Allow: /leaderboard\n";
+        $content .= "Allow: /how-it-works\n";
+        $content .= "\n# Sitemap location\n";
+        $content .= "Sitemap: {$siteUrl}/dynamic-sitemap\n";
+        
+        return response($content, 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
+        ]);
+    })->name('dynamic.robots');
+    
+    // Inline sitemap that bypasses all file systems
+    Route::get('/dynamic-sitemap', function () {
+        $siteUrl = config('app.url');
+        $content = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $content .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        $content .= '  <sitemap>' . "\n";
+        $content .= '    <loc>' . $siteUrl . '/dynamic-sitemap-pages</loc>' . "\n";
+        $content .= '    <lastmod>' . now()->toW3cString() . '</lastmod>' . "\n";
+        $content .= '  </sitemap>' . "\n";
+        $content .= '  <sitemap>' . "\n";
+        $content .= '    <loc>' . $siteUrl . '/dynamic-sitemap-users</loc>' . "\n";
+        $content .= '    <lastmod>' . now()->toW3cString() . '</lastmod>' . "\n";
+        $content .= '  </sitemap>' . "\n";
+        $content .= '  <sitemap>' . "\n";
+        $content .= '    <loc>' . $siteUrl . '/dynamic-sitemap-items</loc>' . "\n";
+        $content .= '    <lastmod>' . now()->toW3cString() . '</lastmod>' . "\n";
+        $content .= '  </sitemap>' . "\n";
+        $content .= '</sitemapindex>' . "\n";
+        
+        return response($content, 200, [
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
+        ]);
+    })->name('dynamic.sitemap');
+    
+    // Dynamic sub-sitemaps
+    Route::get('/dynamic-sitemap-pages', function () {
+        $siteUrl = config('app.url');
+        $staticPages = [
+            ['url' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
+            ['url' => '/discover', 'priority' => '0.9', 'changefreq' => 'daily'],
+            ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
+            ['url' => '/how-it-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
+            ['url' => '/register', 'priority' => '0.6', 'changefreq' => 'weekly'],
+            ['url' => '/login', 'priority' => '0.6', 'changefreq' => 'weekly'],
+        ];
+        
+        $content = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $content .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        
+        foreach ($staticPages as $page) {
+            $content .= '  <url>' . "\n";
+            $content .= '    <loc>' . $siteUrl . $page['url'] . '</loc>' . "\n";
+            $content .= '    <lastmod>' . now()->toW3cString() . '</lastmod>' . "\n";
+            $content .= '    <changefreq>' . $page['changefreq'] . '</changefreq>' . "\n";
+            $content .= '    <priority>' . $page['priority'] . '</priority>' . "\n";
+            $content .= '  </url>' . "\n";
+        }
+        
+        $content .= '</urlset>' . "\n";
+        
+        return response($content, 200, [
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
+        ]);
+    })->name('dynamic.sitemap.pages');
+    
+    Route::get('/dynamic-sitemap-users', [\App\Http\Controllers\SitemapController::class, 'creators'])->name('dynamic.sitemap.users');
+    Route::get('/dynamic-sitemap-items', [\App\Http\Controllers\SitemapController::class, 'wishlists'])->name('dynamic.sitemap.items');
+    
+    // SEO Status Page
+    Route::get('/seo-status', function () {
+        $siteUrl = config('app.url');
+        $html = '<!DOCTYPE html><html><head><title>SEO Files Status</title></head><body>';
+        $html .= '<h1>SEO Files - Working URLs</h1>';
+        $html .= '<p>These URLs bypass all caching and serve dynamic content:</p>';
+        $html .= '<ul>';
+        $html .= '<li><strong>Robots.txt:</strong> <a href="' . $siteUrl . '/dynamic-robots" target="_blank">' . $siteUrl . '/dynamic-robots</a></li>';
+        $html .= '<li><strong>Sitemap Index:</strong> <a href="' . $siteUrl . '/dynamic-sitemap" target="_blank">' . $siteUrl . '/dynamic-sitemap</a></li>';
+        $html .= '<li><strong>Pages Sitemap:</strong> <a href="' . $siteUrl . '/dynamic-sitemap-pages" target="_blank">' . $siteUrl . '/dynamic-sitemap-pages</a></li>';
+        $html .= '<li><strong>Users Sitemap:</strong> <a href="' . $siteUrl . '/dynamic-sitemap-users" target="_blank">' . $siteUrl . '/dynamic-sitemap-users</a></li>';
+        $html .= '<li><strong>Items Sitemap:</strong> <a href="' . $siteUrl . '/dynamic-sitemap-items" target="_blank">' . $siteUrl . '/dynamic-sitemap-items</a></li>';
+        $html .= '</ul>';
+        $html .= '<h2>Submit to Search Engines:</h2>';
+        $html .= '<p>Use this URL for search engine submission:</p>';
+        $html .= '<code>' . $siteUrl . '/dynamic-sitemap</code>';
+        $html .= '</body></html>';
+        
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    })->name('seo.status');
+});
+
+// Redirect old URLs to new SEO URLs
+Route::get('/robots.txt', function () {
+    return redirect('/seo/robots.txt', 301);
+})->name('robots.redirect');
+
+Route::get('/sitemap.xml', function () {
+    return redirect('/seo/sitemap.xml', 301);
+})->name('sitemap.redirect');
+
+Route::get('/sitemap/static.xml', function () {
+    return redirect('/seo/sitemap-static.xml', 301);
+})->name('sitemap.static.redirect');
+
+Route::get('/sitemap/creators.xml', function () {
+    return redirect('/seo/sitemap-creators.xml', 301);
+})->name('sitemap.creators.redirect');
+
+Route::get('/sitemap/wishlists.xml', function () {
+    return redirect('/seo/sitemap-wishlists.xml', 301);
+})->name('sitemap.wishlists.redirect');
+
+// SEO Cache management route (for post-deployment cache clearing)
+Route::get('/seo/clear-cache', [\App\Http\Controllers\SitemapController::class, 'clearCache'])->name('seo.clear.cache');
+
+// Enhanced 404 Error Page
+Route::get('/404', [\App\Http\Controllers\ErrorController::class, 'show404'])->name('error.404');
+
 // Health Check Endpoints for CI/CD Pipeline
 Route::get('/health', [HealthController::class, 'index'])->name('health.check');
 Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');

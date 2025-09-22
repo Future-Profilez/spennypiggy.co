@@ -178,6 +178,25 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
 </FilesMatch>
 
 # ======================================================================
+# SEO Files - Prevent CDN Caching
+# ======================================================================
+
+# Robots.txt and sitemap files - no caching for dynamic generation
+<FilesMatch "robots\.txt$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    Header unset ETag
+</FilesMatch>
+
+<FilesMatch "sitemap.*\.xml$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    Header unset ETag
+</FilesMatch>
+
+# ======================================================================
 # Laravel/PHP Configuration
 # ======================================================================
 
