@@ -31,6 +31,7 @@ class WishItem extends Model
         'content_file',
         'content_file_type',
         'content_file_name',
+        'content_file_size',
         'ai_generated',
         "subscription",
         "subscription_period",

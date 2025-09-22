@@ -71,7 +71,7 @@
     --cfg-multipart-max-attempts: 3;
 }
 .wishlistcontent {
-    --ctx-name: "rewards";
+    --ctx-name: "wishlistcontent";
     --cfg-pubkey: "af0e7b54d1432d098e25";
     --cfg-multiple: 0;
     --darkmode: 0;
@@ -80,8 +80,9 @@
     --l-accent: 61%;
     --cfg-thumb-size: 500;
     --cfg-confirm-upload: 0;
-    /* --cfg-accept: 'image/*,video/*,audio/*,.pdf,.doc,.docx'; */
+    --cfg-accept: "image/*, video/*, audio/*, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-powerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, text/plain, application/rtf, application/zip, application/x-zip-compressed";
     --cfg-store: 1;
+    --cfg-max-local-file-size-bytes: 104857600;
     --data-preview-step: 1;
     --cfg-camera-mirror: 0;
     --cfg-source-list: "local, url, camera, dropbox";

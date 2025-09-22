@@ -130,6 +130,19 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     const f = d[0];
     const type = f?.contentInfo?.mime?.type;
     const fileuid = f?.uuid;
+    
+    // Extract complete file metadata
+    const fileMetadata = {
+      uuid: fileuid,
+      mimeType: f?.contentInfo?.mime?.type || '',
+      mimeSubtype: f?.contentInfo?.mime?.subtype || '',
+      name: f?.originalFilename || f?.name || 'File',
+      size: f?.size || 0,
+      isImage: f?.isImage || false,
+      isVideo: (f?.contentInfo?.mime?.type === 'video') || false,
+      isAudio: (f?.contentInfo?.mime?.type === 'audio') || false,
+      url: f?.cdnUrl || `https://ucarecdn.com/${fileuid}/`
+    };
 
     if (fileuid && type !== 'video') {
       setScanning(true);
@@ -139,7 +152,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
 
         if (resp.data.status) {
           successAlert("File has been scanned !!");
-          sendFile(f);
+          sendFile(fileMetadata); // Pass the full metadata
           setFiles(d);
           controller.current.abort();
         } else {
@@ -151,7 +164,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
         setTimeout(() => setScanning(false), 2000);
       }
     } else {
-      sendFile(f);
+      sendFile(fileMetadata); // Pass the full metadata
       setFiles(d);
     }
   };
@@ -185,10 +198,10 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
         pubkey="af0e7b54d1432d098e25"
         multiple={false}
         darkmode={false}
-        thumb-size={500} inputAcceptTypes="image/*,video/mp4,video/webm"
+        thumb-size={500} inputAcceptTypes={accept || "image/*,video/mp4,video/webm"}
         confirm-upload={false}
         store
-        accept={"image/*,video/*"}
+        accept={accept || "image/*,video/*"}
         preview-step
         camera-mirror={false}
         source-list="local,url,camera,dropbox"

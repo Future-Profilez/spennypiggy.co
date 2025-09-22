@@ -178,10 +178,11 @@ class UserProfileService
                 $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
             });
 
-            // // Apply approval filter for non-owners
-            // if (!Auth::check() || Auth::id() !== $userId) {
-            //     $query->where('is_approved', 1);
-            // }
+            // Apply approval filter for non-owners
+            if (!Auth::check() || Auth::id() !== $userId) {
+                $query->where('is_approved', 1);
+            }
+            
             return $query->orderBy('sort')
                 ->orderBy('created_at', 'desc')
                 ->limit($perPage)

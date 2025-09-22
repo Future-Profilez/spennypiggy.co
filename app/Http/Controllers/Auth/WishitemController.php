@@ -236,6 +236,18 @@ class WishitemController extends Controller
                 "nullable",
                 "string" // Uploadcare UUID
             ],
+            "content_file_name" => [
+                "nullable",
+                "string"
+            ],
+            "content_file_type" => [
+                "nullable",
+                "string"
+            ],
+            "content_file_size" => [
+                "nullable",
+                "integer"
+            ],
             // 'reward_file' => [
             //     'required'
             // ],
@@ -290,14 +302,9 @@ class WishitemController extends Controller
 
         // Handle content file UUID from Uploadcare
         $contentFile = $request->content_file; // Uploadcare UUID
-        $contentFileType = null;
-        $contentFileName = null;
-        
-        // If content file UUID is provided, we can optionally get file info from Uploadcare
-        if ($contentFile) {
-            // You can add Uploadcare API call here to get file metadata if needed
-            // For now, we'll store the UUID directly
-        }
+        $contentFileType = $request->content_file_type;
+        $contentFileName = $request->content_file_name;
+        $contentFileSize = $request->content_file_size;
 
         $wish = WishItem::create([
             "user_id" => Auth::id(),
@@ -310,6 +317,7 @@ class WishitemController extends Controller
             'content_file' => $contentFile,
             'content_file_type' => $contentFileType,
             'content_file_name' => $contentFileName,
+            'content_file_size' => $contentFileSize,
             // 'reward' => $request->reward_file ?? null,
             "ai_generated" => $request->ai_generated,
             'subscription' => $request->subscription,
@@ -433,11 +441,14 @@ class WishitemController extends Controller
             $contentFile = $wish->content_file;
             $contentFileType = $wish->content_file_type;
             $contentFileName = $wish->content_file_name;
+            $contentFileSize = $wish->content_file_size;
             
             if ($request->content_file && $request->content_file !== $wish->content_file) {
-                // Update with new Uploadcare UUID
+                // Update with new Uploadcare UUID and metadata
                 $contentFile = $request->content_file;
-                // You can add Uploadcare API call here to get file metadata if needed
+                $contentFileType = $request->content_file_type;
+                $contentFileName = $request->content_file_name;
+                $contentFileSize = $request->content_file_size;
             }
             
             $updatedata = WishItem::where('uuid', $uuid)->update([
@@ -450,6 +461,7 @@ class WishitemController extends Controller
                 'content_file' => $contentFile,
                 'content_file_type' => $contentFileType,
                 'content_file_name' => $contentFileName,
+                'content_file_size' => $contentFileSize,
                 "ai_generated" => $request->ai_generated ?? $wish->ai_generated,
                 'subscription' => $request->subscription ?? $wish->subscription,
                 'subscription_period' => $request->subscription_period ?? $wish->subscription_period,

@@ -136,6 +136,8 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                     ref={uploaderRef} type='minimal'
                     sendFile={getFileUID}  imgonly={false}
                     options={st.profileVideo}
+                    accept="video/*"
+
                   />
                 </div>
                 <LoaderButton onClick={addVideo}

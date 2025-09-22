@@ -64,6 +64,7 @@ import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
 import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
 import ActionRequired from "./stripe/ActionRequired";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
+import ErrorBoundary from "@/Components/ErrorBoundary";
 
 // Optimized tab system components
 import InstantTabSystem from '@/Components/InstantTabSystem';
@@ -101,19 +102,12 @@ export default function Dashboard(props) {
 
     // Update wishitems when items prop changes (e.g., on category change or page refresh)
     useEffect(() => {
-        console.log('🔄 Dashboard items updated:', {
-            itemsLength: items?.length || 0,
-            selectedCategory,
-            currentWishitemsLength: wishitems?.length || 0,
-            isInitialLoad
-        });
-        
         if (items && Array.isArray(items)) {
             setWishitems(items);
             setIsInitialLoad(false);
         } else if (items === null || items === undefined) {
             // Keep previous items if new items are undefined (loading state)
-            console.log('⚠️ Items are undefined, keeping previous state');
+            // This prevents flickering to empty state during transitions
         }
     }, [items, selectedCategory]);
 
@@ -577,7 +571,7 @@ export default function Dashboard(props) {
                                                     username={user.username}
                                                     IsloggedIn={IsloggedIn}
                                                     onTabChange={(tabId) => {
-                                                        console.log(`🔄 Optimistic tab change: ${tabId}`);
+                                                        // Handle tab change if needed
                                                     }}
                                                 />
 
@@ -760,12 +754,13 @@ export default function Dashboard(props) {
                                                 UserStripeConnected == 1 ? (
                                                     <>
                                                         {page === "wishes" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <div className="wishes-items pb-6 ">
+                                                            <ErrorBoundary>
+                                                                <Suspense
+                                                                    fallback={
+                                                                        <LoadingScreen />
+                                                                    }
+                                                                >
+                                                                    <div className="wishes-items pb-6 ">
                                                                     {wish_categories &&
                                                                     wish_categories.length ? (
                                                                         <>
@@ -910,8 +905,9 @@ export default function Dashboard(props) {
                                                                             <Nocontent text="Nothing to see." />
                                                                         </div>
                                                                     )}
-                                                                </div>
-                                                            </Suspense>
+                                                                    </div>
+                                                                </Suspense>
+                                                            </ErrorBoundary>
                                                         ) : (
                                                             ""
                                                         )}
