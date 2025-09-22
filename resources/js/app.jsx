@@ -1,7 +1,4 @@
-// CRITICAL: React polyfill MUST be imported first to prevent Children undefined errors
 import React, { Children } from "./react-polyfill.js";
-
-// Critical CSS imports - loaded synchronously
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
 import "../css/app.css";
@@ -9,23 +6,18 @@ import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
 
-// React DOM imports after polyfill
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 
-// React Children polyfill has been applied in react-polyfill.js
 console.log('📦 App.jsx loaded - React polyfill should be active');
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
-// Critical app dependencies - loaded immediately
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
 import * as Sentry from "@sentry/react";
 import axios from "axios";
 import DeviceID from "./includes/DeviceID";
-
-// PWA Debug utilities (development only)
 import "./utils/pwaDebug";
 
 // Only initialize Sentry on the production domain
@@ -49,7 +41,6 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
         replaysOnErrorSampleRate: 1.0
     });
 } 
-
 // Global cart refresh functions setup
 function setupGlobalCartFunctions(props) {
     const auth = props?.page?.props?.auth;

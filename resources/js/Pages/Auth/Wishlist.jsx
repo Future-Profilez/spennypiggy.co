@@ -165,6 +165,7 @@ export default function Wishlist(props) {
         setData("content_file", contentFile);
     }, [contentFile]);
 
+
     const [isEditable, setIsEditable] = useState(false);
     const getFileUID = async (data) => {
         let ss = data?.uuid;
@@ -480,7 +481,8 @@ export default function Wishlist(props) {
                                 </li>
                             </ul>
 
-                            <div className="wishlistAccordian mt-3">
+                            <p className="mt-8 pt-6  !border-t ">Choose Wish Type</p>
+                            <div className="wishlistAccordian  mt-3 mb-6">
                                 <Accordion defaultActiveKey={defaultKey}>
                                     <Accordion.Item eventKey={0}>
                                         <Accordion.Header
@@ -599,7 +601,7 @@ export default function Wishlist(props) {
                             </div>
 
                             <div className="pt-4 pb-3">
-                                <strong className="text-start d-block">
+                                <strong className="text-start d-block pt-4 !border-t ">
                                     Content File 
                                 </strong>
                                 <p className="text-small mb-3">
@@ -609,26 +611,8 @@ export default function Wishlist(props) {
                                 <p className="text-small mb-3">
                                     Supported formats: JPEG, PNG, GIF, MP4, MOV, AVI, MP3, WAV, PDF, DOC, DOCX (Max: 50MB)
                                 </p>
-                                
-                                {/* {item && item.content_file && (
-                                    <div className="mb-3 p-3 border rounded">
-                                        <p className="text-sm text-gray-600 mb-2">
-                                            Current file: {item.content_file_name || 'Uploaded file'}
-                                        </p>
-                                        {item.content_file_type && item.content_file_type.startsWith('image/') && (
-                                            <div className="default-wish-img mb-2">
-                                                <img
-                                                    src={item.content_file_url || `https://ucarecdn.com/${item.content_file}/`}
-                                                    className="img-fluid"
-                                                    style={{ maxHeight: '200px', objectFit: 'contain' }}
-                                                    alt="Content file preview"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )} */}
-                                
-                                {contentFile && (
+
+                                {/* {contentFile && (
                                     <div className="mb-3 p-3 border rounded">
                                         <div className="default-wish-img mb-2">
                                             <img
@@ -639,15 +623,22 @@ export default function Wishlist(props) {
                                             />
                                         </div>
                                     </div>
-                                )}
+                                )} */}
                                 
-                                <GlobalUploader
-                                    type="minimal"
-                                    ctxName="wishlistcontent"
-                                    ref={contentUploaderRef}
-                                    sendFile={getContentFileUID}
-                                    options={st.wishlistcontent}
-                                />
+                                {contentFile ? 
+                                    <div className="mb-3 bg-green-50 p-3 border !border-green-600 rounded-xl flex items-center justify-between">
+                                         <p className="font-bold text-green-600 text-normal">Content Added</p>
+                                         <button onClick={()=>setContentFile(null)} >Remove</button>
+                                    </div>
+                                    :
+                                    <GlobalUploader
+                                        type="minimal"
+                                        ctxName="wishlistcontent"
+                                        ref={contentUploaderRef}
+                                        sendFile={getContentFileUID}
+                                        options={st.wishlistcontent}
+                                    />
+                                }
                                 
                                 {errors.content_file && (
                                     <div className="text-red-500 text-sm mt-1">
@@ -728,9 +719,9 @@ export default function Wishlist(props) {
                                             </p>
                                         </div> */}
 
-                            <div className="publish text-start">
+                            <div className="publish text-start pt-6  !border-t ">
                                 <>
-                                    <strong>Categorize this wish *</strong>
+                                    <strong >Categorize this wish *</strong>
                                     <p>
                                         {" "}
                                         Organize your wishes to help gifters

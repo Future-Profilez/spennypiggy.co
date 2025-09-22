@@ -91,14 +91,38 @@ export default function Dashboard(props) {
         migration_status,
     } = props;
 
-    const [wishitems, setWishitems] = useState(items);
+    const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
+
+    // Memoized wishitems to prevent unnecessary re-renders
+    const memoizedWishItems = useMemo(() => {
+        return items && Array.isArray(items) ? items : [];
+    }, [items]);
+
+    // Update wishitems when items prop changes (e.g., on category change or page refresh)
+    useEffect(() => {
+        console.log('🔄 Dashboard items updated:', {
+            itemsLength: items?.length || 0,
+            selectedCategory,
+            currentWishitemsLength: wishitems?.length || 0,
+            isInitialLoad
+        });
+        
+        if (items && Array.isArray(items)) {
+            setWishitems(items);
+            setIsInitialLoad(false);
+        } else if (items === null || items === undefined) {
+            // Keep previous items if new items are undefined (loading state)
+            console.log('⚠️ Items are undefined, keeping previous state');
+        }
+    }, [items, selectedCategory]);
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
     const [loading, setLoading] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
     const [gifts, setGifts] = useState([]);
@@ -819,8 +843,9 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {wishitems &&
-                                                                    wishitems.length ? (
+                                                                    {loading || (isInitialLoad && (!wishitems || wishitems.length === 0)) ? (
+                                                                        <LoadingScreen />
+                                                                    ) : wishitems && wishitems.length > 0 ? (
                                                                         <>
                                                                             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                 <DndContext
@@ -842,59 +867,48 @@ export default function Dashboard(props) {
                                                                                             wishitems
                                                                                         }
                                                                                     >
-                                                                                        {!loading &&
-                                                                                            wishitems.map(
-                                                                                                (
-                                                                                                    c,
-                                                                                                    i
-                                                                                                ) => {
-                                                                                                    return (
-                                                                                                        <Wishlistbox
-                                                                                                            key={`wish-item-${i}`}
-                                                                                                            classes=" "
-                                                                                                            currency={
-                                                                                                                global_currency
-                                                                                                            }
-                                                                                                            IsloggedIn={
-                                                                                                                IsloggedIn
-                                                                                                            }
-                                                                                                            auth={
-                                                                                                                auth.user
-                                                                                                            }
-                                                                                                            itemid={
-                                                                                                                itemid
-                                                                                                            }
-                                                                                                            setuped={
-                                                                                                                AuthUserStripeConnected ==
-                                                                                                                1
-                                                                                                                    ? true
-                                                                                                                    : false
-                                                                                                            }
-                                                                                                            itm={
-                                                                                                                c
-                                                                                                            }
-                                                                                                        />
-                                                                                                    );
-                                                                                                }
-                                                                                            )}
+                                                                                        {wishitems.map(
+                                                                                            (
+                                                                                                c,
+                                                                                                i
+                                                                                            ) => {
+                                                                                                return (
+                                                                                                    <Wishlistbox
+                                                                                                        key={`wish-item-${c.id || c.uuid || i}`}
+                                                                                                        classes=" "
+                                                                                                        currency={
+                                                                                                            global_currency
+                                                                                                        }
+                                                                                                        IsloggedIn={
+                                                                                                            IsloggedIn
+                                                                                                        }
+                                                                                                        auth={
+                                                                                                            auth.user
+                                                                                                        }
+                                                                                                        itemid={
+                                                                                                            itemid
+                                                                                                        }
+                                                                                                        setuped={
+                                                                                                            AuthUserStripeConnected ==
+                                                                                                            1
+                                                                                                                ? true
+                                                                                                                : false
+                                                                                                        }
+                                                                                                        itm={
+                                                                                                            c
+                                                                                                        }
+                                                                                                    />
+                                                                                                );
+                                                                                            }
+                                                                                        )}
                                                                                     </SortableContext>
                                                                                 </DndContext>
                                                                             </div>
                                                                         </>
                                                                     ) : (
-                                                                        <>
-                                                                            {loading ? (
-                                                                                <LoadingScreen />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-                                                                            {(!loading && (
-                                                                                <div className="col-md-12">
-                                                                                    <Nocontent text="Nothing to see." />
-                                                                                </div>
-                                                                            )) ||
-                                                                                ""}
-                                                                        </>
+                                                                        <div className="col-md-12">
+                                                                            <Nocontent text="Nothing to see." />
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </Suspense>
