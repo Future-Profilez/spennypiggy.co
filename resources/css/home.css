@@ -147,11 +147,11 @@ select#country{text-transform:capitalize;border-radius:10px;border:1px solid var
 .wishlistdetial{min-height:140px;padding:20px;}
 .wishlistdetial h3{color:var(--gray2);}
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
-.sharelinks a,.userprofilesec h2{font-style:normal;text-transform:uppercase;text-align:center;}
+.sharelinks a,.userprofilesec h2,.userprofilesec h1{font-style:normal;text-transform:uppercase;text-align:center;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0 var(--black);line-height:19px;}
 .userphoto img{border:4px solid #000;}
 .accountphotosm,.wishlistModal .accordion-button::after{display:none;}
-.userprofilesec h2{color:var(--white);font-size:24px;font-weight:400;line-height:normal;}
+.userprofilesec h2, .userprofilesec h1{color:var(--white);font-size:24px;font-weight:400;line-height:normal;}
 .userphotobox{height:180px;margin-bottom:110px;border:2px solid var(--voilet);border-top:none;border-radius:22px 22px 30px 30px;}
 .addsocial ul li a,.addsocial ul li button,.userId,button.editProfile{color:var(--voilet);font-size:22px;font-style:normal;font-weight:400;line-height:120%;}
 .userId{letter-spacing:-0.77px;text-align:center;margin-bottom:15px;}
@@ -604,7 +604,7 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .menuImg img{max-width:149px;}
 .wishbanner img{height:280px;}
 .userphotobox{border-radius:20px;margin-bottom:50px;}
-.userprofilesec h2{font-size:19px;}
+.userprofilesec h2,.userprofilesec h1{font-size:19px;}
 .userId{font-size:18px;}
 button.editProfile,select#country{padding:10px;font-size:18px;}
 .addsocial ul li a{display:flex;align-items:center;align-content:center;font-size:15px;line-height:15px;}

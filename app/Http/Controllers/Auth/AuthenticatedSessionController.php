@@ -127,6 +127,16 @@ class AuthenticatedSessionController extends Controller
         //     Auth::logout();
         //     return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
         // }
+        
+        // Handle JSON requests differently
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Logged in successfully.',
+                'redirect_url' => route('user.show', ['username' => $user->username])
+            ]);
+        }
+        
         return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
     }
 

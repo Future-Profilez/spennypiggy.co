@@ -61,37 +61,66 @@ export default function Login({ status, canResetPassword }) {
             ...data,
             device_id: deviceId
         };
-        post(route('login-user'), loginData, {
-            preserveScroll: true,
-            onStart: () => {
-                setLoading(true);
-            },
-            onFinish: () => {
-                setLoading(false);
-            },
-            onSuccess: (resp) => {
-                // Only sow toast for flash errors (server errors)
-                if (resp.props.flash.error) {
-                    errorAlert(resp.props.flash.error);
-                    setLoading(false);
-                    return;
+        
+        // Use axios for JSON request to get proper error handling
+        setLoading(true);
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        axios.post(route('login-user'), loginData, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
+        .then((response) => {
+            // Successful login - redirect to user profile or specified redirect
+            localStorage.removeItem("cart");
+            reset();
+            setLoading(false);
+            
+            if (paramValue) {
+                router.visit(paramValue);
+            } else if (response.data && response.data.redirect_url) {
+                // Use the redirect URL from the server response
+                router.visit(response.data.redirect_url);
+            } else {
+                // Fallback - reload the page which will redirect to appropriate location
+                window.location.reload();
+            }
+        })
+        .catch((error) => {
+            setLoading(false);
+            reset("password");
+            
+            if (error.response) {
+                // Handle validation errors
+                if (error.response.status === 422 || error.response.status === 429) {
+                    const errorData = error.response.data;
+                    
+                    // Show main error message
+                    if (errorData.message) {
+                        errorAlert(errorData.message);
+                    }
+                    
+                    // Show field-specific errors
+                    if (errorData.errors) {
+                        Object.entries(errorData.errors).forEach(([field, messages]) => {
+                            if (Array.isArray(messages)) {
+                                messages.forEach(message => errorAlert(message));
+                            }
+                        });
+                    }
+                } else {
+                    errorAlert('An unexpected error occurred. Please try again.');
                 }
-                console.log("Login response:", resp.props.errors);
-                if (resp.props.flash.cart_transfer_success) {
-                    successAlert(resp.props.flash.cart_transfer_success);
-                }
-                localStorage.removeItem("cart");
-                reset();
-                setLoading(false);
-                if(paramValue){
-                    router.visit(paramValue);
-                }
-            },
-            onError: (err) => {
-                reset("password");
-                console.log("Login err:", err);
-                setLoading(false);
-            },
+            } else if (error.request) {
+                errorAlert('Network error. Please check your connection and try again.');
+            } else {
+                errorAlert('An error occurred. Please try again.');
+            }
         });
     };
 
