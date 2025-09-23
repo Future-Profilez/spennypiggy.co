@@ -203,13 +203,13 @@ export default function Login({ status, canResetPassword }) {
                             </ul>
 
                             <div className="  text-center flex justify-center ">
-                                {/* <button type='submit' className='btn-pink lg'>Login</button> */}
-                                <LoaderButton
+                                <button type='submit' className='btn-pink lg'>Login</button>
+                                {/* <LoaderButton
                                     disabled={loading}
                                     className="btn-pink lg2 lg w-80  mb-md-0 max-width login"
                                     spinnerClassName="fill-red-600" >
                                     {loading ? "Wait" : "Log in"}
-                                </LoaderButton>
+                                </LoaderButton> */}
                             </div>
                         </div>
                     </form>
