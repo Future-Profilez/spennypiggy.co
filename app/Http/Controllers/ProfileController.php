@@ -857,12 +857,23 @@ class ProfileController extends Controller
         $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $data = [];
+        // Fix subscription access logic to include one-time subscriptions
         $subscription = WishItem::where('subscription', 1)->whereHas('wishItemsSubscription', function ($qu) use ($user) {
-            $qu->where('recurring_for', 'continue')->where(function ($que) {
-                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
-            })->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            });
+            $qu->where('status', 'paid')
+               ->where(function ($q) use ($user) {
+                   $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+               })
+               ->where(function ($que) {
+                   $que->where(function ($recurring) {
+                       // Active recurring subscriptions
+                       $recurring->where('recurring_for', 'continue')
+                                ->where('upcoming_payment', '>=', Carbon::now());
+                   })->orWhere(function ($onetime) {
+                       // One-time subscriptions get 30-day access
+                       $onetime->where('recurring_for', 'onetime')
+                              ->where('created_at', '>=', Carbon::now()->subDays(30));
+                   });
+               });
         })->pluck('user_id');
 
         $bills = Bills::whereHas('payments', function ($qu) use ($user) {

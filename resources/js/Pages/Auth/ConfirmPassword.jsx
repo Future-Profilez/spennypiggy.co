@@ -123,7 +123,7 @@ export default function ConfirmPassword(props) {
 
                             <LoaderButton
                                 spinnerClassName="fill-red-600"
-                                className="btn-pink w-100 lg lg2 mb-3  mb-md-0"
+                                className="p w-full"
                                 disabled={processing}
                             >
                                 {processing ? "Updating..." : "Confirm"}

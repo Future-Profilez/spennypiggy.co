@@ -142,7 +142,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 </div>
                 <LoaderButton onClick={addVideo}
                     disabled={loading}
-                    className={`${!msgMedia ? 'disabled' : ''} flex px-4  mb-3 btn-pink sm mx-auto w-full`}
+                    className={`${!msgMedia ? 'disabled' : ''} p w-full`}
                     spinnerClassName="fill-red-600" >
                     {loading ? "Adding..." : " Add Video "}
                 </LoaderButton>

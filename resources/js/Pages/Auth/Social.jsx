@@ -162,7 +162,7 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
             <LoaderButton
               disabled={loading  }
               type="submit"
-              className="flex button sm w-100 justify-content-center p-3 text-center mx-auto"
+              className="p w-full"
               spinnerClassName="fill-red-600"
             >
               {loading ? "Processing" : "Add Social Links"}

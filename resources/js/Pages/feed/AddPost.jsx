@@ -143,7 +143,12 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                     : ""}
 
                     <div className="relative">
-                        <GlobalUploader ctxName='add-post-context' ref={uploaderRef} view={false} type="minimal" sendFile={getfile} options={st.post} />
+                        <GlobalUploader 
+                        ctxName='add-post-context' 
+                        ref={uploaderRef} view={false} 
+                        type="minimal"  imgonly={true}
+                        accept="image/*"
+                        sendFile={getfile} options={st.post} />
                         <div className="absolute top-[14px] right-12">
                             <ImageGenerationWithAI classes={`button bg-pink d-table text-[10px] d-sm-flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
                         </div>
@@ -164,7 +169,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
 
             <LoaderButton onClick={submitPost}
                 disabled={loading}
-                className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''}  mt-4 w-full `}
+                className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''}  b mt-4 w-full `}
                 spinnerClassName="fill-red-600">
                 {isEdit ?
                     loading ? "Updating.." :"Update Post"

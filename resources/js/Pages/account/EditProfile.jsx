@@ -312,7 +312,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                     </div>
 
                                     <div className=" text-center mb-7">
-                                        <LoaderButton type='submit' disabled={processing} className='btn-pink sm m-auto'
+                                        <LoaderButton type='submit' disabled={processing} className='p '
                                         spinnerClassName='fill-red-600'>
                                             {processing ? "Updating" : "Update"}
                                         </LoaderButton>

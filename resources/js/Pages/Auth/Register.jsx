@@ -581,10 +581,10 @@ export default function Register(props) {
                                                             </p>
                                                         </label>
                                                     </div>
-                                                    <LoaderButton onClick={accepted} disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
+                                                    <LoaderButton onClick={accepted} disabled={processing} className='p w-full mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
                                                 </div>
                                         </Popup>
-                                        <LoaderButton disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
+                                        <LoaderButton disabled={processing} className='p w-full mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                     </div>
 
                                 </div>

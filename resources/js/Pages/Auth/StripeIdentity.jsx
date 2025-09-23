@@ -76,7 +76,7 @@ export default function StripeIdentity({ auth }) {
                         <LoaderButton
                             disabled={loading}
                             onClick={handleVerification}
-                            className="px-6 py-[13px] bg-blue-600 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300 transition-all ease-in-out duration-200"
+                            className="p  px-6 py-[13px]"
                             spinnerClassName="fill-white"
                         >
                             {loading ? "Processing..." : error?.code ? "Reverify Now" : "Verify Now"}

@@ -473,6 +473,8 @@ export default function Dashboard(props) {
         <>
             <Guest auth={auth.user} user={user}>
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
+
+
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
@@ -629,7 +631,7 @@ export default function Dashboard(props) {
 
 
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
-                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
+                                                                                        <PaymentDashboard classes="b w-full" text="Payment Dashboard" />
                                                                                         ) :
                                                                                         <>
                                                                                         {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">

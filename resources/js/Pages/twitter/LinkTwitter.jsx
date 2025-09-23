@@ -131,7 +131,7 @@ export default function LinkTwitter(props) {
       <LoaderButton onClick={loginTwitter}
           disabled={processing}
           type='submit'
-            className="flex w-100 btn-pink mt-4 lg mx-auto"
+            className="p w-full"
             spinnerClassName="fill-red-600" >
             {processing ? "Processing.." : "Link Twitter"}
         </LoaderButton>

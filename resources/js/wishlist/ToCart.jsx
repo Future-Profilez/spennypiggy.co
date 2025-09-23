@@ -131,7 +131,7 @@ export default function ToCart({
                 <LoaderButton
                     disabled={loading}
                     onClick={() => addtocart(1)}
-                    className={`flex ${classes} mx-auto`}
+                    className={` ${classes} p w-full flex mx-auto`}
                     spinnerClassName="fill-red-600"
                 >
                     {loading ? "Processing" : text}

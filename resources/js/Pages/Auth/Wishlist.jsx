@@ -839,7 +839,7 @@ export default function Wishlist(props) {
                                         <LoaderButton
                                             disabled={processing}
                                             type="submit"
-                                            className="flex w-100 btn-pink lg mx-auto"
+                                            className="b w-full"
                                             spinnerClassName="fill-red-600"
                                         >
                                             {processing
@@ -850,7 +850,7 @@ export default function Wishlist(props) {
                                         <LoaderButton
                                             disabled={processing}
                                             type="submit"
-                                            className="flex w-100 btn-pink lg mx-auto"
+                                            className="b w-full"
                                             spinnerClassName="fill-red-600"
                                         >
                                             {processing

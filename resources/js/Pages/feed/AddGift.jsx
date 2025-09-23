@@ -149,7 +149,7 @@ export default function AddGift({
                     <LoaderButton
                         type="submit"
                         disabled={loading}
-                        className="flex btn-pink lg mt-4 w-full "
+                        className="p w-full "
                         spinnerClassName="fill-red-600"
                     >
                         {loading ? "Adding..." : "Add Item"}

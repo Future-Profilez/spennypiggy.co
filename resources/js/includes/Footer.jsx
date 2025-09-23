@@ -199,6 +199,24 @@ export default function Footer(props) {
                     </p>
                 </div>
             </footer>
+
+        {/* <div className="bg-black p-12 w-full  h-[100px] ">
+            <button className="main-button b ">
+                Click ME
+            </button>
+            <button className="main-button p">
+                Click ME
+            </button>
+            <button className="main-button b size-lg ">
+                Click ME
+            </button>
+            <button className="main-button p size-lg">
+                Click ME
+            </button>
+            <button className="main-button pure-pink">
+                Click ME
+            </button>
+        </div> */}
         </>
     );
 }

@@ -108,7 +108,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   <LoaderButton 
                   onClick={markcomplete} 
                   disabled={processing}
-                     type='submit' className="flex w-100 btn-pink sm mx-auto mt-3 "
+                     type='submit' className="p w-full "
                      spinnerClassName="fill-red-600" >
                      {processing ? "Processing" : "Mark as completed"}
                   </LoaderButton>
@@ -139,7 +139,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   </div>
                   
                   <LoaderButton onClick={addgoal} disabled={processing}
-                     type='submit' className="flex w-100 btn-pink lg mx-auto"
+                     type='submit' className="p w-full"
                      spinnerClassName="fill-red-600" >
                      {processing ? "Processing" : "Add Goal"}
                   </LoaderButton>

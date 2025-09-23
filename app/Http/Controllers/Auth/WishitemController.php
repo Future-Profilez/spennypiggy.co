@@ -2851,11 +2851,49 @@ class WishitemController extends Controller
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
-        $creator_subs = WishItemSubscription::where('recurring_for', 'continue')->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now())->whereHas('wish_item', function ($q) use ($user) {
+        // Get subscriptions TO user's content (purchased by others) - exclude cancelled
+        $creator_subs = WishItemSubscription::where(function($q) {
+            $q->where('recurring_for', 'continue')
+              ->where('created_at', '<=', Carbon::now())
+              ->where('upcoming_payment', '>=', Carbon::now())
+              ->orWhere(function($subQ) {
+                  // Include one-time subscriptions that are still within active period (30 days)
+                  $subQ->where('recurring_for', 'onetime')
+                       ->where('created_at', '>=', Carbon::now()->subDays(30));
+              });
+        })->whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with(['user', 'wish_item'])->whereIn('status', ['paid', 'cancelled'])->orderBy('updated_at', 'DESC')->get();
+        })->with(['user', 'wish_item'])
+        ->where('status', 'paid') // Only show active paid subscriptions
+        ->whereNotIn('stripe_status', ['canceled', 'cancelled', 'unpaid', 'incomplete']) // Exclude cancelled subscriptions
+        ->orderBy('updated_at', 'DESC')->get();
 
-        $user_subs = WishItemSubscription::where('recurring_for', 'continue')->where('user_id', Auth::id())->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now())->with(['wish_item', 'wish_item.user'])->whereIn('status', ['paid', 'cancelled'])->get();
+        // Get subscriptions BY user (purchased by current user) - exclude cancelled
+        $user_subs = WishItemSubscription::where(function($q) {
+            $q->where('recurring_for', 'continue')
+              ->where('created_at', '<=', Carbon::now())
+              ->where('upcoming_payment', '>=', Carbon::now())
+              ->orWhere(function($subQ) {
+                  // Include one-time subscriptions that are still within active period (30 days)
+                  $subQ->where('recurring_for', 'onetime')
+                       ->where('created_at', '>=', Carbon::now()->subDays(30));
+              });
+        })->where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])
+        ->where('status', 'paid') // Only show active paid subscriptions
+        ->whereNotIn('stripe_status', ['canceled', 'cancelled', 'unpaid', 'incomplete']) // Exclude cancelled subscriptions
+        ->get();
+        
+        // Add type indicator to differentiate between purchased by user vs purchased by others
+        $creator_subs->each(function($sub) {
+            $sub->subscription_type = 'received'; // Others purchased this user's content
+        });
+        
+        $user_subs->each(function($sub) {
+            $sub->subscription_type = 'purchased'; // User purchased others' content
+        });
+        
+        // Combine both collections and sort by most recent
+        $all_subscriptions = $creator_subs->concat($user_subs)->sortByDesc('updated_at');
 
         $trackData = $tracks->map(function ($q) {
 
@@ -2873,6 +2911,7 @@ class WishitemController extends Controller
             "tracks" => $trackData,
             "creator_subs" => $creator_subs,
             "user_subs" => $user_subs,
+            "all_subscriptions" => $all_subscriptions->values(), // Combined subscriptions with type indicators
         ]);
     }
 

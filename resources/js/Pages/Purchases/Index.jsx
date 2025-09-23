@@ -1,19 +1,24 @@
-import React, { useState } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Popup from '@/Components/Popup';
-import { FiPackage, FiGift, FiClock, FiCheck, FiX, FiArrowUp, FiArrowDown, FiEye } from 'react-icons/fi';
+import { FiPackage, FiGift, FiClock, FiCheck, FiX, FiArrowUp, FiArrowDown, FiEye, FiRefreshCw, FiCalendar, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
 
-export default function Index({ auth, sentDeliverables, receivedDeliverables }) {
+export default function Index({ auth, sentDeliverables, receivedDeliverables, activeSubscriptions = [] }) {
     console.log("Sent Deliverables:", sentDeliverables);
     console.log("Received Deliverables:", receivedDeliverables);
+    console.log("Active Subscriptions:", activeSubscriptions);
 
     const [selectedDeliverable, setSelectedDeliverable] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
+    const [cancellingSubscriptions, setCancellingSubscriptions] = useState(new Set());
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState('success');
     const { formatMultiPrice } = PriceFormat();
-    const { global_currency } = usePage().props;
+    const { global_currency, flash } = usePage().props;
     
     // Combine all deliverables into one array
     const allDeliverables = [
@@ -28,6 +33,22 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
     
     const closePopup = () => {
         setShowPopup(false);
+    };
+    
+    // Handle flash messages
+    useEffect(() => {
+        if (flash?.success) {
+            showToastMessage(flash.success, 'success');
+        } else if (flash?.error) {
+            showToastMessage(flash.error, 'error');
+        }
+    }, [flash]);
+    
+    const showToastMessage = (message, type) => {
+        setToastMessage(message);
+        setToastType(type);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
     };
     
     // This is kept for backward compatibility but we'll use formatMultiPrice for display
@@ -199,6 +220,175 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
         );
     };
     
+    const handleCancelSubscription = async (subscriptionId) => {
+        if (cancellingSubscriptions.has(subscriptionId)) return;
+        
+        const confirmed = window.confirm('Are you sure you want to cancel this subscription? You will lose access to exclusive content at the end of your current billing period.');
+        if (!confirmed) return;
+        
+        setCancellingSubscriptions(prev => new Set([...prev, subscriptionId]));
+        
+        router.post(`/subscriptions/${subscriptionId}/cancel`, {}, {
+            preserveScroll: true,
+            onFinish: () => {
+                setCancellingSubscriptions(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(subscriptionId);
+                    return newSet;
+                });
+            }
+        });
+    };
+    
+    const renderSubscriptionCard = (subscription) => {
+        const isActive = subscription.stripe_status === 'active';
+        const canCancel = isActive && subscription.cancel_at_period_end === false;
+        const isCancelling = cancellingSubscriptions.has(subscription.id);
+        
+        let statusBadge;
+        if (subscription.cancel_at_period_end) {
+            statusBadge = <span className="px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-800">Canceling</span>;
+        } else if (isActive) {
+            statusBadge = <span className="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Active</span>;
+        } else {
+            statusBadge = <span className="px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-800">Inactive</span>;
+        }
+        
+        const getFormattedDate = (dateValue) => {
+            if (!dateValue) return 'N/A';
+            
+            try {
+                let date;
+                // Handle Unix timestamp (if it's a number)
+                if (typeof dateValue === 'number') {
+                    date = new Date(dateValue * 1000);
+                } else {
+                    // Handle string date
+                    date = new Date(dateValue);
+                }
+                
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                    return 'N/A';
+                }
+                
+                return date.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            } catch (error) {
+                console.error('Date formatting error:', error, dateValue);
+                return 'N/A';
+            }
+        };
+        
+        const nextPaymentDate = getFormattedDate(subscription.current_period_end || subscription.next_payment);
+        
+        return (
+            <div key={subscription.id} className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
+                <div className="lg:flex flex-col md:flex-row">
+                    {/* Left side - Image */}
+                    <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-purple-50 flex items-center justify-center p-4">
+                        <span className='absolute top-4 left-4'>
+                            <FiRefreshCw size={'30px'} className="mr-2 text-purple-500" />
+                        </span>
+                        {subscription.wish_item?.image_url ? (
+                            <img src={subscription.wish_item.image_url} 
+                                alt={subscription.wish_item.wishname} 
+                                className="h-12 w-12 object-cover rounded-md"
+                            />
+                        ) : (
+                            <div className="h-12 w-12 flex items-center justify-center bg-purple-50 rounded-md">
+                                <FiGift className="h-12 w-12 text-purple-500" />
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Right side - Details */}
+                    <div className="w-full p-4">
+                        <div className="lg:flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="text-xl font-gulfs uppercase text-gray-800">
+                                    {subscription.wish_item?.wishname || 'Subscription'}
+                                </h3>
+                                <p className="text-normal mt-2 text-gray-600">
+                                    Creator: {subscription.creator?.name || 'Unknown'}
+                                </p>
+                                {subscription.creator?.username && (
+                                    <Link href={`/${subscription.creator.username}`} className="text-normal text-purple-500 hover:underline">
+                                        @{subscription.creator.username}
+                                    </Link>
+                                )}
+                            </div>
+                            
+                            <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
+                                <p className='me-4 text-lg font-bold'>
+                                    {formatMultiPrice(subscription.amount, subscription.currency || auth.user.default_currency || global_currency)}
+                                    /month
+                                </p>
+                                {statusBadge}
+                            </div>
+                        </div>
+                        
+                        <div className="mt-4">
+                            <div className="flex items-center text-sm text-gray-600 mb-2">
+                                <FiCalendar className="mr-2" />
+                                <span>
+                                    {subscription.recurring_for === 'onetime' ? (
+                                        subscription.expires_at ? 
+                                            `Expires: ${getFormattedDate(subscription.expires_at)}` : 
+                                            'One-time purchase'
+                                    ) : subscription.cancel_at_period_end ? (
+                                        `Ends on: ${nextPaymentDate}`
+                                    ) : (
+                                        `Next payment: ${nextPaymentDate}`
+                                    )}
+                                </span>
+                            </div>
+                            
+                            {isActive && (
+                                <div className="mb-3">
+                                    <Link href={`/${subscription.creator?.username}`} 
+                                        className="text-[15px] text-purple-600 hover:underline mr-4"
+                                    >
+                                        🎉 Access Exclusive Posts
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="flex justify-between items-center mt-4">
+                            <p className='text-sm text-gray-500'>
+                                Started: {new Date(subscription.created_at).toLocaleDateString('en-US', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric',
+                                })}
+                            </p>
+                            
+                            {canCancel && (
+                                <button
+                                    onClick={() => handleCancelSubscription(subscription.id)}
+                                    disabled={isCancelling}
+                                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isCancelling ? 'Cancelling...' : 'Cancel Subscription'}
+                                </button>
+                            )}
+                            
+                            {subscription.cancel_at_period_end && (
+                                <span className="text-sm text-orange-600 font-medium">
+                                    Will cancel at period end
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+    
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -209,6 +399,24 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
             <div className="py-12">
                 <div className="containerbox mx-auto ">
                     <div className="py-8">
+                        {/* Subscriptions Section */}
+                        {activeSubscriptions && activeSubscriptions.length > 0 && (
+                            <div className="mb-8">
+                                <div className="md:flex justify-between items-center mb-6">
+                                    <h1 className="text-3xl text-white font-gulfs uppercase">Active Subscriptions</h1>
+                                    <div className="mt-4 md:mt-0">
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            <FiRefreshCw className="mr-1" /> Subscriptions
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    {activeSubscriptions.map(subscription => renderSubscriptionCard(subscription))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Purchases Section */}
                         <div className="md:flex justify-between items-center mb-6">
                             <h1 className="text-3xl text-white font-gulfs uppercase">All Purchases</h1>
                             <div className="mt-4 md:mt-0 flex space-x-2">
@@ -290,6 +498,41 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables }) 
                         )}
                     </div>
                 </Popup>
+            )}
+            
+            {/* Toast Notification */}
+            {showToast && (
+                <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
+                    showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+                }`}>
+                    <div className={`rounded-lg p-4 shadow-lg ${
+                        toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    }`}>
+                        <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                                {toastType === 'success' ? (
+                                    <FiCheckCircle className="h-5 w-5" />
+                                ) : (
+                                    <FiXCircle className="h-5 w-5" />
+                                )}
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm font-medium">{toastMessage}</p>
+                            </div>
+                            <div className="ml-auto pl-3">
+                                <div className="-mx-1.5 -my-1.5">
+                                    <button
+                                        onClick={() => setShowToast(false)}
+                                        className="inline-flex rounded-md p-1.5 hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                    >
+                                        <span className="sr-only">Dismiss</span>
+                                        <FiX className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </AuthenticatedLayout>
     );

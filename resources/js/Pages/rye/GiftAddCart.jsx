@@ -179,7 +179,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                     <LoaderButton
                         disabled={loading}
                         onClick={() => addtocart(false)}
-                        className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
+                        className={`p w-full`}
                         spinnerClassName="fill-red-600"
                     >
                         {loading ? "Processing..." : "Add to Cart"}
@@ -187,7 +187,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                     <LoaderButton
                         disabled={checkoutloading}
                          onClick={() => addtocart(true)}
-                        className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
+                        className={`p w-full`}
                         spinnerClassName="fill-red-600"
                     >
                         {checkoutloading

@@ -84,7 +84,7 @@ export default function SayThanks(props) {
          onScan={saythankyou} content={<>
             <LoaderButton 
                disabled={loading}
-               className="flex px-4  mb-3 btn-pink sm mx-auto"
+               className="p w-auto"
                spinnerClassName="fill-red-600" >
                {loading ? "Sending..." : "Say Thanks"}
             </LoaderButton>

@@ -100,7 +100,8 @@ export default function Post({item}) {
               <LazyLoadImage
               effect="blur"
               width='400' height='400' alt='spenny piggy'
-              className="post-img rounded-[20px]  md:!rounded-[26px] w-full max-h-[400px] object-cover" src={posturl()} />
+              className="post-img rounded-[20px]  md:!rounded-[26px] w-full max-h-[400px] object-cover"
+               src={posturl()} />
 
               <div className='absolute bottom-3 right-3 z-1 bg-[color:var(--pink)] shadow-sm rounded-xl px-2 py-1 text-[10px] text-white'>
                 {item && item.for_module === 'membership' ? "Members Only" : ""}

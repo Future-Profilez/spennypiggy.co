@@ -1108,6 +1108,47 @@ class StripeController extends Controller
                 'message' => ['sometimes', 'nullable', 'string', 'max:800'],
             ]);
 
+            // ✅ FIXED: Prevent duplicate subscriptions by canceling existing ones
+            $existingSubscriptions = WishItemSubscription::where('wish_item_id', $wish->id)
+                ->where(function($q) use ($user, $request) {
+                    $q->where('user_id', $user->id)
+                      ->orWhere('guest_email', $request->email);
+                })
+                ->whereIn('status', ['paid', 'initiated'])
+                ->where('recurring_for', 'continue') // Only cancel recurring subscriptions
+                ->get();
+                
+            foreach ($existingSubscriptions as $existingSub) {
+                if ($existingSub->stripe_id) {
+                    try {
+                        // Cancel the old subscription at Stripe
+                        StripeControl::cancelSubscription($existingSub->stripe_id, $wish->user->account_id);
+                        
+                        // Update local status
+                        $existingSub->status = 'cancelled';
+                        $existingSub->stripe_status = 'canceled';
+                        $existingSub->canceled_at = Carbon::now();
+                        $existingSub->save();
+                        
+                        \Log::info('StripeController: Canceled existing subscription for new subscription', [
+                            'old_subscription_id' => $existingSub->id,
+                            'old_stripe_id' => $existingSub->stripe_id,
+                            'user_id' => $user->id,
+                            'wish_item_id' => $wish->id
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::warning('StripeController: Failed to cancel existing subscription', [
+                            'old_subscription_id' => $existingSub->id,
+                            'old_stripe_id' => $existingSub->stripe_id,
+                            'error' => $e->getMessage()
+                        ]);
+                        // Mark as cancelled locally even if Stripe call fails
+                        $existingSub->status = 'cancelled';
+                        $existingSub->save();
+                    }
+                }
+            }
+
             $sub = WishItemSubscription::create([
                 'wish_item_id'   => $wish->id,
                 'user_id'        => Auth::id(),
@@ -1478,17 +1519,99 @@ class StripeController extends Controller
                 ]);
 
                 $sub->stripe_id = $session->subscription;
-                $current = Carbon::now();
-                if ($sub->recurring_type == 'daily') {
-                    $current->addDay();
-                } else if ($sub->recurring_type == 'weekly') {
-                    $current->addWeek();
-                } else if ($sub->recurring_type == "monthly") {
-                    $current->addMonth();
-                } else {
-                    $current->addYear();
+                
+                // ✅ FIXED: Retrieve and populate full Stripe subscription data
+                try {
+                    if ($session->subscription) {
+                        // Get full subscription details from Stripe to populate new fields
+                        $stripeSubscription = StripeControl::getSubscription($session->subscription, $sub->wish_item->user->account_id);
+                        
+                        // Populate the new Stripe subscription fields
+                        $sub->stripe_status = $stripeSubscription->status;
+                        $sub->cancel_at_period_end = $stripeSubscription->cancel_at_period_end;
+                        $sub->current_period_start = Carbon::createFromTimestamp($stripeSubscription->current_period_start);
+                        $sub->current_period_end = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+                        
+                        // Set canceled_at if subscription is canceled
+                        if (isset($stripeSubscription->canceled_at) && $stripeSubscription->canceled_at) {
+                            $sub->canceled_at = Carbon::createFromTimestamp($stripeSubscription->canceled_at);
+                        }
+                        
+                        // Set trial dates if they exist
+                        if (isset($stripeSubscription->trial_start) && $stripeSubscription->trial_start) {
+                            $sub->trial_start = Carbon::createFromTimestamp($stripeSubscription->trial_start);
+                        }
+                        if (isset($stripeSubscription->trial_end) && $stripeSubscription->trial_end) {
+                            $sub->trial_end = Carbon::createFromTimestamp($stripeSubscription->trial_end);
+                        }
+                        
+                        // Store relevant Stripe metadata
+                        $sub->stripe_metadata = [
+                            'stripe_customer_id' => $stripeSubscription->customer ?? null,
+                            'stripe_price_id' => $stripeSubscription->items->data[0]->price->id ?? null,
+                            'collection_method' => $stripeSubscription->collection_method ?? null,
+                            'billing_cycle_anchor' => $stripeSubscription->billing_cycle_anchor ?? null,
+                            'created' => $stripeSubscription->created ?? null
+                        ];
+                        
+                        // Use current_period_end for upcoming_payment instead of manual calculation
+                        $sub->upcoming_payment = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+                        
+                        \Log::info('StripeController: Populated subscription with Stripe data', [
+                            'subscription_id' => $sub->id,
+                            'stripe_id' => $sub->stripe_id,
+                            'stripe_status' => $sub->stripe_status,
+                            'current_period_start' => $sub->current_period_start,
+                            'current_period_end' => $sub->current_period_end,
+                            'cancel_at_period_end' => $sub->cancel_at_period_end,
+                            'upcoming_payment' => $sub->upcoming_payment
+                        ]);
+                        
+                    } else {
+                        // Fallback for one-time payments or sessions without subscriptions
+                        \Log::warning('StripeController: No subscription ID in session, using fallback calculation', [
+                            'subscription_id' => $sub->id,
+                            'session_id' => $session->id,
+                            'payment_status' => $session->payment_status
+                        ]);
+                        
+                        $current = Carbon::now();
+                        if ($sub->recurring_type == 'daily') {
+                            $current->addDay();
+                        } else if ($sub->recurring_type == 'weekly') {
+                            $current->addWeek();
+                        } else if ($sub->recurring_type == "monthly") {
+                            $current->addMonth();
+                        } else {
+                            $current->addYear();
+                        }
+                        $sub->upcoming_payment = $current;
+                        $sub->stripe_status = 'active'; // Default for one-time payments
+                    }
+                    
+                } catch (\Exception $e) {
+                    \Log::error('StripeController: Failed to retrieve Stripe subscription details', [
+                        'subscription_id' => $sub->id,
+                        'stripe_id' => $session->subscription,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Fallback to manual calculation if Stripe API fails
+                    $current = Carbon::now();
+                    if ($sub->recurring_type == 'daily') {
+                        $current->addDay();
+                    } else if ($sub->recurring_type == 'weekly') {
+                        $current->addWeek();
+                    } else if ($sub->recurring_type == "monthly") {
+                        $current->addMonth();
+                    } else {
+                        $current->addYear();
+                    }
+                    $sub->upcoming_payment = $current;
+                    $sub->stripe_status = 'active'; // Default fallback
                 }
-                $sub->upcoming_payment = $current;
+                
                 $sub->save();
 
                 if ($sub->recurring_for == 'onetime') {
@@ -1538,13 +1661,72 @@ class StripeController extends Controller
             $sub->save();
             return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
         } catch (Exception $e) {
-            return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', $e->getMessage());
+        return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', $e->getMessage());
         }
         // return response()->json([
         //     'success'   =>  true,
         //     'session'   =>  $session,
         //     'status'    =>  $status
         // ]);
+    }
+    
+    /**
+     * Create StripePaymentDetail record for subscription to work with CheckoutMailToUser
+     */
+    private function createStripePaymentForSubscription($subscription, $session)
+    {
+        try {
+            // Create a proper StripePaymentDetail record that works with CheckoutMailToUser system
+            $stripePayment = \App\Models\StripePaymentDetail::create([
+                'uuid' => \Str::uuid(),
+                'session_id' => $subscription->session_id,
+                'user_id' => $subscription->user_id,
+                'owner_id' => $subscription->wish_item->user_id,
+                'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                'amount_subtotal' => $subscription->amount,
+                'amount_total' => $subscription->amount + ($subscription->tax ?? 0),
+                'currency' => $subscription->currency,
+                'payment_status' => $session->payment_status,
+                'guest_email' => $subscription->guest_email,
+                'guest_name' => $subscription->guest_name,
+                'anonymous' => $subscription->anonymous ?? false,
+                'message' => $subscription->surprise_message,
+                'metadata' => json_encode([
+                    'subscription_id' => $subscription->id,
+                    'wish_item_id' => $subscription->wish_item->id,
+                    'subscription_type' => $subscription->recurring_for,
+                    'content_delivery' => true
+                ])
+            ]);
+            
+            // Create the corresponding stripe payment items for the subscription
+            $stripePaymentItem = \App\Models\StripePaymentItems::create([
+                'uuid' => \Str::uuid(),
+                'stripe_payment_detail_id' => $stripePayment->id,
+                'wish_item_id' => $subscription->wish_item->id,
+                'amount' => $subscription->amount,
+                'quantity' => 1,
+                'message' => $subscription->surprise_message,
+                'anonymous' => $subscription->anonymous ?? false
+            ]);
+            
+            \Log::info('StripeController: Created StripePaymentDetail and Item for subscription', [
+                'subscription_id' => $subscription->id,
+                'stripe_payment_id' => $stripePayment->id,
+                'stripe_payment_item_id' => $stripePaymentItem->id,
+                'wish_item_id' => $subscription->wish_item->id
+            ]);
+            
+            return $stripePayment;
+            
+        } catch (\Exception $e) {
+            \Log::error('StripeController: Failed to create StripePaymentDetail for subscription', [
+                'subscription_id' => $subscription->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
     }
 
     public function subscriptionStatus(Request $request)
@@ -2653,54 +2835,4 @@ class StripeController extends Controller
     //     ]);
     // }
     
-    /**
-     * Create actual StripePaymentDetail and StripePaymentItems records for subscription
-     * This ensures subscriptions work with the existing CheckoutMailToUser system
-     */
-    private function createStripePaymentForSubscription($subscription, $stripeSession)
-    {
-        \Log::info('StripeController: Creating StripePaymentDetail for subscription', [
-            'subscription_id' => $subscription->id,
-            'wish_item_id' => $subscription->wish_item->id,
-            'session_id' => $subscription->session_id
-        ]);
-        
-        // Create actual StripePaymentDetail record
-        $stripePayment = \App\Models\StripePaymentDetail::create([
-            'session_id' => $subscription->session_id,
-            'amount_subtotal' => $subscription->amount,
-            'amount_total' => $subscription->amount + ($subscription->tax ?? 0),
-            'currency' => $subscription->currency,
-            'user_id' => $subscription->user_id,
-            'owner_id' => $subscription->wish_item->user_id,
-            'name' => $subscription->guest_name,
-            'guest_email' => $subscription->guest_email,
-            'message' => $subscription->surprise_message,
-            'anonymous' => $subscription->anonymous ?? false,
-            'tax' => $subscription->tax ?? 0,
-            'payment_status' => 'paid',
-            'payment_method_type' => 'card'
-        ]);
-        
-        // Create corresponding StripePaymentItems record
-        $stripePaymentItem = \App\Models\StripePaymentItems::create([
-            'uuid' => \Illuminate\Support\Str::uuid()->toString(),
-            'stripe_payment_detail_id' => $stripePayment->id,
-            'wish_item_id' => $subscription->wish_item->id,
-            'amount' => $subscription->amount,
-            'quantity' => 1,
-            'anonymous' => $subscription->anonymous ?? false,
-            'message' => $subscription->surprise_message
-        ]);
-        
-        \Log::info('StripeController: StripePaymentDetail created successfully', [
-            'stripe_payment_id' => $stripePayment->id,
-            'payment_item_id' => $stripePaymentItem->id,
-            'wish_item_id' => $subscription->wish_item->id,
-            'wish_name' => $subscription->wish_item->wishname ?? 'Unknown',
-            'guest_email' => $subscription->guest_email
-        ]);
-        
-        return $stripePayment;
-    }
 }

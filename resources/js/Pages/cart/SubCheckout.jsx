@@ -211,7 +211,7 @@ export default function SubCheckout(props) {
                                 </ul>
                                 <div className="mt-4 flex items-center justify-content-center" >
                                     <button type="submit"
-                                        className={`${!data.agree || processing ? "disabled" : ""} btn-pink md px-4 mt-3 text-center`}
+                                        className={`${!data.agree || processing ? "disabled" : ""} main-button p`}
                                         disabled={!data.agree || processing}>
                                         {processing ? 'Processing...' : `${reccure == 'onetime' ? `Subscribe Once ` : `Subscribe ${wish.subscription_period}`} `}
                                     </button>

@@ -115,7 +115,7 @@ export default function Userprofile({ IsloggedIn }) {
                                 : (
                                     <EditProfile
                                         user={user}
-                                        classes={"uppercase text-sm btn-shadow font-gulfs rounded-full px-4 pt-[10px] pb-[7px] pinkbg text-white"}
+                                        classes={"main-button p"}
                                         global_currency={global_currency}
                                     />
                             ) || ""}

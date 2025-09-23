@@ -22,7 +22,7 @@ import ShopTracker from './Shoptracker';
 const defaultsec = 'https://ucarecdn.com/55965522-e075-4ef3-8afc-195dacbf267b/';
 
 export default function Wishtracker(props) {
-    const { auth, user, tracks, user_subs, creator_subs, shop_payment } = props;
+    const { auth, user, tracks, user_subs, creator_subs, all_subscriptions, shop_payment } = props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const TruncatedString = ({ inputString, maxLength }) => {
     if (inputString?.length <= maxLength) {
@@ -33,11 +33,6 @@ export default function Wishtracker(props) {
   };
 
   const { formatMultiPrice } = PriceFormat();
-  const [stab, setStab] = useState(1);
-
-  const handleTabs = (e) => {
-    setStab(e);
-  };
 
   const Wish = ({ n }) => {
     const [open, setOpen] = useState(false);
@@ -401,20 +396,6 @@ export default function Wishtracker(props) {
               </div>
             </Tab>
             <Tab className="pt-6" eventKey="2" title="Subscriptions">
-              <div className="subsctabs d-block d-sm-flex mb-4">
-                <button
-                  onClick={() => handleTabs(1)}
-                  className={`${stab == 1 ? 'active' : ''} me-3 btn mt-2`}
-                >
-                  Active{' '}
-                </button>
-                <button
-                  onClick={() => handleTabs(0)}
-                  className={`${stab == 0 ? 'active' : ''} me-3 btn mt-2`}
-                >
-                  My Purchased
-                </button>
-              </div>
               {paymentStarting ? (
                 <div
                   className="h-screen flex items-center justify-center w-screen fixed top-0 left-0 bg-[#0005] z-[999999999999]"
@@ -441,236 +422,169 @@ export default function Wishtracker(props) {
                 ''
               )}
 
-              {stab == 0 ? (
-                <>
-                  <div className="row">
-                    {user_subs &&
-                      user_subs.map((s, i) => {
-                        return (
-                          <div
-                            key={`subscription-${i}`}
-                            className="col-sm-6 mb-4"
-                          >
-                            <div className="subsbox box p-4">
-                              <h2 className="plantitle">
-                                {s && s.wish_item && s.wish_item.wishname}
-                              </h2>
-                              <ul className="ps-0 mt-3">
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Item Owner</p>
-                                  <p className="text-dark text-capitalize">
-                                    <Link
-                                      href={`/${
-                                        (s &&
-                                          s.wish_item &&
-                                          s.wish_item.user.username) ||
-                                        ''
-                                      }`}
-                                      className="text-voilet"
-                                    >
-                                      {(s &&
-                                        s.wish_item &&
-                                        s.wish_item.user.name) ||
-                                        'Anonymous'}
-                                    </Link>
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">
-                                    Subscription Period
-                                  </p>
-                                  <p className="text-dark text-capitalize">
-                                    {s?.recurring_for == 'onetime'
-                                      ? s?.recurring_for
-                                      : s?.recurring_type}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Price</p>
-                                  <p className="text-dark text-capitalize">
-                                    {formatMultiPrice(
-                                      s && s.amount,
-                                      s.currency
-                                    )}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Start Date</p>
-                                  <p className="text-dark text-capitalize">
-                                    {s && s.start_date}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Upcoming Payment</p>
-                                  <p className="text-dark text-capitalize">
-                                    {s && s.payment_upcoming}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Status</p>
-                                  <p className="text-dark text-capitalize">
-                                    {s && s.status == 'paid' ? (
-                                      <span className="badge bg-success">
-                                        Active
-                                      </span>
-                                    ) : (
-                                      <span className="badge bg-warning">
-                                        {s && s.status}
-                                      </span>
-                                    )}
-                                  </p>
-                                </li>
-                              </ul>
-
-                              <>
-                                {s.recurring_for !== 'onetime' ? (
-                                  <>
-                                    {s.is_subscription_active !== 0 ? (
-                                      <GlobalCheckout
-                                        action={close}
-                                        classes={`btn-pink !bg-red-600 !text-white !border-red-900 sm w-100 px-2 mt-3`}
-                                        text={`RENEW`}
-                                        finalsubmit={() => handleSubmit(s.uuid)}
-                                        getVariables={getVariables}
-                                      />
-                                    ) : (
-                                      <button
-                                        className={`btn-pink disabled sm w-100 px-2 mt-3`}
-                                      >
-                                        Active
-                                      </button>
-                                    )}
-                                  </>
-                                ) : (
-                                  <button
-                                    className={` opacity-0 btn-pink disabled sm w-100 px-2 mt-3`}
-                                  >
-                                    One Time Payment
-                                  </button>
-                                )}
-                              </>
-                            </div>
+              <div className="row">
+                {all_subscriptions &&
+                  all_subscriptions.map((s, i) => {
+                    // Determine if this is a subscription purchased by the user or received by the user
+                    const isPurchasedByUser = s.subscription_type === 'purchased';
+                    
+                    return (
+                      <div
+                        key={`subscription-${i}`}
+                        className="col-sm-6 mb-4"
+                      >
+                        <div className={`subsbox box p-4 ${isPurchasedByUser ? 'border-primary' : 'border-success'}`}>
+                          {/* Subscription Type Badge */}
+                          <div className="mb-3 d-flex justify-content-between align-items-center">
+                            <h2 className="plantitle mb-0">
+                              {s && s.wish_item && s.wish_item.wishname}
+                            </h2>
+                            <span className={`badge ${isPurchasedByUser ? 'bg-primary' : 'bg-success'} ms-2`}>
+                              {isPurchasedByUser ? '🛒 Purchased by me' : '💰 Purchased by others'}
+                            </span>
                           </div>
-                        );
-                      })}
-                  </div>
-                  {user_subs && user_subs.length < 1 ? (
-                    <Nocontent classes="mt-5" text={'nothing to see'} />
-                  ) : (
-                    ''
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="row">
-                    {creator_subs &&
-                      creator_subs.map((s, i) => {
-                        return (
-                          <div
-                            key={`subscription-${i}`}
-                            className="col-sm-6 mb-4"
-                          >
-                            <div className="subsbox box p-3">
+
+                          {/* Show user info for subscriptions purchased by others */}
+                          {!isPurchasedByUser && (
+                            <div className="mb-3">
                               {s.anonymous == 1 ? (
                                 <Avatar
-                                  name={
-                                    <TruncatedString
-                                      inputString={'Anonymous'}
-                                      maxLength={30}
-                                    />
-                                  }
+                                  name={<TruncatedString inputString={'Anonymous'} maxLength={30} />}
                                   src={`${userphoto}`}
                                 />
                               ) : (
                                 <Avatar
                                   name={
                                     <TruncatedString
-                                      inputString={
-                                        (s && s.user && s.user.name) ||
-                                        'Anonymous'
-                                      }
+                                      inputString={(s && s.user && s.user.name) || 'Anonymous'}
                                       maxLength={30}
                                     />
                                   }
-                                  username={`${
-                                    (s && s.user && s.user.username) ||
-                                    'Anonymous'
-                                  }`}
-                                  src={`${
-                                    (s && s.user && s.user.avatar_url) ||
-                                    userphoto
-                                  }`}
+                                  username={`${(s && s.user && s.user.username) || 'Anonymous'}`}
+                                  src={`${(s && s.user && s.user.avatar_url) || userphoto}`}
                                 />
                               )}
-
-                              <ul className="ps-0 mt-3">
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">
-                                    Subscription Item
-                                  </p>
-                                  <p className="text-dark text-capitalize wishname-text">
-                                    {s && s.wish_item && s.wish_item.wishname}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">
-                                    Subscription Period
-                                  </p>
-                                  <p className="text-dark text-capitalize">
-                                    {s &&
-                                      s.wish_item &&
-                                      s.wish_item.subscription_period}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Price</p>
-                                  <p className="text-dark text-capitalize">
-                                    {formatMultiPrice(
-                                      s && s.wish_item && s.wish_item.price,
-                                      s.currency
-                                    )}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Upcoming Payment</p>
-                                  <p className="text-dark text-capitalize">
-                                    {s && s.payment_upcoming}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Start Date</p>
-                                  <p className="text-dark text-capitalize">
-                                    {s && s.start_date}
-                                  </p>
-                                </li>
-                                <li className="mt-2 flex justify-between border-top py-2">
-                                  <p className="text-muted">Status</p>
-                                  <p className="text-dark text-capitalize">
-                                    {s && s.status == 'paid' ? (
-                                      <span className="badge bg-success">
-                                        Active
-                                      </span>
-                                    ) : (
-                                      <span className="badge bg-warning">
-                                        {s && s.status}
-                                      </span>
-                                    )}
-                                  </p>
-                                </li>
-                              </ul>
-
-                              <TweetNow type="subscription" id={s && s.uuid} />
                             </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                  {creator_subs && creator_subs.length < 1 ? (
-                    <Nocontent classes="mt-5" text={'nothing to see'} />
-                  ) : (
-                    ''
-                  )}
-                </>
+                          )}
+
+                          <ul className="ps-0 mt-3">
+                            {isPurchasedByUser ? (
+                              /* For subscriptions purchased by user, show creator info */
+                              <li className="mt-2 flex justify-between border-top py-2">
+                                <p className="text-muted">Creator</p>
+                                <p className="text-dark text-capitalize">
+                                  <Link
+                                    href={`/${
+                                      (s && s.wish_item && s.wish_item.user && s.wish_item.user.username) || ''
+                                    }`}
+                                    className="text-voilet"
+                                  >
+                                    {(s && s.wish_item && s.wish_item.user && s.wish_item.user.name) || 'Anonymous'}
+                                  </Link>
+                                </p>
+                              </li>
+                            ) : (
+                              /* For subscriptions purchased by others, show subscriber info */
+                              <li className="mt-2 flex justify-between border-top py-2">
+                                <p className="text-muted">Subscriber</p>
+                                <p className="text-dark text-capitalize">
+                                  {s.anonymous ? 'Anonymous' : (s && s.user && s.user.name) || 'Anonymous'}
+                                </p>
+                              </li>
+                            )}
+                            
+                            <li className="mt-2 flex justify-between border-top py-2">
+                              <p className="text-muted">Subscription Type</p>
+                              <p className="text-dark text-capitalize">
+                                {s?.recurring_for == 'onetime' ? (
+                                  <span className="badge bg-info">One-time</span>
+                                ) : (
+                                  <span className="badge bg-primary">
+                                    {s?.recurring_type === 'weekly' ? 'Weekly' :
+                                     s?.recurring_type === 'monthly' ? 'Monthly' :
+                                     s?.recurring_type === 'yearly' ? 'Yearly' :
+                                     s?.recurring_type || 'N/A'}
+                                  </span>
+                                )}
+                              </p>
+                            </li>
+                            
+                            <li className="mt-2 flex justify-between border-top py-2">
+                              <p className="text-muted">Price</p>
+                              <p className="text-dark text-capitalize">
+                                {formatMultiPrice(s && s.amount, s.currency)}
+                              </p>
+                            </li>
+                            
+                            <li className="mt-2 flex justify-between border-top py-2">
+                              <p className="text-muted">Start Date</p>
+                              <p className="text-dark text-capitalize">
+                                {s && s.start_date}
+                              </p>
+                            </li>
+                            
+                            {s?.recurring_for !== 'onetime' && (
+                              <li className="mt-2 flex justify-between border-top py-2">
+                                <p className="text-muted">Next Payment</p>
+                                <p className="text-dark text-capitalize">
+                                  {s && s.payment_upcoming}
+                                </p>
+                              </li>
+                            )}
+                            
+                            <li className="mt-2 flex justify-between border-top py-2">
+                              <p className="text-muted">Status</p>
+                              <p className="text-dark text-capitalize">
+                                {s && s.status == 'paid' ? (
+                                  <span className="badge bg-success">Active</span>
+                                ) : (
+                                  <span className="badge bg-warning">{s && s.status}</span>
+                                )}
+                              </p>
+                            </li>
+                          </ul>
+
+                          {/* Action buttons - only for user's own subscriptions */}
+                          {isPurchasedByUser && (
+                            <>
+                              {s.recurring_for !== 'onetime' ? (
+                                <>
+                                  {s.is_subscription_active !== 0 ? (
+                                    <GlobalCheckout
+                                      action={close}
+                                      classes={`btn-pink !bg-red-600 !text-white !border-red-900 sm w-100 px-2 mt-3`}
+                                      text={`RENEW`}
+                                      finalsubmit={() => handleSubmit(s.uuid)}
+                                      getVariables={getVariables}
+                                    />
+                                  ) : (
+                                    <button className={`btn-pink disabled sm w-100 px-2 mt-3`}>
+                                      Active
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <button className={`opacity-0 btn-pink disabled sm w-100 px-2 mt-3`}>
+                                  One Time Payment
+                                </button>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* Tweet button for received subscriptions */}
+                          {!isPurchasedByUser && (
+                            <TweetNow type="subscription" id={s && s.uuid} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+              
+              {(!all_subscriptions || all_subscriptions.length < 1) ? (
+                <Nocontent classes="mt-5" text={'No active subscriptions found'} />
+              ) : (
+                ''
               )}
             </Tab>
             <Tab className="pt-6" eventKey="3" title="Piggy Bank">

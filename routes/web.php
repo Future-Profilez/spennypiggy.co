@@ -182,8 +182,20 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    // Purchases route
+    // Purchases routes
     Route::get('/purchases', [\App\Http\Controllers\PurchasesController::class, 'index'])->name('purchases');
+    Route::post('/purchases/cancel-subscription/{type}/{uuid}', [\App\Http\Controllers\PurchasesController::class, 'cancelSubscription'])
+         ->name('purchases.cancel-subscription');
+    
+    // Alternative subscription cancellation route to match frontend expectation
+    Route::post('/subscriptions/{id}/cancel', [\App\Http\Controllers\PurchasesController::class, 'cancelSubscriptionById'])
+         ->name('subscriptions.cancel');
+         
+    // Comprehensive subscription management routes
+    Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SubscriptionsController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\SubscriptionsController::class, 'show'])->name('show');
+    });
 });
 
 // Select Default Currency
@@ -469,9 +481,7 @@ Route::withoutMiddleware([])->group(function () {
 });
 
 // Redirect old URLs to new SEO URLs
-Route::get('/robots.txt', function () {
-    return redirect('/seo/robots.txt', 301);
-})->name('robots.redirect');
+Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('robots.txt');
 
 Route::get('/sitemap.xml', function () {
     return redirect('/seo/sitemap.xml', 301);

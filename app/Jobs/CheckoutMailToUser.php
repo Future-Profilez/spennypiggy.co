@@ -198,6 +198,7 @@ class CheckoutMailToUser implements ShouldQueue
                 'product_type' => 'wish',
                 'transaction_amount' => $paymentItem->amount * $paymentItem->quantity,
                 'deliverable_url' => $deliverableUrl,
+                'is_deliverable' => !empty($deliverableUrl), // Mark as deliverable if has content
                 'anonymous' => $this->payment->anonymous ?? false,
                 'message' => $this->payment->message ?? null,
                 'metadata' => json_encode([

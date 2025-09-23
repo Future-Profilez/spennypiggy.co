@@ -35,4 +35,47 @@ class SeoController extends Controller
         
         return $response;
     }
+    
+    /**
+     * Serve robots.txt directly without file system dependency
+     */
+    public function robots()
+    {
+        $siteUrl = config('app.url');
+        $content = "User-agent: *\n";
+        $content .= "Disallow: /admin/\n";
+        $content .= "Disallow: /api/webhooks/\n";
+        $content .= "Disallow: /*.json\n";
+        $content .= "Disallow: /staging/\n";
+        $content .= "Disallow: /test/\n";
+        $content .= "Disallow: /debug*/\n";
+        $content .= "Disallow: /seed*/\n";
+        $content .= "Disallow: /*-test\n";
+        $content .= "Disallow: /pwa-debug\n";
+        $content .= "\n# Allow main content\n";
+        $content .= "Allow: /\n";
+        $content .= "Allow: /discover\n";
+        $content .= "Allow: /leaderboard\n";
+        $content .= "Allow: /how-it-works\n";
+        $content .= "\n# Sitemap location\n";
+        $content .= "Sitemap: {$siteUrl}/dynamic-sitemap\n";
+        
+        // Create response with aggressive cache prevention
+        $response = new Response($content, 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+        ]);
+        
+        // Add aggressive cache prevention headers
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, s-maxage=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT');
+        $response->headers->set('Last-Modified', gmdate('D, d M Y H:i:s') . ' GMT');
+        $response->headers->set('X-Accel-Expires', '0');
+        $response->headers->set('Surrogate-Control', 'no-store');
+        
+        // Remove any etag to prevent conditional caching
+        $response->headers->remove('ETag');
+        
+        return $response;
+    }
 }

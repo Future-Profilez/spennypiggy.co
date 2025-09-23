@@ -28,6 +28,7 @@ class Deliverable extends Model
         'deliverable_url',
         'metadata',
         'status',
+        'is_deliverable', // NEW: Flag for admin interface
         'delivered_at',
         'customer_email',
         'customer_name',
@@ -237,5 +238,29 @@ class Deliverable extends Model
     public function scopeForWishItem($query, $wishItemId)
     {
         return $query->where('item_id', $wishItemId);
+    }
+    
+    /**
+     * Scope for deliverable items only
+     */
+    public function scopeDeliverableItems($query)
+    {
+        return $query->where('is_deliverable', true);
+    }
+    
+    /**
+     * Mark as deliverable item
+     */
+    public function markAsDeliverableItem(): void
+    {
+        $this->update(['is_deliverable' => true]);
+    }
+    
+    /**
+     * Mark as non-deliverable item
+     */
+    public function markAsNonDeliverableItem(): void
+    {
+        $this->update(['is_deliverable' => false]);
     }
 }

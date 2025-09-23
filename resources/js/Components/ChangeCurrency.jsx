@@ -103,7 +103,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
             <LoaderButton onClick={()=>changeCurrency(data.currency)}
                disabled={processing}
                type='submit'
-                  className="flex w-100 btn-pink lg mx-auto"
+                  className="p w-full"
                   spinnerClassName="fill-red-600" >
                   {processing ? "Updating.." : "Update"}
             </LoaderButton>

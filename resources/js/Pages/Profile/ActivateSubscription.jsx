@@ -47,7 +47,7 @@ export default function ActivateSubscription(props) {
                         <div className='text-center flex justify-center mb-4'>
                             <LoaderButton onClick={checkTerms}
                                 disabled={loading}
-                                className={'p-3 lg btn-shadow '}
+                                className={'p w-full size-lg '}
                                 spinnerClassName="fill-red-600  ">
                                 {loading ? "Activating.." : "Start 3-Day Free Trial"}
                             </LoaderButton>

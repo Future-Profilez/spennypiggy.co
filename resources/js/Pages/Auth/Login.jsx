@@ -35,25 +35,25 @@ export default function Login({ status, canResetPassword }) {
 
 
     const { flash } = usePage().props;
-    useEffect(() => {
-        if(errors){
-            Object.entries(errors).forEach(([key, value]) => {
-                errorAlert(value);
-            });
-        }
-        if (flash?.error) {
-            errorAlert(flash.error);
-        }
-        if (flash?.success) {
-            successAlert(flash.success);
-        }
-        if (flash?.warning) {
-            warningAlert(flash.warning);
-        }
-        if (flash?.info) {
-            successAlert(flash.info);
-        }
-    },[]);
+    // useEffect(() => {
+    //     if(errors){
+    //         Object.entries(errors).forEach(([key, value]) => {
+    //             errorAlert(value);
+    //         });
+    //     }
+    //     if (flash?.error) {
+    //         errorAlert(flash.error);
+    //     }
+    //     if (flash?.success) {
+    //         successAlert(flash.success);
+    //     }
+    //     if (flash?.warning) {
+    //         warningAlert(flash.warning);
+    //     }
+    //     if (flash?.info) {
+    //         successAlert(flash.info);
+    //     }
+    // },[]);
 
     const submit = (e) => {
         const deviceId = DeviceID();
@@ -61,8 +61,6 @@ export default function Login({ status, canResetPassword }) {
             ...data,
             device_id: deviceId
         };
-        
-        // Use axios for JSON request to get proper error handling
         setLoading(true);
         
         // Get CSRF token
@@ -76,18 +74,13 @@ export default function Login({ status, canResetPassword }) {
             }
         })
         .then((response) => {
-            // Successful login - redirect to user profile or specified redirect
             localStorage.removeItem("cart");
             reset();
-            setLoading(false);
-            
             if (paramValue) {
                 router.visit(paramValue);
             } else if (response.data && response.data.redirect_url) {
-                // Use the redirect URL from the server response
                 router.visit(response.data.redirect_url);
             } else {
-                // Fallback - reload the page which will redirect to appropriate location
                 window.location.reload();
             }
         })
@@ -96,16 +89,11 @@ export default function Login({ status, canResetPassword }) {
             reset("password");
             
             if (error.response) {
-                // Handle validation errors
                 if (error.response.status === 422 || error.response.status === 429) {
                     const errorData = error.response.data;
-                    
-                    // Show main error message
                     if (errorData.message) {
                         errorAlert(errorData.message);
                     }
-                    
-                    // Show field-specific errors
                     if (errorData.errors) {
                         Object.entries(errorData.errors).forEach(([field, messages]) => {
                             if (Array.isArray(messages)) {
@@ -232,13 +220,13 @@ export default function Login({ status, canResetPassword }) {
                             </ul>
 
                             <div className="  text-center flex justify-center ">
-                                <button type='submit' className='btn-pink lg'>Login</button>
-                                {/* <LoaderButton
+                                {/* <button type='submit' className='main-button b size-lg !px-12'>Login Now</button> */}
+                                <LoaderButton
                                     disabled={loading}
-                                    className="btn-pink lg2 lg w-80  mb-md-0 max-width login"
+                                    className="b size-lg !px-12 py-[10px] text-lg"
                                     spinnerClassName="fill-red-600" >
-                                    {loading ? "Wait" : "Log in"}
-                                </LoaderButton> */}
+                                    {loading ? "Loggin In..." : "Log in"}
+                                </LoaderButton>
                             </div>
                         </div>
                     </form>
