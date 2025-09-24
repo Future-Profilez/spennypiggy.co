@@ -19,9 +19,11 @@ export default function Post({item}) {
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
   function posturl (){
-    if(IsloggedIn || item && item.is_lock === 0){
+    // Check if user is the post owner OR post is unlocked
+    if(IsloggedIn || (item && item.is_lock === 0)){
       return item.image_url
     } else {
+      // Show locked placeholder based on post type
       if(item && item.for_module == 'membership'){
         return membershipimg
       }
@@ -31,6 +33,8 @@ export default function Post({item}) {
       if(item && item.for_module == 'support'){
         return supportorsimg
       }
+      // Default fallback for posts without specific module
+      return item.image_url
     }
   }
 
