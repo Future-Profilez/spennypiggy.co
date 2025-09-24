@@ -226,40 +226,32 @@ function InstantTabSystem({
     });
 
     return (
-        <div className="newnav-tabs mb-4 overflow-x-auto  flex items-center justify-between py-2 relative">
-            {/* Tab buttons container */}
-            <div className="flex   ps-1 scrollbar-hide space-x-8 min-w-max">
-                {tabs.map((tab) => (
-                    <TabButton
-                        key={tab.id}
-                        tab={tab}
-                        isActive={activeTab === tab.id}
-                        isPending={pendingTab === tab.id}
-                        isClicked={clickedTab === tab.id}
-                        isTransitioning={isTransitioning}
-                    />
-                ))}
+        <div className='relative'>
+            <div className="newnav-tabs mb-4 pe-[100px] overflow-x-auto  flex items-center justify-between py-2 relative">
+                {/* Tab buttons container */}
+                <div className="flex   ps-1 scrollbar-hide space-x-8 min-w-max">
+                    {tabs.map((tab) => (
+                        <TabButton
+                            key={tab.id}
+                            tab={tab}
+                            isActive={activeTab === tab.id}
+                            isPending={pendingTab === tab.id}
+                            isClicked={clickedTab === tab.id}
+                            isTransitioning={isTransitioning}
+                        />
+                    ))}
+                </div>
+                
+                
+               
+                
+                {isTransitioning && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-transparent opacity-20 animate-pulse pointer-events-none"></div>
+                )}
             </div>
-            
-            {IsloggedIn && (
-                <div className="ml-4">
-                    <Toggle />
-                </div>
-            )}
-            
-            {/* Performance indicator (dev mode) */}
-            {process.env.NODE_ENV === 'development' && (
-                <div className="fixed bottom-20 right-4 bg-black bg-opacity-75 text-white text-xs p-2 rounded z-50">
-                    <div>Feedback: {Math.round(performanceRef.current.feedbackTime)}ms</div>
-                    <div>Navigation: {Math.round(performanceRef.current.navigationTime)}ms</div>
-                    <div>Pending: {pendingTab || 'none'}</div>
-                </div>
-            )}
-            
-            {/* Global loading overlay for smooth transitions */}
-            {isTransitioning && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-transparent opacity-20 animate-pulse pointer-events-none"></div>
-            )}
+                {IsloggedIn && (
+                        <Toggle />
+                )}
         </div>
     );
 }

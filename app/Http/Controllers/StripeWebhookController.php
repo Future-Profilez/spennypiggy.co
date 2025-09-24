@@ -220,6 +220,11 @@ class StripeWebhookController extends Controller
                 Log::info("Handling Invoice Paid");
                 $this->handleInvoicePaid($data, $metadata);
                 break;
+                
+            case 'invoice.payment_succeeded':
+                Log::info("Handling Invoice Payment Succeeded");
+                $this->handleInvoicePaymentSucceeded($data, $metadata);
+                break;
 
             case 'customer.subscription.updated':
                 $productType = $metadata->type ?? null;
@@ -518,6 +523,163 @@ class StripeWebhookController extends Controller
     }
 
     /**
+     * Handle invoice.payment_succeeded events for subscription renewals
+     */
+    public function handleInvoicePaymentSucceeded($data, $metadata)
+    {
+        $subscriptionId = $data->subscription ?? null;
+        
+        if (!$subscriptionId) {
+            Log::info("Invoice payment succeeded but no subscription ID found", ['invoice_id' => $data->id]);
+            return;
+        }
+
+        Log::info("Processing invoice.payment_succeeded for subscription renewal", [
+            'invoice_id' => $data->id,
+            'subscription_id' => $subscriptionId,
+            'billing_reason' => $data->billing_reason ?? null,
+            'amount' => $data->amount_paid ?? 0,
+            'metadata' => $metadata
+        ]);
+        
+        // Check if this is a wish item subscription renewal
+        $wishSubscription = WishItemSubscription::where('stripe_id', $subscriptionId)
+            ->where('status', 'paid')
+            ->first();
+        
+        if ($wishSubscription) {
+            $this->handleWishSubscriptionRenewal($data, $wishSubscription);
+        }
+        
+        // Check for other subscription types (membership, bills) here if needed
+        // For now, focusing on wish subscriptions
+    }
+    
+    /**
+     * Handle wish subscription renewal payments
+     */
+    private function handleWishSubscriptionRenewal($invoiceData, $wishSubscription)
+    {
+        try {
+            Log::info('Processing wish subscription renewal payment', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'wish_item_id' => $wishSubscription->wish_item_id,
+                'invoice_id' => $invoiceData->id,
+                'amount' => $invoiceData->amount_paid ?? 0
+            ]);
+            
+            // Get the subscription details from Stripe to update period information
+            $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripeSubscription = $stripeClient->subscriptions->retrieve($wishSubscription->stripe_id);
+            
+            // Update subscription with new period information
+            $wishSubscription->current_period_start = Carbon::createFromTimestamp($stripeSubscription->current_period_start);
+            $wishSubscription->current_period_end = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+            $wishSubscription->upcoming_payment = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+            $wishSubscription->stripe_status = $stripeSubscription->status;
+            $wishSubscription->updated_at = Carbon::now();
+            $wishSubscription->save();
+            
+            Log::info('Wish subscription updated with new period', [
+                'subscription_id' => $wishSubscription->id,
+                'stripe_id' => $wishSubscription->stripe_id,
+                'new_period_end' => $wishSubscription->current_period_end,
+                'new_upcoming_payment' => $wishSubscription->upcoming_payment
+            ]);
+            
+            // If wish item has content to deliver for renewals, create deliverable
+            if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
+                
+                // Create deliverable record for renewal content delivery
+                $deliverable = \App\Models\Deliverable::create([
+                    'uuid' => \Illuminate\Support\Str::uuid(),
+                    'product_id' => (string) $wishSubscription->wish_item->id,
+                    'item_id' => $wishSubscription->wish_item->id,
+                    'creator_id' => $wishSubscription->wish_item->user_id,
+                    'gifter_id' => $wishSubscription->user_id,
+                    'session_id' => $wishSubscription->session_id,
+                    'payment_intent_id' => $invoiceData->payment_intent ?? null,
+                    'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                    'product_type' => 'wish_subscription_renewal',
+                    'transaction_amount' => $invoiceData->amount_paid / 100, // Convert from cents
+                    'status' => 'pending',
+                    'customer_email' => $wishSubscription->guest_email,
+                    'customer_name' => $wishSubscription->guest_name,
+                    'anonymous' => $wishSubscription->anonymous ?? false,
+                    'message' => 'Subscription renewal content delivery',
+                    'metadata' => json_encode([
+                        'wish_id' => $wishSubscription->wish_item->id,
+                        'subscription_id' => $wishSubscription->id,
+                        'stripe_subscription_id' => $wishSubscription->stripe_id,
+                        'subscription_renewal' => true,
+                        'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                        'invoice_id' => $invoiceData->id,
+                        'billing_reason' => $invoiceData->billing_reason ?? 'subscription_cycle',
+                        'renewal_period_start' => $wishSubscription->current_period_start,
+                        'renewal_period_end' => $wishSubscription->current_period_end
+                    ])
+                ]);
+                
+                // Dispatch job to process renewal content delivery
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                
+                Log::info('Subscription renewal content delivery job dispatched', [
+                    'deliverable_id' => $deliverable->id,
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id
+                ]);
+            }
+            
+            // Send renewal notification email if needed
+            $this->sendSubscriptionRenewalEmail($wishSubscription, $invoiceData);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to process wish subscription renewal', [
+                'subscription_id' => $wishSubscription->stripe_id ?? null,
+                'wish_item_id' => $wishSubscription->wish_item_id ?? null,
+                'invoice_id' => $invoiceData->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+    
+    /**
+     * Send subscription renewal email notification
+     */
+    private function sendSubscriptionRenewalEmail($wishSubscription, $invoiceData)
+    {
+        try {
+            // Prepare renewal amount with currency formatting
+            $currency = \App\Models\Currency::where('iso', strtoupper($invoiceData->currency ?? 'gbp'))->first();
+            $currencySymbol = $currency ? $currency->symbol : '£';
+            $renewalAmount = $currencySymbol . number_format($invoiceData->amount_paid / 100, 2);
+            
+            // Use the existing wish subscription email system for renewals
+            \App\Jobs\WishSubscriptionMailToUser::dispatch(
+                $wishSubscription,
+                $wishSubscription->guest_email,
+                $renewalAmount,
+                $wishSubscription->wish_item->user->name,
+                true // is_renewal = true
+            );
+            
+            Log::info('Wish subscription renewal email dispatched', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'customer_email' => $wishSubscription->guest_email,
+                'amount' => $renewalAmount,
+                'creator_name' => $wishSubscription->wish_item->user->name
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to send subscription renewal email', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Handle invoice.paid events for all subscription types
      */
     public function handleInvoicePaid($data, $metadata)
@@ -606,26 +768,19 @@ class StripeWebhookController extends Controller
                     'has_reward' => !empty($wishSubscription->wish_item->reward)
                 ]);
                 
-                // Also dispatch CheckoutMailToUser for email notification with deliverable info
-                $mockPayment = (object) [
-                    'id' => $wishSubscription->id,
-                    'user_id' => $wishSubscription->user_id,
-                    'owner_id' => $wishSubscription->wish_item->user_id,
-                    'session_id' => $wishSubscription->session_id,
-                    'guest_email' => $wishSubscription->guest_email,
-                    'name' => $wishSubscription->guest_name,
-                    'anonymous' => $wishSubscription->anonymous ?? false,
-                    'amount_subtotal' => $wishSubscription->amount,
-                    'amount_total' => $wishSubscription->amount + ($wishSubscription->tax ?? 0),
-                    'owner' => $wishSubscription->wish_item->user,
-                    'currency' => $wishSubscription->currency ?? 'gbp'
-                ];
-                
-                // Get currency symbol for email
+                // Send subscription payment notification using existing wish subscription email
                 $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
                 $currencySymbol = $currency ? $currency->symbol : '£';
+                $paymentAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
                 
-                \App\Jobs\CheckoutMailToUser::dispatch($mockPayment, $currencySymbol);
+                // Use existing wish subscription email system
+                \App\Jobs\WishSubscriptionMailToUser::dispatch(
+                    $wishSubscription,
+                    $wishSubscription->guest_email,
+                    $paymentAmount,
+                    $wishSubscription->wish_item->user->name,
+                    true // is_renewal = true for subscription payments
+                );
                 
                 Log::info('Wish subscription email notification dispatched', [
                     'subscription_id' => $wishSubscription->stripe_id,

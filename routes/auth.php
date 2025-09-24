@@ -524,7 +524,7 @@ Route::post('/mandatory-status', [StripeWebhookController::class, 'mandatorySubs
 Route::post('/webhook/payment', [StripeWebhookController::class, 'handle']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 // Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
-// Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
+Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 // Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');

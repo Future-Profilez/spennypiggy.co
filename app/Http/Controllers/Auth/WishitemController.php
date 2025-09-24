@@ -2851,45 +2851,55 @@ class WishitemController extends Controller
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
-        // Get subscriptions TO user's content (purchased by others) - exclude cancelled
-        $creator_subs = WishItemSubscription::where(function($q) {
-            $q->where('recurring_for', 'continue')
-              ->where('created_at', '<=', Carbon::now())
-              ->where('upcoming_payment', '>=', Carbon::now())
-              ->orWhere(function($subQ) {
-                  // Include one-time subscriptions that are still within active period (30 days)
-                  $subQ->where('recurring_for', 'onetime')
-                       ->where('created_at', '>=', Carbon::now()->subDays(30));
-              });
-        })->whereHas('wish_item', function ($q) use ($user) {
+        // Get subscriptions TO user's content (purchased by others) - include active subscriptions
+        $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->with(['user', 'wish_item'])
-        ->where('status', 'paid') // Only show active paid subscriptions
-        ->whereNotIn('stripe_status', ['canceled', 'cancelled', 'unpaid', 'incomplete']) // Exclude cancelled subscriptions
-        ->orderBy('updated_at', 'DESC')->get();
-
-        // Get subscriptions BY user (purchased by current user) - exclude cancelled
-        $user_subs = WishItemSubscription::where(function($q) {
+        ->where('status', 'paid')
+        ->where('stripe_status', 'active') // Only get truly active subscriptions from Stripe
+        ->where(function($q) {
             $q->where('recurring_for', 'continue')
-              ->where('created_at', '<=', Carbon::now())
-              ->where('upcoming_payment', '>=', Carbon::now())
+              ->where('upcoming_payment', '>=', Carbon::now()) // Still has upcoming payments
               ->orWhere(function($subQ) {
                   // Include one-time subscriptions that are still within active period (30 days)
                   $subQ->where('recurring_for', 'onetime')
                        ->where('created_at', '>=', Carbon::now()->subDays(30));
               });
-        })->where('user_id', Auth::id())->with(['wish_item', 'wish_item.user'])
-        ->where('status', 'paid') // Only show active paid subscriptions
-        ->whereNotIn('stripe_status', ['canceled', 'cancelled', 'unpaid', 'incomplete']) // Exclude cancelled subscriptions
+        })
+        ->orderBy('updated_at', 'DESC')->get();
+
+        // Get subscriptions BY user (purchased by current user) - include active subscriptions
+        $user_subs = WishItemSubscription::where('user_id', Auth::id())
+        ->with(['wish_item', 'wish_item.user'])
+        ->where('status', 'paid')
+        ->where('stripe_status', 'active') // Only get truly active subscriptions from Stripe
+        ->where(function($q) {
+            $q->where('recurring_for', 'continue')
+              ->where('upcoming_payment', '>=', Carbon::now()) // Still has upcoming payments
+              ->orWhere(function($subQ) {
+                  // Include one-time subscriptions that are still within active period (30 days)
+                  $subQ->where('recurring_for', 'onetime')
+                       ->where('created_at', '>=', Carbon::now()->subDays(30));
+              });
+        })
+        ->orderBy('created_at', 'DESC')
         ->get();
         
-        // Add type indicator to differentiate between purchased by user vs purchased by others
+        // Add type indicator and format data for frontend
         $creator_subs->each(function($sub) {
             $sub->subscription_type = 'received'; // Others purchased this user's content
+            $sub->start_date = Carbon::parse($sub->created_at)->format('M d, Y');
+            $sub->payment_upcoming = Carbon::parse($sub->upcoming_payment)->format('M d, Y');
+            // Add subscription active status for frontend logic
+            $sub->is_subscription_active = ($sub->stripe_status === 'active' && $sub->status === 'paid') ? 1 : 0;
         });
         
         $user_subs->each(function($sub) {
             $sub->subscription_type = 'purchased'; // User purchased others' content
+            $sub->start_date = Carbon::parse($sub->created_at)->format('M d, Y');
+            $sub->payment_upcoming = Carbon::parse($sub->upcoming_payment)->format('M d, Y');
+            // Add subscription active status for frontend logic
+            $sub->is_subscription_active = ($sub->stripe_status === 'active' && $sub->status === 'paid') ? 1 : 0;
         });
         
         // Combine both collections and sort by most recent

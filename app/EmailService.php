@@ -549,10 +549,10 @@ class EmailService
         }
     }
 
-    public static function wishSubscriptionMailToUser($sub, $mailToSend, $amountTotal, $creator_name)
+    public static function wishSubscriptionMailToUser($sub, $mailToSend, $amountTotal, $creator_name, $is_renewal = false)
     {
         try {
-            Mail::to($mailToSend)->send(new WishSubscriptionMailToUsers($sub, $amountTotal, $creator_name));
+            Mail::to($mailToSend)->send(new WishSubscriptionMailToUsers($sub, $amountTotal, $creator_name, $is_renewal));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

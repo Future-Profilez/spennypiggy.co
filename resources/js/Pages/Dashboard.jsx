@@ -317,9 +317,9 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer ps-3 "
+                            className="addoption-action absolute top-[-3px] right-0 cursor-pointer ps-3 bg-black p-2 "
                             dangerouslySetInnerHTML={{ __html: addicon }}
-                        ></div>
+                        ></div> 
                         {showAdd ? (
                             <div
                                 className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
@@ -611,74 +611,76 @@ export default function Dashboard(props) {
 
                                                                         
 
-                                                                        <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
-                                                                            <p className="font-bold">About me</p>
-                                                                            <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
-                                                                                {(user &&user.bio) ||""}
-                                                                            </p>
+                                                                        <div className="pink-round mb-4">
+                                                                            <h2 className='text-large  font-GillSans text-uppercase pinkbg p-3 goaltitle text-white btn-shadow'>About Me</h2>
+                                                                            <div className="p-4">
+                                                                                <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
+                                                                                    {(user &&user.bio) ||""}
+                                                                                </p>
 
-                                                                            {IsloggedIn && user?.edit_bio_reason  ?
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">Bio Edit Request</p>
-                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
-                                                                                </div>
-                                                                            : ''}
+                                                                                {IsloggedIn && user?.edit_bio_reason  ?
+                                                                                    <div className="mt-3">
+                                                                                        <p className="text-red-700">Bio Edit Request</p>
+                                                                                        <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                                                                                    </div>
+                                                                                : ''}
 
-                                                                            <SocialLinks links={sLinks} />
+                                                                                <SocialLinks links={sLinks} />
 
-                                                                            {IsloggedIn ? (
-                                                                                <div className="userProfileDate pt-0 pt-md-3">
+                                                                                {IsloggedIn ? (
+                                                                                    <div className="userProfileDate pt-0 pt-md-3">
 
 
-                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
-                                                                                        <PaymentDashboard classes="b w-full" text="Payment Dashboard" />
-                                                                                        ) :
-                                                                                        <>
-                                                                                        {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">
-                                                                                            <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
-                                                                                            </Link>
-                                                                                        </div> : ''}
-                                                                                        </>
-                                                                                    }
+                                                                                        {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
+                                                                                            <PaymentDashboard classes="b w-full" text="Payment Dashboard" />
+                                                                                            ) :
+                                                                                            <>
+                                                                                            {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">
+                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                                </Link>
+                                                                                            </div> : ''}
+                                                                                            </>
+                                                                                        }
 
-                                                                                {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                                                                        <AddGoal
-                                                                                        stripe_enabled={auth.user && auth.user.stripe_details_submitted}
-                                                                                        fetch_goal={fetch_goal}
-                                                                                        activegoal={goal}
-                                                                                        />
-                                                                                    : ''} */}
-
-                                                                                <div className="addsocial flex">
-                                                                                    <ul>
-                                                                                        <li>
-                                                                                            <AddSocial
-                                                                                                sLinks={
-                                                                                                    sLinks
-                                                                                                }
+                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                                                                            <AddGoal
+                                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                                            fetch_goal={fetch_goal}
+                                                                                            activegoal={goal}
                                                                                             />
-                                                                                        </li>
-                                                                                        <li>
-                                                                                            <ShareProfile
-                                                                                                username={
-                                                                                                    user &&
-                                                                                                    user.name
-                                                                                                }
-                                                                                                classes={
-                                                                                                    "flex ms-auto"
-                                                                                                }
-                                                                                            >
-                                                                                                Share
-                                                                                                Profile
-                                                                                            </ShareProfile>
-                                                                                        </li>
-                                                                                    </ul>
+                                                                                        : ''} */}
+
+                                                                                    <div className="addsocial flex">
+                                                                                        <ul>
+                                                                                            <li>
+                                                                                                <AddSocial
+                                                                                                    sLinks={
+                                                                                                        sLinks
+                                                                                                    }
+                                                                                                />
+                                                                                            </li>
+                                                                                            <li>
+                                                                                                <ShareProfile
+                                                                                                    username={
+                                                                                                        user &&
+                                                                                                        user.name
+                                                                                                    }
+                                                                                                    classes={
+                                                                                                        "flex ms-auto"
+                                                                                                    }
+                                                                                                >
+                                                                                                    Share
+                                                                                                    Profile
+                                                                                                </ShareProfile>
+                                                                                            </li>
+                                                                                        </ul>
+                                                                                    </div>
                                                                                 </div>
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
                                                                             </div>
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
                                                                     </div>
                                                                     <AddIntro
                                                                         uuid={

@@ -542,7 +542,36 @@ export default function Wishtracker(props) {
                                 )}
                               </p>
                             </li>
+                            
+                            {/* Subscription Access Benefits - show for active paid subscriptions */}
+                            {isPurchasedByUser && s.status === 'paid' && (
+                              <li className="mt-2 flex justify-between border-top py-2">
+                                <p className="text-muted">Access Status</p>
+                                <p className="text-dark">
+                                  <span className="badge bg-success">
+                                    ✅ {s.recurring_for === 'onetime' ? '30-Day' : 'Ongoing'} Post Access
+                                  </span>
+                                </p>
+                              </li>
+                            )}
                           </ul>
+                          
+                          {/* View Exclusive Content Button - for users who purchased subscriptions */}
+                          {isPurchasedByUser && s.status === 'paid' && (
+                            <div className="mt-3">
+                              <Link
+                                href={`/${s.wish_item.user.username}?tab=feed`}
+                                className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 2L3 7L12 12L21 7L12 2Z" />
+                                  <path d="M3 17L12 22L21 17" />
+                                  <path d="M3 12L12 17L21 12" />
+                                </svg>
+                                🎥 View Exclusive Content
+                              </Link>
+                            </div>
+                          )}
 
                           {/* Action buttons - only for user's own subscriptions */}
                           {isPurchasedByUser && (

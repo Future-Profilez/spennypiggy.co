@@ -11,14 +11,31 @@
 div{animation:load 0.4s linear;} */
 
 @layer components{
+  .shadow-pink{box-shadow:7px 7px 0 0 var(--pink); 
+  }
+  .border-pink{
+    border:2px solid var(--pink) !important;
+  }
+  
+  .shadow-mint{box-shadow:7px 7px 0 0 var(--mint); 
+  }
+  
+  .border-mint{
+    border:2px solid var(--mint) !important;
+  }
   .main-button {
     @apply bg-white font-gulfs uppercase px-4 py-2 border !border-[3px]  rounded-[20px] 
     }
     .b { @apply main-button bg-white !text-[#003D4F] !border-[#003D4F] transition shadow-[5px_5px_0px_#003D4F] hover:shadow-[3px_3px_0px_#003D4F] focus:shadow-[3px_3px_0px_#003D4F] focus:outline    }
     .p { @apply main-button bg-white !text-[var(--pink)] transition !border-[var(--pink)] shadow-[5px_5px_0px_var(--pink)] hover:shadow-[3px_3px_0px_var(--pink)] focus:shadow-[3px_3px_0px_var(--pink)] focus:outline    }
     .pure-pink { @apply main-button pinkbg !text-[#fff] transition !border-[#fff] shadow-[5px_5px_0px_white] hover:shadow-[3px_3px_0px_white] focus:shadow-[3px_3px_0px_white] focus:outline    }
-    .size-lg { @apply text-[17px] rounded-[20px]  px-[16px] py-[9px]  }
+    .size-lg { @apply text-[17px] rounded-[20px]  px-[16px] py-[9px] }
+    .pink-round { @apply  overflow-hidden bg-white  rounded-[15px] md:rounded-[25px]  border-pink shadow-pink }
+    .mint-round { @apply  overflow-hidden bg-white  rounded-[15px] md:rounded-[25px]  border-mint shadow-mint }
   } 
+
+
+
 .text-body{font-family:var(--para-body);}
 .text-CeraGR{font-family:var(--para-font);}
 .font-GillSans{font-family:var(--heading-font);}
@@ -45,7 +62,7 @@ div{animation:load 0.4s linear;} */
 .shadow-black{box-shadow:5px 5px 0 0 rgba(0,0,0,1);}
 .shadow-voilet{box-shadow:5px 5px 0 0 var(--voilet);}
 .shadow-mint{box-shadow:5px 5px 0 0 var(--mint);}
-.shadow-pink{box-shadow:5px 5px 0 0 var(--pink);}
+
 .shadow-purple{box-shadow:5px 5px 0 0 var(--purple);}
 .shadow-yellow{text-shadow:5px 4px 0px #e6ea82;-webkit-text-stroke:1px #e6ea82;}
 .text-pink{color:var(--pink) !important;}

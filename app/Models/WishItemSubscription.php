@@ -170,7 +170,15 @@ class WishItemSubscription extends Model
                 // Recurring subscriptions with active Stripe status
                 $subQ->where('recurring_for', 'continue')
                      ->where('stripe_status', 'active')
-                     ->where('current_period_end', '>=', Carbon::now());
+                     ->where('status', 'paid')
+                     ->where(function ($periodQ) {
+                         // Check current_period_end if available, otherwise use upcoming_payment
+                         $periodQ->where('current_period_end', '>=', Carbon::now())
+                                 ->orWhere(function($fallbackQ) {
+                                     $fallbackQ->whereNull('current_period_end')
+                                              ->where('upcoming_payment', '>=', Carbon::now());
+                                 });
+                     });
             });
         });
     }

@@ -857,9 +857,10 @@ class ProfileController extends Controller
         $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $data = [];
-        // Fix subscription access logic to include one-time subscriptions
+        // Get user IDs from active subscriptions for post access
         $subscription = WishItem::where('subscription', 1)->whereHas('wishItemsSubscription', function ($qu) use ($user) {
             $qu->where('status', 'paid')
+               ->where('stripe_status', 'active') // Only truly active Stripe subscriptions
                ->where(function ($q) use ($user) {
                    $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
                })

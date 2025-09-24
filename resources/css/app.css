@@ -68,7 +68,6 @@ body{position:relative;font-family:var(--para-font)}
 .shadow-black{box-shadow:7px 7px 0 0 rgba(0,0,0,1)}
 .shadow-voilet{box-shadow:7px 7px 0 0 var(--voilet)}
 .shadow-mint{box-shadow:7px 7px 0 0 var(--mint)}
-.shadow-pink{box-shadow:7px 7px 0 0 var(--pink)}
 .shadow-purple{box-shadow:7px 7px 0 0 var(--purple)}
 .modal-content{max-width:calc(100% - 30px);margin:auto}
 .trackbar > div:not(.tip){display:block !important}

@@ -33,10 +33,8 @@ export default function MyGoal({  IsloggedIn}) {
     .mygoal .progress-bar{position:relative;overflow:visible !important;border-radius:8px;}
     .mygoal .progress{background:#eccedb;height:9px;overflow:visible;}
     `}</style>
-    <div className='box mygoal rounded-lg mb-4 shadow-voilet border p-0'>
-      <div className='border-bottom border-voilet' >
-        <h2 className='text-large   font-GillSans text-uppercase pinkbg p-3 goaltitle text-white btn-shadow'>{goal?.name || 'MY PIGGY BANK'}</h2>
-      </div>
+    <div className='mb-4 pink-round p-0'>
+        <h2 className='text-large  font-GillSans text-uppercase pinkbg p-3 goaltitle text-white btn-shadow'>{goal?.name || 'MY PIGGY BANK'}</h2>
       <div className='p-3' >
         <p className='mb-3 '>Total Support</p>
         <ProgressBar aria-label="Earnings" title="Earnings" now={goal?.fullfilled}  max={goal?.target} />
