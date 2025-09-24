@@ -601,7 +601,7 @@ class StripeWebhookController extends Controller
                     'payment_intent_id' => $invoiceData->payment_intent ?? null,
                     'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
                     'product_type' => 'wish_subscription_renewal',
-                    'transaction_amount' => $invoiceData->amount_paid / 100, // Convert from cents
+                    'transaction_amount' => $wishSubscription->wish_item->price, // Use wish item price directly (base amount only)
                     'status' => 'pending',
                     'customer_email' => $wishSubscription->guest_email,
                     'customer_name' => $wishSubscription->guest_name,
@@ -650,10 +650,13 @@ class StripeWebhookController extends Controller
     private function sendSubscriptionRenewalEmail($wishSubscription, $invoiceData)
     {
         try {
-            // Prepare renewal amount with currency formatting
-            $currency = \App\Models\Currency::where('iso', strtoupper($invoiceData->currency ?? 'gbp'))->first();
+            // Prepare renewal amount with currency formatting and subscription period
+            // Use the base subscription amount (wish item price only, without platform fees)
+            $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
             $currencySymbol = $currency ? $currency->symbol : '£';
-            $renewalAmount = $currencySymbol . number_format($invoiceData->amount_paid / 100, 2);
+            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+            $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
+            $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
             
             // Use the existing wish subscription email system for renewals
             \App\Jobs\WishSubscriptionMailToUser::dispatch(
@@ -771,7 +774,9 @@ class StripeWebhookController extends Controller
                 // Send subscription payment notification using existing wish subscription email
                 $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
                 $currencySymbol = $currency ? $currency->symbol : '£';
-                $paymentAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+                $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+                $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
+                $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
                 
                 // Use existing wish subscription email system
                 \App\Jobs\WishSubscriptionMailToUser::dispatch(

@@ -89,11 +89,13 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         
         // Get item based on product_type
         let itemName = "Gift Item";
+        let itemprice = 0;
         let itemImage = null;
         
         if (deliverable.wish_item) {
             itemName = deliverable.wish_item.wishname;
             itemImage = deliverable.wish_item.image_url;
+            itemprice = deliverable.wish_item.price;
         } else if (metadata.item_name) {
             itemName = metadata.item_name;
         }
@@ -146,7 +148,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                     
                                     <h2 className='text-lg font-bold  '>
                                         <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
-                                            <p className='me-4 text-lg font-bold'>{formatMultiPrice(deliverable.transaction_amount, deliverable.payment_currency || auth.user.default_currency || global_currency)}</p>
+                                            <p className='me-4 text-lg font-bold'>{formatMultiPrice(deliverable.wish_item?.price || itemprice || deliverable.transaction_amount, (deliverable.wish_item?.currency || deliverable.payment_currency || auth.user.default_currency || global_currency))}</p>
                                             <span className={`capitalize px-3 py-1 text-sm font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
                                                 Content {deliverable.status || 'Processing'}
                                             </span>
@@ -325,7 +327,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                             <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
                                 <p className='me-4 text-lg font-bold'>
                                     {formatMultiPrice(subscription.amount, subscription.currency || auth.user.default_currency || global_currency)}
-                                    /month
+                                    /{subscription.recurring_type || 'month'}
                                 </p>
                                 {statusBadge}
                             </div>
@@ -458,7 +460,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Amount:</p>
-                                    <p className="font-medium">{formatMultiPrice(selectedDeliverable.transaction_amount, selectedDeliverable.payment_currency || auth.user.default_currency || global_currency)}</p>
+                                    <p className="font-medium">{formatMultiPrice(selectedDeliverable.wish_item?.price || selectedDeliverable.transaction_amount, selectedDeliverable.wish_item?.currency || selectedDeliverable.payment_currency || auth.user.default_currency || global_currency)}</p>
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Date:</p>

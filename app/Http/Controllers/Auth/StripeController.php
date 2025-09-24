@@ -1459,7 +1459,9 @@ class StripeController extends Controller
                 }
                 $creatorAmount = $sub->amount + $sub->vat_tax_amount;
                 $creatorFinalAmount = $symbol->symbol . $creatorAmount;
-                $amountTotal = $symbol->symbol . $sub->amount;
+                // Include subscription period in amount display
+                $subscriptionPeriod = $sub->wish_item->subscription_period ?? 'monthly';
+                $amountTotal = $symbol->symbol . $sub->amount . '/' . $subscriptionPeriod;
                 $creator_name = $sub->wish_item->user->name;
                 $mailToSend = $sub->guest_email;
 
@@ -1637,7 +1639,7 @@ class StripeController extends Controller
                 $userPayment->from_user_id = $sub->user_id ?? null;
                 $userPayment->to_user_id = $sub->wish_item->user_id;
                 $userPayment->product_type = 'wish item subscription';
-                $userPayment->amount = $sub->amount;
+                $userPayment->amount = $sub->wish_item->price; // Use wish item price directly (no fees)
                 $userPayment->currency = $sub->currency;
                 $userPayment->payment_method = 'stripe';
                 $userPayment->payment_details = json_encode($session, true);
@@ -1677,14 +1679,15 @@ class StripeController extends Controller
     {
         try {
             // Create a proper StripePaymentDetail record that works with CheckoutMailToUser system
+            // Use wish item price only (no fees) to match what user expects to pay for the content
             $stripePayment = \App\Models\StripePaymentDetail::create([
                 'uuid' => \Str::uuid(),
                 'session_id' => $subscription->session_id,
                 'user_id' => $subscription->user_id,
                 'owner_id' => $subscription->wish_item->user_id,
                 'stripe_payment_intent_id' => $session->payment_intent ?? null,
-                'amount_subtotal' => $subscription->amount,
-                'amount_total' => $subscription->amount + ($subscription->tax ?? 0),
+                'amount_subtotal' => $subscription->wish_item->price, // Use wish item price directly
+                'amount_total' => $subscription->wish_item->price, // Use wish item price directly (no fees)
                 'currency' => $subscription->currency,
                 'payment_status' => $session->payment_status,
                 'guest_email' => $subscription->guest_email,
@@ -1704,7 +1707,7 @@ class StripeController extends Controller
                 'uuid' => \Str::uuid(),
                 'stripe_payment_detail_id' => $stripePayment->id,
                 'wish_item_id' => $subscription->wish_item->id,
-                'amount' => $subscription->amount,
+                'amount' => $subscription->wish_item->price, // Use wish item price directly
                 'quantity' => 1,
                 'message' => $subscription->surprise_message,
                 'anonymous' => $subscription->anonymous ?? false
@@ -1882,7 +1885,9 @@ class StripeController extends Controller
                             // Send subscription payment notification using existing wish subscription email
                             $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
                             $currencySymbol = $currency ? $currency->symbol : '£';
-                            $paymentAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+                            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+                            $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
+                            $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
                             
                             // Use existing wish subscription email system
                             \App\Jobs\WishSubscriptionMailToUser::dispatch(
@@ -2011,7 +2016,7 @@ class StripeController extends Controller
                     'payment_intent_id' => $invoiceData->payment_intent ?? null,
                     'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
                     'product_type' => 'wish_subscription_renewal',
-                    'transaction_amount' => $invoiceData->amount_paid / 100, // Convert from cents
+                    'transaction_amount' => $wishSubscription->wish_item->price, // Use wish item price directly (base amount only)
                     'status' => 'pending',
                     'customer_email' => $wishSubscription->guest_email,
                     'customer_name' => $wishSubscription->guest_name,
@@ -2055,10 +2060,13 @@ class StripeController extends Controller
     private function sendRenewalEmailNotification($wishSubscription, $invoiceData)
     {
         try {
-            // Prepare renewal amount with currency formatting
-            $currency = Currency::where('iso', strtoupper($invoiceData->currency ?? 'gbp'))->first();
+            // Prepare renewal amount with currency formatting and subscription period
+            // Use the base subscription amount (wish item price only, without platform fees)
+            $currency = Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
             $currencySymbol = $currency ? $currency->symbol : '£';
-            $renewalAmount = $currencySymbol . number_format($invoiceData->amount_paid / 100, 2);
+            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+            $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
+            $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
             
             // Use the existing wish subscription email system for renewals
             \App\Jobs\WishSubscriptionMailToUser::dispatch(
