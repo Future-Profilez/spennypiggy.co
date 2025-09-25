@@ -172,6 +172,12 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
                                                     </li>
                                                 : ''}
+                                                {deliverable.certificate_url && (
+                                                    <li className='flex items-center flex-wrap'>
+                                                        <a target='_blank' href={deliverable.certificate_url} 
+                                                        className="ms-2 text-[15px] text-green-600 hover:underline" >📜 Download Certificate</a>
+                                                    </li>
+                                                )}
                                             </ul>
                                             <p></p>
                                         </div>

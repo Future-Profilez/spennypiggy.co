@@ -202,6 +202,7 @@ class CheckoutMailToUser implements ShouldQueue
                 'anonymous' => $this->payment->anonymous ?? false,
                 'message' => $this->payment->message ?? null,
                 'metadata' => json_encode([
+                    'certificate' => 'true', // Enable certificate generation
                     'wish_id' => $wish->id, // Database wish_id
                     'stripe_product_id' => $wish->stripe_product_id, // Stripe product_id for reference
                     'wish_name' => $wish->wishname,
@@ -225,6 +226,20 @@ class CheckoutMailToUser implements ShouldQueue
                 'status' => $status,
                 'has_url' => !empty($deliverableUrl)
             ]);
+            
+            // Dispatch certificate generation job for the deliverable
+            try {
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                \Log::info('CheckoutMailToUser: Certificate generation job dispatched', [
+                    'deliverable_id' => $deliverable->id,
+                    'wish_id' => $wish->id
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [
+                    'deliverable_id' => $deliverable->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
             
         } catch (\Exception $e) {
             \Log::error('CheckoutMailToUser: Failed to create item deliverable', [
@@ -518,6 +533,7 @@ class CheckoutMailToUser implements ShouldQueue
                 'anonymous' => $paymentItem->anonymous ?? false,
                 'message' => $paymentItem->message ?? null,
                 'metadata' => json_encode([
+                    'certificate' => 'true', // Enable certificate generation
                     'wish_id' => $wish->id, // Database wish_id
                     'stripe_product_id' => $wish->stripe_product_id, // Stripe product_id for reference
                     'wish_name' => $wish->wishname,
@@ -539,6 +555,20 @@ class CheckoutMailToUser implements ShouldQueue
                 'status' => $status,
                 'has_content' => !empty($deliverableUrl)
             ]);
+            
+            // Dispatch certificate generation job for the deliverable
+            try {
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                \Log::info('CheckoutMailToUser: Certificate generation job dispatched', [
+                    'deliverable_id' => $deliverable->id,
+                    'wish_id' => $wish->id
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [
+                    'deliverable_id' => $deliverable->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
             
             return $deliverable;
             
@@ -864,6 +894,26 @@ class CheckoutMailToUser implements ShouldQueue
             $deliverable = $this->createItemDeliverableRecord($paymentItem, $wish, $contentInfo);
             
             if ($deliverable) {
+                // Generate certificate if not already generated
+                if (empty($deliverable->certificate_url)) {
+                    try {
+                        $certificateService = app(\App\Services\CertificateService::class);
+                        $certificateUrl = $certificateService->generateAndUploadCertificate($deliverable, $wish);
+                        if ($certificateUrl) {
+                            $deliverable->update(['certificate_url' => $certificateUrl]);
+                            \Log::info('CheckoutMailToUser: Certificate generated for deliverable', [
+                                'deliverable_id' => $deliverable->id,
+                                'certificate_url' => $certificateUrl
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('CheckoutMailToUser: Failed to generate certificate', [
+                            'deliverable_id' => $deliverable->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
                 // Create deliverable notification (but no individual email)
                 $this->createDeliverableNotification($deliverable);
                 

@@ -26,6 +26,7 @@ class Deliverable extends Model
         'product_type',
         'transaction_amount',
         'deliverable_url',
+        'certificate_url',
         'metadata',
         'status',
         'is_deliverable', // NEW: Flag for admin interface

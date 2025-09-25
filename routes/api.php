@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WebVitalsController;
+use App\Http\Controllers\Api\DeliverableController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\StripeWebhookController;
@@ -46,5 +47,12 @@ Route::post('/alerts/performance', function (Request $request) {
     // and can forward them to external monitoring services
     \Log::channel('performance')->critical('Performance alert received', $request->all());
     return response()->json(['status' => 'received'], 200);
+});
+
+// Deliverables API (requires authentication)
+Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {
+    Route::get('/', [DeliverableController::class, 'index'])->name('api.deliverables.index');
+    Route::get('/{uuid}', [DeliverableController::class, 'show'])->name('api.deliverables.show');
+    Route::get('/{uuid}/certificate/download', [DeliverableController::class, 'downloadCertificate'])->name('api.deliverables.certificate');
 });
 

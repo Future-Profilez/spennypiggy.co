@@ -395,7 +395,7 @@ export default function UserCarts(props) {
                                     <button
                                         type="button"
                                         onClick={() => clearcart(datas?.user?.id)}
-                                        className={`  w-full btn-pink !text-sm !bg-gray-300 md mt-3 px-4 text-center text-black`}
+                                        className={`  w-full main-button b`}
                                     >
                                         {loading ? "Wait.." : "Clear"}{" "}
                                     </button>
@@ -403,7 +403,7 @@ export default function UserCarts(props) {
                                         type="submit"
                                         className={`${
                                             isChecked ? "" : "disabled"
-                                        } btn-shadow btn-pink md mt-3 text-center !text-sm w-full `}
+                                        } main-button p w-full`}
                                     >
                                         {checking ? "Wait.." : "Checkout"}{" "}
                                     </button>

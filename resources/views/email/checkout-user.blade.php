@@ -69,15 +69,23 @@
                          Go to <a href="https://spennypiggy.co/">Spenny Piggy</a>  and discover more creators wishes to fulfil! Check out their profile Intros, memberships and more! </td>
                      </tr>
                 @php
-                     // Get content deliverables for this payment
+                     // Get content deliverables and certificates for this payment
                      $contentDeliverables = [];
+                     $certificateDeliverables = [];
                      try {
                          // First check if consolidated deliverables are passed directly (new approach)
                          if (isset($data->consolidated_email) && $data->consolidated_email && isset($data->deliverables)) {
-                             $contentDeliverables = collect($data->deliverables)->filter(function($d) {
+                             $allDeliverables = collect($data->deliverables);
+                             $contentDeliverables = $allDeliverables->filter(function($d) {
                                  return !empty($d->deliverable_url) && $d->deliverable_type !== 'email';
                              });
-                             \Log::info('Email template: Using consolidated deliverables', ['count' => $contentDeliverables->count()]);
+                             $certificateDeliverables = $allDeliverables->filter(function($d) {
+                                 return !empty($d->certificate_url);
+                             });
+                             \Log::info('Email template: Using consolidated deliverables', [
+                                 'content_count' => $contentDeliverables->count(),
+                                 'certificate_count' => $certificateDeliverables->count()
+                             ]);
                          } else {
                              // Fallback to database query (legacy approach)
                              if (isset($data->id)) {
@@ -86,12 +94,20 @@
                                      ->where('status', 'delivered')
                                      ->whereNotNull('deliverable_url')
                                      ->get();
-                                 \Log::info('Email template: Using database query deliverables', ['count' => $contentDeliverables->count()]);
+                                 $certificateDeliverables = \App\Models\Deliverable::where('session_id', $data->session_id ?? null)
+                                     ->where('status', 'delivered')
+                                     ->whereNotNull('certificate_url')
+                                     ->get();
+                                 \Log::info('Email template: Using database query deliverables', [
+                                     'content_count' => $contentDeliverables->count(),
+                                     'certificate_count' => $certificateDeliverables->count()
+                                 ]);
                              }
                          }
                      } catch (\Exception $e) {
                          \Log::warning('Email template: Failed to load deliverables', ['error' => $e->getMessage()]);
                          $contentDeliverables = collect();
+                         $certificateDeliverables = collect();
                      }
                  @endphp
                  
@@ -159,6 +175,49 @@
                                     target="_blank">🎁 Access Your Content</a>
                              </div>
                          @endforeach
+                     </td>
+                 </tr>
+                 @endif
+                 
+                 @if($certificateDeliverables && count($certificateDeliverables) > 0)
+                 <tr>
+                     <td style="padding: 20px 0; border-top: 1px solid #eee;">
+                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #8C52FF; text-align: center; margin-bottom: 15px;">🏆 Certificate of Authenticity</h3>
+                         <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Your purchase comes with an official certificate of authenticity for your records:</p>
+                         
+                         @foreach($certificateDeliverables as $deliverable)
+                             @php
+                                 // Handle both consolidated deliverables (objects) and legacy deliverables (models)
+                                 if (is_object($deliverable) && isset($deliverable->metadata)) {
+                                     $metadata = is_array($deliverable->metadata) ? $deliverable->metadata : json_decode($deliverable->metadata, true);
+                                 } else {
+                                     $metadata = [];
+                                 }
+                                 
+                                 // Get wish name for certificate
+                                 $itemName = 'Digital Purchase';
+                                 if (isset($deliverable->wish_item) && $deliverable->wish_item->wishname) {
+                                     $itemName = $deliverable->wish_item->wishname;
+                                 } elseif (isset($metadata['wish_name'])) {
+                                     $itemName = $metadata['wish_name'];
+                                 }
+                                 
+                                 // Get certificate URL
+                                 $certificateUrl = $deliverable->certificate_url ?? '#';
+                                 $certificateId = isset($deliverable->uuid) ? substr($deliverable->uuid, 0, 8) : 'N/A';
+                             @endphp
+                             <div style="margin-bottom: 15px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-align: center;">
+                                 <p style="font-family: Arial; font-size: 16px; font-weight: bold; margin: 0 0 8px 0;">🎊 {{ $itemName }}</p>
+                                 <p style="font-family: Arial; font-size: 12px; margin: 0 0 15px 0; opacity: 0.9;">Certificate ID: {{ $certificateId }}...</p>
+                                 <a href="{{ $certificateUrl }}" 
+                                    style="display: inline-block; padding: 12px 25px; background-color: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); transition: all 0.3s;"
+                                    target="_blank">📜 Download Certificate</a>
+                             </div>
+                         @endforeach
+                         
+                         <p style="font-family: Arial; font-size: 12px; color: #999; text-align: center; margin-top: 15px;">
+                             💡 <strong>What's this?</strong> Your certificate serves as proof of authentic purchase and content delivery. Keep it safe for your records!
+                         </p>
                      </td>
                  </tr>
                  @endif

@@ -333,17 +333,23 @@ class StripeWebhookController extends Controller
         // Get payment details to retrieve message and anonymous data
         $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
         
-        // Create deliverable record
+        // Create deliverable record with proper fields
         $deliverable = \App\Models\Deliverable::create([
             'uuid' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
-            'gifter_id' => $metadata->user_id ?? null,
+            'product_id' => (string) ($metadata->wish_id ?? 'unknown'),
+            'item_id' => $metadata->wish_id ?? null,
             'creator_id' => $metadata->creator_id ?? null,
-            'wish_id' => $metadata->wish_id ?? null,
+            'gifter_id' => $metadata->user_id ?? null,
             'price_id' => $metadata->price_id ?? null,
             'payment_intent_id' => $session->payment_intent ?? null,
             'session_id' => $session->id,
             'deliverable_type' => $deliverableType,
+            'product_type' => str_contains($metadata->product_type ?? '', 'subscription') ? 'wish_subscription' : 'wish',
+            'transaction_amount' => ($session->amount_total ?? 0) / 100, // Convert from cents
             'status' => 'pending',
+            'customer_email' => $session->customer_details->email ?? null,
+            'customer_name' => $session->customer_details->name ?? null,
+            'payment_currency' => strtoupper($session->currency ?? 'GBP'),
             'anonymous' => $payment ? $payment->anonymous : false,
             'message' => $payment ? $payment->message : null,
             'metadata' => json_encode([
@@ -590,7 +596,7 @@ class StripeWebhookController extends Controller
             // If wish item has content to deliver for renewals, create deliverable
             if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
                 
-                // Create deliverable record for renewal content delivery
+                // Create deliverable record for renewal content delivery with certificate support
                 $deliverable = \App\Models\Deliverable::create([
                     'uuid' => \Illuminate\Support\Str::uuid(),
                     'product_id' => (string) $wishSubscription->wish_item->id,
@@ -605,13 +611,16 @@ class StripeWebhookController extends Controller
                     'status' => 'pending',
                     'customer_email' => $wishSubscription->guest_email,
                     'customer_name' => $wishSubscription->guest_name,
+                    'payment_currency' => strtoupper($wishSubscription->currency ?? 'GBP'),
                     'anonymous' => $wishSubscription->anonymous ?? false,
                     'message' => 'Subscription renewal content delivery',
                     'metadata' => json_encode([
+                        'certificate' => 'true', // Enable certificate for subscription renewals
                         'wish_id' => $wishSubscription->wish_item->id,
                         'subscription_id' => $wishSubscription->id,
                         'stripe_subscription_id' => $wishSubscription->stripe_id,
                         'subscription_renewal' => true,
+                        'product_type' => 'wish_subscription_renewal',
                         'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                         'invoice_id' => $invoiceData->id,
                         'billing_reason' => $invoiceData->billing_reason ?? 'subscription_cycle',
@@ -729,7 +738,7 @@ class StripeWebhookController extends Controller
             // Check if wish item has content to deliver
             if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
                 
-                // Create deliverable record for tracking
+                // Create deliverable record for tracking with certificate support
                 $deliverable = \App\Models\Deliverable::create([
                     'uuid' => \Illuminate\Support\Str::uuid(),
                     'product_id' => (string) $wishSubscription->wish_item->id,
@@ -744,13 +753,16 @@ class StripeWebhookController extends Controller
                     'status' => 'pending',
                     'customer_email' => $wishSubscription->guest_email,
                     'customer_name' => $wishSubscription->guest_name,
+                    'payment_currency' => strtoupper($wishSubscription->currency ?? 'GBP'),
                     'anonymous' => $wishSubscription->anonymous ?? false,
                     'message' => $wishSubscription->surprise_message,
                     'metadata' => json_encode([
+                        'certificate' => 'true', // Enable certificate for subscription payments
                         'wish_id' => $wishSubscription->wish_item->id,
                         'subscription_id' => $wishSubscription->id,
                         'stripe_subscription_id' => $wishSubscription->stripe_id,
                         'subscription_payment' => true,
+                        'product_type' => 'wish_subscription_content',
                         'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                         'invoice_id' => $invoiceData->id,
                         'billing_reason' => $invoiceData->billing_reason ?? null,

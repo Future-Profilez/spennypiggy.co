@@ -140,12 +140,43 @@ class CheckoutController extends Controller
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
             
+            // Initialize connectedAccountId outside the loop to avoid undefined variable error
+            $connectedAccountId = null;
+            
+            // Find the first valid cart item to get the connected account ID
+            foreach ($getdata as $item) {
+                if ($item->wish_item_id && $item->wish && $item->owner && $item->owner->account_id) {
+                    $connectedAccountId = $item->owner->account_id;
+                    break;
+                }
+            }
+            
+            // If no valid connected account ID found, return error
+            if (!$connectedAccountId) {
+                Log::error('No valid connected account ID found for checkout', [
+                    'creator_id' => $creator_id,
+                    'cart_items' => $getdata->pluck('id', 'wish_item_id'),
+                    'user_id' => Auth::id()
+                ]);
+                return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
+            }
+            
             $lineItems = [];
             $subtotal = 0;
             $transfer_amount = 0;
             $totalShowTaxWithQuantity = 0;
             $totalStoreTax = 0; // Add this to accumulate store tax
             foreach ($getdata as $dd) {
+                // Skip cart items without valid wish relationship
+                if (!$dd->wish_item_id || !$dd->wish) {
+                    Log::warning('Skipping cart item without valid wish', [
+                        'cart_id' => $dd->id,
+                        'wish_item_id' => $dd->wish_item_id,
+                        'user_id' => $dd->user_id
+                    ]);
+                    continue;
+                }
+                
                 if (!$user) {
                     $email = request()->query('email');
                     $user = User::where('email', $email)->first();
@@ -165,8 +196,6 @@ class CheckoutController extends Controller
                 $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
                 $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
                 $taxPercentage = config('app.platform_fee_percentage');
-
-                $connectedAccountId = $getdata[0]->owner->account_id;
 
                 // Step 1: Check if customer already exists in connected account
                 $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
@@ -239,6 +268,16 @@ class CheckoutController extends Controller
                 $showTaxWithQuantity = $showTax * $dd->quantity;
                 $totalShowTaxWithQuantity += $showTaxWithQuantity;
                 $totalStoreTax += $storeTaxWithQuantity; // Accumulate store tax properly
+            }
+
+            // Check if we have any valid line items after processing
+            if (empty($lineItems)) {
+                Log::error('No valid line items found after processing cart', [
+                    'creator_id' => $creator_id,
+                    'cart_items_count' => $getdata->count(),
+                    'user_id' => Auth::id()
+                ]);
+                return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));

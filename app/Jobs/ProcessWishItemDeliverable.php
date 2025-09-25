@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Deliverable;
 use App\Models\WishItem;
+use App\Services\CertificateService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -12,6 +13,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
+use Stripe\StripeClient;
+use Stripe\PaymentIntent;
 
 class ProcessWishItemDeliverable implements ShouldQueue
 {
@@ -64,24 +67,42 @@ class ProcessWishItemDeliverable implements ShouldQueue
             }
 
             // Process based on deliverable type for wish items
+            Log::info("ProcessWishItemDeliverable: Determining processing type", [
+                'deliverable_id' => $this->deliverable->id,
+                'deliverable_type' => $this->deliverable->deliverable_type,
+                'item_has_content_file' => !empty($item->content_file),
+                'item_content_file' => $item->content_file ?? 'null'
+            ]);
+            
             switch ($this->deliverable->deliverable_type) {
                 case 'media_bundle':
+                    Log::info("ProcessWishItemDeliverable: Processing as media_bundle", ['deliverable_id' => $this->deliverable->id]);
                     $this->processMediaBundle($item);
                     break;
                 
                 case 'content_file':
+                    Log::info("ProcessWishItemDeliverable: Processing as content_file", ['deliverable_id' => $this->deliverable->id]);
                     $this->processContentFile($item);
                     break;
                 
                 case 'subscription_content':
+                    Log::info("ProcessWishItemDeliverable: Processing as subscription_content", ['deliverable_id' => $this->deliverable->id]);
                     $this->processSubscriptionContent($item);
                     break;
                 
                 default:
+                    Log::info("ProcessWishItemDeliverable: Processing as default type", [
+                        'deliverable_id' => $this->deliverable->id,
+                        'deliverable_type' => $this->deliverable->deliverable_type,
+                        'will_process_content_file' => !empty($item->content_file)
+                    ]);
+                    
                     // Default to content file if wish item has content_file, otherwise media bundle
                     if ($item->content_file) {
+                        Log::info("ProcessWishItemDeliverable: Calling processContentFile from default", ['deliverable_id' => $this->deliverable->id]);
                         $this->processContentFile($item);
                     } else {
+                        Log::info("ProcessWishItemDeliverable: Calling processMediaBundle from default", ['deliverable_id' => $this->deliverable->id]);
                         $this->processMediaBundle($item);
                     }
             }
@@ -127,22 +148,31 @@ class ProcessWishItemDeliverable implements ShouldQueue
         // Create media bundle (ZIP file with wish item content)
         $bundlePath = $this->createMediaBundle($item);
         
-        // Generate certificate if requested
-        $certificatePath = null;
-        $metadata = json_decode($this->deliverable->metadata, true);
+        // Generate and upload certificate to Uploadcare if requested
+        $certificateUrl = null;
+        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+        
         if (($metadata['certificate'] ?? 'true') === 'true') {
-            $certificatePath = $this->generateCertificate($item);
+            $certificateService = app(CertificateService::class);
+            $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $item);
         }
 
         // Update deliverable with file paths
         $this->deliverable->update([
-            'content_url' => $bundlePath,
-            'certificate_url' => $certificatePath,
+            'deliverable_url' => $bundlePath,
+            // Preserve existing certificate_url if this run didn't generate one
+            'certificate_url' => $certificateUrl ?: $this->deliverable->certificate_url,
             'metadata' => json_encode(array_merge($metadata, [
                 'bundle_created_at' => now()->toISOString(),
-                'bundle_size' => Storage::size($bundlePath)
+                'bundle_size' => Storage::size($bundlePath),
+                'certificate_generated' => !empty($certificateUrl) || !empty($this->deliverable->certificate_url)
             ]))
         ]);
+        
+        // Update Stripe payment intent metadata with certificate URL
+        if (($certificateUrl ?: $this->deliverable->certificate_url) && $this->deliverable->payment_intent_id) {
+            $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url);
+        }
     }
 
     /**
@@ -157,25 +187,47 @@ class ProcessWishItemDeliverable implements ShouldQueue
         // Get the content file URL from Uploadcare
         $contentUrl = $item->content_file_url;
         
-        // Generate certificate if requested
-        $certificatePath = null;
-        $metadata = json_decode($this->deliverable->metadata, true);
+        // Generate and upload certificate to Uploadcare if requested
+        $certificateUrl = null;
+        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+        
+        Log::info("ProcessContentFile: Checking certificate generation", [
+            'deliverable_id' => $this->deliverable->id,
+            'metadata_certificate' => $metadata['certificate'] ?? 'not set',
+            'will_generate' => ($metadata['certificate'] ?? 'true') === 'true'
+        ]);
+        
         if (($metadata['certificate'] ?? 'true') === 'true') {
-            $certificatePath = $this->generateCertificate($item);
+            Log::info("ProcessContentFile: Starting certificate generation", [
+                'deliverable_id' => $this->deliverable->id
+            ]);
+            $certificateService = app(CertificateService::class);
+            $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $item);
+            Log::info("ProcessContentFile: Certificate generation completed", [
+                'deliverable_id' => $this->deliverable->id,
+                'certificate_url' => $certificateUrl ?: 'Failed'
+            ]);
         }
 
         // Update deliverable with file paths
         $this->deliverable->update([
-            'content_url' => $contentUrl,
-            'certificate_url' => $certificatePath,
+            'deliverable_url' => $contentUrl,
+            // Preserve existing certificate_url if this run didn't generate one
+            'certificate_url' => $certificateUrl ?: $this->deliverable->certificate_url,
             'metadata' => json_encode(array_merge($metadata, [
                 'content_file_name' => $item->content_file_name,
                 'content_file_type' => $item->content_file_type,
                 'content_file_uuid' => $item->content_file,
                 'content_processed_at' => now()->toISOString(),
-                'delivery_type' => 'uploadcare_file'
+                'delivery_type' => 'uploadcare_file',
+                'certificate_generated' => !empty($certificateUrl) || !empty($this->deliverable->certificate_url)
             ]))
         ]);
+        
+        // Update Stripe payment intent metadata with certificate URL
+        if (($certificateUrl ?: $this->deliverable->certificate_url) && $this->deliverable->payment_intent_id) {
+            $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url);
+        }
     }
 
     /**
@@ -249,40 +301,6 @@ class ProcessWishItemDeliverable implements ShouldQueue
         }
     }
 
-    /**
-     * Generate certificate for the deliverable
-     */
-    private function generateCertificate($item): string
-    {
-        $certificateName = "certificate_{$this->deliverable->uuid}.pdf";
-        $certificatePath = "deliverables/certificates/{$certificateName}";
-        
-        // Ensure directory exists
-        Storage::makeDirectory('deliverables/certificates');
-
-        // Simple certificate content (in a real implementation, you'd use a PDF library)
-        $certificateContent = $this->generateCertificateContent($item);
-        
-        Storage::put($certificatePath, $certificateContent);
-        
-        return $certificatePath;
-    }
-
-    /**
-     * Generate certificate content
-     */
-    private function generateCertificateContent($item): string
-    {
-        $itemName = $item->wishname ?? $item->name ?? 'Digital Content';
-        
-        return "CERTIFICATE OF AUTHENTICITY\n\n" .
-               "This certifies that the digital content for:\n" .
-               "'{$itemName}'\n\n" .
-               "Created by: {$item->user->name}\n" .
-               "Deliverable ID: {$this->deliverable->uuid}\n" .
-               "Generated on: " . now()->format('Y-m-d H:i:s') . "\n\n" .
-               "This certificate validates the authenticity of the digital deliverable.";
-    }
 
     /**
      * Process subscription content deliverable
@@ -299,7 +317,7 @@ class ProcessWishItemDeliverable implements ShouldQueue
         // Update deliverable with subscription-specific data
         $contentUrl = $item->image_url ?? null;
         $this->deliverable->update([
-            'content_url' => $contentUrl, // Direct link for subscriptions
+            'deliverable_url' => $contentUrl, // Direct link for subscriptions
             'metadata' => json_encode([
                 'subscription_processed_at' => now()->toISOString(),
                 'content_type' => 'subscription_access'
@@ -317,8 +335,9 @@ class ProcessWishItemDeliverable implements ShouldQueue
             'deliverable_id' => $this->deliverable->id
         ]);
         
-        // Generate membership access certificate
-        $certificatePath = $this->generateMembershipCertificate($membership);
+        // Generate and upload membership certificate to Uploadcare
+        $certificateService = app(CertificateService::class);
+        $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $membership);
         
         // Create access URL (could be a direct link to membership benefits page)
         $accessUrl = env('APP_URL') . '/' . $membership->user->username . '/memberships';
@@ -329,87 +348,55 @@ class ProcessWishItemDeliverable implements ShouldQueue
         // Update deliverable with membership-specific data
         $this->deliverable->update([
             'deliverable_url' => $accessUrl, // Link to membership benefits page
-            'content_url' => $certificatePath, // Certificate download link
-            'certificate_url' => $certificatePath,
+            'certificate_url' => $certificateUrl, // Certificate download link from Uploadcare
             'metadata' => json_encode(array_merge($metadata, [
                 'membership_processed_at' => now()->toISOString(),
                 'content_type' => 'membership_access',
                 'access_url' => $accessUrl,
-                'certificate_generated' => !empty($certificatePath),
+                'certificate_generated' => !empty($certificateUrl),
                 'membership_thumbnail' => $membership->perma_link ?? null,
                 'creator_username' => ($membership->user->username ?? 'Unknown')
             ]))
         ]);
+        
+        // Update Stripe payment intent metadata with certificate URL
+        if ($certificateUrl && $this->deliverable->payment_intent_id) {
+            $this->updateStripeMetadata($certificateUrl);
+        }
     }
     
     /**
-     * Generate membership access certificate
+     * Update Stripe payment intent metadata with certificate URL
      */
-    private function generateMembershipCertificate(\App\Models\Membership $membership): ?string
+    private function updateStripeMetadata($certificateUrl)
     {
         try {
-            $certificateName = "membership_certificate_{$this->deliverable->uuid}.pdf";
-            $certificatePath = "deliverables/certificates/{$certificateName}";
+            // Initialize Stripe
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
             
-            // Ensure directory exists
-            Storage::makeDirectory('deliverables/certificates');
+            // Update payment intent metadata
+            \Stripe\PaymentIntent::update($this->deliverable->payment_intent_id, [
+                'metadata' => [
+                    'certificate_url' => $certificateUrl,
+                    'certificate_id' => $this->deliverable->uuid,
+                    'delivery_status' => 'completed',
+                    'updated_at' => now()->toISOString()
+                ]
+            ]);
             
-            // Generate certificate content for membership
-            $certificateContent = $this->generateMembershipCertificateContent($membership);
+            Log::info('Updated Stripe payment intent metadata with certificate', [
+                'payment_intent_id' => $this->deliverable->payment_intent_id,
+                'certificate_url' => $certificateUrl,
+                'deliverable_id' => $this->deliverable->id
+            ]);
             
-            Storage::put($certificatePath, $certificateContent);
-            
-            return Storage::url($certificatePath);
         } catch (\Exception $e) {
-            Log::error("Failed to generate membership certificate", [
-                'membership_id' => $membership->id,
+            Log::error('Failed to update Stripe payment intent metadata', [
+                'payment_intent_id' => $this->deliverable->payment_intent_id,
                 'deliverable_id' => $this->deliverable->id,
+                'certificate_url' => $certificateUrl,
                 'error' => $e->getMessage()
             ]);
-            return null;
         }
-    }
-    
-    /**
-     * Generate membership certificate content
-     */
-    private function generateMembershipCertificateContent(\App\Models\Membership $membership): string
-    {
-        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
-        $membershipLevel = $metadata['membership_level'] ?? ($membership->level ?? 'Member');
-        $creatorName = $membership->user->name ?? 'Creator';
-        $buyerName = $this->deliverable->customer_name ?? ($this->deliverable->gifter->name ?? 'Member');
-        
-        return "🏆 MEMBERSHIP ACCESS CERTIFICATE 🏆\n\n" .
-               "This certifies that:\n" .
-               "'{$buyerName}'\n\n" .
-               "Has successfully subscribed to:\n" .
-               "'{$creatorName}'s {$membershipLevel} Membership'\n\n" .
-               "Membership Benefits Included:\n" .
-               $this->formatMembershipRewards($membership) . "\n\n" .
-               "Certificate ID: {$this->deliverable->uuid}\n" .
-               "Generated on: " . now()->format('Y-m-d H:i:s') . "\n\n" .
-               "Access your membership benefits at:\n" .
-               env('APP_URL') . '/' . $membership->user->username . "/memberships\n\n" .
-               "This certificate validates your membership access and benefits.";
-    }
-    
-    /**
-     * Format membership rewards for certificate
-     */
-    private function formatMembershipRewards(\App\Models\Membership $membership): string
-    {
-        $rewards = json_decode($membership->rewards, true) ?? [];
-        
-        if (empty($rewards)) {
-            return "• Exclusive membership benefits";
-        }
-        
-        $formattedRewards = "";
-        foreach ($rewards as $index => $reward) {
-            $formattedRewards .= "• " . $reward . "\n";
-        }
-        
-        return trim($formattedRewards);
     }
 }
