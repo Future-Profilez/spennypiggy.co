@@ -27,6 +27,7 @@ class  TipGoalsPayment extends Model
         'message',
         'anonymous',
         'twitter_response',
+        'certificate_url',
         'status',
     ];
 

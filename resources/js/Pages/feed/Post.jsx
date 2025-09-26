@@ -19,6 +19,9 @@ export default function Post({item}) {
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
   function posturl (){
+    if(item && item?.for_module == 'public'){
+      return item.image_url
+    }
     // Check if user is the post owner OR post is unlocked
     if(IsloggedIn || (item && item.is_lock === 0)){
       return item.image_url
@@ -98,7 +101,7 @@ export default function Post({item}) {
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
 
-        {item && item.type =='image' ?
+        {item && item.type =='image' || item && item.type == 'support_thanks' ?
           <div className='post-images lazywrap position-relative  w-full' >
               <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
               <LazyLoadImage

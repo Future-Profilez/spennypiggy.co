@@ -10,7 +10,7 @@
                  <tr>
                      <td
                          style=" font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                         Tip Jar <span style="color: #8C52FF">Top Up!</span>💸💰 </td>
+                         Support <span style="color: #8C52FF">Top Up!</span>💸💰 </td>
                  </tr>
                  <tr>
                      <td style="line-height:20px;height:20px;"></td>
@@ -24,7 +24,7 @@
  
                      <td
                          style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        Thanks for topping up {{ $tip->creator->name }}'s Tip Jar with <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($amount, 2) }}</strong>!<br><br>You've just made their day a little brighter 😍🎁
+                        Thanks for supporting {{ $tip->creator->name }}'s Tip Jar with <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($amount, 2) }}</strong>!<br><br>You've just made their day a little brighter 😍🎁
                      </td>
                  </tr>
                  <tr>
@@ -44,7 +44,7 @@
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
                          <a href={{ env('APP_URL') . '/wish-tracker' }}
-                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Send another tip</a>
+                             style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97;  font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Show More Love</a>
                      </td>
                  </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>

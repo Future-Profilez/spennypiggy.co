@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 export default function FeedList() {
   const { posts } = usePage().props;
+  console.log("posts", posts);
   return (
     <div className='max-feed m-auto'>
       <>

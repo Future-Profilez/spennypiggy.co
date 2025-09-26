@@ -110,6 +110,7 @@ class CreatorActivityService
             $posts = Post::where('user_id', $creator->id)
                 ->where('approved', 1)
                 ->where('created_at', '>=', $since)
+                ->where('type', '!=', 'support_thanks') // Exclude automatic support thank you posts
                 ->count();
                 
             $wishes = WishItem::where('user_id', $creator->id)
@@ -145,6 +146,7 @@ class CreatorActivityService
                 'posts' => Post::where('user_id', $creator->id)
                     ->where('approved', 1)
                     ->where('created_at', '>=', $since)
+                    ->where('type', '!=', 'support_thanks') // Exclude automatic support thank you posts
                     ->count(),
                     
                 'wishes' => WishItem::where('user_id', $creator->id)

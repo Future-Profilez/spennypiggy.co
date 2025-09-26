@@ -2415,8 +2415,15 @@ class StripeController extends Controller
                 $userAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
                 $creatorAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
 
+                // Send notification to creator
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
-                TipJarMailToUser::dispatch($tip_pay, $userCurrency->symbol, $userAmount);
+                
+                // Process supporter deliverable, certificate, and email (replaces TipJarMailToUser)
+                \App\Jobs\TipPaymentMailToUser::dispatch($tip_pay, $userCurrency ? $userCurrency->iso : $tip_pay->currency);
+                
+                // Generate thank you post for creator's feed
+                \App\Jobs\CreateThankYouPostJob::dispatch($tip_pay);
+                
                 $tip_pay->save();
 
                 /**************************TIP**JAR**PWA**START****************************************************/

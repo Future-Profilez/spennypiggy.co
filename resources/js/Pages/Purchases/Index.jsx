@@ -161,17 +161,29 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         text={<>🎉 View Exclusive Content</>} >
                                                             <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
                                                     </Popup> */}
-                                                    <li className='flex items-center flex-wrap'>
-                                                        <a target='_blank' href={`${deliverable.deliverable_url}`} 
-                                                        className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
-                                                    </li>
+                                                    {deliverable?.product_type != 'support_payment'  ?
+                                                        <li className='flex items-center flex-wrap'>
+                                                            <a target='_blank' href={`${deliverable.deliverable_url}`} 
+                                                            className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
+                                                        </li> 
+                                                    : ''}
                                                 </li>
-                                                {deliverable?.wish_item?.subscription == 1 ?
+
+
+                                                {deliverable?.product_type == 'support_payment' ?
+                                                    <li className='flex items-center flex-wrap'>
+                                                        <Link href={`/${deliverable?.creator?.username}`} 
+                                                        className="ms-2 text-[15px] text-pink" >🎉 Get Supportors Only Post Access</Link>
+                                                    </li>
+                                                : ''}
+
+                                                {deliverable?.wish_item?.subscription == 1   ?
                                                     <li className='flex items-center flex-wrap'>
                                                         <Link href={`/${deliverable?.creator?.username}`} 
                                                         className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
                                                     </li>
                                                 : ''}
+
                                                 {deliverable.certificate_url && (
                                                     <li className='flex items-center flex-wrap'>
                                                         <a target='_blank' href={deliverable.certificate_url} 

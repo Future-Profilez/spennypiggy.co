@@ -21,11 +21,21 @@ class Post extends Model
         'content',
         'image',
         'ai_generated',
+        'status',
+        'approved',
+        'approved_at',
+        'can_delete_until',
     ];
 
     protected $hidden = [
         'id',
         'user_id',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
+        'can_delete_until' => 'datetime',
+        'ai_generated' => 'boolean',
     ];
 
     protected $appends = [

@@ -485,12 +485,69 @@ class EmailService
         }
     }
 
-    public static function sendTipJarToUser($data, $symbol, $amount)
+    public static function sendTipJarToUser($pay,$symbol,$amount)
     {
         try {
-            Mail::to($data->guest_email)->send(new SendTipJarMailToUser($data, $symbol, $amount));
+            Mail::to($pay->guest_email ?? $pay->user->email)->send(new SendTipJarMailToUser($pay,$symbol,$amount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    /**
+     * Send support payment notification email to supporter
+     */
+    public static function sendSupportPaymentToUser($paymentData, $currency)
+    {
+        try {
+            // Determine recipient email
+            $recipientEmail = null;
+            if (isset($paymentData->user) && $paymentData->user) {
+                $recipientEmail = $paymentData->user->email;
+            } else {
+                $recipientEmail = $paymentData->guest_email;
+            }
+
+            if (empty($recipientEmail)) {
+                Log::error('EmailService::sendSupportPaymentToUser - No recipient email available');
+                return;
+            }
+
+            Log::info('EmailService::sendSupportPaymentToUser - Sending email', [
+                'payment_id' => $paymentData->id,
+                'to' => $recipientEmail,
+                'amount' => $paymentData->amount_subtotal,
+                'currency' => $currency
+            ]);
+
+            // Create currency symbol from currency code
+            $currencySymbols = [
+                'USD' => '$',
+                'GBP' => '£',
+                'EUR' => '€',
+            ];
+            $symbol = $currencySymbols[strtoupper($currency)] ?? strtoupper($currency) . ' ';
+            
+            Mail::to($recipientEmail)->send(new \App\Mail\SupportPaymentToUser($paymentData, $symbol));
+            
+            Log::info('EmailService::sendSupportPaymentToUser - Email sent successfully', [
+                'to' => $recipientEmail,
+                'payment_id' => $paymentData->id
+            ]);
+            
+        } catch (TransportException $e) {
+            Log::error('EmailService::sendSupportPaymentToUser - TransportException', [
+                'error' => $e->getMessage(),
+                'payment_id' => $paymentData->id ?? 'null'
+            ]);
+            AppService::setStatus('email', 0, $e->getMessage());
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('EmailService::sendSupportPaymentToUser - General Exception', [
+                'error' => $e->getMessage(),
+                'payment_id' => $paymentData->id ?? 'null'
+            ]);
+            throw $e;
         }
     }
 

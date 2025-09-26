@@ -135,6 +135,30 @@ class PostsController extends Controller
 
         $post = Post::where('uuid', $uuid)->first();
         if (!empty($post)) {
+            // Check if this is a support_thanks post with deletion protection
+            if ($post->type === 'support_thanks') {
+                // Use can_delete_until if set, otherwise calculate from created_at
+                $canDeleteUntil = $post->can_delete_until ? 
+                    \Carbon\Carbon::parse($post->can_delete_until) : 
+                    $post->created_at->addMonth();
+                
+                if (now()->lt($canDeleteUntil)) {
+                    $daysLeft = max(1, now()->diffInDays($canDeleteUntil));
+                    return response()->json([
+                        'status' => false,
+                        'msg' => "Creator support thank you posts cannot be deleted for 1 month after creation. You can delete this post in {$daysLeft} day(s)."
+                    ]);
+                }
+            }
+            
+            // Verify the user owns this post (security check)
+            if ($post->user_id !== Auth::id()) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "You don't have permission to delete this post."
+                ]);
+            }
+            
             $comments = PostComment::where('post_id', $post->id)->get();
             foreach ($comments as $comment) {
                 PostCommentReplies::where('post_comment_id', $comment->id)->delete();
