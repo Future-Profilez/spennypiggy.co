@@ -32,7 +32,7 @@ function InstantTabSystem({
     const tabs = [
         { id: 'about', label: 'About', icon: '👤' },
         { id: 'wishes', label: 'Wishes', icon: '💝' },
-        { id: 'memberships', label: 'Memberships', icon: '⭐' },
+        // { id: 'memberships', label: 'Memberships', icon: '⭐' },
         { id: 'bills', label: 'Bills', icon: '💳' },
         { id: 'shop', label: 'Shop', icon: '🛍️' },
         { id: 'gifts', label: 'Gifts', icon: '🎁' }

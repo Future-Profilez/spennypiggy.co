@@ -119,7 +119,7 @@ export default function Wishlist(props) {
         content_file_name: item?.content_file_name || "",
         content_file_type: item?.content_file_type || "",
         content_file_size: item?.content_file_size || 0,
-        subscription: item && item.subscription ? item.subscription : "",
+        subscription: item && item.subscription ? item.subscription : 0,
         subscription_period:
             item && item.subscription_period ? item.subscription_period : "",
         repeat_purchase:
@@ -515,8 +515,8 @@ export default function Wishlist(props) {
                                 </li>
                             </ul>
 
-                            <p className="mt-8 pt-6  !border-t ">Choose Wish Type</p>
-                            <div className="wishlistAccordian  mt-3 mb-6">
+                            <p className="mt-8 pt-6 hidden   !border-t ">Choose Wish Type</p>
+                            <div className=" hidden wishlistAccordian  mt-3 mb-6">
                                 <Accordion defaultActiveKey={defaultKey}>
                                     <Accordion.Item eventKey={0}>
                                         <Accordion.Header
