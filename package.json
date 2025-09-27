@@ -42,6 +42,7 @@
         "monitoring:setup": "php artisan migrate:fresh --seed && php artisan web-vitals:setup"
     },
     "devDependencies": {
+        "@rollup/rollup-darwin-arm64": "^4.0.0",
         "@babel/plugin-transform-react-jsx": "^7.27.1",
         "@babel/preset-react": "^7.27.1",
         "@lhci/cli": "^0.12.0",
