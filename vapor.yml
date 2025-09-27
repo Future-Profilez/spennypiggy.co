@@ -17,7 +17,7 @@ environments:
       - "rm -rf node_modules package-lock.json"
       - "npm install --no-audit --no-fund"
       - "rm -rf public/build"
-      - "npm run build:fast"
+      - "npm run build"
       # - "npm run clear"
       - "rm -rf node_modules"   # Linux/macOS
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
@@ -55,7 +55,7 @@ environments:
       - "rm -rf node_modules package-lock.json"
       - "npm install --no-audit --no-fund"
       - "rm -rf public/build" # Linux/mac/OS
-      - "npm run build:fast"
+      - "npm run build"
       # - "npm run clear"
       - "rm -rf node_modules" # Linux/mac/OS
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
