@@ -14,7 +14,7 @@ environments:
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "npm ci --no-audit --no-fund"
+      - "npm install --no-audit --no-fund"
       - "rm -rf public/build"
       - "npm run build:fast"
       # - "npm run clear"
@@ -51,7 +51,7 @@ environments:
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "npm ci --no-audit --no-fund"
+      - "npm install --no-audit --no-fund"
       - "rm -rf public/build" # Linux/mac/OS
       - "npm run build:fast"
       # - "npm run clear"
