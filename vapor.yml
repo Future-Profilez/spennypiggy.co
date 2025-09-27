@@ -14,6 +14,7 @@ environments:
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
+      - "rm -rf node_modules package-lock.json"
       - "npm install --no-audit --no-fund"
       - "rm -rf public/build"
       - "npm run build:fast"
@@ -51,6 +52,7 @@ environments:
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
+      - "rm -rf node_modules package-lock.json"
       - "npm install --no-audit --no-fund"
       - "rm -rf public/build" # Linux/mac/OS
       - "npm run build:fast"
