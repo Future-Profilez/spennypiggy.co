@@ -19,7 +19,7 @@ environments:
       - "npm run build:fast"
       # - "npm run clear"
       - "rm -rf node_modules"   # Linux/macOS
-      - "rm -rf package-lock.json"   # Linux/macOS
+      # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules"  # Windows/
     deploy:
       - "php artisan migrations:fix-state"
@@ -56,7 +56,7 @@ environments:
       - "npm run build:fast"
       # - "npm run clear"
       - "rm -rf node_modules" # Linux/mac/OS
-      - "rm -rf package-lock.json"   # Linux/macOS
+      # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules" # Windows
     deploy:
       - "php artisan migrations:fix-state"
