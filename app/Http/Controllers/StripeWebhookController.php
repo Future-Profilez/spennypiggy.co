@@ -14,6 +14,7 @@ use Stripe\Exception\SignatureVerificationException;
 use App\Services\StripeControl;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
+use App\Models\Deliverable;
 use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\WishItemSubscription;
@@ -461,7 +462,24 @@ class StripeWebhookController extends Controller
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
 
+        // Create deliverable entry for bill subscription renewal (like wish subscriptions)
+        $this->createBillRenewalDeliverable($newSubs);
+
         SendRenewMail::dispatch($array, 'renew', 'bill');
+        
+        // Dispatch content delivery email if bill has content file
+        if (!empty($newSubs->bill->content_file)) {
+            // Get currency symbol for email
+            $currency = \App\Models\Currency::where('iso', strtoupper($newSubs->currency))->first();
+            $currencySymbol = $currency ? $currency->symbol : '£';
+            
+            \App\Jobs\BillContentDeliveryMail::dispatch($newSubs, $currencySymbol);
+            \Log::info('StripeWebhookController: Content delivery email dispatched for bill renewal', [
+                'bill_payment_id' => $newSubs->id,
+                'bill_id' => $newSubs->bills_id,
+                'has_content_file' => !empty($newSubs->bill->content_file)
+            ]);
+        }
 
         Log::info("Bill subscription updated: {$subscriptionId}, Status: {$status}");
     }
@@ -1122,6 +1140,63 @@ class StripeWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error("Error creating £4/month subscription: " . $e->getMessage());
             return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create deliverable entry for bill subscription renewal (like wish subscriptions)
+     */
+    private function createBillRenewalDeliverable($billPayment)
+    {
+        try {
+            $bill = $billPayment->bill;
+            
+            // Create deliverable entry for renewal tracking (similar to wish subscriptions)
+            $deliverable = Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
+                'price_id' => $bill->price_id,
+                'creator_id' => $bill->user_id,
+                'gifter_id' => $billPayment->user_id,
+                'payment_intent_id' => null, // Renewals don't have payment intent
+                'session_id' => $billPayment->session_id,
+                'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
+                'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'metadata' => json_encode([
+                    'product_type' => 'bill',
+                    'bill_id' => $bill->id,
+                    'bill_name' => $bill->name,
+                    'amount' => $billPayment->amount,
+                    'currency' => $billPayment->currency,
+                    'subscription_id' => $billPayment->stripe_id,
+                    'recurring_type' => $billPayment->recurring_type,
+                    'anonymous' => $billPayment->anonymous,
+                    'message' => $billPayment->message,
+                    'guest_email' => $billPayment->guest_email,
+                    'guest_name' => $billPayment->guest_name,
+                    'has_content_file' => !empty($bill->content_file),
+                    'renewal' => true
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            Log::info('Bill renewal deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'bill_payment_id' => $billPayment->id,
+                'bill_id' => $bill->id,
+                'has_content_file' => !empty($bill->content_file)
+            ]);
+
+            return $deliverable;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create bill renewal deliverable', [
+                'error' => $e->getMessage(),
+                'bill_payment_id' => $billPayment->id ?? 'unknown',
+                'bill_id' => $billPayment->bill->id ?? 'unknown'
+            ]);
+            return null;
         }
     }
 }

@@ -96,6 +96,9 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             itemName = deliverable.wish_item.wishname;
             itemImage = deliverable.wish_item.image_url;
             itemprice = deliverable.wish_item.price;
+        } else if (metadata.bill_name) {
+            // For bill items, show the bill name
+            itemName = metadata.bill_name;
         } else if (metadata.item_name) {
             itemName = metadata.item_name;
         }

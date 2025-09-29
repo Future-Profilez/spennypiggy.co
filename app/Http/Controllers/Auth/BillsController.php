@@ -13,6 +13,7 @@ use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
+use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\User;
 use App\Models\UserCart;
@@ -705,9 +706,22 @@ class BillsController extends Controller
                 Helpers::sendNotification($title, $content, $email);
                 /**************************BILL**PWA**ENDS****************************************************/
 
+                // Create deliverable entry for bill payment (like wish subscriptions)
+                $this->createBillDeliverable($bill_pay, $session);
+
                 // Dispatch mail jobs
                 BillPayMail::dispatch($bill_pay, $amountWithVat);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
+                
+                // Dispatch content delivery email if bill has content file
+                if (!empty($bill_pay->bill->content_file)) {
+                    \App\Jobs\BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
+                    \Log::info('BillsController: Content delivery email dispatched for bill payment', [
+                        'bill_payment_id' => $bill_pay->id,
+                        'bill_id' => $bill_pay->bill->id,
+                        'has_content_file' => !empty($bill_pay->bill->content_file)
+                    ]);
+                }
 
                 // Notification setup
                 $username = $bill_pay->anonymous ? "Anonymous user" : ($bill_pay->guest_name ?? "Anonymous user");
@@ -736,6 +750,62 @@ class BillsController extends Controller
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('warning', "Bill is in {$session->payment_status} status.");
         } catch (Exception $e) {
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Create deliverable entry for bill payment (like wish subscriptions)
+     */
+    private function createBillDeliverable($billPayment, $session)
+    {
+        try {
+            $bill = $billPayment->bill;
+            
+            // Create deliverable entry for tracking (similar to wish subscriptions)
+            $deliverable = Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
+                'price_id' => $bill->price_id,
+                'creator_id' => $bill->user_id,
+                'gifter_id' => $billPayment->user_id,
+                'payment_intent_id' => $session->payment_intent ?? null,
+                'session_id' => $session->id,
+                'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
+                'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'metadata' => json_encode([
+                    'product_type' => 'bill',
+                    'bill_id' => $bill->id,
+                    'bill_name' => $bill->name,
+                    'amount' => $billPayment->amount,
+                    'currency' => $billPayment->currency,
+                    'subscription_id' => $billPayment->stripe_id,
+                    'recurring_type' => $billPayment->recurring_type,
+                    'anonymous' => $billPayment->anonymous,
+                    'message' => $billPayment->message,
+                    'guest_email' => $billPayment->guest_email,
+                    'guest_name' => $billPayment->guest_name,
+                    'has_content_file' => !empty($bill->content_file)
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            Log::info('Bill deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'bill_payment_id' => $billPayment->id,
+                'bill_id' => $bill->id,
+                'has_content_file' => !empty($bill->content_file)
+            ]);
+
+            return $deliverable;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create bill deliverable', [
+                'error' => $e->getMessage(),
+                'bill_payment_id' => $billPayment->id ?? 'unknown',
+                'bill_id' => $billPayment->bill->id ?? 'unknown'
+            ]);
+            return null;
         }
     }
 

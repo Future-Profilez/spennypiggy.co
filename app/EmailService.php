@@ -614,4 +614,30 @@ class EmailService
             AppService::setStatus('email', 0, $e->getMessage());
         }
     }
+
+    public static function billContentDelivery($data, $curr)
+    {
+        \Log::info('EmailService::billContentDelivery started', [
+            'bill_payment_id' => $data->id ?? 'null',
+            'bill_id' => $data->bill->id ?? 'null',
+            'currency' => $curr,
+            'recipient_email' => $data->guest_email ?? 'null'
+        ]);
+
+        try {
+            // Use CheckoutToUser mail class for consistency with existing system
+            Mail::to($data->guest_email)->send(new CheckoutToUser($data, $curr));
+            
+            \Log::info('EmailService::billContentDelivery sent successfully', [
+                'bill_payment_id' => $data->id,
+                'recipient_email' => $data->guest_email
+            ]);
+        } catch (TransportException $e) {
+            \Log::error('EmailService::billContentDelivery failed', [
+                'bill_payment_id' => $data->id ?? 'null',
+                'error' => $e->getMessage()
+            ]);
+            AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
 }
