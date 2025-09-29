@@ -161,6 +161,13 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
             }
             
+            // Log the connected account ID for debugging
+            Log::info('Connected account ID found for checkout', [
+                'connected_account_id' => $connectedAccountId,
+                'creator_id' => $creator_id,
+                'owner_username' => $owner->username ?? 'unknown'
+            ]);
+            
             $lineItems = [];
             $subtotal = 0;
             $transfer_amount = 0;
@@ -280,8 +287,6 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-
             // Calculate transfer amount (what creator receives = item amount only, no platform fees)
             // Total charge = item amount + platform fees
             // Transfer amount = item amount (what creator gets)
@@ -313,40 +318,45 @@ class CheckoutController extends Controller
                         'amount' => $transferAmount, // What creator receives (item + VAT)
                     ],
                     'description' => "Spenny Piggy - Content purchase with platform fee",
-                    "metadata" => \App\Helpers::buildStripeMetadata('wishlist', (object) [
-                        'user_id' => Auth::id(),
-                        'owner_id' => $owner->id,
-                        'owner' => $owner,
-                        'uuid' => 'checkout-session-' . time(),
-                        'total_charge_amount' => $totalChargeAmount,
-                    ], [
-                        "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
-                        "payment_type" => "Destination Charges with transfers",
-                        "creator_id" => (string) $owner->id,
-                        "wish_id" => (string) ($getdata[0]->wish->id ?? null), // Primary wish ID for legacy compatibility
-                        "deliverable_type" => "media_bundle",
-                        "certificate" => "true",
-                        "product_type" => "wish_one_off",
-                        "items_count" => (string) count($getdata),
-                        "content_delivery_status" => "delivered",
-                        // Flatten content URLs instead of JSON
-                        ...$this->buildFlattenedContentMetadata($getdata),
-                        // Clean wish items metadata (avoid duplication)
-                        "wish_items_summary" => $this->buildCleanWishItemsMetadata($getdata),
-                    ]),
+                "metadata" => $this->buildSafeMetadata($owner, $getdata, $totalChargeAmount),
                 ],
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
+            // Validate payload before sending to Stripe
+            $validationError = $this->validateStripePayload($payload);
+            if ($validationError) {
+                Log::error("Stripe payload validation failed: " . $validationError);
+                return redirect()->back()->with('error', 'Payment configuration error. Please try again.');
+            }
+            
             try {
-                $sessionCreate = StripeControl::createCheckoutSession($payload); // Removed $connectedAccount parameter
+                // For destination charges with 'on_behalf_of', don't pass connectedAccountId as parameter
+                // The connected account is specified in the payload's payment_intent_data
+                $sessionCreate = StripeControl::createCheckoutSession($payload);
             } catch (\Stripe\Exception\InvalidRequestException $e) {
-                Log::error("Stripe Checkout Error: " . $e->getMessage());
-                Log::error("Stripe Error Details: ", ['error' => $e->getJsonBody()]);
-                return redirect()->back()->with('error', 'Payment failed: ' . $e->getMessage());
+                Log::error("Stripe Checkout Error: " . $e->getMessage(), [
+                    'error_body' => $e->getJsonBody(),
+                    'error_type' => $e->getError()->type ?? 'unknown',
+                    'error_code' => $e->getError()->code ?? 'unknown',
+                    'error_param' => $e->getError()->param ?? 'unknown',
+                    'payload_summary' => [
+                        'mode' => $payload['mode'] ?? 'missing',
+                        'line_items_count' => count($payload['line_items'] ?? []),
+                        'has_payment_intent_data' => isset($payload['payment_intent_data']),
+                        'metadata_count' => isset($payload['payment_intent_data']['metadata']) ? count($payload['payment_intent_data']['metadata']) : 0
+                    ]
+                ]);
+                return redirect()->back()->with('error', 'Payment configuration error. Please contact support if this persists.');
             } catch (\Exception $e) {
-                Log::error("General Checkout Error: " . $e->getMessage());
-                Log::error("Error trace: " . $e->getTraceAsString());
+                Log::error("General Checkout Error: " . $e->getMessage(), [
+                    'error_class' => get_class($e),
+                    'error_trace' => $e->getTraceAsString(),
+                    'payload_mode' => $payload['mode'] ?? 'missing',
+                    'line_items_present' => isset($payload['line_items']),
+                    'creator_id' => $creator_id,
+                    'user_id' => Auth::id()
+                ]);
                 return redirect()->back()->with('error', 'Checkout failed: ' . $e->getMessage());
             }
 
@@ -399,6 +409,209 @@ class CheckoutController extends Controller
         } catch (\Throwable $th) {
             Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
+        }
+    }
+    
+    /**
+     * Validate Stripe payload before sending to API
+     */
+    private function validateStripePayload($payload)
+    {
+        try {
+            // Required fields
+            $requiredFields = ['success_url', 'cancel_url', 'mode', 'line_items'];
+            
+            foreach ($requiredFields as $field) {
+                if (!isset($payload[$field]) || empty($payload[$field])) {
+                    return "Missing required field: {$field}";
+                }
+            }
+            
+            // Validate mode
+            if (!in_array($payload['mode'], ['payment', 'setup', 'subscription'])) {
+                return "Invalid mode: {$payload['mode']}";
+            }
+            
+            // Validate line items
+            if (!is_array($payload['line_items']) || empty($payload['line_items'])) {
+                return "line_items must be a non-empty array";
+            }
+            
+            // Validate each line item
+            foreach ($payload['line_items'] as $index => $lineItem) {
+                if (!is_array($lineItem)) {
+                    return "Line item {$index} must be an array";
+                }
+                
+                if (!isset($lineItem['quantity']) || !is_numeric($lineItem['quantity'])) {
+                    return "Line item {$index} missing valid quantity";
+                }
+                
+                if (!isset($lineItem['price_data']) || !is_array($lineItem['price_data'])) {
+                    return "Line item {$index} missing valid price_data";
+                }
+                
+                $priceData = $lineItem['price_data'];
+                if (!isset($priceData['currency']) || !isset($priceData['product_data']) || !is_array($priceData['product_data'])) {
+                    return "Line item {$index} price_data missing currency or product_data";
+                }
+                
+                if (!isset($priceData['unit_amount']) && !isset($priceData['unit_amount_decimal'])) {
+                    return "Line item {$index} price_data missing unit_amount or unit_amount_decimal";
+                }
+            }
+            
+            // Validate payment_intent_data if present
+            if (isset($payload['payment_intent_data'])) {
+                if (!is_array($payload['payment_intent_data'])) {
+                    return "payment_intent_data must be an array";
+                }
+                
+                // Validate transfer_data if present
+                if (isset($payload['payment_intent_data']['transfer_data'])) {
+                    $transferData = $payload['payment_intent_data']['transfer_data'];
+                    if (!is_array($transferData)) {
+                        return "transfer_data must be an array";
+                    }
+                    if (!isset($transferData['destination']) || empty($transferData['destination'])) {
+                        return "transfer_data missing destination";
+                    }
+                    if (!isset($transferData['amount']) || !is_numeric($transferData['amount'])) {
+                        return "transfer_data missing valid amount";
+                    }
+                }
+                
+                // Validate metadata if present
+                if (isset($payload['payment_intent_data']['metadata'])) {
+                    if (!is_array($payload['payment_intent_data']['metadata'])) {
+                        return "metadata must be an array";
+                    }
+                    
+                    // Check metadata key/value constraints
+                    foreach ($payload['payment_intent_data']['metadata'] as $key => $value) {
+                        if (!is_string($key) || !is_string($value)) {
+                            return "metadata keys and values must be strings";
+                        }
+                        if (strlen($key) > 40) {
+                            return "metadata key '{$key}' exceeds 40 character limit";
+                        }
+                        if (strlen($value) > 500) {
+                            return "metadata value for '{$key}' exceeds 500 character limit";
+                        }
+                    }
+                    
+                    // Check total metadata count (Stripe limit: 50 keys)
+                    if (count($payload['payment_intent_data']['metadata']) > 50) {
+                        return "metadata exceeds 50 key limit";
+                    }
+                }
+            }
+            
+            Log::info('Stripe payload validation passed', [
+                'line_items_count' => count($payload['line_items']),
+                'mode' => $payload['mode'],
+                'has_payment_intent_data' => isset($payload['payment_intent_data']),
+                'has_metadata' => isset($payload['payment_intent_data']['metadata'])
+            ]);
+            
+            return null; // No validation errors
+            
+        } catch (\Exception $e) {
+            Log::error('Error during payload validation: ' . $e->getMessage());
+            return "Payload validation error: " . $e->getMessage();
+        }
+    }
+    
+    /**
+     * Safely build metadata to avoid Stripe configuration errors
+     */
+    private function buildSafeMetadata($owner, $getdata, $totalChargeAmount)
+    {
+        try {
+            // Build base metadata first
+            $baseMetadata = \App\Helpers::buildStripeMetadata('wishlist', (object) [
+                'user_id' => Auth::id(),
+                'owner_id' => $owner->id,
+                'owner' => $owner,
+                'uuid' => 'checkout-session-' . time(),
+                'total_charge_amount' => $totalChargeAmount,
+            ]);
+            
+            // Build additional metadata safely
+            $additionalMetadata = [
+                "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
+                "payment_type" => "Destination Charges with transfers",
+                "creator_id" => (string) $owner->id,
+                "wish_id" => (string) ($getdata[0]->wish->id ?? null), // Primary wish ID for legacy compatibility
+                "deliverable_type" => "media_bundle",
+                "certificate" => "true",
+                "product_type" => "wish_one_off",
+                "items_count" => (string) count($getdata),
+                "content_delivery_status" => "delivered",
+            ];
+            
+            // Safely add flattened content metadata
+            try {
+                $flattenedMetadata = $this->buildFlattenedContentMetadata($getdata);
+                if (is_array($flattenedMetadata)) {
+                    $additionalMetadata = array_merge($additionalMetadata, $flattenedMetadata);
+                } else {
+                    Log::warning('buildFlattenedContentMetadata did not return an array', [
+                        'returned_type' => gettype($flattenedMetadata),
+                        'returned_value' => $flattenedMetadata
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Error building flattened content metadata: ' . $e->getMessage());
+            }
+            
+            // Safely add wish items summary
+            try {
+                $wishItemsSummary = $this->buildCleanWishItemsMetadata($getdata);
+                $additionalMetadata["wish_items_summary"] = $wishItemsSummary;
+            } catch (\Exception $e) {
+                Log::error('Error building wish items summary: ' . $e->getMessage());
+                $additionalMetadata["wish_items_summary"] = json_encode(['error' => 'failed_to_build']);
+            }
+            
+            // Merge all metadata safely
+            $finalMetadata = array_merge($baseMetadata, $additionalMetadata);
+            
+            // Ensure all values are strings and within Stripe limits
+            foreach ($finalMetadata as $key => $value) {
+                if (!is_string($value)) {
+                    $finalMetadata[$key] = (string) $value;
+                }
+                // Stripe metadata values have a 500 character limit
+                if (strlen($finalMetadata[$key]) > 500) {
+                    $finalMetadata[$key] = substr($finalMetadata[$key], 0, 497) . '...';
+                    Log::warning('Metadata value truncated for Stripe limits', [
+                        'key' => $key,
+                        'original_length' => strlen($value)
+                    ]);
+                }
+            }
+            
+            Log::info('Successfully built safe metadata', [
+                'metadata_count' => count($finalMetadata),
+                'keys' => array_keys($finalMetadata)
+            ]);
+            
+            return $finalMetadata;
+            
+        } catch (\Exception $e) {
+            Log::error('Error building safe metadata: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return minimal safe metadata as fallback
+            return [
+                'platform' => 'SpennyPiggy',
+                'payment_type' => 'wishlist_purchase',
+                'creator_id' => (string) $owner->id,
+                'items_count' => (string) count($getdata),
+                'error' => 'metadata_generation_failed'
+            ];
         }
     }
     
@@ -652,7 +865,7 @@ class CheckoutController extends Controller
         $paymentRecord = StripePaymentDetail::where('session_id', $sessionId)->first();
         
         if (Auth::check()) {
-            $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->get();
+            $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with(['wish', 'owner', 'user'])->get();
         } else {
             // For guest checkouts, we need to find the cart items by matching the payment details
             // The $id parameter is the creator_id, not device_id
@@ -661,6 +874,7 @@ class CheckoutController extends Controller
                 $getdata = UserCart::where('owner_id', $paymentRecord->owner_id)
                     ->where('status', 1)
                     ->whereNull('user_id') // Guest cart items
+                    ->with(['wish', 'owner', 'user'])
                     ->get();
             } else {
                 // Fallback: try to find by device_id from session or other means
@@ -669,6 +883,7 @@ class CheckoutController extends Controller
                     $getdata = UserCart::where('device_id', $deviceId)
                         ->where('owner_id', $id)
                         ->where('status', 1)
+                        ->with(['wish', 'owner', 'user'])
                         ->get();
                 } else {
                     $getdata = collect(); // Empty collection
@@ -781,9 +996,9 @@ class CheckoutController extends Controller
                     'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
                     'amount' => $dd->amount,
-                    'message_media' => $dd->wish->reward ?? null,
-                    'media_type' => !empty($dd->wish->reward) ? 'image' : null,
-                    'thank_you_approved' => !empty($dd->wish->reward) ? 1 : 0,
+                    'message_media' => $dd->wish ? ($dd->wish->reward ?? null) : null,
+                    'media_type' => ($dd->wish && !empty($dd->wish->reward)) ? 'image' : null,
+                    'thank_you_approved' => ($dd->wish && !empty($dd->wish->reward)) ? 1 : 0,
                     'tax' => $dd->tax,
                     'quantity' => $dd->quantity,
                     'anonymous' => $dd->anonymous ?? false,
@@ -874,7 +1089,7 @@ class CheckoutController extends Controller
                     if (empty($dd->wish_item_id)) {
                         Log::info("Dispatching SurpriseTweet job");
                         SurpriseTweet::dispatch($payment_data);
-                    } elseif ($dd->wish->subscription == 2) {
+                    } elseif ($dd->wish && $dd->wish->subscription == 2) {
                         Log::info("Dispatching CrowdfundTweet job");
                         CrowdfundTweet::dispatch($payment_data);
                     } else {
@@ -893,7 +1108,7 @@ class CheckoutController extends Controller
                     $userPayment->to_user_id = $dd->owner_id;
                     $userPayment->product_type = 'wish item';
                     $userPayment->amount = $total_amount;
-                    $userPayment->currency = $dd->wish->currency;
+                    $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
                     $userPayment->payment_method = 'stripe';
                     $userPayment->payment_details = json_encode($sessionId, true);
                     $userPayment->paid_at = Carbon::now();

@@ -99,18 +99,15 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         } else if (metadata.item_name) {
             itemName = metadata.item_name;
         }
-        
-        // Border color based on type (sent vs received)
-        const borderClass = type === 'sent' 
-            ? 'border-l-4 border-blue-500' 
-            : 'border-l-4 border-pink-500';
-        
+      
         return (
-            <div key={deliverable.id} className={`bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-pink-400`}>
-                <div className="lg:flex flex-col md:flex-row">
+            <div key={deliverable.id} className={`bg-white rounded-3xl
+             shadow-md overflow-hidden hover:shadow-lg transition-shadow 
+             duration-200 mb-2 md:mb-4 border border-2  ${type === 'sent' ? "!border-pink-400" : "border-mint"} `}>
+                <div className=" flex ">
                     {/* Left side - Image */}
-                    <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-pink-50 flex items-center justify-center p-4">
-                        <span className='absolute top-4 left-4'>
+                    <div className={`hidden sm:flex relative w-full h-auto max-w-[130px] ${type === 'sent' ? "bg-pink-50" : "bg-green-50"}  flex items-center justify-center p-4`}>
+                        <span className='absolute top-2 left-[40px]'>
                             {type === 'sent' ? (
                                 <FiArrowUp size={'30px'} className="mr-2 text-blue-500" />
                             ) : (
@@ -123,93 +120,102 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                 className="h-12 w-12 object-cover rounded-md"
                             />
                         ) : (
-                            <div className="h-12 w-12 flex items-center justify-center bg-pink-50 rounded-md">
+                            <div className="h-12 w-12 flex items-center justify-center  rounded-md">
                                 <FiPackage className="h-12 w-12 text-pink-500" />
                             </div>
                         )}
                     </div>
                     
                     {/* Right side - Details */}
-                    <div className="w-full p-4">
+                    <div className="w-full p-3 md:p-4">
                         <div className="t">
-                                <div className='lg:flex items-center justify-between  mb-2'>
-                                    <div>
-                                        <h3 className="text-xl font-gulfs uppercase text-gray-800"> {itemName} </h3>
-
-                                        <p className="text-normal mt-2 text-gray-600">
-                                            {type === 'sent' ? `To: ${person?.name || 'Unknown'}` : `From: ${person?.name || 'Unknown'}`}
-                                        </p>
-                                        {deliverable.customer_email && (
-                                            <p className="text-normal text-gray-500 break-long-words">
-                                               {deliverable.customer_email}
+                                <div className='mb-2'>
+                                    <div className='flex flex-wrap justify-between'>
+                                        <div>
+                                            <h3 className="text-xl font-gulfs font-normal uppercase text-black"> {itemName} </h3>
+                                            <p className=' text-gray-500 text-sm'>         
+                                                {new Date(deliverable.created_at).toLocaleDateString('en-US', {
+                                                    day: 'numeric',
+                                                    month: 'long',
+                                                    year: 'numeric',
+                                                })} {new Date(deliverable.created_at).toLocaleTimeString('en-US', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    hour12: true
+                                                })}
                                             </p>
-                                        )}
-                                    </div>
-                                    
-                                    <h2 className='text-lg font-bold  '>
-                                        <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
-                                            <p className='me-4 text-lg font-bold'>{formatMultiPrice(deliverable.wish_item?.price || itemprice || deliverable.transaction_amount, (deliverable.wish_item?.currency || deliverable.payment_currency || auth.user.default_currency || global_currency))}</p>
-                                            <span className={`capitalize px-3 py-1 text-sm font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
+                                        </div>
+
+                                        <div className='flex items-center justify-center gap-2 mt-2 '>
+                                            <p className=' text-lg font-bold text-black mb-1 text-start'>{formatMultiPrice(deliverable.wish_item?.price || itemprice || deliverable.transaction_amount, (deliverable.wish_item?.currency || deliverable.payment_currency || auth.user.default_currency || global_currency))}</p>
+                                            <span className={`capitalize px-3 py-1 text-xs font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
                                                 Content {deliverable.status || 'Processing'}
                                             </span>
                                         </div>
-                                        <div className="mt-4">
-                                            <ul>
-                                                <li className='flex items-center flex-wrap'>
-                                                    {/* <Popup space="2 md:p-4"  
-                                                        classes="text-[15px] text-pink ms-2"
-                                                        text={<>🎉 View Exclusive Content</>} >
-                                                            <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
-                                                    </Popup> */}
-                                                    {deliverable?.product_type != 'support_payment'  ?
-                                                        <li className='flex items-center flex-wrap'>
-                                                            <a target='_blank' href={`${deliverable.deliverable_url}`} 
-                                                            className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
-                                                        </li> 
-                                                    : ''}
-                                                </li>
-
-
-                                                {deliverable?.product_type == 'support_payment' ?
-                                                    <li className='flex items-center flex-wrap'>
-                                                        <Link href={`/${deliverable?.creator?.username}`} 
-                                                        className="ms-2 text-[15px] text-pink" >🎉 Get Supportors Only Post Access</Link>
-                                                    </li>
-                                                : ''}
-
-                                                {deliverable?.wish_item?.subscription == 1   ?
-                                                    <li className='flex items-center flex-wrap'>
-                                                        <Link href={`/${deliverable?.creator?.username}`} 
-                                                        className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
-                                                    </li>
-                                                : ''}
-
-                                                {deliverable.certificate_url && (
-                                                    <li className='flex items-center flex-wrap'>
-                                                        <a target='_blank' href={deliverable.certificate_url} 
-                                                        className="ms-2 text-[15px] text-green-600 hover:underline" >📜 Download Certificate</a>
-                                                    </li>
+                                    </div>
+                                    
+                                    <div className=''>
+                                        <div className='lg:flex justify-between'>
+                                            <div>
+                                                <p className="text-normal mt-2 text-gray-500">
+                                                    {type === 'sent' ? 
+                                                    <a target='_blank' className='text-pink' href={deliverable?.creator?.username}>To: {person?.name || 'Unknown'}</a>
+                                                    : `From: ${person?.name || 'Unknown'}`}
+                                                </p>
+                                                {deliverable.customer_email && (
+                                                    <p className="text-normal text-gray-200 break-long-words">
+                                                    {deliverable.customer_email}
+                                                    </p>
                                                 )}
-                                            </ul>
-                                            <p></p>
+                                            </div>
+                                            <div className="mt-2">
+                                                <ul>
+                                                    <li className='flex items-center flex-wrap'>
+                                                        {/* <Popup space="2 md:p-4"  
+                                                            classes="text-[15px] text-pink ms-2"
+                                                            text={<>🎉 View Exclusive Content</>} >
+                                                                <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
+                                                        </Popup> */}
+                                                        {deliverable?.product_type != 'support_payment'  ?
+                                                            <li className='flex items-center flex-wrap'>
+                                                                <a target='_blank' href={`${deliverable.deliverable_url}`} 
+                                                                className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
+                                                            </li> 
+                                                        : ''}
+                                                    </li>
+
+
+                                                    {deliverable?.product_type == 'support_payment' ?
+                                                        <li className='flex items-center flex-wrap'>
+                                                            <Link href={`/${deliverable?.creator?.username}`} 
+                                                            className="ms-2 text-[15px] text-pink" >🎉 Get Supportors Only Post Access</Link>
+                                                        </li>
+                                                    : ''}
+
+                                                    {deliverable?.wish_item?.subscription == 1   ?
+                                                        <li className='flex items-center flex-wrap'>
+                                                            <Link href={`/${deliverable?.creator?.username}`} 
+                                                            className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
+                                                        </li>
+                                                    : ''}
+
+                                                    {deliverable.certificate_url && (
+                                                        <li className='flex items-center flex-wrap'>
+                                                            <a target='_blank' href={deliverable.certificate_url} 
+                                                            className="ms-2 text-[15px] text-green-600 hover:underline" >📜 Download Certificate</a>
+                                                        </li>
+                                                    )}
+                                                </ul>
+                                                <p></p>
+                                            </div>
                                         </div>
 
-                                    </h2>
+                                    </div>
                                 </div>
 
                                 
                                     
-                                <p className='mt-4'>         
-                                    {new Date(deliverable.created_at).toLocaleDateString('en-US', {
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })} {new Date(deliverable.created_at).toLocaleTimeString('en-US', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: true
-                                    })}
-                                </p>
+                               
                                 
                                 {/* <div className="flex justify-between text-sm mt-1">
                                     <span className="text-gray-500">Message:</span>
@@ -309,7 +315,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             <div key={subscription.id} className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
-                    <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-purple-50 flex items-center justify-center p-4">
+                    <div className="relative w-full h-[100px] lg:h-auto lg:min-w-[130px] lg:max-w-[130px] bg-purple-50 flex items-center justify-center p-4">
                         <span className='absolute top-4 left-4'>
                             <FiRefreshCw size={'30px'} className="mr-2 text-purple-500" />
                         </span>
@@ -326,7 +332,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                     </div>
                     
                     {/* Right side - Details */}
-                    <div className="w-full p-4">
+                    <div className="w-full p-2">
                         <div className="lg:flex items-center justify-between mb-2">
                             <div>
                                 <h3 className="text-xl font-gulfs uppercase text-gray-800">
@@ -351,7 +357,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                             </div>
                         </div>
                         
-                        <div className="mt-4">
+                        <div className="mt-1">
                             <div className="flex items-center text-sm text-gray-600 mb-2">
                                 <FiCalendar className="mr-2" />
                                 <span>
@@ -416,14 +422,14 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         >
             <Head title="Purchases" />
             
-            <div className="py-12">
+            <div className="md:py-12 max-w-[900px] m-auto">
                 <div className="containerbox mx-auto ">
                     <div className="py-8">
                         {/* Subscriptions Section */}
                         {activeSubscriptions && activeSubscriptions.length > 0 && (
                             <div className="mb-8">
                                 <div className="md:flex justify-between items-center mb-6">
-                                    <h1 className="text-3xl text-white font-gulfs uppercase">Active Subscriptions</h1>
+                                    <h1 className="text-2xl text-white  capitalize">Active Subscriptions</h1>
                                     <div className="mt-4 md:mt-0">
                                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                             <FiRefreshCw className="mr-1" /> Subscriptions
@@ -438,8 +444,8 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         
                         {/* Purchases Section */}
                         <div className="md:flex justify-between items-center mb-6">
-                            <h1 className="text-3xl text-white font-gulfs uppercase">All Purchases</h1>
-                            <div className="mt-4 md:mt-0 flex space-x-2">
+                            <h1 className="text-2xl text-white  capitalize">All Purchases</h1>
+                            <div className="mt-2 md:mt-0 flex space-x-2">
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     <FiArrowUp className="mr-1" /> Sent
                                 </span>
@@ -449,7 +455,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                             </div>
                         </div>
                         {allDeliverables.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-2 md:space-y-4">
                                 {allDeliverables.map(deliverable => renderDeliverableCard(deliverable))}
                             </div>
                         ) : (
@@ -520,8 +526,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                 </Popup>
             )}
             
-            {/* Toast Notification */}
-            {showToast && (
+            {/* {showToast && (
                 <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
                     showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
                 }`}>
@@ -553,7 +558,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
         </AuthenticatedLayout>
     );
 }
