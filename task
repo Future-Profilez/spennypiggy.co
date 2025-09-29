@@ -30,3 +30,13 @@ STRIPE_WEBHOOK_SECRET
 https://dev.spennypiggy.co/mandatory-status
 MANDATORY_STATUS_WEBHOOK_SECRET
 
+
+
+https://yoursite.com/admin/logs?token=YOUR_TOKEN
+
+
+✅ /api/simple-test - Returns JSON test response  
+✅ /api/test-logs - Returns log contents as JSON (no authentication required)  
+✅ /api/debug/logs - Returns log contents with search and pagination features  
+✅ /api/debug/logs/clear - Clears log files  
+✅ /api/debug/logs/download - Downloads log files  

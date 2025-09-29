@@ -6,6 +6,8 @@ This system automatically generates social media images for support payment than
 
 **✅ UPDATED**: The system now uses the same HTML template design as EditProfile instead of basic PHP GD library drawing.
 
+**🤖 NEW**: Dynamic content generation using OpenAI ChatGPT for personalized thank you posts.
+
 ## Architecture
 
 ### Frontend Components
@@ -21,11 +23,12 @@ This system automatically generates social media images for support payment than
 
 1. **Support Payment Made** → Triggers `CreateThankYouPostJob`
 2. **Data Preparation** → Job extracts creator, supporter, amount, currency, message
-3. **Node.js Generation** → Calls `renderSupportImage.js` with payload using Symfony Process
-4. **HTML Template** → Uses shared `SocialImageTemplates.js` for consistent design
-5. **Render with Puppeteer** → Converts HTML template to PNG with embedded assets
-6. **Upload** → Image uploaded to Uploadcare via cURL
-7. **Post Creation** → Thank-you post created with attached social image
+3. **Dynamic Content** → OpenAI ChatGPT generates personalized title and content
+4. **Node.js Generation** → Calls `renderSupportImage.js` with payload using Symfony Process
+5. **HTML Template** → Uses shared `SocialImageTemplates.js` for consistent design
+6. **Render with Puppeteer** → Converts HTML template to PNG with embedded assets
+7. **Upload** → Image uploaded to Uploadcare via cURL
+8. **Post Creation** → Thank-you post created with dynamic content and attached social image
 
 ## File Structure
 
@@ -72,11 +75,14 @@ The system runs automatically when support payments are made. The `CreateThankYo
 
 ### Manual Testing
 ```bash
-# Test with latest tip payment
+# Test with latest tip payment (includes OpenAI content test)
 php artisan test:support-image
 
 # Test with specific tip payment ID
 php artisan test:support-image 123
+
+# Test only OpenAI content generation
+php artisan test:openai-content
 
 # Test Node.js script directly
 node resources/node/renderSupportImage.js '{"creator":{"name":"Test Creator","username":"test","avatar":"real-uuid"},"supporterName":"Test Supporter","amount":10,"currency":"GBP","isAnonymous":false,"message":"Thanks!"}'
@@ -107,6 +113,34 @@ node resources/node/test-support-image.js
 - **Profile URL** in identical gradient bubble style
 - **Same background**: Pink gradient with white dot overlay (gift boxes already in background)
 - **Clean, centered design** perfect for sharing
+
+## Dynamic Content Generation
+
+### OpenAI Integration
+- **AI-Powered Content**: Uses ChatGPT to generate unique titles and content for each post
+- **Personalized Messages**: Takes into account creator name, supporter name, amount, and support message
+- **Variety**: Each thank you post feels authentic and different
+- **Fallback System**: If OpenAI fails, uses randomized professional templates
+
+### Content Examples
+**AI-Generated Titles:**
+- "✨ Heartfelt Thanks!"
+- "🎊 You Made My Day!"
+- "💝 Amazing Support Received!"
+- "🙌 Incredible Generosity!"
+
+**AI-Generated Content:**
+- Personalized thank you messages
+- Contextual references to the support amount
+- Mentions supporter by name (or "anonymous supporter")
+- Includes relevant emojis and hashtags
+- Incorporates supporter's message when provided
+
+### Fallback Templates
+- **5 Professional Templates**: Randomly selected if AI fails
+- **Placeholder Replacement**: Dynamic insertion of names, amounts, currency
+- **Consistent Quality**: Ensures posts are always professional
+- **Emoji Integration**: Maintains engaging visual appeal
 
 ## Design Specifications
 

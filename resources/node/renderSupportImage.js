@@ -47,7 +47,6 @@ function renderSupportCardNode({ creator, supporterName, amount, currency, isAno
                     <p class="text-white text-2xl font-bold mb-4">Thank you ${displaySupporter}</p>
                     <p class="text-white text-xl mb-4">for making my day special with</p>
                     <p class="text-yellow-300 font-bold text-3xl mb-4">${currency} ${amount}</p>
-                    ${truncatedMessage ? `<p class="text-white text-lg italic mb-4">"${truncatedMessage}"</p>` : ''}
                 </div>
 
                 <div class="bg-gradient-to-r from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md flex items-center justify-center">

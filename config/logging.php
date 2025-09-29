@@ -38,6 +38,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Log Debug Token
+    |--------------------------------------------------------------------------
+    |
+    | This token is used to secure access to log management endpoints in
+    | production. Set this to a secure, random string in your .env file.
+    |
+    */
+
+    'debug_token' => env('LOG_DEBUG_TOKEN'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Log Channels
     |--------------------------------------------------------------------------
     |

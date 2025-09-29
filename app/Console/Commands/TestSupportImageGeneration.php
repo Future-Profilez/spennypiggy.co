@@ -113,6 +113,26 @@ class TestSupportImageGeneration extends Command
         $this->line('');
 
         // Now test the full Laravel job
+        // Test OpenAI content generation
+        if ($this->confirm('🤖 Do you want to test OpenAI content generation?', true)) {
+            $this->info('🎆 Testing OpenAI content generation...');
+            
+            $contentService = new \App\Services\OpenAIContentService();
+            $dynamicContent = $contentService->generateThankYouContent([
+                'creator_name' => $tipPayment->creator->name,
+                'supporter_name' => $tipPayment->user->name ?? ($tipPayment->guest_name ?? 'Anonymous'),
+                'amount' => number_format($tipPayment->amount, 2),
+                'currency' => strtoupper($tipPayment->currency),
+                'is_anonymous' => $tipPayment->anonymous == 1,
+                'message' => $tipPayment->message
+            ]);
+            
+            $this->info('✅ Dynamic content generated:');
+            $this->info('Title: ' . $dynamicContent['title']);
+            $this->info('Content: ' . $dynamicContent['content']);
+            $this->line('');
+        }
+
         if (!$this->confirm('🔄 Do you want to test the full CreateThankYouPostJob?', true)) {
             return 0;
         }

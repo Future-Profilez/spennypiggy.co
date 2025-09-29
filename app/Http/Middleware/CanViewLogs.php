@@ -15,37 +15,73 @@ class CanViewLogs
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // For local development, allow access without authentication (temporary)
+        // For local development, allow access without authentication
         if (config('app.env') === 'local') {
             return $next($request);
         }
         
+        // In production, require LOG_DEBUG_TOKEN
+        if (config('app.env') === 'production') {
+            $envDebugToken = config('logging.debug_token');
+            $requestToken = $request->query('token') ?? $request->header('X-Log-Debug-Token');
+            
+            // Check if LOG_DEBUG_TOKEN is configured
+            if (empty($envDebugToken)) {
+                return $this->denyAccess($request, 'Log debug token not configured.');
+            }
+            
+            // Check if token is provided and matches
+            if (empty($requestToken) || !hash_equals($envDebugToken, $requestToken)) {
+                return $this->denyAccess($request, 'Invalid or missing log debug token.');
+            }
+            
+            return $next($request);
+        }
+        
+        // For staging/development environments, check user authentication and role
         $user = $request->user();
         
         // Check if user is authenticated
         if (!$user) {
-            return redirect()->route('login')->with('error', 'Please login to access logs.');
+            return $this->denyAccess($request, 'Authentication required.');
         }
         
-        // Allow access if user has admin role (assuming role 0 is admin based on search results)
+        // Allow access if user has admin role (role 0)
         if ($user->role === 0) {
             return $next($request);
         }
         
-        // Check for debug token in environment and request
-        $envDebugToken = config('app.debug_token');
-        $requestToken = $request->query('debug_token') ?? $request->header('X-Debug-Token');
+        // Check for debug token as fallback
+        $envDebugToken = config('logging.debug_token');
+        $requestToken = $request->query('token') ?? $request->header('X-Log-Debug-Token');
         
         if (!empty($envDebugToken) && !empty($requestToken) && hash_equals($envDebugToken, $requestToken)) {
             return $next($request);
         }
         
-        // For production debugging, allow any authenticated user if APP_ENV is not production
-        if (config('app.env') !== 'production') {
-            return $next($request);
+        // Deny access
+        return $this->denyAccess($request, 'Admin access or valid debug token required.');
+    }
+    
+    /**
+     * Handle access denial based on request type
+     */
+    private function denyAccess(Request $request, string $message): Response
+    {
+        // For API requests, return JSON error
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'error' => 'Unauthorized',
+                'message' => $message,
+                'status' => 403
+            ], 403);
         }
         
-        // Deny access
-        abort(403, 'Unauthorized to view logs. Admin access or valid debug token required.');
+        // For web requests, redirect to login or show 403
+        if (auth()->guest()) {
+            return redirect()->route('login')->with('error', $message);
+        }
+        
+        abort(403, $message);
     }
 }

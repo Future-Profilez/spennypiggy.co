@@ -257,6 +257,7 @@ class Helpers
         
         switch ($type) {
             case 'support':
+            case 'support_payment':
             case 'tip_jar':
                 $buyer = $paymentModel->user ?? null;
                 $creator = $paymentModel->creator ?? null;

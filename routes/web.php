@@ -41,6 +41,11 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
+// Log Management Interface
+Route::get('/admin/logs', [\App\Http\Controllers\LogManagementController::class, 'index'])
+    ->middleware(['can.view.logs'])
+    ->name('admin.logs.index');
+
 // Debug route to test subscription status
 Route::get('/debug-subscription/{userId}', function ($userId) {
     $user = App\Models\User::find($userId);
@@ -530,8 +535,6 @@ if (config('app.env') !== 'production') {
 require __DIR__.'/test-subscription.php';
 }
 
-// Include log viewer routes (defined separately to bypass Inertia routing)
-require __DIR__.'/logs.php';
 
 // Routes already defined above
 // Removed duplicate purchases route

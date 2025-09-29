@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\TipGoalsPayment;
 use App\Models\Post;
 use App\Services\ThankYouImageService;
+use App\Services\OpenAIContentService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -47,25 +48,32 @@ class CreateThankYouPostJob implements ShouldQueue
                 'tip_payment_id' => $this->tipPayment->id
             ]);
 
-            // Create the thank you post content
+            // Generate dynamic thank you post content using OpenAI
             $supporterName = $this->tipPayment->user->name ?? ($this->tipPayment->guest_name ?? 'A supporter');
             $amount = number_format($this->tipPayment->amount, 2);
             $currency = strtoupper($this->tipPayment->currency);
             $isAnonymous = $this->tipPayment->anonymous == 1;
             $displaySupporterName = $isAnonymous ? 'An anonymous supporter' : $supporterName;
             
-            // Create post title
-            $postTitle = "🎉 Thank You for Your Support! 💝";
+            // Use OpenAI to generate dynamic content
+            $contentService = new OpenAIContentService();
+            $dynamicContent = $contentService->generateThankYouContent([
+                'creator_name' => $this->tipPayment->creator->name,
+                'supporter_name' => $supporterName,
+                'amount' => $amount,
+                'currency' => $currency,
+                'is_anonymous' => $isAnonymous,
+                'message' => $this->tipPayment->message
+            ]);
             
-            // Create post content
-            $postContent = "I just received amazing support of {$currency} {$amount} from {$displaySupporterName}! ";
-            $postContent .= "This means so much to me and helps me continue creating content for you all. ";
+            $postTitle = $dynamicContent['title'];
+            $postContent = $dynamicContent['content'];
             
-            if (!empty($this->tipPayment->message)) {
-                $postContent .= "\n\nTheir message: \"{$this->tipPayment->message}\"";
-            }
-            
-            $postContent .= "\n\nThank you for being part of this journey! 🙏 #SupportCreator #ThankYou #Community";
+            Log::info('Dynamic content generated', [
+                'title' => $postTitle,
+                'content_length' => strlen($postContent),
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
 
             // Create the post with public visibility and auto-approval
             $post = Post::create([
