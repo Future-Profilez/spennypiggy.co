@@ -7,11 +7,11 @@
          <td align="center" style="padding:10px 10px 20px 10px;">
              <table width="100%" cellspacing="0" cellpadding="0" border="0"
                  style="max-width: 296px; width: 100%; text-align: center;">
-                 <tr>
+                 <!-- <tr>
                      <td
                          style=" font-weight: bold; font-size: 24px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
                          Support <span style="color: #8C52FF">Top Up!</span>💸💰 </td>
-                 </tr>
+                 </tr> -->
                  <tr>
                      <td style="line-height:20px;height:20px;"></td>
                  </tr>

@@ -162,199 +162,137 @@ class CreateThankYouPostJob implements ShouldQueue
     }
 
     /**
-     * Generate PNG image and upload to Uploadcare
+     * Generate HTML-based social image using Node.js script (matches EditProfile design)
      */
     private function generateAndUploadPNGImage($data)
     {
         try {
-            Log::info('Generating PNG support social image and uploading to Uploadcare', [
+            Log::info('Generating HTML-based support social image using Node.js', [
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
+
+            // Build Node.js script payload
+            $payload = [
+                'creator' => [
+                    'name' => $data['creator_name'],
+                    'username' => $data['creator_username'],
+                    'avatar' => $data['creator_avatar']
+                ],
+                'supporterName' => $data['supporter_name'],
+                'amount' => (float)$data['amount'],
+                'currency' => $data['currency'],
+                'isAnonymous' => $data['is_anonymous'],
+                'message' => $data['message']
+            ];
+
+            Log::info('Node.js payload prepared', [
+                'payload' => $payload,
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
+
+            // Execute Node.js script using Symfony Process
+            $nodeScriptPath = base_path('resources/node/renderSupportImage.js');
+            $payloadJson = json_encode($payload);
+            
+            if (!file_exists($nodeScriptPath)) {
+                throw new \Exception("Node.js script not found at: {$nodeScriptPath}");
+            }
+
+            $process = new \Symfony\Component\Process\Process([
+                'node',
+                $nodeScriptPath,
+                $payloadJson
+            ]);
+            $process->setTimeout(40); // 40 second timeout
+            
+            Log::info('Executing Node.js script', [
+                'command' => $process->getCommandLine(),
                 'tip_payment_id' => $this->tipPayment->id
             ]);
             
-            // Create a PNG image with gradient background (reverting to colorful design)
-            $image = imagecreatetruecolor(600, 337);
+            $process->run();
             
-            // Enable alpha blending for transparency
-            imagealphablending($image, true);
-            imagesavealpha($image, true);
-            
-            // Create modern gradient background (vibrant pink/magenta)
-            for ($y = 0; $y < 337; $y++) {
-                $ratio = $y / 337;
-                $red = (int)(219 - (50 * $ratio));     // From bright pink to deeper pink
-                $green = (int)(39 + (20 * $ratio));    // Slight variation
-                $blue = (int)(119 + (30 * $ratio));    // Purple tint increase
-                $color = imagecolorallocate($image, $red, $green, $blue);
-                imageline($image, 0, $y, 600, $y, $color);
+            if (!$process->isSuccessful()) {
+                throw new \Exception("Node.js script failed: " . $process->getErrorOutput());
             }
             
-            // Add subtle dot pattern overlay
-            $dotColor = imagecolorallocatealpha($image, 255, 255, 255, 115); // More visible dots
-            for ($x = 20; $x < 600; $x += 35) {
-                for ($y = 20; $y < 337; $y += 35) {
-                    imagefilledellipse($image, $x, $y, 4, 4, $dotColor);
+            $output = $process->getOutput();
+            Log::info('Node.js script output', [
+                'output' => $output,
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
+            
+            // Parse output to find the image path
+            if (preg_match('/IMAGE_PATH:(.+)/', $output, $matches)) {
+                $imagePath = trim($matches[1]);
+                
+                if (!file_exists($imagePath)) {
+                    throw new \Exception("Generated image file not found: {$imagePath}");
                 }
-            }
-            
-            // Define modern color palette
-            $white = imagecolorallocate($image, 255, 255, 255);
-            $brightGold = imagecolorallocate($image, 255, 193, 7);     // Modern gold
-            $brightGreen = imagecolorallocate($image, 76, 175, 80);    // Modern green
-            $lightText = imagecolorallocate($image, 248, 249, 250);    // Slightly off-white for better readability
-            
-            // Get creator and use passed data
-            $creator = $this->tipPayment->creator;
-            
-            // Add subtle decorative elements in corners
-            // Top right sparkle emoji
-            imagestring($image, 4, 520, 25, '✨', $brightGold);
-            imagestring($image, 3, 500, 45, '🎉', $brightGold);
-            
-            // Layout positioning
-            $avatarX = 170;  // Moved slightly more to center
-            $avatarY = 120;
-            $textStartX = 280;  // Text starts after avatar
-            
-            // Check if creator has a valid avatar
-            $hasAvatar = !empty($data['creator_avatar']);
-            
-            // Add creator avatar if available (circular with modern styling)
-            if ($hasAvatar) {
-                try {
-                    // Download and add creator avatar
-                    $avatarUrl = "https://ucarecdn.com/{$data['creator_avatar']}/-/crop/1:1/-/preview/120x120/";
-                    $avatarData = @file_get_contents($avatarUrl);
-                    
-                    if ($avatarData) {
-                        $avatarImage = @imagecreatefromstring($avatarData);
-                        if ($avatarImage) {
-                            // Create modern green circle border (thicker)
-                            imagefilledellipse($image, $avatarX, $avatarY, 106, 106, $brightGreen);
-                            
-                            // Resize avatar to 96x96 for better quality
-                            $avatarResized = imagecreatetruecolor(96, 96);
-                            imagecopyresampled($avatarResized, $avatarImage, 0, 0, 0, 0, 96, 96, imagesx($avatarImage), imagesy($avatarImage));
-                            
-                            // Create circular mask for avatar
-                            $avatarMask = imagecreatetruecolor(96, 96);
-                            $transparent = imagecolorallocatealpha($avatarMask, 0, 0, 0, 127);
-                            imagefill($avatarMask, 0, 0, $transparent);
-                            $circleColor = imagecolorallocate($avatarMask, 255, 255, 255);
-                            imagefilledellipse($avatarMask, 48, 48, 96, 96, $circleColor);
-                            
-                            // Apply mask to avatar
-                            imagealphablending($avatarResized, false);
-                            imagesavealpha($avatarResized, true);
-                            for ($x = 0; $x < 96; $x++) {
-                                for ($y = 0; $y < 96; $y++) {
-                                    $maskColor = imagecolorat($avatarMask, $x, $y);
-                                    if (($maskColor >> 16) & 0xFF < 128) {
-                                        imagesetpixel($avatarResized, $x, $y, imagecolorallocatealpha($avatarResized, 0, 0, 0, 127));
-                                    }
-                                }
-                            }
-                            
-                            // Place circular avatar
-                            imagecopy($image, $avatarResized, $avatarX - 48, $avatarY - 48, 0, 0, 96, 96);
-                            
-                            imagedestroy($avatarImage);
-                            imagedestroy($avatarResized);
-                            imagedestroy($avatarMask);
-                        }
+                
+                Log::info('Image generated successfully', [
+                    'image_path' => $imagePath,
+                    'file_size' => filesize($imagePath),
+                    'tip_payment_id' => $this->tipPayment->id
+                ]);
+                
+                // Upload to Uploadcare
+                $uploadcareApiKey = env('UPLOADCARE_PUBLIC_KEY');
+                if (!$uploadcareApiKey) {
+                    Log::warning('Uploadcare public key not configured, skipping image upload');
+                    @unlink($imagePath);
+                    return null;
+                }
+                
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, 'https://upload.uploadcare.com/base/');
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, [
+                    'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
+                    'file' => new \CURLFile($imagePath, 'image/png', 'support-social.png')
+                ]);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                
+                // Clean up temp file
+                @unlink($imagePath);
+                
+                if ($response && $httpCode === 200) {
+                    $responseData = json_decode($response, true);
+                    if (isset($responseData['file'])) {
+                        $imageUuid = $responseData['file'];
+                        Log::info('HTML-based support social image generated successfully', [
+                            'image_uuid' => $imageUuid,
+                            'tip_payment_id' => $this->tipPayment->id
+                        ]);
+                        return $imageUuid;
                     }
-                } catch (Exception $e) {
-                    Log::warning('Could not load creator avatar for support image', [
-                        'creator_id' => $creator->id,
-                        'avatar_url' => $avatarUrl ?? 'null',
-                        'error' => $e->getMessage()
-                    ]);
                 }
-            }
-            
-            // Modern typography and layout
-            // Creator name (large, bold, uppercase, better positioned)
-            $creatorNameY = 90;
-            imagestring($image, 5, $textStartX, $creatorNameY, strtoupper($data['creator_name']), $white);
-            
-            // Support message (clean, modern)
-            imagestring($image, 4, $textStartX, $creatorNameY + 35, 'received support from', $lightText);
-            
-            // Supporter name (bright green, prominent)
-            imagestring($image, 5, $textStartX, $creatorNameY + 65, $data['supporter_name'], $brightGreen);
-            
-            // Amount (bright gold, large and prominent)
-            imagestring($image, 5, $textStartX, $creatorNameY + 100, $data['currency'] . ' ' . $data['amount'], $brightGold);
-            
-            // Modern thank you message (better positioned)
-            $thankYouY = 240;
-            imagestring($image, 4, 50, $thankYouY, 'Thank you for supporting my creative journey! 🙏', $white);
-            
-            // Website link with modern styling
-            $linkY = 275;
-            $linkHeight = 35;
-            $linkBg = imagecolorallocatealpha($image, 0, 0, 0, 60); // Semi-transparent black for modern look
-            imagefilledrectangle($image, 40, $linkY, 520, $linkY + $linkHeight, $linkBg);
-            
-            $websiteText = 'https://spennypiggy.co/' . $data['creator_username'];
-            $textWidth = strlen($websiteText) * 8; // Better approximation
-            $linkTextX = (600 - $textWidth) / 2; // Center the text
-            imagestring($image, 4, $linkTextX, $linkY + 10, $websiteText, $white);
-            
-            // Save as PNG
-            $tempPngFile = tempnam(sys_get_temp_dir(), 'support_social_') . '.png';
-            imagepng($image, $tempPngFile, 9); // High compression
-            imagedestroy($image);
-            
-            // Use Uploadcare API to upload the PNG file
-            $uploadcareApiKey = env('UPLOADCARE_PUBLIC_KEY');
-            if (!$uploadcareApiKey) {
-                Log::warning('Uploadcare public key not configured, skipping image upload');
-                @unlink($tempPngFile);
+                
+                Log::warning('Uploadcare API response', [
+                    'response' => $response,
+                    'http_code' => $httpCode,
+                    'tip_payment_id' => $this->tipPayment->id
+                ]);
+                
                 return null;
+                
+            } else {
+                throw new \Exception('No image path found in Node.js script output');
             }
-            
-            // Upload using Uploadcare Upload API
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, 'https://upload.uploadcare.com/base/');
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, [
-                'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
-                'file' => new \CURLFile($tempPngFile, 'image/png', 'support-social.png')
-            ]);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            
-            // Clean up temp files
-            @unlink($tempPngFile);
-            
-            if ($response && $httpCode === 200) {
-                $data = json_decode($response, true);
-                if (isset($data['file'])) {
-                    $imageUuid = $data['file'];
-                    Log::info('Support social image uploaded successfully', [
-                        'image_uuid' => $imageUuid,
-                        'tip_payment_id' => $this->tipPayment->id
-                    ]);
-                    return $imageUuid;
-                }
-            }
-            
-            Log::warning('Uploadcare API response', [
-                'response' => $response,
-                'http_code' => $httpCode
-            ]);
-            
-            return null;
             
         } catch (\Exception $e) {
-            Log::error('Failed to upload SVG to Uploadcare', [
+            Log::error('Failed to generate HTML-based support social image', [
                 'error' => $e->getMessage(),
-                'tip_payment_id' => $this->tipPayment->id
+                'tip_payment_id' => $this->tipPayment->id,
+                'trace' => $e->getTraceAsString()
             ]);
+            
+            // Return null to fall back to text-only post
             return null;
         }
     }

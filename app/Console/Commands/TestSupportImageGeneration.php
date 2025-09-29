@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\TipGoalsPayment;
 use App\Jobs\CreateThankYouPostJob;
+use Symfony\Component\Process\Process;
 
 class TestSupportImageGeneration extends Command
 {
@@ -50,6 +51,71 @@ class TestSupportImageGeneration extends Command
         $this->info("- Amount: {$tipPayment->currency} {$tipPayment->amount}");
         $this->info("- Message: " . ($tipPayment->message ?? 'None'));
         $this->line('');
+
+        // First test the Node.js script directly
+        $this->info('🧪 Testing Node.js script directly...');
+        
+        $payload = [
+            'creator' => [
+                'name' => $tipPayment->creator->name,
+                'username' => $tipPayment->creator->username,
+                'avatar' => $tipPayment->creator->avatar
+            ],
+            'supporterName' => $tipPayment->user->name ?? ($tipPayment->guest_name ?? 'Anonymous'),
+            'amount' => (float)$tipPayment->amount,
+            'currency' => $tipPayment->currency,
+            'isAnonymous' => $tipPayment->anonymous == 1,
+            'message' => $tipPayment->message
+        ];
+
+        $nodeScriptPath = base_path('resources/node/renderSupportImage.js');
+        $payloadJson = json_encode($payload);
+        
+        if (!file_exists($nodeScriptPath)) {
+            $this->error("❌ Node.js script not found at: {$nodeScriptPath}");
+            return 1;
+        }
+
+        $process = new Process([
+            'node',
+            $nodeScriptPath,
+            $payloadJson
+        ]);
+        $process->setTimeout(40);
+        
+        $this->info('🚀 Running Node.js script...');
+        $process->run();
+        
+        if (!$process->isSuccessful()) {
+            $this->error('❌ Node.js script failed:');
+            $this->error($process->getErrorOutput());
+            return 1;
+        }
+        
+        $output = $process->getOutput();
+        $this->info('✅ Node.js script completed successfully!');
+        $this->line('Output:');
+        $this->line($output);
+        
+        // Check if image was generated
+        if (preg_match('/IMAGE_PATH:(.+)/', $output, $matches)) {
+            $imagePath = trim($matches[1]);
+            if (file_exists($imagePath)) {
+                $fileSize = filesize($imagePath);
+                $this->info("📁 Image file generated: {$imagePath} ({$fileSize} bytes)");
+            } else {
+                $this->error("❌ Image file not found at: {$imagePath}");
+            }
+        } else {
+            $this->error('❌ No image path found in output');
+        }
+
+        $this->line('');
+
+        // Now test the full Laravel job
+        if (!$this->confirm('🔄 Do you want to test the full CreateThankYouPostJob?', true)) {
+            return 0;
+        }
 
         $this->info('🚀 Dispatching CreateThankYouPostJob...');
         

@@ -73,5 +73,6 @@ class Kernel extends HttpKernel
         'mustHaveToVerify' => \App\Http\Middleware\UserEmailVerify::class,
         'mustCompletedStripeIdentity' => \App\Http\Middleware\CheckStripeIdentityVerification::class,
         'mustCompletedCardVerification' => \App\Http\Middleware\CheckGifterCardVerification::class,
+        'can.view.logs' => \App\Http\Middleware\CanViewLogs::class,
     ];
 }

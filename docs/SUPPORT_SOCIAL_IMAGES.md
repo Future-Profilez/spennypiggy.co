@@ -2,7 +2,9 @@
 
 ## Overview
 
-This system automatically generates social media images for support payment thank-you posts, using the same HTML-based design approach as the EditProfile component. When someone makes a support payment, a beautiful social image is automatically created and attached to the thank-you post.
+This system automatically generates social media images for support payment thank-you posts, using the exact same HTML-based design approach as the EditProfile component. When someone makes a support payment, a beautiful social image is automatically created and attached to the thank-you post.
+
+**✅ UPDATED**: The system now uses the same HTML template design as EditProfile instead of basic PHP GD library drawing.
 
 ## Architecture
 
@@ -19,10 +21,11 @@ This system automatically generates social media images for support payment than
 
 1. **Support Payment Made** → Triggers `CreateThankYouPostJob`
 2. **Data Preparation** → Job extracts creator, supporter, amount, currency, message
-3. **Node.js Generation** → Calls `renderSupportImage.js` with payload
-4. **HTML → Image** → Puppeteer renders HTML template as PNG
-5. **Upload** → Image uploaded to Uploadcare
-6. **Post Creation** → Thank-you post created with attached social image
+3. **Node.js Generation** → Calls `renderSupportImage.js` with payload using Symfony Process
+4. **HTML Template** → Uses shared `SocialImageTemplates.js` for consistent design
+5. **Render with Puppeteer** → Converts HTML template to PNG with embedded assets
+6. **Upload** → Image uploaded to Uploadcare via cURL
+7. **Post Creation** → Thank-you post created with attached social image
 
 ## File Structure
 
@@ -69,10 +72,16 @@ The system runs automatically when support payments are made. The `CreateThankYo
 
 ### Manual Testing
 ```bash
-# Test Node.js script directly
-node resources/node/renderSupportImage.js '{"creator":{"name":"Test Creator","username":"test","avatar":"uuid"},"supporterName":"Test Supporter","amount":10,"currency":"GBP","isAnonymous":false,"message":"Thanks!"}'
+# Test with latest tip payment
+php artisan test:support-image
 
-# Run test suite
+# Test with specific tip payment ID
+php artisan test:support-image 123
+
+# Test Node.js script directly
+node resources/node/renderSupportImage.js '{"creator":{"name":"Test Creator","username":"test","avatar":"real-uuid"},"supporterName":"Test Supporter","amount":10,"currency":"GBP","isAnonymous":false,"message":"Thanks!"}'
+
+# Run Node.js test suite
 node resources/node/test-support-image.js
 ```
 
@@ -86,13 +95,18 @@ node resources/node/test-support-image.js
 - Decorative emojis: ✨⭐💰
 
 ### Support Template (Thank You Posts)
-- Same visual design foundation
-- Creator avatar and name (consistent branding)
-- "🎉 THANK YOU! 🎉" heading
-- Supporter name and tip amount highlighted
-- Optional support message in bubble
-- Profile URL for continued engagement
-- Celebratory emojis: 🎉💝✨🙏
+- **Same background and styling** as EditProfile template
+- **Centered layout** optimized for thank you messaging
+- **No creator avatar/name** - focuses on thanking the supporter
+- **Gratitude-focused content**: 
+  - "🎉 THANK YOU! 🎉" prominent heading
+  - "Thank you [Supporter Name]" personalized message
+  - "for making my day special with" connecting text
+  - Amount highlighted in bright yellow/gold
+  - Optional support message in italics
+- **Profile URL** in identical gradient bubble style
+- **Same background**: Pink gradient with white dot overlay (gift boxes already in background)
+- **Clean, centered design** perfect for sharing
 
 ## Design Specifications
 

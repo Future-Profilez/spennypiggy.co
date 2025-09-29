@@ -59,8 +59,15 @@ export default defineConfig({
     
     // Optimize dev server
     server: {
+        // host: '0.0.0.0',
+        // port: 5173,
+        cors: true,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+        },
         hmr: {
-            overlay: false
+            overlay: false,
+            port: 5173
         } 
     },
     

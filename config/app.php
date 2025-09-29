@@ -205,6 +205,19 @@ return [
 
     'administration_fee' => 1,
     'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 20),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Debug Token for Production Log Access
+    |--------------------------------------------------------------------------
+    |
+    | This token can be used to access log viewer in production environment.
+    | Add LOG_DEBUG_TOKEN to your .env file with a secure random string.
+    | Access logs with: /debug/logs?debug_token=YOUR_TOKEN
+    |
+    */
+    
+    'debug_token' => env('LOG_DEBUG_TOKEN'),
 
     // 'surprise_tax' => 10,
     // 'crowd_tax' => 10,

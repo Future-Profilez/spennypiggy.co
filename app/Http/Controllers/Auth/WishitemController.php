@@ -968,7 +968,6 @@ class WishitemController extends Controller
         );
 
         if ($cart) {
-            
             // $cart->quantity      = $cart->quantity + 1;
             $cart->quantity      = 1;
             $cart->status        = 1; // Ensure it stays active

@@ -44,6 +44,7 @@ export function renderProfileCard({ avatarUid, name, username }) {
 
 /**
  * Generate HTML template for support payment social image
+ * Uses the same visual design foundation as the EditProfile component
  * @param {Object} params - Support payment parameters
  * @param {Object} params.creator - Creator object with name, username, avatar
  * @param {string} params.supporterName - Supporter display name
@@ -54,32 +55,25 @@ export function renderProfileCard({ avatarUid, name, username }) {
  * @returns {string} HTML template string
  */
 export function renderSupportCard({ creator, supporterName, amount, currency, isAnonymous, message }) {
-    const displaySupporter = isAnonymous ? "An anonymous supporter" : supporterName;
-    const avatarUid = creator.avatar;
+    const displaySupporter = isAnonymous ? "Anonymous Supporter" : supporterName;
+    const truncatedMessage = message && message.length > 80 ? message.substring(0, 77) + '...' : message;
     
     return `
-        <div id="card-to-capture" class="dot-pattern relative my-[300px] flex items-center p-6 w-[600px] h-[337.5px] text-white shadow-2xl">
+        <div id="card-to-capture" class="dot-pattern relative flex items-center justify-center p-6 w-[600px] h-[337.5px] text-white shadow-2xl">
             <img src="${socialbg}" alt="Background" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
 
             <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
-            <div class="absolute top-4 left-6 text-yellow-300 text-4xl">🎉</div>
-            <div class="absolute bottom-6 right-8 text-pink-300 text-3xl">💝</div>
-            <div class="absolute top-4 right-6 text-cyan-300 text-3xl">✨</div>
-            <div class="absolute bottom-6 left-8 text-green-300 text-2xl">🙏</div>
 
             <div class="inner-image w-full text-center">
                 <div class="mb-6">
-                    <h2 class="text-4xl font-bold text-yellow-300 mb-4">🎉 THANK YOU! 🎉</h2>
-                    <p class="text-white text-2xl font-bold mb-2">${displaySupporter}</p>
-                    <p class="text-white text-xl mb-4">just tipped <span class="text-yellow-300 font-bold">${currency} ${amount}</span></p>
+                    <h1 class="text-4xl font-bold text-yellow-300 mb-4">🎉 THANK YOU! 🎉</h1>
+                    <p class="text-white text-2xl font-bold mb-4">Thank you ${displaySupporter}</p>
+                    <p class="text-white text-xl mb-4">for making my day special with</p>
+                    <p class="text-yellow-300 font-bold text-3xl mb-4">${currency} ${amount}</p>
+                    ${truncatedMessage ? `<p class="text-white text-lg italic mb-4">"${truncatedMessage}"</p>` : ''}
                 </div>
 
-                <div class="mb-6">
-                    <p class="text-white text-lg font-semibold mb-2">🚀 Supporting Creative Dreams</p>
-                    <p class="text-white text-base opacity-90">Every contribution helps bring amazing content to life!</p>
-                </div>
-
-                <div class="bg-gradient-to-r from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[18px] shadow-md flex items-center justify-center">
+                <div class="bg-gradient-to-r from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md flex items-center justify-center">
                     https://spennypiggy.co/${creator.username}
                 </div>
             </div>

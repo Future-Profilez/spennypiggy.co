@@ -153,7 +153,6 @@ Route::get('/giftstore', function () {
 //     return response()->json(['status' => 'done', 'message' => $a], 200);
 // })->name('test.stripe');
 
-Route::post('subscription-update-status', [StripeController::class, 'subscriptionUpdateStatus']);
 
 Route::get('create-product-for-creator-and-gifter', [StripeWebhookController::class, 'CreateProductForCreatorAndGifter']);
 
@@ -528,8 +527,11 @@ require __DIR__.'/test-date.php';
 
 // Test subscription routes (remove in production)
 if (config('app.env') !== 'production') {
-    require __DIR__ . '/test-subscription.php';
+require __DIR__.'/test-subscription.php';
 }
+
+// Include log viewer routes (defined separately to bypass Inertia routing)
+require __DIR__.'/logs.php';
 
 // Routes already defined above
 // Removed duplicate purchases route
