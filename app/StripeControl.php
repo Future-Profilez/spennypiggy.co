@@ -37,7 +37,25 @@ class StripeControl
     {
         try {
             if (empty(self::$client)) {
-                self::$client = new StripeClient(env("STRIPE_SECRET_KEY"));
+                $apiKey = env("STRIPE_SECRET_KEY");
+                
+                // If env() returns null, try to get from config
+                if (is_null($apiKey)) {
+                    $apiKey = config('services.stripe.secret', env("STRIPE_SECRET_KEY"));
+                }
+                
+                // If still null or not a string, log debug info and throw exception
+                if (empty($apiKey) || !is_string($apiKey)) {
+                    Log::error("Stripe API key configuration issue", [
+                        'env_value' => var_export(env("STRIPE_SECRET_KEY"), true),
+                        'config_value' => var_export(config('services.stripe.secret'), true),
+                        'final_key_type' => gettype($apiKey),
+                        'final_key_empty' => empty($apiKey)
+                    ]);
+                    throw new Exception("Stripe API key is not properly configured. Please check STRIPE_SECRET_KEY environment variable. Debug info logged.");
+                }
+                
+                self::$client = new StripeClient($apiKey);
             }
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());

@@ -12,6 +12,8 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Exception;
 
 class CreateThankYouPostJob implements ShouldQueue
 {
@@ -37,7 +39,11 @@ class CreateThankYouPostJob implements ShouldQueue
                 'tip_payment_id' => $this->tipPayment->id,
                 'tip_payment_uuid' => $this->tipPayment->uuid,
                 'creator_id' => $this->tipPayment->creator_id,
-                'amount' => $this->tipPayment->amount
+                'amount' => $this->tipPayment->amount,
+                'execution_context' => 'queue_worker',
+                'process_id' => getmypid(),
+                'memory_usage' => memory_get_usage(true),
+                'uploadcare_key_available' => !empty(config('services.uploadcare.public', env('UPLOADCARE_PUBLIC_KEY')))
             ]);
 
             // Generate social thank you image similar to EditProfile component
@@ -48,47 +54,84 @@ class CreateThankYouPostJob implements ShouldQueue
                 'tip_payment_id' => $this->tipPayment->id
             ]);
 
-            // Generate dynamic thank you post content using OpenAI
+            // Generate dynamic thank you post content using OpenAI (with error handling)
             $supporterName = $this->tipPayment->user->name ?? ($this->tipPayment->guest_name ?? 'A supporter');
             $amount = number_format($this->tipPayment->amount, 2);
             $currency = strtoupper($this->tipPayment->currency);
             $isAnonymous = $this->tipPayment->anonymous == 1;
             $displaySupporterName = $isAnonymous ? 'An anonymous supporter' : $supporterName;
             
-            // Use OpenAI to generate dynamic content
-            $contentService = new OpenAIContentService();
-            $dynamicContent = $contentService->generateThankYouContent([
-                'creator_name' => $this->tipPayment->creator->name,
-                'supporter_name' => $supporterName,
-                'amount' => $amount,
-                'currency' => $currency,
-                'is_anonymous' => $isAnonymous,
-                'message' => $this->tipPayment->message
-            ]);
+            // Use OpenAI to generate dynamic content with proper error handling
+            $postTitle = "💝 Amazing Support Received!";
+            $postContent = "Just received incredible support of {$currency} {$amount} from {$displaySupporterName}! This means the world to me and helps me keep creating content you love. Thank you for being part of this journey! 🙏 #Grateful #Community";
             
-            $postTitle = $dynamicContent['title'];
-            $postContent = $dynamicContent['content'];
+            try {
+                $contentService = new OpenAIContentService();
+                $dynamicContent = $contentService->generateThankYouContent([
+                    'creator_name' => $this->tipPayment->creator->name,
+                    'supporter_name' => $supporterName,
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'is_anonymous' => $isAnonymous,
+                    'message' => $this->tipPayment->message
+                ]);
+                
+                // Only use AI content if it was successful
+                if (!empty($dynamicContent['title']) && !empty($dynamicContent['content'])) {
+                    $postTitle = $dynamicContent['title'];
+                    $postContent = $dynamicContent['content'];
+                    Log::info('AI-generated content used', [
+                        'title' => $postTitle,
+                        'content_length' => strlen($postContent),
+                        'tip_payment_id' => $this->tipPayment->id
+                    ]);
+                } else {
+                    Log::warning('AI content was empty, using fallback', [
+                        'tip_payment_id' => $this->tipPayment->id
+                    ]);
+                }
+            } catch (\Exception $aiException) {
+                Log::warning('AI content generation failed, using fallback', [
+                    'error' => $aiException->getMessage(),
+                    'tip_payment_id' => $this->tipPayment->id
+                ]);
+            }
             
-            Log::info('Dynamic content generated', [
+            Log::info('Final content prepared', [
                 'title' => $postTitle,
                 'content_length' => strlen($postContent),
                 'tip_payment_id' => $this->tipPayment->id
             ]);
 
             // Create the post with public visibility and auto-approval
-            $post = Post::create([
+            $postData = [
                 'user_id' => $this->tipPayment->creator_id,
                 'type' => 'support_thanks', // Custom type for support thank you posts
                 'for_module' => 'public', // 'public' for public visibility as per requirements
                 'title' => $postTitle,
                 'content' => $postContent,
-                'image' => $imageUuid, // Store the Uploadcare UUID
                 'ai_generated' => false,
                 'status' => 1, // Use numeric status (1 = approved)
                 'approved' => 1, // Also set the approved field
                 'approved_at' => now(), // Set approval timestamp
                 'can_delete_until' => now()->addMonth(), // Allow deletion for 1 month
-            ]);
+            ];
+            
+            // Only add image if we have a valid UUID (avoid storing null)
+            if (!empty($imageUuid) && is_string($imageUuid)) {
+                $postData['image'] = $imageUuid;
+                Log::info('Post will include image', [
+                    'image_uuid' => $imageUuid,
+                    'tip_payment_id' => $this->tipPayment->id
+                ]);
+            } else {
+                Log::info('Post created without image (text-only)', [
+                    'image_uuid_provided' => var_export($imageUuid, true),
+                    'tip_payment_id' => $this->tipPayment->id
+                ]);
+            }
+            
+            $post = Post::create($postData);
 
             if ($post) {
                 Log::info('Thank you post created successfully', [
@@ -205,9 +248,41 @@ class CreateThankYouPostJob implements ShouldQueue
             if (!file_exists($nodeScriptPath)) {
                 throw new \Exception("Node.js script not found at: {$nodeScriptPath}");
             }
+            
+            // Check if Node.js is available in queue context
+            $nodeCommand = 'node';
+            $nodeCheck = shell_exec('which node 2>/dev/null');
+            if (empty(trim($nodeCheck))) {
+                // Try common Node.js paths
+                $possibleNodePaths = [
+                    '/usr/local/bin/node',
+                    '/usr/bin/node',
+                    '/opt/homebrew/bin/node'
+                ];
+                
+                foreach ($possibleNodePaths as $path) {
+                    if (file_exists($path)) {
+                        $nodeCommand = $path;
+                        break;
+                    }
+                }
+                
+                if ($nodeCommand === 'node') {
+                    Log::error('Node.js not found in queue context', [
+                        'checked_paths' => $possibleNodePaths,
+                        'tip_payment_id' => $this->tipPayment->id
+                    ]);
+                    return null;
+                }
+            }
+            
+            Log::info('Using Node.js path', [
+                'node_command' => $nodeCommand,
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
 
             $process = new \Symfony\Component\Process\Process([
-                'node',
+                $nodeCommand,
                 $nodeScriptPath,
                 $payloadJson
             ]);
@@ -244,13 +319,32 @@ class CreateThankYouPostJob implements ShouldQueue
                     'tip_payment_id' => $this->tipPayment->id
                 ]);
                 
-                // Upload to Uploadcare
-                $uploadcareApiKey = env('UPLOADCARE_PUBLIC_KEY');
+                // Upload to Uploadcare - try multiple config sources
+                $uploadcareApiKey = config('services.uploadcare.public', env('UPLOADCARE_PUBLIC_KEY'));
+                if (empty($uploadcareApiKey)) {
+                    // Try direct environment access as fallback
+                    $uploadcareApiKey = getenv('UPLOADCARE_PUBLIC_KEY') ?: $_ENV['UPLOADCARE_PUBLIC_KEY'] ?? null;
+                }
+                
                 if (!$uploadcareApiKey) {
-                    Log::warning('Uploadcare public key not configured, skipping image upload');
+                    Log::warning('Uploadcare public key not configured, skipping image upload', [
+                        'config_value' => config('services.uploadcare.public'),
+                        'env_value' => env('UPLOADCARE_PUBLIC_KEY'),
+                        'getenv_value' => getenv('UPLOADCARE_PUBLIC_KEY'),
+                        'environment' => env('APP_ENV'),
+                        'config_cached' => app()->configurationIsCached(),
+                        'process_id' => getmypid(),
+                        'tip_payment_id' => $this->tipPayment->id
+                    ]);
                     @unlink($imagePath);
                     return null;
                 }
+                
+                Log::info('Using Uploadcare API key', [
+                    'key_length' => strlen($uploadcareApiKey),
+                    'key_prefix' => substr($uploadcareApiKey, 0, 8),
+                    'tip_payment_id' => $this->tipPayment->id
+                ]);
                 
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, 'https://upload.uploadcare.com/base/');
