@@ -70,6 +70,8 @@ class PurchasesController extends Controller
                 'stripe_id' => $sub->stripe_id,
                 'stripe_status' => $sub->stripe_status ?: ($sub->isActive() ? 'active' : 'inactive'),
                 'cancel_at_period_end' => $sub->cancel_at_period_end,
+                'is_active' => $sub->isActive(),
+                'is_canceling' => $sub->isCanceling(),
                 'wish_item' => $sub->wish_item ? [
                     'id' => $sub->wish_item->id,
                     'wishname' => $sub->wish_item->wishname,
@@ -142,7 +144,7 @@ class PurchasesController extends Controller
                 'uuid' => $sub->uuid,
                 'type' => 'bill',
                 'stripe_id' => $sub->stripe_id,
-                'item_name' => $sub->bill->title ?? 'Bill Payment',
+                'item_name' => $sub->bill->name ?? 'Bill Payment',
                 'creator' => [
                     'name' => $sub->bill->user->name ?? '',
                     'username' => $sub->bill->user->username ?? '',
@@ -256,7 +258,7 @@ class PurchasesController extends Controller
                 ->first();
             
             if ($subscription) {
-                return $this->cancelWishItemSubscription($subscription);
+                return $this->cancelWishItemSubscription($request, $subscription);
             }
             
             // Try membership subscriptions
@@ -267,7 +269,7 @@ class PurchasesController extends Controller
                 ->first();
             
             if ($subscription) {
-                return $this->cancelMembershipSubscription($subscription);
+                return $this->cancelMembershipSubscription($request, $subscription);
             }
             
             // Try bill subscriptions
@@ -278,9 +280,12 @@ class PurchasesController extends Controller
                 ->first();
             
             if ($subscription) {
-                return $this->cancelBillSubscription($subscription);
+                return $this->cancelBillSubscription($request, $subscription);
             }
             
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Subscription not found'], 404);
+            }
             return back()->with('error', 'Subscription not found.');
             
         } catch (\Exception $e) {
@@ -290,32 +295,47 @@ class PurchasesController extends Controller
                 'error' => $e->getMessage()
             ]);
             
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Failed to cancel subscription. Please try again.'], 500);
+            }
             return back()->with('error', 'Failed to cancel subscription. Please try again.');
         }
     }
     
-    private function cancelWishItemSubscription($subscription)
+    private function cancelWishItemSubscription(Request $request, $subscription)
     {
         // Handle case where subscription ID is passed instead of object
         if (is_numeric($subscription)) {
             $subscription = WishItemSubscription::find($subscription);
             if (!$subscription) {
+                if ($request->expectsJson()) {
+                    return response()->json(['error' => 'Subscription not found'], 404);
+                }
                 return back()->with('error', 'Subscription not found.');
             }
         }
         
         if (!$subscription->stripe_id) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'No Stripe subscription ID found'], 400);
+            }
             return back()->with('error', 'No Stripe subscription ID found.');
         }
         
         if (!$subscription->canBeCanceled()) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'This subscription cannot be canceled'], 400);
+            }
             return back()->with('error', 'This subscription cannot be canceled.');
         }
         
         try {
-            // Cancel the subscription in Stripe (skip for test subscriptions)
+            // Cancel the subscription in Stripe using cancel_at_period_end
             if (!str_starts_with($subscription->stripe_id, 'sub_test_')) {
-                StripeControl::cancelSubscription($subscription->stripe_id);
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+                \Stripe\Subscription::update($subscription->stripe_id, [
+                    'cancel_at_period_end' => true
+                ]);
             }
             
             // Update local status
@@ -329,6 +349,13 @@ class PurchasesController extends Controller
                 'notes' => 'Subscription canceled by user'
             ]);
             
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Subscription will be canceled at the end of the current billing period.'
+                ]);
+            }
+            
             return back()->with('success', 'Subscription will be canceled at the end of the current billing period.');
             
         } catch (\Exception $e) {
@@ -338,11 +365,18 @@ class PurchasesController extends Controller
                 'error' => $e->getMessage()
             ]);
             
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to cancel subscription. Please try again or contact support.'
+                ], 500);
+            }
+            
             return back()->with('error', 'Failed to cancel subscription. Please try again or contact support.');
         }
     }
     
-    private function cancelMembershipSubscription($subscription)
+    private function cancelMembershipSubscription(Request $request, $subscription)
     {
         // Similar logic for membership subscriptions
         if (!$subscription->stripe_id) {
@@ -366,7 +400,7 @@ class PurchasesController extends Controller
         }
     }
     
-    private function cancelBillSubscription($subscription)
+    private function cancelBillSubscription(Request $request, $subscription)
     {
         // Similar logic for bill subscriptions
         if (!$subscription->stripe_id) {

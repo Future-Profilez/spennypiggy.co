@@ -578,7 +578,7 @@ export default function Wishtracker(props) {
                             <>
                               {s.recurring_for !== 'onetime' ? (
                                 <>
-                                  {s.is_subscription_active !== 0 ? (
+                                  {s.is_subscription_active === 0 || s.stripe_status !== 'active' ? (
                                     <GlobalCheckout
                                       action={close}
                                       classes={`btn-pink !bg-red-600 !text-white !border-red-900 sm w-100 px-2 mt-3`}

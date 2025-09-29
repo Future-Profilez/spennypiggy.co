@@ -265,25 +265,47 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         
         setCancellingSubscriptions(prev => new Set([...prev, subscriptionId]));
         
-        router.post(`/subscriptions/${subscriptionId}/cancel`, {}, {
-            preserveScroll: true,
-            onFinish: () => {
-                setCancellingSubscriptions(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(subscriptionId);
-                    return newSet;
-                });
+        try {
+            const response = await fetch(`/subscriptions/${subscriptionId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                showToastMessage('Subscription will be cancelled at the end of the current billing period.', 'success');
+                // Force page reload to show updated data
+                setTimeout(() => {
+                    router.reload({ only: ['activeSubscriptions'] });
+                }, 1000);
+            } else {
+                showToastMessage(data.error || 'Failed to cancel subscription. Please try again.', 'error');
             }
-        });
+        } catch (error) {
+            console.error('Cancellation error:', error);
+            showToastMessage('Failed to cancel subscription. Please check your connection and try again.', 'error');
+        } finally {
+            setCancellingSubscriptions(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(subscriptionId);
+                return newSet;
+            });
+        }
     };
     
     const renderSubscriptionCard = (subscription) => {
-        const isActive = subscription.stripe_status === 'active';
-        const canCancel = isActive && subscription.cancel_at_period_end === false;
+        // Use the computed isActive status from backend or fallback to stripe_status check
+        const isActive = subscription.is_active ?? (subscription.stripe_status === 'active');
+        const canCancel = isActive && subscription.cancel_at_period_end === false && subscription.can_cancel;
         const isCancelling = cancellingSubscriptions.has(subscription.id);
         
         let statusBadge;
-        if (subscription.cancel_at_period_end) {
+        if (subscription.cancel_at_period_end || subscription.is_canceling) {
             statusBadge = <span className="px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-800">Canceling</span>;
         } else if (isActive) {
             statusBadge = <span className="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">Active</span>;
@@ -347,7 +369,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         <div className="lg:flex items-center justify-between mb-2">
                             <div>
                                 <h3 className="text-xl font-gulfs uppercase text-gray-800">
-                                    {subscription.wish_item?.wishname || 'Subscription'}
+                                    {subscription.wish_item?.wishname || subscription.item_name || 'Subscription'}
                                 </h3>
                                 <p className="text-normal mt-2 text-gray-600">
                                     Creator: {subscription.creator?.name || 'Unknown'}
@@ -537,7 +559,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                 </Popup>
             )}
             
-            {/* {showToast && (
+            {showToast && (
                 <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
                     showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
                 }`}>
@@ -569,7 +591,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         </div>
                     </div>
                 </div>
-            )} */}
+            )}
         </AuthenticatedLayout>
     );
 }
