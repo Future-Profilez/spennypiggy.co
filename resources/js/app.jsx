@@ -21,7 +21,7 @@ import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
 
 // Only initialize Sentry on the production domain
-if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
+if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' || window.location.hostname === 'https://www.spennypiggy.co') {
     console.log("Sentry Enabled");
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",

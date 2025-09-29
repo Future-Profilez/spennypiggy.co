@@ -92,6 +92,14 @@ class Deliverable extends Model
     }
     
     /**
+     * Get the bill this deliverable is for
+     */
+    public function bill(): BelongsTo
+    {
+        return $this->belongsTo(Bills::class, 'item_id');
+    }
+    
+    /**
      * Get the item based on product_type
      * 
      * @return mixed
@@ -101,6 +109,8 @@ class Deliverable extends Model
         switch ($this->product_type) {
             case 'wish':
                 return $this->wishItem;
+            case 'bill':
+                return $this->bill;
             case 'membership':
                 return $this->membership;
             case 'shop_item':

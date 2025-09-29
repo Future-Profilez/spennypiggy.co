@@ -25,15 +25,15 @@ class PurchasesController extends Controller
         
         // Get deliverables for the authenticated user (as gifter)
         $sentDeliverables = Deliverable::where('gifter_id', $user->id)
-            ->with(['creator', 'wishItem'])
-            ->select(['id', 'uuid', 'creator_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'created_at'])
+            ->with(['creator', 'wishItem', 'bill', 'membership'])
+            ->select(['id', 'uuid', 'creator_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
             
         // Get deliverables received by the user (as creator)
         $receivedDeliverables = Deliverable::where('creator_id', $user->id)
-            ->with(['gifter', 'wishItem'])
-            ->select(['id', 'uuid', 'gifter_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'created_at'])
+            ->with(['gifter', 'wishItem', 'bill', 'membership'])
+            ->select(['id', 'uuid', 'gifter_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -296,6 +296,14 @@ class PurchasesController extends Controller
     
     private function cancelWishItemSubscription($subscription)
     {
+        // Handle case where subscription ID is passed instead of object
+        if (is_numeric($subscription)) {
+            $subscription = WishItemSubscription::find($subscription);
+            if (!$subscription) {
+                return back()->with('error', 'Subscription not found.');
+            }
+        }
+        
         if (!$subscription->stripe_id) {
             return back()->with('error', 'No Stripe subscription ID found.');
         }
@@ -305,8 +313,10 @@ class PurchasesController extends Controller
         }
         
         try {
-            // Cancel the subscription in Stripe
-            StripeControl::cancelSubscription($subscription->stripe_id);
+            // Cancel the subscription in Stripe (skip for test subscriptions)
+            if (!str_starts_with($subscription->stripe_id, 'sub_test_')) {
+                StripeControl::cancelSubscription($subscription->stripe_id);
+            }
             
             // Update local status
             $subscription->update([

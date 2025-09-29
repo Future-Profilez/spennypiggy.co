@@ -53,6 +53,18 @@ class ProcessWishItemDeliverable implements ShouldQueue
                 }
                 $this->processMembershipDeliverable($item);
                 return;
+            } elseif ($this->deliverable->product_type === 'bill') {
+                // Handle bill deliverable
+                $item = \App\Models\Bills::find($this->deliverable->item_id);
+                if (!$item && isset($metadata['bill_id'])) {
+                    // Fallback to metadata bill_id
+                    $item = \App\Models\Bills::find($metadata['bill_id']);
+                }
+                if (!$item) {
+                    throw new \Exception("Bill not found for deliverable {$this->deliverable->id}");
+                }
+                $this->processBillDeliverable($item);
+                return;
             } else {
                 // Handle wish item deliverable (existing logic)
                 $wishItem = \App\Models\WishItem::find($this->deliverable->item_id);
@@ -356,6 +368,56 @@ class ProcessWishItemDeliverable implements ShouldQueue
                 'certificate_generated' => !empty($certificateUrl),
                 'membership_thumbnail' => $membership->perma_link ?? null,
                 'creator_username' => ($membership->user->username ?? 'Unknown')
+            ]))
+        ]);
+        
+        // Update Stripe payment intent metadata with certificate URL
+        if ($certificateUrl && $this->deliverable->payment_intent_id) {
+            $this->updateStripeMetadata($certificateUrl);
+        }
+    }
+    
+    /**
+     * Process bill deliverable
+     */
+    private function processBillDeliverable($bill): void
+    {
+        Log::info("Processing bill deliverable", [
+            'deliverable_id' => $this->deliverable->id,
+            'bill_id' => $bill->id,
+            'bill_name' => $bill->name
+        ]);
+        
+        // Check if certificate already exists to prevent duplicates
+        if (!empty($this->deliverable->certificate_url)) {
+            Log::info("Certificate already exists for deliverable", [
+                'deliverable_id' => $this->deliverable->id,
+                'existing_certificate_url' => $this->deliverable->certificate_url
+            ]);
+            return;
+        }
+        
+        // Generate and upload bill certificate to Uploadcare
+        $certificateService = app(CertificateService::class);
+        $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $bill);
+        
+        // Create access URL (could be a direct link to bill content or creator page)
+        $accessUrl = $bill->content_file ? "https://ucarecdn.com/{$bill->content_file}/" : (env('APP_URL') . '/' . $bill->user->username);
+        
+        // Get metadata
+        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+        
+        // Update deliverable with bill-specific data
+        $this->deliverable->update([
+            'deliverable_url' => $accessUrl, // Link to bill content or creator page
+            'certificate_url' => $certificateUrl, // Certificate download link from Uploadcare
+            'metadata' => json_encode(array_merge($metadata, [
+                'bill_processed_at' => now()->toISOString(),
+                'content_type' => 'bill_payment',
+                'access_url' => $accessUrl,
+                'certificate_generated' => !empty($certificateUrl),
+                'bill_thumbnail' => $bill->perma_link ?? null,
+                'creator_username' => ($bill->user->username ?? 'Unknown')
             ]))
         ]);
         

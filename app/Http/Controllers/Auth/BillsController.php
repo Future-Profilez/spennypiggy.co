@@ -766,11 +766,13 @@ class BillsController extends Controller
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
                 'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
                 'price_id' => $bill->price_id,
+                'item_id' => $bill->id, // Add item_id for bill lookup
                 'creator_id' => $bill->user_id,
                 'gifter_id' => $billPayment->user_id,
                 'payment_intent_id' => $session->payment_intent ?? null,
                 'session_id' => $session->id,
                 'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
+                'product_type' => 'bill',
                 'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
                 'metadata' => json_encode([
                     'product_type' => 'bill',
@@ -789,6 +791,9 @@ class BillsController extends Controller
                 'status' => 'delivered',
                 'delivered_at' => now()
             ]);
+
+            // Dispatch ProcessWishItemDeliverable job for certificate generation
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
 
             Log::info('Bill deliverable created successfully', [
                 'deliverable_id' => $deliverable->id,

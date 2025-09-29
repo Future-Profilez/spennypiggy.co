@@ -92,12 +92,20 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         let itemprice = 0;
         let itemImage = null;
         
-        if (deliverable.wish_item) {
+        if (deliverable.product_type === 'wish' && deliverable.wish_item) {
             itemName = deliverable.wish_item.wishname;
             itemImage = deliverable.wish_item.image_url;
             itemprice = deliverable.wish_item.price;
+        } else if (deliverable.product_type === 'bill' && deliverable.bill) {
+            // For bill items, show the bill name from relationship
+            itemName = deliverable.bill.name;
+            itemImage = deliverable.bill.perma_link;
+        } else if (deliverable.product_type === 'membership' && deliverable.membership) {
+            // For membership items, show the membership name
+            itemName = deliverable.membership.name;
+            itemImage = deliverable.membership.perma_link;
         } else if (metadata.bill_name) {
-            // For bill items, show the bill name
+            // Fallback to metadata bill_name if relationship not loaded
             itemName = metadata.bill_name;
         } else if (metadata.item_name) {
             itemName = metadata.item_name;
@@ -195,7 +203,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         </li>
                                                     : ''}
 
-                                                    {deliverable?.wish_item?.subscription == 1   ?
+                                                    {deliverable?.product_type == 'bill'   ?
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 
                                                             className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
