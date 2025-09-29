@@ -82,7 +82,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
     };
     
     const renderDeliverableCard = (deliverable) => {
-        const metadata = deliverable.metadata || {};
+        const metadata = typeof deliverable.metadata === 'string' ? JSON.parse(deliverable.metadata || '{}') : (deliverable.metadata || {});
         const type = deliverable.type;
         const person = type === 'sent' ? deliverable.creator : deliverable.gifter;
         const statusClass = getStatusClass(deliverable.status);
@@ -100,15 +100,20 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             // For bill items, show the bill name from relationship
             itemName = deliverable.bill.name;
             itemImage = deliverable.bill.perma_link;
+            // Get price from bill or transaction amount
+            itemprice = deliverable.bill.price || deliverable.transaction_amount || metadata.amount;
         } else if (deliverable.product_type === 'membership' && deliverable.membership) {
             // For membership items, show the membership name
             itemName = deliverable.membership.name;
             itemImage = deliverable.membership.perma_link;
+            itemprice = deliverable.membership.price || deliverable.transaction_amount || metadata.amount;
         } else if (metadata.bill_name) {
             // Fallback to metadata bill_name if relationship not loaded
             itemName = metadata.bill_name;
+            itemprice = metadata.amount || deliverable.transaction_amount;
         } else if (metadata.item_name) {
             itemName = metadata.item_name;
+            itemprice = metadata.amount || deliverable.transaction_amount;
         }
       
         return (
@@ -158,7 +163,14 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                         </div>
 
                                         <div className='flex items-center justify-center gap-2 mt-2 '>
-                                            <p className=' text-lg font-bold text-black mb-1 text-start'>{formatMultiPrice(deliverable.wish_item?.price || itemprice || deliverable.transaction_amount, (deliverable.wish_item?.currency || deliverable.payment_currency || auth.user.default_currency || global_currency))}</p>
+                                            <p className=' text-lg font-bold text-black mb-1 text-start'>{formatMultiPrice(
+                                                deliverable.wish_item?.price || 
+                                                itemprice || 
+                                                deliverable.transaction_amount || 
+                                                metadata.amount || 
+                                                0, 
+                                                (deliverable.wish_item?.currency || deliverable.payment_currency || metadata.currency || auth.user.default_currency || global_currency)
+                                            )}</p>
                                             <span className={`capitalize px-3 py-1 text-xs font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
                                                 Content {deliverable.status || 'Processing'}
                                             </span>
@@ -459,7 +471,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                 <div className="containerbox mx-auto ">
                     <div className="py-8">
                         {/* Subscriptions Section */}
-                        {activeSubscriptions && activeSubscriptions.length > 0 && (
+                        {/* {activeSubscriptions && activeSubscriptions.length > 0 && (
                             <div className="mb-8">
                                 <div className="md:flex justify-between items-center mb-6">
                                     <h1 className="text-2xl text-white  capitalize">Active Subscriptions</h1>
@@ -473,7 +485,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                     {activeSubscriptions.map(subscription => renderSubscriptionCard(subscription))}
                                 </div>
                             </div>
-                        )}
+                        )} */}
                         
                         {/* Purchases Section */}
                         <div className="md:flex justify-between items-center mb-6">
