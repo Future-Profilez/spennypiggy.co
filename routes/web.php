@@ -259,6 +259,10 @@ Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey'])
 Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
 Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
 
+// Debug: Test support image generation end-to-end (Node + PHP fallback)
+Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
+    ->name('debug.test-support-image');
+
 // Creator Activity Routes
 Route::middleware('auth')->prefix('creator')->name('creator.')->group(function () {
     Route::get('/activity', [\App\Http\Controllers\CreatorActivityController::class, 'index'])->name('activity');

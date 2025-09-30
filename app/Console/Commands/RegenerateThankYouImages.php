@@ -310,6 +310,7 @@ class RegenerateThankYouImages extends Command
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, [
                 'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
+                'UPLOADCARE_STORE' => '1',
                 'file' => new \CURLFile($imagePath, 'image/png', 'regenerated-thank-you.png')
             ]);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

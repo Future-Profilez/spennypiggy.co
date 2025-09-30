@@ -352,6 +352,7 @@ class CreateThankYouPostJob implements ShouldQueue
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, [
                     'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
+                    'UPLOADCARE_STORE' => '1',
                     'file' => new \CURLFile($imagePath, 'image/png', 'support-social.png')
                 ]);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -439,6 +440,7 @@ class CreateThankYouPostJob implements ShouldQueue
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, [
                 'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
+                'UPLOADCARE_STORE' => '1',
                 'file' => new \CURLFile($imagePath, 'image/png', 'support-social-php.png')
             ]);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

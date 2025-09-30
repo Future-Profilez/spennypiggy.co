@@ -13,12 +13,18 @@ class SocialImageGenerator
     
     public function __construct()
     {
-        // Use a system font or include a font file in your project
-        $this->fontPath = resource_path('fonts/arial.ttf');
-        
-        // Fallback to system font if custom font not available
-        if (!file_exists($this->fontPath)) {
-            $this->fontPath = null; // Will use imagestring instead of imagettftext
+        // Prefer bundled brand font if available
+        $preferredPath = resource_path('assets/fonts/legacy/CeraGRMedium.ttf');
+        $fallbackPath = resource_path('fonts/arial.ttf');
+        $fontCandidate = file_exists($preferredPath)
+            ? $preferredPath
+            : (file_exists($fallbackPath) ? $fallbackPath : null);
+
+        // Only use TTF path if GD FreeType functions are available
+        if ($fontCandidate && \function_exists('imagettfbbox') && \function_exists('imagettftext')) {
+            $this->fontPath = $fontCandidate;
+        } else {
+            $this->fontPath = null; // fallback to built-in fonts
         }
     }
     
@@ -37,40 +43,58 @@ class SocialImageGenerator
             $image = imagecreatetruecolor($this->width, $this->height);
             
             // Define colors
-            $backgroundColor = imagecolorallocate($image, 155, 0, 57); // #9b0039
+            $backgroundColor = imagecolorallocate($image, 155, 0, 57); // base #9b0039
             $white = imagecolorallocate($image, 255, 255, 255);
             $yellow = imagecolorallocate($image, 253, 224, 71); // text-yellow-300
-            $lightGray = imagecolorallocate($image, 243, 244, 246);
+            $lightGray = imagecolorallocate($image, 220, 220, 220);
             
-            // Fill background with gradient-like effect
-            imagefill($image, 0, 0, $backgroundColor);
+            // Fill background with smooth vertical gradient
+            $endR = 184; $endG = 20; $endB = 85; // slightly brighter bottom tint
+            for ($y = 0; $y < $this->height; $y++) {
+                $ratio = $y / $this->height;
+                $r = (int)(155 + ($endR - 155) * $ratio);
+                $g = (int)(0 + ($endG - 0) * $ratio);
+                $b = (int)(57 + ($endB - 57) * $ratio);
+                $rowColor = imagecolorallocate($image, $r, $g, $b);
+                imageline($image, 0, $y, $this->width, $y, $rowColor);
+            }
             
-            // Add dot pattern effect (simplified)
-            $dotColor = imagecolorallocatealpha($image, 255, 255, 255, 100);
-            for ($x = 15; $x < $this->width; $x += 30) {
-                for ($y = 15; $y < $this->height; $y += 30) {
+            // Add dot pattern effect (refined)
+            $dotColor = imagecolorallocatealpha($image, 255, 255, 255, 120);
+            for ($x = 26; $x < $this->width; $x += 34) {
+                for ($y = 26; $y < $this->height; $y += 34) {
                     imagefilledellipse($image, $x, $y, 6, 6, $dotColor);
                 }
+            }
+
+            // Add a subtle radial highlight in the center
+            $centerX = (int)($this->width / 2);
+            $centerY = (int)($this->height / 2);
+            for ($radius = 140; $radius > 0; $radius -= 2) {
+                $alpha = (int)(127 * (1 - ($radius / 140)) * 0.25); // subtle
+                $highlight = imagecolorallocatealpha($image, 255, 255, 255, max(90, $alpha));
+                imagefilledellipse($image, $centerX, $centerY, $radius * 2, $radius * 1.2, $highlight);
             }
             
             // Prepare text data
             $supporterName = $data['isAnonymous'] ? 'Anonymous Supporter' : $data['supporterName'];
-            $amount = $data['currency'] . ' ' . number_format($data['amount'], 2);
+            $amount = $data['currency'] . ' ' . number_format($data['amount'], 2, ',', '.');
             
-            // Add text content
-            $this->addCenteredText($image, '🎉 THANK YOU! 🎉', 50, $yellow, 32);
-            $this->addCenteredText($image, "Thank you {$supporterName}", 100, $white, 24);
-            $this->addCenteredText($image, 'for making my day special with', 140, $white, 20);
-            $this->addCenteredText($image, $amount, 180, $yellow, 28);
+            // Add text content with shadow/bold to match design
+            $shadow = imagecolorallocatealpha($image, 0, 0, 0, 110);
+            $this->addCenteredTextStyled($image, 'THANK YOU!', 58, $yellow, 40, $shadow, true);
+            $this->addCenteredTextStyled($image, "Thank you {$supporterName}", 128, $white, 26, $shadow, true);
+            $this->addCenteredTextStyled($image, 'for making my day special with', 166, $white, 22, $shadow, false);
+            $this->addCenteredTextStyled($image, $amount, 210, $yellow, 34, $shadow, true);
             
             // Add creator info at bottom
             $creatorText = "From @{$data['creator']['username']}";
-            $this->addCenteredText($image, $creatorText, 280, $lightGray, 16);
+            $this->addCenteredTextStyled($image, $creatorText, 312, $lightGray, 18, $shadow, false);
             
             // Add message if provided (truncated)
             if (!empty($data['message'])) {
-                $message = strlen($data['message']) > 50 ? substr($data['message'], 0, 47) . '...' : $data['message'];
-                $this->addCenteredText($image, "\"{$message}\"", 220, $white, 18);
+                $message = strlen($data['message']) > 70 ? substr($data['message'], 0, 67) . '...' : $data['message'];
+                $this->addCenteredTextStyled($image, "\"{$message}\"", 250, $white, 20, $shadow, false);
             }
             
             // Generate unique filename
@@ -107,18 +131,60 @@ class SocialImageGenerator
      */
     private function addCenteredText($image, string $text, int $y, $color, int $fontSize): void
     {
-        if ($this->fontPath && file_exists($this->fontPath)) {
+        if ($this->fontPath && file_exists($this->fontPath) && \function_exists('imagettfbbox') && \function_exists('imagettftext')) {
             // Use TTF font if available
-            $bbox = imagettfbbox($fontSize, 0, $this->fontPath, $text);
+            $bbox = \imagettfbbox($fontSize, 0, $this->fontPath, $text);
             $textWidth = $bbox[4] - $bbox[0];
             $x = ($this->width - $textWidth) / 2;
-            imagettftext($image, $fontSize, 0, $x, $y, $color, $this->fontPath, $text);
+            \imagettftext($image, $fontSize, 0, (int)$x, $y, $color, $this->fontPath, $text);
         } else {
             // Fallback to built-in font
             $fontSizeBuiltIn = min(5, max(1, intval($fontSize / 6))); // Convert to built-in font size (1-5)
             $textWidth = strlen($text) * imagefontwidth($fontSizeBuiltIn);
             $x = ($this->width - $textWidth) / 2;
             imagestring($image, $fontSizeBuiltIn, $x, $y, $text, $color);
+        }
+    }
+
+    /**
+     * Add centered text with optional subtle shadow and pseudo-bold
+     */
+    private function addCenteredTextStyled($image, string $text, int $y, $color, int $fontSize, $shadowColor = null, bool $bold = false): void
+    {
+        if ($this->fontPath && file_exists($this->fontPath) && \function_exists('imagettfbbox') && \function_exists('imagettftext')) {
+            $bbox = \imagettfbbox($fontSize, 0, $this->fontPath, $text);
+            $textWidth = $bbox[4] - $bbox[0];
+            $x = (int)(($this->width - $textWidth) / 2);
+
+            // Shadow
+            if ($shadowColor) {
+                \imagettftext($image, $fontSize, 0, $x + 1, $y + 1, $shadowColor, $this->fontPath, $text);
+            }
+
+            if ($bold) {
+                // Draw multiple passes to simulate bold
+                \imagettftext($image, $fontSize, 0, $x, $y, $color, $this->fontPath, $text);
+                \imagettftext($image, $fontSize, 0, $x + 1, $y, $color, $this->fontPath, $text);
+                \imagettftext($image, $fontSize, 0, $x, $y + 1, $color, $this->fontPath, $text);
+            } else {
+                \imagettftext($image, $fontSize, 0, $x, $y, $color, $this->fontPath, $text);
+            }
+        } else {
+            $fontSizeBuiltIn = min(5, max(1, intval($fontSize / 6)));
+            $textWidth = strlen($text) * imagefontwidth($fontSizeBuiltIn);
+            $x = (int)(($this->width - $textWidth) / 2);
+
+            if ($shadowColor) {
+                imagestring($image, $fontSizeBuiltIn, $x + 1, $y + 1, $text, $shadowColor);
+            }
+
+            if ($bold) {
+                imagestring($image, $fontSizeBuiltIn, $x, $y, $text, $color);
+                imagestring($image, $fontSizeBuiltIn, $x + 1, $y, $text, $color);
+                imagestring($image, $fontSizeBuiltIn, $x, $y + 1, $text, $color);
+            } else {
+                imagestring($image, $fontSizeBuiltIn, $x, $y, $text, $color);
+            }
         }
     }
     

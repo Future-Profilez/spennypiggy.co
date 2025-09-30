@@ -12,6 +12,26 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Resolve Chrome/Chromium executable path for various environments
+function resolveChromePath() {
+    const candidates = [
+        process.env.CHROME_PATH,
+        process.env.PUPPETEER_EXECUTABLE_PATH,
+        process.env.GOOGLE_CHROME_BIN,
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    ].filter(Boolean);
+
+    for (const p of candidates) {
+        try { if (fs.existsSync(p)) return p; } catch {}
+    }
+    try { if (typeof puppeteer.executablePath === 'function') return puppeteer.executablePath(); } catch {}
+    return null;
+}
+
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -302,10 +322,12 @@ async function generateSupportSocialImage(payload) {
         </body>
         </html>`;
 
-        // Launch puppeteer
+        // Launch puppeteer (production-safe)
+        const chromePath = resolveChromePath();
+        console.log(`🧭 Chrome path: ${chromePath || 'default/bundled'}`);
         browser = await puppeteer.launch({
-            headless: 'new',
-            executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            headless: true,
+            executablePath: chromePath || undefined,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -314,7 +336,8 @@ async function generateSupportSocialImage(payload) {
                 '--disable-gpu',
                 '--disable-web-security',
                 '--disable-features=VizDisplayCompositor',
-                '--window-size=1200,800'
+                '--window-size=1200,800',
+                '--font-render-hinting=medium'
             ],
             timeout: 60000
         });
