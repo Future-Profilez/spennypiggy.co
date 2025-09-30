@@ -90,42 +90,7 @@ Route::get('/test-logs', function() {
 
 // Main log viewer routes with API authentication for JSON responses
 Route::middleware(['can.view.logs'])->prefix('debug')->name('api.logs.')->group(function () {
-    Route::get('/logs', function(\Illuminate\Http\Request $request) {
-        $logPath = storage_path('logs/laravel.log');
-        
-        if (!\Illuminate\Support\Facades\File::exists($logPath)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Log file not found.',
-                'logs' => [],
-            ]);
-        }
-        
-        $search = $request->get('search', '');
-        $lines = $request->get('lines', 100); // Default to 100 lines
-        
-        $logs = \Illuminate\Support\Facades\File::get($logPath);
-        $logLines = explode("\n", $logs);
-        
-        // Get the last N lines
-        $logLines = array_slice($logLines, -$lines);
-        
-        // Apply search filter if provided
-        if (!empty($search)) {
-            $logLines = array_filter($logLines, function($line) use ($search) {
-                return stripos($line, $search) !== false;
-            });
-        }
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Log file loaded successfully',
-            'logs' => array_values(array_filter($logLines)), // Remove empty lines and reindex
-            'total_lines' => count(array_filter($logLines)),
-            'search' => $search,
-            'lines_requested' => $lines,
-        ]);
-    })->name('index');
+    Route::get('/logs', [App\Http\Controllers\LogManagementController::class, 'getLogs'])->name('index');
     
     Route::get('/logs/download', function() {
         $logPath = storage_path('logs/laravel.log');

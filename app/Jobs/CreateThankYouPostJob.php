@@ -6,6 +6,7 @@ use App\Models\TipGoalsPayment;
 use App\Models\Post;
 use App\Services\ThankYouImageService;
 use App\Services\OpenAIContentService;
+use App\Services\SocialImageGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -388,10 +389,92 @@ class CreateThankYouPostJob implements ShouldQueue
             }
             
         } catch (\Exception $e) {
-            Log::error('Failed to generate HTML-based support social image', [
+            Log::error('Node.js image generation failed, trying PHP fallback', [
                 'error' => $e->getMessage(),
-                'tip_payment_id' => $this->tipPayment->id,
-                'trace' => $e->getTraceAsString()
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
+            
+            // Try PHP-based image generation as fallback
+            return $this->generatePHPFallbackImage($data);
+        }
+    }
+    
+    /**
+     * PHP-based image generation fallback for Vapor environment
+     */
+    private function generatePHPFallbackImage($data)
+    {
+        try {
+            Log::info('Using PHP-based image generation fallback', [
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
+            
+            $imageGenerator = new SocialImageGenerator();
+            $imagePath = $imageGenerator->generateThankYouImage($data);
+            
+            if (!$imagePath || !file_exists($imagePath)) {
+                Log::warning('PHP image generation failed, trying default image');
+                $imagePath = $imageGenerator->generateDefaultThankYouImage();
+            }
+            
+            if (!$imagePath || !file_exists($imagePath)) {
+                Log::error('All image generation methods failed');
+                return null;
+            }
+            
+            // Upload to Uploadcare
+            $uploadcareApiKey = config('services.uploadcare.public', env('UPLOADCARE_PUBLIC_KEY'));
+            if (empty($uploadcareApiKey)) {
+                $uploadcareApiKey = getenv('UPLOADCARE_PUBLIC_KEY') ?: $_ENV['UPLOADCARE_PUBLIC_KEY'] ?? null;
+            }
+            
+            if (!$uploadcareApiKey) {
+                Log::warning('Uploadcare public key not configured for PHP fallback');
+                @unlink($imagePath);
+                return null;
+            }
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, 'https://upload.uploadcare.com/base/');
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, [
+                'UPLOADCARE_PUB_KEY' => $uploadcareApiKey,
+                'file' => new \CURLFile($imagePath, 'image/png', 'support-social-php.png')
+            ]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            // Clean up temp file
+            @unlink($imagePath);
+            
+            if ($response && $httpCode === 200) {
+                $responseData = json_decode($response, true);
+                if (isset($responseData['file'])) {
+                    $imageUuid = $responseData['file'];
+                    Log::info('PHP fallback social image generated successfully', [
+                        'image_uuid' => $imageUuid,
+                        'tip_payment_id' => $this->tipPayment->id
+                    ]);
+                    return $imageUuid;
+                }
+            }
+            
+            Log::warning('PHP fallback Uploadcare API response', [
+                'response' => $response,
+                'http_code' => $httpCode,
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error('PHP fallback image generation failed', [
+                'error' => $e->getMessage(),
+                'tip_payment_id' => $this->tipPayment->id
             ]);
             
             // Return null to fall back to text-only post

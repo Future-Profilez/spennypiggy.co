@@ -67,8 +67,7 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-      # Note: DynamoDB sessions are handled automatically
-      # Note: optimize command conflicts with read-only filesystem
+      - "php artisan posts:regenerate-thank-you-images --dry-run" # Windows
       - "php artisan subscription:sync --all"
       # Optional: Generate sitemaps (comment out for faster deployments)
       # - "php artisan sitemap:generate --force"

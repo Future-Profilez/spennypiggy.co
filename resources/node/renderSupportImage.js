@@ -21,37 +21,35 @@ const projectRoot = path.resolve(__dirname, '../..');
 const assetsPath = path.join(projectRoot, 'resources/assets');
 
 /**
- * Node.js compatible template function (matches the shared SocialImageTemplates design)
- * Uses the same visual design as EditProfile component
+ * Modern elegant template function for support payment social images
+ * Beautiful design with pink gradient background and decorative elements
  */
-function renderSupportCardNode({ creator, supporterName, amount, currency, isAnonymous, message }) {
+function renderSupportCardNode({ creator, supporterName, amount, currency, isAnonymous, message, logoDataUrl, bgDataUrl }) {
     const displaySupporter = isAnonymous ? "Anonymous Supporter" : supporterName;
-    const avatarUid = creator.avatar;
     const truncatedMessage = message && message.length > 80 ? message.substring(0, 77) + '...' : message;
-    
-    // Load and embed local assets as data URLs
-    const socialBgPath = path.join(assetsPath, 'social-bg.png');
-    const logoPath = path.join(assetsPath, 'img/logo.png');
-    const socialBgDataUrl = `data:image/png;base64,${fs.readFileSync(socialBgPath, 'base64')}`;
-    const logoDataUrl = `data:image/png;base64,${fs.readFileSync(logoPath, 'base64')}`;
-    
+
     return `
-        <div id="card-to-capture" class="dot-pattern relative flex items-center justify-center p-6 w-[600px] h-[337.5px] text-white shadow-2xl">
-            <img src="${socialBgDataUrl}" alt="Background" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
+        <div id="card-to-capture" class="relative w-[600px] h-[337px] overflow-hidden rounded-[28px] shadow-2xl">
+            ${bgDataUrl ? `<img src="${bgDataUrl}" alt="Background" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-2;filter:contrast(1.0) saturate(1.25);" />` : `<div class="absolute inset-0" style="background-image: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0b1220 100%);"></div>`}
 
-            <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
+            <div class="absolute inset-0" style="background: radial-gradient(800px 200px at 80% 10%, rgba(167,139,250,0.35), transparent 50%), radial-gradient(600px 180px at 20% 90%, rgba(34,211,238,0.35), transparent 55%);"></div>
+            <div class="absolute inset-0" style="opacity:0.15;background-image: radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 1px); background-size: 18px 18px; mix-blend: screen;"></div>
 
-            <div class="inner-image w-full text-center">
-                <div class="mb-6">
-                    <h1 class="text-4xl font-bold text-yellow-300 mb-4">🎉 THANK YOU! 🎉</h1>
-                    <p class="text-white text-2xl font-bold mb-4">Thank you ${displaySupporter}</p>
-                    <p class="text-white text-xl mb-4">for making my day special with</p>
-                    <p class="text-yellow-300 font-bold text-3xl mb-4">${currency} ${amount}</p>
+            
+
+            <div class="relative z-10 flex flex-col items-center justify-center h-full px-10 text-center text-white">
+                ${logoDataUrl ? `<img src="${logoDataUrl}" alt="SpennyPiggy" style="width:42px;height:42px;object-fit:contain;opacity:0.95;margin-bottom:8px;" />` : ''}
+
+                <h1 class="text-4xl font-outfit tracking-wide mb-2 gradient-accent" style="letter-spacing:0.3px; text-transform: uppercase; color:#fde046;">🎉 THANK YOU! 🎉</h1>
+
+                <p class="text-xl font-inter font-semibold opacity-95 mb-1">Thank you ${displaySupporter}</p>
+                <p style="margin-bottom:10px;" class="text-base font-inter opacity-80">for making my day special with</p>
+
+                <div style="margin-top:10px; margin-bottom:10px;display:inline-block;padding:6px 14px; font-weight:bold;">
+                    <span class="text-2xl font-outfit gradient-amount" style="letter-spacing:0.2px;color: #fde046">${(currency || '').toUpperCase()} ${amount}</span>
                 </div>
 
-                <div class="bg-gradient-to-r from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md flex items-center justify-center">
-                    https://spennypiggy.co/${creator.username}
-                </div>
+                <div class="mt-6 link-pill-modern font-inter" style="">https://spennypiggy.co/${creator.username}</div>
             </div>
         </div>
     `;
@@ -107,8 +105,25 @@ async function generateSupportSocialImage(payload) {
 
         console.log('✅ Data formatted:', JSON.stringify(formattedData, null, 2));
 
+        // Resolve logo and decorative assets (optional)
+        let logoDataUrl = null;
+        let bgDataUrl = null;
+        try {
+            const logoPath = path.join(projectRoot, 'public', 'img', 'logo.png');
+            if (fs.existsSync(logoPath)) {
+                const logoBuffer = fs.readFileSync(logoPath);
+                logoDataUrl = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+            }
+            const bgPath = path.join(projectRoot, 'resources', 'assets', 'social-bg.png');
+            if (fs.existsSync(bgPath)) {
+                const bgBuffer = fs.readFileSync(bgPath);
+                bgDataUrl = `data:image/png;base64,${bgBuffer.toString('base64')}`;
+            }
+            // Removed decorative gift icons per request
+        } catch {}
+
         // Generate HTML using the Node-compatible template
-        const cardHtml = renderSupportCardNode(formattedData);
+        const cardHtml = renderSupportCardNode({ ...formattedData, logoDataUrl, bgDataUrl });
         
         const htmlContent = `<!DOCTYPE html>
         <html>
@@ -117,9 +132,11 @@ async function generateSupportSocialImage(payload) {
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; }
+                h1 { font-weight: 700; }
                 .relative { position: relative; }
                 .absolute { position: absolute; }
                 .flex { display: flex; }
+                .flex-col { flex-direction: column; }
                 .items-center { align-items: center; }
                 .justify-center { justify-content: center; }
                 .text-center { text-align: center; }
@@ -135,6 +152,8 @@ async function generateSupportSocialImage(payload) {
                 .object-cover { object-fit: cover; }
                 .uppercase { text-transform: uppercase; }
                 .font-bold { font-weight: 700; }
+                .font-medium { font-weight: 500; }
+                .tracking-wide { letter-spacing: 0.025em; }
                 .text-white { color: rgb(255 255 255); }
                 .text-yellow-300 { color: rgb(253 224 71); }
                 .text-cyan-300 { color: rgb(103 232 249); }
@@ -144,6 +163,7 @@ async function generateSupportSocialImage(payload) {
                 .text-purple-300 { color: rgb(196 181 253); }
                 .text-blue-300 { color: rgb(147 197 253); }
                 .text-sm { font-size: 0.875rem; }
+                .text-base { font-size: 1rem; }
                 .text-lg { font-size: 1.125rem; }
                 .text-xl { font-size: 1.25rem; }
                 .text-2xl { font-size: 1.5rem; }
@@ -151,54 +171,130 @@ async function generateSupportSocialImage(payload) {
                 .text-4xl { font-size: 2.25rem; }
                 .text-5xl { font-size: 3rem; }
                 .p-6 { padding: 1.5rem; }
-                .ps-3 { padding-left: 0.75rem; }
                 .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
                 .px-4 { padding-left: 1rem; padding-right: 1rem; }
+                .px-8 { padding-left: 2rem; padding-right: 2rem; }
                 .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+                .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
                 .mb-1 { margin-bottom: 0.25rem; }
                 .mb-2 { margin-bottom: 0.5rem; }
                 .mb-4 { margin-bottom: 1rem; }
+                .mb-6 { margin-bottom: 1.5rem; }
                 .mt-3 { margin-top: 0.75rem; }
-                .mt-\\[20px\\] { margin-top: 20px; }
-                .mt-\\[-20px\\] { margin-top: -20px; }
-                .pb-2 { padding-bottom: 0.5rem; }
+                .mt-auto { margin-top: auto; }
+                .space-y-2 > * + * { margin-top: 0.5rem; }
                 .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
                 .top-4 { top: 1rem; }
-                .top-18 { top: 4.5rem; }
+                .top-6 { top: 1.5rem; }
                 .left-6 { left: 1.5rem; }
                 .right-8 { right: 2rem; }
                 .bottom-6 { bottom: 1.5rem; }
+                .bottom-8 { bottom: 2rem; }
                 .left-8 { left: 2rem; }
-                .right-20 { right: 5rem; }
-                .bottom-4 { bottom: 1rem; }
-                .right-28 { right: 7rem; }
-                .top-\\[180px\\] { top: 180px; }
-                .left-\\[210px\\] { left: 210px; }
-                .top-\\[190px\\] { top: 190px; }
-                .left-\\[310px\\] { left: 310px; }
-                .max-w-\\[200px\\] { max-width: 200px; }
+                .right-6 { right: 1.5rem; }
                 .max-w-\\[400px\\] { max-width: 400px; }
-                .max-w-\\[100px\\] { max-width: 100px; }
                 .mx-auto { margin-left: auto; margin-right: auto; }
                 .bg-black { background-color: rgb(0 0 0); }
-                .bg-opacity-30 { background-color: rgb(0 0 0 / 0.3); }
+                .bg-opacity-20 { background-color: rgb(0 0 0 / 0.2); }
+                .opacity-30 { opacity: 0.3; }
+                .opacity-60 { opacity: 0.6; }
+                .opacity-80 { opacity: 0.8; }
+                .opacity-90 { opacity: 0.9; }
                 .rounded-lg { border-radius: 0.5rem; }
-                .rounded-\\[15px\\] { border-radius: 15px; }
+                .rounded-\\[20px\\] { border-radius: 20px; }
                 .italic { font-style: italic; }
                 .shadow-2xl { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); }
-                .shadow-md { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
-                .bg-gradient-to-r { background-image: linear-gradient(to right, var(--tw-gradient-stops)); }
-                .from-\\[\\#9b0039\\] { --tw-gradient-from: #9b0039; --tw-gradient-to: rgb(155 0 57 / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-                .to-\\[\\#9b0039b6\\] { --tw-gradient-to: #9b0039b6; }
-                .bg-\\[radial-gradient\\(rgba\\(255\\,255\\,255\\,0\\.2\\)_3px\\,transparent_3px\\)\\] { background-image: radial-gradient(rgba(255,255,255,0.2) 3px, transparent 3px); }
-                .bg-\\[size\\:30px_30px\\] { background-size: 30px 30px; }
-                .border-\\[\\#00ff5e\\] { border-color: #00ff5e; }
+                .drop-shadow-lg { filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1)); }
+                .z-10 { z-index: 10; }
+                
+                /* Font smoothing */
+                html, body, #card-to-capture, h1, p, span {
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                    text-rendering: optimizeLegibility;
+                }
+                
+                /* Glass pill for amount */
+                .glass-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 12px 24px;
+                    border-radius: 9999px;
+                    background: rgba(255, 255, 255, 0.15);
+                    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+                    backdrop-filter: blur(6px);
+                    -webkit-backdrop-filter: blur(6px);
+                    border: 1px solid rgba(255,255,255,0.25);
+                    margin: 0 auto;
+                    width: fit-content;
+                }
+                
+                /* Gradient gold text */
+                .gradient-gold-strong {
+                    background: linear-gradient(135deg, #fff1a8 0%, #ffe066 30%, #ffc233 60%, #ffb300 78%, #f39c12 100%);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                    text-shadow: 3px 3px 0 rgba(0,0,0,0.28);
+                }
+                .gradient-gold-flat {
+                    background: linear-gradient(135deg, #ffea80 0%, #ffd54f 35%, #ffb300 65%, #fbc02d 100%);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                }
+                
+                /* Gradient backgrounds */
+                .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+                .from-\\[\\#b91c7c\\] { --tw-gradient-from: #b91c7c; --tw-gradient-to: rgb(185 28 124 / 0); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+                .via-\\[\\#c2185b\\] { --tw-gradient-to: rgb(194 24 91 / 0); --tw-gradient-stops: var(--tw-gradient-from), #c2185b, var(--tw-gradient-to); }
+                .to-\\[\\#ad1457\\] { --tw-gradient-to: #ad1457; }
+                
+                /* Fun fonts */
+                @import url('https://fonts.googleapis.com/css2?family=Bungee:wght@400&display=swap');
+                .font-bungee { font-family: 'Bungee', cursive; }
+                
+                /* Smooth display font */
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&display=swap');
+                .font-outfit { font-family: 'Outfit', -apple-system, Segoe UI, Roboto, sans-serif; }
+                
+                /* Professional fonts */
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                .font-inter { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+                
+                /* Dimensions */
                 .w-\\[600px\\] { width: 600px; }
-                .h-\\[337\\.5px\\] { height: 337.5px; }
-                .h-\\[40px\\] { height: 40px; }
-                .leading-\\[15px\\] { line-height: 15px; }
-                .z-\\[-1\\] { z-index: -1; }
-                .z-\\[-2\\] { z-index: -2; }
+                .h-\\[337px\\] { height: 337px; }
+                .w-\\[80px\\] { width: 80px; }
+                .h-\\[80px\\] { height: 80px; }
+                
+                /* Modern gradient text */
+                .gradient-accent {
+                    background: linear-gradient(90deg, #8b5cf6 0%, #06b6d4 50%, #22d3ee 100%);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                }
+                .gradient-amount {
+                    background: linear-gradient(90deg, #f97316 0%, #fb7185 100%);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                }
+                
+                /* Modern link pill */
+                .link-pill-modern {
+                    display: inline-block;
+                    padding: 8px 14px;
+                    border-radius: 9999px;
+                    background: rgba(255,255,255,0.08);
+                    border: 1px solid rgba(255,255,255,0.18);
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+                    backdrop-filter: blur(4px);
+                    color: rgba(255,255,255,0.92);
+                    font-size: 14px;
+                }
             </style>
         </head>
         <body style=\"margin:0;padding:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;\">
@@ -209,14 +305,18 @@ async function generateSupportSocialImage(payload) {
         // Launch puppeteer
         browser = await puppeteer.launch({
             headless: 'new',
+            executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=VizDisplayCompositor',
                 '--window-size=1200,800'
-            ]
+            ],
+            timeout: 60000
         });
 
         const page = await browser.newPage();
@@ -228,12 +328,15 @@ async function generateSupportSocialImage(payload) {
             deviceScaleFactor: 2
         });
 
+        // Set page timeout
+        page.setDefaultTimeout(60000);
+
 // HTML content is prepared above with shared template
         
 // Set content and wait for images to load
         await page.setContent(htmlContent, {
-            waitUntil: ['load', 'networkidle0'],
-            timeout: 30000
+            waitUntil: ['domcontentloaded'],
+            timeout: 60000
         });
 
         console.log('📸 Taking screenshot...');

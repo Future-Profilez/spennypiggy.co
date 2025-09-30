@@ -85,6 +85,22 @@
                 <i class="fas fa-info-circle text-blue-500 mr-2"></i>
                 Log File Information
             </h2>
+            
+            @if($isVapor && $cloudwatchMessage)
+            <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-cloud text-blue-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            <strong>Laravel Vapor Environment:</strong> {{ $cloudwatchMessage }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            @endif
+            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-gray-50 p-4 rounded-lg">
                     <div class="text-sm text-gray-600">Status</div>
@@ -105,6 +121,16 @@
                     <div class="text-lg font-medium">{{ $lastModified ?? 'N/A' }}</div>
                 </div>
             </div>
+            
+            @if($isVapor)
+            <div class="mt-4 text-sm text-gray-600">
+                <strong>Log Path:</strong> {{ $logPath }} (CloudWatch)
+            </div>
+            @else
+            <div class="mt-4 text-sm text-gray-600">
+                <strong>Log Path:</strong> {{ $logPath }}
+            </div>
+            @endif
         </div>
 
         <!-- Controls Section -->
@@ -378,19 +404,46 @@
                 
                 logContainer.innerHTML = logsHtml;
                 
-                const searchText = data.search ? ` (filtered by "${data.search}")` : '';
-                logStats.textContent = `Showing ${data.total_lines} lines${searchText}`;
+                // Handle different response formats for Vapor vs local
+                let statsText = '';
+                if (data.isVapor) {
+                    statsText = `Showing ${data.logs.length} CloudWatch log entries`;
+                    if (data.note) {
+                        statsText += ` - ${data.note}`;
+                    }
+                } else {
+                    const searchText = data.search ? ` (filtered by "${data.search}")` : '';
+                    const totalLines = data.total_lines || data.logs.length;
+                    statsText = `Showing ${totalLines} lines${searchText}`;
+                }
+                
+                logStats.textContent = statsText;
                 
                 // Auto-scroll to bottom
                 logContainer.scrollTop = logContainer.scrollHeight;
             } else {
+                const noLogsMessage = data.isVapor ? 
+                    'No CloudWatch log entries found. Check Vapor dashboard for detailed logs.' :
+                    'No log entries found';
+                    
                 logContainer.innerHTML = `
                     <div class="text-gray-400 text-center py-8">
                         <i class="fas fa-file text-4xl mb-4"></i>
-                        <p>No log entries found</p>
+                        <p>${noLogsMessage}</p>
+                        ${data.isVapor ? '<p class="text-sm mt-2">For detailed logs, visit the Vapor dashboard or AWS CloudWatch console.</p>' : ''}
                     </div>
                 `;
                 logStats.textContent = 'No logs found';
+            }
+            
+            // Show any error messages or notes from the API
+            if (data.error) {
+                logContainer.innerHTML += `
+                    <div class="text-yellow-400 text-center py-4 border-t border-gray-700 mt-4">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span>${data.error}</span>
+                    </div>
+                `;
             }
         }
 
