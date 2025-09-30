@@ -43,59 +43,61 @@ class SocialImageGenerator
             $image = imagecreatetruecolor($this->width, $this->height);
             
             // Define colors
-            $backgroundColor = imagecolorallocate($image, 155, 0, 57); // base #9b0039
+            $backgroundColor = imagecolorallocate($image, 165, 10, 67);
             $white = imagecolorallocate($image, 255, 255, 255);
-            $yellow = imagecolorallocate($image, 253, 224, 71); // text-yellow-300
-            $lightGray = imagecolorallocate($image, 220, 220, 220);
+            $yellow = imagecolorallocate($image, 255, 235, 59);
+            $lightGray = imagecolorallocate($image, 200, 200, 200);
+            $softWhite = imagecolorallocate($image, 248, 248, 248);
             
             // Fill background with smooth vertical gradient
-            $endR = 184; $endG = 20; $endB = 85; // slightly brighter bottom tint
+            $endR = 195; $endG = 35; $endB = 95;
             for ($y = 0; $y < $this->height; $y++) {
                 $ratio = $y / $this->height;
-                $r = (int)(155 + ($endR - 155) * $ratio);
-                $g = (int)(0 + ($endG - 0) * $ratio);
-                $b = (int)(57 + ($endB - 57) * $ratio);
+                $r = (int)(165 + ($endR - 165) * $ratio);
+                $g = (int)(10 + ($endG - 10) * $ratio);
+                $b = (int)(67 + ($endB - 67) * $ratio);
                 $rowColor = imagecolorallocate($image, $r, $g, $b);
                 imageline($image, 0, $y, $this->width, $y, $rowColor);
             }
             
             // Add dot pattern effect (refined)
-            $dotColor = imagecolorallocatealpha($image, 255, 255, 255, 120);
-            for ($x = 26; $x < $this->width; $x += 34) {
-                for ($y = 26; $y < $this->height; $y += 34) {
-                    imagefilledellipse($image, $x, $y, 6, 6, $dotColor);
+            $dotColor = imagecolorallocatealpha($image, 255, 255, 255, 110);
+            for ($x = 30; $x < $this->width; $x += 40) {
+                for ($y = 30; $y < $this->height; $y += 40) {
+                    imagefilledellipse($image, $x, $y, 8, 8, $dotColor);
                 }
             }
 
             // Add a subtle radial highlight in the center
             $centerX = (int)($this->width / 2);
             $centerY = (int)($this->height / 2);
-            for ($radius = 140; $radius > 0; $radius -= 2) {
-                $alpha = (int)(127 * (1 - ($radius / 140)) * 0.25); // subtle
-                $highlight = imagecolorallocatealpha($image, 255, 255, 255, max(90, $alpha));
-                imagefilledellipse($image, $centerX, $centerY, $radius * 2, $radius * 1.2, $highlight);
+            for ($radius = 160; $radius > 0; $radius -= 3) {
+                $alpha = (int)(127 * (1 - ($radius / 160)) * 0.3);
+                $highlight = imagecolorallocatealpha($image, 255, 255, 255, max(85, $alpha));
+                imagefilledellipse($image, $centerX, $centerY, $radius * 2.2, $radius * 1.4, $highlight);
             }
             
             // Prepare text data
             $supporterName = $data['isAnonymous'] ? 'Anonymous Supporter' : $data['supporterName'];
-            $amount = $data['currency'] . ' ' . number_format($data['amount'], 2, ',', '.');
+            $amount = $data['currency'] . ' ' . number_format((float)$data['amount'], 2);
             
-            // Add text content with shadow/bold to match design
-            $shadow = imagecolorallocatealpha($image, 0, 0, 0, 110);
-            $this->addCenteredTextStyled($image, 'THANK YOU!', 58, $yellow, 40, $shadow, true);
-            $this->addCenteredTextStyled($image, "Thank you {$supporterName}", 128, $white, 26, $shadow, true);
-            $this->addCenteredTextStyled($image, 'for making my day special with', 166, $white, 22, $shadow, false);
-            $this->addCenteredTextStyled($image, $amount, 210, $yellow, 34, $shadow, true);
-            
-            // Add creator info at bottom
-            $creatorText = "From @{$data['creator']['username']}";
-            $this->addCenteredTextStyled($image, $creatorText, 312, $lightGray, 18, $shadow, false);
+            // Add text content with refined styling and positioning
+            $strongShadow = imagecolorallocatealpha($image, 0, 0, 0, 100);
+            $subtleShadow = imagecolorallocatealpha($image, 0, 0, 0, 120);
+            $this->addCenteredTextStyled($image, 'THANK YOU!', 55, $yellow, 44, $strongShadow, true);
+            $this->addCenteredTextStyled($image, "Thank you {$supporterName}", 120, $softWhite, 28, $subtleShadow, false);
+            $this->addCenteredTextStyled($image, 'for making my day special with', 158, $softWhite, 24, $subtleShadow, false);
+            $this->addCenteredTextStyled($image, $amount, 200, $yellow, 38, $strongShadow, true);
             
             // Add message if provided (truncated)
             if (!empty($data['message'])) {
-                $message = strlen($data['message']) > 70 ? substr($data['message'], 0, 67) . '...' : $data['message'];
-                $this->addCenteredTextStyled($image, "\"{$message}\"", 250, $white, 20, $shadow, false);
+                $message = strlen($data['message']) > 65 ? substr($data['message'], 0, 62) . '...' : $data['message'];
+                $this->addCenteredTextStyled($image, "\"{$message}\"", 245, $softWhite, 22, $subtleShadow, false);
             }
+            
+            // Add creator info at bottom
+            $creatorText = "From @{$data['creator']['username']}";
+            $this->addCenteredTextStyled($image, $creatorText, 310, $lightGray, 20, $subtleShadow, false);
             
             // Generate unique filename
             $filename = 'support-social-' . time() . '-' . uniqid() . '.png';
