@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\TipGoalsPayment;
 use App\Models\Post;
 use App\Services\OpenAIContentService;
+use App\Services\UploadcareThankYouImageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -34,12 +35,20 @@ class CreateThankYouPostJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            Log::info('Creating support thank you post', [
+            Log::info('Creating support thank you post with Uploadcare image', [
                 'tip_payment_id' => $this->tipPayment->id,
                 'tip_payment_uuid' => $this->tipPayment->uuid,
                 'creator_id' => $this->tipPayment->creator_id,
                 'amount' => $this->tipPayment->amount,
                 'execution_context' => 'queue_worker'
+            ]);
+
+            // Generate dynamic Uploadcare image URL with text overlays
+            $imageUrl = UploadcareThankYouImageService::generateThankYouImageUrl($this->tipPayment);
+            
+            Log::info('Generated Uploadcare thank you image', [
+                'tip_payment_id' => $this->tipPayment->id,
+                'image_url' => $imageUrl
             ]);
             
 
@@ -106,7 +115,12 @@ class CreateThankYouPostJob implements ShouldQueue
                 'can_delete_until' => now()->addMonth(), // Allow deletion for 1 month
             ];
             
-            // No image needed - text-only post
+            // Add the dynamic Uploadcare image to the post
+            $postData['image'] = $imageUrl;
+            Log::info('Post will include Uploadcare thank you image', [
+                'image_url' => $imageUrl,
+                'tip_payment_id' => $this->tipPayment->id
+            ]);
             
             $post = Post::create($postData);
 
@@ -114,7 +128,8 @@ class CreateThankYouPostJob implements ShouldQueue
                 Log::info('Thank you post created successfully', [
                     'post_id' => $post->id,
                     'post_uuid' => $post->uuid,
-                    'tip_payment_id' => $this->tipPayment->id
+                    'tip_payment_id' => $this->tipPayment->id,
+                    'image_url' => $imageUrl
                 ]);
             } else {
                 Log::error('Failed to create thank you post', [
