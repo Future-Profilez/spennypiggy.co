@@ -60,7 +60,6 @@ environments:
       - "rm -rf node_modules" # Linux/mac/OS
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules" # Windows
-      - "php artisan posts:regenerate-thank-you-images --dry-run" # Windows
 
     deploy:
       - "php artisan migrations:fix-state"
