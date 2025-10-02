@@ -68,7 +68,6 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-      - "php artisan posts:regenerate-thank-you-images --dry-run" # Windows
       - "php artisan subscription:sync --all"
       # Optional: Generate sitemaps (comment out for faster deployments)
       # - "php artisan sitemap:generate --force"

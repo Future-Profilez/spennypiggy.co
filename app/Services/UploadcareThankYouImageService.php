@@ -55,38 +55,19 @@ class UploadcareThankYouImageService
     }
     
     /**
-     * Generate a preview URL for testing with custom data
+     * Generate a preview URL for testing - just the background image
      */
     public static function generatePreviewUrl(array $data): string
     {
         try {
-            $supporterName = $data['supporter_name'] ?? 'Test Supporter';
-            $amount = number_format($data['amount'] ?? 25.00, 2);
-            $currency = strtoupper($data['currency'] ?? 'USD');
-            $creatorUsername = $data['creator_username'] ?? 'testcreator';
-            $message = $data['message'] ?? null;
-            $isAnonymous = $data['anonymous'] ?? false;
-            
-            $displaySupporterName = $isAnonymous ? 'Anonymous Supporter' : $supporterName;
-            
-            // Build the transformation URL
+            // Build URL with just basic transformations
             $baseUrl = "https://ucarecdn.com/" . self::BACKGROUND_UUID . "/";
             
             $transformations = [
                 "-/resize/1200x630/",
                 "-/quality/smart/",
-                "-/text/" . rawurlencode("THANK YOU!") . "/64/ffffff/",
-                "-/text/" . rawurlencode("Thank you " . $displaySupporterName) . "/32/ffffff/",
-                "-/text/" . rawurlencode("for your generous support of") . "/24/ffffff/",
-                "-/text/" . rawurlencode($currency . " " . $amount) . "/48/ffd700/",
+                "-/format/auto/"
             ];
-            
-            if ($message) {
-                $transformations[] = "-/text/" . rawurlencode('"' . Str::limit($message, 80) . '"') . "/20/e0e0e0/";
-            }
-            
-            $transformations[] = "-/text/" . rawurlencode("@" . $creatorUsername) . "/24/ffffff/";
-            $transformations[] = "-/text/" . rawurlencode("spennypiggy.co") . "/16/cccccc/";
             
             return $baseUrl . implode('', $transformations);
             
