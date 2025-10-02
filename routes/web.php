@@ -41,10 +41,6 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
-// Log Management Interface
-Route::get('/admin/logs', [\App\Http\Controllers\LogManagementController::class, 'index'])
-    ->middleware(['can.view.logs'])
-    ->name('admin.logs.index');
 
 // Debug route to test subscription status
 Route::get('/debug-subscription/{userId}', function ($userId) {

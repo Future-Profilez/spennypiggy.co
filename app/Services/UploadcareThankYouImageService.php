@@ -33,13 +33,8 @@ class UploadcareThankYouImageService
             $transformationString = implode('', $transformations);
             $imageUrl = $baseUrl . $transformationString;
             
-            Log::info('Generated Uploadcare background image URL', [
-                'tip_payment_id' => $tipPayment->id,
-                'image_url' => $imageUrl,
-                'supporter' => $tipPayment->user->name ?? ($tipPayment->guest_name ?? 'Anonymous'),
-                'amount' => strtoupper($tipPayment->currency) . ' ' . number_format($tipPayment->amount, 2),
-                'creator' => $tipPayment->creator->username
-            ]);
+            // Log only essential info to reduce costs
+            Log::info('Generated Uploadcare image', ['tip_id' => $tipPayment->id]);
             
             return $imageUrl;
             
