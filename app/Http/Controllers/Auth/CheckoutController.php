@@ -523,91 +523,85 @@ class CheckoutController extends Controller
     }
     
     /**
-     * Safely build metadata to avoid Stripe configuration errors
+     * Safely build metadata using refined structures to avoid Stripe configuration errors
      */
     private function buildSafeMetadata($owner, $getdata, $totalChargeAmount)
     {
         try {
-            // Build base metadata first
-            $baseMetadata = \App\Helpers::buildStripeMetadata('wishlist', (object) [
+            // Create a mock payment model for metadata generation
+            $primaryWish = $getdata[0]->wish ?? null;
+            $mockPayment = (object) [
                 'user_id' => Auth::id(),
                 'owner_id' => $owner->id,
                 'owner' => $owner,
+                'creator_id' => $owner->id,
+                'wish_item_id' => $primaryWish->id ?? null,
+                'wish_item' => $primaryWish,
                 'uuid' => 'checkout-session-' . time(),
-                'total_charge_amount' => $totalChargeAmount,
-            ]);
-            
-            // Build additional metadata safely
-            $additionalMetadata = [
-                "quantity" => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
-                "payment_type" => "Destination Charges with transfers",
-                "creator_id" => (string) $owner->id,
-                "wish_id" => (string) ($getdata[0]->wish->id ?? null), // Primary wish ID for legacy compatibility
-                "deliverable_type" => "media_bundle",
-                "certificate" => "true",
-                "product_type" => "wish_one_off",
-                "items_count" => (string) count($getdata),
-                "content_delivery_status" => "delivered",
+                'name' => request()->query('from') ?? null,
+                'email' => request()->query('email') ?? null,
+                'anonymous' => request()->query('anonymous') ?? 0,
             ];
             
-            // Safely add flattened content metadata
-            try {
-                $flattenedMetadata = $this->buildFlattenedContentMetadata($getdata);
-                if (is_array($flattenedMetadata)) {
-                    $additionalMetadata = array_merge($additionalMetadata, $flattenedMetadata);
-                } else {
-                    Log::warning('buildFlattenedContentMetadata did not return an array', [
-                        'returned_type' => gettype($flattenedMetadata),
-                        'returned_value' => $flattenedMetadata
-                    ]);
+            // Build base metadata using refined structure
+            $baseMetadata = \App\Helpers::buildStripeMetadata('wishlist', $mockPayment);
+            
+            // Add essential checkout-specific metadata
+            $checkoutMetadata = [
+                'quantity_total' => (string) array_sum(array_column($getdata->toArray(), 'quantity')),
+                'items_count' => (string) count($getdata),
+                'payment_method' => 'destination_charges',
+                'certificate_delivery' => '1',
+                'total_charge_amount' => (string) $totalChargeAmount,
+            ];
+            
+            // Add primary wish item info for backward compatibility
+            if ($primaryWish) {
+                $checkoutMetadata['primary_wish_id'] = (string) $primaryWish->id;
+                $checkoutMetadata['primary_wish_name'] = substr($primaryWish->wishname ?? 'Wishlist Item', 0, 100);
+            }
+            
+            // Add content delivery summary
+            $contentItemsCount = 0;
+            foreach ($getdata as $item) {
+                $wish = $item->wish;
+                if ($wish && (!empty($wish->content_file) || !empty($wish->reward))) {
+                    $contentItemsCount++;
                 }
-            } catch (\Exception $e) {
-                Log::error('Error building flattened content metadata: ' . $e->getMessage());
             }
+            $checkoutMetadata['content_items_count'] = (string) $contentItemsCount;
+            $checkoutMetadata['has_deliverable_content'] = $contentItemsCount > 0 ? '1' : '0';
             
-            // Safely add wish items summary
-            try {
-                $wishItemsSummary = $this->buildCleanWishItemsMetadata($getdata);
-                $additionalMetadata["wish_items_summary"] = $wishItemsSummary;
-            } catch (\Exception $e) {
-                Log::error('Error building wish items summary: ' . $e->getMessage());
-                $additionalMetadata["wish_items_summary"] = json_encode(['error' => 'failed_to_build']);
-            }
+            // Merge metadata safely
+            $finalMetadata = array_merge($baseMetadata, $checkoutMetadata);
             
-            // Merge all metadata safely
-            $finalMetadata = array_merge($baseMetadata, $additionalMetadata);
-            
-            // Ensure all values are strings and within Stripe limits
+            // Ensure all values are strings and within Stripe limits (already done in Helpers::buildStripeMetadata)
             foreach ($finalMetadata as $key => $value) {
                 if (!is_string($value)) {
                     $finalMetadata[$key] = (string) $value;
                 }
-                // Stripe metadata values have a 500 character limit
+                // Double-check Stripe limits
                 if (strlen($finalMetadata[$key]) > 500) {
                     $finalMetadata[$key] = substr($finalMetadata[$key], 0, 497) . '...';
-                    Log::warning('Metadata value truncated for Stripe limits', [
-                        'key' => $key,
-                        'original_length' => strlen($value)
-                    ]);
+                    Log::warning('Checkout metadata value truncated', ['key' => $key]);
                 }
             }
             
-            Log::info('Successfully built safe metadata', [
+            Log::info('Successfully built refined checkout metadata', [
                 'metadata_count' => count($finalMetadata),
-                'keys' => array_keys($finalMetadata)
+                'content_items' => $contentItemsCount,
+                'total_items' => count($getdata)
             ]);
             
             return $finalMetadata;
             
         } catch (\Exception $e) {
-            Log::error('Error building safe metadata: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error building refined checkout metadata: ' . $e->getMessage());
             
             // Return minimal safe metadata as fallback
             return [
                 'platform' => 'SpennyPiggy',
-                'payment_type' => 'wishlist_purchase',
+                'type' => 'wishlist_payment',
                 'creator_id' => (string) $owner->id,
                 'items_count' => (string) count($getdata),
                 'error' => 'metadata_generation_failed'
@@ -616,8 +610,11 @@ class CheckoutController extends Controller
     }
     
     /**
-     * Build content URLs metadata for Stripe - handles multiple wish items with content
+     * DEPRECATED: Build content URLs metadata for Stripe - handles multiple wish items with content
+     * This function is no longer used - metadata is now built using refined structures in buildSafeMetadata
+     * Preserved for reference only - can be removed in future cleanup
      */
+    /*
     private function buildContentUrlsMetadata($cartItems)
     {
         $contentUrls = [];
@@ -656,10 +653,14 @@ class CheckoutController extends Controller
         // Return as JSON string to fit in Stripe metadata limits
         return json_encode($contentUrls);
     }
+    */
     
     /**
-     * Build flattened content metadata for Stripe - individual keys instead of JSON
+     * DEPRECATED: Build flattened content metadata for Stripe - individual keys instead of JSON
+     * This function is no longer used - metadata is now built using refined structures
+     * Preserved for reference only - can be removed in future cleanup
      */
+    /*
     private function buildFlattenedContentMetadata($cartItems)
     {
         $flattenedMetadata = [];
@@ -721,6 +722,7 @@ class CheckoutController extends Controller
         
         return $flattenedMetadata;
     }
+    */
     
     /**
      * Build wish items metadata for Stripe - comprehensive item details
@@ -750,8 +752,11 @@ class CheckoutController extends Controller
     }
     
     /**
-     * Build clean wish items metadata to avoid duplication with individual content keys
+     * DEPRECATED: Build clean wish items metadata to avoid duplication with individual content keys
+     * This function is no longer used - metadata is now built using refined structures
+     * Preserved for reference only - can be removed in future cleanup
      */
+    /*
     private function buildCleanWishItemsMetadata($cartItems)
     {
         $summary = [
@@ -772,6 +777,7 @@ class CheckoutController extends Controller
         
         return json_encode($summary);
     }
+    */
     
     /**
      * Generate content URL from file path/identifier

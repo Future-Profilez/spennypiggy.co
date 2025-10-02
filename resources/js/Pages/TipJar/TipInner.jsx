@@ -119,7 +119,7 @@ export default function TipInner({classes, idd}) {
           <h2 className='p-3 text-pink !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pe-5'>Support Me</h2>
           <div className='border-top p-3 pt-3' >
 
-            <div className='tip-counter flex items-center justify-between mb-3' >
+            {/* <div className='tip-counter flex items-center justify-between mb-3' >
                 <p className='tipheading flex items-center' >
                   <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
                 {defaultAmount} &nbsp;Each</p>
@@ -128,13 +128,19 @@ export default function TipInner({classes, idd}) {
                       <div className='border px-3 py-2 rounded-5 mx-1' >{tipQuantity}</div>
                       <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-4 ' onClick={incresevalue} >+</button>
                 </div>
-            </div>
+            </div> */}
 
-            <div className="flex flex-wrap  gap-1 mb-4 mt-2">
-                <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={()=>customAmountTag(25)}  >{formatMultiPrice(25, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={()=>customAmountTag(50)}  >{formatMultiPrice(50, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={()=>customAmountTag(99)}  >{formatMultiPrice(99, global_currency || "GBP")}</button>
-                <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-sm`} onClick={selectCustom} >Custom</button>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 mt-2">
+                <button className={`${ selectegTag == 5 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(5)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(5, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 15 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(10)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(10, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 15 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(15)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(15, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, global_currency || "GBP")}</button>
+                <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='me-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, global_currency || "GBP")}</button>
+                {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[20px] p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
             </div>
 
             {selectegTag === 'custom' ? <div className="form-field mb-4 ">

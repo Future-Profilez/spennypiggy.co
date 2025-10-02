@@ -51,7 +51,7 @@ export default function IntroVideos(props) {
 
 
     const Intro = ({w}) => {
-      return  <div className="relative rounded-[25px]  h-[350px]  overflow-hidden border-3 !border-[#F94F97] "> 
+      return  <div className="relative rounded-[25px]  h-[250px] md:h-[350px]  overflow-hidden border-3 !border-[#F94F97] "> 
       <ProfileIntro data={w}  text={<>
         <div className='h-full' >
             <div className='introvideobox h-full bg-black  position-relative' >
@@ -67,10 +67,10 @@ export default function IntroVideos(props) {
             </div>
         </div>
       </>} />
-      <div className='absolute bottom-0 bg-black  left-0 w-full p-4 z-[99px] text-white transition-colors   ' >
+      <div className='absolute bottom-0 bg-black  left-0 w-full p-3 md:p-4 z-[99px] text-white transition-colors   ' >
         {w && w.user && w.user.username ? (
           <Link href={`/${w.user.username}`}  >
-            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
+            <p className='text-normal md:text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
             <p className='text-normal mt-0' >@{w.user.username}</p>
           </Link>
         ) : (

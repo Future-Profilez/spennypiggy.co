@@ -1,41 +1,77 @@
 import { Link, usePage } from "@inertiajs/react";
 import { useSelector } from "react-redux";
-import { CiSearch } from "react-icons/ci";
-import { FiShoppingCart } from "react-icons/fi";
-import { HiOutlineHome } from "react-icons/hi2";
-import { FaCircleUser } from "react-icons/fa6";
-import { IoSearch } from "react-icons/io5";
-import { FaRegUserCircle } from "react-icons/fa";
+import { RetroHomeIcon, RetroCartIcon, RetroSearchIcon, RetroUserIcon } from '../Components/RetroIcons';
+import { useState, useEffect } from 'react';
 
 export default function BottomBar(){
    const count = useSelector((state) => state.data.cart.cart);
-   const { auth } = usePage().props;
+   const { auth, ziggy } = usePage().props;
+   const [activeTab, setActiveTab] = useState('home');
+
+   // Determine active tab based on current route
+   useEffect(() => {
+      const currentUrl = window.location.pathname;
+      if (currentUrl.includes('/cart')) {
+         setActiveTab('cart');
+      } else if (currentUrl.includes('/discover')) {
+         setActiveTab('discover');
+      } else if (currentUrl.includes('/account')) {
+         setActiveTab('account');
+      } else if (currentUrl === `/${auth?.user?.username}`) {
+         setActiveTab('home');
+      } else {
+         setActiveTab('home'); // default
+      }
+   }, [auth, ziggy]);
 
    return <>
          {auth && auth.user ?
-            <div className="fixed md:hidden bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200 pb-[14px] ">
-               <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
-                  <Link href={`/${auth && auth.user && auth.user.username}`} as="button" className="relative inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 group" >
-                     <HiOutlineHome size="1.5rem" />
+            <div className="fixed md:hidden bottom-0 left-0 z-50 w-full h-16 retro-bottom-bar pb-[env(safe-area-inset-bottom)]">
+               {/* Retro scanline effect */}
+               {/* <div className="scanline"></div> */}
+               
+               <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium relative z-10 !pb-[10px]">
+                  {/* Home Button */}
+                  <Link 
+                     href={`/${auth && auth.user && auth.user.username}`} 
+                     as="button" 
+                     className={`retro-nav-button ${activeTab === 'home' ? 'active' : ''}`}
+                     onClick={() => setActiveTab('home')}
+                  >
+                     <RetroHomeIcon size={28} isActive={activeTab === 'home'} />
                   </Link>
-                  <Link href={route("cart")} as="button" className=" inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50  group" >
-                     <div className="relative">
-                        <FiShoppingCart size="1.5rem" />
-                        {count ?
-                        <span className=" absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full site-counter d-block">{count}</span>
-                        : ""}
-                     </div>
+                  
+                  {/* Cart Button */}
+                  <Link 
+                     href={route("cart")} 
+                     as="button" 
+                     className={`retro-nav-button ${activeTab === 'cart' ? 'active' : ''}`}
+                     onClick={() => setActiveTab('cart')}
+                  >
+                     <RetroCartIcon 
+                        size={28} 
+                        isActive={activeTab === 'cart'} 
+                        count={count || 0}
+                     />
                   </Link>
 
-                  <Link href={route("discover")} className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 group">
-                        <IoSearch size="1.5rem" />
-                        {/* <span className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Discover</span> */}
+                  {/* Discover Button */}
+                  <Link 
+                     href={route("discover")} 
+                     className={`retro-nav-button ${activeTab === 'discover' ? 'active' : ''}`}
+                     onClick={() => setActiveTab('discover')}
+                  >
+                     <RetroSearchIcon size={28} isActive={activeTab === 'discover'} />
                   </Link>
 
-
-                  <Link href={'/account'} as="button" className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 group">
-                        <FaRegUserCircle size="1.5rem" />
-                        {/* <span className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500">Account</span> */}
+                  {/* Account Button */}
+                  <Link 
+                     href={'/account'} 
+                     as="button" 
+                     className={`retro-nav-button ${activeTab === 'account' ? 'active' : ''}`}
+                     onClick={() => setActiveTab('account')}
+                  >
+                     <RetroUserIcon size={28} isActive={activeTab === 'account'} />
                   </Link>
 
                </div>

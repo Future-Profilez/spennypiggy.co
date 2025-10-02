@@ -170,6 +170,16 @@ h2.wishtitle{font-size:24px;font-weight:900;}
   .noti-title button{display:none !important;}
   .noti-title{justify-content:center !important;}
   .notifications-lists{max-height:84vh;overflow:auto;}
+
+  /* .modal.mymodal.full:not(.basic) .modal-content {
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+    height: 100vh;
+  } */
+   .tip-wrapper { 
+    border-radius: 0 !important;
+   }
 }
 
 @media(max-width:575px){
