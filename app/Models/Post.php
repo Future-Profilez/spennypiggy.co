@@ -60,8 +60,16 @@ class Post extends Model
     {
         $url = false;
         if (!empty($this->image)) {
-            // Use only format transformation, quality seems to cause 400 errors
-            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+            // Check if this is a thank you image with existing transformations (contains /-/text/ or /-/font/)
+            if (str_contains($this->image, '/-/text/') || str_contains($this->image, '/-/font/')) {
+                // This is a dynamic thank you image - use as-is with domain
+                $url = "https://ucarecdn.com/" . $this->image  . '/-/preview/';
+                // replace + with %20 for spaces
+                $url = str_replace('+', '%20', $url);
+            } else {
+                // Regular image - add format transformation
+                $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+            }
         }
         return $url;
     }

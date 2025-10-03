@@ -45,7 +45,11 @@ class ProcessWishItemDeliverable implements ShouldQueue
             $item = null;
             $metadata = json_decode($this->deliverable->metadata, true) ?? [];
             
-            if ($this->deliverable->product_type === 'membership_onetime' || $this->deliverable->product_type === 'membership_subscription') {
+            if ($this->deliverable->product_type === 'support_payment') {
+                // Handle support payment - just update metadata, no certificate generation
+                $this->processSupportPaymentDeliverable();
+                return;
+            } elseif ($this->deliverable->product_type === 'membership' || $this->deliverable->product_type === 'membership_onetime' || $this->deliverable->product_type === 'membership_subscription') {
                 // Handle membership deliverable
                 $item = \App\Models\Membership::find($this->deliverable->item_id);
                 if (!$item) {
@@ -119,12 +123,6 @@ class ProcessWishItemDeliverable implements ShouldQueue
                     }
             }
 
-            // Mark as delivered
-            $this->deliverable->update([
-                'status' => 'delivered',
-                'delivered_at' => now()
-            ]);
-
             // Clear activity cache to ensure real-time updates
             if ($item && $item->user) {
                 app(\App\Services\CreatorActivityService::class)->clearActivityCache($item->user);
@@ -174,6 +172,8 @@ class ProcessWishItemDeliverable implements ShouldQueue
             'deliverable_url' => $bundlePath,
             // Preserve existing certificate_url if this run didn't generate one
             'certificate_url' => $certificateUrl ?: $this->deliverable->certificate_url,
+            'status' => 'delivered',
+            'delivered_at' => now(),
             'metadata' => json_encode(array_merge($metadata, [
                 'bundle_created_at' => now()->toISOString(),
                 'bundle_size' => Storage::size($bundlePath),
@@ -181,10 +181,13 @@ class ProcessWishItemDeliverable implements ShouldQueue
             ]))
         ]);
         
-        // Update Stripe payment intent metadata with certificate URL
-        if (($certificateUrl ?: $this->deliverable->certificate_url) && $this->deliverable->payment_intent_id) {
-            $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url);
-        }
+        // Always update Stripe payment intent metadata for media bundles
+        $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url, [
+            'bundle_created_at' => now()->toISOString(),
+            'bundle_size' => (string) Storage::size($bundlePath),
+            'certificate_generated' => (!empty($certificateUrl) || !empty($this->deliverable->certificate_url)) ? 'true' : 'false',
+            'content_type' => 'media_bundle'
+        ]);
     }
 
     /**
@@ -226,6 +229,8 @@ class ProcessWishItemDeliverable implements ShouldQueue
             'deliverable_url' => $contentUrl,
             // Preserve existing certificate_url if this run didn't generate one
             'certificate_url' => $certificateUrl ?: $this->deliverable->certificate_url,
+            'status' => 'delivered',
+            'delivered_at' => now(),
             'metadata' => json_encode(array_merge($metadata, [
                 'content_file_name' => $item->content_file_name,
                 'content_file_type' => $item->content_file_type,
@@ -236,10 +241,15 @@ class ProcessWishItemDeliverable implements ShouldQueue
             ]))
         ]);
         
-        // Update Stripe payment intent metadata with certificate URL
-        if (($certificateUrl ?: $this->deliverable->certificate_url) && $this->deliverable->payment_intent_id) {
-            $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url);
-        }
+        // Always update Stripe payment intent metadata for content files
+        $this->updateStripeMetadata($certificateUrl ?: $this->deliverable->certificate_url, [
+            'content_file_name' => $item->content_file_name ?? 'unknown',
+            'content_file_type' => $item->content_file_type ?? 'unknown',
+            'content_processed_at' => now()->toISOString(),
+            'delivery_type' => 'uploadcare_file',
+            'certificate_generated' => (!empty($certificateUrl) || !empty($this->deliverable->certificate_url)) ? 'true' : 'false',
+            'content_type' => 'content_file'
+        ]);
     }
 
     /**
@@ -330,10 +340,18 @@ class ProcessWishItemDeliverable implements ShouldQueue
         $contentUrl = $item->image_url ?? null;
         $this->deliverable->update([
             'deliverable_url' => $contentUrl, // Direct link for subscriptions
+            'status' => 'delivered',
+            'delivered_at' => now(),
             'metadata' => json_encode([
                 'subscription_processed_at' => now()->toISOString(),
                 'content_type' => 'subscription_access'
             ])
+        ]);
+        
+        // Update Stripe payment intent metadata
+        $this->updateStripeMetadata(null, [
+            'subscription_processed_at' => now()->toISOString(),
+            'content_type' => 'subscription_access'
         ]);
     }
     
@@ -347,34 +365,53 @@ class ProcessWishItemDeliverable implements ShouldQueue
             'deliverable_id' => $this->deliverable->id
         ]);
         
+        // Check if certificate already exists to prevent duplicates
+        if (!empty($this->deliverable->certificate_url)) {
+            Log::info("Certificate already exists for membership deliverable", [
+                'deliverable_id' => $this->deliverable->id,
+                'existing_certificate_url' => $this->deliverable->certificate_url
+            ]);
+            // Still update status to delivered if it's not already
+            if ($this->deliverable->status !== 'delivered') {
+                $this->deliverable->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now()
+                ]);
+            }
+            return;
+        }
+        
         // Generate and upload membership certificate to Uploadcare
         $certificateService = app(CertificateService::class);
         $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $membership);
-        
-        // Create access URL (could be a direct link to membership benefits page)
-        $accessUrl = env('APP_URL') . '/' . $membership->user->username . '/memberships';
         
         // Get metadata
         $metadata = json_decode($this->deliverable->metadata, true) ?? [];
         
         // Update deliverable with membership-specific data
+        // NOTE: We don't set deliverable_url for memberships because they don't have downloadable content
+        // This prevents "View Exclusive Content" from showing in the UI
         $this->deliverable->update([
-            'deliverable_url' => $accessUrl, // Link to membership benefits page
+            'deliverable_url' => null, // No content URL for memberships (only certificate)
             'certificate_url' => $certificateUrl, // Certificate download link from Uploadcare
+            'status' => 'delivered',
+            'delivered_at' => now(),
             'metadata' => json_encode(array_merge($metadata, [
                 'membership_processed_at' => now()->toISOString(),
                 'content_type' => 'membership_access',
-                'access_url' => $accessUrl,
                 'certificate_generated' => !empty($certificateUrl),
                 'membership_thumbnail' => $membership->perma_link ?? null,
                 'creator_username' => ($membership->user->username ?? 'Unknown')
             ]))
         ]);
         
-        // Update Stripe payment intent metadata with certificate URL
-        if ($certificateUrl && $this->deliverable->payment_intent_id) {
-            $this->updateStripeMetadata($certificateUrl);
-        }
+        // Always update Stripe payment intent metadata
+        $this->updateStripeMetadata($certificateUrl, [
+            'membership_processed_at' => now()->toISOString(),
+            'content_type' => 'membership_access',
+            'certificate_generated' => !empty($certificateUrl) ? 'true' : 'false',
+            'membership_thumbnail' => $membership->perma_link ?? null
+        ]);
     }
     
     /**
@@ -411,6 +448,8 @@ class ProcessWishItemDeliverable implements ShouldQueue
         $this->deliverable->update([
             'deliverable_url' => $accessUrl, // Link to bill content or creator page
             'certificate_url' => $certificateUrl, // Certificate download link from Uploadcare
+            'status' => 'delivered',
+            'delivered_at' => now(),
             'metadata' => json_encode(array_merge($metadata, [
                 'bill_processed_at' => now()->toISOString(),
                 'content_type' => 'bill_payment',
@@ -421,43 +460,76 @@ class ProcessWishItemDeliverable implements ShouldQueue
             ]))
         ]);
         
-        // Update Stripe payment intent metadata with certificate URL
-        if ($certificateUrl && $this->deliverable->payment_intent_id) {
-            $this->updateStripeMetadata($certificateUrl);
-        }
+        // Always update Stripe payment intent metadata
+        $this->updateStripeMetadata($certificateUrl, [
+            'bill_processed_at' => now()->toISOString(),
+            'content_type' => 'bill_payment',
+            'access_url' => $accessUrl,
+            'certificate_generated' => !empty($certificateUrl) ? 'true' : 'false',
+            'bill_thumbnail' => $bill->perma_link ?? null
+        ]);
     }
     
     /**
-     * Update Stripe payment intent metadata with certificate URL
+     * Process support payment deliverable (tips/donations)
+     * No certificate generation, just metadata update
      */
-    private function updateStripeMetadata($certificateUrl)
+    private function processSupportPaymentDeliverable(): void
     {
-        try {
-            // Initialize Stripe
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-            
-            // Update payment intent metadata
-            \Stripe\PaymentIntent::update($this->deliverable->payment_intent_id, [
-                'metadata' => [
-                    'certificate_url' => $certificateUrl,
-                    'certificate_id' => $this->deliverable->uuid,
-                    'delivery_status' => 'completed',
-                    'updated_at' => now()->toISOString()
-                ]
+        Log::info("Processing support payment deliverable", [
+            'deliverable_id' => $this->deliverable->id
+        ]);
+        
+        // Update deliverable status - support payments are immediately "delivered"
+        $this->deliverable->update([
+            'status' => 'delivered',
+            'delivered_at' => now(),
+            'metadata' => json_encode([
+                'support_processed_at' => now()->toISOString(),
+                'content_type' => 'support_payment',
+                'no_certificate' => true,
+                'no_content' => true
+            ])
+        ]);
+        
+        // Update Stripe metadata (without delivery/certificate fields)
+        $this->updateStripeMetadata(null, [
+            'support_processed_at' => now()->toISOString(),
+            'content_type' => 'support_payment',
+            'payment_type' => 'tip_donation'
+        ]);
+    }
+    
+    /**
+     * Update Stripe payment intent metadata using the centralized service
+     * 
+     * @param string|null $certificateUrl
+     * @param array $additionalMetadata
+     * @return void
+     */
+    private function updateStripeMetadata($certificateUrl = null, array $additionalMetadata = [])
+    {
+        // Use the new centralized StripeMetadataService
+        $stripeMetadataService = app(\App\Services\StripeMetadataService::class);
+        
+        // Update the deliverable status to delivered if certificate was generated
+        if ($certificateUrl && $this->deliverable->status !== 'delivered') {
+            $this->deliverable->update([
+                'status' => 'delivered',
+                'delivered_at' => now()
             ]);
-            
-            Log::info('Updated Stripe payment intent metadata with certificate', [
-                'payment_intent_id' => $this->deliverable->payment_intent_id,
-                'certificate_url' => $certificateUrl,
-                'deliverable_id' => $this->deliverable->id
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to update Stripe payment intent metadata', [
-                'payment_intent_id' => $this->deliverable->payment_intent_id,
+        }
+        
+        // Update Stripe metadata with all deliverable information
+        $success = $stripeMetadataService->updateDeliverableMetadata($this->deliverable, $additionalMetadata);
+        
+        if ($success) {
+            Log::info('ProcessWishItemDeliverable: Updated Stripe payment intent metadata', [
                 'deliverable_id' => $this->deliverable->id,
+                'deliverable_uuid' => $this->deliverable->uuid,
+                'payment_intent_id' => $this->deliverable->payment_intent_id,
                 'certificate_url' => $certificateUrl,
-                'error' => $e->getMessage()
+                'product_type' => $this->deliverable->product_type
             ]);
         }
     }

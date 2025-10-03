@@ -34,11 +34,13 @@ class CreateThankYouPostJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            // Generate Uploadcare image URL
+            // Generate dynamic Uploadcare image URL with supporter name and amount
             $imageUrl = UploadcareThankYouImageService::generateThankYouImageUrl($this->tipPayment);
             
+            // Generate unique image ID to prevent conflicts
+            $uniqueImageId = UploadcareThankYouImageService::generateUniqueImageId($this->tipPayment);
 
-            // Generate dynamic thank you post content using OpenAI (with error handling)
+            // Generate dynamic thank you post content
             $supporterName = $this->tipPayment->user->name ?? ($this->tipPayment->guest_name ?? 'A supporter');
             $amount = number_format($this->tipPayment->amount, 2);
             $currency = strtoupper($this->tipPayment->currency);
@@ -79,10 +81,22 @@ class CreateThankYouPostJob implements ShouldQueue
                 'approved' => 1, // Also set the approved field
                 'approved_at' => now(), // Set approval timestamp
                 'can_delete_until' => now()->addMonth(), // Allow deletion for 1 month
+                'metadata' => json_encode([
+                    'auto_generated' => true,
+                    'trigger' => 'support_payment',
+                    'tip_payment_id' => $this->tipPayment->id,
+                    'supporter_name' => $displaySupporterName,
+                    'support_amount' => $amount,
+                    'support_currency' => $currency,
+                    'anonymous_support' => $isAnonymous,
+                    'unique_image_id' => $uniqueImageId,
+                    'generated_at' => now()->toISOString()
+                ])
             ];
             
-            // Add the dynamic Uploadcare image to the post
-            $postData['image'] = $imageUrl;
+            // Store the dynamic image URL - this creates the final image with supporter name and amount
+            // Format: 6ac0f103-a9f5-4a95-86e0-1381da155432/-/font/bold/40/fff/-/text_box/fill/00000000/-/text/100px50p/0,50p/SupporterName/-/font/bold/40/fbd755/-/text_box/fill/00000000/-/text/100px40p/0,100p/USD%20$50.00/
+            $postData['image'] = str_replace('https://ucarecdn.com/', '', $imageUrl); // Store just the UUID and transformations
             
             $post = Post::create($postData);
 
@@ -91,11 +105,19 @@ class CreateThankYouPostJob implements ShouldQueue
                     'post_id' => $post->id,
                     'post_uuid' => $post->uuid,
                     'tip_payment_id' => $this->tipPayment->id,
-                    'image_url' => $imageUrl
+                    'supporter_name' => $displaySupporterName,
+                    'support_amount' => $currency . ' $' . $amount,
+                    'anonymous' => $isAnonymous,
+                    'image_url' => $imageUrl,
+                    'unique_image_id' => $uniqueImageId,
+                    'post_type' => 'support_thanks',
+                    'visibility' => 'public'
                 ]);
             } else {
                 Log::error('Failed to create thank you post', [
-                    'tip_payment_id' => $this->tipPayment->id
+                    'tip_payment_id' => $this->tipPayment->id,
+                    'supporter_name' => $displaySupporterName,
+                    'support_amount' => $currency . ' $' . $amount
                 ]);
             }
 

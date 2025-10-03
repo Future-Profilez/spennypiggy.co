@@ -744,41 +744,8 @@ class MembershipController extends Controller
                     'guest_email' => $mem->guest_email
                 ]);
                 
-                // ✅ NEW: Use CheckoutMailToUser system for membership emails with deliverable tracking
-                // This ensures consistent email delivery and deliverable creation like wish items
-                try {
-                    // Create actual StripePaymentDetail record that works with CheckoutMailToUser
-                    $stripePayment = $this->createStripePaymentForMembership($mem, $session);
-                    
-                    \Log::info('MembershipController: Created StripePaymentDetail for membership', [
-                        'membership_payment_id' => $mem->id,
-                        'stripe_payment_id' => $stripePayment->id,
-                        'session_id' => $stripePayment->session_id,
-                        'user_id' => $stripePayment->user_id,
-                        'owner_id' => $stripePayment->owner_id
-                    ]);
-                    
-                    // Get currency symbol for email
-                    $currency = \App\Models\Currency::where('iso', strtoupper($mem->currency))->first();
-                    $currencySymbol = $currency ? $currency->symbol : '£';
-                    
-                    // Dispatch CheckoutMailToUser with real StripePaymentDetail - this will create deliverables and send email
-                    \App\Jobs\CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
-                    
-                    \Log::info('MembershipController: CheckoutMailToUser dispatched for membership deliverables', [
-                        'membership_payment_id' => $mem->id,
-                        'stripe_payment_id' => $stripePayment->id,
-                        'currency_symbol' => $currencySymbol,
-                        'email_address' => $mem->guest_email
-                    ]);
-                    
-                } catch (\Exception $e) {
-                    \Log::error('MembershipController: Failed to dispatch CheckoutMailToUser for membership', [
-                        'membership_payment_id' => $mem->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                }
+                // ✅ FIXED: Create deliverable entry for membership payment (exactly like bills)
+                $this->createMembershipDeliverable($mem, $session);
                 
                 // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
                 // This should be sent regardless of CheckoutMailToUser success/failure
@@ -1009,6 +976,30 @@ class MembershipController extends Controller
                 $newSubs->created_at = $subs->created_at;
                 $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
+                
+                // ✅ NEW: Create deliverable for membership renewal
+                try {
+                    \Log::info('MembershipController: Creating deliverable for membership renewal', [
+                        'new_membership_payment_id' => $newSubs->id,
+                        'membership_id' => $newSubs->membership_id,
+                        'stripe_subscription_id' => $newSubs->stripe_id
+                    ]);
+                    
+                    // Create deliverable entry for renewal (same as initial purchase)
+                    $renewalDeliverable = $this->createMembershipRenewalDeliverable($newSubs);
+                    
+                    if ($renewalDeliverable) {
+                        \Log::info('MembershipController: Renewal deliverable created', [
+                            'deliverable_id' => $renewalDeliverable->id,
+                            'membership_payment_id' => $newSubs->id
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('MembershipController: Failed to create renewal deliverable', [
+                        'membership_payment_id' => $newSubs->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
 
                 SendRenewMail::dispatch($array, 'renew', 'membership');
             } elseif ($event->type == "customer.subscription.deleted" && !empty($subs)) {
@@ -1031,72 +1022,197 @@ class MembershipController extends Controller
         // return true;
     }
     
+    // REMOVED: Old createStripePaymentForMembership method - now using direct deliverable creation like bills
+    
     /**
-     * Create actual StripePaymentDetail and StripePaymentItems records for membership
-     * This ensures memberships work with the existing CheckoutMailToUser system
+     * Create deliverable entry for membership payment (exactly like bills)
      */
-    private function createStripePaymentForMembership($membershipPayment, $stripeSession)
+    private function createMembershipDeliverable($membershipPayment, $session)
     {
-        \Log::info('MembershipController: Creating StripePaymentDetail for membership', [
-            'membership_payment_id' => $membershipPayment->id,
-            'membership_id' => $membershipPayment->membership->id,
-            'session_id' => $membershipPayment->session_id
-        ]);
-        
-        // Create actual StripePaymentDetail record
-        $stripePayment = \App\Models\StripePaymentDetail::create([
-            'session_id' => $membershipPayment->session_id,
-            'amount_subtotal' => $membershipPayment->amount,
-            'amount_total' => $membershipPayment->amount + ($membershipPayment->tax ?? 0),
-            'currency' => $membershipPayment->currency,
-            'user_id' => $membershipPayment->user_id,
-            'owner_id' => $membershipPayment->membership->user_id,
-            'name' => $membershipPayment->guest_name,
-            'guest_email' => $membershipPayment->guest_email,
-            'message' => $membershipPayment->surprise_message ?? null,
-            'anonymous' => $membershipPayment->anonymous ?? false,
-            'tax' => $membershipPayment->tax ?? 0,
-            'payment_status' => 'paid',
-            'payment_method_type' => 'card'
-        ]);
-        
-        // Create a temporary wish item in the database that represents the membership
-        // This allows the existing CheckoutMailToUser system to work without modification
-        $tempWishItem = \App\Models\WishItem::create([
-            'user_id' => $membershipPayment->membership->user_id,
-            'wishname' => $membershipPayment->membership->level . ' Membership Access',
-            'description' => 'Membership access with exclusive benefits - ' . json_encode(json_decode($membershipPayment->membership->rewards, true) ?? []),
-            'price' => $membershipPayment->amount,
-            'currency' => $membershipPayment->currency,
-            'reward' => $membershipPayment->membership->perma_link, // Use membership thumbnail as reward
-            'price_id' => $membershipPayment->price_id,
-            'stripe_product_id' => $membershipPayment->membership->product_id,
-            'is_approved' => 1, // Auto-approve membership access items
-            'content_file' => null, // Memberships don't have content files
-            'content_file_type' => null,
-            'content_file_name' => null
-        ]);
-        
-        // Create corresponding StripePaymentItems record linked to the temp wish item
-        $stripePaymentItem = \App\Models\StripePaymentItems::create([
-            'uuid' => \Illuminate\Support\Str::uuid()->toString(),
-            'stripe_payment_detail_id' => $stripePayment->id,
-            'wish_item_id' => $tempWishItem->id, // Use the temporary wish item ID
-            'amount' => $membershipPayment->amount,
-            'quantity' => 1,
-            'anonymous' => $membershipPayment->anonymous ?? false,
-            'message' => $membershipPayment->surprise_message ?? null
-        ]);
-        
-        \Log::info('MembershipController: StripePaymentDetail created successfully', [
-            'stripe_payment_id' => $stripePayment->id,
-            'payment_item_id' => $stripePaymentItem->id,
-            'temp_wish_item_id' => $tempWishItem->id,
-            'membership_id' => $membershipPayment->membership->id,
-            'membership_level' => $membershipPayment->membership->level,
-            'guest_email' => $membershipPayment->guest_email
-        ]);
-        
-        return $stripePayment;
+        try {
+            $membership = $membershipPayment->membership;
+            
+            // Get payment intent ID from Stripe session if available
+            $paymentIntentId = null;
+            if ($session && isset($session->id)) {
+                try {
+                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                    $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
+                    $paymentIntentId = $retrievedSession->payment_intent ?? null;
+                    \Log::info('MembershipController: Retrieved payment intent from session', [
+                        'session_id' => $session->id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('MembershipController: Failed to retrieve payment intent from session', [
+                        'session_id' => $session->id ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Create deliverable entry for tracking (exactly like bills)
+            $deliverable = \App\Models\Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $membership->product_id ?? 'membership_' . $membership->id,
+                'price_id' => $membership->price_id,
+                'item_id' => $membership->id, // Add item_id for membership lookup
+                'creator_id' => $membership->user_id,
+                'gifter_id' => $membershipPayment->user_id,
+                'payment_intent_id' => $paymentIntentId,
+                'session_id' => $session->id,
+                'deliverable_type' => 'access', // Membership provides access, not a file
+                'product_type' => 'membership',
+                'transaction_amount' => $membershipPayment->amount,
+                'customer_email' => $membershipPayment->guest_email,
+                'customer_name' => $membershipPayment->guest_name,
+                'payment_currency' => strtoupper($membershipPayment->currency ?? 'GBP'),
+                'anonymous' => $membershipPayment->anonymous ?? false,
+                'message' => $membershipPayment->surprise_message,
+                'deliverable_url' => null, // Memberships don't have downloadable content
+                'metadata' => json_encode([
+                    'product_type' => 'membership',
+                    'membership_id' => $membership->id,
+                    'membership_name' => $membership->level . ' Membership Access',
+                    'membership_level' => $membership->level,
+                    'amount' => $membershipPayment->amount,
+                    'currency' => $membershipPayment->currency,
+                    'subscription_id' => $membershipPayment->stripe_id,
+                    'recurring_type' => $membershipPayment->recurring_type,
+                    'recurring_for' => $membershipPayment->recurring_for,
+                    'anonymous' => $membershipPayment->anonymous,
+                    'message' => $membershipPayment->surprise_message,
+                    'guest_email' => $membershipPayment->guest_email,
+                    'guest_name' => $membershipPayment->guest_name,
+                    'members_only_access' => true, // Flag indicating this grants membership access
+                    'subscription_active' => true
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            // Dispatch ProcessWishItemDeliverable job for certificate generation
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+            
+            // Update Stripe payment intent metadata (same as bills)
+            if ($paymentIntentId) {
+                try {
+                    $stripeMetadataService = app(\App\Services\StripeMetadataService::class);
+                    $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                        'membership_processed_at' => now()->toISOString(),
+                        'immediate_delivery' => 'true'
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('MembershipController: Failed to update Stripe metadata', [
+                        'deliverable_id' => $deliverable->id,
+                        'payment_intent_id' => $paymentIntentId,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            Log::info('Membership deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'membership_payment_id' => $membershipPayment->id,
+                'membership_id' => $membership->id,
+                'membership_level' => $membership->level
+            ]);
+
+            return $deliverable;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create membership deliverable', [
+                'error' => $e->getMessage(),
+                'membership_payment_id' => $membershipPayment->id ?? 'unknown',
+                'membership_id' => $membershipPayment->membership->id ?? 'unknown'
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Create deliverable entry for membership renewal (similar to initial purchase)
+     */
+    private function createMembershipRenewalDeliverable($membershipPayment)
+    {
+        try {
+            $membership = $membershipPayment->membership;
+            
+            if (!$membership) {
+                \Log::error('MembershipController: No membership found for renewal deliverable', [
+                    'membership_payment_id' => $membershipPayment->id
+                ]);
+                return null;
+            }
+            
+            // For renewals, we don't have a session but we have the subscription info
+            $paymentIntentId = null; // Renewals typically don't have payment intent, just subscription invoice
+            
+            // Create deliverable entry for renewed membership access
+            $deliverable = \App\Models\Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $membership->product_id ?? 'membership_' . $membership->id,
+                'price_id' => $membership->price_id,
+                'item_id' => $membership->id,
+                'creator_id' => $membership->user_id,
+                'gifter_id' => $membershipPayment->user_id,
+                'payment_intent_id' => $paymentIntentId,
+                'session_id' => $membershipPayment->session_id, // Original session, not renewal invoice
+                'deliverable_type' => 'membership_access',
+                'product_type' => 'membership',
+                'transaction_amount' => $membershipPayment->amount,
+                'customer_email' => $membershipPayment->guest_email,
+                'customer_name' => $membershipPayment->guest_name,
+                'payment_currency' => strtoupper($membershipPayment->currency ?? 'GBP'),
+                'anonymous' => $membershipPayment->anonymous ?? false,
+                'message' => $membershipPayment->surprise_message,
+                'deliverable_url' => null, // Members-only access, no direct content URL
+                'metadata' => json_encode([
+                    'certificate' => 'true', // Enable certificate for renewed membership
+                    'product_type' => 'membership',
+                    'membership_id' => $membership->id,
+                    'membership_level' => $membership->level,
+                    'membership_name' => $membership->level . ' Membership',
+                    'amount' => $membershipPayment->amount,
+                    'currency' => $membershipPayment->currency,
+                    'subscription_id' => $membershipPayment->stripe_id,
+                    'recurring_type' => $membershipPayment->recurring_type,
+                    'recurring_for' => $membershipPayment->recurring_for,
+                    'anonymous' => $membershipPayment->anonymous,
+                    'message' => $membershipPayment->surprise_message,
+                    'guest_email' => $membershipPayment->guest_email,
+                    'guest_name' => $membershipPayment->guest_name,
+                    'members_only_access' => true, // Flag for membership access
+                    'subscription_active' => true,
+                    'is_renewal' => true, // Mark as renewal deliverable
+                    'renewal_period_start' => now()->toISOString(),
+                    'renewal_period_end' => $membershipPayment->upcoming_payment ?? Carbon::now()->addMonth()->toISOString()
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            // Dispatch ProcessWishItemDeliverable job for certificate generation
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+            Log::info('Membership renewal deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'membership_payment_id' => $membershipPayment->id,
+                'membership_id' => $membership->id,
+                'membership_level' => $membership->level,
+                'is_renewal' => true,
+                'has_certificate' => true
+            ]);
+
+            return $deliverable;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create membership renewal deliverable', [
+                'error' => $e->getMessage(),
+                'membership_payment_id' => $membershipPayment->id ?? 'unknown',
+                'membership_id' => $membershipPayment->membership->id ?? 'unknown'
+            ]);
+            return null;
+        }
     }
 }

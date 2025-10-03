@@ -103,8 +103,8 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             // Get price from bill or transaction amount
             itemprice = deliverable.bill.price || deliverable.transaction_amount || metadata.amount;
         } else if (deliverable.product_type === 'membership' && deliverable.membership) {
-            // For membership items, show the membership name
-            itemName = deliverable.membership.name;
+            // For membership items, show the membership level
+            itemName = `${deliverable.membership.level} Membership`;
             itemImage = deliverable.membership.perma_link;
             itemprice = deliverable.membership.price || deliverable.transaction_amount || metadata.amount;
         } else if (metadata.bill_name) {
@@ -172,7 +172,10 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                 (deliverable.wish_item?.currency || deliverable.payment_currency || metadata.currency || auth.user.default_currency || global_currency)
                                             )}</p>
                                             <span className={`capitalize px-3 py-1 text-xs font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
-                                                Content {deliverable.status || 'Processing'}
+                                                {deliverable.product_type === 'membership' ? 
+                                                    (deliverable.status === 'delivered' ? 'Content Delivered' : 'Content Processing') :
+                                                    `Content ${deliverable.status || 'Processing'}`
+                                                }
                                             </span>
                                         </div>
                                     </div>
@@ -200,7 +203,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                             text={<>🎉 View Exclusive Content</>} >
                                                                 <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
                                                         </Popup> */}
-                                                        {deliverable?.product_type != 'support_payment'  ?
+                                                        {deliverable?.product_type != 'support_payment' && deliverable?.product_type != 'membership' && deliverable.deliverable_url  ?
                                                             <li className='flex items-center flex-wrap'>
                                                                 <a target='_blank' href={`${deliverable.deliverable_url}`} 
                                                                 className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
@@ -220,6 +223,13 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 
                                                             className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
+                                                        </li>
+                                                    : ''}
+                                                    
+                                                    {deliverable?.product_type == 'membership'   ?
+                                                        <li className='flex items-center flex-wrap'>
+                                                            <Link href={`/${deliverable?.creator?.username}`} 
+                                                            className="ms-2 text-[15px] text-pink" >🎉 Get Members Only Post Access</Link>
                                                         </li>
                                                     : ''}
 

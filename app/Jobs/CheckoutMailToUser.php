@@ -185,6 +185,25 @@ class CheckoutMailToUser implements ShouldQueue
                 return;
             }
             
+            // Get payment intent ID from Stripe session if available
+            $paymentIntentId = null;
+            if ($this->payment->session_id) {
+                try {
+                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                    $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
+                    $paymentIntentId = $session->payment_intent ?? null;
+                    \Log::info('CheckoutMailToUser: Retrieved payment intent from session', [
+                        'session_id' => $this->payment->session_id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('CheckoutMailToUser: Failed to retrieve payment intent from session', [
+                        'session_id' => $this->payment->session_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             $deliverable = \App\Models\Deliverable::create([
                 'uuid' => \Str::uuid(),
                 'product_id' => (string) $wish->id, // Use actual wish_id from database, not Stripe product_id
@@ -192,10 +211,10 @@ class CheckoutMailToUser implements ShouldQueue
                 'price_id' => $wish->price_id,
                 'creator_id' => $wish->user_id,
                 'gifter_id' => $this->payment->user_id,
-                'payment_intent_id' => $this->payment->stripe_payment_intent_id ?? null,
+                'payment_intent_id' => $paymentIntentId,
                 'session_id' => $this->payment->session_id,
                 'deliverable_type' => $deliverableType,
-                'product_type' => 'wish',
+                'product_type' => $this->getProductTypeFromWish($wish),
                 'transaction_amount' => $paymentItem->amount * $paymentItem->quantity,
                 'deliverable_url' => $deliverableUrl,
                 'is_deliverable' => !empty($deliverableUrl), // Mark as deliverable if has content
@@ -300,6 +319,33 @@ class CheckoutMailToUser implements ShouldQueue
         }
         
         return $baseUrl;
+    }
+    
+    /**
+     * Determine product type based on wish item properties
+     */
+    private function getProductTypeFromWish($wish)
+    {
+        if (!$wish) {
+            return 'wish';
+        }
+        
+        // Check if wish name or description indicates membership
+        $wishName = strtolower($wish->wishname ?? '');
+        $description = strtolower($wish->description ?? '');
+        
+        if (strpos($wishName, 'membership') !== false || strpos($description, 'membership') !== false) {
+            return 'membership';
+        }
+        
+        // Check if Stripe product ID indicates membership
+        $productId = strtolower($wish->stripe_product_id ?? '');
+        if (strpos($productId, 'membership') !== false || strpos($productId, 'member') !== false) {
+            return 'membership';
+        }
+        
+        // Default to wish
+        return 'wish';
     }
     
     /**
@@ -513,6 +559,25 @@ class CheckoutMailToUser implements ShouldQueue
                 $customerName = $this->payment->name ?? 'Guest';
             }
             
+            // Get payment intent ID from Stripe session if available
+            $paymentIntentId = null;
+            if ($this->payment->session_id) {
+                try {
+                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                    $session = $stripe->checkout->sessions->retrieve($this->payment->session_id);
+                    $paymentIntentId = $session->payment_intent ?? null;
+                    \Log::info('CheckoutMailToUser: Retrieved payment intent from session (item deliverable)', [
+                        'session_id' => $this->payment->session_id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('CheckoutMailToUser: Failed to retrieve payment intent from session (item deliverable)', [
+                        'session_id' => $this->payment->session_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             $deliverable = \App\Models\Deliverable::create([
                 'uuid' => \Str::uuid(),
                 'product_id' => (string) $wish->id, // Use actual wish_id from database, not Stripe product_id
@@ -520,10 +585,10 @@ class CheckoutMailToUser implements ShouldQueue
                 'price_id' => $wish->price_id,
                 'creator_id' => $wish->user_id,
                 'gifter_id' => $this->payment->user_id,
-                'payment_intent_id' => $this->payment->stripe_payment_intent_id ?? null,
+                'payment_intent_id' => $paymentIntentId,
                 'session_id' => $this->payment->session_id,
                 'deliverable_type' => $deliverableType,
-                'product_type' => 'wish',
+                'product_type' => $this->getProductTypeFromWish($wish),
                 'transaction_amount' => $paymentItem->amount * $paymentItem->quantity,
                 'deliverable_url' => $deliverableUrl,
                 'customer_email' => $customerEmail,
@@ -568,6 +633,23 @@ class CheckoutMailToUser implements ShouldQueue
                     'deliverable_id' => $deliverable->id,
                     'error' => $e->getMessage()
                 ]);
+            }
+            
+            // Update Stripe payment intent metadata immediately for deliverables with payment intents
+            if ($deliverable->payment_intent_id && $status === 'delivered') {
+                try {
+                    $stripeMetadataService = app(\App\Services\StripeMetadataService::class);
+                    $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                        'checkout_processed_at' => now()->toISOString(),
+                        'immediate_delivery' => 'true'
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('CheckoutMailToUser: Failed to update Stripe metadata', [
+                        'deliverable_id' => $deliverable->id,
+                        'payment_intent_id' => $deliverable->payment_intent_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
             
             return $deliverable;

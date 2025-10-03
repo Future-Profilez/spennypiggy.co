@@ -79,7 +79,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
             <div className="inlinetab">
                 <div className='max-w-3xl m-auto'>
                     <ActivateCard auth={auth}/>
-                    <AboutScreen />
+                    {/* <AboutScreen /> */}
                 </div>
                 <Tabs
                     activeKey={activeTab}

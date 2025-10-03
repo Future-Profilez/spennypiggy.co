@@ -761,6 +761,25 @@ class BillsController extends Controller
         try {
             $bill = $billPayment->bill;
             
+            // Get payment intent ID from Stripe session if available
+            $paymentIntentId = null;
+            if ($session && isset($session->id)) {
+                try {
+                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                    $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
+                    $paymentIntentId = $retrievedSession->payment_intent ?? null;
+                    \Log::info('BillsController: Retrieved payment intent from session', [
+                        'session_id' => $session->id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('BillsController: Failed to retrieve payment intent from session', [
+                        'session_id' => $session->id ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
             // Create deliverable entry for tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
@@ -769,7 +788,7 @@ class BillsController extends Controller
                 'item_id' => $bill->id, // Add item_id for bill lookup
                 'creator_id' => $bill->user_id,
                 'gifter_id' => $billPayment->user_id,
-                'payment_intent_id' => $session->payment_intent ?? null,
+                'payment_intent_id' => $paymentIntentId,
                 'session_id' => $session->id,
                 'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
                 'product_type' => 'bill',

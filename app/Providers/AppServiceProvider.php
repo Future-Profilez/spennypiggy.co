@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Notification;
 use App\Channels\MagicBellChannel;
+use App\Models\Deliverable;
+use App\Observers\DeliverableObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +36,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register model observers
+        Deliverable::observe(DeliverableObserver::class);
+        
         // Register custom notification channel for MagicBell push notifications
         Notification::extend('push', function ($app) {
             return new MagicBellChannel();
