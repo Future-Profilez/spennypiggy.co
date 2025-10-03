@@ -232,34 +232,7 @@ export default function Dashboard(props) {
         }
     };
 
-    const { flash, errors } = usePage().props;
-    useEffect(() => {
-        if (errors) {
-            Object.entries(errors).forEach(([key, value]) => {
-                errorAlert(value);
-            });
-        }
-        if (flash?.success) {
-            setTimeout(() => {
-                successAlert(flash.success);
-            }, 500);
-        }
-        if (flash?.error) {
-            setTimeout(() => {
-                errorAlert(flash.error);
-            }, 500);
-        }
-        if (flash?.warning) {
-            setTimeout(() => {
-                warningAlert(flash.warning);
-            }, 500);
-        }
-        if (flash?.info) {
-            setTimeout(() => {
-                infoAlert(flash.info);
-            }, 500);
-        }
-    }, [errors, flash]);
+    // Flash messages now handled centrally by FlashMessenger in layout
 
 
     const [showAlert, setShowAlert] = useState(true);
@@ -693,7 +666,6 @@ export default function Dashboard(props) {
                                                                     />
                                                                 </div>
                                                             </div>
-
                                                             <div className="ps-md-4 col-md-6">
                                                                 {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
                                                                     <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>
@@ -743,13 +715,15 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
                                                                 <FeedList
+                                                                    user={user}
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    initialFilter="all"
                                                                 />
                                                             </div>
-                                                        </div>
-                                                    </Suspense>
+                                                            </div>
+                                                        </Suspense>
                                                  :
                                                     ""
                                                 }
@@ -927,6 +901,7 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    initialFilter="all"
                                                                 />
                                                             </Suspense>
                                                         ) : (

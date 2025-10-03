@@ -1,3 +1,6 @@
+Meta missing in memberships and bills
+Thankku page
+
  1. auto tweets not working
  2. one time subscriptions are now showing in wish or subscriptions
  3. Wish tracker me payments message are not showing
@@ -9,6 +12,8 @@
  9. when profile is verify of any creatort then their cover banner not appproved automatically
 10. admin counter not showing
 11. check bill added in same currency 
+
+
 
 
 
@@ -40,3 +45,211 @@ https://yoursite.com/admin/logs?token=YOUR_TOKEN
 ✅ /api/debug/logs - Returns log contents with search and pagination features  
 ✅ /api/debug/logs/clear - Clears log files  
 ✅ /api/debug/logs/download - Downloads log files  
+
+
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=========================================================================================================
+=================================== ======================================================================
+=========================================================================================================
+=========================================================================================================
+
+
+
+Founder Bonus System – Detailed Flow
+1. Purpose
+
+The Founder Bonus is a special incentive for creators who perform exceptionally in their first 30 days. Only the first 150 qualifying creators can become Founders. Eligible Founders get a 10% bonus on monthly gifter spend (£500–£10,000) from the platform (not from gifters).
+
+All history, progress, and payouts are tracked in a single table. Frontend shows current month progress, profile badge, and announcement. Admin can reject payout with reason (email sent to creator).
+
+2. Key Configuration
+
+Founder Bonus Thresholds
+
+Minimum first 30-day earnings: £2,500
+
+Monthly spend for bonus: £500–£10,000
+
+Bonus %: 10%
+
+Maximum Founder seats: 150
+
+Job schedule
+
+Qualification check: 6th of each month
+
+Payout processing: 7th of each month
+
+Admin options
+
+Can reject payout with reason
+
+Can reduce first 30-day minimum if needed
+
+Frontend
+
+Profile badge for Founders
+
+Announcement area (Homepage or Profile)
+
+Founder Bonus page (shows current month progress)
+
+3. Tables & Relationships
+founder_bonus table
+
+Tracks monthly history and payouts.
+
+Columns (suggested structure):
+
+id (PK)
+
+creator_id (FK → users)
+
+month (YYYY-MM)
+
+first_30d_earnings (decimal)
+
+founder_qualified_at (timestamp)
+
+monthly_earnings (decimal)
+
+bonus_amount (decimal)
+
+payout_status (enum: pending / paid / rejected)
+
+payout_date (timestamp)
+
+payout_rejection_reason (string, nullable)
+
+created_at
+
+updated_at
+
+Users table relation:
+
+users.is_founder → boolean, calculated from founder_bonus table (latest month where creator qualified).
+
+4. Workflow – New & Existing Creators
+Step 1: Track First 30 Days Earnings
+
+On creator creation, record created_at.
+
+Nightly job calculates first_30d_earnings = SUM(gifter_spend) for first 30 days.
+
+If first_30d_earnings ≥ £2,500 AND Founder seats available, mark as founder_qualified_at = current_date and create a row in founder_bonus table with month = month of qualification.
+
+Update users.is_founder = true.
+
+Step 2: Monthly Bonus Calculation
+
+Nightly job on 6th of each month:
+
+For all active Founders:
+
+Calculate total gifter spend for previous month.
+
+If spend is between £500–£10,000, calculate bonus = 10% × monthly spend.
+
+Store bonus and monthly spend in founder_bonus table (for that month).
+
+If any refunds occurred after previous bonus payout, subtract from next month’s bonus automatically.
+
+Send congratulations email to qualifying Founders with:
+
+Bonus amount
+
+Link to Founder Bonus page
+
+Badge reminder
+
+Step 3: Payout Processing
+
+Job runs 7th of each month:
+
+For rows with bonus_amount > 0 and payout_status = pending:
+
+Attempt payout via Stripe from platform funds.
+
+Update payout_status = paid and payout_date.
+
+If payout fails or admin rejects, set payout_status = rejected and require reason.
+
+Email reason to creator.
+
+Step 4: Profile & Frontend
+
+Profile Badge
+
+Display Founder badge if users.is_founder = true.
+
+Announcement
+
+Show banner/announcement on Homepage/Profile about Founder program.
+
+Founder Bonus Page
+
+Shows current month progress:
+
+Total gifter spend
+
+Bonus earned (if applicable)
+
+Remaining to qualify (if under threshold)
+
+5. Edge Cases & Rules
+
+Founder Seats
+
+Only first 150 creators qualify.
+
+Seats are filled sequentially based on who meets £2,500 first.
+
+If fewer qualify in a month, remaining seats roll over.
+
+Refund Handling
+
+If bonus paid and refunds occur later, deduct from next month bonus.
+
+Admin Override
+
+Admin can reject payout; reason must be stored and emailed.
+
+Admin can reduce minimum first 30-day threshold if needed.
+
+Historic Data
+
+All monthly calculations stored in founder_bonus table.
+
+Frontend shows only current month progress, not historical payouts.
+
+Notifications
+
+Congratulation email when qualifying.
+
+Email on payout rejection.
+
+UI/UX
+
+Theme matched to vintage look.
+
+Clear messaging for qualifying and bonus progress.
+
+6. AI Implementation Notes
+
+No new migrations besides founder_bonus table.
+
+Jobs: 6th = qualification, 7th = payout.
+
+Stripe metadata: store creator_id, month, bonus_amount, payout_status, payout_date.
+
+All calculations must be idempotent (re-running jobs should not double count).
+
+Deliverables table is checked to confirm gifter spend, no new frontend admin required.

@@ -99,37 +99,34 @@ class CreatorActivityService
 
     /**
      * Get total count of recent content items (approved only)
+     * Removed Redis caching to reduce ElastiCache costs
      */
     public function getRecentContentCount(User $creator): int
     {
-        $cacheKey = "creator_content_count_{$creator->id}";
+        $since = Carbon::now()->subDays(self::ACTIVITY_PERIOD_DAYS);
         
-        return Cache::remember($cacheKey, 300, function () use ($creator) { // 5 minute cache
-            $since = Carbon::now()->subDays(self::ACTIVITY_PERIOD_DAYS);
+        $posts = Post::where('user_id', $creator->id)
+            ->where('approved', 1)
+            ->where('created_at', '>=', $since)
+            ->where('type', '!=', 'support_thanks') // Exclude automatic support thank you posts
+            ->count();
             
-            $posts = Post::where('user_id', $creator->id)
-                ->where('approved', 1)
-                ->where('created_at', '>=', $since)
-                ->where('type', '!=', 'support_thanks') // Exclude automatic support thank you posts
-                ->count();
-                
-            $wishes = WishItem::where('user_id', $creator->id)
-                ->where('is_approved', 1)
-                ->where('created_at', '>=', $since)
-                ->count();
-                
-            $memberships = Membership::where('user_id', $creator->id)
-                ->where('approved', 1)
-                ->where('created_at', '>=', $since)
-                ->count();
-                
-            $shops = Shop::where('user_id', $creator->id)
-                ->where('approved', 1)
-                ->where('created_at', '>=', $since)
-                ->count();
-                
-            return $posts + $wishes + $memberships + $shops;
-        });
+        $wishes = WishItem::where('user_id', $creator->id)
+            ->where('is_approved', 1)
+            ->where('created_at', '>=', $since)
+            ->count();
+            
+        $memberships = Membership::where('user_id', $creator->id)
+            ->where('approved', 1)
+            ->where('created_at', '>=', $since)
+            ->count();
+            
+        $shops = Shop::where('user_id', $creator->id)
+            ->where('approved', 1)
+            ->where('created_at', '>=', $since)
+            ->count();
+            
+        return $posts + $wishes + $memberships + $shops;
     }
 
     /**

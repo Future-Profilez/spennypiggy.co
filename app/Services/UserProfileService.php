@@ -194,112 +194,112 @@ class UserProfileService
     /**
      * Get user's posts with optimized queries and subscription access logic
      */
-    public function getUserPosts(int $userId, int $limit = 10): array
+    public function getUserPosts(int $userId, string $module = 'all', int $perPage = 10, int $page = 1)
     {
-        $cacheKey = "user_posts_{$userId}_{$limit}";
+        // Don't cache paginated results to ensure fresh data
+        $query = Post::where('user_id', $userId);
 
-        // return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $limit) {
-            $query = Post::where('user_id', $userId);
+        // Apply approval filter for non-owners
+        if (!Auth::check() || Auth::id() !== $userId) {
+            $query->where('approved', 1);
+        }
 
-            // Apply approval filter for non-owners
-            if (!Auth::check() || Auth::id() !== $userId) {
-                $query->where('approved', 1);
-            }
+        // Apply module filtering
+        $query->when($module !== 'all', function ($q) use ($module) {
+            $q->forModule($module);
+        });
 
-            $posts = $query->latest()
-                ->limit($limit)
-                ->get();
+        $posts = $query->latest()->paginate($perPage, ['*'], 'page', $page);
 
-            // Check subscription access for each post
-            $currentUser = Auth::user();
-            $isOwner = $currentUser && $currentUser->id === $userId;
+        // Check subscription access for each post
+        $currentUser = Auth::user();
+        $isOwner = $currentUser && $currentUser->id === $userId;
+        
+        // Get user's active subscriptions for this creator if not the owner
+        $hasActiveSubscription = false;
+        $hasMembership = false;
+        $hasBill = false;
+        $hasSupport = false;
+        
+        if ($currentUser && !$isOwner) {
+            // Check active wish item subscriptions
+            $hasActiveSubscription = \App\Models\WishItemSubscription::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+            ->whereHas('wish_item', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where('status', 'paid')
+            ->where('stripe_status', 'active')
+            ->where(function ($q) {
+                $q->where(function ($recurring) {
+                    $recurring->where('recurring_for', 'continue')
+                             ->where('upcoming_payment', '>=', \Carbon\Carbon::now());
+                })->orWhere(function ($onetime) {
+                    $onetime->where('recurring_for', 'onetime')
+                           ->where('created_at', '>=', \Carbon\Carbon::now()->subDays(30));
+                });
+            })
+            ->exists();
             
-            // Get user's active subscriptions for this creator if not the owner
-            $hasActiveSubscription = false;
-            $hasMembership = false;
-            $hasBill = false;
-            $hasSupport = false;
+            // Check active memberships
+            $hasMembership = \App\Models\MembershipPayment::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+            ->whereHas('membership', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where('status', 'paid')
+            ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
+            ->exists();
             
-            if ($currentUser && !$isOwner) {
-                // Check active wish item subscriptions
-                $hasActiveSubscription = \App\Models\WishItemSubscription::where(function ($q) use ($currentUser) {
-                    $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
-                })
-                ->whereHas('wish_item', function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                ->where('status', 'paid')
-                ->where('stripe_status', 'active')
-                ->where(function ($q) {
-                    $q->where(function ($recurring) {
-                        $recurring->where('recurring_for', 'continue')
-                                 ->where('upcoming_payment', '>=', \Carbon\Carbon::now());
-                    })->orWhere(function ($onetime) {
-                        $onetime->where('recurring_for', 'onetime')
-                               ->where('created_at', '>=', \Carbon\Carbon::now()->subDays(30));
-                    });
-                })
-                ->exists();
-                
-                // Check active memberships
-                $hasMembership = \App\Models\MembershipPayment::where(function ($q) use ($currentUser) {
-                    $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
-                })
-                ->whereHas('membership', function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                ->where('status', 'paid')
-                ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
-                ->exists();
-                
-                // Check active bills
-                $hasBill = \App\Models\BillPayment::where(function ($q) use ($currentUser) {
-                    $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
-                })
-                ->whereHas('bill', function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                ->where('status', 'paid')
-                ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
-                ->exists();
-                
-                // Check support/tip payments
-                $hasSupport = \App\Models\TipGoalsPayment::where(function ($q) use ($currentUser) {
-                    $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
-                })
-                ->where('creator_id', $userId)
-                ->where('status', 'paid')
-                ->exists();
-            }
+            // Check active bills
+            $hasBill = \App\Models\BillPayment::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+            ->whereHas('bill', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where('status', 'paid')
+            ->where('upcoming_payment', '>=', \Carbon\Carbon::now())
+            ->exists();
             
-            // Set is_lock based on post type and user's access
-            $posts->transform(function ($post) use ($isOwner, $hasActiveSubscription, $hasMembership, $hasBill, $hasSupport) {
-                if ($isOwner) {
-                    // Owner can always see their own posts
-                    $post->is_lock = 0;
-                } else {
-                    // Check access based on post type
-                    switch ($post->for_module) {
-                        case 'subscription':
-                            $post->is_lock = $hasActiveSubscription ? 0 : 1;
-                            break;
-                        case 'membership':
-                            $post->is_lock = $hasMembership ? 0 : 1;
-                            break;
-                        case 'support':
-                            $post->is_lock = $hasSupport ? 0 : 1;
-                            break;
-                        default:
-                            // Public posts or posts with no module restriction
-                            $post->is_lock = 0;
-                            break;
-                    }
+            // Check support/tip payments
+            $hasSupport = \App\Models\TipGoalsPayment::where(function ($q) use ($currentUser) {
+                $q->where('user_id', $currentUser->id)->orWhere('guest_email', $currentUser->email);
+            })
+            ->where('creator_id', $userId)
+            ->where('status', 'paid')
+            ->exists();
+        }
+        
+        // Apply is_lock logic to paginated posts using through() method
+        $posts->through(function ($post) use ($isOwner, $hasActiveSubscription, $hasMembership, $hasBill, $hasSupport) {
+            if ($isOwner) {
+                // Owner can always see their own posts
+                $post->is_lock = 0;
+            } else {
+                // Check access based on post type
+                switch ($post->for_module) {
+                    case 'subscription':
+                        $post->is_lock = $hasActiveSubscription ? 0 : 1;
+                        break;
+                    case 'membership':
+                        $post->is_lock = $hasMembership ? 0 : 1;
+                        break;
+                    case 'support':
+                        $post->is_lock = $hasSupport ? 0 : 1;
+                        break;
+                    default:
+                        // Public posts or posts with no module restriction
+                        $post->is_lock = 0;
+                        break;
                 }
-                return $post;
-            });
+            }
+            return $post;
+        });
 
-            return $posts->toArray();
-        // });
+        return $posts;
     }
 
     /**

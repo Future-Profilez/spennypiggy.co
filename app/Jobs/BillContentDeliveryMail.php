@@ -101,8 +101,8 @@ class BillContentDeliveryMail implements ShouldQueue
                 ))
             ]);
 
-            // Dispatch ProcessWishItemDeliverable job for certificate generation
-            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+            // Dispatch ProcessWishItemDeliverable job for certificate generation using SQS
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
             
             \Log::info('BillContentDeliveryMail: ProcessWishItemDeliverable job dispatched for certificate generation', [
                 'deliverable_id' => $deliverable->id,

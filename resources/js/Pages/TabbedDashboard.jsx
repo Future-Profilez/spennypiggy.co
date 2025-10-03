@@ -36,9 +36,8 @@ export default function TabbedDashboard(props) {
     const [gifts, setGifts] = useState([]);
     const [giftsloading, setGiftsLoading] = useState(false);
 
-    // Alerts
+    // Alerts (handled by FlashMessenger in layout)
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
-    const { flash, errors } = usePage().props;
 
     // Fetch gifts when tab changes to gifts
     const fetch_gifts = async (signal) => {
@@ -62,26 +61,7 @@ export default function TabbedDashboard(props) {
         }
     }, [activeTab, username]);
 
-    // Handle flash messages
-    useEffect(() => {
-        if (errors) {
-            Object.entries(errors).forEach(([key, value]) => {
-                errorAlert(value);
-            });
-        }
-        if (flash?.success) {
-            setTimeout(() => successAlert(flash.success), 500);
-        }
-        if (flash?.error) {
-            setTimeout(() => errorAlert(flash.error), 500);
-        }
-        if (flash?.warning) {
-            setTimeout(() => warningAlert(flash.warning), 500);
-        }
-        if (flash?.info) {
-            setTimeout(() => infoAlert(flash.info), 500);
-        }
-    }, [errors, flash]);
+    // Flash messages now handled centrally by FlashMessenger in layout
 
     // Handle tab changes
     const handleTabChange = (tabKey) => {

@@ -1871,8 +1871,8 @@ class StripeController extends Controller
                                 ])
                             ]);
                             
-                            // Dispatch ProcessWishItemDeliverable job for content processing
-                            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                            // Dispatch ProcessWishItemDeliverable job for content processing using SQS
+                            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
                             
                             Log::info('Subscription content delivery job dispatched', [
                                 'deliverable_id' => $deliverable->id,
@@ -2033,8 +2033,8 @@ class StripeController extends Controller
                     ])
                 ]);
                 
-                // Dispatch job to process renewal content delivery
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                // Dispatch job to process renewal content delivery using SQS
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
                 
                 Log::info('Subscription renewal content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,

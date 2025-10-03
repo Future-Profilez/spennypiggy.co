@@ -180,4 +180,26 @@ class Post extends Model
 
         return false;
     }
+
+    /**
+     * Scope to filter posts by module type
+     */
+    public function scopeForModule($query, $module)
+    {
+        if ($module === 'all') {
+            return $query;
+        }
+        
+        // Map filter names to for_module values
+        $moduleMap = [
+            'supporters' => 'support',
+            'members' => 'membership',
+            'subscribers' => 'subscription',
+            'shoutouts' => 'public',
+        ];
+        
+        $moduleValue = $moduleMap[$module] ?? $module;
+        
+        return $query->where('for_module', $moduleValue);
+    }
 }

@@ -123,10 +123,7 @@ class ProcessWishItemDeliverable implements ShouldQueue
                     }
             }
 
-            // Clear activity cache to ensure real-time updates
-            if ($item && $item->user) {
-                app(\App\Services\CreatorActivityService::class)->clearActivityCache($item->user);
-            }
+            // Cache clearing removed - CreatorActivityService no longer uses Redis cache
 
             Log::info("Successfully processed deliverable", [
                 'deliverable_id' => $this->deliverable->id,

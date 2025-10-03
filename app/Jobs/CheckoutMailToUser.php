@@ -246,12 +246,13 @@ class CheckoutMailToUser implements ShouldQueue
                 'has_url' => !empty($deliverableUrl)
             ]);
             
-            // Dispatch certificate generation job for the deliverable
+            // Dispatch certificate generation job for the deliverable using SQS
             try {
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-                \Log::info('CheckoutMailToUser: Certificate generation job dispatched', [
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                \Log::info('CheckoutMailToUser: Certificate generation job dispatched to SQS', [
                     'deliverable_id' => $deliverable->id,
-                    'wish_id' => $wish->id
+                    'wish_id' => $wish->id,
+                    'queue_connection' => 'sqs_certificates'
                 ]);
             } catch (\Exception $e) {
                 \Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [
@@ -621,12 +622,13 @@ class CheckoutMailToUser implements ShouldQueue
                 'has_content' => !empty($deliverableUrl)
             ]);
             
-            // Dispatch certificate generation job for the deliverable
+            // Dispatch certificate generation job for the deliverable using SQS
             try {
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-                \Log::info('CheckoutMailToUser: Certificate generation job dispatched', [
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                \Log::info('CheckoutMailToUser: Certificate generation job dispatched to SQS', [
                     'deliverable_id' => $deliverable->id,
-                    'wish_id' => $wish->id
+                    'wish_id' => $wish->id,
+                    'queue_connection' => 'sqs_certificates'
                 ]);
             } catch (\Exception $e) {
                 \Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [

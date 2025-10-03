@@ -56,4 +56,10 @@ Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {
     Route::get('/{uuid}/certificate/download', [DeliverableController::class, 'downloadCertificate'])->name('api.deliverables.certificate');
 });
 
+// Profile Posts API (supports pagination and filtering)
+Route::middleware('web')->group(function () {
+    Route::get('/profile/{user}/posts', [\App\Http\Controllers\ProfilePostController::class, 'index'])
+        ->name('api.profile.posts');
+});
+
 

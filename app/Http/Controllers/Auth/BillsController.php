@@ -293,7 +293,6 @@ class BillsController extends Controller
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
         DB::beginTransaction();
-        new StripeClient(env('STRIPE_SECRET_KEY'));
         $bill = Bills::with('user')->whereUuid($uuid)->first();
         // if (!in_array($bill->user->subscription_status, [1, 2])) {
         //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
