@@ -28,7 +28,7 @@ class User extends Authenticatable
         'gender', 'password', 'deleted_at', 'creator_category', 'identity_status',
         'identity_verified_at', 'identity_verification_error', 'identity_verification_details',
         'ip_address', 'profile_status_lock', 'profile_reject_reason', 'is_500_limit_exceeded',
-        'is_subscribed',
+        'is_subscribed', 'is_founder',
     ];
 
     protected $hidden = [
@@ -623,5 +623,49 @@ public function getFollowingCountAttribute()
             ->orderByDesc('wish_items_count')
             ->orderByDesc('followers_count')
             ->limit($limit);
+    }
+
+    /**
+     * Founder Bonus relationship
+     */
+    public function founderBonus()
+    {
+        return $this->hasMany(FounderBonus::class, 'creator_id');
+    }
+
+    /**
+     * Get current month founder bonus
+     */
+    public function currentMonthFounderBonus()
+    {
+        return $this->founderBonus()
+            ->where('month', now()->format('Y-m'))
+            ->first();
+    }
+
+    /**
+     * Get deliverables where this user is the gifter (purchaser)
+     */
+    public function deliverables()
+    {
+        return $this->hasMany(Deliverable::class, 'gifter_id');
+    }
+
+    /**
+     * Get deliverables where this user is the creator
+     */
+    public function createdDeliverables()
+    {
+        return $this->hasMany(Deliverable::class, 'creator_id');
+    }
+
+    /**
+     * Check if user is eligible for founder program
+     */
+    public function isEligibleForFounder()
+    {
+        // Check if user has been active for at least 30 days
+        $thirtyDaysAgo = now()->subDays(30);
+        return $this->created_at <= $thirtyDaysAgo && !$this->is_founder;
     }
 }

@@ -182,8 +182,22 @@ class LeaderBoardController extends Controller
             $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'USD');
             $user->total_shop = Helpers::priceFormat($user->default_currency, $user->total_shop, 'USD');
             
-            // Calculate total monetary amount (legacy metric)
-            $user->total_amount = $user->total_payments + $user->total_subscriptions + $user->total_tips + $user->total_member + $user->total_bill + $user->total_shop;
+            // Calculate total monetary amount (legacy metric) with NaN protection
+            $amounts = [
+                $user->total_payments,
+                $user->total_subscriptions,
+                $user->total_tips,
+                $user->total_member,
+                $user->total_bill,
+                $user->total_shop
+            ];
+            
+            // Filter out NaN values and ensure we have valid numbers
+            $validAmounts = array_filter($amounts, function($amount) {
+                return is_numeric($amount) && !is_nan($amount) && is_finite($amount);
+            });
+            
+            $user->total_amount = array_sum($validAmounts);
             
             // Calculate social engagement metrics
             $user->total_supporters = $user->followers_count;

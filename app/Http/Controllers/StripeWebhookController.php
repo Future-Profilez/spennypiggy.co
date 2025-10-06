@@ -1163,7 +1163,14 @@ class StripeWebhookController extends Controller
                 'session_id' => $billPayment->session_id,
                 'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
                 'product_type' => 'bill',
+                'transaction_amount' => $billPayment->amount, // Add transaction amount
                 'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'customer_email' => $billPayment->guest_email ?? $billPayment->user->email ?? null,
+                'customer_name' => $billPayment->guest_name ?? $billPayment->user->name ?? null,
+                'payment_status' => $billPayment->status,
+                'payment_currency' => $billPayment->currency,
+                'anonymous' => $billPayment->anonymous ?? false,
+                'message' => $billPayment->message,
                 'metadata' => json_encode([
                     'product_type' => 'bill',
                     'bill_id' => $bill->id,

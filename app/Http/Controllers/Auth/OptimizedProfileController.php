@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\StripeController;
 use App\Services\UserProfileService;
 use App\SeoMeta;
 use App\StripeControl;
+use App\Models\FounderBonus;
+use App\Models\Deliverable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -56,6 +58,9 @@ class OptimizedProfileController extends Controller
         // Set SEO meta tags
         $this->setSeoMetaTags($user, $username);
 
+        // Get founder bonus data if user is a founder
+        $founderData = $this->getFounderData($user);
+
         return Inertia::render('Dashboard', [
             'username' => $username,
             'user' => $user,
@@ -73,6 +78,7 @@ class OptimizedProfileController extends Controller
             'selectedCategory' => request()->query('category') ?? false,
             'notification_count' => $profileData['notification_count'],
             'profile_steps' => null,
+            'first30DayEarnings' => $founderData['first30DayEarnings'],
             ...$pageData
         ]);
     }
@@ -395,5 +401,30 @@ class OptimizedProfileController extends Controller
             'success' => true,
             'items' => $items
         ]);
+    }
+
+    /**
+     * Get founder bonus data for the user
+     */
+    private function getFounderData($user): array
+    {
+        $first30DayEarnings = 0;
+
+        // Calculate first 30-day earnings for the user
+        if ($user) {
+            $createdAt = $user->created_at;
+            $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
+            
+            // Get total earnings from deliverables within first 30 days
+            $first30DayEarnings = Deliverable::where('creator_id', $user->id)
+                ->where('created_at', '>=', $createdAt)
+                ->where('created_at', '<=', $thirtyDaysAfterCreation)
+                ->where('status', 'delivered')
+                ->sum('transaction_amount');
+        }
+
+        return [
+            'first30DayEarnings' => $first30DayEarnings
+        ];
     }
 }

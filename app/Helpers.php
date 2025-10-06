@@ -49,6 +49,16 @@ class Helpers
 
     public static function priceFormat($currency1, $amount, $currency2)
     {
+        // Validate input amount
+        if (!is_numeric($amount) || is_nan($amount) || !is_finite($amount)) {
+            Log::error('Invalid amount in priceFormat', [
+                'amount' => $amount,
+                'currency1' => $currency1,
+                'currency2' => $currency2
+            ]);
+            return 0; // Return 0 for invalid amounts
+        }
+
         $def = Currency::where('ISO', strtoupper($currency1))->first();
         $prof = Currency::where('ISO', strtoupper($currency2))->first();
 
@@ -73,7 +83,22 @@ class Helpers
 
         // Use ISOdigits to determine decimal places for proper rounding
         $decimalPlaces = $prof->ISOdigits ?? 2;
-        return round($prof_cur_price, $decimalPlaces, PHP_ROUND_HALF_UP);
+        $result = round($prof_cur_price, $decimalPlaces, PHP_ROUND_HALF_UP);
+        
+        // Final validation to ensure we don't return NaN
+        if (is_nan($result) || !is_finite($result)) {
+            Log::error('NaN result in priceFormat', [
+                'amount' => $amount,
+                'currency1' => $currency1,
+                'currency2' => $currency2,
+                'gbp_price' => $gbp_price,
+                'prof_cur_price' => $prof_cur_price,
+                'result' => $result
+            ]);
+            return 0; // Return 0 instead of NaN
+        }
+        
+        return $result;
     }
 
     public static function checkUnsafeContent($uuid)

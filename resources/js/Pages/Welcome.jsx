@@ -24,7 +24,8 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";
 import PaymentSlider from "./home/PaymentSlider";
-export default function Home({ auth, user }) {
+import FounderProgramAnnouncement from "./home/FounderProgramAnnouncement";
+export default function Home({ auth, user, founderBonus }) {
 
     useEffect(()=>{
         AOS && AOS.init({
@@ -56,8 +57,9 @@ export default function Home({ auth, user }) {
 
         <div className="overflow-hidden" >
         <Guest auth={auth.user} user={auth.user}>
-        <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment’s through 🍎 Pay! "} />
+        <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
         <Hero auth={auth} />
+        <FounderProgramAnnouncement founderBonus={founderBonus} />
         <LiveBarSection />
         <PaymentSlider/>
         {/* <ForCreators /> */}

@@ -1,4 +1,5 @@
 import React, { Children } from "./react-polyfill.js";
+import "./bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
 import "../css/app.css";

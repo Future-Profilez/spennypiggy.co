@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\FounderBonusController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -115,6 +116,13 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'founderBonus' => [
+            'minMonthlyEarnings' => config('founder_bonus.bonus.min_monthly_earnings'),
+            'bonusPercentage' => config('founder_bonus.bonus.bonus_percentage') * 100, // Convert to percentage
+            'maxBonusPerMonth' => config('founder_bonus.bonus.max_bonus_per_month'),
+            'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
+            'currencySymbol' => config('founder_bonus.display.currency_symbol'),
+        ],
     ]);
 })->name("home");
 
@@ -173,9 +181,10 @@ Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkC
 
 Route::post("/username-availablity", [RegisteredUserController::class, "checkUsername"])->name("check.username");
 
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
+// Define global Dashboard route (required by multiple controllers and components)
+Route::get('/dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -514,10 +523,29 @@ Route::get('/health', [HealthController::class, 'index'])->name('health.check');
 Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('health.detailed');
 
 
-require __DIR__.'/auth.php';
+// require __DIR__.'/auth.php'; // moved below founder routes
 
 // Debug routes for wish creation issue
 require __DIR__.'/debug-wish.php';
+
+// Founder routes are now defined in auth.php
+
+// Admin Founder Bonus Routes
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/founder/bonuses', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'index'])->name('admin.founder/bonuses.index');
+    Route::get('/founder/bonuses/data', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'getBonuses'])->name('admin.founder/bonuses.data');
+    Route::post('/founder/bonuses/{bonus}/reject', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'rejectPayout'])->name('admin.founder/bonuses.reject');
+    Route::post('/founder/bonuses/{bonus}/approve', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'approvePayout'])->name('admin.founder/bonuses.approve');
+    Route::get('/founder/bonus-settings', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'getSettings'])->name('admin.founder/bonus-settings.get');
+    Route::post('/founder/bonus-settings', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'updateSettings'])->name('admin.founder/bonus-settings.update');
+    Route::get('/founder/bonus-settings-page', function () {
+        return Inertia::render('Admin/FounderBonus/Settings');
+    })->name('admin.founder/bonus-settings.page');
+    Route::post('/founder/bonuses/trigger-qualification-check', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
+});
+
+// Ensure auth routes (including catch-all) load AFTER explicit founder routes
+require __DIR__.'/auth.php';
 
 // Quick middleware test
 Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])

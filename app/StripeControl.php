@@ -725,16 +725,118 @@ class StripeControl
 
 
     /**
-     * Deleting and account
+     * Create a transfer to a connected account
      *
-     * @param string $account_id account Id
-     * @return Throwable|\Stripe\Subscription
+     * @param array $payload Transfer payload
+     * @return \Stripe\Transfer
+     * @throws Exception
      */
-    public static function deleteAccount($account_id)
+    public static function createTransfer(array $payload)
     {
         self::setClient();
+        
         try {
-            return self::$client->accounts->delete($account_id, []);
+            return self::$client->transfers->create($payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get account balance for a connected account
+     *
+     * @param string $connectedAccountId
+     * @return \Stripe\Balance
+     * @throws Exception
+     */
+    public static function getAccountBalance($connectedAccountId)
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->balance->retrieve([], ['stripe_account' => $connectedAccountId]);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a payout to a connected account's bank account
+     *
+     * @param array $payload Payout payload
+     * @param string $connectedAccountId
+     * @return \Stripe\Payout
+     * @throws Exception
+     */
+    public static function createPayout(array $payload, $connectedAccountId)
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->payouts->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get transfer details
+     *
+     * @param string $transferId
+     * @return \Stripe\Transfer
+     * @throws Exception
+     */
+    public static function getTransfer($transferId)
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->transfers->retrieve($transferId);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * List transfers for an account
+     *
+     * @param array $params
+     * @return \Stripe\Collection
+     * @throws Exception
+     */
+    public static function listTransfers(array $params = [])
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->transfers->all($params);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {

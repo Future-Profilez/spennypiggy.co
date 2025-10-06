@@ -2,8 +2,9 @@ import { Link } from "@inertiajs/react";
 import ModernImage from '../Components/ModernImage';
 import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
+import FounderBadge from "@/Components/FounderBadge";
 
-export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link }) {
+export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder }) {
 
   return (
     <>
@@ -89,8 +90,19 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
               />
             </div>
             <div className="avatar-content">
-              <h2 className='flex items-center '>{name} {role && profile_status_lock ?
-              <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 mt-1 text-pink" /> : ''}
+              <h2 className='flex items-center '>{name} 
+                {role && profile_status_lock ?
+                  <>
+                    {is_founder ? 
+                      <div className="mb-1">
+                        <FounderBadge classes="w-4 h-4" icon={true}  />
+                      </div>
+                      :
+                      <RiVerifiedBadgeFill  size={'1.2rem'} 
+                      className="ms-1 mt-1 text-pink" /> 
+                    }
+                  </>
+                : ''}
               </h2>
               <p className='text-gray-500'>{subhead || username}</p>
             </div>

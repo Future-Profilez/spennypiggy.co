@@ -3,6 +3,9 @@
 namespace App\Console;
 
 use App\Jobs\SendMailSubscriptions;
+use App\Jobs\CalculateFirstThirtyDayEarnings;
+use App\Jobs\CheckFounderQualifications;
+use App\Jobs\ProcessFounderPayouts;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -35,6 +38,25 @@ class Kernel extends ConsoleKernel
                      ->{$scheduleMethod}()
                      ->withoutOverlapping(4);
         }
+
+        // Founder Bonus System Jobs
+        // Daily job to calculate first 30-day earnings for new creators
+        $schedule->job(new CalculateFirstThirtyDayEarnings)
+                 ->daily()
+                 ->withoutOverlapping(10)
+                 ->runInBackground();
+
+        // Monthly job to check founder qualifications (6th of each month)
+        $schedule->job(new CheckFounderQualifications)
+                 ->monthlyOn(6, '09:00')
+                 ->withoutOverlapping(30)
+                 ->runInBackground();
+
+        // Monthly job to process founder payouts (7th of each month)
+        $schedule->job(new ProcessFounderPayouts)
+                 ->monthlyOn(7, '10:00')
+                 ->withoutOverlapping(30)
+                 ->runInBackground();
     }
 
     /**

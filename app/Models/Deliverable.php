@@ -41,7 +41,8 @@ class Deliverable extends Model
 
     protected $casts = [
         'delivered_at' => 'datetime',
-        'metadata' => 'array'
+        'metadata' => 'array',
+        'transaction_amount' => 'decimal:2'
     ];
 
     protected $dates = [

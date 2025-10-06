@@ -37,21 +37,22 @@ class UserProfileService
     public function getUserWithRelations(string $username): ?User
     {
         // NO CACHE - REAL TIME DATA
-        return User::select([
+        $query = User::select([
             'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
             'avatar', 'avatar_approved', 'cover', 'suspended_account',
             'social_image', 'account_id', 'stripe_details_submitted',
             'default_currency', 'country', 'creator_category', 'identity_status',
-            'profile_status_lock', 'is_subscribed', 'created_at'
+            'profile_status_lock', 'is_subscribed', 'is_founder', 'created_at'
         ])
         ->with([
             'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,reddit,discord,other',
             'user_categories:id,user_id,category,created_at',
             'intro:id,user_id,poster,poster_token,height,width,approved,created_at'
         ])
-        ->where('username', $username)
-        ->where('is_uk', 0)
-        ->first();
+        ->where('username', $username);
+
+        // Remove is_uk filter for profile viewing to prevent false 404s in all environments
+        return $query->first();
     }
 
     /**

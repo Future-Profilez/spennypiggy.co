@@ -8,15 +8,24 @@ const SendTip = lazy(() => import("@/Pages/TipJar/SendTip"));
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
 import { MdOutlineContentCopy } from "react-icons/md";
+import FounderBadge from "@/Components/FounderBadge";
+import FounderAnnouncement from "@/Components/FounderAnnouncement";
 
 export default function Userprofile({ IsloggedIn }) {
 
-    const { auth, user, global_currency, supporters, follow_status } = usePage().props;
+    const { auth, user, global_currency, supporters, follow_status, first30DayEarnings } = usePage().props;
     const opponantUser = auth?.opposite_user;
 
 
     return (
         <div className="userprofilesec mb-2 ">
+            {/* Founder Announcement Banner */}
+            <FounderAnnouncement 
+                user={user} 
+                first30DayEarnings={first30DayEarnings}
+                isVisible={true}
+            />
+            
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="userphoto relative !flex  items-center justify-center mb-4 ">
@@ -58,19 +67,28 @@ export default function Userprofile({ IsloggedIn }) {
                         <h1 className="font-GillSans  flex   items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
                             {user?.role === 1 &&
-                                user?.profile_status_lock === 2 && (
+                                user?.profile_status_lock === 2 && <>
+                                {user?.is_founder ? 
+                                    <div className="mb-1">
+                                        <FounderBadge classes="w-6 h-6 ms-2" icon={true}   />
+                                    </div>
+                                    :
                                     <RiVerifiedBadgeFill
                                         size="1.5rem"
                                         className="ms-2 mt-[-2px] text-pink"
                                     />
-                                )}
+                                }
+                                </>
+                                }
                         </h1>
+
+                        {/* Founder Badge */}
 
                         <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <ShareProfile
                                 username={user?.name}
                                 classes="flex text-gray-300 mr-4 items-center"
-                            >
+                                >
                                 @{user?.username}
                                 <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-2"/>
 
@@ -79,6 +97,11 @@ export default function Userprofile({ IsloggedIn }) {
 
                         </div>
                     </div>
+                    {user?.is_founder ? (
+                        <div className="lg:ms-[30px] xl:ms-[50px] flex justify-center lg:justify-start mb-2">
+                            <FounderBadge size="md" />
+                        </div>
+                    ) : ''}
                 </div>
 
                 <div className="flex lg:block justify-center mt-4 lg:mt-0">

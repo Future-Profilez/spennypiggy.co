@@ -28,6 +28,8 @@ use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Models\FounderBonus;
+use App\Models\Deliverable;
 use App\Providers\RouteServiceProvider;
 use App\SeoMeta;
 use App\StripeControl;
@@ -219,6 +221,9 @@ class AuthenticatedSessionController extends Controller
         // Check if account needs migration for cross-border payments
         $migrationStatus = $this->getMigrationStatus($user);
 
+        // Get founder bonus data if user is a founder
+        $founderData = $this->getFounderData($user);
+
         return Inertia::render('Dashboard', [
             'username' => $username,
             'user' => $user,
@@ -234,6 +239,7 @@ class AuthenticatedSessionController extends Controller
             'wish_categories' => $user->user_categories,
             'selectedCategory' => request()->query('category') ?? false,
             'page' => $page,
+            'first30DayEarnings' => $founderData['first30DayEarnings'],
             // 'notification_count' => $profileData['notification_count'],
             // 'profile_steps' => null,
             ...$pageData
@@ -864,6 +870,31 @@ class AuthenticatedSessionController extends Controller
         //     'msg'    => 'Thank you for signing the contract.',
         //     'contract' => $contract->url
         // ]);
+    }
+
+    /**
+     * Get founder bonus data for a user
+     */
+    private function getFounderData($user): array
+    {
+        $first30DayEarnings = 0;
+
+        // Calculate first 30-day earnings for the user
+        if ($user) {
+            $createdAt = $user->created_at;
+            $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
+            
+            // Get total earnings from deliverables within first 30 days
+            $first30DayEarnings = Deliverable::where('creator_id', $user->id)
+                ->where('created_at', '>=', $createdAt)
+                ->where('created_at', '<=', $thirtyDaysAfterCreation)
+                ->where('status', 'delivered')
+                ->sum('transaction_amount');
+        }
+
+        return [
+            'first30DayEarnings' => $first30DayEarnings
+        ];
     }
 
 

@@ -59,6 +59,13 @@ export default function PwaInstallPrompt() {
       console.log('🎆 beforeinstallprompt event fired!');
       e.preventDefault();
       deferredPromptRef.current = e;
+      
+      // Show the custom PWA prompt immediately when the event fires
+      // instead of waiting for the 3-second timer
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (!isStandalone && shouldShowPrompt()) {
+        setVisible(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);

@@ -27,6 +27,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\DeliveriesController;
+use App\Http\Controllers\FounderBonusController;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Jobs\SendRenewMail;
 use App\Models\Bills;
@@ -167,7 +168,7 @@ Route::middleware('auth')->group(function () {
             // gifter card verification routes
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
-            Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
+            Route::get('card-verification-failed/{id}', [AuthenticatedSessionController::class, 'cardVerificationFailed'])->name('card.verification.failed');
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
@@ -599,7 +600,17 @@ Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'use
 
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+// Founder routes - must come before profile route to prevent interception
+Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
+Route::middleware(['auth', 'verified'])->group(function () {
+Route::get('/founder/data', [FounderBonusController::class, 'getData'])->name('founder.data');
+Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
+Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
+});
+
+Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
+    // ->where('username', '^(?!founder$).*$')
+    ->name('user.show');
 // Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');

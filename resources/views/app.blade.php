@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     
     {{-- Critical performance hints --}}
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
