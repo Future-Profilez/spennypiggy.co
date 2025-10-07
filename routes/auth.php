@@ -105,7 +105,7 @@ Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
     /*send surprise amount*/

@@ -675,8 +675,9 @@ export default function Header({classMagicword}) {
                                             <li className="d-block">
                                                 <Link
                                                     onClick={toggleClass}
-                                                    method="get"
+                                                    method="post"
                                                     href={route("logout")}
+                                                    as="button"
                                                     className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">

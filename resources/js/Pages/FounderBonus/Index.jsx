@@ -54,11 +54,10 @@ export default function FounderBonusIndex() {
                         </p>
                     </div>
 
-                    {auth && auth?.user && auth?.user?.username && userInRace && userProgress && (
+                    {auth && auth?.user && auth?.user?.role == 1 && userInRace && userProgress && (
                         <div className=" pinkbg rounded-[25px] md:rounded-[30px] shadow-2xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
-                            
                             <div className="relative">
                                 <div className="md:flex items-center justify-between mb-6">
                                     <div>
@@ -160,7 +159,7 @@ export default function FounderBonusIndex() {
                     )}
 
                     {/* Program Stats */}
-                    <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                         {/* 5px 5px 0 0 rgba(0,0,0,1) */}
                         <div className="bg-white rounded-[25px] shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
                             <div className="flex items-center justify-between">
@@ -214,7 +213,6 @@ export default function FounderBonusIndex() {
                             <p className="text text-gray-500 mt-2">Monthly earnings bonus</p>
                         </div>
                     </div>
-
                     
 
                     <div className="bg-white mt-4 rounded-[25px] shadow-sm overflow-hidden mb-8">

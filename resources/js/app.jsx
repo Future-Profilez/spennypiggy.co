@@ -13,6 +13,7 @@ import { createRoot } from "react-dom/client";
 console.log('📦 App.jsx loaded - React polyfill should be active');
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
+import { router } from "@inertiajs/react";
 
 import { Provider } from "react-redux";
 import store from "./Pages/redux/Store";
@@ -204,25 +205,6 @@ createInertiaApp({
         
         // Set up global cart refresh functions
         setupGlobalCartFunctions(props);
-        
-        // Initialize non-critical resources after the app is mounted
-        // Use setTimeout to ensure this runs after the current event loop
-        // setTimeout(() => {
-        //     // initializeApp().catch(console.error);
-            
-        //     // Initialize intelligent chunk preloading
-        //     const currentPage = props?.page?.component;
-        //     if (currentPage) {
-        //         // chunkPreloader.preloadCriticalChunks(currentPage);
-        //     }
-            
-        //     // Re-observe links after Inertia navigation
-        //     document.addEventListener('inertia:success', () => {
-        //         setTimeout(() => {
-        //             chunkPreloader.observeLinks();
-        //         }, 100);
-        //     });
-        // }, 0);
     },
     progress: {
         color: "var(--pink)",
@@ -230,4 +212,15 @@ createInertiaApp({
         includeCSS: true,
         showSpinner: false,
     },
+});
+
+// Configure Inertia.js to include CSRF token in all requests
+router.on('before', (event) => {
+    const token = document.head.querySelector('meta[name="csrf-token"]');
+    if (token) {
+        event.detail.visit.headers = {
+            ...event.detail.visit.headers,
+            'X-CSRF-TOKEN': token.content
+        };
+    }
 });
