@@ -42,10 +42,10 @@
         "monitoring:setup": "php artisan migrate:fresh --seed && php artisan web-vitals:setup"
     },
     "devDependencies": {
-        "@rollup/rollup-darwin-arm64": "^4.0.0",
         "@babel/plugin-transform-react-jsx": "^7.27.1",
         "@babel/preset-react": "^7.27.1",
         "@lhci/cli": "^0.12.0",
+        "@rollup/rollup-darwin-arm64": "^4.0.0",
         "@vitejs/plugin-react": "^4.0.3",
         "autoprefixer": "^10.4.12",
         "babel-plugin-react-html-attrs": "^3.0.5",
@@ -73,6 +73,7 @@
         "@inertiajs/react": "^1.0.0",
         "@magicbell/magicbell-react": "^11.3.2",
         "@magicbell/webpush": "^2.1.0",
+        "@midudev/tailwind-animations": "^0.2.0",
         "@reduxjs/toolkit": "^1.9.7",
         "@rye-api/rye-sdk": "^1.4.2",
         "@sentry/react": "^9.39.0",
@@ -117,4 +118,3 @@
         "workbox-window": "^7.3.0"
     }
 }
-

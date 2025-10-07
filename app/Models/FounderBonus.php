@@ -176,10 +176,14 @@ class FounderBonus extends Model
         // Get all creators excluding test/dummy users and those who already became founders
         $existingFounderIds = self::pluck('creator_id')->toArray();
         
+        // Get creators who joined in the last 60 days to show recent joiners
+        $cutoffDate = now()->subDays(60);
+        
         $creators = User::where('name', 'NOT LIKE', '%Test%')
             ->where('name', 'NOT LIKE', '%Founder%')
             ->where('name', 'NOT LIKE', '%test%')
             ->where('name', 'NOT LIKE', '%dummy%')
+            ->where('created_at', '>=', $cutoffDate)
             ->whereNotIn('id', $existingFounderIds)
             ->with(['createdDeliverables' => function($query) {
                 $query->where('status', 'delivered');
@@ -200,11 +204,12 @@ class FounderBonus extends Model
                 ->where('status', 'delivered')
                 ->sum('transaction_amount');
                 
-            // Only include users who have earned at least £2500 in their first 30 days
-            if ($earnings >= $minEarnings) {
-                $daysRemaining = max(0, $thirtyDaysLater->diffInDays(now(), false));
-                $isQualified = $earnings >= $minEarnings && $daysRemaining <= 0;
-                
+            $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
+            $isQualified = $earnings >= $minEarnings && $daysRemaining <= 0;
+            
+            // Include all creators who are still within their qualification period OR have already qualified
+            // This shows all recently joined creators who can potentially qualify for the month-end draw
+            if ($daysRemaining > 0 || $isQualified) {
                 $leaderboard[] = [
                     'creator' => $creator,
                     'current_earnings' => (float) $earnings,
@@ -215,8 +220,17 @@ class FounderBonus extends Model
             }
         }
 
-        // Sort by earnings (highest first)
+        // Sort by qualification progress (highest first), then by earnings
         usort($leaderboard, function($a, $b) {
+            // First sort by qualification status (qualified first)
+            if ($a['is_qualified'] !== $b['is_qualified']) {
+                return $b['is_qualified'] <=> $a['is_qualified'];
+            }
+            // Then by qualification progress
+            if ($a['qualification_progress'] !== $b['qualification_progress']) {
+                return $b['qualification_progress'] <=> $a['qualification_progress'];
+            }
+            // Finally by earnings
             return $b['current_earnings'] <=> $a['current_earnings'];
         });
 

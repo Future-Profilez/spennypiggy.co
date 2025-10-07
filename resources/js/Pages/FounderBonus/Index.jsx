@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import FounderBadge from '@/Components/FounderBadge';
 import { FaCrown, FaCalendarAlt, FaChartLine, FaGift, FaInfoCircle, FaTrophy, FaMedal } from 'react-icons/fa';
 import { BiTrendingUp, BiDollarCircle } from 'react-icons/bi';
 import PriceFormat from '@/includes/PriceFormat';
+import userphoto from '../../../assets/siteicon.png';
+import Avatar from '@/includes/Avatar';
 
 export default function FounderBonusIndex() {
     const { auth, leaderboard, userInRace, userProgress, programStats } = usePage().props;
@@ -52,8 +54,113 @@ export default function FounderBonusIndex() {
                         </p>
                     </div>
 
+                    {auth && auth?.user && auth?.user?.username && userInRace && userProgress && (
+                        <div className=" pinkbg rounded-[25px] md:rounded-[30px] shadow-2xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
+                            
+                            <div className="relative">
+                                <div className="md:flex items-center justify-between mb-6">
+                                    <div>
+                                        <h2 className="text-2xl md:text-3xl font-bold mb-2">🚀 Your Founder Journey</h2>
+                                        <p className="text-lg opacity-90">
+                                            {userProgress.is_qualified 
+                                                ? "🎉 Congratulations! You're officially a Founder!" 
+                                                : `💪 ${formatMultiPrice(minEarnings - userProgress.current_earnings)} away from Founder Badge!`
+                                            }
+                                        </p>
+                                    </div>
+                                    <div className="mt-3 text-right bg-white/10 rounded-2xl p-3 md:p-2 backdrop-blur-sm flex items-center">
+                                        <p className="text-lg opacity-90 me-2">⏰ Time Left : </p>
+                                        <div className='flex items-center'>
+                                            <p className="text-3xl font-bold">
+                                                {userProgress.days_remaining}
+                                            </p>
+                                            <p className="text-lg opacity-90 ms-1">Days</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                                    <div className="bg-black/5 rounded-2xl p-4 backdrop-blur-sm">
+                                        <div className="flex items-center mb-2">
+                                            <BiDollarCircle className="w-6 h-6 mr-2" />
+                                            <p className="text-normal opacity-90">Current Earnings</p>
+                                        </div>
+                                        <p className="text-2xl font-bold">{formatMultiPrice(userProgress.current_earnings)}</p>
+                                        <p className="text-xs opacity-75 mt-1">
+                                            {userProgress.current_earnings > 0 
+                                                ? "🔥 Keep the momentum going!" 
+                                                : "💡 Start creating to earn your first £!"
+                                            }
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="bg-black/5 rounded-2xl p-4 backdrop-blur-sm">
+                                        <div className="flex items-center mb-2">
+                                            <FaChartLine className="w-6 h-6 mr-2" />
+                                            <p className="text-normal opacity-90">Progress to Goal</p>
+                                        </div>
+                                        <div className="flex items-center mb-2">
+                                            <div className="flex-1 bg-white/30 rounded-full h-3 mr-3">
+                                                <div 
+                                                    className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full transition-all duration-500 shadow-lg"
+                                                    style={{ width: `${Math.min(userProgress.qualification_progress, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="text-lg font-bold">{Math.round(userProgress.qualification_progress)}%</span>
+                                        </div>
+                                        <p className="text-xs opacity-75">
+                                            {userProgress.qualification_progress >= 75 
+                                                ? "🎯 Almost there! Final push!" 
+                                                : userProgress.qualification_progress >= 50 
+                                                ? "⚡ Halfway there! You're doing great!" 
+                                                : userProgress.qualification_progress >= 25 
+                                                ? "🌟 Great start! Keep building!" 
+                                                : "🚀 Your journey begins now!"
+                                            }
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="bg-black/5 rounded-2xl p-4 backdrop-blur-sm">
+                                        <div className="flex items-center mb-2">
+                                            <FaCrown className="w-6 h-6 mr-2" />
+                                            <p className="text-normal opacity-90">Status</p>
+                                        </div>
+                                        <p className="text-xl font-bold mb-1">
+                                            {userProgress.is_qualified ? '🎉 Founder Qualified!' : '🏃‍♂️ Racing to Qualify'}
+                                        </p>
+                                        <p className="text-xs opacity-75">
+                                            {userProgress.is_qualified 
+                                                ? "🏆 Enjoy your exclusive benefits!" 
+                                                : "💎 Exclusive rewards await you!"
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {!userProgress.is_qualified && (
+                                    <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-lg font-bold mb-1">💡 Quick Tips to Boost Your Earnings:</p>
+                                                <ul className="text-sm opacity-90 space-y-1">
+                                                    <li>• Create high-quality content that your audience loves</li>
+                                                    <li>• Engage with your followers regularly</li>
+                                                    <li>• Share your profile on social media</li>
+                                                    <li>• Offer exclusive content and experiences</li>
+                                                </ul>
+                                            </div>
+                                            <div className="text-6xl ">🎯</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Program Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* 5px 5px 0 0 rgba(0,0,0,1) */}
                         <div className="bg-white rounded-[25px] shadow-[5px_5px_0_0_var(--yellow)] !border-2 border-[var(--yellow)] p-6">
                             <div className="flex items-center justify-between">
@@ -108,42 +215,7 @@ export default function FounderBonusIndex() {
                         </div>
                     </div>
 
-                    {/* User Progress (if in race) */}
-                    {userInRace && userProgress && (
-                        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-8 text-white">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-2xl font-bold">Your Progress</h2>
-                                <div className="text-right">
-                                    <p className="text-sm opacity-90">Days Remaining</p>
-                                    <p className="text-2xl font-bold">{userProgress.days_remaining}</p>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <p className="text-sm opacity-90">Current Earnings</p>
-                                    <p className="text-xl font-bold">{formatMultiPrice(userProgress.current_earnings)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm opacity-90">Progress to Goal</p>
-                                    <div className="flex items-center">
-                                        <div className="flex-1 bg-white/20 rounded-full h-2 mr-2">
-                                            <div 
-                                                className="bg-white h-2 rounded-full transition-all duration-300"
-                                                style={{ width: `${Math.min(userProgress.qualification_progress, 100)}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="text-sm font-medium">{Math.round(userProgress.qualification_progress)}%</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-sm opacity-90">Status</p>
-                                    <p className="text-lg font-bold">
-                                        {userProgress.is_qualified ? '🎉 Qualified!' : '🏃‍♂️ Racing'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    
 
                     <div className="bg-white mt-4 rounded-[25px] shadow-sm overflow-hidden mb-8">
                         <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
@@ -156,12 +228,6 @@ export default function FounderBonusIndex() {
                                         New creators racing for Founder status
                                     </p>
                                 </div>
-                                {/* <div className="text-right">
-                                    <p className="text-normal flex items-center text-purple-100">
-                                        <BiTrendingUp className="w-8 h-8 mx-auto me-2" />
-                                        First 30 days progress
-                                    </p>
-                                </div> */}
                             </div>
                         </div>
 
@@ -171,30 +237,27 @@ export default function FounderBonusIndex() {
                                     {leaderboard.map((entry, index) => (
                                         <div 
                                             key={entry.creator.id}
-                                            className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                                            className={`flex items-center justify-between p-3 rounded-[25px] border-2 transition-all ${
                                                 entry.is_qualified 
                                                     ? 'border-green-200 bg-green-50' 
                                                     : 'border-gray-200 bg-gray-50'
-                                            } ${entry.creator.id === user.id ? 'ring-2 ring-blue-500' : ''}`}
+                                            } ${entry.creator.id === user.id ? 'bg-indigo-100 border-indigo-300' : ''}`}
                                         >
-                                            <div className="flex items-center space-x-4">
-                                                <div className="flex items-center justify-center w-10 h-10">
+                                            <div className="flex items-center ">
+                                                {/* <div className="flex items-center justify-center w-10 h-10">
                                                     {getRankIcon(index + 1)}
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-gray-900">
-                                                        {entry.creator.name}
-                                                        {entry.creator.id === user.id && (
-                                                            <span className="ml-2 text-sm text-blue-600 font-medium">(You)</span>
-                                                        )}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600">
-                                                        {entry.days_remaining > 0 
-                                                            ? `${entry.days_remaining} days remaining`
-                                                            : 'Challenge period complete'
-                                                        }
-                                                    </p>
-                                                </div>
+                                                </div> */}
+
+                                                <Avatar profile_status_lock={entry.creator.profile_status_lock} role={entry.creator.role}
+                                                    src={entry.creator.avatar_url || userphoto}
+                                                    name={entry.creator.name}
+                                                    username={entry.creator.username}
+                                                />
+                                                {/* {entry.days_remaining > 0 
+                                                    ? `${entry.days_remaining} days remaining`
+                                                    : 'Challenge period complete'
+                                                } */}
+                                                
                                             </div>
                                             
                                             <div className="text-right">

@@ -48,7 +48,7 @@ class FounderBonusController extends Controller
                     ->whereBetween('created_at', [$joinDate, $calculationEndDate])
                     ->sum('transaction_amount');
                     
-                $daysRemaining = max(0, $thirtyDaysLater->diffInDays(now(), false));
+                $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
                 
                 $userProgress = [
                     'creator' => $user,

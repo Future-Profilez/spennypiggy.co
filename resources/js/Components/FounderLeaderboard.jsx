@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaCrown, FaTrophy, FaMedal, FaAward, FaUser } from 'react-icons/fa';
 import { BiTrendingUp } from 'react-icons/bi';
 import PriceFormat from '@/includes/PriceFormat';
+import axios from 'axios';
 
 export default function FounderLeaderboard({ currentUser }) {
     const [leaderboardData, setLeaderboardData] = useState(null);
@@ -22,7 +23,7 @@ export default function FounderLeaderboard({ currentUser }) {
         
         try {
             console.log('Fetching leaderboard data for user:', currentUser);
-            const response = await window.axios.get('/founder/leaderboard');
+            const response = await axios.get('/founder/leaderboard');
             console.log('Leaderboard response:', response.data);
             
             if (response.data) {

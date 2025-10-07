@@ -90,7 +90,7 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
               />
             </div>
             <div className="avatar-content">
-              <h2 className='flex items-center '>{name} 
+              <h2 className='flex items-center capitalize '>{name} 
                 {role && profile_status_lock ?
                   <>
                     {is_founder ? 

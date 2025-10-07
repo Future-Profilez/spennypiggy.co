@@ -141,7 +141,6 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                         <FaCrown className="text-white text-3xl" />
                                     </div>
                                     {/* <h3 className="text-2xl font-bold text-gray-800 mb-2">Founding Member</h3> */}
-                                    <p className="text-gray-600">Exclusive Status</p>
                                 </div>
                                 
                                 <div className="space-y-3 text-left">
@@ -171,11 +170,13 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                     </div>
                                 </div>
                                 
+                                {/* 
                                 <div className="mt-6 p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl">
                                     <p className="text-sm text-gray-700 font-medium">
                                         🎯 Earn {config.currencySymbol}{config.minMonthlyEarnings} in your first 30 days from joining to automatically qualify for {config.bonusPercentage}% bonus up to {config.currencySymbol}{config.maxBonusPerMonth}! All creators who achieved this milestone are eligible, but existing founders are excluded from future selections.
                                     </p>
                                 </div>
+                                */}
                             </div>
                         </div>
                     </div>
