@@ -10,6 +10,7 @@ import FollowButton from "@/Pages/Profile/FollowButton";
 import { MdOutlineContentCopy } from "react-icons/md";
 import FounderBadge from "@/Components/FounderBadge";
 import FounderAnnouncement from "@/Components/FounderAnnouncement";
+import OfferAnnouncement from "@/Components/OfferAnnouncement";
 
 export default function Userprofile({ IsloggedIn }) {
 
@@ -19,12 +20,16 @@ export default function Userprofile({ IsloggedIn }) {
 
     return (
         <div className="userprofilesec mb-2 ">
-            {/* Founder Announcement Banner */}
-            <FounderAnnouncement 
-                user={user} 
-                first30DayEarnings={first30DayEarnings}
-                isVisible={true}
-            />
+            
+            {user?.is_founder && (
+                <div className="px-4 mb-4">
+                    <FounderAnnouncement 
+                        user={user} 
+                        first30DayEarnings={first30DayEarnings}
+                        variant="compact"
+                    />
+                </div>
+            )}
             
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">

@@ -69,6 +69,7 @@ import ErrorBoundary from "@/Components/ErrorBoundary";
 // Optimized tab system components
 import InstantTabSystem from '@/Components/InstantTabSystem';
 import FastTabRenderer from '@/Components/FastTabRenderer';
+import OfferAnnouncement from "@/Components/OfferAnnouncement";
 
 // Creator Activity and Subscription Components
 const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWidget'));
@@ -451,6 +452,9 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
+
+                        <OfferAnnouncement variant="default" />
+
                         {/* <Side /> */}
                         <div className="wishbanner relative ">
                             <div className="relative">

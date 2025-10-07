@@ -64,8 +64,6 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
                 <div className="max-w-6xl mx-auto">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-                        
-                        {/* Left side - Content */}
                         <div className="flex-1 text-center lg:text-left" data-aos="fade-right">
                             <div className="mb-6">
                                 <div className="inline-flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
@@ -85,7 +83,6 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                 </p>
                             </div>
 
-                            {/* Features list */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                 <div className="flex justify-center md:justify-start items-center text-white">
                                     <div className="w-8 h-8 min-w-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
@@ -113,7 +110,6 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                 </div>
                             </div>
 
-                            {/* CTA Button */}
                             <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center lg:jsustify-start">
                                 <Link 
                                     href="/founder/bonus"
@@ -133,7 +129,6 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
                         </div>
 
-                        {/* Right side - Visual element */}
                         <div className="flex-1 max-w-md" data-aos="fade-left">
                             <div className="founder-card rounded-3xl p-4 md:p-8 text-center shadow-2xl">
                                 <div className="mb-6">
@@ -147,10 +142,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                     <div className="text-center">
                                         <h2 className="text-xl font-bold text-gray-900 mb-4">
                                             Join Our Exclusive Founder Program
-                                        </h2>
-                                        {/* <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                                            Earn {config.currencySymbol}{config.minMonthlyEarnings} monthly and automatically qualify for a {config.bonusPercentage}% bonus up to {config.currencySymbol}{config.maxBonusPerMonth}! Join our exclusive founder program with special recognition and benefits. Only {config.maxFounderSeats} creators can join! Qualification based on last 30 days earnings.
-                                        </p> */}
+                                        </h2> 
                                     </div>
                                     <div className="flex justify-between items-center py-2 border-b border-gray-200">
                                         <span className="text-gray-600">Monthly Bonus</span>
@@ -169,7 +161,6 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                         <span className="font-bold text-orange-600">High</span>
                                     </div>
                                 </div>
-                                
                                 {/* 
                                 <div className="mt-6 p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl">
                                     <p className="text-sm text-gray-700 font-medium">
