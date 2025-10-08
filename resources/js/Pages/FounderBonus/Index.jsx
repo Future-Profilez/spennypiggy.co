@@ -9,9 +9,8 @@ import userphoto from '../../../assets/siteicon.png';
 import Avatar from '@/includes/Avatar';
 
 export default function FounderBonusIndex() {
-    const { auth, leaderboard, userInRace, userProgress, programStats } = usePage().props;
+    const { auth, leaderboard, userInRace, userProgress, founderBonusData, programStats } = usePage().props;
     
-    // Extract configurable values from programStats
     const qualificationDays = programStats?.qualificationDays || 30;
     const minEarnings = programStats?.minEarnings || 2500;
     const bonusPercentage = programStats?.bonusPercentage || 10;
@@ -54,6 +53,128 @@ export default function FounderBonusIndex() {
                         </p>
                     </div>
 
+                    {/* Founder Congratulations Section */}
+                    {auth && auth?.user && auth?.user?.is_founder && founderBonusData && (
+                        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-[25px] shadow-xl ring-1 ring-white/20 p-4 md:p-6 mb-8 text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10 animate-pulse"></div>
+                            <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full translate-y-8 -translate-x-8 animate-pulse"></div>
+                            <div className="relative">
+                                <div className="text-center mb-4">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="p-2 bg-white/5 rounded-full">
+                                            <FaCrown className="w-6 h-6 text-white" />
+                                        </div>
+                                    </div>
+                                    <h2 className="text-xl md:text-2xl font-bold mb-1">🎉 Congratulations, {auth.user.name}!</h2>
+                                    <p className="text-sm md:text-base opacity-90">You're officially a SpennyPiggy Founder!</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                                    <div className="bg-white/5 rounded-xl p-3 backdrop-blur-sm text-center">
+                                        <div className="flex items-center justify-center mb-1">
+                                            <FaCalendarAlt className="w-5 h-5 mr-1" />
+                                            <p className="text-lg font-bold opacity-90">Became Founder</p>
+                                        </div>
+                                        <p className="text-sm font-bold">
+                                            {new Date(founderBonusData.qualification_date).toLocaleDateString('en-GB', { 
+                                                day: 'numeric', 
+                                                month: 'short', 
+                                                year: 'numeric' 
+                                            })}
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="bg-white/5 rounded-xl p-3 backdrop-blur-sm text-center">
+                                        <div className="flex items-center justify-center mb-1">
+                                            <BiDollarCircle className="w-5 h-5 mr-1" />
+                                            <p className="text-lg font-bold opacity-90">First 30 Days</p>
+                                        </div>
+                                        <p className="text-sm font-bold">{formatMultiPrice(founderBonusData.first_30d_earnings)}</p>
+                                    </div>
+                                    
+                                    <div className="bg-white/5 rounded-xl p-3 backdrop-blur-sm text-center">
+                                        <div className="flex items-center justify-center mb-1">
+                                            <FaGift className="w-5 h-5 mr-1" />
+                                            <p className="text-lg font-bold opacity-90">Bonus Amount</p>
+                                        </div>
+                                        <p className="text-sm font-bold">{formatMultiPrice(founderBonusData.bonus_amount)}</p>
+                                    </div>
+                                    
+                                    <div className="bg-white/5 rounded-xl p-3 backdrop-blur-sm text-center">
+                                        <div className="flex items-center justify-center mb-1">
+                                            <FaTrophy className="w-5 h-5 mr-1" />
+                                            <p className="text-lg font-bold opacity-90">Status</p>
+                                        </div>
+                                        <p className="text-xs font-bold">
+                                            {founderBonusData.payout_status === 'paid' ? '✅ Paid' : 
+                                             founderBonusData.payout_status === 'pending' ? '⏳ Pending' : 
+                                             founderBonusData.payout_status === 'rejected' ? '❌ Rejected' : 
+                                             '📋 Processing'}
+                                        </p>
+                                        {founderBonusData.payout_status === 'paid' && founderBonusData.formatted_paid_date && (
+                                            <p className="text-xs opacity-75 mt-1">
+                                                Paid: {founderBonusData.formatted_paid_date}
+                                            </p>
+                                        )}
+                                        {founderBonusData.payout_status === 'pending' && founderBonusData.estimated_payout_date && (
+                                            <p className="text-xs opacity-75 mt-1">
+                                                Expected: {new Date(founderBonusData.estimated_payout_date).toLocaleDateString('en-GB')}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm mb-3">
+                                    <h3 className="text-xl font-bold mb-2 flex items-center">
+                                        <FaCrown className="w-5 h-5 mr-1" />
+                                        Your Founder Benefits
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-normal">
+                                        <div className="flex items-center">
+                                            <span className="w-4 h-4 bg-white/5 rounded-full flex items-center justify-center mr-2 text-xs">💰</span>
+                                            <span>10% monthly bonus on earnings</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="w-4 h-4 bg-white/5 rounded-full flex items-center justify-center mr-2 text-xs">👑</span>
+                                            <span>Exclusive Founder badge</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="w-4 h-4 bg-white/5 rounded-full flex items-center justify-center mr-2 text-xs">🎯</span>
+                                            <span>Priority customer support</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="w-4 h-4 bg-white/5 rounded-full flex items-center justify-center mr-2 text-xs">📊</span>
+                                            <span>Advanced analytics</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {founderBonusData.payout_status === 'pending' && (
+                                    <div className="text-center bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                                        <p className="text-lg font-bold opacity-90">
+                                            💡 Your bonus will be processed on {' '}
+                                            {founderBonusData.estimated_payout_date ? 
+                                                new Date(founderBonusData.estimated_payout_date).toLocaleDateString('en-GB', { 
+                                                    day: 'numeric', 
+                                                    month: 'long', 
+                                                    year: 'numeric' 
+                                                }) : 
+                                                'the 7th of next month'
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {founderBonusData.payout_status === 'rejected' && founderBonusData.rejection_reason && (
+                                    <div className="text-center bg-red-500/20 rounded-xl p-3 backdrop-blur-sm">
+                                        <p className="text-xs font-semibold mb-1">❌ Payout Rejected</p>
+                                        <p className="text-lg font-bold opacity-90">{founderBonusData.rejection_reason}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )|| ''}
+
                     {auth && auth?.user && auth?.user?.role == 1 && userInRace && userProgress && (
                         <div className=" pinkbg rounded-[25px] md:rounded-[30px] shadow-2xl p-6 md:p-8 mb-12 text-white relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
@@ -63,11 +184,13 @@ export default function FounderBonusIndex() {
                                     <div>
                                         <h2 className="text-2xl md:text-3xl font-bold mb-2">🚀 Your Founder Journey</h2>
                                         <p className="text-lg opacity-90">
-                                            {userProgress.is_qualified 
-                                                ? "🎉 Congratulations! You're officially a Founder!" 
-                                                : `💪 ${formatMultiPrice(minEarnings - userProgress.current_earnings)} away from Founder Badge!`
-                                            }
-                                        </p>
+                            {userProgress?.is_qualified 
+                                ? "🎉 Congratulations! You're officially a Founder!" 
+                                : userProgress?.current_earnings >= minEarnings
+                                ? "🎉 Qualified for Founder Badge!"
+                                : `💪 ${formatMultiPrice(minEarnings - userProgress?.current_earnings)} away from Founder Badge!`
+                            }
+                        </p>
                                     </div>
                                     <div className="mt-3 text-right bg-white/10 rounded-2xl p-3 md:p-2 backdrop-blur-sm flex items-center">
                                         <p className="text-lg opacity-90 me-2">⏰ Time Left : </p>
@@ -86,9 +209,9 @@ export default function FounderBonusIndex() {
                                             <BiDollarCircle className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Current Earnings</p>
                                         </div>
-                                        <p className="text-2xl font-bold">{formatMultiPrice(userProgress.current_earnings)}</p>
+                                        <p className="text-2xl font-bold">{formatMultiPrice(userProgress?.current_earnings)}</p>
                                         <p className="text-xs opacity-75 mt-1">
-                                            {userProgress.current_earnings > 0 
+                                            {userProgress?.current_earnings > 0 
                                                 ? "🔥 Keep the momentum going!" 
                                                 : "💡 Start creating to earn your first £!"
                                             }
@@ -104,17 +227,17 @@ export default function FounderBonusIndex() {
                                             <div className="flex-1 bg-white/30 rounded-full h-3 mr-3">
                                                 <div 
                                                     className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full transition-all duration-500 shadow-lg"
-                                                    style={{ width: `${Math.min(userProgress.qualification_progress, 100)}%` }}
+                                                    style={{ width: `${Math.min(userProgress?.qualification_progress, 100)}%` }}
                                                 ></div>
                                             </div>
-                                            <span className="text-lg font-bold">{Math.round(userProgress.qualification_progress)}%</span>
+                                            <span className="text-lg font-bold">{Math.round(userProgress?.qualification_progress)}%</span>
                                         </div>
                                         <p className="text-xs opacity-75">
-                                            {userProgress.qualification_progress >= 75 
+                                            {userProgress?.qualification_progress >= 75 
                                                 ? "🎯 Almost there! Final push!" 
-                                                : userProgress.qualification_progress >= 50 
+                                                : userProgress?.qualification_progress >= 50 
                                                 ? "⚡ Halfway there! You're doing great!" 
-                                                : userProgress.qualification_progress >= 25 
+                                                : userProgress?.qualification_progress >= 25 
                                                 ? "🌟 Great start! Keep building!" 
                                                 : "🚀 Your journey begins now!"
                                             }
@@ -127,10 +250,10 @@ export default function FounderBonusIndex() {
                                             <p className="text-normal opacity-90">Status</p>
                                         </div>
                                         <p className="text-xl font-bold mb-1">
-                                            {userProgress.is_qualified ? '🎉 Founder Qualified!' : '🏃‍♂️ Racing to Qualify'}
+                                            {userProgress?.is_qualified ? '🎉 Founder Qualified!' : '🏃‍♂️ Racing to Qualify'}
                                         </p>
                                         <p className="text-xs opacity-75">
-                                            {userProgress.is_qualified 
+                                            {userProgress?.is_qualified 
                                                 ? "🏆 Enjoy your exclusive benefits!" 
                                                 : "💎 Exclusive rewards await you!"
                                             }
@@ -138,7 +261,7 @@ export default function FounderBonusIndex() {
                                     </div>
                                 </div>
                                 
-                                {!userProgress.is_qualified && (
+                                {!userProgress?.is_qualified && (
                                     <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -156,7 +279,7 @@ export default function FounderBonusIndex() {
                                 )}
                             </div>
                         </div>
-                    )}
+                    ) || ''}
 
                     {/* Program Stats */}
                     <div className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
@@ -270,7 +393,7 @@ export default function FounderBonusIndex() {
                                             {/* <td className="py-4 px-6">
                                                 {entry.is_qualified && (
                                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        <FaCrown className="w-3 h-3 mr-1" />
+                                                        <FaCrown className="w-5 h-5 mr-1" />
                                                         Qualified
                                                     </span>
                                                 )}

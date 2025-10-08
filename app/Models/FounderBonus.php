@@ -19,6 +19,7 @@ class FounderBonus extends Model
         'bonus_amount',
         'estimated_payout_date',
         'payout_status',
+        'paid_date',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class FounderBonus extends Model
         'first_30d_earnings' => 'decimal:2',
         'bonus_amount' => 'decimal:2',
         'estimated_payout_date' => 'date',
+        'paid_date' => 'datetime',
     ];
 
     // Payout status constants
@@ -244,6 +246,7 @@ class FounderBonus extends Model
     {
         $this->update([
             'payout_status' => self::STATUS_PAID,
+            'paid_date' => now(),
         ]);
     }
 
@@ -269,5 +272,21 @@ class FounderBonus extends Model
     public function isEligibleForPayout()
     {
         return $this->payout_status === self::STATUS_PENDING;
+    }
+
+    /**
+     * Get formatted paid date
+     */
+    public function getFormattedPaidDateAttribute()
+    {
+        return $this->paid_date ? $this->paid_date->format('M j, Y \a\t g:i A') : null;
+    }
+
+    /**
+     * Check if bonus has been paid
+     */
+    public function isPaid()
+    {
+        return $this->payout_status === self::STATUS_PAID && $this->paid_date !== null;
     }
 }

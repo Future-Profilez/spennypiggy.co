@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\WebVitalsController;
 use App\Http\Controllers\Api\DeliverableController;
 use App\Http\Controllers\Auth\StripeController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\FounderBonusController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
 use Illuminate\Http\Request;
@@ -48,6 +49,9 @@ Route::post('/alerts/performance', function (Request $request) {
     \Log::channel('performance')->critical('Performance alert received', $request->all());
     return response()->json(['status' => 'received'], 200);
 });
+
+// Founder Bonus API Routes
+Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners']);
 
 // Deliverables API (requires authentication)
 Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {

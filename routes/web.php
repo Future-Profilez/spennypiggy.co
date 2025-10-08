@@ -224,6 +224,8 @@ Route::prefix("test")->name("test.")->group(function () {
     });
     Route::get('adult-content-check', [TestController::class, 'testAdultContent'])->name("adult-check");
     Route::get("email", [TestController::class, "testEmail"]);
+    Route::get("founder-email", [TestController::class, "testFounderEmail"]);
+    Route::get("debug-user-status", [TestController::class, "debugUserStatus"])->middleware('auth');
     Route::get("rates/{c?}", [TestController::class, "getRates"]);
     Route::get("c-data", [TestController::class, "testCurrencyData"]);
     Route::get("x-api", [TwitterController::class, 'testToken']);

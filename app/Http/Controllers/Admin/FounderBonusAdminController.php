@@ -37,7 +37,7 @@ class FounderBonusAdminController extends Controller
                     'month' => $bonus->month,
                     'bonus_amount' => $bonus->bonus_amount,
                     'payout_status' => $bonus->payout_status,
-                    'payout_date' => $bonus->payout_date,
+                    'paid_date' => $bonus->paid_date,
                     'created_at' => $bonus->created_at,
                 ];
             });
@@ -84,7 +84,7 @@ class FounderBonusAdminController extends Controller
                     'month' => $bonus->month,
                     'bonus_amount' => $bonus->bonus_amount,
                     'payout_status' => $bonus->payout_status,
-                    'payout_date' => $bonus->payout_date,
+                    'paid_date' => $bonus->paid_date,
                     'payout_rejection_reason' => $bonus->payout_rejection_reason,
                     'stripe_transfer_id' => $bonus->stripe_transfer_id,
                     'created_at' => $bonus->created_at,

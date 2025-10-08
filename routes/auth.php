@@ -603,9 +603,11 @@ Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('us
 // Founder routes - must come before profile route to prevent interception
 Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
 Route::middleware(['auth', 'verified'])->group(function () {
-Route::get('/founder/data', [FounderBonusController::class, 'getData'])->name('founder.data');
-Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
-Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
+    Route::get('/founder/data', [FounderBonusController::class, 'getData'])->name('founder.data');
+    Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
+    Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
+    Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
+    Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
 });
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
