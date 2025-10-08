@@ -255,6 +255,5 @@ All calculations must be idempotent (re-running jobs should not double count).
 Deliverables table is checked to confirm gifter spend, no new frontend admin required.
 
 
-
 http://localhost:8000/api/founder/qualify-winners
 http://localhost:8000/founder/settle-payouts
