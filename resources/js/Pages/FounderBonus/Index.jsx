@@ -73,7 +73,7 @@ export default function FounderBonusIndex() {
                                         <p className="text-lg opacity-90 me-2">⏰ Time Left : </p>
                                         <div className='flex items-center'>
                                             <p className="text-3xl font-bold">
-                                                {userProgress.days_remaining}
+                                                {userProgress?.days_remaining}
                                             </p>
                                             <p className="text-lg opacity-90 ms-1">Days</p>
                                         </div>
@@ -215,85 +215,71 @@ export default function FounderBonusIndex() {
                     </div>
                     
 
-                    <div className="bg-white mt-4 rounded-[25px] shadow-sm overflow-hidden mb-8">
-                        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-2xl font-bold flex items-center">
-                                        {currentMonth} Leaderboard
-                                    </h2>
-                                    <p className="text-purple-100 mt-1">
-                                        New creators racing for Founder status
-                                    </p>
-                                </div>
-                            </div>
+                    <div className="mt-16 mb-8">
+                        <div>
+                            <h2 className="text-xl md:text-3xl font-gulfs uppercase font-bold flex items-center">
+                                {currentMonth} Leaderboard
+                            </h2>
+                            <p className="text-gray-600 mt-1">
+                                New creators racing for Founder status
+                            </p>
                         </div>
 
-                        <div className="p-6">
-                            {leaderboard && leaderboard.length > 0 ? (
-                                <div className="space-y-4">
-                                    {leaderboard.map((entry, index) => (
-                                        <div 
-                                            key={entry.creator.id}
-                                            className={`flex items-center justify-between p-3 rounded-[25px] border-2 transition-all ${
-                                                entry.is_qualified 
-                                                    ? 'border-green-200 bg-green-50' 
-                                                    : 'border-gray-200 bg-gray-50'
-                                            } ${entry.creator.id === user.id ? 'bg-indigo-100 border-indigo-300' : ''}`}
-                                        >
-                                            <div className="flex items-center ">
-                                                {/* <div className="flex items-center justify-center w-10 h-10">
-                                                    {getRankIcon(index + 1)}
-                                                </div> */}
+                        <div className="py-6 overflow-auto">
 
-                                                <Avatar profile_status_lock={entry.creator.profile_status_lock} role={entry.creator.role}
-                                                    src={entry.creator.avatar_url || userphoto}
-                                                    name={entry.creator.name}
-                                                    username={entry.creator.username}
+                            <table className='w-full table-auto border-collapse border border-gray-200 shadow-sm rounded-[20px] overflow-hidden bg-gray-100'>
+                                <thead>
+                                    <tr>
+                                        <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Creator</th>
+                                        <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Earnings</th>
+                                        <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Progress</th>
+                                        <th className='border pinkbg text-white !py-[15px] !px-[15px]'>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {leaderboard && leaderboard.map((entry, index) => (
+                                        <tr key={entry?.creator?.id} className={`hover:bg-gray-50 transition-colors ${entry?.creator?.id === user?.id ? 'bg-indigo-100' : ''}`}>
+                                            <td className="border-r border-gray-200 p-3 flex items-center">
+                                                {/* {getRankIcon(index + 1)} */}
+                                                <Avatar profile_status_lock={entry?.creator?.profile_status_lock} role={entry?.creator?.role}
+                                                    src={entry?.creator?.avatar_url || userphoto}
+                                                    name={entry?.creator?.name}
+                                                    username={entry?.creator?.username}
                                                 />
-                                                {/* {entry.days_remaining > 0 
+                                            </td>
+                                            <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
+                                                {formatMultiPrice(entry.current_earnings)}
+                                            </td>
+                                            <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
+                                                {entry.days_remaining > 0 
                                                     ? `${entry.days_remaining} days remaining`
                                                     : 'Challenge period complete'
-                                                } */}
-                                                
-                                            </div>
-                                            
-                                            <div className="text-right">
-                                                <p className="text-lg font-bold text-gray-900">
-                                                    {formatMultiPrice(entry.current_earnings)}
-                                                </p>
-                                                <div className="flex items-center justify-end mt-1">
-                                                    <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
-                                                        <div 
-                                                            className={`h-2 rounded-full transition-all duration-300 ${
-                                                                entry.is_qualified ? 'bg-green-500' : 'bg-blue-500'
-                                                            }`}
-                                                            style={{ width: `${Math.min(entry.qualification_progress, 100)}%` }}
+                                                }
+                                            </td>
+                                            <td className="border-r border-gray-200 p-3"> 
+                                                <div className="flex items-center">
+                                                    <div className="w-32 bg-gray-200 rounded-full h-3 mr-3">
+                                                        <div
+                                                            className="bg-indigo-500 h-3 rounded-full"
+                                                            style={{ width: `${Math.min(entry.progress ?? entry.qualification_progress ?? 0, 100)}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className="text-xs text-gray-600">
-                                                        {Math.round(entry.qualification_progress)}%
-                                                    </span>
+                                                    <span className="text-sm text-gray-500">{Math.round(entry.progress ?? entry.qualification_progress ?? 0)}%</span>
                                                 </div>
+                                            </td>
+                                            {/* <td className="py-4 px-6">
                                                 {entry.is_qualified && (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                         <FaCrown className="w-3 h-3 mr-1" />
                                                         Qualified
                                                     </span>
                                                 )}
-                                            </div>
-                                        </div>
+                                            </td> */}
+                                        </tr>
                                     ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-12">
-                                    <FaCalendarAlt className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                                    <h3 className="text-xl font-medium text-gray-900 mb-2">No Racers Yet</h3>
-                                    <p className="text-gray-600">
-                                        Be the first new creator to join this month and start racing for Founder status!
-                                    </p>
-                                </div>
-                            )}
+                                </tbody>
+                            </table>
+                           
                         </div>
                     </div>
 

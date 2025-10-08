@@ -452,9 +452,7 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
-
                         <OfferAnnouncement variant="default" />
-
                         {/* <Side /> */}
                         <div className="wishbanner relative ">
                             <div className="relative">

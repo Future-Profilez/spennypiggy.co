@@ -45,7 +45,7 @@ export default function OfferAnnouncement({
     if (!isVisible) return null;
 
     const DefaultVariant = () => (
-        <Link href="/founder/bonus" className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
+        <Link onClick={handleDismiss} href="/founder/bonus" className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-20">
                 <div className="absolute top-3 left-4 animate-bounce">
