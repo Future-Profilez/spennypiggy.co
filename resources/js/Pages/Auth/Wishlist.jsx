@@ -187,7 +187,8 @@ export default function Wishlist(props) {
             content_file_size: metadata.size
         }));
         
-        console.log("getContentFileUID", uploadData, metadata);
+        console.log("Content file uploaded:", uuid, metadata);
+        console.log("Current thumbnail state:", thumbnail);
     };
 
     // Content file updates are handled in getContentFileUID function
@@ -195,9 +196,13 @@ export default function Wishlist(props) {
 
     const [isEditable, setIsEditable] = useState(false);
     const getFileUID = async (data) => {
-        let ss = data?.uuid;
-        setThumbnail(ss);
-        // setIsEditable(true);
+        // Only handle thumbnail uploads - ensure this is specifically for thumbnail
+        if (data?.uuid) {
+            let thumbnailUuid = data.uuid;
+            setThumbnail(thumbnailUuid);
+            console.log("Thumbnail uploaded:", thumbnailUuid);
+            // setIsEditable(true);
+        }
     };
 
 
@@ -502,7 +507,7 @@ export default function Wishlist(props) {
 
                                         <div className={`${ !isEditable ? "" : "d-none" } editable`} >
                                             <GlobalUploader
-                                                type="minimal" ctxName="wishlist"
+                                                type="minimal" ctxName="wish-thumbnail"
                                                 ref={uploaderRef}
                                                 accept="image/*"
                                                 sendFile={getFileUID}

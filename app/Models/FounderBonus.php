@@ -185,6 +185,7 @@ class FounderBonus extends Model
             ->where('name', 'NOT LIKE', '%Founder%')
             ->where('name', 'NOT LIKE', '%test%')
             ->where('name', 'NOT LIKE', '%dummy%')
+            ->where('role', 1) // Only include creators (role 1), not gifters (role 0)
             ->where('created_at', '>=', $cutoffDate)
             ->whereNotIn('id', $existingFounderIds)
             ->with(['createdDeliverables' => function($query) {
