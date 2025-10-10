@@ -44,15 +44,14 @@ export default function OfferAnnouncement({
 
     if (!isVisible) return null;
 
-
     return <>
     <div className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
-            {/* <button
+            <button
                 onClick={handleDismiss}
-                className="absolute top-3 right-3 p-3 rounded-full hover:bg-white/20 transition-colors"
+                className="absolute !text-[20px] z-1 top-1 right-1 py-[3px] px-[10px] rounded-full hover:bg-white/20 transition-all"
             >
-                <FaTimes className="w-4 h-4" />
-        </button> */}
+                &times;
+        </button>
         
             {/* <div className="absolute inset-0 opacity-20">
                 <div className="absolute top-3 left-4 animate-bounce">
@@ -70,7 +69,7 @@ export default function OfferAnnouncement({
             </div> */}
 
             {/* Content */}
-            <div className="relative z-10">
+            <div className="relative ">
                 <div className="flex items-center mb-3">
                     <div className="p-2 bg-white/20 rounded-full mr-3">
                         <FaGift className="w-6 h-6" />

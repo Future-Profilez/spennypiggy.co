@@ -121,11 +121,14 @@ class StripeMetadataService
             return false;
         }
         
-        // Check if this is a support payment (no delivery/certificate fields)
-        $isSupportPayment = $deliverable->product_type === 'support_payment';
+        // Check if this is a support payment with certificate
+        $isSupportPaymentWithCert = $this->isSupportPaymentWithCertificate($deliverable);
         
-        // Determine delivery status based on deliverable status (skip for support payments)
-        $deliveryStatus = $isSupportPayment ? 'pending' : $this->mapDeliverableStatusToDeliveryStatus($deliverable->status);
+        // For support payments: include cert fields if certificate exists, otherwise exclude
+        $skipDeliveryFields = $deliverable->product_type === 'support_payment' && !$isSupportPaymentWithCert;
+        
+        // Determine delivery status 
+        $deliveryStatus = $skipDeliveryFields ? 'pending' : $this->mapDeliverableStatusToDeliveryStatus($deliverable->status);
         
         // Build NEW FLATTENED metadata format
         $newFormatMetadata = $this->buildNewFlattenedMetadata($deliverable);
@@ -133,15 +136,37 @@ class StripeMetadataService
         // Merge with additional metadata
         $allAdditionalMetadata = array_merge($newFormatMetadata, $additionalMetadata);
         
+        // Add special logging for support payments with certificates
+        if ($isSupportPaymentWithCert) {
+            Log::info('StripeMetadataService: Support payment metadata + cert URL', [
+                'deliverable_id' => $deliverable->id,
+                'certificate_url' => $deliverable->certificate_url,
+                'payment_intent_id' => $deliverable->payment_intent_id
+            ]);
+        }
+        
         return $this->updatePaymentIntentMetadata(
             $deliverable->payment_intent_id,
-            $isSupportPayment ? null : $deliverable->certificate_url,
+            $skipDeliveryFields ? null : $deliverable->certificate_url,
             $deliveryStatus,
             $allAdditionalMetadata,
-            $isSupportPayment ? null : $deliverable->uuid,
-            $isSupportPayment ? null : $deliverable->deliverable_url,
-            $isSupportPayment
+            $skipDeliveryFields ? null : $deliverable->uuid,
+            $skipDeliveryFields ? null : $deliverable->deliverable_url,
+            $skipDeliveryFields
         );
+    }
+    
+    /**
+     * Check if deliverable is a support payment with certificate
+     * 
+     * @param Deliverable $deliverable
+     * @return bool
+     */
+    private function isSupportPaymentWithCertificate(Deliverable $deliverable): bool
+    {
+        return $deliverable->product_type === 'support_payment' 
+            && !empty($deliverable->certificate_url)
+            && $deliverable->status === 'delivered';
     }
     
     /**
@@ -206,12 +231,24 @@ class StripeMetadataService
             case 'support_payment':
                 $metadata['support_payment'] = 'true';
                 $metadata['payment_type'] = 'tip_donation';
-                // No delivery/certificate fields for support payments
+                // Include certificate/delivery fields if certificate exists
+                if ($this->isSupportPaymentWithCertificate($deliverable)) {
+                    $metadata['certificate_url'] = $deliverable->certificate_url;
+                    $metadata['certificate_id'] = $deliverable->uuid;
+                    $metadata['delivery_status'] = 'completed';
+                    $metadata['deliverable_uuid'] = $deliverable->uuid;
+                }
                 break;
         }
         
-        // Add content delivery information (skip for support payments)
+        // Add content delivery information 
         if ($deliverable->product_type !== 'support_payment' && $deliverable->deliverable_url) {
+            $metadata['content_available'] = 'true';
+            $metadata['content_delivery_url'] = $deliverable->deliverable_url;
+        }
+        
+        // Special handling for support payments with certificate delivery
+        if ($this->isSupportPaymentWithCertificate($deliverable) && $deliverable->deliverable_url) {
             $metadata['content_available'] = 'true';
             $metadata['content_delivery_url'] = $deliverable->deliverable_url;
         }

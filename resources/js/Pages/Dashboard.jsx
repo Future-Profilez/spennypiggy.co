@@ -70,6 +70,7 @@ import ErrorBoundary from "@/Components/ErrorBoundary";
 import InstantTabSystem from '@/Components/InstantTabSystem';
 import FastTabRenderer from '@/Components/FastTabRenderer';
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
+import FounderBadge from "@/Components/FounderBadge";
 
 // Creator Activity and Subscription Components
 const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWidget'));
@@ -456,6 +457,11 @@ export default function Dashboard(props) {
                         {/* <Side /> */}
                         <div className="wishbanner relative ">
                             <div className="relative">
+                                {user?.is_founder ? (
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-xl lg:justify-start mb-2">
+                                        <FounderBadge size="md" />
+                                    </div>
+                                ) : ''}
                                 <img
                                     alt={`${user?.name} - Cover Image`}
                                     height={400} 

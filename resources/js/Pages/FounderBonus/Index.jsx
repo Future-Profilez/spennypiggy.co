@@ -444,7 +444,7 @@ export default function FounderBonusIndex() {
 
                     <div className="mt-8 text-center">
                         <p className="text-sm text-gray-500">
-                            Only {maxSeats} founder seats available. Qualification checked on the 1st of each month.
+                            Only {availableSeats} founder seats available. Qualification checked on the 1st of each month.
                             Bonuses paid on the 7th. Only new creators who joined this month can participate in the race.
                         </p>
                     </div>

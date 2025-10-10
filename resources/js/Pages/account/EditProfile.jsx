@@ -3,7 +3,7 @@ import userdefaultphoto from '../../../assets/siteicon.png';
 import coverimage from '../../../assets/img/wishlistbannerimg.jpg';
 import editicon from '../../../assets/img/editicon.png';
 import Popup from '@/Components/Popup';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
@@ -15,6 +15,7 @@ import socialbg from "../../../assets/social-bg.png";
 
 export default function EditProfile({ user, text, classes, updateProfileSteps }) {
 
+    const { auth }= usePage().props;
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();
@@ -156,6 +157,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
     const updateProfile = async (e) => {
         e.preventDefault();
+        auth?.user?.role == 1 && await generateCardAndUpload(localAvatar || user?.avatar);
         post(route('edit-profile', {...data}), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -264,7 +266,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                         </li> */}
 
                                     </ul>
-
+                                {auth?.user?.role == 1 ? 
                                     <div className="text-center mb-4">
                                         <div className="mb-2">
                                             <p className="text-sm text-gray-600 mb-2">
@@ -272,7 +274,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                             </p>
                                         </div>
                                         
-                                        {/* Social Media Banner Preview */}
                                         {currentSocialBanner && (
                                             <div className="mb-4">
                                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Your Social Media Banner:</h4>
@@ -286,7 +287,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 <p className="text-xs text-gray-500 mt-2">Right-click and save to download your banner</p>
                                             </div>
                                         )}
-                                        
+                                       
                                         <button 
                                             type="button"
                                             onClick={async () => {
@@ -308,8 +309,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                             className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[30px] mb-3 disabled:opacity-50"
                                         >
                                             {generatingBanner ? 'Generating Banner...' : (currentSocialBanner ? 'Regenerate Social Media Banner' : 'Generate Social Media Banner')}
-                                        </button>
+                                        </button> 
                                     </div>
+                                        : ''}
 
                                     <div className=" text-center mb-7">
                                         <LoaderButton type='submit' disabled={processing} className='p '

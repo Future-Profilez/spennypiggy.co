@@ -28,6 +28,11 @@ export default function Userprofile({ IsloggedIn }) {
                         !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px]
                         md:!h-[150px] md:!w-[150px] md:min-w-[150px] md:!min-h-[150px] md:!max-w-[150px] md:!max-h-[150px]" />
 
+                        {/* {user?.is_founder ? (
+                            <div className="lg:ms-[30px] xl:ms-[50px] flex justify-center lg:justify-start mb-2">
+                                <FounderBadge size="md" />
+                            </div>
+                        ) : ''} */}
                         {IsloggedIn && auth && auth?.user.avatar_url && auth?.user?.avatar_approved == 0 ? (
                             <div className="absolute approvetag top-3 mx-auto">
                                 <button className="tooltipbtn">
@@ -56,42 +61,31 @@ export default function Userprofile({ IsloggedIn }) {
                     <div className="ps-3">
                         <h1 className="font-GillSans  flex   items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
-                            {user?.role === 1 &&
-                                user?.profile_status_lock === 2 && <>
-                                {user?.is_founder ? 
-                                    <div className="mb-1">
-                                        <FounderBadge classes="w-6 h-6 ms-2" icon={true}   />
-                                    </div>
-                                    :
-                                    <RiVerifiedBadgeFill
-                                        size="1.5rem"
-                                        className="ms-2 mt-[-2px] text-pink"
-                                    />
-                                }
+                            {user?.role == 1 && user?.profile_status_lock == 2 && <>
+                                    {user?.is_founder ? 
+                                        <div className="mb-1">
+                                            <FounderBadge classes="w-6 h-6 ms-2" icon={true}   />
+                                        </div>
+                                        :
+                                        <RiVerifiedBadgeFill
+                                            size="1.5rem"
+                                            className="ms-2 mt-[-2px] text-pink"
+                                        />
+                                    }
                                 </>
-                                }
+                            || ''}
                         </h1>
-
-                        {/* Founder Badge */}
 
                         <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <ShareProfile
                                 username={user?.name}
-                                classes="flex text-gray-300 mr-4 items-center"
-                                >
+                                classes="flex text-gray-300 mr-4 items-center" >
                                 @{user?.username}
-                                <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-2"/>
-
+                                <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-0"/>
                             </ShareProfile>
-
-
                         </div>
                     </div>
-                    {user?.is_founder ? (
-                        <div className="lg:ms-[30px] xl:ms-[50px] flex justify-center lg:justify-start mb-2">
-                            <FounderBadge size="md" />
-                        </div>
-                    ) : ''}
+                    
                 </div>
 
                 <div className="flex lg:block justify-center mt-4 lg:mt-0">
@@ -100,12 +94,12 @@ export default function Userprofile({ IsloggedIn }) {
                             <div className="flex mb-4 justify-center md:mb-2">
                                 <p className="md:flex text-center font-poppins mt-1 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>
-                                        {user?.followers_count}
+                                      👥  {user?.followers_count}
                                     </span>
                                       Followers
                                 </p>
                                 <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
-                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >{user?.following_count}</span> Following
+                                     <span className='!w-auto !h-auto block md:inline-block pe-1 ' >🤝 {user?.following_count}</span> Following
                                 </p>
                                 <p className="md:flex text-center font-poppins mt-1 ms-3 text-white">
                                     <span className='!w-auto !h-auto block md:inline-block pe-1 '>🐷 {supporters}</span> Supporters

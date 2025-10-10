@@ -215,6 +215,7 @@ class StripeWebhookController extends Controller
             case 'checkout.session.completed':
                 Log::info("Handling Checkout Session Completed");
                 $this->handleCheckoutSessionCompleted($data, $metadata);
+                $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
 
             case 'invoice.paid':
@@ -225,6 +226,7 @@ class StripeWebhookController extends Controller
             case 'invoice.payment_succeeded':
                 Log::info("Handling Invoice Payment Succeeded");
                 $this->handleInvoicePaymentSucceeded($data, $metadata);
+                $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
 
             case 'customer.subscription.updated':
@@ -1209,6 +1211,85 @@ class StripeWebhookController extends Controller
                 'bill_id' => $billPayment->bill->id ?? 'unknown'
             ]);
             return null;
+        }
+    }
+    
+    /**
+     * Handle support payment deliverables that are ready for Stripe metadata updates
+     * This is a safety-net to catch any support payments that didn't get their
+     * Stripe metadata updated through the primary flow
+     */
+    private function handleSupportPaymentDeliverableReady($data, $metadata)
+    {
+        try {
+            Log::info('StripeWebhookController: Checking for support payment deliverables ready for metadata updates', [
+                'event_data' => get_class($data),
+                'metadata' => $metadata
+            ]);
+            
+            // Look for support payment deliverables that are ready but haven't had Stripe metadata updated
+            $readyDeliverables = \App\Models\Deliverable::where('product_type', 'support_payment')
+                ->where('status', 'delivered')
+                ->whereNotNull('certificate_url')
+                ->whereNotNull('payment_intent_id')
+                ->get()
+                ->filter(function($deliverable) {
+                    // Check if Stripe metadata hasn't been updated yet
+                    $metadata = json_decode($deliverable->metadata, true) ?? [];
+                    $alreadyUpdated = $metadata['stripe_metadata_updated'] ?? false;
+                    
+                    if ($alreadyUpdated) {
+                        return false; // Skip already updated ones
+                    }
+                    
+                    // Additional check: verify this deliverable is related to current webhook event
+                    // by checking session_id or payment_intent_id matches webhook data
+                    $sessionId = $deliverable->session_id;
+                    $paymentIntentId = $deliverable->payment_intent_id;
+                    
+                    // Check if this webhook event relates to this deliverable
+                    $eventSessionId = $data->id ?? null;
+                    $eventPaymentIntentId = $data->payment_intent ?? null;
+                    
+                    $isRelated = ($sessionId && $sessionId === $eventSessionId) ||
+                                ($paymentIntentId && $paymentIntentId === $eventPaymentIntentId);
+                    
+                    if ($isRelated) {
+                        Log::info('StripeWebhookController: Found related support payment deliverable needing metadata update', [
+                            'deliverable_id' => $deliverable->id,
+                            'session_id' => $sessionId,
+                            'payment_intent_id' => $paymentIntentId,
+                            'event_session_id' => $eventSessionId,
+                            'event_payment_intent_id' => $eventPaymentIntentId
+                        ]);
+                        return true;
+                    }
+                    
+                    return false;
+                });
+            
+            // Dispatch UpdateSupportPaymentStripeMetadata job for any found deliverables
+            foreach ($readyDeliverables as $deliverable) {
+                \App\Jobs\UpdateSupportPaymentStripeMetadata::dispatch($deliverable->id)
+                    ->delay(now()->addSeconds(5)); // Short delay for webhook safety-net
+                
+                Log::info('StripeWebhookController: Dispatched safety-net UpdateSupportPaymentStripeMetadata job', [
+                    'deliverable_id' => $deliverable->id,
+                    'certificate_url' => $deliverable->certificate_url,
+                    'payment_intent_id' => $deliverable->payment_intent_id
+                ]);
+            }
+            
+            if ($readyDeliverables->count() === 0) {
+                Log::info('StripeWebhookController: No support payment deliverables found needing metadata updates');
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('StripeWebhookController: Error in handleSupportPaymentDeliverableReady', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - this is a safety-net, shouldn't break main webhook processing
         }
     }
 }

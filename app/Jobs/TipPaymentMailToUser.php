@@ -84,6 +84,7 @@ class TipPaymentMailToUser implements ShouldQueue
             $customerEmail = null;
             $customerName = null;
             $gifterId = null;
+            $paymentIntentId = null;
 
             if ($this->tipPayment->user) {
                 $customerEmail = $this->tipPayment->user->email;
@@ -100,6 +101,26 @@ class TipPaymentMailToUser implements ShouldQueue
                 ]);
                 return null;
             }
+            
+            // Extract payment intent ID from Stripe session for metadata updates
+            if ($this->tipPayment->session_id) {
+                try {
+                    $session = \App\StripeControl::getCheckoutSession($this->tipPayment->session_id);
+                    $paymentIntentId = $session->payment_intent ?? null;
+                    
+                    Log::info('TipPaymentMailToUser: Extracted payment intent from session', [
+                        'tip_payment_id' => $this->tipPayment->id,
+                        'session_id' => $this->tipPayment->session_id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('TipPaymentMailToUser: Could not retrieve session for payment intent', [
+                        'tip_payment_id' => $this->tipPayment->id,
+                        'session_id' => $this->tipPayment->session_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             $deliverable = Deliverable::create([
                 'uuid' => Str::uuid(),
@@ -108,7 +129,7 @@ class TipPaymentMailToUser implements ShouldQueue
                 'price_id' => null,
                 'creator_id' => $this->tipPayment->creator_id, // Creator being supported
                 'gifter_id' => $gifterId, // Supporter user ID (null for guests)
-                'payment_intent_id' => null, // Tip payments don't have payment intents usually
+                'payment_intent_id' => $paymentIntentId, // Extract from Stripe session for metadata updates
                 'session_id' => $this->tipPayment->session_id,
                 'deliverable_type' => 'access', // Supporter access type
                 'product_type' => 'support_payment', // Support/tip payment
@@ -185,6 +206,17 @@ class TipPaymentMailToUser implements ShouldQueue
                     'deliverable_id' => $deliverable->id,
                     'certificate_url' => $certificateUrl
                 ]);
+
+                // Dispatch job to update Stripe payment intent metadata with certificate URL
+                if ($deliverable->product_type === 'support_payment') {
+                    \App\Jobs\UpdateSupportPaymentStripeMetadata::dispatch($deliverable->id)
+                        ->delay(now()->addSeconds(10)); // Small delay to ensure database transaction is complete
+                    
+                    Log::info('TipPaymentMailToUser: Dispatched UpdateSupportPaymentStripeMetadata job', [
+                        'deliverable_id' => $deliverable->id,
+                        'certificate_url' => $certificateUrl
+                    ]);
+                }
             } else {
                 Log::error('TipPaymentMailToUser: Certificate generation failed', [
                     'deliverable_id' => $deliverable->id
