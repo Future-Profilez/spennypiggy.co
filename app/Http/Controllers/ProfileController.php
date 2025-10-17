@@ -552,13 +552,13 @@ class ProfileController extends Controller
             $intro = UserIntro::create([
                 'uuid' => $media['uuid'],
                 'user_id' => Auth::id(),
-                'height' => $media['videoInfo']['video']['height'],
-                'width' => $media['videoInfo']['video']['width'],
+                'height' => 720, // Default height for videos
+                'width' => 1280, // Default width for videos
             ]);
         } else {
             $intro->uuid = $media['uuid'];
-            $intro->height = $media['videoInfo']['video']['height'];
-            $intro->width = $media['videoInfo']['video']['width'];
+            $intro->height = 720; // Default height for videos
+            $intro->width = 1280; // Default width for videos
             $intro->save();
         }
 

@@ -202,10 +202,20 @@ class FounderBonus extends Model
             $calculationEndDate = min($thirtyDaysLater, now());
             
             // Calculate earnings in their first 30 days (or up to now if less than 30 days)
-            $earnings = $creator->createdDeliverables()
+            $deliverables = $creator->createdDeliverables()
                 ->whereBetween('created_at', [$joinDate, $calculationEndDate])
                 ->where('status', 'delivered')
-                ->sum('transaction_amount');
+                ->get(['transaction_amount', 'payment_currency']);
+
+            $earnings = 0;
+            foreach ($deliverables as $deliverable) {
+                $currency = $deliverable->payment_currency ?? 'GBP';
+                $amount = $deliverable->transaction_amount ?? 0;
+                
+                // Convert to GBP using the existing helper
+                $gbpAmount = \App\Helpers::priceFormat($currency, $amount, 'GBP');
+                $earnings += $gbpAmount;
+            }
                 
             $daysRemaining = $thirtyDaysLater->isFuture() ? $thirtyDaysLater->diffInDays(now()) : 0;
             $isQualified = $earnings >= $minEarnings && $daysRemaining <= 0;

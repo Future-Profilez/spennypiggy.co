@@ -264,19 +264,10 @@ class StripeControl
                 }
             }
             
-            // Check for legacy account upgrade needs
-            $isLegacy = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
-            if ($isLegacy) {
-                $hasRequirements = true;
-                $requirements[] = [
-                    'type' => 'legacy_upgrade',
-                    'severity' => 'high',
-                    'title' => 'Account Upgrade Required',
-                    'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
-                    'action' => 'Upgrade your Stripe account now.',
-                    'action_url' => '/stripe/upgrade-express-account'
-                ];
-            }
+            // Check for legacy account upgrade needs using proper migration logic
+            // Note: We need the user object to check migration needs properly
+            // For now, we'll skip this check here since it requires user context
+            // The migration check is handled in the controllers where user context is available
             
             // Check payout capability
             if (isset($account->capabilities->transfers) && $account->capabilities->transfers !== 'active') {

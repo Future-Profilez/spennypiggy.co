@@ -212,12 +212,18 @@ class AuthenticatedSessionController extends Controller
         
         $sociallinks = null;
         $userIntro = null;
-        $isNeedToUpgrade = null;
-        $cardCapabilities = null;
+        $isNeedToUpgrade = false;
+        $cardCapabilities = true;
+        $stripeRequirements = [];
+        
+        // Get Stripe capabilities if user is a creator (for all pages)
+        if ($user->role == 1 && !empty($user->account_id)) {
+            [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
+        }
+        
         if($page == 'about'){
             $sociallinks = $user->social_links;
             $userIntro = $user->intro;
-            [$isNeedToUpgrade, $cardCapabilities] = $this->getStripeCapabilities($user);
         }
 
         // Check if account needs migration for cross-border payments
@@ -233,6 +239,7 @@ class AuthenticatedSessionController extends Controller
             // About Page Data
             'card_capabilities' => $cardCapabilities,
             'isNeedToUpgrade' => $isNeedToUpgrade,
+            'stripe_requirements' => $stripeRequirements,
             'migration_status' => $migrationStatus,
             'sociallinks' => $sociallinks,
             'slinks' => $sociallinks,
@@ -257,7 +264,7 @@ class AuthenticatedSessionController extends Controller
     private function getStripeCapabilities($user): array
     {
         if (empty($user->account_id)) {
-            return [false, true];
+            return [false, true, []];
         }
 
         $cacheKey = "stripe_capabilities_{$user->account_id}";
@@ -265,14 +272,45 @@ class AuthenticatedSessionController extends Controller
         return Cache::remember($cacheKey, 300, function () use ($user) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
-                $isNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
+                
+                // Use the proper migration check to determine if upgrade is needed
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+                $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
+                
                 $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
                 
-                return [$isNeedToUpgrade, $cardCapabilities];
+                // Get comprehensive account requirements
+                $requirements = StripeControl::getAccountRequirements($user->account_id);
+                
+                // Add migration requirement if account needs upgrade
+                if ($isNeedToUpgrade) {
+                    $requirements['has_requirements'] = true;
+                    $requirements['requirements'][] = [
+                        'type' => 'legacy_upgrade',
+                        'severity' => 'high',
+                        'title' => 'Account Upgrade Required',
+                        'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
+                        'action' => 'Upgrade your Stripe account now.',
+                        'action_url' => '/stripe/upgrade-express-account'
+                    ];
+                }
+                
+                return [$isNeedToUpgrade, $cardCapabilities, $requirements];
             } catch (\Exception $e) {
                 // Update user if account is invalid
                 $user->update(['stripe_details_submitted' => 0]);
-                return [false, true];
+                return [false, true, [
+                    'has_requirements' => true,
+                    'requirements' => [[
+                        'type' => 'connection_error',
+                        'severity' => 'critical',
+                        'title' => 'Account Connection Issue',
+                        'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
+                        'action' => 'Refresh the page or contact support.',
+                        'action_url' => null
+                    ]],
+                    'account_status' => []
+                ]];
             }
         });
     }

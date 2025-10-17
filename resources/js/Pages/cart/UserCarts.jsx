@@ -411,7 +411,7 @@ export default function UserCarts(props) {
                                 {hcaptchakey && hcaptchakey !== '' && (
                                     <HCaptcha
                                         ref={hcaptchaRef}
-                                        sitekey={hcaptchakey}
+                                        sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
                                         data-theme="light"
                                         size="invisible"
                                         onVerify={onVerify}

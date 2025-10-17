@@ -89,7 +89,7 @@ export default function FounderBonusIndex() {
                                             <BiDollarCircle className="w-5 h-5 mr-1" />
                                             <p className="text-lg font-bold opacity-90">First 30 Days</p>
                                         </div>
-                                        <p className="text-lg font-bold">{formatMultiPrice(founderBonusData.first_30d_earnings)}</p>
+                                        <p className="text-lg font-bold">{formatMultiPrice(founderBonusData.first_30d_earnings, 'GBP')}</p>
                                     </div>
                                     
                                     <div className="bg-black/5 rounded-xl p-3 backdrop-blur-sm text-center">
@@ -97,7 +97,7 @@ export default function FounderBonusIndex() {
                                             <FaGift className="w-5 h-5 mr-1" />
                                             <p className="text-lg font-bold opacity-90">Bonus Amount</p>
                                         </div>
-                                        <p className="text-lg font-bold">{formatMultiPrice(founderBonusData.bonus_amount)}</p>
+                                        <p className="text-lg font-bold">{formatMultiPrice(founderBonusData.bonus_amount, 'GBP')}</p>
                                     </div>
                                     
                                     <div className="bg-black/5 rounded-xl p-3 backdrop-blur-sm text-center">
@@ -188,7 +188,7 @@ export default function FounderBonusIndex() {
                                 ? "🎉 Congratulations! You're officially a Founder!" 
                                 : userProgress?.current_earnings >= minEarnings
                                 ? "🎉 Qualified for Founder Badge!"
-                                : `💪 ${formatMultiPrice(minEarnings - userProgress?.current_earnings)} away from Founder Badge!`
+                                : `💪 ${formatMultiPrice(minEarnings - userProgress?.current_earnings, 'GBP')} away from Founder Badge!`
                             }
                         </p>
                                     </div>
@@ -209,7 +209,7 @@ export default function FounderBonusIndex() {
                                             <BiDollarCircle className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Current Earnings</p>
                                         </div>
-                                        <p className="text-2xl font-bold">{formatMultiPrice(userProgress?.current_earnings)}</p>
+                                        <p className="text-2xl font-bold">{formatMultiPrice(userProgress?.current_earnings, 'GBP')}</p>
                                         <p className="text-xs opacity-75 mt-1">
                                             {userProgress?.current_earnings > 0 
                                                 ? "🔥 Keep the momentum going!" 
@@ -314,7 +314,7 @@ export default function FounderBonusIndex() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xl font-medium text-gray-600">Qualification Target</p>
-                                    <p className="text-2xl font-bold text-gray-900">{formatMultiPrice(minEarnings)}</p>
+                                    <p className="text-2xl font-bold text-gray-900">£{(minEarnings)}</p>
                                 </div>
                                 <div className="p-3 bg-blue-100 rounded-full">
                                     <FaGift className="w-6 h-6 text-blue-600" />
@@ -371,7 +371,7 @@ export default function FounderBonusIndex() {
                                                 />
                                             </td>
                                             <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
-                                                {formatMultiPrice(entry.current_earnings)}
+                                                {formatMultiPrice(entry.current_earnings, 'GBP')}
                                             </td>
                                             <td className="border-r border-gray-200 p-3 text-lg font-bold text-gray-900"> 
                                                 {entry.days_remaining > 0 

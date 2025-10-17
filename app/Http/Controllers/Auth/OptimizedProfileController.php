@@ -97,11 +97,28 @@ class OptimizedProfileController extends Controller
         return Cache::remember($cacheKey, 300, function () use ($user) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
-                $isNeedToUpgrade = ($account->tos_acceptance->service_agreement ?? '') === 'recipient';
+                
+                // Use the proper migration check to determine if upgrade is needed
+                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+                $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
+                
                 $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
                 
                 // Get comprehensive account requirements
                 $requirements = StripeControl::getAccountRequirements($user->account_id);
+                
+                // Add migration requirement if account needs upgrade
+                if ($isNeedToUpgrade) {
+                    $requirements['has_requirements'] = true;
+                    $requirements['requirements'][] = [
+                        'type' => 'legacy_upgrade',
+                        'severity' => 'high',
+                        'title' => 'Account Upgrade Required',
+                        'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
+                        'action' => 'Upgrade your Stripe account now.',
+                        'action_url' => '/stripe/upgrade-express-account'
+                    ];
+                }
                 
                 return [$isNeedToUpgrade, $cardCapabilities, $requirements];
             } catch (\Exception $e) {

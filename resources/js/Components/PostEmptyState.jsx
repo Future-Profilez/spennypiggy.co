@@ -60,11 +60,11 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                 </div>
 
                 {/* Message */}
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                <h3 className="text-xl font-semibold text-gray-200 mb-2">
                     {getEmptyMessage()}
                 </h3>
                 
-                <p className="text-gray-600 max-w-md mb-4">
+                <p className="text-gray-400 max-w-md mb-4">
                     {getEmptyDescription()}
                 </p>
 

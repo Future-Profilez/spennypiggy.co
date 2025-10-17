@@ -182,15 +182,25 @@ class FounderBonusController extends Controller
         $startDate = $user->created_at;
         $endDate = $user->created_at->copy()->addDays($qualificationDays);
 
-        // Calculate earnings from deliverables table
-        $earnings = \DB::table('deliverables')
+        // Get deliverables with currency information
+        $deliverables = \DB::table('deliverables')
             ->where('creator_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNotNull('transaction_amount')
             ->where('transaction_amount', '>', 0)
-            ->sum('transaction_amount');
+            ->get(['transaction_amount', 'payment_currency']);
+
+        $totalGbp = 0;
+        foreach ($deliverables as $deliverable) {
+            $currency = $deliverable->payment_currency ?? 'GBP';
+            $amount = $deliverable->transaction_amount ?? 0;
+            
+            // Convert to GBP using the existing helper
+            $gbpAmount = \App\Helpers::priceFormat($currency, $amount, 'GBP');
+            $totalGbp += $gbpAmount;
+        }
         
-        return (float) $earnings;
+        return (float) $totalGbp;
     }
 
     /**
@@ -204,15 +214,25 @@ class FounderBonusController extends Controller
         $startDate = $user->created_at;
         $endDate = now();
 
-        // Calculate earnings from deliverables table
-        $earnings = \DB::table('deliverables')
+        // Get deliverables with currency information
+        $deliverables = \DB::table('deliverables')
             ->where('creator_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNotNull('transaction_amount')
             ->where('transaction_amount', '>', 0)
-            ->sum('transaction_amount');
+            ->get(['transaction_amount', 'payment_currency']);
+
+        $totalGbp = 0;
+        foreach ($deliverables as $deliverable) {
+            $currency = $deliverable->payment_currency ?? 'GBP';
+            $amount = $deliverable->transaction_amount ?? 0;
+            
+            // Convert to GBP using the existing helper
+            $gbpAmount = \App\Helpers::priceFormat($currency, $amount, 'GBP');
+            $totalGbp += $gbpAmount;
+        }
         
-        return (float) $earnings;
+        return (float) $totalGbp;
     }
 
     /**

@@ -79,7 +79,7 @@ export default function ActionRequired({ requirements = [] }) {
                 return (
                     <div 
                         key={index}
-                        className={`w-full mb-4 rounded-3xl bg-white border-2 ${reqColors.border} shadow-lg`}
+                        className={`w-full overflow-hidden mb-4 rounded-3xl bg-white border-2 ${reqColors.border} shadow-lg`}
                     >
                         <div className={`border-bottom ${reqColors.border} ${reqColors.bg}`}>
                             <div className="p-3 flex items-center">

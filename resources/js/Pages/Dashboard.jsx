@@ -65,19 +65,16 @@ import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
 import ActionRequired from "./stripe/ActionRequired";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
 import ErrorBoundary from "@/Components/ErrorBoundary";
-
-// Optimized tab system components
 import InstantTabSystem from '@/Components/InstantTabSystem';
-import FastTabRenderer from '@/Components/FastTabRenderer';
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
 
 // Creator Activity and Subscription Components
 const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWidget'));
 const CreatorSubscriptionWidget = lazy(() => import('@/Components/CreatorSubscriptionWidget'));
-
 export default function Dashboard(props) {
     
+    console.log("props",props)
     const w = useWidthCount();
     const {
         auth,
@@ -300,12 +297,16 @@ export default function Dashboard(props) {
                                 className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full"
                             >
+
+
+
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
                                         <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
+                                            <p> {AuthUserStripeConnected !== 1 ?  "Please complete your Stripe account setup to add your wishlist." : '' } </p>
                                             <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
                                                 {wishOptions ? (
                                                     <div>
@@ -565,14 +566,14 @@ export default function Dashboard(props) {
                                                     {page === "about" || page === false ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             <div className="row about-sec align-self-start">
-                                                                <div className="col-md-6  h-auto">
+                                                                <div className="col-lg-6  h-auto">
                                                                     <div className="about-sticky" >
 
                                                                         <DashboardStripeMigrationWarning migrationStatus={migration_status} />
 
-                                                                        {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.length > 0 && AuthUserStripeConnected ?
-                                                                            <ActionRequired requirements={stripe_requirements} />
-                                                                            : ''} */}
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements.requirements.length > 0 && AuthUserStripeConnected ?
+                                                                            <ActionRequired requirements={stripe_requirements.requirements} />
+                                                                        : ''}
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
@@ -582,7 +583,7 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status !== 1  ?
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status == 0  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         : ''}
                                                                         
@@ -674,7 +675,7 @@ export default function Dashboard(props) {
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            <div className="ps-md-4 col-md-6">
+                                                            <div className="ps-lg-4 col-lg-6">
                                                                 {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
                                                                     <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>
                                                                         <CreatorActivityWidget 

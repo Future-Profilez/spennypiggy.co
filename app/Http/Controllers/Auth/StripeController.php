@@ -363,19 +363,19 @@ class StripeController extends Controller
     public function index()
     {
         $user = User::find(Auth::id());
+        if ($user->stripe_details_submitted == 1) {
+            return redirect(route("user.show", $user->username))->with("error", "Stripe Account already connected!");
+        }
         if (!empty($user->account_id)) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
                 if ($account->charges_enabled) {
-                    return redirect(route("user.show"))->with("success", "Already Connected!");
+                    return redirect(route("user.show", $user->username))->with("success", "Already Connected!");
                 }
             } catch (Exception $e) {
-                return redirect(route("user.show"))->with("error", $e->getMessage());
+                return redirect(route("user.show", $user->username))->with("error", $e->getMessage());
             }
         }
-
-        // return Inertia::render("Stripe/Index");
-
         return Inertia::render("stripe/Stripe");
     }
 
@@ -390,6 +390,7 @@ class StripeController extends Controller
     {
         $user = User::find(Auth::id());
 
+       
         if (empty($user->account_id)) {
             $country = strtoupper($country);
             try {
@@ -408,7 +409,10 @@ class StripeController extends Controller
                 if ($serviceAgreementType === 'recipient') {
                     $capabilities['transfers'] = ['requested' => true];
                 } else {
+                    // For card_payments capability, Stripe requires BOTH card_payments AND transfers
+                    // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
                     $capabilities['card_payments'] = ['requested' => true];
+                    $capabilities['transfers'] = ['requested' => true];
                 }
                 
                 $payload = [
@@ -507,7 +511,10 @@ class StripeController extends Controller
                 if ($serviceAgreementType === 'recipient') {
                     $capabilities['transfers'] = ['requested' => true];
                 } else {
+                    // For card_payments capability, Stripe requires BOTH card_payments AND transfers
+                    // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
                     $capabilities['card_payments'] = ['requested' => true];
+                    $capabilities['transfers'] = ['requested' => true];
                 }
                 
                 $newAccount = StripeControl::createAccount([
@@ -586,14 +593,52 @@ class StripeController extends Controller
     {
         $user = User::findOrFail(Auth::id());
         try {
+            // First, get the current account to check its service agreement
+            $account = StripeControl::getClient()->accounts->retrieve($user->account_id);
+            $currentServiceAgreement = $account->tos_acceptance->service_agreement ?? null;
+            
+            // Determine what service agreement type should be based on country
+            $expectedServiceAgreementType = self::getServiceAgreementType($user->country);
+            
+            // Set capabilities based on the ACTUAL service agreement of the account
+            // This prevents capability mismatch errors
+            $capabilities = [];
+            if ($currentServiceAgreement === 'recipient') {
+                // Recipient accounts can only request transfers capability
+                $capabilities['transfers'] = ['requested' => true];
+            } else {
+                // Full service agreement accounts can request both capabilities
+                // For card_payments capability, Stripe requires BOTH card_payments AND transfers
+                // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
+                $capabilities['card_payments'] = ['requested' => true];
+                $capabilities['transfers'] = ['requested' => true];
+            }
+            
+            Log::info('Enabling card payments with capabilities', [
+                'user_id' => $user->id,
+                'country' => $user->country,
+                'current_service_agreement' => $currentServiceAgreement,
+                'expected_service_agreement' => $expectedServiceAgreementType,
+                'capabilities' => array_keys($capabilities),
+                'service_agreement_mismatch' => $currentServiceAgreement !== $expectedServiceAgreementType
+            ]);
+            
+            // Log a warning if there's a service agreement mismatch
+            if ($currentServiceAgreement !== $expectedServiceAgreementType) {
+                Log::warning('Service agreement mismatch detected', [
+                    'user_id' => $user->id,
+                    'account_id' => $user->account_id,
+                    'current_agreement' => $currentServiceAgreement,
+                    'expected_agreement' => $expectedServiceAgreementType,
+                    'country' => $user->country
+                ]);
+            }
+            
             // 1. Ask for the capabilities ↴
             StripeControl::getClient()->accounts->update(
                 $user->account_id,
                 [
-                    'capabilities' => [
-                        'card_payments' => ['requested' => true],
-                        // 'transfers'     => ['requested' => true], // Removed per client request
-                    ],
+                    'capabilities' => $capabilities,
                 ]
             );
 
@@ -616,8 +661,19 @@ class StripeController extends Controller
                 'stripe_error' => $e->getError()->message ?? $e->getMessage(),
                 'stripe_code'  => $e->getStripeCode(),
             ]);
-            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error",
-            $e->getError()->message ?? 'Your Stripe account can’t be onboarded. Please contact support.');
+            $errorMessage = $e->getError()->message ?? $e->getMessage();
+            
+            // Provide more specific error messages for capability-related issues
+            $userErrorMessage = $errorMessage;
+            if (str_contains($errorMessage, 'recipient') && str_contains($errorMessage, 'service agreement')) {
+                $userErrorMessage = 'Your account is configured for recipient payments only and cannot process card payments. Please contact support if you need to change your account type.';
+            } elseif (str_contains($errorMessage, 'capability') || str_contains($errorMessage, 'capabilities')) {
+                $userErrorMessage = 'There was an issue configuring payment capabilities for your account. Please contact support for assistance.';
+            } elseif (!$userErrorMessage) {
+                $userErrorMessage = 'Your Stripe account cannot be onboarded. Please contact support.';
+            }
+            
+            return redirect(route("user.show", ["username" => $user->username, "page" => 'about']))->with("error", $userErrorMessage);
         }
     }
 

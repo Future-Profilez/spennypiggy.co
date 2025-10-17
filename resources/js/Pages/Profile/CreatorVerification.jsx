@@ -118,7 +118,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </p>
                         </div>
                     </div>
-                    {auth?.user?.is_subscribed !== 1 && (
+                    {auth?.user?.is_subscribed == 0 && (
                         <Link
                             className="text-pink text-nowrap"
                             href="/activate-subscription"
