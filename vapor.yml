@@ -71,3 +71,6 @@ environments:
       - "php artisan subscription:sync --all"
       # Optional: Generate sitemaps (comment out for faster deployments)
       # - "php artisan sitemap:generate --force"
+
+
+# php artisan app:notifications-pending-approval

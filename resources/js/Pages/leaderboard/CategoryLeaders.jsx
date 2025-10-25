@@ -41,7 +41,7 @@ export default function CategoryLeaders() {
     const categories = [
         { key: 'tips', label: 'Supports', icon: RiStarLine, color: 'text-yellow-600' },
         { key: 'wishes', label: 'Wishes', icon: RiHeartLine, color: 'text-pink-600' },
-        { key: 'subscriptions', label: 'Subscriptions', icon: RiGroupLine, color: 'text-purple-600' },
+        // { key: 'subscriptions', label: 'Subscriptions', icon: RiGroupLine, color: 'text-purple-600' },
         { key: 'memberships', label: 'Memberships', icon: RiBankCardLine, color: 'text-blue-600' },
         { key: 'bills', label: 'Bills', icon: RiBankCardLine, color: 'text-green-600' },
         { key: 'shop', label: 'Shop', icon: RiShoppingBagLine, color: 'text-orange-600' }
@@ -78,7 +78,7 @@ export default function CategoryLeaders() {
                     ) : (
                         <>
                             <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'USD')}</p>
-                            <p className="text-sm text-gray-600">This month</p>
+                            <p className="text-sm text-gray-600">Last 3 months</p>
                             <p className="text-xs text-gray-500">{creator.total_count || creator.supporters_count || 0} {creator.supporters_count ? 'supporters' : 'transactions'}</p>
                         </>
                     )}

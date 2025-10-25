@@ -152,7 +152,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             id: 'identity',
             title: 'Identity Verification',
             description: 'Complete identity verification to secure your account and meet compliance requirements.',
-            isCompleted: auth?.user?.identity_status == 1,
+            isCompleted: auth?.user?.identity_admin_status == 1,
+            isPending: auth?.user?.identity_status == 1 && auth?.user?.identity_admin_status !== 1,
             isRequired: true,
             order: 5,
             category: 'verification',
@@ -178,6 +179,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     // Helper functions
     const getStepStatus = (step) => {
+        if (step.id === 'stripe' && auth?.user?.identity_admin_status !== 1) return 'locked';
         if (step.isCompleted) return 'completed';
         if (step.isPending) return 'pending';
         if (step.requiresApproval && auth?.user?.profile_status_lock != 2) return 'locked';
@@ -637,7 +639,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 {status === 'locked' && (
                                                     <div className="flex items-center mt-3 text-gray-500 bg-gray-100 px-3 py-2 rounded-lg">
                                                         <FaLock className="mr-2" size={16} />
-                                                        <span>Complete profile approval first</span>
+                                                        <span>{step.id === 'stripe' && auth?.user?.profile_status_lock == 2 ? 'Waiting for admin identity approval' : 'Complete profile approval first'}</span>
                                                     </div>
                                                 )}
                                                 {step.isCompleted && (
@@ -646,7 +648,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                         <span className="font-medium">Completed ✓</span>
                                                     </div>
                                                 )}
-                                            </div>
+                                                {step.id === 'identity' && status === 'pending' && (
+                                                    <div className="flex items-center mt-3 text-yellow-700 bg-yellow-50 px-3 py-2 rounded-lg">
+                                                        <BsClockFill className="mr-2" size={16} />
+                                                        <span className="font-medium">Submitted. Waiting for admin review.</span>
+                                                    </div>
+                                                )}
+                                                {step.id === 'identity' && auth?.user?.identity_admin_status == 2 && (
+                                                    <div className="mt-3">
+                                                        <div className="flex items-center text-red-700 bg-red-50 px-3 py-2 rounded-lg">
+                                                            <BsXCircleFill className="mr-2" size={16} />
+                                                            <span className="font-medium">Rejected by admin</span>
+                                                        </div>
+                                                        {auth?.user?.identity_admin_notes && (
+                                                            <div className="mt-2 px-3 py-2 bg-red-100 text-red-800 rounded text-sm">
+                                                                Reason: {auth?.user?.identity_admin_notes}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                </div>
                                         </div>
                                         
                                         {/* Action Buttons */}
@@ -656,7 +677,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/stripe/identity-verification"
                                                 >
-                                                    Verify Identity
+                                                    {auth?.user?.identity_admin_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
                                                 </Link>
                                             )}
                                             

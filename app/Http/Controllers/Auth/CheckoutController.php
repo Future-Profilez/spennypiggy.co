@@ -252,7 +252,7 @@ class CheckoutController extends Controller
                             'name' => $productName,
                             'description' => 'Content from ' . ($dd->owner->name ?? 'Creator'),
                         ],
-                        'unit_amount_decimal' => round($totalAmount * $multiplier),
+                        'unit_amount' => (int) round($ConvertedAmount * $multiplier),
                     ]
                 ];
                 
@@ -264,7 +264,7 @@ class CheckoutController extends Controller
                         'product_data' => [
                             'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - ' . ($dd->wish->wishname ?? 'Content'),
                         ],
-                        'unit_amount' => round($showTaxWithQuantity * $multiplier),
+                        'unit_amount' => (int) round($showTaxWithQuantity * $multiplier),
                         'tax_behavior' => 'exclusive',
                     ],
                 ];
@@ -315,7 +315,7 @@ class CheckoutController extends Controller
                     'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
                     'transfer_data' => [
                         'destination' => $connectedAccountId, // Creator's connected account
-                        'amount' => $transferAmount, // What creator receives (item + VAT)
+                        'amount' => (int) $transferAmount, // What creator receives (item + VAT)
                     ],
                     'description' => "Spenny Piggy - Content purchase with platform fee",
                 "metadata" => $this->buildSafeMetadata($owner, $getdata, $totalChargeAmount),

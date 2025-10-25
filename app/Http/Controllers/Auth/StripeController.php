@@ -366,6 +366,18 @@ class StripeController extends Controller
         if ($user->stripe_details_submitted == 1) {
             return redirect(route("user.show", $user->username))->with("error", "Stripe Account already connected!");
         }
+
+        // Require: approved profile, Stripe identity verified, and admin identity approved
+        if (($user->profile_status_lock ?? 0) != 2) {
+            return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
+        }
+        if (($user->identity_status ?? 0) != 1) {
+            return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
+        }
+        if (($user->identity_admin_status ?? 0) != 1) {
+            return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
+        }
+
         if (!empty($user->account_id)) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
@@ -389,6 +401,17 @@ class StripeController extends Controller
     public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
         $user = User::find(Auth::id());
+
+        // Require: approved profile, Stripe identity verified, and admin identity approved
+        if (($user->profile_status_lock ?? 0) != 2) {
+            return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
+        }
+        if (($user->identity_status ?? 0) != 1) {
+            return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
+        }
+        if (($user->identity_admin_status ?? 0) != 1) {
+            return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
+        }
 
        
         if (empty($user->account_id)) {

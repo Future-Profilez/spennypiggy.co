@@ -597,7 +597,7 @@ export default function Dashboard(props) {
                                                                             <h2 className='text-large  font-GillSans text-uppercase pinkbg p-3 goaltitle text-white btn-shadow'>About Me</h2>
                                                                             <div className="p-4">
                                                                                 <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
-                                                                                    {(user &&user.bio) ||""}
+                                                                                    {(user &&user.bio) ||"Hy, I am a creator on SpennyPiggy."}
                                                                                 </p>
 
                                                                                 {IsloggedIn && user?.edit_bio_reason  ?
@@ -617,11 +617,13 @@ export default function Dashboard(props) {
                                                                                             <PaymentDashboard classes="b w-full" text="Payment Dashboard" />
                                                                                             ) :
                                                                                             <>
-                                                                                            {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">
+                                                                                            {/* {auth?.user?.identity_status == 1 ? 
+                                                                                            <div className="finish mt-4 d-block">
                                                                                                 <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                                                                 <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
                                                                                                 </Link>
-                                                                                            </div> : ''}
+                                                                                            </div> 
+                                                                                            : ''} */}
                                                                                             </>
                                                                                         }
 

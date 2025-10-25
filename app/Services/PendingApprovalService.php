@@ -10,9 +10,9 @@ use App\Models\UserIntro;
 use App\Models\Post;
 use App\Models\User;
 use Exception;
+use App\Mail\PendingApprovalSummary;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\PendingApprovalSummary;
 
 class PendingApprovalService
 {
@@ -58,6 +58,8 @@ class PendingApprovalService
             'posts' => $this->getPendingPosts(),
             'user_profiles' => $this->getPendingUserProfiles(),
             'user_avatars' => $this->getPendingUserAvatars(),
+            // New: Stripe Identity submissions awaiting admin review
+            'stripe_identity' => $this->getPendingStripeIdentitySubmissions(),
         ];
     }
 
@@ -139,7 +141,7 @@ class PendingApprovalService
         return UserIntro::where('approved', false)
             ->with('user:id,name,username,email')
             ->orderBy('created_at', 'desc')
-            ->get(['id', 'uuid', 'user_id', 'title', 'created_at']);
+            ->get(['id', 'uuid', 'user_id', 'created_at']);
     }
 
     /**
@@ -162,11 +164,43 @@ class PendingApprovalService
      */
     private function getPendingUserProfiles()
     {
-        return User::where('bio_approved', false)
+        // Match admin counter logic for profile verification
+        $creatorQuery = User::where('role', 1)
+            ->where('is_uk', 0)
+            ->where('suspended_account', 0)
+            ->where('profile_status_lock', 1) // Pending approval
+            ->where('is_subscribed', 1)
+            ->whereNotNull('avatar')
             ->whereNotNull('bio')
-            ->where('bio', '!=', '')
-            ->orderBy('updated_at', 'desc')
-            ->get(['id', 'uuid', 'name', 'username', 'email', 'bio', 'updated_at']);
+            ->whereHas('social_links', function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNotNull('twitter')
+                      ->orWhereNotNull('instagram')
+                      ->orWhereNotNull('youtube')
+                      ->orWhereNotNull('twitch')
+                      ->orWhereNotNull('tumblr')
+                      ->orWhereNotNull('reddit')
+                      ->orWhereNotNull('discord')
+                      ->orWhereNotNull('onlyfans')
+                      ->orWhereNotNull('loyalfans')
+                      ->orWhereNotNull('fansly')
+                      ->orWhereNotNull('manyvids')
+                      ->orWhereNotNull('other');
+                });
+            });
+
+        $gifterQuery = User::where('role', 0)
+            ->where('is_uk', 0)
+            ->where('suspended_account', 0)
+            ->where('profile_status_lock', 1) // Pending approval
+            ->where('is_subscribed', 1)
+            ->where('is_500_limit_exceeded', 1);
+
+        // Combine both queries using union
+        $pendingCreators = $creatorQuery->get(['id', 'uuid', 'name', 'username', 'email', 'bio', 'updated_at', 'role']);
+        $pendingGifters = $gifterQuery->get(['id', 'uuid', 'name', 'username', 'email', 'bio', 'updated_at', 'role']);
+
+        return $pendingCreators->merge($pendingGifters)->sortByDesc('updated_at');
     }
 
     /**
@@ -184,6 +218,26 @@ class PendingApprovalService
     }
 
     /**
+     * Get Stripe Identity submissions awaiting admin review
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingStripeIdentitySubmissions()
+    {
+        return User::query()
+            ->where('role', 1) // creators only
+            ->where('suspended_account', 0) // not suspended
+            ->where('identity_status', 1) // user submitted/verified by Stripe
+            ->where(function ($q) {
+                $q->whereNull('identity_admin_status')
+                  ->orWhere('identity_admin_status', 0); // pending admin approval
+            })
+
+            ->orderBy('identity_verified_at', 'desc')
+            ->get(['id', 'uuid', 'name', 'username', 'email', 'identity_status', 'identity_admin_status', 'identity_verified_at']);
+    }
+
+    /**
      * Send approval email notification
      *
      * @param array $pendingItems
@@ -192,18 +246,25 @@ class PendingApprovalService
     private function sendApprovalEmail(array $pendingItems): void
     {
         try {
-            $recipients = [
-                'admin@spennypiggy.co',
-                'support@spennypiggy.co'
-            ];
+            $recipients = app()->environment('production')
+                ? [
+                    'naveen@internetbusinesssolutionsindia.com',
+                    'support@spennypiggy.com',
+                    'support@spennypiggy.co',
+                ]
+                : [
+                    'naveen@internetbusinesssolutionsindia.com',
+                ];
 
             foreach ($recipients as $email) {
-                Mail::to($email)->send(new PendingApprovalSummary($pendingItems));
+                $mailable = new PendingApprovalSummary($pendingItems);
+                $mailer = config('mail.default');
+                Mail::mailer($mailer)->to($email)->send($mailable);
             }
 
             Log::info('Pending approval summary email sent to: ' . implode(', ', $recipients));
         } catch (Exception $e) {
-            Log::error('Failed to send pending approval email: ' . $e->getMessage());
+            Log::error('Failed to send pending approval summary email: ' . $e->getMessage());
             throw $e;
         }
     }

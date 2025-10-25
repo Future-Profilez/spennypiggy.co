@@ -4,7 +4,6 @@
 <head>
     {{-- EMERGENCY: React Children patch must load before ANY other JavaScript --}}
     <script src="{{ asset('react-emergency-patch.js') }}"></script>
-    
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <meta name="robots" content="index, follow">
@@ -202,6 +201,7 @@
 
     {{-- hCaptcha Script --}}
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
     
     {{-- @laravelPWA --}}
     @routes

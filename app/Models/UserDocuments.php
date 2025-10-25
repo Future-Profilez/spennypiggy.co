@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Ramsey\Uuid\Uuid;
 
 class UserDocuments extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'uuid',
@@ -28,6 +26,6 @@ class UserDocuments extends Model
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($w) => $w->uuid = Uuid::uuid4());
+        static::creating(fn ($w) => $w->uuid = \Ramsey\Uuid\Uuid::uuid4());
     }
 }

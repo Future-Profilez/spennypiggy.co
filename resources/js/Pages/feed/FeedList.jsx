@@ -136,13 +136,13 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
 
   return (
     <div className='max-feed m-auto'>
-      {/* <PostFilterTabs 
+      {displayPosts && displayPosts.length > 5 && <PostFilterTabs 
         filters={FILTER_OPTIONS}
         activeFilter={filter}
         onFilterChange={handleFilterChange}
         disabled={isLoading}
-      />
-       */}
+      />}
+      
       {displayPosts.length > 0 ? (
         <>
           {displayPosts.map((post, i) => 
@@ -180,16 +180,16 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
 // Filter tabs component
 function PostFilterTabs({ filters, activeFilter, onFilterChange, disabled = false }) {
   return (
-    <div className="flex flex-wrap gap-2 mb-6 p-1 bg-gray-50 rounded-lg">
+    <div className="flex gap-2 mb-6 overflow-auto hideScroll ">
       {filters.map(({ key, label }) => (
-        <button
+        <button 
           key={key}
           onClick={() => onFilterChange(key)}
           disabled={disabled}
-          className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+          className={`px-4 py-2 text-sm rounded-[30px] font-medium transition-all duration-200 ${
             activeFilter === key
               ? 'bg-pink-600 text-white shadow-sm'
-              : 'bg-transparent text-gray-600 hover:bg-white hover:shadow-sm'
+              : 'bg-gray-700 text-gray-100 hover:bg-white hover:text-black hover:shadow-sm'
           } ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
           }`}

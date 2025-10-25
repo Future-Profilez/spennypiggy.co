@@ -4,7 +4,7 @@
 (function() {
     'use strict';
     
-    console.log('🚨 GLOBAL REACT EMERGENCY PATCH LOADING...');
+    // console.log('🚨 GLOBAL REACT EMERGENCY PATCH LOADING...');
     
     // Create a comprehensive Children API implementation
     const createEmergencyChildrenAPI = () => {
@@ -85,7 +85,7 @@
     // Ensure React.Children is available
     if (!window.React.Children) {
         window.React.Children = emergencyChildren;
-        console.log('✅ Emergency React.Children installed on window.React');
+        // console.log('✅ Emergency React.Children installed on window.React');
     }
     
     // Also patch globalThis
@@ -95,7 +95,7 @@
         }
         if (!globalThis.React.Children) {
             globalThis.React.Children = emergencyChildren;
-            console.log('✅ Emergency React.Children installed on globalThis.React');
+            // console.log('✅ Emergency React.Children installed on globalThis.React');
         }
     }
     
@@ -103,7 +103,7 @@
     const monitorAndFixReactChildren = () => {
         setInterval(() => {
             if (window.React && !window.React.Children) {
-                console.warn('🚨 React.Children became undefined! Restoring emergency implementation...');
+                // console.warn('🚨 React.Children became undefined! Restoring emergency implementation...');
                 window.React.Children = emergencyChildren;
             }
         }, 100); // Check every 100ms
@@ -127,7 +127,7 @@
                 // Ensure Children property exists on any React object assigned to window
                 if (!newReact.Children) {
                     newReact.Children = emergencyChildren;
-                    console.log('✅ Auto-fixed missing Children on newly assigned React object');
+                    // console.log('✅ Auto-fixed missing Children on newly assigned React object');
                 }
             }
             originalReact = newReact;
@@ -136,14 +136,5 @@
         configurable: true
     });
     
-    console.log('✅ Global React Children emergency patch completed successfully!');
-    
-    // Debug information
-    console.log('🔍 Emergency patch status:', {
-        'window.React exists': !!window.React,
-        'window.React.Children exists': !!(window.React && window.React.Children),
-        'globalThis.React.Children exists': !!(typeof globalThis !== 'undefined' && globalThis.React && globalThis.React.Children),
-        'Emergency implementation available': !!window.__EMERGENCY_REACT_CHILDREN__
-    });
-    
+    // console.log('✅ Global React Children emergency patch completed successfully!');
 })();

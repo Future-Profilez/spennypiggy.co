@@ -3,8 +3,7 @@
 
 (function() {
     'use strict';
-    
-    console.log('🚨 GLOBAL REACT EMERGENCY PATCH LOADING...');
+    // console.log('🚨 GLOBAL REACT EMERGENCY PATCH LOADING...');
     
     // Create a comprehensive Children API implementation
     const createEmergencyChildrenAPI = () => {

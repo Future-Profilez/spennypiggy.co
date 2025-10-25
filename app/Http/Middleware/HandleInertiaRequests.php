@@ -59,6 +59,12 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'opposite_user' => $followedUser,
                 'verification_status' => $userBioStatus,
+                // Expose admin identity review status explicitly for frontend gating/UI
+                'admin_identity' => $user ? [
+                    'status' => $user->identity_admin_status,
+                    'reviewed_at' => $user->identity_admin_reviewed_at,
+                    'notes' => $user->identity_admin_notes,
+                ] : null,
             ],
             'follow_status' => $follow_status,
             'notification_count' => $notification_count,

@@ -104,6 +104,35 @@
 @endpush
 
 @section('content')
+@php
+    // Build a normalized summary entries array from either $pendingSummary (notifications)
+    // or directly from $pendingItems (service mailable fallback)
+    $entries = [];
+
+    if (isset($pendingSummary) && is_array($pendingSummary)) {
+        $entries = $pendingSummary;
+    } else {
+        // Fallback map for labels to counts from $pendingItems
+        $icons = config('pending-approval.icons');
+        $items = isset($pendingItems) && is_array($pendingItems) ? $pendingItems : [];
+
+        $entries = [
+            ['label' => 'Wish Items', 'count' => isset($items['wish_items']) ? count($items['wish_items']) : 0, 'icon' => $icons['Wish Items'] ?? '🎁'],
+            ['label' => 'Memberships', 'count' => isset($items['memberships']) ? count($items['memberships']) : 0, 'icon' => $icons['Memberships'] ?? '👥'],
+            ['label' => 'Bills', 'count' => isset($items['bills']) ? count($items['bills']) : 0, 'icon' => $icons['Bills'] ?? '🧾'],
+            ['label' => 'Shops', 'count' => isset($items['shops']) ? count($items['shops']) : 0, 'icon' => $icons['Shops'] ?? '🏪'],
+            ['label' => 'User Intros', 'count' => isset($items['user_intros']) ? count($items['user_intros']) : 0, 'icon' => $icons['User Intros'] ?? '👋'],
+            ['label' => 'User Avatars', 'count' => isset($items['user_avatars']) ? count($items['user_avatars']) : 0, 'icon' => $icons['User Avatars'] ?? '🖼️'],
+            ['label' => 'User Profiles', 'count' => isset($items['user_profiles']) ? count($items['user_profiles']) : 0, 'icon' => $icons['User Profiles'] ?? '👤'],
+            ['label' => 'Posts', 'count' => isset($items['posts']) ? count($items['posts']) : 0, 'icon' => $icons['Posts'] ?? '📝'],
+            // New identity row
+            ['label' => 'Stripe Identity', 'count' => isset($items['stripe_identity']) ? count($items['stripe_identity']) : 0, 'icon' => $icons['Stripe Identity'] ?? '🪪'],
+        ];
+
+        // Filter out zero-count entries to reduce noise
+        $entries = array_values(array_filter($entries, fn($e) => ($e['count'] ?? 0) > 0));
+    }
+@endphp
 <tr>
     <td align="center" style="padding:10px 10px 20px 10px;">
         <a href="{{ env('APP_URL') . '/' }}">
@@ -138,7 +167,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($pendingSummary as $entry)
+                            @foreach ($entries as $entry)
                             <tr style="{{ $loop->even ? 'background-color: #f8f9ff;' : 'background-color: #ffffff;' }}">
                                 <td style="padding: 16px 20px; border: 1px solid #e2e8f0; font-size: 16px; font-weight: 600; color: #1e293b;">
                                     <span style="font-size: 20px; margin-right: 10px;">{{ $entry['icon'] ?? '📋' }}</span>
@@ -174,7 +203,7 @@
                 <td style="padding: 20px 0 0 0; font-size: 16px; color: #64748b; text-align: center; line-height: 24px;">
                     Thanks for keeping Spenny Piggy running smoothly! 🚀
                     <br><br>
-                    <span style="font-size: 14px; color: #94a3b8;">This notification was sent at {{ now()->format('M j, Y \a\t g:i A') }}</span>
+                    <span style="font-size: 14px; color: #94a3b8;">This notification was sent at {{ now()->format('M j, Y \\a\\t g:i A') }}</span>
                 </td>
             </tr>
         </table>

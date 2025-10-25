@@ -568,3 +568,18 @@ require __DIR__.'/test-subscription.php';
 
 // Routes already defined above
 // Removed duplicate purchases route
+
+// Local preview route for pending approval email
+// Only available in local/dev and for authenticated admins
+Route::middleware(['web'])->group(function () {
+    Route::get('/_preview/pending-approval', function () {
+        if (!app()->isLocal()) {
+            abort(403);
+        }
+
+        $items = app(\App\Services\PendingApprovalService::class)->collectPendingItems();
+        return view('email.pending_approval_summary', [
+            'pendingItems' => $items,
+        ]);
+    })->name('preview.pending-approval');
+});

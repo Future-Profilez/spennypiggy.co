@@ -27,6 +27,7 @@ class User extends Authenticatable
         'uuid', '2fa_key', 'name', 'email', 'role', 'username', 'country', 'bio', 'bio_approved',
         'gender', 'password', 'deleted_at', 'creator_category', 'identity_status',
         'identity_verified_at', 'identity_verification_error', 'identity_verification_details',
+        'identity_admin_status', 'identity_admin_reviewed_at', 'identity_admin_notes',
         'ip_address', 'profile_status_lock', 'profile_reject_reason', 'is_500_limit_exceeded',
         'is_subscribed', 'is_founder',
     ];
@@ -39,6 +40,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'identity_admin_status' => 'integer',
+        'identity_admin_reviewed_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -529,6 +532,10 @@ public function getFollowingCountAttribute()
 
 
 
+    public function documents()
+    {
+        return $this->hasMany(\App\Models\UserDocuments::class, 'user_id');
+    }
     public function paymentitems()
     {
         return $this->hasManyThrough(
