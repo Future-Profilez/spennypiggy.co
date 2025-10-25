@@ -10,7 +10,7 @@ return [
         'domains' => ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'],
         'emails'  => ['naveen@internetbusinesssolutionsindia.com'],
         // 'schedule' => 'daily', // How often to run in development
-        'schedule' => 'daily', // How often to run in development
+        'schedule' => 'hourly', // How often to run in development
     ],
     
     // Icon mapping for different item types in email template
