@@ -90,8 +90,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
-
-
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');
 })->name("discover");

@@ -86,7 +86,7 @@ class StripeWebhookController extends Controller
      */
     private function handleRequiresInputEvent($session)
     {
-        $user = User::where('stripe_user_id', $session->id)->where('is_uk', 0)->first();
+        $user = User::where('stripe_user_id', $session->id)->first();
 
         if ($user) {
             // Check for fraud based on the last error or session details
@@ -113,7 +113,7 @@ class StripeWebhookController extends Controller
      */
     private function handleVerifiedEvent($session)
     {
-        $user = User::where('stripe_user_id', $session->id)->where('is_uk', 0)->first();
+        $user = User::where('stripe_user_id', $session->id)->first();
 
         if ($user) {
             // Check for fraud even if the session is verified
