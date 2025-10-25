@@ -17,6 +17,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const [isChecked, setIsChecked] = useState(false);
     const [checking, setChecking] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isAnonymous, setIsAnonymous] = useState(false);
     // const [formData, setFormData] = useState({
     //       country: '',
     //       street_address: '',
@@ -194,6 +195,13 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
     const executeCaptcha = async (e) => {
         e.preventDefault();
+        
+        // If no hCaptcha key is configured, skip captcha
+        if (!hcaptchakey || hcaptchakey === '') {
+            handleSubmit();
+            return;
+        }
+        
         hcaptchaRef.current.execute();
         setChecking(true);
     };
@@ -210,6 +218,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                 {
                     cart_id: data?.cart?.id,
                     creator_id: cartsItems?.creator?.id,
+                    is_anonymous: isAnonymous,
                 }
             );
             if (response?.data?.status === true) {
@@ -391,15 +400,15 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         <br />
                                         Memberships - 10%
                                         <br />
-                                        Piggy Bank - 20%
+                                        Piggy Bank - {window.platformFeePercentage || 20}%
                                         <br />
-                                        Crowdfunding - 20%
+                                        Crowdfunding - {window.platformFeePercentage || 20}%
                                         <br />
                                         Subscriptions - 10%
                                         <br />
-                                        Single Purchases - 20%
+                                        Single Purchases - {window.platformFeePercentage || 20}%
                                         <br />
-                                        Profile Shop - 20%
+                                        Profile Shop - {window.platformFeePercentage || 20}%
                                         <br />
                                         <br />
                                         Administrative Fee on all Transactions -
@@ -531,6 +540,20 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                             // onChange={(e) => setEmail(e.target.value)}
                                             type="email" placeholder="Enter email.. " />
                                         <p className='text-[12px] text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
+                                    </div>
+                                    
+                                    <div className="form-field mb-3">
+                                        <label htmlFor="anonymous" className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                id="anonymous"
+                                                name="anonymous"
+                                                className="mr-2"
+                                                onChange={(e) => setIsAnonymous(e.target.checked)}
+                                            />
+                                            <span>Send anonymously</span>
+                                        </label>
+                                        <p className='text-[12px] text-muted mt-1'>Your name will not be shown to the recipient if checked.</p>
                                     </div>
                                     {/* <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
@@ -683,14 +706,16 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     {checking ? "Wait.." : "Checkout"}{" "}
                                 </button>
                             </div>
-                            <HCaptcha
-                                ref={hcaptchaRef}
-                                sitekey={hcaptchakey || ""}
-                                data-theme="light"
-                                size="invisible"
-                                onVerify={onVerify}
-                                required
-                            />
+                            {hcaptchakey && hcaptchakey !== '' && (
+                                <HCaptcha
+                                    ref={hcaptchaRef}
+                                    sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
+                                    data-theme="light"
+                                    size="invisible"
+                                    onVerify={onVerify}
+                                    required
+                                />
+                            )}
                         </form>
                     </div>
                 </div>

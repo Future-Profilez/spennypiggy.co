@@ -7,14 +7,25 @@ import ShareProfile from '@/wishlist/ShareProfile';
 import SocialLinks from '@/includes/SocialLinks';
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GifterFeed from './GifterFeed';
 import MembershipLists from './MembershipLists';
+import GifterMedia from './GifterMedia';
 import ActivateCard from './ActivateCard';
 
 
 export default function Gifter({ IsloggedIn,  sLinks }){
   const { auth, user, itemid  } = usePage().props;
+  const [activeTab, setActiveTab] = useState('home');
+  
+  // Check for tab parameter in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, []);
   const AboutScreen = () => {
     return <>
         <div className=" about-sec  m-auto " >
@@ -66,14 +77,10 @@ export default function Gifter({ IsloggedIn,  sLinks }){
         <div className={`tabs-container gifter ${IsloggedIn ? "IsloggedIn" : ""}`} >
           {IsloggedIn ? <>
             <div className="inlinetab">
-                <div className='max-w-3xl m-auto'>
-                    <ActivateCard auth={auth}/>
-                    <AboutScreen />
-                </div>
-                {/* <Tabs
-                    defaultActiveKey="home"
+                <Tabs
+                    activeKey={activeTab}
+                    onSelect={(key) => setActiveTab(key)}
                     transition={true}
-                    onSelect={(e) => setTab(e)}
                     id="noanim-tab-example"
                     className="mb-3 justify-content-center" >
                     <Tab eventKey="home" title="About">
@@ -95,7 +102,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             <GifterMedia username={user && user.username || ''} />
                         </Tab>
                    
-                </Tabs> */}
+                </Tabs>
             </div>
             </>
           : <AboutScreen /> }

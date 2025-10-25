@@ -1,4 +1,5 @@
-// Critical CSS imports - loaded synchronously
+import React, { Children } from "./react-polyfill.js";
+import "./bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
 import "../css/app.css";
@@ -6,70 +7,24 @@ import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
 
-// React core imports - ensure React is available globally to prevent Children undefined errors
-import React, { Suspense, lazy, Children } from "react";
+import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 
-// Make React globally available for components that expect it
-if (typeof window !== 'undefined') {
-    window.React = React;
-    // Ensure React.Children is available globally to fix production issues
-    if (!React.Children) {
-        React.Children = Children;
-    }
-}
+console.log('📦 App.jsx loaded - React polyfill should be active');
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
+import { router } from "@inertiajs/react";
 
-// Critical app dependencies - loaded immediately
 import { Provider } from "react-redux";
-import store from "./Pages/redux/Store.jsx";
+import store from "./Pages/redux/Store";
+import * as Sentry from "@sentry/react";
+import axios from "axios";
+import DeviceID from "./includes/DeviceID";
+import "./utils/pwaDebug";
 
-// Performance components
-import { LoadingSkeleton } from "./Components/OptimizedComponents";
-// Temporarily disable ErrorBoundary to isolate JSX runtime issue
-// import { ErrorBoundary } from "./Components/OptimizedComponents";
-
-// Intelligent chunk preloader
-import chunkPreloader from "./utils/chunkPreloader.js";
-
-// Dynamic imports for non-critical resources
-const loadNonCriticalAssets = async () => {
-    // Non-critical CSS is now loaded statically at the top of the file
-    // to prevent MIME type issues in production
-    console.log('📦 Non-critical assets loaded');
-};
-
-// Initialize Web Vitals monitoring
-const initWebVitals = async () => {
-    if (typeof window === 'undefined') return;
-    
-    try {
-        const { initWebVitalsMonitoring, detectPerformanceRegression } = await import('./monitoring/web-vitals.js');
-        
-        // Initialize core monitoring
-        initWebVitalsMonitoring();
-        
-        // Enable performance regression detection
-        detectPerformanceRegression();
-        
-        console.log('📊 Web Vitals monitoring initialized');
-    } catch (error) {
-        // Silently fail in production to avoid breaking the app
-        if (process.env.NODE_ENV === 'development') {
-            console.warn('Failed to initialize Web Vitals monitoring:', error);
-        }
-    }
-};
-
-// Initialize Sentry with dynamic import for better performance
-let sentryInitialized = false;
-const initSentry = async () => {
-    if (sentryInitialized) return;
-    
-    const Sentry = await import("@sentry/react");
-    
-    console.log("sentry enabled");
+// Only initialize Sentry on the production domain
+if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' || window.location.hostname === 'https://www.spennypiggy.co') {
+    console.log("Sentry Enabled");
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
         sendDefaultPii: true,
@@ -87,25 +42,137 @@ const initSentry = async () => {
         replaysSessionSampleRate: 0.1,
         replaysOnErrorSampleRate: 1.0
     });
+} 
+// Global cart refresh functions setup
+function setupGlobalCartFunctions(props) {
+    const auth = props?.page?.props?.auth;
+    const deviceid = DeviceID();
     
-    sentryInitialized = true;
-};
+    console.log("Setting up global cart refresh functions, auth:", !!auth?.user);
+    
+    // Anonymous cart refresh function
+    const fetchAnonymousCartItems = async () => {
+        console.log("Global fetchAnonymousCartItems called with deviceid:", deviceid);
+        try {
+            const timestamp = new Date().getTime();
+            const config = {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            };
+            const response = await axios.get(`anonymous-cart/${deviceid}?_t=${timestamp}`, config);
+            console.log("Global anonymous cart response:", response.data);
+            // Dispatch event for components to listen to
+            window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
+                detail: { carts: response.data.carts, isAuthenticated: false }
+            }));
+        } catch (error) {
+            console.error("Global error fetching anonymous cart:", error);
+        }
+    };
+    
+    // Authenticated cart refresh function
+    const fetchAuthenticatedCartItems = async () => {
+        console.log("Global fetchAuthenticatedCartItems called");
+        try {
+            // Include device_id for potential cart merging fallback
+            const config = {
+                headers: {
+                    'X-Device-ID': deviceid
+                }
+            };
+            // Add cache-busting parameter
+            const timestamp = new Date().getTime();
+            const response = await axios.get(`authenticated-cart?_t=${timestamp}`, config);
+            console.log("Global authenticated cart response:", response.data);
+            console.log("Authenticated cart items count:", response.data.carts ? response.data.carts.length : 0);
+            if (response.data.success) {
+                // Dispatch event for components to listen to
+                window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
+                    detail: { carts: response.data.carts, isAuthenticated: true }
+                }));
+                console.log("Dispatched cartItemsRefreshed event for authenticated user");
+            } else {
+                console.error("Authenticated cart API returned success=false:", response.data);
+            }
+        } catch (error) {
+            console.error("Global error fetching authenticated cart:", error);
+            console.error("Error details:", error.response?.data);
+        }
+    };
+    
+    // Rye items refresh function
+    const fetchRyeItems = async () => {
+        console.log("Global fetchRyeItems called");
+        try {
+            const response = await axios.get(`get-cart-details`);
+            if (response?.data?.status) {
+                // Dispatch event for components to listen to
+                window.dispatchEvent(new CustomEvent('ryeItemsRefreshed', {
+                    detail: { ryeItems: response.data.data }
+                }));
+            }
+        } catch (error) {
+            console.error("Global error fetching rye items:", error);
+        }
+    };
+    
+    // Cart counter refresh function 
+    const fetchCartCounter = async () => {
+        console.log("Global fetchCartCounter called with deviceid:", deviceid);
+        try {
+            const timestamp = new Date().getTime();
+            const config = {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            };
+            const response = await axios.get(`/counter/${deviceid}?_t=${timestamp}`, config);
+            console.log("Global cart counter response:", response.data.counter);
+            // Dispatch event for components to listen to
+            window.dispatchEvent(new CustomEvent('cartCounterRefreshed', {
+                detail: { counter: response.data.counter }
+            }));
+        } catch (error) {
+            console.error("Global error fetching cart counter:", error);
+        }
+    };
+    
+    // Set up global refresh functions based on authentication status
+    if (typeof window !== 'undefined') {
+        if (auth?.user) {
+            console.log("Setting up authenticated cart refresh functions");
+            window.refreshCartItems = fetchAuthenticatedCartItems;
+        } else {
+            console.log("Setting up anonymous cart refresh functions");
+            window.refreshCartItems = fetchAnonymousCartItems;
+        }
+        window.refreshRyeItems = fetchRyeItems;
+        window.refreshCartCounter = fetchCartCounter;
+        
+        // Update functions when auth state changes (on Inertia navigation)
+        document.addEventListener('inertia:success', (event) => {
+            const newAuth = event?.detail?.page?.props?.auth;
+            if (newAuth?.user) {
+                console.log("Auth state changed to authenticated - updating refresh functions");
+                window.refreshCartItems = fetchAuthenticatedCartItems;
+            } else {
+                console.log("Auth state changed to anonymous - updating refresh functions");
+                window.refreshCartItems = fetchAnonymousCartItems;
+            }
+        });
+    }
+}
 
-// Initialize non-critical assets and Sentry after app mount
-const initializeApp = async () => {
-    // Load non-critical assets in parallel
-    await Promise.all([
-        loadNonCriticalAssets(),
-        initSentry(),
-        initWebVitals() // Initialize Web Vitals monitoring
-    ]);
-};
 
 createInertiaApp({
     title: (title) =>
         `${title || "Spenny Piggy"} - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More.`,
     resolve: (name) => {
-        // Implement route-level code splitting with lazy loading
         return resolvePageComponent(
             `./Pages/${name}.jsx`,
             // Use eager: false for better code splitting
@@ -115,31 +182,29 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
-            <Provider store={store}>
-                <Suspense fallback={<LoadingSkeleton rows={3} />}>
-                    <App {...props} />
-                </Suspense>
-            </Provider>
+            <React.StrictMode>
+                <Provider store={store}>
+                    <Suspense fallback={<>Loading...</>}>
+                        <App {...props} />
+                    </Suspense>
+                </Provider>
+            </React.StrictMode>
         );
         
-        // Initialize non-critical resources after the app is mounted
-        // Use setTimeout to ensure this runs after the current event loop
+        // Hide initial loading screen once React app is mounted
         setTimeout(() => {
-            initializeApp().catch(console.error);
-            
-            // Initialize intelligent chunk preloading
-            const currentPage = props?.page?.component;
-            if (currentPage) {
-                chunkPreloader.preloadCriticalChunks(currentPage);
-            }
-            
-            // Re-observe links after Inertia navigation
-            document.addEventListener('inertia:success', () => {
-                setTimeout(() => {
-                    chunkPreloader.observeLinks();
-                }, 100);
-            });
-        }, 0);
+            document.body.classList.add('app-loaded');
+            // Remove the loading screen element after transition
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('initial-loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.remove();
+                }
+            }, 500); // Wait for CSS transition to complete
+        }, 100); // Small delay to ensure app is rendered
+        
+        // Set up global cart refresh functions
+        setupGlobalCartFunctions(props);
     },
     progress: {
         color: "var(--pink)",
@@ -147,4 +212,15 @@ createInertiaApp({
         includeCSS: true,
         showSpinner: false,
     },
+});
+
+// Configure Inertia.js to include CSRF token in all requests
+router.on('before', (event) => {
+    const token = document.head.querySelector('meta[name="csrf-token"]');
+    if (token) {
+        event.detail.visit.headers = {
+            ...event.detail.visit.headers,
+            'X-CSRF-TOKEN': token.content
+        };
+    }
 });

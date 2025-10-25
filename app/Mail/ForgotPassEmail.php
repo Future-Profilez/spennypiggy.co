@@ -35,7 +35,7 @@ class ForgotPassEmail extends Mailable
     public function build()
     {
         try {
-            $subject = 'Forgot password email from spenny piggy platform.';
+            $subject = 'Forgot password email from Spenny Piggy platform.';
             return $this->view('email.forgot-password')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
                 ->subject($subject);

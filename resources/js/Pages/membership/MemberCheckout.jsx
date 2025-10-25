@@ -63,6 +63,13 @@ export default function SubCheckout(props) {
 
     const executeCaptcha = (e) => {
         e.preventDefault();
+        
+        // If no hCaptcha key is configured, skip captcha
+        if (!hcaptchakey || hcaptchakey === '') {
+            handleSubmit();
+            return;
+        }
+        
         hcaptchaRef.current.execute();
         setChecking(true);
     };
@@ -141,7 +148,7 @@ export default function SubCheckout(props) {
                                             <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                             ?
                                             <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                15% Card Fees and £1 administrative fee of applies to
+                                                {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
                                             all transactions.
                                             </p>
                                             </button>
@@ -416,14 +423,16 @@ export default function SubCheckout(props) {
                                                 ? "Processing..."
                                                 : "Join Now"}
                                         </button>
-                                        <HCaptcha
-                                            ref={hcaptchaRef}
-                                            sitekey={hcaptchakey || ""}
-                                            data-theme="light"
-                                            size="invisible"
-                                            onVerify={onVerify}
-                                            required
-                                        />
+                                        {hcaptchakey && hcaptchakey !== '' && (
+                                            <HCaptcha
+                                                ref={hcaptchaRef}
+                                                sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
+                                                data-theme="light"
+                                                size="invisible"
+                                                onVerify={onVerify}
+                                                required
+                                            />
+                                        )}
                                     </div>
                                 </form>
                             </div>

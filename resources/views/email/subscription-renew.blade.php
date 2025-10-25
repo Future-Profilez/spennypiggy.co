@@ -41,18 +41,9 @@ $status = $messages[$type] ?? ['text' => 'Status', 'desc' => 'was updated', 'bod
     </td>
 </tr>
 
-
 <tr>
     <td align="center" style="padding: 10px 0;">
         <p style="font-size: 18px; color: #111; margin: 5px 0;"><strong>Your Spenny Piggy Subscription Details</strong></p>
-    </td>
-</tr>
-
-<tr>
-    <td align="center" style="padding: 10px;">
-        <a href="{{ env('APP_URL') }}/" style="font-size: 100px;  margin: auto; text-align: center;">
-           🎁
-        </a>
     </td>
 </tr>
 

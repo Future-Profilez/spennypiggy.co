@@ -601,18 +601,14 @@ export default function AddressForm({
                     />
                 </div>
 
-                <LoaderButton
-                    type="submit"
-                    disabled={loading}
-                    className="flex btn-pink lg mt-2 w-full "
-                    spinnerClassName="fill-red-600"
-                >
+                <LoaderButton type="submit" disabled={loading} className="button p mt-2 "
+                    spinnerClassName="fill-red-600" >
                     {loading && isEditPopup
                         ? "Updating..."
                         : loading && !isEditPopup
                         ? "Adding..."
                         : isEditPopup
-                        ? "Update Details"
+                        ? "Update Address"
                         : "Add Details"}
                 </LoaderButton>
             </div> 

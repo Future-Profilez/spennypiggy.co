@@ -168,9 +168,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\CriticalCssServiceProvider::class,
-        App\Providers\ResourcePreloadServiceProvider::class,
-        // App\Providers\ModernImageServiceProvider::class,
+        App\Providers\PerformanceServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
     ])->toArray(),
 
@@ -191,17 +189,13 @@ return [
     ])->toArray(),
 
 
-    'single_tax' => 15, // wish single payment fees
-    'subs_tax' => 15, // wish subscription payment fees
-    'crowd_tax' => 15, // wish crowed fund payment fees
-    'member_tax' => 15, // membership payment fees
-    'jar_tax' => 15, // tip jar payment fees
-    'bill_tax' => 15, // bill payment fees
-    'shop_tax' => 15, // Shop payment fees
+    'crowd_tax' => 20, // wish crowed fund payment fees
+    'member_tax' => 20, // membership payment fees
+    'jar_tax' => 20, // tip jar payment fees
+    'bill_tax' => 20, // bill payment fees
+    'shop_tax' => 20, // Shop payment fees
 
     // 'surprise_tax' => 10,
-    // 'single_tax' => 20,
-    // 'subs_tax' => 10,
     // 'crowd_tax' => 20,
     // 'member_tax' => 10,
     // 'jar_tax' => 20,
@@ -210,10 +204,22 @@ return [
 
 
     'administration_fee' => 1,
+    'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 20),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Debug Token for Production Log Access
+    |--------------------------------------------------------------------------
+    |
+    | This token can be used to access log viewer in production environment.
+    | Add LOG_DEBUG_TOKEN to your .env file with a secure random string.
+    | Access logs with: /debug/logs?debug_token=YOUR_TOKEN
+    |
+    */
+    
+    'debug_token' => env('LOG_DEBUG_TOKEN'),
 
     // 'surprise_tax' => 10,
-    // 'single_tax' => 20,
-    // 'subs_tax' => 20,
     // 'crowd_tax' => 10,
     // 'member_tax' => 15,
     // 'jar_tax' => 20,

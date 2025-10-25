@@ -22,6 +22,7 @@ class UserCart extends Model
         'tax',
         'priceid',
         'message',
+        'anonymous',
         'is_subscribed',
         'country',
         "status",

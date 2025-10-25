@@ -112,11 +112,34 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                 creator_id: user?.id,
             });
             if(addCart?.data?.status){
-            successAlert(addCart?.data?.message);
-            setClose(false);
-            {navigate && router.visit("cart")}
-            {navigate ? setCheckoutLoading(false) : setLoading(false)}
-        }
+                successAlert(addCart?.data?.message);
+                setClose(false);
+                
+                // Refresh cart items, rye items, and cart counter
+                if (typeof window !== 'undefined') {
+                    if (window.refreshCartItems) {
+                        console.log("Refreshing cart items after successful gift add-to-cart");
+                        setTimeout(() => {
+                            window.refreshCartItems();
+                        }, 500);
+                    }
+                    if (window.refreshRyeItems) {
+                        console.log("Refreshing rye items after successful gift add-to-cart");
+                        setTimeout(() => {
+                            window.refreshRyeItems();
+                        }, 500);
+                    }
+                    if (window.refreshCartCounter) {
+                        console.log("Refreshing cart counter after successful gift add-to-cart");
+                        setTimeout(() => {
+                            window.refreshCartCounter();
+                        }, 100); // Refresh counter immediately
+                    }
+                }
+                
+                {navigate && router.visit("cart")}
+                {navigate ? setCheckoutLoading(false) : setLoading(false)}
+            }
         else{
             errorAlert(response.data.message);
         }
@@ -156,7 +179,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                     <LoaderButton
                         disabled={loading}
                         onClick={() => addtocart(false)}
-                        className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
+                        className={`p w-full`}
                         spinnerClassName="fill-red-600"
                     >
                         {loading ? "Processing..." : "Add to Cart"}
@@ -164,7 +187,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                     <LoaderButton
                         disabled={checkoutloading}
                          onClick={() => addtocart(true)}
-                        className={`flex btn-pink lg w-100 mb-3 font-CeraGR mx-auto`}
+                        className={`p w-full`}
                         spinnerClassName="fill-red-600"
                     >
                         {checkoutloading

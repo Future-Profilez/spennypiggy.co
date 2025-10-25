@@ -19,9 +19,14 @@ export default function Post({item}) {
   const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
   function posturl (){
-    if(IsloggedIn || item && item.is_lock === 0){
+    if(item && item?.for_module == 'public'){
+      return item.image_url || false
+    }
+    // Check if user is the post owner OR post is unlocked
+    if(IsloggedIn || (item && item.is_lock === 0)){
       return item.image_url
     } else {
+      // Show locked placeholder based on post type
       if(item && item.for_module == 'membership'){
         return membershipimg
       }
@@ -31,6 +36,8 @@ export default function Post({item}) {
       if(item && item.for_module == 'support'){
         return supportorsimg
       }
+      // Default fallback for posts without specific module
+      return item.image_url
     }
   }
 
@@ -58,7 +65,7 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className="post-wrap bg-light rounded-[30px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pink border-2 border-[#F94F97]">
+      <div className="post-wrap bg-light rounded-[20px] md:rounded-[35px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pinks sborder-2 sborder-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img alt='spenny piggy' className="author-img" src={item?.user?.avatar_url || userphoto} />
@@ -94,15 +101,29 @@ export default function Post({item}) {
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
 
-        {item && item.type =='image' ?
+        {item && item.type =='image' || item && item.type == 'support_thanks' ?
           <div className='post-images lazywrap position-relative  w-full' >
-              <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
-              <LazyLoadImage
-              effect="blur"
-              width='400' height='400' alt='spenny piggy'
-              className="post-img w-full max-h-[400px] object-cover" src={posturl()} />
+              
+              {posturl() ?<>
+                <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
+                <LazyLoadImage
+                effect="blur"
+                width='400' height='400' alt='spenny piggy'
+                className="post-img rounded-[20px]  md:!rounded-[26px] w-full max-h-[400px] object-cover"
+                 src={posturl()} />
+                <div className='absolute bottom-3 right-3 z-1 bg-[color:var(--pink)] shadow-sm rounded-xl px-2 py-1 text-[10px] text-white'>
+                  {item && item.for_module === 'public' ? "Shoutout" : ""}
+                  {item && item.for_module === 'membership' ? "Members Only" : ""}
+                  {item && item.for_module === 'subscription' ? "Subscriber Only" : ""}
+                  {item && item.for_module === 'support' ? "Supporters Only" : ""}
+                </div>
+              </> : ''}
 
-              {item.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
+              
+              
+              {item.ai_generated == 1 ? 
+              <div className='absolute bottom-3 left-3 z-1 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
+               : ""}
           </div>
         : ''}
 

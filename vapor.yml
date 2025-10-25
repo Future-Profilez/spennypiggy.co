@@ -5,7 +5,7 @@ environments:
     memory: 2048
     queue-memory: 1024
     cli-memory: 512
-    timeout: 30
+    timeout: 120
     runtime: "php-8.2:al2"
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
@@ -14,38 +14,63 @@ environments:
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "npm ci"
+      - "rm -rf node_modules package-lock.json"
+      - "npm install --no-audit --no-fund"
+      - "rm -rf public/build"
       - "npm run build"
+      # - "npm run clear"
       - "rm -rf node_modules"   # Linux/macOS
-      - "rm -rf package-lock.json"   # Linux/macOS
+      # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules"  # Windows/
     deploy:
+      - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
-
+      - "php artisan config:clear"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan event:clear"
+      # Note: DynamoDB sessions are handled automatically
+      # Note: optimize command conflicts with read-only filesystem
+      - "php artisan subscription:sync --all"
+      # Optional: Generate sitemaps (comment out for faster deployments)
+      # - "php artisan sitemap:generate --force"
   production:
-    memory: 3008
-    queue-memory: 2048
-    cli-memory: 2048
-    warm: 10
+    memory: 1024
+    queue-memory: 512
+    cli-memory: 512
+    warm: 5
     gateway-version: 2
-    timeout: 30
+    timeout: 60
     cache: spennypiggy-cache
     runtime: "php-8.2:al2"
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
+    health-checks: false
     build:
       - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "php artisan route:cache"
-      - "npm ci"
+      - "rm -rf node_modules package-lock.json"
+      - "npm install --no-audit --no-fund"
+      - "rm -rf public/build" # Linux/mac/OS
       - "npm run build"
+      # - "npm run clear"
       - "rm -rf node_modules" # Linux/mac/OS
-      - "rm -rf package-lock.json"   # Linux/macOS
+      # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules" # Windows
+
     deploy:
+      - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
+      - "php artisan config:clear"
+      - "php artisan route:clear"
+      - "php artisan view:clear"
+      - "php artisan event:clear"
+      - "php artisan subscription:sync --all"
+      # Optional: Generate sitemaps (comment out for faster deployments)
+      # - "php artisan sitemap:generate --force"
 
 
+# php artisan app:notifications-pending-approval

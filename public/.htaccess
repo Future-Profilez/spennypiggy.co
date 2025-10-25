@@ -153,6 +153,50 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
 </IfModule>
 
 # ======================================================================
+# PWA Configuration
+# ======================================================================
+
+# Set correct MIME types for PWA files
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType application/json .json
+    AddType text/cache-manifest .appcache
+</IfModule>
+
+# Service Worker - must be served from root with correct headers
+<FilesMatch "(service-worker|sw)\.js$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+    Header set Service-Worker-Allowed "/"
+    Header set X-Content-Type-Options "nosniff"
+</FilesMatch>
+
+# Web App Manifest - correct headers
+<FilesMatch "\.webmanifest$">
+    Header set Cache-Control "public, max-age=86400"
+    Header set Content-Type "application/manifest+json"
+    Header set X-Content-Type-Options "nosniff"
+</FilesMatch>
+
+# ======================================================================
+# SEO Files - Prevent CDN Caching
+# ======================================================================
+
+# Robots.txt and sitemap files - no caching for dynamic generation
+<FilesMatch "robots\.txt$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    Header unset ETag
+</FilesMatch>
+
+<FilesMatch "sitemap.*\.xml$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    Header unset ETag
+</FilesMatch>
+
+# ======================================================================
 # Laravel/PHP Configuration
 # ======================================================================
 

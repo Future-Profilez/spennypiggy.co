@@ -94,8 +94,42 @@ class IpTracker {
             $client = new IPinfo(env("IP_TOKEN"));
             static::$ipInfo = $client->getDetails(self::$ip);
         } catch (IPinfoException $e){
-            throw new Exception($e->getMessage());
+            // Silently handle quota exceeded or other IPinfo errors
+            // Create a default IP info object to prevent application crashes
+            static::$ipInfo = self::createDefaultIpInfo(self::$ip);
+            
+            // Optionally log the error for debugging (but don't throw)
+            \Log::warning('IPinfo API error: ' . $e->getMessage(), [
+                'ip' => self::$ip,
+                'error' => $e->getMessage()
+            ]);
+        } catch (Exception $e) {
+            // Handle any other exceptions
+            static::$ipInfo = self::createDefaultIpInfo(self::$ip);
+            \Log::warning('Unexpected error in IP tracking: ' . $e->getMessage(), [
+                'ip' => self::$ip
+            ]);
         }
-
+    }
+    
+    /**
+     * Create default IP info object when API fails
+     *
+     * @param string $ip
+     * @return stdClass
+     */
+    private static function createDefaultIpInfo($ip)
+    {
+        $defaultInfo = new stdClass();
+        $defaultInfo->ip = $ip;
+        $defaultInfo->city = 'Unknown';
+        $defaultInfo->region = 'Unknown';
+        $defaultInfo->country = 'Unknown';
+        $defaultInfo->loc = '0.0,0.0';
+        $defaultInfo->org = 'Unknown';
+        $defaultInfo->postal = 'Unknown';
+        $defaultInfo->timezone = 'UTC';
+        
+        return $defaultInfo;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -36,7 +37,7 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Illuminate\Validation\ValidationException|\Illuminate\Http\Exceptions\HttpResponseException
      */
     public function authenticate(): void
     {
@@ -51,6 +52,18 @@ class LoginRequest extends FormRequest
         if (!Auth::attempt($userData, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            // If this is a JSON request (e.g., from frontend expecting JSON response)
+            if ($this->expectsJson()) {
+                throw new HttpResponseException(
+                    response()->json([
+                        'message' => trans('auth.failed'),
+                        'errors' => [
+                            'email' => [trans('auth.failed')]
+                        ]
+                    ], 422)
+                );
+            }
+
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
@@ -62,7 +75,7 @@ class LoginRequest extends FormRequest
     /**
      * Ensure the login request is not rate limited.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Illuminate\Validation\ValidationException|\Illuminate\Http\Exceptions\HttpResponseException
      */
     public function ensureIsNotRateLimited(): void
     {
@@ -73,12 +86,25 @@ class LoginRequest extends FormRequest
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
+        $throttleMessage = trans('auth.throttle', [
+            'seconds' => $seconds,
+            'minutes' => ceil($seconds / 60),
+        ]);
+
+        // If this is a JSON request (e.g., from frontend expecting JSON response)
+        if ($this->expectsJson()) {
+            throw new HttpResponseException(
+                response()->json([
+                    'message' => $throttleMessage,
+                    'errors' => [
+                        'email' => [$throttleMessage]
+                    ]
+                ], 429)
+            );
+        }
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => $throttleMessage,
         ]);
     }
 

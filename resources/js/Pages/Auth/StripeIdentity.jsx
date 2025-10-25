@@ -7,6 +7,7 @@ import { useAlerts } from "@/Components/Alerts";
 export default function StripeIdentity({ auth }) {
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
+    const adminIdentity = auth?.admin_identity;
     // Parse error details if available
     const error = (() => {
         try {
@@ -39,6 +40,20 @@ export default function StripeIdentity({ auth }) {
         <Authenticated>
             <div className="flex flex-col items-center justify-center h-[80vh] bg-gray-100">
                 <div className="rounded-lg p-6 sm:p-10 max-w-xl w-full">
+                    {/* Admin Review Banners */}
+                    {auth?.user?.identity_status == 1 && (!adminIdentity || adminIdentity?.status !== 1) && (
+                        <div className="mb-4 text-blue-800 bg-blue-100 p-4 rounded-lg border border-blue-200 text-center">
+                            <p className="font-semibold mb-1">Identity Submitted</p>
+                            <p className="text-sm">Your documents are with our admin team for review. You'll receive an email once approved.</p>
+                        </div>
+                    )}
+                    {adminIdentity?.status === 2 && (
+                        <div className="mb-4 text-red-800 bg-red-100 p-4 rounded-lg border border-red-200 text-center">
+                            <p className="font-semibold mb-1">Admin Review: Rejected</p>
+                            <p className="text-sm">{adminIdentity?.notes || "Please re-submit your identity documents following the guidelines below."}</p>
+                        </div>
+                    )}
+
                     {/* Display error explanation */}
                     {auth?.user?.identity_verification_error && (
                         <div className="mb-4 text-yellow-700 bg-yellow-100 p-4 rounded-lg border border-yellow-200 text-center">
@@ -74,12 +89,12 @@ export default function StripeIdentity({ auth }) {
                     {/* Verification Button */}
                     <div className="mt-6 flex justify-center">
                         <LoaderButton
-                            disabled={loading}
+                            disabled={loading || (auth?.user?.identity_status == 1 && adminIdentity?.status !== 2)}
                             onClick={handleVerification}
-                            className="px-6 py-[13px] bg-blue-600 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-300 transition-all ease-in-out duration-200"
+                            className="p  px-6 py-[13px]"
                             spinnerClassName="fill-white"
                         >
-                            {loading ? "Processing..." : error?.code ? "Reverify Now" : "Verify Now"}
+                            {loading ? "Processing..." : adminIdentity?.status === 2 ? "Reverify Now" : auth?.user?.identity_status == 1 ? "Verification Submitted" : "Verify Now"}
                         </LoaderButton>
                     </div>
                 </div>

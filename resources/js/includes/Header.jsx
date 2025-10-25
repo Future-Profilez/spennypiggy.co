@@ -1,8 +1,10 @@
 import { Link, usePage, router } from "@inertiajs/react";
 import spennypiggy from "../../assets/img/logo.png";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
+import { SiBuymeacoffee } from "react-icons/si";
+
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
@@ -24,7 +26,7 @@ import { MdClose } from "react-icons/md";
 import { AiOutlineLogout } from "react-icons/ai";
 import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
-import MagicBellNotification from "@/Pages/webpush/MagicBellNotificationDisabled";
+import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
 export default function Header({classMagicword}) {
     const { global_currency, auth } = usePage().props;
@@ -42,20 +44,36 @@ export default function Header({classMagicword}) {
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
-    async function fetchCounter() {
-        axios
-            .get(`/counter/${deviceid}`)
-            .then((resp) => {
-                setCount(resp.data.counter);
-                dispatch(add_to_cart(resp.data.counter));
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
-    }
+    
+    const fetchCounter = useCallback(async () => {
+        try {
+            const resp = await axios.get(`/counter/${deviceid}`);
+            setCount(Number(resp.data.counter));
+        } catch (_err) {
+            console.error("Error fetching cart counter:", _err);
+        }
+    }, [deviceid, dispatch, auth?.user?.id]);
+
+    // Listen to global cart counter refresh events
     useEffect(() => {
+        const handleCartCounterRefresh = (event) => {
+            if (event.detail.counter !== undefined) {
+                // setCount(event.detail.counter);
+                // dispatch(add_to_cart(event.detail.counter));
+            }
+        };
+        
+        // Add event listener for global cart counter refresh
+        window.addEventListener('cartCounterRefreshed', handleCartCounterRefresh);
+        
+        // Initial fetch
         fetchCounter();
-    }, [cart]);
+        
+        // Cleanup event listener
+        return () => {
+            window.removeEventListener('cartCounterRefreshed', handleCartCounterRefresh);
+        };
+    }, [fetchCounter, dispatch]);
 
     return (
         <>
@@ -166,9 +184,8 @@ export default function Header({classMagicword}) {
                                 <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <LiaShoppingCartSolid color="#ffffff"  size={32} />
                                 </div>
-                                {count ?  <span className="site-counter d-block">{cart}</span> : ''}
+                                {count > 0 ?  <span className="site-counter d-block">{count}</span> : ''}
                             </Link>
-
 
                             {auth?.user?.username || false ? (
                                 ""
@@ -376,6 +393,27 @@ export default function Header({classMagicword}) {
                                             ) : (
                                                 ""
                                             )}
+                                            {auth?.user?.username ?
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/purchases`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SiBuymeacoffee
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span
+                                                        className="ml-2 text-[17px]
+                                tracking-wide truncate text-white"
+                                                    >
+                                                        All Purchases
+                                                    </span>
+                                                </Link>
+                                            </li> : ''}
 
                                             <li>
                                                 <Link
@@ -637,8 +675,9 @@ export default function Header({classMagicword}) {
                                             <li className="d-block">
                                                 <Link
                                                     onClick={toggleClass}
-                                                    method="get"
+                                                    method="post"
                                                     href={route("logout")}
+                                                    as="button"
                                                     className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">

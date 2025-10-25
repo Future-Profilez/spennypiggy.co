@@ -13,11 +13,17 @@ use App\Models\BillPayment;
 use App\Models\Bills;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
+use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\User;
+use App\Models\UserCart;
 use App\Models\UserPayment;
 use App\StripeControl;
 use Carbon\Carbon;
+use App\Services\CreatorActivityService;
+use App\Notifications\PaymentBlockedNotification;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\CreatorSubscriptionService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -287,12 +293,72 @@ class BillsController extends Controller
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
         DB::beginTransaction();
-        new StripeClient(env('STRIPE_SECRET_KEY'));
         $bill = Bills::with('user')->whereUuid($uuid)->first();
-        if ($bill->user['is_subscribed'] !== 1) {
-            return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
-        }
+        // if (!in_array($bill->user->subscription_status, [1, 2])) {
+        //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
+        // }
         if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
+
+        // NEW: Check creator subscription eligibility first
+        $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);
+        
+        if (!$subscriptionCheck['eligible']) {
+            DB::rollBack(); // Rollback the transaction before early return
+            
+            // Send notification to creator about blocked payment
+            $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
+            
+            // Log the blocked payment for subscription issues
+            Log::warning('Bill payment blocked due to subscription issue', [
+                'creator_id' => $bill->user->id,
+                'creator_username' => $bill->user->username,
+                'bill_id' => $bill->id,
+                'bill_price' => $bill->price,
+                'subscription_status' => $subscriptionCheck['status'],
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+
+        // NEW: Check creator activity eligibility
+        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($bill->user);
+        
+        if (!$activityCheck['eligible']) {
+            DB::rollBack(); // Rollback the transaction before early return
+            
+            // Send notification to creator about blocked payment
+            $bill->user->notify(new PaymentBlockedNotification($activityCheck, $bill->price));
+            
+            // Log the blocked payment for analytics
+            Log::info('Bill payment blocked due to insufficient creator activity', [
+                'creator_id' => $bill->user->id,
+                'creator_username' => $bill->user->username,
+                'bill_id' => $bill->id,
+                'bill_price' => $bill->price,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+            
+            // Return user-friendly error to fan
+            return redirect()->back()->with('error', 
+                'This creator is temporarily unavailable. Please try again later.'
+            );
+        }
+        
+        // Log successful activity check for analytics
+        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+            Log::info('Payment allowed - creator activity check passed', [
+                'creator_id' => $bill->user->id,
+                'creator_username' => $bill->user->username,
+                'bill_id' => $bill->id,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+        }
 
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
@@ -456,30 +522,101 @@ class BillsController extends Controller
                     ]);
                 }
 
-                $items = [['price' => $priceId, 'quantity' => 1]];
-
-                $payload = [
-                    'currency' => $currency,
-                    'line_items' => $items,
-                    'customer' => $customer_id ?? null,
-                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
-                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
-                    'mode' => 'subscription',
-                    'subscription_data' => [
-                        'application_fee_percent' => $applicationFeePercent,
-                        'description' => "Recurring Bill for {$bill->user->username}",
-                        'metadata' => [
-                            'user_id' => $user->id ?? null,
-                            'email' => $request->email ?? $bill->guest_email,
-                            'creator_id' => $bill->user->id,
-                            'bill_id' => $bill->id,
-                            'bill_payment_id' => $sub->id, // or 'bill_payment_uuid' => $sub->uuid
-                            'type' => 'bill'
+                // Calculate creator VAT amount if applicable
+                $creatorVatAmount = 0;
+                if (isset($bill->user->vat_amount_percentage) && $bill->user->vat_amount_percentage > 0) {
+                    $creatorVatAmount = round(($bill->price * $bill->user->vat_amount_percentage / 100) * $multiplier);
+                }
+                
+                // Use destination charges pattern like cart/tip payments - create line items that sum to total charge
+                $lineItems = [
+                    [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => $bill->name,
+                                'description' => "Recurring Bill from {$bill->user->name}",
+                            ],
+                            'unit_amount' => round($bill->price * $multiplier),
+                            'recurring' => [
+                                'interval' => StripeControl::$periods[$bill->period],
+                                'interval_count' => 1,
+                            ],
+                        ]
+                    ]
+                ];
+                
+                // Add creator VAT as separate line item if applicable
+                if ($creatorVatAmount > 0) {
+                    $lineItems[] = [
+                        'quantity' => 1,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => 'Creator VAT',
+                            ],
+                            'unit_amount' => $creatorVatAmount,
+                            'tax_behavior' => 'exclusive',
+                            'recurring' => [
+                                'interval' => StripeControl::$periods[$bill->period],
+                                'interval_count' => 1,
+                            ],
+                        ],
+                    ];
+                }
+                
+                // Add platform fee as separate line item
+                $lineItems[] = [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Bill Payment',
+                        ],
+                        'unit_amount' => round($totalPaymentTaxAmount * $multiplier),
+                        'tax_behavior' => 'exclusive',
+                        'recurring' => [
+                            'interval' => StripeControl::$periods[$bill->period],
+                            'interval_count' => 1,
                         ],
                     ],
                 ];
+                
+                // Transfer amount = bill amount + creator's VAT (what creator receives)
+                $transferAmount = round($bill->price * $multiplier) + $creatorVatAmount;
+                
+                // Total charge amount = bill amount + creator's VAT + platform fees
+                $totalChargeAmount = round($bill->price * $multiplier) + $creatorVatAmount + round($totalPaymentTaxAmount * $multiplier);
 
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $payload = [
+                    'mode' => 'subscription',
+                    'payment_method_types' => ['card'],
+                    'line_items' => $lineItems, // Total amount determined by line items
+                    'subscription_data' => [
+                        'description' => "Recurring Bill for {$bill->user->username}",
+                        'metadata' => \App\Helpers::buildStripeMetadata('bill', $sub, [
+                            'bill_id' => (string) $bill->id,
+                            'recurring_for' => $reccure,
+                            'item_amount' => (string) round($bill->price * $multiplier),
+                            'creator_vat_amount' => (string) $creatorVatAmount,
+                            'transfer_amount' => (string) $transferAmount,
+                            'platform_fee_amount' => (string) round($totalPaymentTaxAmount * $multiplier),
+                            'total_charge_amount' => (string) $totalChargeAmount,
+                            'payment_type' => 'Bill Payment - Destination Charges with transfers',
+                            'anonymous' => (string) ($sub->anonymous ?? 0),
+                        ]),
+                        'transfer_data' => [
+                            'destination' => $connectedAccountId, // Creator's connected account
+                            'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
+                        ],
+                    ],
+                    'customer_email' => $user->email ?? $request->email,
+                    'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
+                    'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
+                ];
+
+                $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
 
                 $sub->update([
                     'session_id' => $session->id,
@@ -523,7 +660,8 @@ class BillsController extends Controller
         }
 
         try {
-            $session = StripeControl::getCheckoutSession($bill_pay->session_id, $bill_pay->bill->user->account_id);
+            // Since we're using destination charges, session is created on platform account (no connected account parameter)
+            $session = StripeControl::getCheckoutSession($bill_pay->session_id);
             $bill_pay->status = $session->payment_status;
 
             if ($session->payment_status === 'paid') {
@@ -567,9 +705,22 @@ class BillsController extends Controller
                 Helpers::sendNotification($title, $content, $email);
                 /**************************BILL**PWA**ENDS****************************************************/
 
+                // Create deliverable entry for bill payment (like wish subscriptions)
+                $this->createBillDeliverable($bill_pay, $session);
+
                 // Dispatch mail jobs
                 BillPayMail::dispatch($bill_pay, $amountWithVat);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
+                
+                // Dispatch content delivery email if bill has content file
+                if (!empty($bill_pay->bill->content_file)) {
+                    \App\Jobs\BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
+                    \Log::info('BillsController: Content delivery email dispatched for bill payment', [
+                        'bill_payment_id' => $bill_pay->id,
+                        'bill_id' => $bill_pay->bill->id,
+                        'has_content_file' => !empty($bill_pay->bill->content_file)
+                    ]);
+                }
 
                 // Notification setup
                 $username = $bill_pay->anonymous ? "Anonymous user" : ($bill_pay->guest_name ?? "Anonymous user");
@@ -598,6 +749,93 @@ class BillsController extends Controller
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('warning', "Bill is in {$session->payment_status} status.");
         } catch (Exception $e) {
             return to_route('user.show', ['username' => $bill_pay->bill->user->username])->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Create deliverable entry for bill payment (like wish subscriptions)
+     */
+    private function createBillDeliverable($billPayment, $session)
+    {
+        try {
+            $bill = $billPayment->bill;
+            
+            // Get payment intent ID from Stripe session if available
+            $paymentIntentId = null;
+            if ($session && isset($session->id)) {
+                try {
+                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+                    $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
+                    $paymentIntentId = $retrievedSession->payment_intent ?? null;
+                    \Log::info('BillsController: Retrieved payment intent from session', [
+                        'session_id' => $session->id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('BillsController: Failed to retrieve payment intent from session', [
+                        'session_id' => $session->id ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Create deliverable entry for tracking (similar to wish subscriptions)
+            $deliverable = Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
+                'price_id' => $bill->price_id,
+                'item_id' => $bill->id, // Add item_id for bill lookup
+                'creator_id' => $bill->user_id,
+                'gifter_id' => $billPayment->user_id,
+                'payment_intent_id' => $paymentIntentId,
+                'session_id' => $session->id,
+                'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
+                'product_type' => 'bill',
+                'transaction_amount' => $billPayment->amount, // Add transaction amount
+                'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'customer_email' => $billPayment->guest_email ?? $billPayment->user->email ?? null,
+                'customer_name' => $billPayment->guest_name ?? $billPayment->user->name ?? null,
+                'payment_status' => $billPayment->status,
+                'payment_currency' => $billPayment->currency,
+                'anonymous' => $billPayment->anonymous ?? false,
+                'message' => $billPayment->message,
+                'metadata' => json_encode([
+                    'product_type' => 'bill',
+                    'bill_id' => $bill->id,
+                    'bill_name' => $bill->name,
+                    'amount' => $billPayment->amount,
+                    'currency' => $billPayment->currency,
+                    'subscription_id' => $billPayment->stripe_id,
+                    'recurring_type' => $billPayment->recurring_type,
+                    'anonymous' => $billPayment->anonymous,
+                    'message' => $billPayment->message,
+                    'guest_email' => $billPayment->guest_email,
+                    'guest_name' => $billPayment->guest_name,
+                    'has_content_file' => !empty($bill->content_file)
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            // Dispatch ProcessWishItemDeliverable job for certificate generation
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+            Log::info('Bill deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'bill_payment_id' => $billPayment->id,
+                'bill_id' => $bill->id,
+                'has_content_file' => !empty($bill->content_file)
+            ]);
+
+            return $deliverable;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create bill deliverable', [
+                'error' => $e->getMessage(),
+                'bill_payment_id' => $billPayment->id ?? 'unknown',
+                'bill_id' => $billPayment->bill->id ?? 'unknown'
+            ]);
+            return null;
         }
     }
 

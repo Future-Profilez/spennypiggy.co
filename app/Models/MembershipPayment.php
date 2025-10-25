@@ -59,6 +59,13 @@ class MembershipPayment extends Model
     {
         return $this->belongsTo(User::class)->where('is_uk', 0);
     }
+    
+    public function deliverables()
+    {
+        return $this->hasMany(Deliverable::class, 'gifter_id', 'user_id')
+                    ->where('product_type', 'membership')
+                    ->whereRaw('JSON_EXTRACT(metadata, "$.membership_id") = ?', [$this->membership_id]);
+    }
 
     public function getSenderAttribute()
     {

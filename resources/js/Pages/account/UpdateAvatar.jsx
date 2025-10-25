@@ -47,7 +47,7 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
     return <>
         {/* <Popup  modalclassName="updateavatar p-4" action={ClosePop} text={text}  > */}
             <div className='editprofileModal innermodal  '>
-                <div className='editprofileModalInner p-4'>
+                <div className='editprofileModalInner mt-4'>
                     <div className={`${isEditable ? '' : 'd-none'} editable`} >
                         <UploadcareEditor height={'50vh'} uuid={file && file.uuid || ''} updateFile={updateFile}  />
                     </div>

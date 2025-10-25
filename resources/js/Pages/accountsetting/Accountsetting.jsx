@@ -17,12 +17,13 @@ import SiteSubscription from "../Profile/SiteSubscription";
 import TFA from "../Auth/TFA";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
+import SubscriptionHistory from "@/Components/SubscriptionHistory";
 
 export default function Accountsetting(props) {
 
     console.log('props', props);
     const { successAlert, errorAlert } = useAlerts();
-    const { auth, user, global_currency, auto_tweet, pwa_notification_details, site_subscription } = props;
+    const { auth, user, global_currency, auto_tweet, pwa_notification_details, site_subscription, subscription_history, subscription_status } = props;
     console.log('pwa_notification_details',pwa_notification_details);
     const [showModal, setShowModal] = useState(false);
 
@@ -113,10 +114,11 @@ export default function Accountsetting(props) {
                                     space="4"
                                     modalclassName="pinkmodal"
                                     text={
-                                        <>
-                                            SPENNY PIGGY SUBSCRIPTION 
+                                        <div className="flex items-center justify-between w-full">
+                                            <p className="text-start">SPENNY PIGGY SUBSCRIPTION </p>
+                                            
                                             <span className={`
-                                                text-gray 
+                                                text-gray  text-start
                                                 uppercase
                                                 ${site_subscription && site_subscription.status == "ACTIVE" || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"}
                                             `}>
@@ -125,10 +127,12 @@ export default function Accountsetting(props) {
                                                 {site_subscription && site_subscription.status || "Start"}
                                                 </>}
                                             </span>
-                                        </>
+                                        </div>
                                     }
                                 >
-                                    <h2 className="text-black font-gulfs text-xl mb-3">SPENNY PIGGY SUBSCRIPTION</h2>
+                                    <h2 className="text-black text-start font-gulfs text-xl mb-3">SPENNY PIGGY SUBSCRIPTION</h2>
+                                    
+                                    
 
                                     {site_subscription?.trial_status === "active" ? <>
                                             <h2>Subscription Status : <span className="text-green-600 font-bold text-lg uppercase">Free Trial</span></h2>
@@ -164,7 +168,27 @@ export default function Accountsetting(props) {
                                     
                                 </Popup>
                             </li> : 
-                             ""}    
+                             ""}
+
+                        {auth && auth.user && auth?.user?.role == 1 && subscription_history && subscription_history.length > 0 ?
+                            <li>
+                                <Popup
+                                    space="4"
+                                    modalclassName="pinkmodal"
+                                    text={
+                                        <div className="flex w-full justify-between items-center">
+                                            <p className="text-start">SUBSCRIPTION HISTORY</p>
+                                            <span className="text-gray whitespace-nowrap">
+                                                {subscription_history.length} records
+                                            </span>
+                                        </div>
+                                    }
+                                >
+                                    <h2 className="text-black font-gulfs text-xl mb-3">SUBSCRIPTION PAYMENT HISTORY</h2>
+                                    <SubscriptionHistory subscriptionHistory={subscription_history} />
+                                </Popup>
+                            </li> : 
+                             ""}
 
                             <li>
                                 <Popup

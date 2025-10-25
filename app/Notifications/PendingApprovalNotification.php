@@ -12,9 +12,7 @@ use Illuminate\Notifications\Messages\MailMessage as Mailable;
 class PendingApprovalNotification extends Notification implements ShouldQueue
 {
     use Queueable;
-
     public $pendingSummary;
-
     public function __construct($pendingSummary)
     {
         $this->pendingSummary = $pendingSummary;
@@ -28,7 +26,7 @@ class PendingApprovalNotification extends Notification implements ShouldQueue
     public function toMail($notifiable)
     {
         return (new Mailable)
-            ->subject('Summary of Pending Approvals')
+            ->subject('Summary of Pending Approvals - ' . env('APP_NAME'))
             ->view('email.pending_approval_summary', [
                 'pendingSummary' => $this->pendingSummary,
             ]);

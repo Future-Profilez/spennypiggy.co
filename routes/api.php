@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WebVitalsController;
+use App\Http\Controllers\Api\DeliverableController;
 use App\Http\Controllers\Auth\StripeController;
+use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\FounderBonusController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishtenderController;
 use Illuminate\Http\Request;
@@ -27,6 +30,11 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::post('/create-product', [ProductController::class, 'store']);
 Route::put('/products/{id}', [ProductController::class, 'update']);
 
+// Cart API routes - using web middleware to maintain session authentication
+Route::middleware('web')->group(function () {
+    Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('api.remove-from-cart');
+});
+
 // Web Vitals Analytics & Monitoring
 Route::prefix('analytics')->group(function () {
     Route::post('/web-vitals', [WebVitalsController::class, 'store']);
@@ -41,4 +49,21 @@ Route::post('/alerts/performance', function (Request $request) {
     \Log::channel('performance')->critical('Performance alert received', $request->all());
     return response()->json(['status' => 'received'], 200);
 });
+
+// Founder Bonus API Routes
+Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners']);
+
+// Deliverables API (requires authentication)
+Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {
+    Route::get('/', [DeliverableController::class, 'index'])->name('api.deliverables.index');
+    Route::get('/{uuid}', [DeliverableController::class, 'show'])->name('api.deliverables.show');
+    Route::get('/{uuid}/certificate/download', [DeliverableController::class, 'downloadCertificate'])->name('api.deliverables.certificate');
+});
+
+// Profile Posts API (supports pagination and filtering)
+Route::middleware('web')->group(function () {
+    Route::get('/profile/{user}/posts', [\App\Http\Controllers\ProfilePostController::class, 'index'])
+        ->name('api.profile.posts');
+});
+
 

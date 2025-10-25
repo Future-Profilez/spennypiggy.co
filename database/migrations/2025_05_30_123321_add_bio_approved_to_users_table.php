@@ -12,8 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->smallInteger('bio_approved')->default(0)->after('bio');
-            $table->smallInteger('is_500_limit_exceeded')->default(0)->comment("this is for the gifter")->after('profile_reject_reason');
+            if (!Schema::hasColumn('users', 'bio_approved')) {
+                $table->smallInteger('bio_approved')->default(0)->after('bio');
+            }
+            if (!Schema::hasColumn('users', 'is_500_limit_exceeded')) {
+                // Check if profile_reject_reason column exists, otherwise add at end
+                if (Schema::hasColumn('users', 'profile_reject_reason')) {
+                    $table->smallInteger('is_500_limit_exceeded')->default(0)->comment("this is for the gifter")->after('profile_reject_reason');
+                } else {
+                    $table->smallInteger('is_500_limit_exceeded')->default(0)->comment("this is for the gifter");
+                }
+            }
         });
     }
 

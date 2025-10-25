@@ -77,6 +77,23 @@ class TestController extends Controller
         ]);
     }
 
+    public function testFounderEmail()
+    {
+        $user = User::find(1);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        
+        // Create sample data for testing
+        $first30DayEarnings = 2512.61;
+        
+        // Return the email view directly for preview
+        return view('email.founder-congratulations', [
+            'creator' => $user,
+            'first30DayEarnings' => $first30DayEarnings
+        ]);
+    }
+
     /**
      * Get Exchange Rates
      *
@@ -702,6 +719,39 @@ class TestController extends Controller
         // Notify the user about the trial ending
         // Example: Notification::send(User::find($data->customer), new TrialEndingNotification($subscriptionId, $currentPeriodEnd));
 
-        Log::info("Trial will end soon for subscription: {$subscriptionId}, Current Period End: {$currentPeriodEnd}");
+        Log::info("Trial will end soon for subscription: " . $data->id);
+    }
+
+    /**
+     * Debug user status for founder bonus
+     */
+    public function debugUserStatus(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated']);
+        }
+        
+        $debugInfo = [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+            'created_at' => $user->created_at,
+            'created_at_formatted' => $user->created_at->format('Y-m-d H:i:s'),
+            'is_founder' => $user->is_founder,
+            'is_current_month' => $user->created_at->isCurrentMonth(),
+            'current_month' => now()->format('Y-m'),
+            'user_creation_month' => $user->created_at->format('Y-m'),
+            'now' => now()->format('Y-m-d H:i:s'),
+            'condition_check' => [
+                'user_exists' => !!$user,
+                'not_founder' => !$user->is_founder,
+                'created_current_month' => $user->created_at->isCurrentMonth(),
+                'should_be_in_race' => $user && !$user->is_founder && $user->created_at->isCurrentMonth()
+            ]
+        ];
+        
+        return response()->json($debugInfo);
     }
 }

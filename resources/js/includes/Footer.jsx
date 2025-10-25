@@ -2,40 +2,117 @@ import { Head, Link } from "@inertiajs/react";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import spennypiggy from "../../assets/img/logo.png";
-// import scriptManager from "../../utils/thirdPartyScriptManager";
 
 export default function Footer(props) {
     const { auth } = props;
-    // // Initialize third-party scripts using the script manager
-    // async function initializeThirdPartyScripts() {
-    //     // Load Google Analytics with lazy loading
-    //     scriptManager.loadGoogleAnalytics('G-9F1M3QZZB3', {
-    //         delay: 5000,
-    //         events: ['click', 'scroll', 'touchstart', 'keydown']
-    //     });
-        
-    //     // Load Intercom chat widget with user-specific settings
-    //     const intercomSettings = {
-    //         api_base: "https://api-iam.intercom.io",
-    //         custom_launcher_selector: ".livechat",
-    //         ...(auth && auth.user && {
-    //             name: auth?.name,
-    //             email: auth?.email,
-    //             created_at: auth?.createdAt,
-    //         })
-    //     };
-        
-    //     scriptManager.loadIntercom('xomg14o9', intercomSettings, {
-    //         delay: 8000,
-    //         events: ['click', 'scroll', 'touchstart', 'keydown']
-    //     });
-    // }
+   
+    async function configIntercom() {
+        setTimeout(() => {
+            if (auth && auth.user) {
+                window.intercomSettings = {
+                    api_base: "https://api-iam.intercom.io",
+                    app_id: "xomg14o9",
+                    name: auth && auth?.name, // Full name
+                    email: auth && auth?.email, // Email address
+                    custom_launcher_selector: ".livechat", // Email address
+                    created_at: auth && auth?.createdAt, // Signup date as a Unix timestamp
+                };
+                (function () {
+                    var w = window;
+                    var ic = w.Intercom;
+                    if (typeof ic === "function") {
+                        ic("reattach_activator");
+                        ic("update", w.intercomSettings);
+                    } else {
+                        var d = document;
+                        var i = function () {
+                            i.c(arguments);
+                        };
+                        i.q = [];
+                        i.c = function (args) {
+                            i.q.push(args);
+                        };
+                        w.Intercom = i;
+                        var l = function () {
+                            var s = d.createElement("script");
+                            s.type = "text/javascript";
+                            s.async = true;
+                            s.defer = true;
+                            s.src =
+                                "https://widget.intercom.io/widget/xomg14o9";
+                            var x = d.getElementsByTagName("script")[0];
+                            x.parentNode.insertBefore(s, x);
+                        };
+                        if (document.readyState === "complete") {
+                            l();
+                        } else if (w.attachEvent) {
+                            w.attachEvent("onload", l);
+                        } else {
+                            w.addEventListener("load", l, false);
+                        }
+                    }
+                })();
+            } else {
+                window.intercomSettings = {
+                    api_base: "https://api-iam.intercom.io",
+                    app_id: "xomg14o9",
+                    custom_launcher_selector: ".livechat",
+                };
+                (function () {
+                    var w = window;
+                    var ic = w.Intercom;
+                    if (typeof ic === "function") {
+                        ic("reattach_activator");
+                        ic("update", w.intercomSettings);
+                    } else {
+                        var d = document;
+                        var i = function () {
+                            i.c(arguments);
+                        };
+                        i.q = [];
+                        i.c = function (args) {
+                            i.q.push(args);
+                        };
+                        w.Intercom = i;
+                        var l = function () {
+                            var s = d.createElement("script");
+                            s.type = "text/javascript";
+                            s.async = true;
+                            s.src =
+                                "https://widget.intercom.io/widget/xomg14o9";
+                            var x = d.getElementsByTagName("script")[0];
+                            x.parentNode.insertBefore(s, x);
+                        };
+                        if (document.readyState === "complete") {
+                            l();
+                        } else if (w.attachEvent) {
+                            w.attachEvent("onload", l);
+                        } else {
+                            w.addEventListener("load", l, false);
+                        }
+                    }
+                })();
+            }
+        }, 7000);
+    }
+
+    async function confgureGtag() {
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag("js", new Date());
+        gtag("config", "G-9F1M3QZZB3");
+    }
+
+    useEffect(() => {
+        configIntercom();
+    }, [auth && auth?.name]);
+    useEffect(() => {
+        confgureGtag();
+    }, []);
 
 
-    // useEffect(() => {
-    //     // Initialize all third-party scripts with lazy loading
-    //     initializeThirdPartyScripts();
-    // }, [auth && auth?.name]);
 
     const date = new Date();
     return (
@@ -122,6 +199,24 @@ export default function Footer(props) {
                     </p>
                 </div>
             </footer>
+
+        {/* <div className="bg-black p-12 w-full  h-[100px] ">
+            <button className="main-button b ">
+                Click ME
+            </button>
+            <button className="main-button p">
+                Click ME
+            </button>
+            <button className="main-button b size-lg ">
+                Click ME
+            </button>
+            <button className="main-button p size-lg">
+                Click ME
+            </button>
+            <button className="main-button pure-pink">
+                Click ME
+            </button>
+        </div> */}
         </>
     );
 }

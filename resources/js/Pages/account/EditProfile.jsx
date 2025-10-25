@@ -3,7 +3,7 @@ import userdefaultphoto from '../../../assets/siteicon.png';
 import coverimage from '../../../assets/img/wishlistbannerimg.jpg';
 import editicon from '../../../assets/img/editicon.png';
 import Popup from '@/Components/Popup';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
@@ -15,6 +15,7 @@ import socialbg from "../../../assets/social-bg.png";
 
 export default function EditProfile({ user, text, classes, updateProfileSteps }) {
 
+    const { auth }= usePage().props;
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();
@@ -38,6 +39,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     });
 
     const generateCardAndUpload = async (avataruid) => {
+        console.log('Generating banner with avatar:', avataruid);
+        console.log('Background image:', socialbg);
+        console.log('Logo image:', spennypiggy);
+        
         const container = document.createElement('div');
         container.style.position = 'absolute';
         container.style.left = '-9999px';
@@ -46,7 +51,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         document.body.appendChild(container);
         container.innerHTML = `
             <div id="card-to-capture"  class="dot-pattern relative my-[300px] flex items-center  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
-                    <img src="${socialbg}" alt="Profile" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" />
+                    <img src="${socialbg}" alt="Background" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
 
                     <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
                     <div class="absolute top-18 left-6 text-yellow-300 text-4xl">✨</div>
@@ -56,7 +61,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                     <div class="inner-image w-full">
                         <div class="flex items-center justify-center  mb-4">
                             <div class="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden shadow-lg">
-                                <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" />
+                                <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
                             </div>
                             <div class="ps-3">
                                 <h1 class="image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-start  ">
@@ -66,7 +71,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         </div>
 
                         <p class="  text-white text-xl font-bold me-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
-                        <img src="${spennypiggy}" alt="Profile" class="me-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" />
+                        <img src="${spennypiggy}" alt="Logo" class="me-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
 
                         <div class="  bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
                             px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
@@ -76,12 +81,25 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         `;
 
         const card = container.querySelector('#card-to-capture');
-        const img = card.querySelector('img');
-        await new Promise((resolve, reject) => {
-            if (img.complete) return resolve(); // already loaded
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error('Image failed to load'));
-        });
+        const images = card.querySelectorAll('img');
+        
+        // Wait for all images to load
+        await Promise.all(Array.from(images).map(img => {
+            return new Promise((resolve, reject) => {
+                if (img.complete) {
+                    resolve();
+                } else {
+                    img.onload = () => resolve();
+                    img.onerror = () => {
+                        console.warn('Image failed to load:', img.src);
+                        resolve(); // Continue even if image fails
+                    };
+                }
+            });
+        }));
+        
+        // Add a small delay to ensure rendering is complete
+        await new Promise(resolve => setTimeout(resolve, 500));
         // 4. Convert to canvas
         const canvas = await html2canvas(card, {
         useCORS: true,
@@ -97,29 +115,28 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         setTimeout(() => {
             setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
             setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
+            // Update the preview with the newly generated banner
+            const bannerUrl = URL.createObjectURL(blob);
+            setCurrentSocialBanner(bannerUrl);
+            console.log('Banner generated successfully');
         },500);
 
-
-        // 6. Download to user device
-        // const localUrl = URL.createObjectURL(blob);
-        // const a = document.createElement('a');
-        // a.href = localUrl;
-        // a.download = `card.png`;
-        // a.click();
-        // URL.revokeObjectURL(localUrl);
-
-
-        // // 7. Cleanup
-        // document.body.removeChild(container);
+        // 7. Cleanup
+        setTimeout(() => {
+            if (container && container.parentNode) {
+                document.body.removeChild(container);
+            }
+        }, 1000);
     };
     const [UploadingStart, setUploadingStart] = useState(false);
     const [CoverUploadingStart, setCoverUploadingStart] = useState(false);
     const [localAvatar, setLocalAvatar] = useState('');
+    const [generatingBanner, setGeneratingBanner] = useState(false);
+    const [currentSocialBanner, setCurrentSocialBanner] = useState(user?.social_image_url || null);
 
     useEffect(() => {
         if(localAvatar){
             setData('avatar', localAvatar);
-            generateCardAndUpload(e?.uuid);
         }
     },[localAvatar]);
 
@@ -140,6 +157,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
     const updateProfile = async (e) => {
         e.preventDefault();
+        auth?.user?.role == 1 && await generateCardAndUpload(localAvatar || user?.avatar);
         post(route('edit-profile', {...data}), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -165,24 +183,22 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             }
         });
     };
-
     
     const IsProfileChannged = async() => {
-        if(user && user.avatar && !user?.social_image){
-            await generateCardAndUpload(user.avatar);
-        }
-
+        // Removed automatic banner generation - users can generate banners manually
     }
+
     return (
         <Popup modalclassName='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
             <div className='editForm  mt-4'>
-                        {UploadingStart ? <div className=''>
-                            <div className='flex items-center justify-between'>
-                                <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
-                                <button onClick={()=>setUploadingStart(false)} className='me-4 mt-4 bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
+                        {UploadingStart ? <div className='p-4 '>
+                            <div className='flex items-center justify-between mb-3'>
+                                <h2 className='pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
+                                <button onClick={()=>setUploadingStart(false)} className='me-4  bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
                             </div>
+                           {user?.role == 1 && <p className=' text-yellow-600'>Your Profile picture must match the person in the ID verification which is the next step, if it doesn’t your account will be blocked and the user banned.</p>}
                             <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
                         </div> : ''}
 
@@ -250,9 +266,55 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                         </li> */}
 
                                     </ul>
+                                {auth?.user?.role == 1 ? 
+                                    <div className="text-center mb-4">
+                                        <div className="mb-2">
+                                            <p className="text-sm text-gray-600 mb-2">
+                                                Generate a promotional banner to share your profile on social media platforms like Twitter, Facebook, and Instagram.
+                                            </p>
+                                        </div>
+                                        
+                                        {currentSocialBanner && (
+                                            <div className="mb-4">
+                                                <h4 className="text-sm font-medium text-gray-700 mb-2">Your Social Media Banner:</h4>
+                                                <div className="border-2 border-gray-200 rounded-[25px] p-2 bg-gray-50">
+                                                    <img 
+                                                        src={currentSocialBanner} 
+                                                        alt="Social Media Banner" 
+                                                        className="w-full max-w-md mx-auto rounded-[20px] shadow-sm"
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-2">Right-click and save to download your banner</p>
+                                            </div>
+                                        )}
+                                       
+                                        <button 
+                                            type="button"
+                                            onClick={async () => {
+                                                const avatarToUse = localAvatar || user?.avatar;
+                                                if (avatarToUse) {
+                                                    setGeneratingBanner(true);
+                                                    try {
+                                                        await generateCardAndUpload(avatarToUse);
+                                                    } catch (error) {
+                                                        console.error('Error generating banner:', error);
+                                                        alert('Failed to generate banner. Please try again.');
+                                                    }
+                                                    setGeneratingBanner(false);
+                                                } else {
+                                                    alert('Please upload an avatar first to generate a promotional banner.');
+                                                }
+                                            }}
+                                            disabled={generatingBanner || (!localAvatar && !user?.avatar)}
+                                            className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[30px] mb-3 disabled:opacity-50"
+                                        >
+                                            {generatingBanner ? 'Generating Banner...' : (currentSocialBanner ? 'Regenerate Social Media Banner' : 'Generate Social Media Banner')}
+                                        </button> 
+                                    </div>
+                                        : ''}
 
                                     <div className=" text-center mb-7">
-                                        <LoaderButton type='submit' disabled={processing} className='btn-pink sm m-auto'
+                                        <LoaderButton type='submit' disabled={processing} className='p '
                                         spinnerClassName='fill-red-600'>
                                             {processing ? "Updating" : "Update"}
                                         </LoaderButton>

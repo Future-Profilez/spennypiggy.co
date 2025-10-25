@@ -12,7 +12,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        Stripe::setApiKey(env('STRIPE_SECRET'));
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
         $products = Product::all();
 
@@ -21,7 +21,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        Stripe::setApiKey(env('STRIPE_SECRET'));
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
         $product = Product::create([
             'name' => $request->input('name'),
@@ -33,7 +33,7 @@ class ProductController extends Controller
 
     public function update(Request $request, $id)
     {
-        Stripe::setApiKey(env('STRIPE_SECRET'));
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
         $product = Product::update($id, [
             'name' => $request->input('name'),

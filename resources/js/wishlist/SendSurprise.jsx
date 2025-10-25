@@ -96,7 +96,7 @@ export default function SendSurprise({auth, owner}) {
             <LoaderButton onClick={sendSurprize}
                disabled={processing} 
                type='submit' 
-               className="flex w-100 btn-pink lg mx-auto" 
+               className="p w-full" 
                spinnerClassName="fill-red-600" >
                {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>

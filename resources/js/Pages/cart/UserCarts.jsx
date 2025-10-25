@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import CartItem from "./CartItem";
 import { Link, router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
@@ -11,36 +11,58 @@ import HCaptcha from "@hcaptcha/react-hcaptcha";
 export default function UserCarts(props) {
     const hcaptchaRef = useRef(null);
     const { hcaptchakey } = usePage().props;
-    const deviceid = DeviceID();
+    // Memoize deviceid to prevent re-computation on every render
+    const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
     const datas = props.data;
+    
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const [message, setMessage] = useState(null);
-    const [name, setName] = useState((auth && auth.name) || "");
-    const [email, setEmail] = useState((auth && auth.email) || "");
+    const [name, setName] = useState((auth && auth.user && auth.user.name) || "");
+    const [email, setEmail] = useState((auth && auth.user && auth.user.email) || "");
 
     const [checking, setChecking] = useState(false);
     const handleSubmit = (e) => {
-        if (auth && auth.id) {
-            window.location.href = `/create-checkout-session/${
-                datas?.user?.id || ""
-            }?message=${message}&from=${name}&email=${email}&anonymous=${
-                keepAnonmyous ? 1 : 0
-            }`;
-        } else {
-            window.location.href = `/create-checkout-session/${deviceid}?message=${message}&from=${name}&email=${email}&anonymous=${
-                keepAnonmyous ? 1 : 0
-            }`;
-        }
+        setChecking(true);
+        const checkoutUrl = auth && auth.user && auth.user.id 
+            ? `/create-checkout-session/${datas?.user?.id}/${datas?.user?.id || "notid"}`
+            : `/create-checkout-session/${datas?.user?.id}/${deviceid}`;
+        
+        const queryParams = {
+            message: message || '',
+            from: name || '',
+            email: email || '',
+            anonymous: keepAnonmyous ? 1 : 0
+        };
+        
+        // Use Inertia navigation instead of window.location.href to properly handle flash messages
+        router.visit(checkoutUrl, {
+            method: 'get',
+            data: queryParams,
+            onError: (errors) => {
+                console.error('Checkout error:', errors);
+                setChecking(false);
+            },
+            onFinish: () => {
+                setChecking(false);
+            }
+        });
     };
-    const onVerify = (token) => {
+     const onVerify = (token) => {
         handleSubmit();
     };
 
     const executeCaptcha = (e) => {
         e.preventDefault();
+        
+        // If no hCaptcha key is configured, skip captcha
+        if (!hcaptchakey || hcaptchakey === '') {
+            handleSubmit();
+            return;
+        }
+        
         hcaptchaRef.current.execute();
         setChecking(true);
     };
@@ -67,72 +89,85 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        router.get(`/remove-from-cart/${id}`, {
-            preserveScroll: true,
-            onSuccess: (resp) => {
+        console.log("Auth status:", auth, "Auth user:", auth?.user, "Auth user ID:", auth?.user?.id);
+        const removeUrl = auth && auth.user && auth.user.id 
+            ? `/api/remove-from-cart/${id}` 
+            : `/api/remove-from-cart/${id}/${deviceid}`;
+        
+        console.log("Remove URL:", removeUrl);
+        
+        axios.get(removeUrl, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then((response) => {
+            console.log("Cart item removed successfully:", response.data);
+            if (response.data.success) {
                 const updatedItems = items.filter((item) => item.uuid !== id);
-                setItems(updatedItems);
-            },
-            onError: (_err) => {
-                console.error("error", _err);
-            },
+                setItems(updatedItems || []);
+            } else {
+                console.error("Failed to remove cart item:", response.data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("Error removing cart item:", error);
+            if (error.response && error.response.data && error.response.data.message) {
+                console.error("Server error:", error.response.data.message);
+            }
         });
     };
 
     const [subtotal, setsubtotal] = useState();
-    const [fee, setFee] = useState(0.15 * subtotal);
+    const [fee, setFee] = useState((window.platformFeePercentage || 20) / 100 * subtotal);
 
-    function updateTotals(p) {
-        const value =
+     function updateTotals() {
+        const subtotalValue =
             items &&
             items.reduce(
                 (total, item) => +total + +item.price * (+item.quantity || 1),
                 0
-            ) + p;
-        setsubtotal(value);
-        const fees =
+            );
+        setsubtotal(subtotalValue);
+        
+        const feesValue =
             items &&
             items.reduce(
                 (total, item) => +total + +item.tax * (+item.quantity || 1),
                 0
-            ) + p;
-        setFee(fees);
+            );
+        setFee(feesValue);
     }
 
     const quantityUpdate = (type, amount, tax) => {
-        if (type == "add") {
-            const updated = subtotal + amount;
-            setsubtotal(updated);
-            const totalfee = fee + tax;
-            setFee(totalfee);
-        } else {
-            const updated = subtotal - amount;
-            setsubtotal(updated);
-            const totalfee = fee - tax;
-            setFee(totalfee);
-        }
+        // Instead of manually updating totals, let the useEffect handle it
+        // This prevents double calculations and ensures consistency
+        setTimeout(() => {
+            updateTotals();
+        }, 100); // Small delay to ensure cart update API call completes
     };
 
     useEffect(() => {
-        updateTotals(0);
+        updateTotals();
     }, [items]);
 
     return (
         <div className={`${cartCleared ? "d-none" : ""} px-2 containerbox`}>
-            <div className="my-4 cartPage overflow-hidden bg-white border-pink shadow-black border-black rounded-[35px]">
-                    <div className='p-3 md:p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+            <div className="my-4 pb-12 mb-16 border-b border-[#000] cartPage overflow-hidden bg-white md:shadow-black md:border md:border-black md:rounded-[35px]">
+                    <div className='hidden md:flex p-3 md:p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                         <span className=' border-black border-2 bg-red-700 me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-yellow-400 me-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-mint me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                     </div>
-                    <div className="cartMain p-4 m-2 md:p-12">
+                    <div className="cartMain md:p-4 m-2 md:p-12">
                         <h2 className="pb-1 wishtitle">
                             Your Basket for {datas?.user?.name || ""}
                             <Link className="text-voilet" href={`/${datas?.user?.username || ""}`}>
                                 (@{datas?.user?.username || ""})
                             </Link>
                         </h2>
-                        <p className="pb-4 text-lg mt-2 mb-4">
+                        <p className="md:pb-4 text-lg mt-2 mb-4">
                             You are about to send a payout to <strong> {datas?.user?.name || ""} </strong> to fund their lifestyle.
                         </p>
                         <div className="CartItemBox">
@@ -159,11 +194,11 @@ export default function UserCarts(props) {
                             </div>
                             <div className="cartSubTotal whitespace-nowrap text-right mt-1">
                                 <span className="sm:ps-[5px]">Platform Fee :</span>{" "}
-                                <strong className="text-end text-black">
+                                <strong className="text-end text-black">  
                                     {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
                                         <p className="max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                            15% Card Fees and £1 administrative fee of applies to
+                                            {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
                                             all transactions.
                                         </p>
                                     </button>
@@ -207,11 +242,11 @@ export default function UserCarts(props) {
                                                             : ""
                                                     } form-input w-100 rounded`}
                                                     value={auth && auth.email}
-                                                    // disabled={
-                                                    //     auth && auth.email
-                                                    //         ? true
-                                                    //         : false
-                                                    // }
+                                                    disabled={
+                                                        auth && auth.email
+                                                            ? true
+                                                            : false
+                                                    }
                                                     onChange={(e) =>
                                                         setEmail(e.target.value)
                                                     }
@@ -268,7 +303,7 @@ export default function UserCarts(props) {
                                                     setIsChecked(e.target.checked)
                                                 }
                                                 type="checkbox"
-                                                id="agreeterm"
+                                                // id="agreeterm"
                                                 name="agreeterm"
                                                 className="me-2"
                                                 value="agreeterm"
@@ -295,8 +330,7 @@ export default function UserCarts(props) {
                                         </label>
                                         <div className="tearmlist ps-3">
                                             <ul className="ps-0">
-                                                <li>
-                                                    {" "}
+                                                <li> 
                                                     For Memberships and
                                                     subscriptions, I understand I am
                                                     making a non-refundable purchase
@@ -361,7 +395,7 @@ export default function UserCarts(props) {
                                     <button
                                         type="button"
                                         onClick={() => clearcart(datas?.user?.id)}
-                                        className={`  w-full btn-pink !text-sm !bg-gray-300 md mt-3 px-4 text-center text-black`}
+                                        className={`  w-full main-button b`}
                                     >
                                         {loading ? "Wait.." : "Clear"}{" "}
                                     </button>
@@ -369,19 +403,21 @@ export default function UserCarts(props) {
                                         type="submit"
                                         className={`${
                                             isChecked ? "" : "disabled"
-                                        } btn-shadow btn-pink md mt-3 text-center !text-sm w-full `}
+                                        } main-button p w-full`}
                                     >
                                         {checking ? "Wait.." : "Checkout"}{" "}
                                     </button>
                                 </div>
-                                <HCaptcha
-                                    ref={hcaptchaRef}
-                                    sitekey={hcaptchakey || ""}
-                                    data-theme="light"
-                                    size="invisible"
-                                    onVerify={onVerify}
-                                    required
-                                />
+                                {hcaptchakey && hcaptchakey !== '' && (
+                                    <HCaptcha
+                                        ref={hcaptchaRef}
+                                        sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
+                                        data-theme="light"
+                                        size="invisible"
+                                        onVerify={onVerify}
+                                        required
+                                    />
+                                )}
                             </form>
                         </div>
                     </div>

@@ -1,0 +1,194 @@
+/* Additional Retro Theme Enhancements */
+
+/* Retro glow effects for buttons matching the theme colors */
+.btn-pink-retro {
+  background: linear-gradient(135deg, var(--pink) 0%, var(--voilet) 50%, var(--mint) 100%);
+  border: 2px solid var(--yellow);
+  box-shadow: 
+    0 0 10px rgba(249, 79, 151, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-pink-retro::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    transparent, 
+    rgba(230, 234, 123, 0.2), 
+    transparent
+  );
+  z-index: -1;
+  border-radius: inherit;
+  animation: retro-border-glow 3s linear infinite;
+}
+
+.btn-pink-retro:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 0 20px rgba(249, 79, 151, 0.5),
+    0 0 30px rgba(140, 82, 255, 0.3),
+    0 8px 16px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}
+
+/* Retro card styling */
+.retro-card {
+  background: linear-gradient(135deg, 
+    rgba(249, 79, 151, 0.1) 0%, 
+    rgba(140, 82, 255, 0.1) 50%, 
+    rgba(5, 239, 184, 0.1) 100%
+  );
+  border: 2px solid transparent;
+  border-image: linear-gradient(45deg, #F94F97, #8C52FF, #05EFB8) 1;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.retro-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--yellow), 
+    transparent
+  );
+  animation: retro-sweep 4s linear infinite;
+}
+
+/* Retro text effects */
+.retro-text-glow {
+  text-shadow: 
+    0 0 5px rgba(230, 234, 123, 0.5),
+    0 0 10px rgba(249, 79, 151, 0.3),
+    0 0 15px rgba(140, 82, 255, 0.2);
+  animation: text-glow-pulse 2s ease-in-out infinite alternate;
+}
+
+/* Retro background patterns */
+.retro-bg-pattern {
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(249, 79, 151, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(140, 82, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 25%, rgba(5, 239, 184, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 25% 75%, rgba(230, 234, 123, 0.1) 0%, transparent 50%);
+  background-size: 100px 100px, 100px 100px, 100px 100px, 100px 100px;
+  background-position: 0 0, 50px 50px, 50px 0, 0 50px;
+}
+
+/* Retro loading animations */
+@keyframes retro-border-glow {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes retro-sweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes text-glow-pulse {
+  0% {
+    text-shadow: 
+      0 0 5px rgba(230, 234, 123, 0.5),
+      0 0 10px rgba(249, 79, 151, 0.3),
+      0 0 15px rgba(140, 82, 255, 0.2);
+  }
+  100% {
+    text-shadow: 
+      0 0 10px rgba(230, 234, 123, 0.8),
+      0 0 20px rgba(249, 79, 151, 0.5),
+      0 0 30px rgba(140, 82, 255, 0.4),
+      0 0 40px rgba(5, 239, 184, 0.2);
+  }
+}
+
+/* Retro hover effects for general elements */
+.retro-hover-glow {
+  transition: all 0.3s ease;
+}
+
+.retro-hover-glow:hover {
+  box-shadow: 
+    0 0 15px rgba(249, 79, 151, 0.3),
+    0 0 25px rgba(140, 82, 255, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Retro focus states */
+.retro-focus:focus {
+  outline: none;
+  box-shadow: 
+    0 0 0 3px rgba(230, 234, 123, 0.5),
+    0 0 15px rgba(249, 79, 151, 0.4);
+}
+
+/* Enhanced mobile bottom bar spacing for retro theme */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 80px; /* Extra space for retro bottom bar */
+  }
+  
+  .retro-bottom-bar {
+    height: 70px; /* Slightly taller for retro aesthetic */
+  }
+  
+  .retro-nav-button {
+    padding: 10px 8px;
+  }
+}
+
+/* VHS/CRT style effects (optional) */
+.retro-crt-effect {
+  position: relative;
+}
+
+.retro-crt-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(0, 255, 0, 0.02) 2%,
+    transparent 4%,
+    transparent 96%,
+    rgba(0, 255, 0, 0.02) 98%,
+    transparent 100%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  animation: crt-flicker 0.1s linear infinite;
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 1; }
+  98% { opacity: 1; }
+  99% { opacity: 0.98; }
+  100% { opacity: 1; }
+}

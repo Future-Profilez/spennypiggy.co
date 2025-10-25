@@ -350,7 +350,7 @@ export default function AddBills(props) {
                                     <LoaderButton
                                         disabled={loading}
                                         type="submit"
-                                        className="flex w-100 btn-pink lg mx-auto"
+                                        className="p w-full"
                                         spinnerClassName="fill-red-600"
                                     >
                                         {loading ? "Updating.." : "Update Bill"}
@@ -360,7 +360,7 @@ export default function AddBills(props) {
                                         <LoaderButton
                                             disabled={loading}
                                             type="submit"
-                                            className="flex w-100 btn-pink lg mx-auto"
+                                            className="p w-full"
                                             spinnerClassName="fill-red-600"
                                         >
                                             {loading

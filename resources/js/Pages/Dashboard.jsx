@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Suspense, lazy } from "react";
+import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
@@ -48,8 +48,6 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
-// import { Tabs } from "react-tabs-scrollable";
-// import "react-tabs-scrollable/dist/rts.css";
 import ProfileSteps from "./Profile/ProfileSteps";
 import ProfileProductLists from "./shop/profile/ProfileProductLists";
 import AddItem from "./shop/AddItem";
@@ -59,16 +57,24 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
+// import CreatorVerification from "./Profile/CreatorVerificationNew";
 import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
 import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
+import ActionRequired from "./stripe/ActionRequired";
+import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
+import ErrorBoundary from "@/Components/ErrorBoundary";
+import InstantTabSystem from '@/Components/InstantTabSystem';
+import OfferAnnouncement from "@/Components/OfferAnnouncement";
+import FounderBadge from "@/Components/FounderBadge";
 
+// Creator Activity and Subscription Components
+const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWidget'));
+const CreatorSubscriptionWidget = lazy(() => import('@/Components/CreatorSubscriptionWidget'));
 export default function Dashboard(props) {
-
-    console.log(props)
-
-
+    
+    console.log("props",props)
     const w = useWidthCount();
     const {
         auth,
@@ -81,20 +87,42 @@ export default function Dashboard(props) {
         items,
         page,
         selectedCategory,
+        stripe_requirements,
+        migration_status,
     } = props;
-    const [wishitems, setWishitems] = useState(
-        useMemo(() => items || [], [items])
-    );
+
+    const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
+
+    // Memoized wishitems to prevent unnecessary re-renders
+    const memoizedWishItems = useMemo(() => {
+        return items && Array.isArray(items) ? items : [];
+    }, [items]);
+
+    // Update wishitems when items prop changes (e.g., on category change or page refresh)
+    useEffect(() => {
+        if (items && Array.isArray(items)) {
+            setWishitems(items);
+            setIsInitialLoad(false);
+        } else if (items === null || items === undefined) {
+            // Keep previous items if new items are undefined (loading state)
+            // This prevents flickering to empty state during transitions
+        }
+    }, [items, selectedCategory]);
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
     const [loading, setLoading] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
     const [gifts, setGifts] = useState([]);
+    const [activityStatus, setActivityStatus] = useState(null);
+    const [activityLoading, setActivityLoading] = useState(false);
+    
+    const tabRendererRef = useRef(null);
 
     const fetch_gifts = async (signal) => {
         setGiftsLoading(true);
@@ -117,6 +145,30 @@ export default function Dashboard(props) {
         return () => controller.abort();
     }, [tab]);
 
+    // Fetch creator activity status
+    const fetchActivityStatus = async () => {
+        if (!IsloggedIn || !auth?.user || auth?.user?.role !== 1) {
+            return;
+        }
+        setActivityLoading(true);
+        try {
+            const response = await axios.get('/creator/activity/status');
+            setActivityStatus(response.data);
+        } catch (error) {
+            console.error('Failed to fetch activity status:', error);
+        } finally {
+            setActivityLoading(false);
+        }
+    };
+
+    // Fetch activity status on component mount for logged-in creators
+    useEffect(() => {
+        if (IsloggedIn && auth?.user?.role === 1) {
+            fetchActivityStatus();
+        }
+    }, [IsloggedIn, auth?.user?.role]);
+
+
     const currencyaction = (e) => {
         if (e == "open") {
             setOpenCurrency(true);
@@ -124,12 +176,15 @@ export default function Dashboard(props) {
             setOpenCurrency(false);
         }
     };
+
+
     const [openCurrency, setOpenCurrency] = useState(null);
     useEffect(() => {
         if (global_currency == null) {
             setOpenCurrency(true);
         }
     });
+
 
     const updateMovement = async (updated) => {
         const array = [];
@@ -155,6 +210,7 @@ export default function Dashboard(props) {
         })
     );
 
+
     const handleDragEnd = (event) => {
         if (!IsloggedIn) {
             return false;
@@ -175,34 +231,8 @@ export default function Dashboard(props) {
         }
     };
 
-    const { flash, errors } = usePage().props;
-    useEffect(() => {
-        if (errors) {
-            Object.entries(errors).forEach(([key, value]) => {
-                errorAlert(value);
-            });
-        }
-        if (flash?.success) {
-            setTimeout(() => {
-                successAlert(flash.success);
-            }, 500);
-        }
-        if (flash?.error) {
-            setTimeout(() => {
-                errorAlert(flash.error);
-            }, 500);
-        }
-        if (flash?.warning) {
-            setTimeout(() => {
-                warningAlert(flash.warning);
-            }, 500);
-        }
-        if (flash?.info) {
-            setTimeout(() => {
-                infoAlert(flash.info);
-            }, 500);
-        }
-    }, [errors, flash]);
+    // Flash messages now handled centrally by FlashMessenger in layout
+
 
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
@@ -215,14 +245,16 @@ export default function Dashboard(props) {
             }
         }
     }, []);
+
+
     const handleDismiss = () => {
         localStorage.setItem("stripeAlertDismissedAt", Date.now().toString());
         setShowAlert(false);
     };
 
     useEffect(() => {
-        if (auth?.user?.email && typeof window !== 'undefined' && window.twq) {
-            window.twq("event", "tw-ozu4h-pt5uc", {
+        if (auth?.user?.email && typeof twq !== 'undefined') {
+            twq("event", "tw-ozu4h-pt5uc", {
                 conversion_id: auth?.user?.uuid,
                 email_address: auth?.user?.email,
             });
@@ -231,6 +263,16 @@ export default function Dashboard(props) {
 
     const Toggle = () => {
         const [showAdd, setShowAdd] = useState(false);
+        useEffect(() => {
+            const handleToggleEvent = () => {
+                setShowAdd(true);
+            };
+            
+            window.addEventListener('toggleAddOptions', handleToggleEvent);
+            return () => {
+                window.removeEventListener('toggleAddOptions', handleToggleEvent);
+            };
+        }, []);
         useEffect(() => {
             if (showAdd) {
                 document.body.classList.add("overflow-hidden");
@@ -247,20 +289,24 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer px-3 "
+                            className="addoption-action absolute top-[-3px] right-0 cursor-pointer ps-3 bg-black p-2 "
                             dangerouslySetInnerHTML={{ __html: addicon }}
-                        ></div>
+                        ></div> 
                         {showAdd ? (
                             <div
                                 className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center
                      top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full"
                             >
+
+
+
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
                                         <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
+                                            <p> {AuthUserStripeConnected !== 1 ?  "Please complete your Stripe account setup to add your wishlist." : '' } </p>
                                             <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
                                                 {wishOptions ? (
                                                     <div>
@@ -403,12 +449,20 @@ export default function Dashboard(props) {
         <>
             <Guest auth={auth.user} user={user}>
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
+
+
                 <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
+                        <OfferAnnouncement variant="default" />
                         {/* <Side /> */}
                         <div className="wishbanner relative ">
                             <div className="relative">
+                                {user?.is_founder ? (
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-xl lg:justify-start mb-2">
+                                        <FounderBadge size="md" />
+                                    </div>
+                                ) : ''}
                                 <img
                                     alt={`${user?.name} - Cover Image`}
                                     height={400} 
@@ -446,11 +500,13 @@ export default function Dashboard(props) {
                                 ) : (
                                     ""
                                 )}
-                            </div>
+                        </div>
                             <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
+                        
+                        {/* Stripe Account Migration Warning */}
 
-                            {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
+                            {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
                                 <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
@@ -463,11 +519,23 @@ export default function Dashboard(props) {
                                         </button>
                                     </div>
                                 </div>
-                            : ''}
+                            : ''} */}
+
+                            
 
 
                             {user && user.role == 1 ?
                                 <div className="wishManage sticky top-8 ">
+                                    
+                                    {/* Creator Subscription Widget - Show on all tabs for creators */}
+                                    {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
+                                        <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
+                                            <CreatorSubscriptionWidget 
+                                                className="mb-4"
+                                            />
+                                        </Suspense>
+                                    )} */}
+                                    
                                     <div className="userManageRt mt-4 ">
                                         <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`} >
                                             <div className="inlinetab ">
@@ -477,155 +545,35 @@ export default function Dashboard(props) {
                                                         This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
                                                     </div>
                                                 )} */}
-                                            <div className="newnav-tabs flex  justify-between gap-2 mb-4">
-                                                {/* <Tabs
-                                                    activeTab={1}
-                                                    hideNavBtnsOnMobile={false}
-                                                >
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "about",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "about" ||
-                                                            page === false
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        About
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "wishes",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "wishes"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        Wishes
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "feed",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "feed"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        feed
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "memberships",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page ===
-                                                            "memberships"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        memberships
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "bills",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "bills"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        bills
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "shop",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "shop"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        shop
-                                                    </Link>
-                                                    <Link
-                                                        preserveScroll
-                                                        preserveState
-                                                        href={route(
-                                                            "user.show",
-                                                            {
-                                                                username:
-                                                                    user.username,
-                                                                page: "gifts",
-                                                            }
-                                                        )}
-                                                        className={`tab !uppercase !border-l-0 !text-xl font-bold !border-t-0 !border-e-0 capitalize !border-transparent ${
-                                                            page === "gifts"
-                                                                ? "text-pink border-b-2 !border-[#F94F97]"
-                                                                : "text-[#b5b5b5]"
-                                                        }`}
-                                                    >
-                                                        gifts
-                                                    </Link>
-                                                </Tabs> */}
 
-                                                    {IsloggedIn && <Toggle />}
-                                                </div>
+
+                                                {/* Instant Tab System with immediate feedback */}
+                                                <InstantTabSystem 
+                                                    Toggle={Toggle}
+                                                    activeTab={page || 'about'}
+                                                    user={user}
+                                                    username={user.username}
+                                                    IsloggedIn={IsloggedIn}
+                                                    onTabChange={(tabId) => {
+                                                        // Handle tab change if needed
+                                                    }}
+                                                />
+
+                                               
+
+
                                                 <div className="tabs-containers min-height" >
                                                     {page === "about" || page === false ?
                                                         <Suspense fallback={<LoadingScreen />} >
                                                             <div className="row about-sec align-self-start">
-                                                                <div className="col-md-6  h-auto">
+                                                                <div className="col-lg-6  h-auto">
                                                                     <div className="about-sticky" >
+
+                                                                        <DashboardStripeMigrationWarning migrationStatus={migration_status} />
+
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements.requirements.length > 0 && AuthUserStripeConnected ?
+                                                                            <ActionRequired requirements={stripe_requirements.requirements} />
+                                                                        : ''}
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
@@ -635,7 +583,7 @@ export default function Dashboard(props) {
                                                                             <UpgradeStripeAccount  />
                                                                         : ''}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !auth?.user?.monthly_charge_enabled  ?
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status == 0  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
                                                                         : ''}
                                                                         
@@ -643,75 +591,80 @@ export default function Dashboard(props) {
                                                                            <MyGoal IsloggedIn={IsloggedIn}  /> :
                                                                         ""}
 
+                                                                        
 
-                                                                        <div className="box p-3 p-md-4 shadow-voilet rounded-lg mb-4">
-                                                                            <p className="font-bold">About me</p>
-                                                                            <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
-                                                                                {(user &&user.bio) ||""}
-                                                                            </p>
+                                                                        <div className="pink-round mb-4">
+                                                                            <h2 className='text-large  font-GillSans text-uppercase pinkbg p-3 goaltitle text-white btn-shadow'>About Me</h2>
+                                                                            <div className="p-4">
+                                                                                <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
+                                                                                    {(user &&user.bio) ||"Hy, I am a creator on SpennyPiggy."}
+                                                                                </p>
 
-                                                                            {IsloggedIn && user?.edit_bio_reason  ?
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">Bio Edit Request</p>
-                                                                                    <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
-                                                                                </div>
-                                                                            : ''}
+                                                                                {IsloggedIn && user?.edit_bio_reason  ?
+                                                                                    <div className="mt-3">
+                                                                                        <p className="text-red-700">Bio Edit Request</p>
+                                                                                        <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
+                                                                                    </div>
+                                                                                : ''}
 
-                                                                            <SocialLinks links={sLinks} />
+                                                                                <SocialLinks links={sLinks} />
 
-                                                                            {IsloggedIn ? (
-                                                                                <div className="userProfileDate pt-0 pt-md-3">
+                                                                                {IsloggedIn ? (
+                                                                                    <div className="userProfileDate pt-0 pt-md-3">
 
 
-                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
-                                                                                        <PaymentDashboard classes="btn-pink lg w-100 mt-3 btn-shadow" text="Payment Dashboard" />
-                                                                                        ) :
-                                                                                        <>
-                                                                                        {auth?.user?.identity_status == 1 ? <div className="finish mt-4 d-block">
-                                                                                            <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
-                                                                                            </Link>
-                                                                                        </div> : ''}
-                                                                                        </>
-                                                                                    }
+                                                                                        {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1  ? (
+                                                                                            <PaymentDashboard classes="b w-full" text="Payment Dashboard" />
+                                                                                            ) :
+                                                                                            <>
+                                                                                            {/* {auth?.user?.identity_status == 1 ? 
+                                                                                            <div className="finish mt-4 d-block">
+                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                                </Link>
+                                                                                            </div> 
+                                                                                            : ''} */}
+                                                                                            </>
+                                                                                        }
 
-                                                                                {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
-                                                                                        <AddGoal
-                                                                                        stripe_enabled={auth.user && auth.user.stripe_details_submitted}
-                                                                                        fetch_goal={fetch_goal}
-                                                                                        activegoal={goal}
-                                                                                        />
-                                                                                    : ''} */}
-
-                                                                                <div className="addsocial flex">
-                                                                                    <ul>
-                                                                                        <li>
-                                                                                            <AddSocial
-                                                                                                sLinks={
-                                                                                                    sLinks
-                                                                                                }
+                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                                                                            <AddGoal
+                                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                                            fetch_goal={fetch_goal}
+                                                                                            activegoal={goal}
                                                                                             />
-                                                                                        </li>
-                                                                                        <li>
-                                                                                            <ShareProfile
-                                                                                                username={
-                                                                                                    user &&
-                                                                                                    user.name
-                                                                                                }
-                                                                                                classes={
-                                                                                                    "flex ms-auto"
-                                                                                                }
-                                                                                            >
-                                                                                                Share
-                                                                                                Profile
-                                                                                            </ShareProfile>
-                                                                                        </li>
-                                                                                    </ul>
+                                                                                        : ''} */}
+
+                                                                                    <div className="addsocial flex">
+                                                                                        <ul>
+                                                                                            <li>
+                                                                                                <AddSocial
+                                                                                                    sLinks={
+                                                                                                        sLinks
+                                                                                                    }
+                                                                                                />
+                                                                                            </li>
+                                                                                            <li>
+                                                                                                <ShareProfile
+                                                                                                    username={
+                                                                                                        user &&
+                                                                                                        user.name
+                                                                                                    }
+                                                                                                    classes={
+                                                                                                        "flex ms-auto"
+                                                                                                    }
+                                                                                                >
+                                                                                                    Share
+                                                                                                    Profile
+                                                                                                </ShareProfile>
+                                                                                            </li>
+                                                                                        </ul>
+                                                                                    </div>
                                                                                 </div>
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
                                                                             </div>
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
                                                                     </div>
                                                                     <AddIntro
                                                                         uuid={
@@ -724,9 +677,16 @@ export default function Dashboard(props) {
                                                                     />
                                                                 </div>
                                                             </div>
+                                                            <div className="ps-lg-4 col-lg-6">
+                                                                {IsloggedIn && auth?.user && auth?.user?.role == 1 && UserStripeConnected == 1 && (
+                                                                    <Suspense fallback={<div className="mb-4">Loading activity status...</div>}>
+                                                                        <CreatorActivityWidget 
+                                                                            activityStatus={activityStatus}
+                                                                            className="mb-4"
+                                                                        />
+                                                                    </Suspense>
+                                                                )}
 
-                                                            <div className="ps-md-4 col-md-6">
-                                                                
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected !==
                                                                     1 ? (
@@ -766,13 +726,15 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
                                                                 <FeedList
+                                                                    user={user}
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    initialFilter="all"
                                                                 />
                                                             </div>
-                                                        </div>
-                                                    </Suspense>
+                                                            </div>
+                                                        </Suspense>
                                                  :
                                                     ""
                                                 }
@@ -781,12 +743,13 @@ export default function Dashboard(props) {
                                                 UserStripeConnected == 1 ? (
                                                     <>
                                                         {page === "wishes" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <div className="wishes-items pb-6 ">
+                                                            <ErrorBoundary>
+                                                                <Suspense
+                                                                    fallback={
+                                                                        <LoadingScreen />
+                                                                    }
+                                                                >
+                                                                    <div className="wishes-items pb-6 ">
                                                                     {wish_categories &&
                                                                     wish_categories.length ? (
                                                                         <>
@@ -864,8 +827,9 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {wishitems &&
-                                                                    wishitems.length ? (
+                                                                    {loading || (isInitialLoad && (!wishitems || wishitems.length === 0)) ? (
+                                                                        <LoadingScreen />
+                                                                    ) : wishitems && wishitems.length > 0 ? (
                                                                         <>
                                                                             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                 <DndContext
@@ -887,62 +851,52 @@ export default function Dashboard(props) {
                                                                                             wishitems
                                                                                         }
                                                                                     >
-                                                                                        {!loading &&
-                                                                                            wishitems.map(
-                                                                                                (
-                                                                                                    c,
-                                                                                                    i
-                                                                                                ) => {
-                                                                                                    return (
-                                                                                                        <Wishlistbox
-                                                                                                            key={`wish-item-${i}`}
-                                                                                                            classes=" "
-                                                                                                            currency={
-                                                                                                                global_currency
-                                                                                                            }
-                                                                                                            IsloggedIn={
-                                                                                                                IsloggedIn
-                                                                                                            }
-                                                                                                            auth={
-                                                                                                                auth.user
-                                                                                                            }
-                                                                                                            itemid={
-                                                                                                                itemid
-                                                                                                            }
-                                                                                                            setuped={
-                                                                                                                AuthUserStripeConnected ==
-                                                                                                                1
-                                                                                                                    ? true
-                                                                                                                    : false
-                                                                                                            }
-                                                                                                            itm={
-                                                                                                                c
-                                                                                                            }
-                                                                                                        />
-                                                                                                    );
-                                                                                                }
-                                                                                            )}
+                                                                                        {wishitems.map(
+                                                                                            (
+                                                                                                c,
+                                                                                                i
+                                                                                            ) => {
+                                                                                                return (
+                                                                                                    <Wishlistbox
+                                                                                                        key={`wish-item-${c.id || c.uuid || i}`}
+                                                                                                        classes=" "
+                                                                                                        currency={
+                                                                                                            global_currency
+                                                                                                        }
+                                                                                                        IsloggedIn={
+                                                                                                            IsloggedIn
+                                                                                                        }
+                                                                                                        auth={
+                                                                                                            auth.user
+                                                                                                        }
+                                                                                                        itemid={
+                                                                                                            itemid
+                                                                                                        }
+                                                                                                        setuped={
+                                                                                                            AuthUserStripeConnected ==
+                                                                                                            1
+                                                                                                                ? true
+                                                                                                                : false
+                                                                                                        }
+                                                                                                        itm={
+                                                                                                            c
+                                                                                                        }
+                                                                                                    />
+                                                                                                );
+                                                                                            }
+                                                                                        )}
                                                                                     </SortableContext>
                                                                                 </DndContext>
                                                                             </div>
                                                                         </>
                                                                     ) : (
-                                                                        <>
-                                                                            {loading ? (
-                                                                                <LoadingScreen />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-                                                                            {(!loading && (
-                                                                                <div className="col-md-12">
-                                                                                    <Nocontent text="Nothing to see." />
-                                                                                </div>
-                                                                            )) ||
-                                                                                ""}
-                                                                        </>
+                                                                        <div className="col-md-12">
+                                                                            <Nocontent text="Nothing to see." />
+                                                                        </div>
                                                                     )}
-                                                                </div>
-                                                            </Suspense>
+                                                                    </div>
+                                                                </Suspense>
+                                                            </ErrorBoundary>
                                                         ) : (
                                                             ""
                                                         )}
@@ -958,6 +912,7 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    initialFilter="all"
                                                                 />
                                                             </Suspense>
                                                         ) : (

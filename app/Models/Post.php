@@ -21,11 +21,21 @@ class Post extends Model
         'content',
         'image',
         'ai_generated',
+        'status',
+        'approved',
+        'approved_at',
+        'can_delete_until',
     ];
 
     protected $hidden = [
         'id',
         'user_id',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
+        'can_delete_until' => 'datetime',
+        'ai_generated' => 'boolean',
     ];
 
     protected $appends = [
@@ -50,8 +60,16 @@ class Post extends Model
     {
         $url = false;
         if (!empty($this->image)) {
-            // Use only format transformation, quality seems to cause 400 errors
-            $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+            // Check if this is a thank you image with existing transformations (contains /-/text/ or /-/font/)
+            if (str_contains($this->image, '/-/text/') || str_contains($this->image, '/-/font/')) {
+                // This is a dynamic thank you image - use as-is with domain
+                $url = "https://ucarecdn.com/" . $this->image  . '/-/preview/';
+                // replace + with %20 for spaces
+                $url = str_replace('+', '%20', $url);
+            } else {
+                // Regular image - add format transformation
+                $url = "https://ucarecdn.com/" . $this->image . '/-/format/jpeg/';
+            }
         }
         return $url;
     }
@@ -161,5 +179,27 @@ class Post extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Scope to filter posts by module type
+     */
+    public function scopeForModule($query, $module)
+    {
+        if ($module === 'all') {
+            return $query;
+        }
+        
+        // Map filter names to for_module values
+        $moduleMap = [
+            'supporters' => 'support',
+            'members' => 'membership',
+            'subscribers' => 'subscription',
+            'shoutouts' => 'public',
+        ];
+        
+        $moduleValue = $moduleMap[$module] ?? $module;
+        
+        return $query->where('for_module', $moduleValue);
     }
 }

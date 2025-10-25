@@ -147,11 +147,11 @@ select#country{text-transform:capitalize;border-radius:10px;border:1px solid var
 .wishlistdetial{min-height:140px;padding:20px;}
 .wishlistdetial h3{color:var(--gray2);}
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
-.sharelinks a,.userprofilesec h2{font-style:normal;text-transform:uppercase;text-align:center;}
+.sharelinks a,.userprofilesec h2,.userprofilesec h1{font-style:normal;text-transform:uppercase;text-align:center;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0 var(--black);line-height:19px;}
 .userphoto img{border:4px solid #000;}
 .accountphotosm,.wishlistModal .accordion-button::after{display:none;}
-.userprofilesec h2{color:var(--white);font-size:24px;font-weight:400;line-height:normal;}
+.userprofilesec h2, .userprofilesec h1{color:var(--white);font-size:24px;font-weight:400;line-height:normal;}
 .userphotobox{height:180px;margin-bottom:110px;border:2px solid var(--voilet);border-top:none;border-radius:22px 22px 30px 30px;}
 .addsocial ul li a,.addsocial ul li button,.userId,button.editProfile{color:var(--voilet);font-size:22px;font-style:normal;font-weight:400;line-height:120%;}
 .userId{letter-spacing:-0.77px;text-align:center;margin-bottom:15px;}
@@ -246,7 +246,6 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .qutynum{font-size:16px;width:34px;text-align:center;border-left:1px solid var(--gray);border-right:1px solid var(--gray);display:inline-flex;line-height:23px;}
 .quty button{width:33px;font-size:18px !important;display:flex;}
 .cartlist.shadow-purple{box-shadow:5px 8px 0 0 var(--purple);}
-.shadow-pink{box-shadow:5px 8px 0 0 var(--pink);}
 .stripbox{max-width:741px;width:90%;}
 .stripbox .loginheadbox{border-radius:30px 30px 0 0;}
 .termselect label{color:#676767;font-size:17px;font-style:normal;letter-spacing:-0.28px;line-height:24px;}
@@ -272,7 +271,7 @@ button.editbtn{position:absolute;left:0;right:0;margin:auto;width:50px;height:50
 .creatorslider .swiper-pagination-bullet{width:16px;height:16px;background:var(--voilet);}
 .howWorkTab .nav-tabs li{margin:0 10px;display:inline-block;}
 .howWorkTab .nav-tabs{margin-bottom:40px !important;justify-content:center;border:0;}
-.howWorkTab .nav-tabs button{padding:11px 26px;border-radius:15px;border:1px solid var(--black) !important;background:#7c7885;box-shadow:5px 5px 0 0 var(--black);color:#e6e6e6;font-family:var(--heading-font);font-size:20px;font-style:normal;font-weight:300;letter-spacing:1px;line-height:normal;text-transform:uppercase;}
+.howWorkTab .nav-tabs button{padding:11px 26px;border-radius:15px;border:1px solid var(--black) !important;background:#7c7885;box-shadow:5px 5px 0 0 var(--black);color:#ffffff;font-family:var(--heading-font);font-size:20px;font-style:normal;font-weight:300;letter-spacing:1px;line-height:normal;text-transform:uppercase;}
 .howWorkTab .nav-tabs button.active,.howWorkTab .nav-tabs button:focus,.howWorkTab .nav-tabs button:hover{background:#8c52ff;color:var(--white) !important;}
 .socialmedia li:last-child{margin-right:0;}
 .noresultimg{max-width:110px;margin-bottom:10px !important;}
@@ -537,7 +536,6 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .percent-eight{position:absolute;top:50%;left:50%;opacity:0.7;transform:translate(-50%,-50%);}
 .percent-eight-text{position:relative;z-index:1;}
 .goaltitle{border-top-left-radius:18px;border-top-right-radius:18px;}
-.mygoal{border:2px solid var(--voilet) !important;}
 .approvalmessge{background:#fff1d2;color:#f7ab00;border:1px solid #ffdd90;}
 .approvalmessge.membership{position:absolute;left:0;font-size:13px;top:0;z-index:1;text-align:center;}
 .creator-tags input:checked +label{background:var(--voilet);color:#fff;}
@@ -604,7 +602,7 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .menuImg img{max-width:149px;}
 .wishbanner img{height:280px;}
 .userphotobox{border-radius:20px;margin-bottom:50px;}
-.userprofilesec h2{font-size:19px;}
+.userprofilesec h2,.userprofilesec h1{font-size:19px;}
 .userId{font-size:18px;}
 button.editProfile,select#country{padding:10px;font-size:18px;}
 .addsocial ul li a{display:flex;align-items:center;align-content:center;font-size:15px;line-height:15px;}
@@ -875,18 +873,24 @@ select#country{width:100%;}
 .menutoggle .menu{left:-100%;transition:0.4s;}
 .menutoggle.shows .menu{transition:0.4s;left:0%;}
 .otp-input{line-height:32px;font-family:sans-serif;}
-.dark1{background:#1a1a1a !important;/* Very dark gray,almost black */
+.dark1{background:#1a1a1a !important; 
 }
-.dark2{background:#262626 !important;/* Dark charcoal */
+.dark2{background:#262626 !important; 
 }
-.dark3{background:#333333 !important;/* Charcoal gray */
+.dark3{background:#333333 !important; 
 }
-.dark4{background:#404040 !important;/* Medium-dark gray */
+.dark4{background:#404040 !important; 
 }
-.dark5{background:#4d4d4d !important;/* Slate gray */
+.dark5{background:#4d4d4d !important; 
 }
-.dark6{background:#595959 !important;/* Soft dark gray */
+.dark6{background:#595959 !important; 
 }
 .dark7{background:#666666 !important;}
 .font-fre{font-family:var(--body-font) !important;}
 .image-name{letter-spacing:1px;}
+.new-wish-cats::-webkit-scrollbar{width:0px;}
+
+.sliderOption::-webkit-scrollbar{width:5px;height:5px;}
+.sliderOption::-webkit-scrollbar-thumb{background-color:rgba(82, 82, 82, 0.5);border-radius:4px;}
+.sliderOption::-webkit-scrollbar-track{background-color:rgba(65, 65, 65, 0.5);border-radius:4px;}
+.sliderOption::-webkit-scrollbar-thumb:hover{background-color:rgba(0,0,0,0.7);}

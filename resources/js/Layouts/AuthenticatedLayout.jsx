@@ -1,36 +1,15 @@
 import { lazy } from "react";
-import { useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
 import { Toaster } from 'react-hot-toast';
-import { useAlerts } from '@/Components/Alerts';
 import BottomBar from './BottomBar';
+import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
+import PullToRefresh from '@/Components/PullToRefresh';
+import FlashMessenger from '@/Components/FlashMessenger';
 const Footer = lazy(() => import('@/includes/Footer'));
 const Header = lazy(() => import('@/includes/Header'));
 
 export default function Authenticated(props){ 
 
     const { auth, user, children, cart_count } = props;
-    const { successAlert, errorAlert, warningAlert } = useAlerts();
-    const { flash, errors } = usePage().props;
-    useEffect(() => {
-        if(errors){
-            Object.entries(errors).forEach(([key, value]) => {
-                errorAlert(value);
-            });
-        }
-        if (flash?.error) {
-            errorAlert(flash.error);
-        }
-        if (flash?.success) {
-            successAlert(flash.success);
-        }
-        if (flash?.warning) {
-            warningAlert(flash.warning);
-        }
-        if (flash?.info) {
-            successAlert(flash.info);
-        }
-    },[]);
 
     return <>
         <Header auth={auth} user={user}  />
@@ -58,6 +37,9 @@ export default function Authenticated(props){
         </main>
         <Footer auth={auth} />
         <BottomBar />
+        <PwaInstallPrompt />
+        <PullToRefresh />
+        <FlashMessenger />
     
     </>
 }

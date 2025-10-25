@@ -60,14 +60,14 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   const {auth} = usePage().props;
   const { formatMultiPrice } = PriceFormat();
 
-  const [rewards ,setrewards ] = useState(JSON.parse(item && item?.rewards));
+  const [rewards ,setrewards ] = useState(item?.rewards ? JSON.parse(item.rewards) : []);
   const getRewardTitle = (e) => {
     const item = rewards_lists.filter((item)=> item?.value == e);
     return item && item[0] && item[0].title;
   }
 
   useEffect(()=>{
-    setrewards(JSON.parse(item && item?.rewards));
+    setrewards(item?.rewards ? JSON.parse(item.rewards) : []);
   },[item]);
 
 
@@ -95,7 +95,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                 <h2 className="text-xl text-black font-bold uppercase mt-2">{item && item?.level}</h2>
                 <p className="text-2xl font-extrabold mb-6">{formatMultiPrice(item && item?.price, item && item?.currency)}  <span className="text-sm">Monthly</span></p>
                 <ul className="space-y-1 mb-6">
-                    <li key="reward-default" className='flex items-center' >
+                    <li key={`reward-`} className='flex items-center' >
                         ✅ <span className="ml-2 text-sm">Access to Member only posts</span>
                     </li>
                     {rewards && rewards.map((r, i)=>{

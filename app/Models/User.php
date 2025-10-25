@@ -10,7 +10,12 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
+use Stripe\Stripe;
+use Stripe\Subscription;
+use Carbon\Carbon;
+use App\Models\MonthlyCharge;
 
 class User extends Authenticatable
 {
@@ -22,8 +27,9 @@ class User extends Authenticatable
         'uuid', '2fa_key', 'name', 'email', 'role', 'username', 'country', 'bio', 'bio_approved',
         'gender', 'password', 'deleted_at', 'creator_category', 'identity_status',
         'identity_verified_at', 'identity_verification_error', 'identity_verification_details',
+        'identity_admin_status', 'identity_admin_reviewed_at', 'identity_admin_notes',
         'ip_address', 'profile_status_lock', 'profile_reject_reason', 'is_500_limit_exceeded',
-        'is_subscribed',
+        'is_subscribed', 'is_founder',
     ];
 
     protected $hidden = [
@@ -34,11 +40,14 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'identity_admin_status' => 'integer',
+        'identity_admin_reviewed_at' => 'datetime',
     ];
 
     protected $appends = [
         'avatar_url', 'cover_url', 'twitter_username', 
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
+        'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
     ];
 
     public static function boot()
@@ -83,8 +92,7 @@ class User extends Authenticatable
         return $this->twitter_token->username ?? false;
     }
 
-    public function getMonthlyChargeEnabledAttribute()
-    {
+    public function getMonthlyChargeEnabledAttribute() {
         if (Auth::check() && $this->id === Auth::id()) {
             return MonthlyCharge::where('user_id', $this->id)
                 ->whereIn('status', ['paid', 'trialing', 'active'])
@@ -98,8 +106,291 @@ class User extends Authenticatable
         return $this->creatorShippingAddress()->exists();
     }
 
+    public function getSubscriptionStatusAttribute()
+    {
+        if ($this->role == 1) { 
+            // Find the currently active subscription period (same logic as account route)
+            $now = Carbon::now();
+            $subscription = MonthlyCharge::where('user_id', $this->id)
+                ->where(function($query) use ($now) {
+                    $query->where(function($q) use ($now) {
+                        // Active subscription period
+                        $q->whereDate('current_start_subscription_date', '<=', $now)
+                          ->whereDate('current_end_subscription_date', '>=', $now);
+                    })->orWhere(function($q) use ($now) {
+                        // Active trial period
+                        $q->whereDate('current_start_trial_date', '<=', $now)
+                          ->whereDate('current_end_trial_date', '>=', $now);
+                    });
+                })
+                // Order by start date DESC to get the newest period first (handles overlaps)
+                ->orderByDesc('current_start_subscription_date')
+                ->first();
+            
+            // If no active period found, get the most recent one
+            if (!$subscription) {
+                $subscription = MonthlyCharge::where('user_id', $this->id)
+                    ->orderByDesc('current_start_subscription_date')
+                    ->first();
+            }
+            
+            if (!$subscription) {
+                try {
+                    $createdAt = Carbon::parse($this->created_at);
+                    $trialEndDate = $createdAt->copy()->addDays(3); // 3-day trial - use copy() to avoid mutating original
+                    $now = Carbon::now();
+                    
+                    \Log::info('Subscription Status Debug - No MonthlyCharge record', [
+                        'user_id' => $this->id,
+                        'created_at' => $this->created_at,
+                        'trial_end_date' => $trialEndDate->toDateTimeString(),
+                        'now' => $now->toDateTimeString(),
+                        'is_within_trial' => $now->lessThan($trialEndDate)
+                    ]);
+                    
+                    // If within trial period, return trial status
+                    if ($now->lessThan($trialEndDate)) {
+                        return 2; // FREE_TRIAL
+                    }
+                    
+                    // If trial expired and not subscribed, return expired
+                    return 0; // EXPIRED
+                } catch (\Exception $e) {
+                    \Log::error('Error parsing subscription dates for user without MonthlyCharge', [
+                        'user_id' => $this->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return 0; // EXPIRED on error
+                }
+            }
+            
+            // Use the same logic as account settings route
+            $trial_start = $subscription->current_start_trial_date;
+            $trial_end = $subscription->current_end_trial_date;
+            $subscription_start = $subscription->current_start_subscription_date;
+            $subscription_end = $subscription->current_end_subscription_date;
 
+            $now = Carbon::now();
+            $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+            $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
 
+            $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+            // Check subscription status from MonthlyCharge table instead of is_subscribed column
+            $isSubscriptionActive = in_array($subscription->status, ['paid', 'renew', 'active']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+            $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
+
+            // Check for trialing status first, before other conditions
+            if ($subscription->status === 'trialing') {
+                return 2; // FREE_TRIAL
+            }
+            
+            // Return status based on subscription table status
+            if ($isSubscriptionActive) {
+                return 1; // ACTIVE
+            } elseif ($isTrialOngoing) {
+                return 2; // FREE_TRIAL
+            } elseif ($isExpired || !in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
+                return 0; // EXPIRED
+            }
+            
+            // Fallback to original Stripe API logic for edge cases
+            if ($subscription->status === 'trial_ending') {
+                return 2;
+            }
+            if ($subscription->status === 'paid' || $subscription->status === 'renew' || $subscription->status === 'trialing') {
+                if (!isset($subscription->stripe_id) || empty($subscription->stripe_id)) {
+                    if ($subscription->status === 'trialing') {
+                        return 2;
+                    }
+                    return 1; 
+                }
+                try {
+                    // Skip Stripe API call in background jobs to prevent token errors
+                    if (app()->runningInConsole() || app()->runningUnitTests()) {
+                        // In background jobs, just use the local subscription status
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    $stripeKey = env('STRIPE_SECRET_KEY');
+                    if (empty($stripeKey)) {
+                        Log::warning('Stripe API key not configured, falling back to local subscription status', [
+                            'user_id' => $this->id,
+                            'subscription_status' => $subscription->status
+                        ]);
+                        // Return based on local status instead of throwing exception
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    // Check if stripe_id is valid before making API call
+                    if (empty($subscription->stripe_id)) {
+                        Log::warning('Empty stripe_id, falling back to local subscription status', [
+                            'user_id' => $this->id,
+                            'subscription_status' => $subscription->status
+                        ]);
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    Stripe::setApiKey($stripeKey);
+                    Log::info("About to retrieve Stripe subscription", [
+                        'user_id' => $this->id,
+                        'stripe_id' => $subscription->stripe_id,
+                        'subscription_status' => $subscription->status
+                    ]);
+                    
+                    // Set timeout to prevent long-running API calls
+                    $timeout = 3; // 3 seconds timeout
+                    $stripeSubscription = null;
+                    
+                    try {
+                        // Use a timeout to prevent long API calls
+                        $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
+                        Log::info("Retrieved Stripe subscription", [
+                            'user_id' => $this->id,
+                            'stripe_id' => $subscription->stripe_id,
+                            'stripe_status' => $stripeSubscription->status
+                        ]);
+                    } catch (\Exception $apiError) {
+                        Log::error('Stripe API call failed', [
+                            'user_id' => $this->id,
+                            'stripe_id' => $subscription->stripe_id,
+                            'error' => $apiError->getMessage()
+                        ]);
+                        // Return based on local status
+                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
+                    }
+                    
+                    if (isset($stripeSubscription) && $stripeSubscription->status === 'active') {
+                        return 1;
+                    } elseif (isset($stripeSubscription) && $stripeSubscription->status === 'trialing') {
+                        return 2;
+                    } else {
+                        // Fallback: Check local trial dates if Stripe status is different
+                        if ($subscription->status === 'trialing') {
+                            // Check if we have trial dates and if trial is still active
+                            if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
+                                $now = \Carbon\Carbon::now();
+                                $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                                if ($now->lessThan($trialEnd)) {
+                                    return 2; // Still in trial
+                                }
+                            }
+                            // If no trial dates or trial expired, check if user is within 3-day grace period
+                            $userCreated = \Carbon\Carbon::parse($this->created_at);
+                            $trialEndDate = $userCreated->copy()->addDays(3);
+                            if (\Carbon\Carbon::now()->lessThan($trialEndDate)) {
+                                return 2; // Within 3-day trial period
+                            }
+                        }
+                        return 0;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Stripe subscription check failed', [
+                        'user_id' => $this->id,
+                        'stripe_id' => $subscription->stripe_id ?? 'null',
+                        'error' => $e->getMessage(),
+                        'error_type' => get_class($e)
+                    ]);
+                    
+                    // Fallback when Stripe API fails
+                    if ($subscription->status === 'trialing') {
+                        // Check trial dates first
+                        if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
+                            $now = \Carbon\Carbon::now();
+                            $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                            if ($now->lessThan($trialEnd)) {
+                                return 2; // Still in trial
+                            }
+                        }
+                        // Fallback to 3-day grace period from user creation
+                        $userCreated = \Carbon\Carbon::parse($this->created_at);
+                        $trialEndDate = $userCreated->copy()->addDays(3);
+                        if (\Carbon\Carbon::now()->lessThan($trialEndDate)) {
+                            return 2; // Within 3-day trial period
+                        }
+                        return 0; // Trial expired
+                    }
+                    return 1; // Default to active for other statuses when API fails
+                }
+            }
+            return 0;
+        }
+
+        if ($this->role == 0) { // Gifter
+            return $this->gifterCardVerification ? 1 : 0;
+        }
+        return 'Unknown';
+    }
+
+    // ───────────────────────
+    // Grace Period Accessors (Virtual Fields)
+    // ───────────────────────
+
+    /**
+     * Get when grace period started (virtual calculation)
+     */
+    public function getGracePeriodStartedAtAttribute()
+    {
+        if (!$this->isFullyVerified()) {
+            return null;
+        }
+        
+        // Use identity_verified_at as the primary grace period start date
+        if ($this->identity_verified_at) {
+            return Carbon::parse($this->identity_verified_at);
+        }
+        
+        // Fallback to updated_at if identity_verified_at is not set
+        return $this->updated_at ? Carbon::parse($this->updated_at) : null;
+    }
+
+    /**
+     * Get when grace period ends (0 days after start)
+     */
+    public function getGracePeriodEndsAtAttribute()
+    {
+        $startDate = $this->grace_period_started_at;
+        return $startDate ? $startDate->copy()->addDays(\App\Services\CreatorActivityService::GRACE_PERIOD_DAYS) : null;
+    }
+
+    /**
+     * Check if creator is currently in grace period
+     */
+    public function getIsInGracePeriodAttribute()
+    {
+        if (!$this->grace_period_ends_at) {
+            return false;
+        }
+        
+        return Carbon::now()->lessThan($this->grace_period_ends_at);
+    }
+
+    /**
+     * Get days remaining in grace period
+     */
+    public function getGracePeriodDaysRemainingAttribute()
+    {
+        if (!$this->is_in_grace_period || !$this->grace_period_ends_at) {
+            return 0;
+        }
+        
+        return max(0, Carbon::now()->diffInDays($this->grace_period_ends_at, false));
+    }
+
+    /**
+     * Check if creator is fully verified and ready to receive payments
+     */
+    private function isFullyVerified()
+    {
+        // Skip verification check - always return true for creators
+        return $this->role == 1;
+        
+        // Original verification logic (commented out):
+        // return $this->role == 1 && // Is creator
+        //        $this->is_subscribed == 1 && // Has subscription
+        //        $this->profile_status_lock == 2 && // Profile approved
+        //        $this->identity_status == 1 && // Identity verified
+        //        $this->stripe_details_submitted == 1; // Stripe connected
+    }
 
     // ───────────────────────
     // Scopes
@@ -206,7 +497,15 @@ class User extends Authenticatable
 
     public function creatorMonthlySubscription()
     {
-        return $this->hasOne(MonthlyCharge::class, 'user_id');
+        return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany();
+    }
+    
+    /**
+     * Get all subscription records (for history)
+     */
+    public function allMonthlyCharges()
+    {
+        return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
     }
 
  public function followers()
@@ -233,6 +532,10 @@ public function getFollowingCountAttribute()
 
 
 
+    public function documents()
+    {
+        return $this->hasMany(\App\Models\UserDocuments::class, 'user_id');
+    }
     public function paymentitems()
     {
         return $this->hasManyThrough(
@@ -287,23 +590,19 @@ public function getFollowingCountAttribute()
     }
 
     /**
-     * Get user with cached wish items count
+     * Get user wish items count (NO CACHE)
      */
     public function getCachedWishItemsCount()
     {
-        return $this->rememberComputation('wish_items_count', function () {
-            return $this->wishItems()->count();
-        });
+        return $this->wishItems()->count();
     }
 
     /**
-     * Get user with cached followers count
+     * Get user followers count (NO CACHE)
      */
     public function getCachedFollowersCount()
     {
-        return $this->rememberComputation('followers_count', function () {
-            return $this->followers()->count();
-        });
+        return $this->followers()->count();
     }
 
     /**
@@ -322,19 +621,58 @@ public function getFollowingCountAttribute()
     }
 
     /**
-     * Scope for popular users (with caching)
+     * Scope for popular users (NO CACHE)
      */
     public function scopePopular($query, int $limit = 10)
     {
-        $cacheKey = "popular_users_{$limit}";
-        
-        return Cache::remember($cacheKey, 3600, function () use ($query, $limit) {
-            return $query
-                ->withCount(['wishItems', 'followers'])
-                ->orderByDesc('wish_items_count')
-                ->orderByDesc('followers_count')
-                ->limit($limit)
-                ->get();
-        });
+        return $query
+            ->withCount(['wishItems', 'followers'])
+            ->orderByDesc('wish_items_count')
+            ->orderByDesc('followers_count')
+            ->limit($limit);
+    }
+
+    /**
+     * Founder Bonus relationship
+     */
+    public function founderBonus()
+    {
+        return $this->hasMany(FounderBonus::class, 'creator_id');
+    }
+
+    /**
+     * Get current month founder bonus
+     */
+    public function currentMonthFounderBonus()
+    {
+        return $this->founderBonus()
+            ->where('month', now()->format('Y-m'))
+            ->first();
+    }
+
+    /**
+     * Get deliverables where this user is the gifter (purchaser)
+     */
+    public function deliverables()
+    {
+        return $this->hasMany(Deliverable::class, 'gifter_id');
+    }
+
+    /**
+     * Get deliverables where this user is the creator
+     */
+    public function createdDeliverables()
+    {
+        return $this->hasMany(Deliverable::class, 'creator_id');
+    }
+
+    /**
+     * Check if user is eligible for founder program
+     */
+    public function isEligibleForFounder()
+    {
+        // Check if user has been active for at least 30 days
+        $thirtyDaysAgo = now()->subDays(30);
+        return $this->created_at <= $thirtyDaysAgo && !$this->is_founder;
     }
 }

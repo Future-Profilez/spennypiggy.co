@@ -8,7 +8,7 @@ export default function CategoryLeaders() {
     const { formatMultiPrice } = PriceFormat();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('wishes');
+    const [activeTab, setActiveTab] = useState('tips');
     const [data, setData] = useState({
         wishes: [],
         subscriptions: [],
@@ -39,19 +39,19 @@ export default function CategoryLeaders() {
     }, []);
 
     const categories = [
+        { key: 'tips', label: 'Supports', icon: RiStarLine, color: 'text-yellow-600' },
         { key: 'wishes', label: 'Wishes', icon: RiHeartLine, color: 'text-pink-600' },
-        { key: 'subscriptions', label: 'Subscriptions', icon: RiGroupLine, color: 'text-purple-600' },
-        { key: 'tips', label: 'Piggy Bank', icon: RiStarLine, color: 'text-yellow-600' },
+        // { key: 'subscriptions', label: 'Subscriptions', icon: RiGroupLine, color: 'text-purple-600' },
         { key: 'memberships', label: 'Memberships', icon: RiBankCardLine, color: 'text-blue-600' },
         { key: 'bills', label: 'Bills', icon: RiBankCardLine, color: 'text-green-600' },
         { key: 'shop', label: 'Shop', icon: RiShoppingBagLine, color: 'text-orange-600' }
     ];
 
     const CategoryItem = ({ creator, rank }) => (
-        <div className="category-item relative bg-white rounded-xl p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="category-item relative bg-white rounded-xl p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <div className="flex items-center ">
-                    <div className="absolute top-4 left-4 z-1 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                    <div className="absolute top-2 left-2 z-1 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
                         {rank}
                     </div>
                     <Avatar
@@ -78,7 +78,7 @@ export default function CategoryLeaders() {
                     ) : (
                         <>
                             <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'USD')}</p>
-                            <p className="text-sm text-gray-600">This month</p>
+                            <p className="text-sm text-gray-600">Last 3 months</p>
                             <p className="text-xs text-gray-500">{creator.total_count || creator.supporters_count || 0} {creator.supporters_count ? 'supporters' : 'transactions'}</p>
                         </>
                     )}
@@ -158,12 +158,14 @@ export default function CategoryLeaders() {
             <div className="category-content">
                 {currentData.length > 0 ? (
                     <>
-                        <div className="flex items-center mb-4">
-                            <currentCategory.icon size={24} className={currentCategory.color} />
-                            <h3 className="text-lg font-semibold ml-2">
-                                Top {currentCategory.label} Creators
-                            </h3>
-                        </div>
+                        {currentCategory && (
+                            <div className="flex items-center mb-4">
+                                <currentCategory.icon size={24} className={currentCategory.color} />
+                                <h3 className="text-lg font-semibold ml-2">
+                                    Top {currentCategory.label} Creators
+                                </h3>
+                            </div>
+                        )}
                         {currentData.map((creator, index) => (
                             <CategoryItem 
                                 key={creator.id} 
@@ -173,7 +175,7 @@ export default function CategoryLeaders() {
                         ))}
                     </>
                 ) : (
-                    <EmptyState category={currentCategory.label} />
+                    <EmptyState category={currentCategory?.label || 'Category'} />
                 )}
             </div>
 

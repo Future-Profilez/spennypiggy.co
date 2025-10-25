@@ -1,5 +1,7 @@
 /* app.css */
 @import "react-lazy-load-image-component/src/effects/blur.css";
+@import "./retro-bottombar.css";
+@import "./retro-enhancements.css";
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .font-poppins{font-family:'Poppins',sans-serif}
 .font-anton{font-family:'Anton',sans-serif}
@@ -68,7 +70,6 @@ body{position:relative;font-family:var(--para-font)}
 .shadow-black{box-shadow:7px 7px 0 0 rgba(0,0,0,1)}
 .shadow-voilet{box-shadow:7px 7px 0 0 var(--voilet)}
 .shadow-mint{box-shadow:7px 7px 0 0 var(--mint)}
-.shadow-pink{box-shadow:7px 7px 0 0 var(--pink)}
 .shadow-purple{box-shadow:7px 7px 0 0 var(--purple)}
 .modal-content{max-width:calc(100% - 30px);margin:auto}
 .trackbar > div:not(.tip){display:block !important}
@@ -81,7 +82,7 @@ body{position:relative;font-family:var(--para-font)}
 .toppercentage.income{color:green;font-size:16px;background:#05efb83b;padding:5px 15px;border-radius:10px}
 .postions{display:flex;align-items:flex-end}
 .postions .position{margin:0 5px;width:100%}
-.profile-image{padding:5px;background:linear-gradient( 2.92deg,var(--mint) -4.71%,var(--voilet) 28.23%,var(--yellow) 56%,var(--pink) 83.76% );width:130px;height:130px;margin:auto;display:table;margin-top:-80px;border-radius:50%;overflow:hidden}
+.profile-image{padding:5px;background:linear-gradient( 2.92deg,var(--mint) -4.71%,var(--voilet) 28.23%,var(--yellow) 56%,var(--pink) 83.76% );width:130px;height:130px; max-height:130px;margin:auto; margin-top:-80px;border-radius:50%;overflow:hidden}
 .profile-image img{max-height:100%;max-width:100%;width:100%;height:100%;object-fit:cover;border-radius:50%}
 .rank-position h2{text-shadow:2px 2px 1px #e6ea82;-webkit-text-stroke:1px #e6ea82;color:var(--pink);font-size:25px}
 .changePeriod{display:flex;justify-content:center}
@@ -141,9 +142,12 @@ body{position:relative;font-family:var(--para-font)}
 .likebtn svg{fill:#fff;width:27px !important;height:27px !important}
 .liked svg{fill:var(--pink);transition:all 0.5s}
 .likebtn.liked svg path{stroke:var(--pink)}
-@keyframes like{0%{transform:scale(1)}
-90%{transform:scale(1.4)}
+
+@keyframes like{
+    0%{ transform:scale(1) }
+    90%{ transform:scale(1.4) }
 }
+
 .likebtn{transition:all 0.5s}
 .likebtn.liked{animation:like 0.5s 1}
 .customScrollbar::-webkit-scrollbar{width:5px;border-radius:10px}
@@ -152,6 +156,11 @@ body{position:relative;font-family:var(--para-font)}
 .overflow-y-auto::-webkit-scrollbar{width:5px;border-radius:10px}
 .overflow-y-auto::-webkit-scrollbar-track{border-radius:10px;background:#d7d7d7}
 .overflow-y-auto::-webkit-scrollbar-thumb{background:#5f5f5f;border-radius:10px}
+
+.hideScroll::-webkit-scrollbar{width:0px; height: 0px; border-radius:10px}
+.hideScroll::-webkit-scrollbar-track{border-radius:10px;background:#d7d7d7}
+.hideScroll::-webkit-scrollbar-thumb{background:#5f5f5f;border-radius:10px}
+
 /* Magic bell css */
 a.css-1j56y57{background:#f94f96;width:40px !important;height:40px !important;padding:4px;display:flex;align-items:center !important;justify-content:center;border-radius:50%}
 a.css-1j56y57 svg{width:21px !important;height:21px !important}

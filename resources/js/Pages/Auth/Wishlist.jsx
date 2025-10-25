@@ -16,6 +16,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart } from "react-icons/fa";
+import ContentFilePreview from "@/Components/ContentFilePreview";
 const imageLinks = [
     "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
     "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
@@ -48,7 +49,7 @@ export default function Wishlist(props) {
     const [close, setClose] = useState();
     const { formatMultiPrice } = PriceFormat();
     const [repeat, setRepeat] = useState(true);
-    const [thumbnail, setThumbnail] = useState("");
+    const [thumbnail, setThumbnail] = useState(item?.thumbnail || "");
     const [adding, setAdding] = useState(false);
     const [rewardImage, setRewardImage] = useState("");
     const [isAiImage, setIsAiImage] = useState();
@@ -65,6 +66,9 @@ export default function Wishlist(props) {
         }
         if (uploaderRef1.current) {
             uploaderRef1.current.reset();
+        }
+        if (contentUploaderRef.current) {
+            contentUploaderRef.current.reset();
         }
     };
 
@@ -109,9 +113,13 @@ export default function Wishlist(props) {
         wishname: item && item.wishname ? item.wishname : "",
         price: item && item.price ? item.price : "",
         item_url: item && item.item_url ? item.item_url : "",
-        thumbnail: item && item.thumbnail ? item.thumbnail : imageLinks[0],
+        thumbnail: item && item.thumbnail ? item.thumbnail : (editpop ? "" : imageLinks[0]),
         reward_file: item && item.reward_file ? item.reward_file : "",
-        subscription: item && item.subscription ? item.subscription : "",
+        content_file: item?.content_file || "",
+        content_file_name: item?.content_file_name || "",
+        content_file_type: item?.content_file_type || "",
+        content_file_size: item?.content_file_size || 0,
+        subscription: item && item.subscription ? item.subscription : 0,
         subscription_period:
             item && item.subscription_period ? item.subscription_period : "",
         repeat_purchase:
@@ -147,18 +155,62 @@ export default function Wishlist(props) {
         }
     };
 
-    const [isEditable, setIsEditable] = useState(false);
-    const getFileUID = async (data) => {
-        let ss = data?.uuid;
-        setThumbnail(ss);
-        setIsEditable(true);
+    const [contentFile, setContentFile] = useState(item?.content_file || "");
+    const [contentFileMetadata, setContentFileMetadata] = useState({
+        name: item?.content_file_name || '',
+        type: item?.content_file_type || '',
+        size: item?.content_file_size || 0
+    });
+    const contentUploaderRef = useRef();
+
+    const getContentFileUID = async (uploadData) => {
+        let uuid = uploadData?.uuid;
+        setContentFile(uuid);
+        
+        // Store complete file metadata
+        const metadata = {
+            name: uploadData?.name || 'Content file',
+            type: uploadData?.mimeType ? `${uploadData.mimeType}/${uploadData.mimeSubtype}` : 'file',
+            size: uploadData?.size || 0,
+            isImage: uploadData?.isImage || false,
+            isVideo: uploadData?.isVideo || false,
+            isAudio: uploadData?.isAudio || false
+        };
+        setContentFileMetadata(metadata);
+        
+        // Update only the content file fields, preserving existing form data
+        setData(prevData => ({
+            ...prevData,
+            content_file: uuid,
+            content_file_name: metadata.name,
+            content_file_type: metadata.type,
+            content_file_size: metadata.size
+        }));
+        
+        console.log("Content file uploaded:", uuid, metadata);
+        console.log("Current thumbnail state:", thumbnail);
     };
 
-    const wishImageEdited = async (d, uuid) => {
-        const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
-        setThumbnail(url);
-        setIsEditable(false);
+    // Content file updates are handled in getContentFileUID function
+
+
+    const [isEditable, setIsEditable] = useState(false);
+    const getFileUID = async (data) => {
+        // Only handle thumbnail uploads - ensure this is specifically for thumbnail
+        if (data?.uuid) {
+            let thumbnailUuid = data.uuid;
+            setThumbnail(thumbnailUuid);
+            console.log("Thumbnail uploaded:", thumbnailUuid);
+            // setIsEditable(true);
+        }
     };
+
+
+    // const wishImageEdited = async (d, uuid) => {
+    //     const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
+    //     setThumbnail(url);
+    //     setIsEditable(false);
+    // };
 
     const getAIImage = (e) => {
         setRewardImage(
@@ -176,9 +228,6 @@ export default function Wishlist(props) {
         setData("ai_generated", 0);
     };
 
-    useEffect(() => {
-        setData("reward_file", rewardImage);
-    }, [rewardImage]);
 
     const rpValue = (e) => {
         setRepeat(e.target.checked);
@@ -196,7 +245,23 @@ export default function Wishlist(props) {
 
     useEffect(() => {
         setData("thumbnail", thumbnail);
+        console.log("thumbnail",thumbnail);
     }, [thumbnail]);
+
+
+    // Initialize thumbnail state when editing an item
+    useEffect(() => {
+        if (editpop && item?.thumbnail) {
+            setThumbnail(item.thumbnail);
+        }
+    }, [editpop, item]);
+
+    // Initialize contentFile state when editing an item
+    useEffect(() => {
+        if (editpop && item?.content_file) {
+            setContentFile(item.content_file);
+        }
+    }, [editpop, item]);
 
     const createWishList = async (e) => {
         e.preventDefault();
@@ -212,10 +277,10 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        // if ((!editpop && data && data.reward_file == "") || null || undefined) {
-        //     errorAlert("Please choose a exclusive reward for this wish item.");
-        //     return false;
-        // }
+        if ((!editpop && data && data.content_file == "") || null || undefined) {
+            errorAlert("Please choose a exclusive reward content for this wish item.");
+            return false;
+        }
         if (editpop) {
             post(route(`update_wish_item`, [item && item.uuid]), {
                 preserveScroll: true,
@@ -365,7 +430,7 @@ export default function Wishlist(props) {
                                         .
                                     </p>}
                                 </li>
-                                <li className="mb-4">
+                                {/* <li className="mb-4">
                                     <label className="mb-2 text-start d-block">
                                         URL (Optional)
                                     </label>
@@ -384,83 +449,79 @@ export default function Wishlist(props) {
                                             setData("item_url", e.target.value)
                                         }
                                     />
-                                </li>
+                                </li> */}
 
                                 <li className="mb-4">
                                     <label className="mb-2 text-start d-block">
                                         Choose Image or Upload
                                     </label>
 
-                                    {item && item.perma_link ? (
-                                        <div className="default-wish-img mb-1">
-                                            <img
-                                                src={
-                                                    (item && item.perma_link) ||
-                                                    uploadedimg
-                                                }
-                                                className="img-fluid"
+                                    {thumbnail ? 
+                                        <div className="relative">
+                                            <img className="max-h-[300px] w-full object-cover rounded-xl border !border-gray-300" src={`https://ucarecdn.com/${thumbnail}/`} />
+                                            <button className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 text-sm rounded-xl" onClick={() => setThumbnail('')}>Remove</button>
+                                        </div>
+                                    :
+                                    <>
+                                        {/* {item && item.perma_link ? (
+                                            <div className="default-wish-img mb-1">
+                                                <img
+                                                    src={
+                                                        (item && item.perma_link) ||
+                                                        uploadedimg
+                                                    }
+                                                    className="img-fluid"
+                                                />
+                                            </div>
+                                        ) : (
+                                        )} */}
+                                            <Swiper
+                                                spaceBetween={0}
+                                                pagination={{
+                                                    clickable: true,
+                                                }}
+                                                navigation={true}
+                                                onSlideChange={onSlideChange}
+                                                modules={[Pagination, Navigation]}
+                                                slidesPerView={1}
+                                            >
+                                                {imageLinks &&
+                                                    imageLinks.map((image) => {
+                                                        return (
+                                                            <SwiperSlide
+                                                                key={`swiper-item-${image}`}
+                                                            >
+                                                                <div className="default-wish-img mb-1">
+                                                                    <img
+                                                                        src={`https://ucarecdn.com/${image}/`}
+                                                                        className="img-fluid"
+                                                                    />
+                                                                </div>
+                                                            </SwiperSlide>
+                                                        );
+                                                    })}
+                                            </Swiper>
+                                        <h4 className="mt-2 mb-2 w-100 text-center"> {" "}
+                                            OR{" "}
+                                        </h4>
+
+                                        <div className={`${ !isEditable ? "" : "d-none" } editable`} >
+                                            <GlobalUploader
+                                                type="minimal" ctxName="wish-thumbnail"
+                                                ref={uploaderRef}
+                                                accept="image/*"
+                                                sendFile={getFileUID}
+                                                options={st.wishitemUploader}
                                             />
                                         </div>
-                                    ) : (
-                                        <Swiper
-                                            spaceBetween={0}
-                                            pagination={{
-                                                clickable: true,
-                                            }}
-                                            navigation={true}
-                                            onSlideChange={onSlideChange}
-                                            modules={[Pagination, Navigation]}
-                                            slidesPerView={1}
-                                        >
-                                            {imageLinks &&
-                                                imageLinks.map((image) => {
-                                                    return (
-                                                        <SwiperSlide
-                                                            key={`swiper-item-${image}`}
-                                                        >
-                                                            <div className="default-wish-img mb-1">
-                                                                <img
-                                                                    src={`https://ucarecdn.com/${image}/`}
-                                                                    className="img-fluid"
-                                                                />
-                                                            </div>
-                                                        </SwiperSlide>
-                                                    );
-                                                })}
-                                        </Swiper>
-                                    )}
-                                    <h4 className="mt-2 mb-2 w-100 text-center">
-                                        {" "}
-                                        OR{" "}
-                                    </h4>
+                                    </>
+                                    }
 
-                                    <div
-                                        className={`${
-                                            !isEditable ? "" : "d-none"
-                                        } editable`}
-                                    >
-                                        <GlobalUploader
-                                            type="minimal" ctxName="wishlist"
-                                            ref={uploaderRef}
-                                            sendFile={getFileUID}
-                                            options={st.wishitemUploader}
-                                        />
-                                    </div>
-
-                                    <div
-                                        className={`${
-                                            isEditable ? "" : "d-none"
-                                        } editable`}
-                                    >
-                                        <UploadcareEditor
-                                            uuid={thumbnail}
-                                            updateFile={wishImageEdited}
-                                        />
-                                    </div>
                                 </li>
                             </ul>
 
-                            <div className="wishlistAccordian mt-3">
+                            <p className="mt-8 pt-6 hidden   !border-t ">Choose Wish Type</p>
+                            <div className=" hidden wishlistAccordian  mt-3 mb-6">
                                 <Accordion defaultActiveKey={defaultKey}>
                                     <Accordion.Item eventKey={0}>
                                         <Accordion.Header
@@ -578,6 +639,59 @@ export default function Wishlist(props) {
                                 </Accordion>
                             </div>
 
+                            <div className="pt-4 pb-3">
+                                <strong className="text-start d-block pt-4 !border-t ">
+                                    Content File 
+                                </strong>
+                                <p className="text-small mb-3">
+                                    Upload a single file that buyers will receive after purchase. 
+                                    This can be an image, video, audio, document, or archive file.
+                                </p>
+                                <p className="text-small mb-3">
+                                    <strong>Supported formats:</strong><br/>
+                                    • <strong>Images:</strong> JPEG, PNG, GIF, WebP, BMP, TIFF<br/>
+                                    • <strong>Videos:</strong> MP4, MOV, AVI, MKV, WebM, FLV<br/>
+                                    • <strong>Audio:</strong> MP3, WAV, FLAC, AAC, OGG<br/>
+                                    • <strong>Documents:</strong> PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, RTF<br/>
+                                    • <strong>Archives:</strong> ZIP, RAR<br/>
+                                    <strong>Max file size:</strong> 100MB
+                                </p>
+                               
+                               {item && item.content_file ? (
+                                     <div className="border !border-green-600 p-3 rounded-xl flex justify-between items-center">
+                                        <p className="text-green-600">Content File Added Successfully</p>
+                                        <a target="_blank" className="text-green-600" href={`https://ucarecdn.com/${item && item.content_file}/`}>View</a>
+                                     </div>
+                                ) : (
+                                    <>
+                                    {contentFile ? 
+                                        <div className="mt-4">
+                                            <ContentFilePreview 
+                                                fileUrl={`https://ucarecdn.com/${contentFile}/`}
+                                                fileType={contentFileMetadata.type}
+                                                fileName={contentFileMetadata.name}
+                                                fileSize={contentFileMetadata.size}
+                                                isImage={contentFileMetadata.isImage}
+                                                isVideo={contentFileMetadata.isVideo}
+                                                isAudio={contentFileMetadata.isAudio}
+                                                className="mb-1"
+                                            />
+                                        </div>
+                                    : '' }
+                                    </>
+                                )}
+
+
+                            </div>
+                                <GlobalUploader
+                                    type="minimal" view={false}
+                                    ctxName="wishlistcontent"
+                                    ref={contentUploaderRef} imgonly={false}
+                                    accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
+                                    sendFile={getContentFileUID}
+                                    options={st.wishlistcontent}
+                                />
+
                             {/* <div className="pt-4 pb-3">
                                 <strong className="text-start d-block">
                                     Exclusive Reward or Art commission *
@@ -650,9 +764,9 @@ export default function Wishlist(props) {
                                             </p>
                                         </div> */}
 
-                            <div className="publish text-start">
+                            <div className="publish text-start pt-6  !border-t ">
                                 <>
-                                    <strong>Categorize this wish *</strong>
+                                    <strong >Categorize this wish *</strong>
                                     <p>
                                         {" "}
                                         Organize your wishes to help gifters
@@ -730,7 +844,7 @@ export default function Wishlist(props) {
                                         <LoaderButton
                                             disabled={processing}
                                             type="submit"
-                                            className="flex w-100 btn-pink lg mx-auto"
+                                            className="b w-full"
                                             spinnerClassName="fill-red-600"
                                         >
                                             {processing
@@ -741,7 +855,7 @@ export default function Wishlist(props) {
                                         <LoaderButton
                                             disabled={processing}
                                             type="submit"
-                                            className="flex w-100 btn-pink lg mx-auto"
+                                            className="b w-full"
                                             spinnerClassName="fill-red-600"
                                         >
                                             {processing

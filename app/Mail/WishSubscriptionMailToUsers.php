@@ -17,6 +17,7 @@ class WishSubscriptionMailToUsers extends Mailable
     public $sub;
     public $amountTotal;
     public $creator_name;
+    public $is_renewal;
 
 
     /**
@@ -24,11 +25,12 @@ class WishSubscriptionMailToUsers extends Mailable
      *
      * @return void
      */
-    public function __construct($sub, $amountTotal, $creator_name)
+    public function __construct($sub, $amountTotal, $creator_name, $is_renewal = false)
     {
         $this->sub = $sub;
         $this->amountTotal = $amountTotal;
         $this->creator_name = $creator_name;
+        $this->is_renewal = $is_renewal;
     }
 
     /**
@@ -39,10 +41,16 @@ class WishSubscriptionMailToUsers extends Mailable
     public function build()
     {
         try {
-            $subject = 'Wish Subscription Granted on Spenny Piggy!';
+            $subject = $this->is_renewal 
+                ? 'Wish Subscription Renewed on Spenny Piggy!' 
+                : 'Wish Subscription Granted on Spenny Piggy!';
+                
             return $this->view('email.subscription_wish_for_user')
                 ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-                ->subject($subject);
+                ->subject($subject)
+                ->with([
+                    'is_renewal' => $this->is_renewal
+                ]);
         } catch (\Exception $e) {
         }
     }

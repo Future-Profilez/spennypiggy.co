@@ -37,14 +37,14 @@ export default function CartItem({data, removeCart, quantityUpdate, currency}) {
     }
 
     return (
-        <div className={`border cartlist flex flex-wrap justify-between  content-between items-center border-black shadow-black rounded-[20px]
+        <div className={`border cartlist flex justify-between  content-between items-center border-black shadow-black rounded-[20px]
             mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
             <div className='prodcartbox items-center'>
                 <div className='productimg !rounded-[10px] me-3'>
                     <img src={data.url || cartproductimg} alt='img' />
                 </div>
                 <div>
-                    <div className='cartProdTitle font-bold !text-black '>{data.wishname}</div>
+                    <div className=' !text-normal md:!text-lg font-bold !text-black '>{data.wishname}</div>
                     <div className='font-bold'>
                         {formatMultiPrice(data.price, currency)}
                     </div>
@@ -52,15 +52,15 @@ export default function CartItem({data, removeCart, quantityUpdate, currency}) {
             </div>
 
 
-            <div className='cartProRtbox   items-center'>
-                <div className="quty flex items-center me-4 ">
-                    <button disabled={quantity == 1} onClick={decrementCount}>
+            <div className=' items-center'>
+                <div className="quty hidden items-center me-4 ">
+                    <button className="disabled" disabled={quantity == 1} onClick={decrementCount}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M19 12.998H5V10.998H19V12.998Z" fill="black"/>
                         </svg>
                     </button>
                     <div className="qutynum">{quantity}</div>
-                    <button onClick={incrementCount}>
+                    <button className="disabled" onClick={incrementCount}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="black"/>
                         </svg>

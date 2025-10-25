@@ -79,7 +79,7 @@ export default function ActivateCard() {
                                 <LoaderButton
                                     onClick={checkTerms}
                                     disabled={loading} 
-                                    className={"p-3 lg btn-shadow !font-normal"}
+                                    className={"main-button p !bg-white "}
                                     spinnerClassName="fill-red-600 " >
                                     {auth?.user?.profile_reject_reason ? "Re-Activate Account" : "Activate Account"}
                                 </LoaderButton>

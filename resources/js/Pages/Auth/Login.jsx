@@ -1,18 +1,19 @@
 import { useEffect } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import { useAlerts } from '@/Components/Alerts';
+import InputError from '@/Components/InputError';
 import EnterOTP from './EnterOTP';
 import axios from 'axios';
 import { useState } from 'react';
+import DeviceID from '@/includes/DeviceID';
 
 export default function Login({ status, canResetPassword }) {
 
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get('redirect');
     const redirectmessage = urlParams.get('message');
-
     const [open, setOpen] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -21,56 +22,129 @@ export default function Login({ status, canResetPassword }) {
         remember: false,
     });
 
-    const [loading, setLoading] = useState(processing)
+    const [loading, setLoading] = useState(false);
+    useEffect(() => {
+        setLoading(processing);
+    }, [processing]);
+    
     useEffect(() => {
         return () => {
             reset("password");
         };
     }, []);
 
+
+    const { flash } = usePage().props;
+    // useEffect(() => {
+    //     if(errors){
+    //         Object.entries(errors).forEach(([key, value]) => {
+    //             errorAlert(value);
+    //         });
+    //     }
+    //     if (flash?.error) {
+    //         errorAlert(flash.error);
+    //     }
+    //     if (flash?.success) {
+    //         successAlert(flash.success);
+    //     }
+    //     if (flash?.warning) {
+    //         warningAlert(flash.warning);
+    //     }
+    //     if (flash?.info) {
+    //         successAlert(flash.info);
+    //     }
+    // },[]);
+
     const submit = (e) => {
-        post(route('login-user'), {
-            preserveScroll: true,
-            onSuccess: (resp) => {
-                if (resp.props.flash.error) {
-                    errorAlert(resp.props.flash.error);
+        const deviceId = DeviceID();
+        const loginData = {
+            ...data,
+            device_id: deviceId
+        };
+        setLoading(true);
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        axios.post(route('login-user'), loginData, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
+        .then((response) => {
+            localStorage.removeItem("cart");
+            reset();
+            if (paramValue) {
+                router.visit(paramValue);
+            } else if (response.data && response.data.redirect_url) {
+                router.visit(response.data.redirect_url);
+            } else {
+                window.location.reload();
+            }
+        })
+        .catch((error) => {
+            setLoading(false);
+            reset("password");
+            
+            if (error.response) {
+                if (error.response.status === 422 || error.response.status === 429) {
+                    const errorData = error.response.data;
+                    if (errorData.message) {
+                        errorAlert(errorData.message);
+                    }
+                    if (errorData.errors) {
+                        Object.entries(errorData.errors).forEach(([field, messages]) => {
+                            if (Array.isArray(messages)) {
+                                messages.forEach(message => errorAlert(message));
+                            }
+                        });
+                    }
+                } else {
+                    errorAlert('An unexpected error occurred. Please try again.');
                 }
-                localStorage.removeItem("cart");
-                reset();
-                if(paramValue){
-                    router.visit(paramValue);
-                }
-            },
-            onError: (err) => {
-                reset("password");
-                Object.keys(err).map((key) => {
-                    errorAlert(err[key]);
-                });
-            },
+            } else if (error.request) {
+                errorAlert('Network error. Please check your connection and try again.');
+            } else {
+                errorAlert('An error occurred. Please try again.');
+            }
         });
     };
 
     const checkTFA = (e) => {
         e.preventDefault();
-        setLoading(true)
-        axios.post('/verify-user', data).then((resp) => {
-           if (resp.data.status) {
-               if (resp.data.is_2fa) {
-                   setOpen("open");
-                   setTimeout(() => {
-                    setOpen(false);
-                   },1000);
+        setLoading(true);
+        axios.post('/verify-user', data)
+            .then((resp) => {
+                if (resp.data.status) {
+                    if (resp.data.is_2fa) {
+                        setOpen("open");
+                        setLoading(false);
+                        setTimeout(() => {
+                            setOpen(false);
+                        }, 1000);
+                    } else {
+                        submit();
+                    }
                 } else {
-                    submit();
+                    errorAlert(resp.data.msg);
+                    setLoading(false);
                 }
-                setLoading(true);
-           } else {
-               errorAlert(resp.data.msg);
-               setLoading(false);
-           }
-        }).catch((err) => {
-            console.error("err", err);
-        });
+            })
+            .catch((err) => {
+                console.error("Verify user error:", err);
+                if (err.response && err.response.data && err.response.data.message) {
+                    errorAlert(err.response.data.message);
+                } else if (err.response && err.response.data && err.response.data.msg) {
+                    errorAlert(err.response.data.msg);
+                } else if (err.message) {
+                    errorAlert(err.message);
+                } else {
+                    errorAlert('An error occurred during login. Please try again.');
+                }
+                setLoading(false);
+            });
     };
 
     return (
@@ -111,6 +185,9 @@ export default function Login({ status, canResetPassword }) {
                                             setData("email", e.target.value)
                                         }
                                     />
+                                    <div className='p-2'>
+                                        <InputError message={errors.email} className="mt-2" />
+                                    </div>
                                 </li>
                                 <li className="formfield mb-6">
                                     <label>Password</label>
@@ -125,9 +202,12 @@ export default function Login({ status, canResetPassword }) {
                                             setData("password", e.target.value)
                                         }
                                     />
+                                    <div className='p-2'>
+                                        <InputError message={errors.password} className="mt-2" />
+                                    </div>
 
                                     {canResetPassword && (
-                                        <div className=" mt-4 m-auto d-table ">
+                                        <div className=" mt-2 m-auto d-table ">
                                             <Link
                                                 href={route("password.request")}
                                                 className="text-sm text-gray-600 hover:text-gray-900"
@@ -139,16 +219,13 @@ export default function Login({ status, canResetPassword }) {
                                 </li>
                             </ul>
 
-                            {/* <InputError message={errors.email} className="mt-2" />
-                            <InputError message={errors.password} className="mt-2" /> */}
-
                             <div className="  text-center flex justify-center ">
-                                {/* <button type='submit' className='btn-pink lg'>Login</button> */}
+                                {/* <button type='submit' className='main-button b size-lg !px-12'>Login Now</button> */}
                                 <LoaderButton
                                     disabled={loading}
-                                    className="btn-pink lg2 lg w-80  mb-md-0 max-width login"
+                                    className="b size-lg !px-12 py-[10px] text-lg"
                                     spinnerClassName="fill-red-600" >
-                                    {loading ? "Wait" : "Log in"}
+                                    {loading ? "Loggin In..." : "Log in"}
                                 </LoaderButton>
                             </div>
                         </div>

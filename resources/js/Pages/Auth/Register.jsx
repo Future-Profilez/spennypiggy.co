@@ -10,7 +10,6 @@ import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { handleIpRedirection } from '../../includes/useIpRedirection';
 import Countries from '../../includes/Countries';
 import Popup from '@/Components/Popup';
-import toast from 'react-hot-toast';
 
 export default function Register(props) {
     const CheckCircleIcon = () => {
@@ -80,8 +79,8 @@ export default function Register(props) {
         if(e == 1){
             // await handleIpRedirection(ziggy);
             setStep(1);
-        }else {
-            setStep(2);
+        } else {
+            setStep(3);
         }
     }
 
@@ -158,11 +157,11 @@ export default function Register(props) {
     }
 
     const handleNext = () => {
-        if(profileTags && profileTags.length <1){
+        if(step === 2 && profileTags && profileTags.length < 1){
             errorAlert("Please select at least one tag");
             return false;
-        } else {
-            setStep(step + 1);
+        } else { 
+            setStep(step+1);
         }
     }
 
@@ -306,25 +305,39 @@ export default function Register(props) {
                         <h1 className='text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2'>Create Wishlist</h1>
                         <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
                         <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
-
-                        {step === 0 && <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
-                            <div className='p-2 w-full max-w-[400px] m-auto'>
-                                <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
-                                    <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
-                                    <p className='text-muted text-[16px] mt-1 mb-0' >I'd like to create a wishlist</p>
+                        {step === 0 && 
+                            <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
+                                <div className='p-2 w-full max-w-[400px] m-auto'>
+                                    <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
+                                        <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
+                                        <p className='text-muted text-[16px] mt-1 mb-0' >I'd like to create a wishlist</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className='p-2 w-full max-w-[400px] m-auto'>
-                                <div  onClick={()=>handleBecomeCreator(0)}  className={`${role==0 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
-                                    <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Fan</h2>
-                                    <p className='text-muted text-[16px] mt-1 mb-0' >I'm here to follow and support creators</p>
+                                <div className='p-2 w-full max-w-[400px] m-auto'>
+                                    <div  onClick={()=>handleBecomeCreator(0)}  className={`${role==0 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
+                                        <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Fan</h2>
+                                        <p className='text-muted text-[16px] mt-1 mb-0' >I'm here to follow and support creators</p>
+                                    </div>
                                 </div>
+                                <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
                             </div>
+                        }
 
-                            <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
-                        </div>}
+                        {step === 1 && 
+                            <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
+                                <div className='px-0 px-md-4 px-lg-5 pb-4'>
+                                    <h2 className="font-gulfs uppercase text-center text-xl md:text-2xl mb-2">Heads up, Babe! 🚨</h2>
+                                    <p className='text-center text-[17px] text-muted ' >
+                                        Your social media link is how we verify you’re real — no bots, no fakes, no funny business.
+                                        Make sure it’s an active profile with clear posts, or your application might be rejected.
+                                    </p>
+                                    <button onClick={handleNext} className='btn-pink !font-normal md m-auto mt-3 w-full' > Got it – I’ll link my socials</button>
+                                </div>
+                            </div> 
+                        }
 
-                        {step === 1 && <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
+
+                        {step === 2 && <div className={`${step === 2 ? '' : 'd-none'}    px-3`} >
                             <div className='px-0 px-md-4 px-lg-5 pb-4'>
                                 <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
 
@@ -348,14 +361,13 @@ export default function Register(props) {
                                     ))}
                                 </div>
 
-                                <button onClick={handleNext} className='btn-pink md m-auto mt-3 w-full' >  Next</button>
+                                <button onClick={handleNext} className={`${profileTags && profileTags.length < 1 ? 'disabled' : ''} btn-pink md m-auto mt-3 w-full`} >  Next</button>
                             </div>
                         </div> }
 
-                        {step === 2 && <div className={`${ step === 2 ? '' : 'd-none'}`} >
+                        {step === 3 && <div className={`${ step === 3 ? '' : 'd-none'}`} >
                             <form onSubmit={submit} className='p-4' >
                                 <div className='login-step1 loginform'>
-
                                     <div className='row'>
                                         <div className='col-md-6 mb-4 formfield'>
                                             <label>Display Name</label>
@@ -552,7 +564,7 @@ export default function Register(props) {
 
                                     <div className='m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3' >
                                         <HCaptcha ref={captchaRef}
-                                        sitekey={props.hcaptchakey || ''}
+                                        sitekey={props.hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
                                         data-theme="light"
                                         data-size="compact"
                                         onVerify={onVerify}
@@ -581,15 +593,16 @@ export default function Register(props) {
                                                             </p>
                                                         </label>
                                                     </div>
-                                                    <LoaderButton onClick={accepted} disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
+                                                    <LoaderButton onClick={accepted} disabled={processing} className='p w-full mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
                                                 </div>
                                         </Popup>
-                                        <LoaderButton disabled={processing} className='btn-pink w-full lg lg2 mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
+                                        <LoaderButton disabled={processing} className='p w-full mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
                                     </div>
 
                                 </div>
                             </form>
-                        </div> }
+                        </div> 
+                        }
                     </div>
                 </div>
             </div>

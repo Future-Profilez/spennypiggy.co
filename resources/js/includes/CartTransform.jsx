@@ -42,7 +42,7 @@ export default function CartTransform(){
     
       for (const userId in groupedData) {
         const userCart = groupedData[userId];
-        userCart.processingFee = 0.2 * userCart.subtotal; 
+        userCart.processingFee = (window.platformFeePercentage || 20) / 100 * userCart.subtotal; 
         userCart.loggeInUser = loggedInUserId;
         outputData.push(userCart);
       }

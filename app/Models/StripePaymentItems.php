@@ -28,7 +28,9 @@ class StripePaymentItems extends Model
         'tax',
         'deleted_at',
         'quantity',
-        'twitter_response'
+        'twitter_response',
+        'anonymous',
+        'message'
     ];
 
     protected $appends = [

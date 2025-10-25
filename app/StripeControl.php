@@ -37,7 +37,25 @@ class StripeControl
     {
         try {
             if (empty(self::$client)) {
-                self::$client = new StripeClient(env("STRIPE_SECRET_KEY"));
+                $apiKey = env("STRIPE_SECRET_KEY");
+                
+                // If env() returns null, try to get from config
+                if (is_null($apiKey)) {
+                    $apiKey = config('services.stripe.secret', env("STRIPE_SECRET_KEY"));
+                }
+                
+                // If still null or not a string, log debug info and throw exception
+                if (empty($apiKey) || !is_string($apiKey)) {
+                    Log::error("Stripe API key configuration issue", [
+                        'env_value' => var_export(env("STRIPE_SECRET_KEY"), true),
+                        'config_value' => var_export(config('services.stripe.secret'), true),
+                        'final_key_type' => gettype($apiKey),
+                        'final_key_empty' => empty($apiKey)
+                    ]);
+                    throw new Exception("Stripe API key is not properly configured. Please check STRIPE_SECRET_KEY environment variable. Debug info logged.");
+                }
+                
+                self::$client = new StripeClient($apiKey);
             }
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
@@ -115,6 +133,182 @@ class StripeControl
                 return false;
             }
         }
+
+    /**
+     * Get comprehensive Stripe account requirements and action items
+     * 
+     * @param string $accountId Stripe Account ID
+     * @return array Account requirements analysis
+     */
+    public static function getAccountRequirements(string $accountId): array
+    {
+        self::setClient();
+        try {
+            $account = self::$client->accounts->retrieve($accountId);
+            $requirements = [];
+            $hasRequirements = false;
+            
+            // Check if account is disabled
+            if (!$account->charges_enabled) {
+                $hasRequirements = true;
+                
+                // Check disabled reason
+                if (isset($account->requirements->disabled_reason)) {
+                    switch ($account->requirements->disabled_reason) {
+                        case 'requirements.past_due':
+                            $requirements[] = [
+                                'type' => 'past_due_requirements',
+                                'severity' => 'critical',
+                                'title' => 'Past Due Requirements',
+                                'message' => 'Your account has past due requirements that must be completed immediately to restore payment processing.',
+                                'action' => 'Complete missing information in your Stripe dashboard.',
+                                'action_url' => '/stripe/enable_card_payments'
+                            ];
+                            break;
+                            
+                        case 'requirements.pending_verification':
+                            $requirements[] = [
+                                'type' => 'pending_verification',
+                                'severity' => 'warning', 
+                                'title' => 'Verification Pending',
+                                'message' => 'Your account information is being verified. This process typically takes 1-3 business days.',
+                                'action' => 'Please wait for verification to complete.',
+                                'action_url' => null
+                            ];
+                            break;
+                            
+                        case 'rejected.fraud':
+                            $requirements[] = [
+                                'type' => 'rejected_fraud',
+                                'severity' => 'critical',
+                                'title' => 'Account Rejected - Fraud',
+                                'message' => 'Your account was rejected due to fraud concerns. Please contact support.',
+                                'action' => 'Contact Stripe support for account review.',
+                                'action_url' => null
+                            ];
+                            break;
+                            
+                        case 'rejected.listed':
+                            $requirements[] = [
+                                'type' => 'rejected_listed',
+                                'severity' => 'critical',
+                                'title' => 'Account Rejected - Listed',
+                                'message' => 'Your account was rejected due to being on a restricted list.',
+                                'action' => 'Contact Stripe support for clarification.',
+                                'action_url' => null
+                            ];
+                            break;
+                            
+                        case 'rejected.other':
+                            $requirements[] = [
+                                'type' => 'rejected_other',
+                                'severity' => 'critical',
+                                'title' => 'Account Rejected',
+                                'message' => 'Your account was rejected. Please contact support for more information.',
+                                'action' => 'Contact Stripe support for account review.',
+                                'action_url' => null
+                            ];
+                            break;
+                    }
+                }
+                
+                // Check currently due requirements
+                if (!empty($account->requirements->currently_due)) {
+                    $requirements[] = [
+                        'type' => 'currently_due',
+                        'severity' => 'high',
+                        'title' => 'Information Required',
+                        'message' => 'Additional information is required to activate your account.',
+                        'action' => 'Complete your account setup with the missing information.',
+                        'action_url' => '/stripe/enable_card_payments',
+                        'fields_needed' => $account->requirements->currently_due
+                    ];
+                }
+                
+                // Check eventually due requirements  
+                if (!empty($account->requirements->eventually_due)) {
+                    $requirements[] = [
+                        'type' => 'eventually_due',
+                        'severity' => 'medium',
+                        'title' => 'Action Needed Soon',
+                        'message' => 'Additional information will be required in the future to maintain your account.',
+                        'action' => 'Complete account information at your convenience.',
+                        'action_url' => '/stripe/enable_card_payments',
+                        'fields_needed' => $account->requirements->eventually_due
+                    ];
+                }
+            }
+            
+            // Check capabilities issues
+            if (isset($account->capabilities->card_payments)) {
+                if ($account->capabilities->card_payments === 'inactive') {
+                    $hasRequirements = true;
+                    $requirements[] = [
+                        'type' => 'card_payments_inactive',
+                        'severity' => 'high',
+                        'title' => 'Card Payments Disabled',
+                        'message' => 'Card payment capability is not active on your account.',
+                        'action' => 'Enable card payments in your account settings.',
+                        'action_url' => '/stripe/enable_card_payments'
+                    ];
+                } elseif ($account->capabilities->card_payments === 'pending') {
+                    $hasRequirements = true;
+                    $requirements[] = [
+                        'type' => 'card_payments_pending',
+                        'severity' => 'medium',
+                        'title' => 'Card Payments Pending',
+                        'message' => 'Card payment capability is being reviewed.',
+                        'action' => 'Please wait for the review to complete.',
+                        'action_url' => null
+                    ];
+                }
+            }
+            
+            // Check for legacy account upgrade needs using proper migration logic
+            // Note: We need the user object to check migration needs properly
+            // For now, we'll skip this check here since it requires user context
+            // The migration check is handled in the controllers where user context is available
+            
+            // Check payout capability
+            if (isset($account->capabilities->transfers) && $account->capabilities->transfers !== 'active') {
+                $hasRequirements = true;
+                $requirements[] = [
+                    'type' => 'transfers_disabled',
+                    'severity' => 'high',
+                    'title' => 'Payouts Disabled',
+                    'message' => 'Your account cannot receive payouts. This may be due to missing bank account information.',
+                    'action' => 'Complete your payout information.',
+                    'action_url' => '/stripe/enable_card_payments'
+                ];
+            }
+            
+            return [
+                'has_requirements' => $hasRequirements,
+                'requirements' => $requirements,
+                'account_status' => [
+                    'charges_enabled' => $account->charges_enabled,
+                    'details_submitted' => $account->details_submitted,
+                    'payouts_enabled' => $account->payouts_enabled ?? false,
+                    'disabled_reason' => $account->requirements->disabled_reason ?? null
+                ]
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to get account requirements: " . $e->getMessage());
+            return [
+                'has_requirements' => true,
+                'requirements' => [[
+                    'type' => 'connection_error',
+                    'severity' => 'critical',
+                    'title' => 'Account Connection Issue',
+                    'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
+                    'action' => 'Refresh the page or contact support.',
+                    'action_url' => null
+                ]],
+                'account_status' => []
+            ];
+        }
+    }
 
 
     /**
@@ -522,16 +716,118 @@ class StripeControl
 
 
     /**
-     * Deleting and account
+     * Create a transfer to a connected account
      *
-     * @param string $account_id account Id
-     * @return Throwable|\Stripe\Subscription
+     * @param array $payload Transfer payload
+     * @return \Stripe\Transfer
+     * @throws Exception
      */
-    public static function deleteAccount($account_id)
+    public static function createTransfer(array $payload)
     {
         self::setClient();
+        
         try {
-            return self::$client->accounts->delete($account_id, []);
+            return self::$client->transfers->create($payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get account balance for a connected account
+     *
+     * @param string $connectedAccountId
+     * @return \Stripe\Balance
+     * @throws Exception
+     */
+    public static function getAccountBalance($connectedAccountId)
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->balance->retrieve([], ['stripe_account' => $connectedAccountId]);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create a payout to a connected account's bank account
+     *
+     * @param array $payload Payout payload
+     * @param string $connectedAccountId
+     * @return \Stripe\Payout
+     * @throws Exception
+     */
+    public static function createPayout(array $payload, $connectedAccountId)
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->payouts->create(
+                $payload,
+                ['stripe_account' => $connectedAccountId]
+            );
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get transfer details
+     *
+     * @param string $transferId
+     * @return \Stripe\Transfer
+     * @throws Exception
+     */
+    public static function getTransfer($transferId)
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->transfers->retrieve($transferId);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * List transfers for an account
+     *
+     * @param array $params
+     * @return \Stripe\Collection
+     * @throws Exception
+     */
+    public static function listTransfers(array $params = [])
+    {
+        self::setClient();
+        
+        try {
+            return self::$client->transfers->all($params);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {

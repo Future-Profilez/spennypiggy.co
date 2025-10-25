@@ -43,7 +43,7 @@ export default function ChangeVat({defaultvalue, updatevat}) {
       <LoaderButton onClick={()=>changeVat(data.currency)}
         disabled={processing}
         type='submit'
-        className="flex w-100 button justify-content-center py-3  sm lg mx-auto"
+        className="p w-full"
         spinnerClassName="fill-red-600" >
         {processing ? "Updating.." : "Update"}
       </LoaderButton>

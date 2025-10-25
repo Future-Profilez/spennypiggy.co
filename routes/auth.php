@@ -26,6 +26,8 @@ use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\DeliveriesController;
+use App\Http\Controllers\FounderBonusController;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Jobs\SendRenewMail;
 use App\Models\Bills;
@@ -63,9 +65,9 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user')->middleware('mustHaveToVerify');
+    Route::match(['get', 'post'], 'verify/login', [AuthenticatedSessionController::class, 'store'])->name('login-user');
 
-    Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA')->middleware('mustHaveToVerify');
+    Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
     Route::post('/verify-user', [AuthenticatedSessionController::class, 'verifyUser'])->name('verifyUser');
 
@@ -89,6 +91,7 @@ Route::middleware('guest')->group(function () {
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 
+
 Route::get('discover', function () {
     return Inertia::render('discover/Discover');
 })->name("discover");
@@ -102,7 +105,7 @@ Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // Route::post('verify-2fa', [AuthenticatedSessionController::class, 'verify2FA'])->name('verify2FA');
 
     /*send surprise amount*/
@@ -110,20 +113,65 @@ Route::middleware('auth')->group(function () {
     Route::get('email/send-verification-email', [EmailVerificationNotificationController::class, 'sendVerificationEmail'])
         ->name('verification.email');
 
+    // Content creation routes - NO subscription requirements
+    Route::middleware(['mustHaveToVerify'])->group(function () {
+        // Wish item routes - accessible without subscription
+        Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
+        Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
+        Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
+        
+        // Bills - accessible without subscription
+        Route::prefix("bill")->name("bill.")->group(function () {
+            Route::post('save', [BillsController::class, 'billSave'])->name('save');
+            Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
+            Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
+        });
+        
+        // Memberships - accessible without subscription
+        Route::prefix("membership")->name("membership.")->group(function () {
+            Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
+            Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
+            Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
+            Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
+            Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
+        });
+        
+        // Shop items - accessible without subscription
+        Route::prefix('shop')->group(function () {
+            Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
+            Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
+            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
+            Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
+            Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
+        });
+        
+        // Posts - accessible without subscription
+        Route::prefix("post")->name("post.")->group(function () {
+            Route::post('save', [PostsController::class, 'savePost'])->name('save');
+            Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
+            Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
+            Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
+            Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
+            Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
+        });
+        
+        // Categories and basic functionality
+        Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
+        Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
+        Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
+        Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
+    });
+
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
 
             // gifter card verification routes
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
-            Route::get('card-verification-failed/{id}', [RegisteredUserController::class, 'cardVerificationFailed'])->name('card.verification.failed');
+            Route::get('card-verification-failed/{id}', [AuthenticatedSessionController::class, 'cardVerificationFailed'])->name('card.verification.failed');
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-            Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
-            Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
-            Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
-            Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
             Route::prefix("stripe")->name("stripe.")->group(function () {
                 Route::get("authorize", [StripeController::class, "index"])->name("index");
                 Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
@@ -145,9 +193,52 @@ Route::middleware('auth')->group(function () {
         $auto_tweet = $user->auto_tweet == 1;
         $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
+        // Find the currently active subscription period
+        $now = Carbon::now();
         $subscription = MonthlyCharge::where('user_id', $user->id)
-            ->orderByDesc('created_at')
+            ->where(function($query) use ($now) {
+                $query->where(function($q) use ($now) {
+                    // Active subscription period
+                    $q->whereDate('current_start_subscription_date', '<=', $now)
+                      ->whereDate('current_end_subscription_date', '>=', $now);
+                })->orWhere(function($q) use ($now) {
+                    // Active trial period
+                    $q->whereDate('current_start_trial_date', '<=', $now)
+                      ->whereDate('current_end_trial_date', '>=', $now);
+                });
+            })
+            // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
+            ->orderByDesc('current_start_subscription_date')
             ->first();
+        
+        // If no active period found, get the most recent one
+        if (!$subscription) {
+            $subscription = MonthlyCharge::where('user_id', $user->id)
+                ->orderByDesc('current_start_subscription_date')
+                ->first();
+        }
+
+        // Get complete subscription history for the user
+        $subscription_history = MonthlyCharge::where('user_id', $user->id)
+            ->orderByDesc('current_start_subscription_date')
+            ->get()
+            ->map(function ($charge) {
+                return [
+                    'id' => $charge->id,
+                    'uuid' => $charge->uuid,
+                    'stripe_id' => $charge->stripe_id,
+                    'amount' => $charge->amount ?? 0,
+                    'currency' => $charge->currency ?? 'GBP',
+                    'status' => $charge->status ?? 'pending',
+                    'current_start_trial_date' => $charge->current_start_trial_date,
+                    'current_end_trial_date' => $charge->current_end_trial_date,
+                    'current_start_subscription_date' => $charge->current_start_subscription_date,
+                    'current_end_subscription_date' => $charge->current_end_subscription_date,
+                    'upcoming_payment' => $charge->upcoming_payment,
+                    'created_at' => $charge->created_at,
+                    'updated_at' => $charge->updated_at,
+                ];
+            });
 
         $site_subscription = [
             'status' => 'INACTIVE',
@@ -198,12 +289,37 @@ Route::middleware('auth')->group(function () {
             } elseif ($isExpired || $user->is_subscribed == 0) {
                 $site_subscription['status'] = 'EXPIRED';
             }
+        } else {
+            // Handle users without subscription records (new users)
+            // This matches the logic in User model's getSubscriptionStatusAttribute method
+            if ($user->role == 1) {
+                $createdAt = Carbon::parse($user->created_at);
+                $trialEndDate = $createdAt->copy()->addDays(3); // 3-day trial - use copy() to avoid mutating original
+                $now = Carbon::now();
+                
+                // If within trial period and not subscribed, show as trial
+                if ($now->lessThan($trialEndDate) && $user->is_subscribed == 0) {
+                    $site_subscription['status'] = 'FREE_TRIAL';
+                    $site_subscription['trial_status'] = 'active';
+                    $site_subscription['trial_start'] = $createdAt->format('d F Y');
+                    $site_subscription['trial_end_in'] = $trialEndDate->diffForHumans($now);
+                } else {
+                    // Trial expired and not subscribed
+                    $site_subscription['status'] = 'EXPIRED';
+                    $site_subscription['trial_status'] = 'ended';
+                }
+            } else {
+                // Non-creator users default to inactive
+                $site_subscription['status'] = 'INACTIVE';
+            }
         }
 
         return Inertia::render('accountsetting/Accountsetting', [
             'auto_tweet' => $auto_tweet,
             'site_subscription' => $site_subscription,
+            'subscription_history' => $subscription_history,
             'pwa_notification_details' => $pwaNotificationDetails ?? null,
+            'subscription_status' => $user->subscription_status, // Add numeric status for debugging
         ]);
     });
 
@@ -254,27 +370,11 @@ Route::middleware('auth')->group(function () {
                 Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
                 // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
             });
-            Route::prefix("membership")->name("membership.")->group(function () {
-                Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
-                Route::post('edit/{uuid}', [MembershipController::class, 'updateLevel'])->name('edit');
-                Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
-                Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
-                Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
-            });
-            Route::prefix("post")->name("post.")->group(function () {
-                Route::post('save', [PostsController::class, 'savePost'])->name('save');
-                Route::post('edit/{uuid}', [PostsController::class, 'editPost'])->name('edit');
-                Route::get('delete/{uuid}', [PostsController::class, 'deletePost'])->name('delete');
-                Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
-                Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
-                Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
+            Route::prefix("deliveries")->name("deliveries.")->group(function () {
+                Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
+                Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
             });
 
-            Route::prefix("bill")->name("bill.")->group(function () {
-                Route::post('save', [BillsController::class, 'billSave'])->name('save');
-                Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
-                Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
-            });
 
             Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
 
@@ -324,14 +424,8 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('shop/ShopPage');
         })->name('shop');
 
-        Route::prefix('shop')->group(function () {
-            Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
-            Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
-            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('save-category');
-            Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
-            Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
-            Route::get('orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
-        });
+        // Keep orders-list in subscription middleware (requires payment features)
+        Route::get('shop/orders-list', [ShopsController::class, 'ordersList'])->name('orders-list');
 
         Route::get('create-applicant', [TestController::class, 'createApplicant']);
         Route::get('generate-verification-link', [TestController::class, 'generateVerificationLink']);
@@ -360,7 +454,6 @@ Route::middleware('auth')->group(function () {
 
         Route::get('cancel-subs/{uuid}', [StripeController::class, 'cancelSubs'])->name('cancel-subs');
 
-        Route::get('/remove-from-cart/{uuid}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
         // rye product routes start
         Route::post('creator-store-address', [WishitemController::class, 'creatorStoreAddress'])->name('creator.store.address');
@@ -400,7 +493,7 @@ Route::prefix('shop')->group(function () {
     Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
 });
 
-    Route::get('/create-checkout-session/{id}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
+    Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
 
 Route::get('/success-checkout/{id}', [CheckoutController::class, 'successCheckout'])->name('checkout.success');
 
@@ -411,6 +504,8 @@ Route::get('get-cart-details', [WishitemController::class, 'getCartDetails'])->n
 Route::get('/add-to-cart/{uuid}/{device_id}/{sub}/{amount?}', [WishitemController::class, 'addToCart'])->name('add-to-cart');
 
 Route::get('anonymous-cart/{deviceId}', [WishitemController::class, 'anonymousCartItems'])->name('anonymous-cart');
+
+Route::get('authenticated-cart', [WishitemController::class, 'authenticatedCartItems'])->name('authenticated-cart');
 
 Route::get('/clear-cart/{device_id}/{ownerid}', [WishitemController::class, 'clearCart'])->name('clear-cart');
 
@@ -423,16 +518,14 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
     Route::get('/handle/{uuid}/{status?}', [StripeController::class, 'handleTipJarPayment'])->name('handle');
 });
 
-
 Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class, 'usergoal'])->name('user.goal');
-
 // subscription webhook
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 Route::post('/mandatory-status', [StripeWebhookController::class, 'mandatorySubscriptionStatus']);
 Route::post('/webhook/payment', [StripeWebhookController::class, 'handle']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 // Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
-// Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
+Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
 // Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
@@ -458,7 +551,7 @@ Route::get('/files/{filename}', function (string $filename) {
 
 Route::get('recent-gifters/{type?}', [LeaderBoardController::class, 'recentGifters'])->name('largest-gifts');
 Route::get('leaderboard/star/lists', [LeaderBoardController::class, 'topGiftersAllTime'])->name('leaderboard.stars');
-Route::get('largest/gifts/alltime', [LeaderBoardController::class, 'top10UniqueBiggestGifters'])->name('leaderboard.stars');
+Route::get('largest/gifts/alltime', [LeaderBoardController::class, 'top10UniqueBiggestGifters'])->name('largest.gifts.alltime');
 Route::get('top-supporters/frequency', [LeaderBoardController::class, 'topSupportersByFrequency'])->name('top-supporters-frequency');
 Route::get('leaderboard/platform-analytics', [LeaderBoardController::class, 'platformAnalytics'])->name('leaderboard.platform-analytics');
 Route::get('leaderboard/growth-trends', [LeaderBoardController::class, 'growthTrends'])->name('leaderboard.growth-trends');
@@ -491,11 +584,11 @@ Route::get('/problem-solving', function () {
         array_push($a, $multiple);
     }
     return $a;
-})->name("test");
+})->name("problem-solving");
 
 Route::get('twitter-token/', [TwitterController::class, 'twitterAuthUrl']);
 Route::get('twitter/login', [TwitterController::class, 'twitterLogin']);
-Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('check.username');
+Route::get('check-username/{username}', [AuthenticatedSessionController::class, 'checkUserName'])->name('username.check');
 
 Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'sociallinks'])->name('user.sociallinks');
 
@@ -504,9 +597,22 @@ Route::get('sociallinks/{username}', [AuthenticatedSessionController::class, 'so
 // Route::get('bills/{username}', [AuthenticatedSessionController::class, 'user_bills'])->name('user.bills');
 
 Route::get('gift-items/{username}', [AuthenticatedSessionController::class, 'userGiftItems'])->name('gift.items');
+
 Route::get('comments/{uuid}', [PostsController::class, 'allComments'])->name('user.posts.comments');
 
-Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])->name('user.show');
+// Founder routes - must come before profile route to prevent interception
+Route::get('/founder/bonus', [FounderBonusController::class, 'index'])->name('founder.bonus');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/founder/data', [FounderBonusController::class, 'getData'])->name('founder.data');
+    Route::get('/founder/leaderboard', [FounderBonusController::class, 'getLeaderboard'])->name('founder.leaderboard');
+    Route::get('/founder-program', [FounderBonusController::class, 'programInfo'])->name('founder.program');
+    Route::get('/founder/qualify-winners', [FounderBonusController::class, 'qualifyWinners'])->name('founder.qualify-winners');
+    Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
+});
+
+Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
+    // ->where('username', '^(?!founder$).*$')
+    ->name('user.show');
 // Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
@@ -538,10 +644,17 @@ Route::prefix("bill")->name("bill.")->group(function () {
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
 Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
+Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
+
+
 
 // ADD IN ADMIN PANEL
 Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
 Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'deleteConnectedAccount']);
+
+// Stripe Service Agreement Migration Routes
+Route::post('/stripe/migrate-account/{userId?}', [StripeController::class, 'migrateAccount'])->name('stripe.migrate-account');
+Route::get('/stripe/check-migration/{userId?}', [StripeController::class, 'checkMigrationNeeds'])->name('stripe.check-migration');
 
 Route::get('/force-error/error/file', function () {
     throw new \Exception("Testing Handler.php");

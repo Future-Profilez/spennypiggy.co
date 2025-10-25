@@ -14,6 +14,7 @@ use Stripe\Exception\SignatureVerificationException;
 use App\Services\StripeControl;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
+use App\Models\Deliverable;
 use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\WishItemSubscription;
@@ -211,6 +212,23 @@ class StripeWebhookController extends Controller
         $metadata = $event->data->object->metadata ?? null;
 
         switch ($type) {
+            case 'checkout.session.completed':
+                Log::info("Handling Checkout Session Completed");
+                $this->handleCheckoutSessionCompleted($data, $metadata);
+                $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                break;
+
+            case 'invoice.paid':
+                Log::info("Handling Invoice Paid");
+                $this->handleInvoicePaid($data, $metadata);
+                break;
+                
+            case 'invoice.payment_succeeded':
+                Log::info("Handling Invoice Payment Succeeded");
+                $this->handleInvoicePaymentSucceeded($data, $metadata);
+                $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                break;
+
             case 'customer.subscription.updated':
                 $productType = $metadata->type ?? null;
 
@@ -270,6 +288,129 @@ class StripeWebhookController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+    /**
+     * Handle checkout session completed event
+     */
+    public function handleCheckoutSessionCompleted($session, $metadata)
+    {
+        try {
+            Log::info("Processing checkout session completed", [
+                'session_id' => $session->id,
+                'metadata' => $metadata
+            ]);
+
+            // Check if this is a wish item purchase
+            if (isset($metadata->deliverable_type) && $metadata->deliverable_type === 'media_bundle') {
+                $this->processWishItemDeliverable($session, $metadata);
+            }
+
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error("Error processing checkout session completed", [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Process wish item deliverable creation
+     */
+    private function processWishItemDeliverable($session, $metadata)
+    {
+        // Get wish item to check for content file
+        $wishItem = null;
+        $deliverableType = $metadata->deliverable_type ?? 'media_bundle';
+        $contentUrl = null;
+        
+        if (isset($metadata->wish_id)) {
+            $wishItem = \App\Models\WishItem::find($metadata->wish_id);
+            if ($wishItem && $wishItem->content_file) {
+                $deliverableType = 'content_file';
+                $contentUrl = $wishItem->content_file_url; // Use Uploadcare URL
+            }
+        }
+
+        // Get payment details to retrieve message and anonymous data
+        $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
+        
+        // Create deliverable record with proper fields
+        $deliverable = \App\Models\Deliverable::create([
+            'uuid' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
+            'product_id' => (string) ($metadata->wish_id ?? 'unknown'),
+            'item_id' => $metadata->wish_id ?? null,
+            'creator_id' => $metadata->creator_id ?? null,
+            'gifter_id' => $metadata->user_id ?? null,
+            'price_id' => $metadata->price_id ?? null,
+            'payment_intent_id' => $session->payment_intent ?? null,
+            'session_id' => $session->id,
+            'deliverable_type' => $deliverableType,
+            'product_type' => str_contains($metadata->product_type ?? '', 'subscription') ? 'wish_subscription' : 'wish',
+            'transaction_amount' => ($session->amount_total ?? 0) / 100, // Convert from cents
+            'status' => 'pending',
+            'customer_email' => $session->customer_details->email ?? null,
+            'customer_name' => $session->customer_details->name ?? null,
+            'payment_currency' => strtoupper($session->currency ?? 'GBP'),
+            'anonymous' => $payment ? $payment->anonymous : false,
+            'message' => $payment ? $payment->message : null,
+            'metadata' => json_encode([
+                'certificate' => $metadata->certificate ?? 'true',
+                'product_type' => $metadata->product_type ?? 'wish_one_off',
+                'content_url' => $contentUrl, // Real content URL instead of zip
+                'content_file_name' => $wishItem->content_file_name ?? null,
+                'content_file_type' => $wishItem->content_file_type ?? null,
+                'session_data' => [
+                    'amount_total' => $session->amount_total,
+                    'currency' => $session->currency,
+                    'customer_email' => $session->customer_details->email ?? null,
+                    'payment_status' => $session->payment_status
+                ]
+            ])
+        ]);
+
+        Log::info("Created deliverable record", [
+            'deliverable_id' => $deliverable->id,
+            'uuid' => $deliverable->uuid,
+            'session_id' => $session->id,
+            'deliverable_type' => $deliverableType,
+            'has_content_file' => $wishItem && $wishItem->content_file ? true : false
+        ]);
+
+        // Dispatch job to process the deliverable (media bundle creation, etc.)
+        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+        // Send thank you email to the purchaser
+        if (isset($metadata->user_id)) {
+            $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
+            if ($payment) {
+                // Check if user exists and has is_uk = 0 (to match the relationship constraint)
+                $user = \App\Models\User::where('id', $metadata->user_id)->where('is_uk', 0)->first();
+                
+                if ($user) {
+                    $currency = \App\Models\Currency::where('iso', strtoupper($session->currency))->first();
+                    $currencySymbol = $currency ? $currency->symbol : '£';
+                    
+                    Log::info("Skipping CheckoutMailToUser dispatch in webhook - already handled by checkout controller", [
+                        'payment_id' => $payment->id,
+                        'user_id' => $metadata->user_id,
+                        'currency' => $currencySymbol
+                    ]);
+                    
+                    // \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
+                    // NOTE: Disabled to prevent duplicate emails - checkout controller handles this
+                } else {
+                    Log::info('User not eligible for email (is_uk != 0 or user not found)', [
+                        'user_id' => $metadata->user_id
+                    ]);
+                }
+            } else {
+                Log::warning("Payment record not found for session", ['session_id' => $session->id]);
+            }
+        }
+    }
+
     public function handleBillSubscriptionUpdate($data, $metadata)
     {
         $subscriptionId = $data->id;
@@ -323,7 +464,24 @@ class StripeWebhookController extends Controller
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
 
+        // Create deliverable entry for bill subscription renewal (like wish subscriptions)
+        $this->createBillRenewalDeliverable($newSubs);
+
         SendRenewMail::dispatch($array, 'renew', 'bill');
+        
+        // Dispatch content delivery email if bill has content file
+        if (!empty($newSubs->bill->content_file)) {
+            // Get currency symbol for email
+            $currency = \App\Models\Currency::where('iso', strtoupper($newSubs->currency))->first();
+            $currencySymbol = $currency ? $currency->symbol : '£';
+            
+            \App\Jobs\BillContentDeliveryMail::dispatch($newSubs, $currencySymbol);
+            \Log::info('StripeWebhookController: Content delivery email dispatched for bill renewal', [
+                'bill_payment_id' => $newSubs->id,
+                'bill_id' => $newSubs->bills_id,
+                'has_content_file' => !empty($newSubs->bill->content_file)
+            ]);
+        }
 
         Log::info("Bill subscription updated: {$subscriptionId}, Status: {$status}");
     }
@@ -388,6 +546,299 @@ class StripeWebhookController extends Controller
         SendRenewMail::dispatch($array, 'renew', 'membership');
 
         Log::info("Membership subscription updated: {$subscriptionId}, Status: {$status}");
+    }
+
+    /**
+     * Handle invoice.payment_succeeded events for subscription renewals
+     */
+    public function handleInvoicePaymentSucceeded($data, $metadata)
+    {
+        $subscriptionId = $data->subscription ?? null;
+        
+        if (!$subscriptionId) {
+            Log::info("Invoice payment succeeded but no subscription ID found", ['invoice_id' => $data->id]);
+            return;
+        }
+
+        Log::info("Processing invoice.payment_succeeded for subscription renewal", [
+            'invoice_id' => $data->id,
+            'subscription_id' => $subscriptionId,
+            'billing_reason' => $data->billing_reason ?? null,
+            'amount' => $data->amount_paid ?? 0,
+            'metadata' => $metadata
+        ]);
+        
+        // Check if this is a wish item subscription renewal
+        $wishSubscription = WishItemSubscription::where('stripe_id', $subscriptionId)
+            ->where('status', 'paid')
+            ->first();
+        
+        if ($wishSubscription) {
+            $this->handleWishSubscriptionRenewal($data, $wishSubscription);
+        }
+        
+        // Check for other subscription types (membership, bills) here if needed
+        // For now, focusing on wish subscriptions
+    }
+    
+    /**
+     * Handle wish subscription renewal payments
+     */
+    private function handleWishSubscriptionRenewal($invoiceData, $wishSubscription)
+    {
+        try {
+            Log::info('Processing wish subscription renewal payment', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'wish_item_id' => $wishSubscription->wish_item_id,
+                'invoice_id' => $invoiceData->id,
+                'amount' => $invoiceData->amount_paid ?? 0
+            ]);
+            
+            // Get the subscription details from Stripe to update period information
+            $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripeSubscription = $stripeClient->subscriptions->retrieve($wishSubscription->stripe_id);
+            
+            // Update subscription with new period information
+            $wishSubscription->current_period_start = Carbon::createFromTimestamp($stripeSubscription->current_period_start);
+            $wishSubscription->current_period_end = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+            $wishSubscription->upcoming_payment = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+            $wishSubscription->stripe_status = $stripeSubscription->status;
+            $wishSubscription->updated_at = Carbon::now();
+            $wishSubscription->save();
+            
+            Log::info('Wish subscription updated with new period', [
+                'subscription_id' => $wishSubscription->id,
+                'stripe_id' => $wishSubscription->stripe_id,
+                'new_period_end' => $wishSubscription->current_period_end,
+                'new_upcoming_payment' => $wishSubscription->upcoming_payment
+            ]);
+            
+            // If wish item has content to deliver for renewals, create deliverable
+            if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
+                
+                // Create deliverable record for renewal content delivery with certificate support
+                $deliverable = \App\Models\Deliverable::create([
+                    'uuid' => \Illuminate\Support\Str::uuid(),
+                    'product_id' => (string) $wishSubscription->wish_item->id,
+                    'item_id' => $wishSubscription->wish_item->id,
+                    'creator_id' => $wishSubscription->wish_item->user_id,
+                    'gifter_id' => $wishSubscription->user_id,
+                    'session_id' => $wishSubscription->session_id,
+                    'payment_intent_id' => $invoiceData->payment_intent ?? null,
+                    'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                    'product_type' => 'wish_subscription_renewal',
+                    'transaction_amount' => $wishSubscription->wish_item->price, // Use wish item price directly (base amount only)
+                    'status' => 'pending',
+                    'customer_email' => $wishSubscription->guest_email,
+                    'customer_name' => $wishSubscription->guest_name,
+                    'payment_currency' => strtoupper($wishSubscription->currency ?? 'GBP'),
+                    'anonymous' => $wishSubscription->anonymous ?? false,
+                    'message' => 'Subscription renewal content delivery',
+                    'metadata' => json_encode([
+                        'certificate' => 'true', // Enable certificate for subscription renewals
+                        'wish_id' => $wishSubscription->wish_item->id,
+                        'subscription_id' => $wishSubscription->id,
+                        'stripe_subscription_id' => $wishSubscription->stripe_id,
+                        'subscription_renewal' => true,
+                        'product_type' => 'wish_subscription_renewal',
+                        'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                        'invoice_id' => $invoiceData->id,
+                        'billing_reason' => $invoiceData->billing_reason ?? 'subscription_cycle',
+                        'renewal_period_start' => $wishSubscription->current_period_start,
+                        'renewal_period_end' => $wishSubscription->current_period_end
+                    ])
+                ]);
+                
+                // Dispatch job to process renewal content delivery
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                
+                Log::info('Subscription renewal content delivery job dispatched', [
+                    'deliverable_id' => $deliverable->id,
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id
+                ]);
+            }
+            
+            // Send renewal notification email if needed
+            $this->sendSubscriptionRenewalEmail($wishSubscription, $invoiceData);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to process wish subscription renewal', [
+                'subscription_id' => $wishSubscription->stripe_id ?? null,
+                'wish_item_id' => $wishSubscription->wish_item_id ?? null,
+                'invoice_id' => $invoiceData->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+    
+    /**
+     * Send subscription renewal email notification
+     */
+    private function sendSubscriptionRenewalEmail($wishSubscription, $invoiceData)
+    {
+        try {
+            // Prepare renewal amount with currency formatting and subscription period
+            // Use the base subscription amount (wish item price only, without platform fees)
+            $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
+            $currencySymbol = $currency ? $currency->symbol : '£';
+            $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+            $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
+            $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
+            
+            // Use the existing wish subscription email system for renewals
+            \App\Jobs\WishSubscriptionMailToUser::dispatch(
+                $wishSubscription,
+                $wishSubscription->guest_email,
+                $renewalAmount,
+                $wishSubscription->wish_item->user->name,
+                true // is_renewal = true
+            );
+            
+            Log::info('Wish subscription renewal email dispatched', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'customer_email' => $wishSubscription->guest_email,
+                'amount' => $renewalAmount,
+                'creator_name' => $wishSubscription->wish_item->user->name
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to send subscription renewal email', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Handle invoice.paid events for all subscription types
+     */
+    public function handleInvoicePaid($data, $metadata)
+    {
+        $subscriptionId = $data->subscription ?? null;
+        
+        if (!$subscriptionId) {
+            Log::info("Invoice paid but no subscription ID found", ['invoice_id' => $data->id]);
+            return;
+        }
+
+        Log::info("Processing invoice.paid for subscription", [
+            'invoice_id' => $data->id,
+            'subscription_id' => $subscriptionId,
+            'billing_reason' => $data->billing_reason ?? null
+        ]);
+
+        // Check if this is a wish item subscription
+        $wishSubscription = \App\Models\WishItemSubscription::where('stripe_id', $subscriptionId)
+            ->where('status', 'paid')
+            ->first();
+        
+        if ($wishSubscription && $wishSubscription->wish_item) {
+            $this->handleWishSubscriptionInvoicePaid($data, $wishSubscription);
+        } else {
+            Log::info("Invoice paid for non-wish subscription or subscription not found", [
+                'subscription_id' => $subscriptionId
+            ]);
+        }
+    }
+
+    /**
+     * Handle invoice.paid events specifically for wish item subscriptions
+     */
+    private function handleWishSubscriptionInvoicePaid($invoiceData, $wishSubscription)
+    {
+        try {
+            Log::info('Processing wish subscription invoice.paid', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'wish_item_id' => $wishSubscription->wish_item->id,
+                'invoice_id' => $invoiceData->id
+            ]);
+            
+            // Check if wish item has content to deliver
+            if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
+                
+                // Create deliverable record for tracking with certificate support
+                $deliverable = \App\Models\Deliverable::create([
+                    'uuid' => \Illuminate\Support\Str::uuid(),
+                    'product_id' => (string) $wishSubscription->wish_item->id,
+                    'item_id' => $wishSubscription->wish_item->id,
+                    'creator_id' => $wishSubscription->wish_item->user_id,
+                    'gifter_id' => $wishSubscription->user_id,
+                    'session_id' => $wishSubscription->session_id,
+                    'payment_intent_id' => $invoiceData->payment_intent ?? null,
+                    'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
+                    'product_type' => 'wish_subscription_content',
+                    'transaction_amount' => $wishSubscription->amount,
+                    'status' => 'pending',
+                    'customer_email' => $wishSubscription->guest_email,
+                    'customer_name' => $wishSubscription->guest_name,
+                    'payment_currency' => strtoupper($wishSubscription->currency ?? 'GBP'),
+                    'anonymous' => $wishSubscription->anonymous ?? false,
+                    'message' => $wishSubscription->surprise_message,
+                    'metadata' => json_encode([
+                        'certificate' => 'true', // Enable certificate for subscription payments
+                        'wish_id' => $wishSubscription->wish_item->id,
+                        'subscription_id' => $wishSubscription->id,
+                        'stripe_subscription_id' => $wishSubscription->stripe_id,
+                        'subscription_payment' => true,
+                        'product_type' => 'wish_subscription_content',
+                        'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
+                        'invoice_id' => $invoiceData->id,
+                        'billing_reason' => $invoiceData->billing_reason ?? null,
+                        'deliverable_url' => !empty($wishSubscription->wish_item->content_file) ? 
+                            $wishSubscription->wish_item->content_file_url : 
+                            ($wishSubscription->wish_item->reward_url ?? null)
+                    ])
+                ]);
+                
+                // Dispatch ProcessWishItemDeliverable job for content processing
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                
+                Log::info('Wish subscription content delivery job dispatched', [
+                    'deliverable_id' => $deliverable->id,
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id,
+                    'has_content_file' => !empty($wishSubscription->wish_item->content_file),
+                    'has_reward' => !empty($wishSubscription->wish_item->reward)
+                ]);
+                
+                // Send subscription payment notification using existing wish subscription email
+                $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
+                $currencySymbol = $currency ? $currency->symbol : '£';
+                $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
+                $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
+                $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
+                
+                // Use existing wish subscription email system
+                \App\Jobs\WishSubscriptionMailToUser::dispatch(
+                    $wishSubscription,
+                    $wishSubscription->guest_email,
+                    $paymentAmount,
+                    $wishSubscription->wish_item->user->name,
+                    true // is_renewal = true for subscription payments
+                );
+                
+                Log::info('Wish subscription email notification dispatched', [
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id,
+                    'customer_email' => $wishSubscription->guest_email
+                ]);
+            } else {
+                Log::info('Wish subscription has no content to deliver', [
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'wish_item_id' => $wishSubscription->wish_item->id
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to process wish subscription invoice.paid', [
+                'subscription_id' => $wishSubscription->stripe_id,
+                'wish_item_id' => $wishSubscription->wish_item->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     public function handleWishSubscriptionUpdate($data, $metadata)
@@ -594,6 +1045,27 @@ class StripeWebhookController extends Controller
                 }
                 break;
 
+                case 'review.closed':
+                    $review = $event->data->object;
+
+                    if ($review->reason === 'approved') {
+                        $paymentIntentId = $review->payment_intent;
+
+                        if ($paymentIntentId) {
+                            try {
+                                $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+                                
+                                // Only capture if it's still requires_capture
+                                if ($paymentIntent->status === 'requires_capture') {
+                                    $stripe->paymentIntents->capture($paymentIntentId);
+                                    Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                    break;
 
             case 'invoice.payment_failed':
                 $subs->status = 'failed';
@@ -619,8 +1091,22 @@ class StripeWebhookController extends Controller
                 SendRenewMail::dispatch($array, 'cancelled', 'site');
                 break;
 
+            case 'customer.subscription.deleted':
+                Log::info("Subscription deleted: {$subscriptionId}");
+                $subs->status = 'cancelled';
+                $subs->cancelled_at = now();
+                $subs->upcoming_payment = null;
+                $subs->save();
+                if ($user) {
+                    $user->is_subscribed = 0;
+                    $user->save();
+                }
+                Helpers::sendNotification('Subscription has been cancelled 🛑', 'We\'re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
+                SendRenewMail::dispatch($array, 'cancelled', 'site');
+                break;
+
             default:
-                Log::info('Unhandled event type: {$eventType}');
+                Log::info("Unhandled event type: {$eventType}");
                 break;
         }
 
@@ -656,6 +1142,154 @@ class StripeWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error("Error creating £4/month subscription: " . $e->getMessage());
             return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create deliverable entry for bill subscription renewal (like wish subscriptions)
+     */
+    private function createBillRenewalDeliverable($billPayment)
+    {
+        try {
+            $bill = $billPayment->bill;
+            
+            // Create deliverable entry for renewal tracking (similar to wish subscriptions)
+            $deliverable = Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
+                'price_id' => $bill->price_id,
+                'item_id' => $bill->id, // Add item_id for bill lookup
+                'creator_id' => $bill->user_id,
+                'gifter_id' => $billPayment->user_id,
+                'payment_intent_id' => null, // Renewals don't have payment intent
+                'session_id' => $billPayment->session_id,
+                'deliverable_type' => !empty($bill->content_file) ? 'digital_file' : 'access',
+                'product_type' => 'bill',
+                'transaction_amount' => $billPayment->amount, // Add transaction amount
+                'deliverable_url' => !empty($bill->content_file) ? "https://ucarecdn.com/{$bill->content_file}/" : null,
+                'customer_email' => $billPayment->guest_email ?? $billPayment->user->email ?? null,
+                'customer_name' => $billPayment->guest_name ?? $billPayment->user->name ?? null,
+                'payment_status' => $billPayment->status,
+                'payment_currency' => $billPayment->currency,
+                'anonymous' => $billPayment->anonymous ?? false,
+                'message' => $billPayment->message,
+                'metadata' => json_encode([
+                    'product_type' => 'bill',
+                    'bill_id' => $bill->id,
+                    'bill_name' => $bill->name,
+                    'amount' => $billPayment->amount,
+                    'currency' => $billPayment->currency,
+                    'subscription_id' => $billPayment->stripe_id,
+                    'recurring_type' => $billPayment->recurring_type,
+                    'anonymous' => $billPayment->anonymous,
+                    'message' => $billPayment->message,
+                    'guest_email' => $billPayment->guest_email,
+                    'guest_name' => $billPayment->guest_name,
+                    'has_content_file' => !empty($bill->content_file),
+                    'renewal' => true
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            // Dispatch ProcessWishItemDeliverable job for certificate generation
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+            Log::info('Bill renewal deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'bill_payment_id' => $billPayment->id,
+                'bill_id' => $bill->id,
+                'has_content_file' => !empty($bill->content_file)
+            ]);
+
+            return $deliverable;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create bill renewal deliverable', [
+                'error' => $e->getMessage(),
+                'bill_payment_id' => $billPayment->id ?? 'unknown',
+                'bill_id' => $billPayment->bill->id ?? 'unknown'
+            ]);
+            return null;
+        }
+    }
+    
+    /**
+     * Handle support payment deliverables that are ready for Stripe metadata updates
+     * This is a safety-net to catch any support payments that didn't get their
+     * Stripe metadata updated through the primary flow
+     */
+    private function handleSupportPaymentDeliverableReady($data, $metadata)
+    {
+        try {
+            Log::info('StripeWebhookController: Checking for support payment deliverables ready for metadata updates', [
+                'event_data' => get_class($data),
+                'metadata' => $metadata
+            ]);
+            
+            // Look for support payment deliverables that are ready but haven't had Stripe metadata updated
+            $readyDeliverables = \App\Models\Deliverable::where('product_type', 'support_payment')
+                ->where('status', 'delivered')
+                ->whereNotNull('certificate_url')
+                ->whereNotNull('payment_intent_id')
+                ->get()
+                ->filter(function($deliverable) {
+                    // Check if Stripe metadata hasn't been updated yet
+                    $metadata = json_decode($deliverable->metadata, true) ?? [];
+                    $alreadyUpdated = $metadata['stripe_metadata_updated'] ?? false;
+                    
+                    if ($alreadyUpdated) {
+                        return false; // Skip already updated ones
+                    }
+                    
+                    // Additional check: verify this deliverable is related to current webhook event
+                    // by checking session_id or payment_intent_id matches webhook data
+                    $sessionId = $deliverable->session_id;
+                    $paymentIntentId = $deliverable->payment_intent_id;
+                    
+                    // Check if this webhook event relates to this deliverable
+                    $eventSessionId = $data->id ?? null;
+                    $eventPaymentIntentId = $data->payment_intent ?? null;
+                    
+                    $isRelated = ($sessionId && $sessionId === $eventSessionId) ||
+                                ($paymentIntentId && $paymentIntentId === $eventPaymentIntentId);
+                    
+                    if ($isRelated) {
+                        Log::info('StripeWebhookController: Found related support payment deliverable needing metadata update', [
+                            'deliverable_id' => $deliverable->id,
+                            'session_id' => $sessionId,
+                            'payment_intent_id' => $paymentIntentId,
+                            'event_session_id' => $eventSessionId,
+                            'event_payment_intent_id' => $eventPaymentIntentId
+                        ]);
+                        return true;
+                    }
+                    
+                    return false;
+                });
+            
+            // Dispatch UpdateSupportPaymentStripeMetadata job for any found deliverables
+            foreach ($readyDeliverables as $deliverable) {
+                \App\Jobs\UpdateSupportPaymentStripeMetadata::dispatch($deliverable->id)
+                    ->delay(now()->addSeconds(5)); // Short delay for webhook safety-net
+                
+                Log::info('StripeWebhookController: Dispatched safety-net UpdateSupportPaymentStripeMetadata job', [
+                    'deliverable_id' => $deliverable->id,
+                    'certificate_url' => $deliverable->certificate_url,
+                    'payment_intent_id' => $deliverable->payment_intent_id
+                ]);
+            }
+            
+            if ($readyDeliverables->count() === 0) {
+                Log::info('StripeWebhookController: No support payment deliverables found needing metadata updates');
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('StripeWebhookController: Error in handleSupportPaymentDeliverableReady', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Don't throw - this is a safety-net, shouldn't break main webhook processing
         }
     }
 }

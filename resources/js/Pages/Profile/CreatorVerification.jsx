@@ -18,6 +18,7 @@ import { FaLock } from "react-icons/fa";
 import { empty } from "@apollo/client";
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
+    
     const { auth, user, global_currency, slinks } = usePage().props;
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
@@ -71,7 +72,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     Complete these steps and let your fans fund your lifestyle.
                 </p>
                 <ProgressBar now={filledSteps} max={6} />
-
                 {IsloggedIn && user?.profile_reject_reason != null &&
                 user?.profile_status_lock == 0 ?
                     <>
@@ -118,7 +118,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </p>
                         </div>
                     </div>
-                    {auth?.user?.is_subscribed !== 1 && (
+                    {auth?.user?.is_subscribed == 0 && (
                         <Link
                             className="text-pink text-nowrap"
                             href="/activate-subscription"
@@ -362,42 +362,66 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
                 )}
                 <div>
-                    <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
-                            <div
-                                className={`check-icon me-2 pt-1 ${
-                                    auth?.user?.identity_status == 1
-                                        ? "checked"
-                                        : ""
-                                }`}
-                            >
+                    <div className="profile-steps border border-gray-200 rounded-xl p-3 mt-3 ">
+                        <div className=" flex items-center justify-between ">
+                            <div className="step-title flex max-w-[390px] pe-3">
                                 <div
-                                    dangerouslySetInnerHTML={{
-                                        __html: checkedItem,
-                                    }}
-                                />
+                                    className={`check-icon me-2 pt-1 ${
+                                        auth?.user?.identity_admin_status == 1
+                                            ? "checked"
+                                            : ""
+                                    }`} >
+                                    <div dangerouslySetInnerHTML={{ __html: checkedItem, }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Identity Verification
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Secure your account and meet compliance
+                                        requirements.
+                                    </p>
+
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-dark font-bold">
-                                    Identity Verification
-                                </h2>
-                                <p className="text-gray-500 text-[14px]">
-                                    Secure your account and meet compliance
-                                    requirements.
-                                </p>
-                            </div>
-                        </div>
-                        <div>
-                            {auth?.user?.identity_status == 1 ?
-                                <span className="text-green-600">Verified</span>
-                            :
                             <>
-                                {auth?.user?.profile_status_lock == 2 ?
-                                <Link className={"text-pink"} href="/stripe/identity-verification">Verify</Link>
-                                : <p className={"text-gray-400"}  >Verify</p> }
+                                {auth?.user?.identity_admin_status == 1 ? (
+                                    <span className="text-green-600">Verified</span>
+                                ) : auth?.user?.identity_admin_status == 2 ? (
+                                    <>
+                                        {/* <span className="text-red-600">Rejected</span>{" "} */}
+                                        <Link className={"text-pink"} href="/stripe/identity-verification">Re-verify</Link>
+                                    </>
+                                ) : auth?.user?.identity_status == 1 ? (
+                                    <span className="text-yellow-600">
+                                        {/* Pending Admin Review */}
+                                        </span>
+                                ) : auth?.user?.profile_status_lock == 2 ? (
+                                    <Link className={"text-pink"} href="/stripe/identity-verification">Verify</Link>
+                                ) : (
+                                    <p className={"text-gray-400"}>Verify</p>
+                                )}
                             </>
-                            }
                         </div>
+
+
+                        {auth?.user?.identity_admin_status !== 2 && auth?.user?.identity_status == 1 && auth?.user?.identity_admin_status != 1 && (
+                            <div className="mt-2 text-yellow-700 bg-yellow-50 px-3 py-2 rounded">
+                                ⏳ Your documents has been submitted. Waiting for admin review. Please check again after 1-2 hrs.
+                            </div>
+                        )}
+
+                        {auth?.user?.identity_admin_status == 2 && (
+                            <div className="mt-2">
+                                {auth?.user?.identity_admin_notes && (
+                                    <div className="mt-2 px-3 py-2 bg-red-100 text-red-800 rounded-lg text-sm">
+                                        <h2>Rejected By Admin</h2>
+                                        <p>Reason : {auth?.user?.identity_admin_notes}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                      </div>
 
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
@@ -426,12 +450,15 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </p>
                             </div>
                         </div>
+
                         {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
                            <div>
-                            { auth?.user?.profile_status_lock == 2 && auth?.user?.identity_status == 1 ?
+                            { auth?.user?.identity_admin_status == 1 ?
                             <Link className={"text-pink"} href="/stripe">Connect</Link>
                              :
+                             <>
                              <p className={"text-gray-400"}  >Connect</p>
+                             </>
                             }
                            </div> :
                             ''
@@ -440,6 +467,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                            <div> <span className="text-green-600">Connected</span> </div> :
                             ''
                         }
+
                      </div>
                   </div>
             </div>

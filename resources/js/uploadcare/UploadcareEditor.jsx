@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import * as LR from 'https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js';
 
-export default function UploadcareEditor({uuid, updateFile, setIsEditable, height}){
+export default function UploadcareEditor({uuid, updateFile, setIsEditable, height, ctxName = "my-editor"}){
 
   useEffect(() => {
     LR.registerBlocks(LR);
@@ -9,14 +9,14 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable, heigh
       updateFile && updateFile(event.detail, uuid);
       setIsEditable && setIsEditable(false);
     };
-    const instance = document.querySelector('#my-editor');
+    const instance = document.querySelector(`#${ctxName}`);
     instance && instance.addEventListener('apply', callback('Apply'));
     instance && instance.addEventListener('cancel', callback('Cancel'));
     return () => {
       instance && instance.removeEventListener('apply', callback('Apply'));
       instance && instance.removeEventListener('cancel', callback('Cancel'));
     };
-  }, [uuid]);
+  }, [uuid, ctxName]);
 
   return (
     <>
@@ -32,11 +32,11 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable, heigh
 
       {uuid ? <div className='image-editor border rounded-4 overflow-hidden' >
         <lr-config  
-        ctx-name="my-editor"
+        ctx-name={ctxName}
         ></lr-config>
         <lr-cloud-image-editor
-          id="my-editor"
-          ctx-name="my-editor"
+          id={ctxName}
+          ctx-name={ctxName}
           css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.css"
           uuid={uuid}  
           crop-preset="1:1"

@@ -19,7 +19,7 @@ export default function IntroVideos(props) {
     const fetch_videos = () => {
         setloading(true);
         axios.get(`discover/creators/${order}/${gender}`).then((resp) => {
-            setIntros(resp.data && resp.data.intro.data);
+            setIntros(resp.data && resp.data?.intro?.data);
             setloading(false);
         }).catch((_err) => {
             console.error("error", _err);
@@ -40,7 +40,7 @@ export default function IntroVideos(props) {
 
     const ProfileIntro = ({ data, text}) => {
     return <>
-      <Popup space="0" size="md"  classes={`w-100`}
+      <Popup space="0" size="md"  classes={`w-100 h-full`}
         text={text} >
             <div className='video-payer-pop' >
               <video playsInline='false'  controlsList='nodownload' autoPlay   controls src={data && data.perma_link} />
@@ -51,27 +51,36 @@ export default function IntroVideos(props) {
 
 
     const Intro = ({w}) => {
-      return   <ProfileIntro data={w}   text={<>
-        <div className=' ' >
-            <div className='introvideobox overflow-hidden h-[350px] rounded-[25px] border-3 !border-[#F94F97] position-relative' >
+      return  <div className="relative rounded-[25px]  h-[250px] md:h-[350px]  overflow-hidden border-3 !border-[#F94F97] "> 
+      <ProfileIntro data={w}  text={<>
+        <div className='h-full' >
+            <div className='introvideobox h-full bg-black  position-relative' >
               <LazyLoadImage
-              alt={"image"}  effect="blur"
-              height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full h-full object-cover' width={260} />
-              <div  className='cursor-pointer playicon ' >
+              alt={"image"}  effect="blur"  
+              height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full !h-full object-cover ' width={260} />
+              <div className='cursor-pointer playicon ' >
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="32" cy="32" r="32" fill="#F94F97"/>
                 <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
                 </svg>
               </div>
-              <div className='absolute bg-[#0004] bottom-0 left-0  p-3  w-100 text-white transition-colors hover:bg-[#000] ' >
-                <Link href={`/${w && w.user && w.user.username}`}  >
-                  <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name}</p>
-                  <p className='text-normal' >@{w && w.user && w.user.username}</p>
-                </Link>
-              </div>
             </div>
         </div>
       </>} />
+      <div className='absolute bottom-0 bg-black  left-0 w-full p-3 md:p-4 z-[99px] text-white transition-colors   ' >
+        {w && w.user && w.user.username ? (
+          <Link href={`/${w.user.username}`}  >
+            <p className='text-normal md:text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
+            <p className='text-normal mt-0' >@{w.user.username}</p>
+          </Link>
+        ) : (
+          <div>
+            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name || 'Unknown User'}</p>
+            <p className='text-normal mt-0 text-gray-400' >@unavailable</p>
+          </div>
+        )}
+      </div>
+      </div>
     }
 
     return <>

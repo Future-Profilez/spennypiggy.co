@@ -70,13 +70,13 @@ export default function SocialLinks({ links, textcolor }) {
                     </li>
                 : ''}
 
-                {links && links.facebook ?
+                {/* {links && links.facebook ?
                     <li className={`px-2 mt-2 mb-2`} >
                         <a target="_blank" className={textcolor} title={"facebook"} href={`${gefullurl("facebook")}${links && links.facebook}`}  >
                             <div dangerouslySetInnerHTML={{ __html: facebook }}></div> Facebook
                         </a>
                     </li>
-                : ''}
+                : ''} */}
 
                {links && links.twitter ?
                     <li className={`px-2 mt-2 mb-2`} >

@@ -42,6 +42,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Stripe\StripeClient;
 use App\StripeControl;
@@ -121,7 +122,7 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
             $user = User::find(Auth::id());
-            $taxamount = $request->price * config('app.single_tax') / 100;
+            $taxamount = $request->price * config('app.platform_fee_percentage') / 100;
             $adminFee = config('app.administration_fee');
             $adminFees = Helpers::priceFormat('GBP', $adminFee, $user->default_currency);
             // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
@@ -165,8 +166,11 @@ class WishitemController extends Controller
                         'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
                     ],
                     'metadata' => [
+                        'creator_id' => $user->id,
                         'wish_id' => $wish->id,
-                        'user_id' => $user->id,
+                        'deliverable_type' => 'media_bundle',
+                        'certificate' => 'true',
+                        'product_type' => 'wish_onetime',
                     ],
                 ];
 
@@ -196,56 +200,77 @@ class WishitemController extends Controller
      * @param Request $request
      * @return mixed
      */
-    public function addWishItem(Request $request)
+    public function addWishItem(Request $request): RedirectResponse
     {
-        $request->validate(
-            [
-                "wishname" => [
-                    "required",
-                    "string",
-                    "min:4",
-                    "max:255"
-                ],
-                "price" => [
-                    "required",
-                    "numeric",
-                    "min:0"
-                ],
-                "item_url" => [
-                    "nullable"
-                ],
-                "fullfill_amount" => [
-                    "nullable"
-                ],
-                "thumbnail" => [
-                    "sometimes",
-                    "nullable"
-                ],
-                // 'reward_file' => [
-                //     'required'
-                // ],
-                "subscription" => [
-                    "required",
-                    "integer",
-                    Rule::in([0, 1, 2])
-                ],
-                "subscription_period" => [
-                    "required_if:subscription,1",
-                    new ValidSubscriptionPeriod
-                ],
-                "repeat_purchase" => [
-                    "sometimes",
-                    "nullable"
-                ],
-                "category" => [
-                    "sometimes",
-                    "nullable"
-                ]
+        // Temporary debug logging
+        \Log::info('Wish creation attempt', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->except(['password', '_token']),
+            'user_role' => Auth::user()?->role,
+            'subscription_status' => Auth::user()?->subscription_status,
+        ]);
+        
+        $request->validate([
+            "wishname" => [
+                "required",
+                "string",
+                "min:4",
+                "max:255"
             ],
-            [
-                'subscription_period.required_if'   =>  'Please select subscription period'
+            "price" => [
+                "required",
+                "numeric",
+                "min:0"
+            ],
+            "item_url" => [
+                "nullable"
+            ],
+            "fullfill_amount" => [
+                "nullable"
+            ],
+            "thumbnail" => [
+                "sometimes",
+                "nullable"
+            ],
+            "content_file" => [
+                "nullable",
+                "string" // Uploadcare UUID
+            ],
+            "content_file_name" => [
+                "nullable",
+                "string"
+            ],
+            "content_file_type" => [
+                "nullable",
+                "string"
+            ],
+            "content_file_size" => [
+                "nullable",
+                "integer"
+            ],
+            // 'reward_file' => [
+            //     'required'
+            // ],
+            "subscription" => [
+                "required",
+                "integer",
+                Rule::in([0, 1, 2])
+            ],
+            "subscription_period" => [
+                "required_if:subscription,1",
+                new ValidSubscriptionPeriod
+            ],
+            "repeat_purchase" => [
+                "sometimes",
+                "nullable"
+            ],
+            "category" => [
+                "sometimes",
+                "nullable"
             ]
-        );
+        ], [
+            'subscription_period.required_if'   =>  'Please select subscription period'
+        ]);
 
         // return response()->json([
         //     "data" => $request->all()
@@ -265,15 +290,21 @@ class WishitemController extends Controller
 
         // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
         if ($request->subscription == 0) {
-            $tax_percent = config('app.single_tax');
+            $tax_percent = config('app.platform_fee_percentage');
         } elseif ($request->subscription == 1) {
-            $tax_percent = config('app.subs_tax');
+            $tax_percent = config('app.platform_fee_percentage');
         } elseif ($request->subscription == 2) {
             $tax_percent = config('app.crowd_tax');
         }
 
         $taxamount = round(($price * $tax_percent / 100), 2, PHP_ROUND_HALF_UP);
         $createpriceid = $price + $taxamount;
+
+        // Handle content file UUID from Uploadcare
+        $contentFile = $request->content_file; // Uploadcare UUID
+        $contentFileType = $request->content_file_type;
+        $contentFileName = $request->content_file_name;
+        $contentFileSize = $request->content_file_size;
 
         $wish = WishItem::create([
             "user_id" => Auth::id(),
@@ -283,6 +314,10 @@ class WishitemController extends Controller
             'item_url' => $request->item_url != "" ? $request->item_url : null,
             'thumbnail' => $request->thumbnail ?? null,
             'reward' => null,
+            'content_file' => $contentFile,
+            'content_file_type' => $contentFileType,
+            'content_file_name' => $contentFileName,
+            'content_file_size' => $contentFileSize,
             // 'reward' => $request->reward_file ?? null,
             "ai_generated" => $request->ai_generated,
             'subscription' => $request->subscription,
@@ -332,8 +367,11 @@ class WishitemController extends Controller
                         'unit_amount_decimal' => number_format($createpriceid * 100, 0, '.', ''), // Stripe expects string or int
                     ],
                     'metadata' => [
+                        'creator_id' => $user->id,
                         'wish_id' => $wish->id,
-                        'user_id' => $user->id,
+                        'deliverable_type' => $request->subscription == 1 ? 'access' : 'media_bundle',
+                        'certificate' => 'true',
+                        'product_type' => $request->subscription == 1 ? 'wish_subscription' : 'wish_onetime',
                     ],
                 ];
 
@@ -361,6 +399,9 @@ class WishitemController extends Controller
             }
         }
 
+        // Clear activity cache to ensure real-time updates
+        app(\App\Services\CreatorActivityService::class)->clearActivityCache(Auth::user());
+
         return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
 
@@ -381,9 +422,9 @@ class WishitemController extends Controller
         $new_price = $request->price;
         if (!empty($request->price)) {
             if ($request->subscription == 0) {
-                $tax_percent = config('app.single_tax');
+                $tax_percent = config('app.platform_fee_percentage');
             } elseif ($request->subscription == 1) {
-                $tax_percent = config('app.subs_tax');
+                $tax_percent = config('app.platform_fee_percentage');
             } elseif ($request->subscription == 2) {
                 $tax_percent = config('app.crowd_tax');
             }
@@ -396,6 +437,20 @@ class WishitemController extends Controller
             $createpriceid = $taxamount + $price;
         }
         if (!empty($wish)) {
+            // Handle content file UUID from Uploadcare for update
+            $contentFile = $wish->content_file;
+            $contentFileType = $wish->content_file_type;
+            $contentFileName = $wish->content_file_name;
+            $contentFileSize = $wish->content_file_size;
+            
+            if ($request->content_file && $request->content_file !== $wish->content_file) {
+                // Update with new Uploadcare UUID and metadata
+                $contentFile = $request->content_file;
+                $contentFileType = $request->content_file_type;
+                $contentFileName = $request->content_file_name;
+                $contentFileSize = $request->content_file_size;
+            }
+            
             $updatedata = WishItem::where('uuid', $uuid)->update([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname ?? $wish->wishname,
@@ -403,6 +458,10 @@ class WishitemController extends Controller
                 'item_url' => $request->item_url != "" ? $request->item_url : $wish->item_url,
                 'thumbnail' => $request->thumbnail ?? $wish->thumbnail,
                 'reward' => $request->reward_file ?? $wish->reward,
+                'content_file' => $contentFile,
+                'content_file_type' => $contentFileType,
+                'content_file_name' => $contentFileName,
+                'content_file_size' => $contentFileSize,
                 "ai_generated" => $request->ai_generated ?? $wish->ai_generated,
                 'subscription' => $request->subscription ?? $wish->subscription,
                 'subscription_period' => $request->subscription_period ?? $wish->subscription_period,
@@ -450,49 +509,86 @@ class WishitemController extends Controller
                 }
 
                 try {
-
                     $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-                    // Always update the product name and image
-                    $productUpdatePayload = [
-                        'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
-                        'images' => [$wish->perma_link],
-                    ];
-
-                    $stripeProduct = (object)['id' => $wish->stripe_product_id];
-
-                    if ($old_price != $new_price || $request->subscription != $old_wish || $request->wishname != $old_wish_name) {
-                        // Create new price
-                        $newPricePayload = [
-                            "currency" => $user->default_currency,
-                            "unit_amount_decimal" => round($createpriceid * 100, 2),
-                            "product" => $wish->stripe_product_id,
-                        ];
-
-                        if ($request->subscription == 1) {
-                            $newPricePayload["recurring"] = [
-                                "interval" => StripeControl::$periods[$request->subscription_period],
-                                "interval_count" => 1
-                            ];
+                    // Check if Stripe product exists, if not create a new one
+                    $stripeProduct = null;
+                    if (!empty($wish->stripe_product_id)) {
+                        try {
+                            $stripeProduct = StripeControl::getProduct($wish->stripe_product_id, $wish->user->account_id);
+                        } catch (Exception $e) {
+                            Log::warning('Stripe product not found during update', [
+                                'wish_id' => $wish->id,
+                                'stripe_product_id' => $wish->stripe_product_id,
+                                'error' => $e->getMessage()
+                            ]);
+                            $stripeProduct = null;
                         }
-
-                        $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
-
-                        $wish->price_id = $newPrice->id;
-
-                        // Update product default price
-                        $productUpdatePayload['default_price'] = $newPrice->id;
-                        $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
-
-                        $stripeClient->prices->update($old_price_id, [
-                            'active' => false
-                        ], [
-                            'stripe_account' => $user->account_id
-                        ]);
                     }
 
-                    // Save updated product ID
-                    $wish->stripe_product_id = $stripeProduct->id;
+                    // If product doesn't exist, create a new one
+                    if (!$stripeProduct) {
+                        $productPayload['metadata'] = [
+                            'creator_id' => $user->id,
+                            'wish_id' => $wish->id,
+                            'deliverable_type' => 'media_bundle',
+                            'certificate' => 'true',
+                            'product_type' => 'wish_onetime',
+                        ];
+
+                        $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
+                        
+                        // Save the new product and price IDs
+                        $wish->stripe_product_id = $stripeProduct->id;
+                        $wish->price_id = $stripeProduct->default_price;
+                        $wish->save();
+                    } else {
+                        // Product exists, handle price updates if needed
+                        if ($old_price != $new_price || $request->subscription != $old_wish || $request->wishname != $old_wish_name) {
+                            // Create new price only if product exists
+                            $newPricePayload = [
+                                "currency" => $user->default_currency,
+                                "unit_amount_decimal" => round($createpriceid * 100, 2),
+                                "product" => $wish->stripe_product_id,
+                            ];
+
+                            if ($request->subscription == 1) {
+                                $newPricePayload["recurring"] = [
+                                    "interval" => StripeControl::$periods[$request->subscription_period],
+                                    "interval_count" => 1
+                                ];
+                            }
+
+                            $newPrice = StripeControl::createPrice($newPricePayload, $wish->user->account_id);
+                            $wish->price_id = $newPrice->id;
+
+                            // Update product details
+                            $productUpdatePayload = [
+                                'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
+                                'images' => [$wish->perma_link],
+                                'default_price' => $newPrice->id
+                            ];
+                            
+                            $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
+
+                            // Deactivate old price if it exists
+                            if (!empty($old_price_id)) {
+                                try {
+                                    $stripeClient->prices->update($old_price_id, [
+                                        'active' => false
+                                    ], [
+                                        'stripe_account' => $user->account_id
+                                    ]);
+                                } catch (Exception $e) {
+                                    Log::warning('Could not deactivate old price', [
+                                        'old_price_id' => $old_price_id,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+
                     $wish->is_approved = 0;
                     $wish->save();
 
@@ -524,33 +620,67 @@ class WishitemController extends Controller
             ]);
         }
 
-        WishCategory::where('wish_item_id', $wishitem->id)->delete();
-
-        UserCart::where('wish_item_id', $wishitem->id)->delete();
-
-        $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
-
-        foreach ($si as $key => $value) {
-            StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
-            $value->delete();
+        try {
+            // Delete related database records first
+            WishCategory::where('wish_item_id', $wishitem->id)->delete();
+            UserCart::where('wish_item_id', $wishitem->id)->delete();
+            
+            $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
+            
+            foreach ($si as $key => $value) {
+                StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
+                $value->delete();
+            }
+            
+            WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
+            
+            // Try to delete Stripe product if it exists
+            if (!empty($wishitem->stripe_product_id)) {
+                try {
+                    $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
+                    
+                    if ($stripeProduct) {
+                        StripeControl::deleteProductAndPrices($stripeProduct->id, $wishitem->user->account_id);
+                        Log::info('Deleted Stripe product during wish deletion', [
+                            'wish_id' => $wishitem->id,
+                            'stripe_product_id' => $wishitem->stripe_product_id
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    Log::warning('Could not delete Stripe product during wish deletion', [
+                        'wish_id' => $wishitem->id,
+                        'stripe_product_id' => $wishitem->stripe_product_id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with deletion even if Stripe fails
+                }
+            }
+            
+            // Delete the wish item from database
+            $wishitem->delete();
+            
+            Log::info('Wish item deleted successfully', [
+                'wish_id' => $wishitem->id,
+                'user_id' => $wishitem->user_id
+            ]);
+            
+            return response()->json([
+                'status' => true,
+                'msg' => "Wishitem removed successfully."
+            ]);
+            
+        } catch (Exception $e) {
+            Log::error('Error deleting wish item', [
+                'wish_id' => $wishitem->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => false,
+                'msg' => "Error deleting wish item: " . $e->getMessage()
+            ]);
         }
-
-        WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
-
-        $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
-
-        if ($stripeProduct) {
-            // Delete the product and prices from Stripe
-            StripeControl::deleteProductAndPrices($stripeProduct->id, $wishitem->user->account_id);
-        }
-        // StripeControl::deleteProductAndPrices($wishitem->stripe_product_id, $wishitem->user->account_id);
-
-        $wishitem->delete();
-
-        return response()->json([
-            'status' => true,
-            'msg' => "Wishitem removed successfully."
-        ]);
     }
 
     public function saveUserCategory(Request $request)
@@ -595,97 +725,116 @@ class WishitemController extends Controller
     public function discover_all_wishes($order, $type, $price)
     {
         $tag = request()->query('tag') ? str_replace('-', ' ', request()->query('tag')) : false;
-        $cacheKey = "discover_wishes_{$order}_{$type}_{$price}_" . md5($tag ?? '');
-
-        return CacheService::remember($cacheKey, CacheService::SHORT_CACHE, function () use ($order, $type, $price, $tag) {
-            $query = WishItem::query()
-                ->forListing()
-                ->whereHas('user', function ($q) use ($tag) {
-                    $q->where('is_uk', 0)->where('profile_status_lock', 2)->where('profile_reject_reason', null);
-                    
-                    if ($tag) {
-                        $q->whereJsonContains('creator_category', $tag);
-                    }
-                });
-
-            // Order by condition with performance optimization
-            if ($order === 'new') {
-                $query->latest();
-            } elseif ($order === 'trending') {
-                $query->trending();
+        $query = WishItem::whereNull('deleted_at')->where('is_approved', 1)->with("user")->whereHas('user', function ($q) use ($tag) {
+            $q->whereNull('deleted_at')
+                ->where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0);
+            if ($tag) {
+                $q->whereJsonContains('creator_category', $tag);
             }
-
-            // Price range filter
-            $priceRanges = [
-                '5to10' => [4.99, 9.99],
-                '10to30' => [9.99, 29.99],
-                '30to50' => [29.99, 49.99],
-                '50to100' => [49.99, 99.99],
-            ];
-
-            if (isset($priceRanges[$price])) {
-                $query->whereBetween('price', $priceRanges[$price]);
-            } elseif ($price === '100plus') {
-                $query->where('price', '>', 99.99);
-            }
-
-            // Subscription type filter
-            $subscriptionTypes = [
-                'subscription' => 1,
-                'crowdfund' => 2,
-                'single' => 0,
-            ];
-
-            if (isset($subscriptionTypes[$type])) {
-                $query->where('subscription', $subscriptionTypes[$type]);
-            }
-
-            // Use cached pagination
-            $wishes = $query->cachedPaginate(30);
-            
-            return [
-                'success' => true,
-                'wishes' => $wishes,
-                'last_page' => $wishes->lastPage(),
-                'current_page' => $wishes->currentPage(),
-                'total' => $wishes->total(),
-                'per_page' => $wishes->perPage(),
-            ];
         });
-        
+
+        // return $query->get();
+
+        if ($order === 'new') {
+            $query->latest();
+        } elseif ($order === 'trending' && method_exists(WishItem::class, 'scopeTrending')) {
+            $query->trending();
+        }
+
+        $priceRanges = [
+            '5to10' => [4.99, 9.99],
+            '10to30' => [9.99, 29.99],
+            '30to50' => [29.99, 49.99],
+            '50to100' => [49.99, 99.99],
+        ];
+
+        if (isset($priceRanges[$price])) {
+            $query->whereBetween('price', $priceRanges[$price]);
+        } elseif ($price === '100plus') {
+            $query->where('price', '>', 99.99);
+        }
+
+        $subscriptionTypes = [
+            'subscription' => 1,
+            'crowdfund' => 2,
+            'single' => 0,
+        ];
+        if (isset($subscriptionTypes[$type])) {
+            $query->where('subscription', $subscriptionTypes[$type]);
+        }
+
+        // Pagination
+        $wishes = $query->paginate(30);
+
+        $result = [
+            'success' => true,
+            'wishes' => $wishes,
+            'last_page' => $wishes->lastPage(),
+            'current_page' => $wishes->currentPage(),
+            'total' => $wishes->total(),
+            'per_page' => $wishes->perPage(),
+        ];
         return response()->json($result);
     }
 
-    public function discover_all_creators($order, $gender)
-    {
 
-        $query = UserIntro::where('deleted_at', null)
-            ->with(['user'])
-            ->whereHas('user', function ($q) use ($gender) {
-                $q->where('is_uk', 0);
-                // $q->where(function ($s) {
-                //     $s->whereNot('country', 'GB')->orWhereNull('country');
-                // });
+    public function discover_all_creators($order, $gender) {
+        $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
+            ->whereNull('deleted_at')
+            ->where('approved', 1)
+            ->groupBy('user_id');
 
+        $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
+                $join->on('user_intros.id', '=', 'latest_intros.latest_id');
+            })
+            ->with(['user' => function ($q) use ($gender) {
+                $q->where('is_uk', 0)
+                  ->where('stripe_details_submitted', 1)
+                  ->where('suspended_account', 0)
+                  ->whereNotNull('username')
+                  ->where('username', '!=', '');
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
                 }
-            });
+            }])
+            ->select('user_intros.*'); // make sure we select proper columns
+            
+        // Double-check to ensure we only get intros with valid users
+        $query->whereHas('user', function ($q) use ($gender) {
+            $q->whereNull('deleted_at')
+              ->where('is_uk', 0)
+              ->where('stripe_details_submitted', 1)
+              ->where('suspended_account', 0)
+              ->where('username', '!=', '');
+            if ($gender != 'all') {
+                $q->where('gender', $gender);
+            }
+        });
 
-        if ($order == 'new') {
-            $query->latest();
+        if ($order === 'new') {
+            $query->orderBy('user_intros.created_at', 'desc');
         }
 
         $intros = $query->paginate(30);
+        
+        // Filter out any intro records where user is still null (safety check)
+        $filteredIntros = $intros->getCollection()->filter(function ($intro) {
+            return $intro->user !== null && !empty($intro->user->username);
+        });
+        $intros->setCollection($filteredIntros);
+
         return response()->json([
-            'success'   => true,
-            'intro' => $intros,
-            "last_page" => $intros->lastPage() ?? null,
-            "current_page" => $intros->currentPage() ?? null,
-            "total" => $intros->total() ?? null,
-            "per_page" => $intros->perPage() ?? null,
+            'success'       => true,
+            'intro'         => $intros,
+            "last_page"     => $intros->lastPage(),
+            "current_page"  => $intros->currentPage(),
+            "total"         => $intros->total(),
+            "per_page"      => $intros->perPage(),
         ]);
     }
+
+
 
     public function all_creators_categories()
     {
@@ -741,134 +890,162 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
-        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
-        if ($checkGifterStatus == true) {
+           
+        if (Helpers::checkGifterCardVerificationStatus()) {
             return response()->json([
-                'status' => false,
-                'msg' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
+                'success' => false,
+                'msg'     => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
             ]);
-            //    return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Your card verification is pending admin approval. Please wait before making any payments.");
         }
 
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $currency = request()->cookie('currency') 
+            ? strtolower(request()->cookie('currency')) 
+            : 'gbp';
 
         $amount = round($amount, 2, PHP_ROUND_HALF_UP);
-        $wishitem = WishItem::where('uuid', $uuid)->first();
+        $wishitem = WishItem::where('uuid', $uuid)->firstOrFail();
+
+        // ✅ Prevent user from buying own item
+        if (Auth::check() && Auth::id() == $wishitem->user_id) {
+            return response()->json([
+                "success" => false,
+                "msg"     => "You are not able to add your own item to your cart.",
+            ]);
+        }
+
+        // ✅ Prevent duplicate one-time purchase
         if (Auth::check()) {
-            if (Auth::id() == $wishitem->user_id) {
+            $payment = StripePaymentItems::where('wish_item_id', $wishitem->id)
+                ->whereHas('payment', fn($q) => $q->where('user_id', Auth::id()))
+                ->first();
+
+            if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && $payment) {
                 return response()->json([
                     "success" => false,
-                    "msg" => "You are not able to add your item to your cart.",
-                ]);
-            }
-
-            $payment = StripePaymentItems::where('wish_item_id', $wishitem->id)->whereHas('payment', function ($q) {
-                $q->where('user_id', Auth::id());
-            })->first();
-
-            if ($wishitem->subscription == 0 && $wishitem->repeat_purchase == 0 && !empty($payment)) {
-                return response()->json([
-                    "success" => false,
-                    "msg" => "You can pay only once for this wish.",
+                    "msg"     => "You can pay only once for this wish.",
                 ]);
             }
         }
 
-        $cart = UserCart::where('wish_item_id', $wishitem->id)->where(function ($q) use ($device_id) {
-            if (Auth::check()) {
-                $q->where("user_id", Auth::id());
-            } else {
-                $q->where("device_id", $device_id);
-            }
-        })->first();
-        if ($cart) {
+        // ✅ Find existing cart item for this user/device with proper filtering
+        $cart = UserCart::where('wish_item_id', $wishitem->id)
+            ->where('country', 'global')
+            ->where('status', 1) // Only look for active cart items
+            ->when(Auth::check(), fn($q) => $q->where('user_id', Auth::id())->whereNull('device_id'))
+            ->when(!Auth::check(), fn($q) => $q->where('device_id', $device_id)->whereNull('user_id'))
+            ->first();
 
-            if ($cart->status == 1) {
-                $cart->quantity = $cart->quantity + 1;
-            } else {
-                $cart->quantity = 1;
-            }
-            $cart->status = 1;
-            $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
-            if ($wishitem->subscription == 2) {
-
-                $price = Helpers::priceFormat($currency, $amount, $cart->owner->default_currency);
-                $fullfillamount = $price;
-                $tax =  round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
-                $createpriceid = $price + $tax;
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe_client = $stripe->products->create([
-                    'name' => $wishitem->wishname,
-                    'images' => [$wishitem->perma_link],
-                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
-                ], [
-                    'stripe_account' => $cart->owner->account_id
-                ]);
-                $priceid = $stripe_client->id;
-            } elseif ($wishitem->subscription == 0) {
-                $priceid = $wishitem->stripe_product_id;
-                $fullfillamount = $wishitem->price;
-                $tax = $wishitem->tax_amount;
-            } else {
-                $fullfillamount = $wishitem->price;
-                $tax = $wishitem->tax_amount;
-                $priceid = null;
-            }
-            $cart->amount = $fullfillamount;
-            $cart->tax = $tax;
-            $cart->priceid = $priceid;
-            $cart->country = 'global';
-            $cart->save();
-            return response()->json([
-                "success" => true,
-                'added' => true,
-                "uuid" => $cart->uuid,
-                "msg" => "Item added to cart.",
-            ]);
-        } else {
+        // ✅ Calculate product details (refactored block)
+        $calculateProduct = function($wishitem, $currency, $amount, $accountId = null) {
             if ($wishitem->subscription == 2) {
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
-                $fullfillamount = $price;
-                $tax = round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
-                $createpriceid = $price + $tax;
+                $tax   = round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
+                $total = $price + $tax;
+
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-                $stripe_client = $stripe->products->create([
-                    'name' => $wishitem->wishname,
-                    'images' => [$wishitem->perma_link],
-                    "default_price_data" => ["currency" => "gbp", "unit_amount_decimal" =>  round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100],
-                ], [
-                    'stripe_account' => $wishitem->user->account_id
-                ]);
-                $priceid = $stripe_client->id;
+                $stripeProduct = $stripe->products->create([
+                    'name'               => $wishitem->wishname,
+                    'images'             => [$wishitem->perma_link],
+                    "default_price_data" => [
+                        "currency"           => "gbp",
+                        "unit_amount_decimal"=> round($total * 100, 0)
+                    ],
+                ], $accountId ? ['stripe_account' => $accountId] : []);
+
+                return [$price, $tax, $stripeProduct->id];
             } elseif ($wishitem->subscription == 0) {
-                $priceid = $wishitem->stripe_product_id;
-                $fullfillamount = $wishitem->price;
-                $tax = $wishitem->tax_amount;
+                return [$wishitem->price, $wishitem->tax_amount, $wishitem->stripe_product_id];
             } else {
-                $fullfillamount = $wishitem->price;
-                $tax = $wishitem->tax_amount;
-                $priceid = null;
+                return [$wishitem->price, $wishitem->tax_amount, null];
             }
-            $cart = UserCart::create([
-                "user_id" => Auth::check() ? Auth::id() : null,
-                "device_id" => !Auth::check() ? $device_id : null,
-                "owner_id" => $wishitem->user_id,
+        };
+
+        [$fullfillAmount, $tax, $priceId] = $calculateProduct(
+            $wishitem,
+            $currency,
+            $amount,
+            $wishitem->user->account_id
+        );
+
+        if ($cart) {
+            // $cart->quantity      = $cart->quantity + 1;
+            $cart->quantity      = 1;
+            $cart->status        = 1; // Ensure it stays active
+            $cart->is_subscribed = ($sub == 'onetime' || $sub == false) ? 0 : 1;
+            $cart->amount        = $fullfillAmount;
+            $cart->tax           = $tax;
+            $cart->priceid       = $priceId;
+            $cart->country       = 'global';
+            $cart->updated_at    = now();
+            
+            $saveResult = $cart->save();
+            $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
+        } else {
+            $cartData = [
+                "user_id"      => Auth::check() ? Auth::id() : null,
+                "device_id"    => !Auth::check() ? $device_id : null,
+                "owner_id"     => $wishitem->user_id,
                 'wish_item_id' => $wishitem->id,
-                'quantity' => 1,
-                'status' => 1,
-                'amount' => $fullfillamount,
-                'tax' => $tax,
-                'country' => 'global',
-                'is_subscribed' => ($sub == false || $sub == 'onetime') ? 0 : 1,
-                'priceid' => $priceid,
-            ]);
-            return response()->json([
-                "success" => true,
-                'added' => true,
-                "msg" => "Item added to cart.",
+                'quantity'     => 1,
+                'status'       => 1, // CRITICAL: Always set status to 1 (active)
+                'amount'       => $fullfillAmount,
+                'tax'          => $tax,
+                'country'      => 'global', // CRITICAL: Always set country
+                'is_subscribed'=> ($sub == false || $sub == 'onetime') ? 0 : 1,
+                'priceid'      => $priceId,
+            ];
+            try {
+                $cart = UserCart::create($cartData);
+                
+                $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
+                Log::info('Database verification after create', [
+                    'cart_id' => $cart->id,
+                    'found_in_db' => $dbVerification ? true : false,
+                    'db_user_id' => $dbVerification->user_id ?? 'N/A',
+                    'db_status' => $dbVerification->status ?? 'N/A',
+                    'db_created_at' => $dbVerification->created_at ?? 'N/A'
+                ]);
+                
+                $modelVerification = UserCart::find($cart->id);
+               
+            } catch (\Exception $e) {
+                Log::error('Cart creation failed', [
+                    'error' => $e->getMessage(),
+                    'cart_data' => $cartData,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
+        }
+
+        // ✅ Verify cart was saved correctly
+        $cart->refresh(); // Reload from database to verify
+        if ($cart->status !== 1) {
+            Log::error('Cart status inconsistency detected', [
+                'cart_id' => $cart->id,
+                'expected_status' => 1,
+                'actual_status' => $cart->status
             ]);
         }
+
+        // ✅ Always return consistent response
+        Log::info('Cart item operation completed', [
+            'cart_id'     => $cart->id,
+            'cart_uuid'   => $cart->uuid,
+            'user_id'     => $cart->user_id,
+            'device_id'   => $cart->device_id,
+            'wish_item_id'=> $cart->wish_item_id,
+            'final_status'=> $cart->status
+        ]);
+
+        return response()->json([
+            "success"   => true,
+            "added"     => true,
+            "cart_uuid" => $cart->uuid,
+            "msg"       => "Item added to cart.",
+        ]);
     }
+
 
     /*x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x*****x******x******x*****x******x*****x*****x******x******x******x******x******x*****x
      *
@@ -1212,6 +1389,29 @@ class WishitemController extends Controller
                 ], 404);
             }
 
+            // Check creator subscription eligibility
+            $subscriptionCheck = app(\App\Services\CreatorSubscriptionService::class)->validateCreatorSubscription($orderDetails->creator);
+            
+            if (!$subscriptionCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $orderDetails->creator->notify(new \App\Notifications\SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+                
+                // Log the blocked payment for subscription issues
+                \Log::warning('Rye product payment blocked due to subscription issue', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'creator_username' => $orderDetails->creator->username,
+                    'cart_id' => $request->cart_id,
+                    'subscription_status' => $subscriptionCheck['status'],
+                    'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+                ]);
+                
+                // Return user-friendly error to fan
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                ]);
+            }
+
             $currency = 'usd';
             $totalAmount = 0;
             $lineItems = [];
@@ -1283,6 +1483,7 @@ class WishitemController extends Controller
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
+            $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
             $ryeProductPayment->save();
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -2049,11 +2250,65 @@ class WishitemController extends Controller
         $this->cartItems();
     }
 
-    public function removeSurpriseFromCart($uuid)
+    public function removeSurpriseFromCart($uuid, $device_id = null)
     {
-        $cart = UserCart::where('country', 'global')->whereUuid($uuid)->first();
+        // Check if this is an AJAX request
+        $isAjax = request()->header('X-Requested-With') === 'XMLHttpRequest' || 
+                  request()->header('Accept') === 'application/json' ||
+                  request()->wantsJson();
+        
+        $query = UserCart::where('country', 'global')->whereUuid($uuid);
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } else {
+            if (!$device_id) {
+                $device_id = request()->get('device_id') ?? request()->header('X-Device-ID');
+            }
+            
+            if (!$device_id) {
+                if ($isAjax) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Device ID required for guest users'
+                    ], 400);
+                }
+                return redirect()->route('cart')->with('error', 'Unable to remove item from cart. Please try again.');
+            }
+            $query->where('device_id', $device_id);
+        }
+        $cart = $query->first();
+        
+        if (!$cart) {
+            // Handle not found case based on request type
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cart item not found or you do not have permission to remove it'
+                ], 404);
+            }
+            
+            if (request()->header('X-Inertia')) {
+                return redirect()->route('cart')->with('error', 'Cart item not found or you do not have permission to remove it.');
+            }
+            
+            return back()->with('error', 'Cart item not found or you do not have permission to remove it.');
+        }
+        
         $cart->status = 0;
         $cart->save();
+        
+        // Return appropriate response based on request type
+        if ($isAjax) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Item removed from cart'
+            ]);
+        }
+        
+        if (request()->header('X-Inertia')) {
+            return redirect()->route('cart')->with('success', 'Item removed from cart');
+        }
+        
         return back()->with('success', 'Item removed from cart');
     }
 
@@ -2068,11 +2323,9 @@ class WishitemController extends Controller
                 //         ->orWhereNull('country');
                 // })
                 ->first();
-
             $cart = [];
             if ($user) {
                 $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
-
                 $groupedWishes = [];
                 foreach ($carts as $wish) {
                     $owner_id = $wish->owner_id;
@@ -2172,7 +2425,7 @@ class WishitemController extends Controller
         }
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
-
+            'hcaptchakey' => env('HCAPTCHA', null),
         ]);
     }
 
@@ -2262,6 +2515,208 @@ class WishitemController extends Controller
         return response()->json([
             "success" => true,
             "carts" => $cart,
+            'hcaptchakey' => env('HCAPTCHA', null)
+        ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+          ->header('Pragma', 'no-cache')
+          ->header('Expires', '0');
+    }
+
+    /**
+     * Get authenticated user's regular cart items as JSON
+     * Similar to cartItems() but returns JSON instead of Inertia view
+     */
+    public function authenticatedCartItems()
+    {
+        Log::info('AuthenticatedCartItems API called', [
+            'is_authenticated' => Auth::check(),
+            'user_id' => Auth::id(),
+            'timestamp' => now()
+        ]);
+        
+        if (!Auth::check()) {
+            return response()->json([
+                "success" => false,
+                "message" => "Authentication required",
+                "carts" => []
+            ], 401);
+        }
+
+        $user = User::where('id', Auth::id())
+            ->where('is_uk', 0)
+            ->first();
+            
+        $cart = [];
+        if ($user) {
+            // Get authenticated cart items
+            $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+            
+            // FALLBACK: Also check if there are any orphaned cart items with device_id that should belong to this user
+            // This handles cases where the login cart transfer might not have worked
+            $deviceIdFromRequest = request()->header('X-Device-ID') 
+                                  ?? request()->cookie('device_id')
+                                  ?? request()->input('device_id');
+            
+            if (!empty($deviceIdFromRequest)) {
+                $orphanedCarts = UserCart::whereHas('wish')
+                    ->where('device_id', $deviceIdFromRequest)
+                    ->whereNull('user_id')
+                    ->where('country', 'global')
+                    ->where('status', 1)
+                    ->get();
+                    
+                if ($orphanedCarts->isNotEmpty()) {
+                    Log::info('Found orphaned cart items during cart retrieval - performing merge', [
+                        'user_id' => $user->id,
+                        'device_id' => $deviceIdFromRequest,
+                        'orphaned_count' => $orphanedCarts->count()
+                    ]);
+                    
+                    // Merge orphaned cart items
+                    foreach ($orphanedCarts as $orphanedItem) {
+                        // Check if user already has this item
+                        $existingItem = $carts->where('wish_item_id', $orphanedItem->wish_item_id)
+                                             ->where('owner_id', $orphanedItem->owner_id)
+                                             ->first();
+                        
+                        if ($existingItem) {
+                            // Merge quantities
+                            $existingItem->quantity += $orphanedItem->quantity;
+                            $existingItem->save();
+                            $orphanedItem->delete();
+                        } else {
+                            // Transfer to user
+                            $orphanedItem->user_id = $user->id;
+                            $orphanedItem->device_id = null;
+                            $orphanedItem->save();
+                            $carts->push($orphanedItem); // Add to collection for processing
+                        }
+                    }
+                }
+            }
+            Log::info('Authenticated cart query result', [
+                'user_id' => $user->id,
+                'cart_count' => $carts->count(),
+                'cart_ids' => $carts->pluck('id')->toArray(),
+                'cart_details' => $carts->map(function($cart) {
+                    return [
+                        'id' => $cart->id,
+                        'user_id' => $cart->user_id,
+                        'device_id' => $cart->device_id,
+                        'owner_id' => $cart->owner_id,
+                        'wish_item_id' => $cart->wish_item_id,
+                        'status' => $cart->status,
+                        'country' => $cart->country,
+                        'amount' => $cart->amount,
+                        'wish_exists' => $cart->wish ? true : false,
+                        'wish_id' => $cart->wish ? $cart->wish->id : null
+                    ];
+                })->toArray()
+            ]);
+            
+            $groupedWishes = [];
+            foreach ($carts as $wish) {
+                $owner_id = $wish->owner_id;
+                if (!isset($groupedWishes[$owner_id])) {
+                    $groupedWishes[$owner_id] = [];
+                }
+
+                $groupedWishes[$owner_id][] = [
+                    'user' => $wish->user->toArray(),
+                    'wish' => $wish->wish ? $wish->wish->toArray() : [],
+                    'owner' => $wish->owner->toArray(),
+                    'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
+                    'amount' => $wish->amount,
+                    'priceid' => $wish->priceid,
+                    'uuiddata' => $wish->uuid,
+                    'tax' => $wish->tax,
+                    'surprisemessage' => $wish->message ?? '',
+                    'quantity' => $wish->quantity ?? '',
+                ];
+            }
+            
+            Log::info('Grouped wishes processed', [
+                'grouped_count' => count($groupedWishes),
+                'owner_ids' => array_keys($groupedWishes)
+            ]);
+            
+            $key = 0;
+            foreach ($groupedWishes as $value) {
+                $cart[$key] = [
+                    'user' => [
+                        'id' => $value[0]['owner']['id'],
+                        'name' => $value[0]['owner']['name'],
+                        'username' => $value[0]['owner']['username'],
+                        'uuid' => $value[0]['owner']['uuid'],
+                        'default_currency' => $value[0]['owner']['default_currency'],
+                    ],
+                ];
+
+                $total = 0;
+                $fee = 0;
+                foreach ($value as $k => $v) {
+                    $price = $v['amount'] ? $v['amount'] : $v['wish']['price'];
+                    $tax = $v['tax'] ? $v['tax'] : $v['wish']['tax_amount'];
+                    $priceid = $v['priceid'] ? $v['priceid'] : $v['wish']['price_id'];
+
+                    if (!empty($v['wish'])) {
+                        $cart[$key]['items'][$k] = [
+                            'id' => $v['wish']['id'],
+                            'uuid' => $v['uuiddata'],
+                            'user_id' => $v['wish']['user_id'],
+                            'wishname' => $v['wish']['wishname'],
+                            'stripe_product_id' => $v['wish']['stripe_product_id'],
+                            'price' => $price,
+                            'tax' => $tax,
+                            'price_id' => $priceid,
+                            'item_url' => $v['wish']['item_url'],
+                            'subscription' => $v['wish']['subscription'],
+                            'subscription_period' => $v['wish']['subscription_period'],
+                            'repeat_purchase' => $v['wish']['repeat_purchase'],
+                            'category' => $v['wish']['category'],
+                            'url' => $v['url'],
+                            'quantity' => $v['quantity'],
+                        ];
+                    } else {
+                        $cart[$key]['items'][$k] = [
+                            'price' => $price,
+                            'tax' => $tax,
+                            'wishname' => 'Surprise Gift',
+                            'uuid' => $v['uuiddata'],
+                            'price_id' => $priceid,
+                            'product' => 'surprise',
+                            'url' => $v['url'],
+                            'surprise_message' => $v['surprisemessage'],
+                            'quantity' => $v['quantity'],
+                        ];
+                    }
+                    $total += !empty($v['priceid']) ? $v['amount'] : $v['wish']['price'];
+                    $fee += !empty($v['priceid']) ? $v['tax'] * $v['quantity'] : ($v['wish']['tax_amount'] * $v['quantity'] ?? 0);
+                }
+                $cart[$key]['total'] = $total;
+                $cart[$key]['fee'] = $fee;
+
+                $key++;
+            }
+        }
+        
+        Log::info('Final authenticated cart response', [
+            'user_id' => Auth::id(),
+            'final_cart_count' => count($cart),
+            'cart_structure' => array_map(function($c) {
+                return [
+                    'user_id' => $c['user']['id'] ?? null,
+                    'username' => $c['user']['username'] ?? null,
+                    'items_count' => count($c['items'] ?? []),
+                    'total' => $c['total'] ?? null,
+                    'fee' => $c['fee'] ?? null
+                ];
+            }, $cart)
+        ]);
+        
+        return response()->json([
+            "success" => true,
+            "carts" => $cart,
+            'hcaptchakey' => env('HCAPTCHA', null)
         ]);
     }
 
@@ -2312,6 +2767,7 @@ class WishitemController extends Controller
                 'message' => $request->message,
                 'quantity' => 1,
                 'status' => 1,
+                'country' => 'global', // CRITICAL: Always set country
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
         } else {
@@ -2324,6 +2780,7 @@ class WishitemController extends Controller
                 'message' => $request->message,
                 'quantity' => 1,
                 'status' => 1,
+                'country' => 'global', // CRITICAL: Always set country
             ]);
             return back()->with('success', 'Surprise Gift item has been added to the cart.');
         }
@@ -2370,6 +2827,9 @@ class WishitemController extends Controller
                 "success" => true,
                 "counter" => $items,
             ]);
+            // ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            //   ->header('Pragma', 'no-cache')
+            //   ->header('Expires', '0');
         } else {
             $user = Auth::user();
             $items = UserCart::whereHas('wish')->where('user_id', $user->id ?? null)->where('country', 'global')->where('status', 1)->count();
@@ -2377,6 +2837,9 @@ class WishitemController extends Controller
                 "success" => true,
                 "counter" => $items,
             ]);
+            // ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            //   ->header('Pragma', 'no-cache')
+            //   ->header('Expires', '0');
         }
     }
 
@@ -2387,11 +2850,59 @@ class WishitemController extends Controller
             $query->where('user_id', $user->id)->orWhere('owner_id', $user->id);
         })->with(['wish'])->orderBy('created_at', 'DESC')->get();
 
-        $creator_subs = WishItemSubscription::where('recurring_for', 'continue')->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now())->whereHas('wish_item', function ($q) use ($user) {
+        // Get subscriptions TO user's content (purchased by others) - include active subscriptions
+        $creator_subs = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
             $q->where('user_id', $user->id);
-        })->with(['user', 'wish_item'])->whereIn('status', ['paid', 'cancelled'])->orderBy('updated_at', 'DESC')->get();
+        })->with(['user', 'wish_item'])
+        ->where('status', 'paid')
+        ->where('stripe_status', 'active') // Only get truly active subscriptions from Stripe
+        ->where(function($q) {
+            $q->where('recurring_for', 'continue')
+              ->where('upcoming_payment', '>=', Carbon::now()) // Still has upcoming payments
+              ->orWhere(function($subQ) {
+                  // Include one-time subscriptions that are still within active period (30 days)
+                  $subQ->where('recurring_for', 'onetime')
+                       ->where('created_at', '>=', Carbon::now()->subDays(30));
+              });
+        })
+        ->orderBy('updated_at', 'DESC')->get();
 
-        $user_subs = WishItemSubscription::where('recurring_for', 'continue')->where('user_id', Auth::id())->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now())->with(['wish_item', 'wish_item.user'])->whereIn('status', ['paid', 'cancelled'])->get();
+        // Get subscriptions BY user (purchased by current user) - include active subscriptions
+        $user_subs = WishItemSubscription::where('user_id', Auth::id())
+        ->with(['wish_item', 'wish_item.user'])
+        ->where('status', 'paid')
+        ->where('stripe_status', 'active') // Only get truly active subscriptions from Stripe
+        ->where(function($q) {
+            $q->where('recurring_for', 'continue')
+              ->where('upcoming_payment', '>=', Carbon::now()) // Still has upcoming payments
+              ->orWhere(function($subQ) {
+                  // Include one-time subscriptions that are still within active period (30 days)
+                  $subQ->where('recurring_for', 'onetime')
+                       ->where('created_at', '>=', Carbon::now()->subDays(30));
+              });
+        })
+        ->orderBy('created_at', 'DESC')
+        ->get();
+        
+        // Add type indicator and format data for frontend
+        $creator_subs->each(function($sub) {
+            $sub->subscription_type = 'received'; // Others purchased this user's content
+            $sub->start_date = Carbon::parse($sub->created_at)->format('M d, Y');
+            $sub->payment_upcoming = Carbon::parse($sub->upcoming_payment)->format('M d, Y');
+            // Add subscription active status for frontend logic
+            $sub->is_subscription_active = ($sub->stripe_status === 'active' && $sub->status === 'paid') ? 1 : 0;
+        });
+        
+        $user_subs->each(function($sub) {
+            $sub->subscription_type = 'purchased'; // User purchased others' content
+            $sub->start_date = Carbon::parse($sub->created_at)->format('M d, Y');
+            $sub->payment_upcoming = Carbon::parse($sub->upcoming_payment)->format('M d, Y');
+            // Add subscription active status for frontend logic
+            $sub->is_subscription_active = ($sub->stripe_status === 'active' && $sub->status === 'paid') ? 1 : 0;
+        });
+        
+        // Combine both collections and sort by most recent
+        $all_subscriptions = $creator_subs->concat($user_subs)->sortByDesc('updated_at');
 
         $trackData = $tracks->map(function ($q) {
 
@@ -2409,6 +2920,7 @@ class WishitemController extends Controller
             "tracks" => $trackData,
             "creator_subs" => $creator_subs,
             "user_subs" => $user_subs,
+            "all_subscriptions" => $all_subscriptions->values(), // Combined subscriptions with type indicators
         ]);
     }
 

@@ -28,9 +28,7 @@ class CheckStripeIdentityVerification
             return redirect()->route('login')->with('error', 'please login first');
         }
 
-        $hasPaidSubscription = MonthlyCharge::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->exists();
+        $hasPaidSubscription = in_array($user->subscription_status, [1, 2]);
 
         $needsIdentityVerification = $user->role == 1
             && $user->profile_status_lock == 2

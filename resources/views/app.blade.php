@@ -2,62 +2,56 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
+    {{-- EMERGENCY: React Children patch must load before ANY other JavaScript --}}
+    <script src="{{ asset('react-emergency-patch.js') }}"></script>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index,follow" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    {{-- Critical performance hints --}}
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//widget.trustpilot.com">
+    <link rel="dns-prefetch" href="//static.ads-twitter.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    {{-- Basic performance hints --}}
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     {!! \App\SeoMeta::render() !!}
 
-    {{-- <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="Spenny Piggy - The Everything Wishlist - Gifts, Memberships, Exclusive Content & More." />
-    <meta property="twitter:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
-    <meta property="twitter:image" content="{{ URL::asset('/siteicon.png') }}" />
-    <meta property="twitter:site" content="@spennypiggy" />
-    <meta property="twitter:image:alt" content="Exclusive Content, Memberships & More!" />
-    <meta property="twitter:image:src" content="{{ URL::asset('/siteicon.png') }}" /> --}}
-
+    {{-- PWA and App metadata --}}
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Spenny Piggy">
-    <meta name="mobile-web-app-capable" content="yes"/>
-
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="mask-icon" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="apple-touch-icon" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="apple-touch-icon-precomposed" href="{{ URL::asset('/favicon.ico') }}" />
-    <link rel="shortcut icon" href="{{ URL::asset('/favicon.ico') }}" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#05EFB8">
+    <meta name="application-name" content="Spenny Piggy">
+    
+    {{-- Optimized favicon loading --}}
+    <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="any">
+    <link rel="icon" href="{{ URL::asset('/favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ URL::asset('/apple-touch-icon.png') }}">
+    <link rel="mask-icon" href="{{ URL::asset('/favicon.svg') }}" color="#05EFB8">
+    
     <meta name="msapplication-TileColor" content="#05EFB8" />
     <meta name="msapplication-TileImage" content="{{ URL::asset('/siteicon.png') }}">
-    <meta name="theme-color" content="#05EFB8" />
     <meta name="description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
     <meta name="keywords" content="Exclusive Content, Memberships & More!, Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!, Create Wishlist, Share Wishlist, Add Wishlist, Recieve Gifts, Send Gifts, Fans Funding. The Best Alternative to Amazon Wishlist" />
-    {{-- Comprehensive Resource Preloading & Prefetching --}}
-    @php
-        $pageComponent = 'home';
-        if (isset($page) && is_array($page) && isset($page['component'])) {
-            $pageComponent = $page['component'];
+    
+    {{-- Minimal critical CSS --}}
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
-    @endphp
-    {{-- @resourceOptimization($pageComponent) --}}
+    </style>
     
-    {{-- Critical Hero Image Preloading for LCP Optimization --}}
-    @if($pageComponent === 'home' || $pageComponent === 'Welcome')
-        {{-- Preload hero background images in order of format efficiency --}}
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.avif') }}" type="image/avif" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.webp') }}" type="image/webp" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg.png') }}" type="image/png" fetchpriority="high">
-        
-        {{-- Mobile-specific preloads for smaller screens --}}
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg-mobile.avif') }}" type="image/avif" media="(max-width: 480px)" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/new/HeroBg-mobile.webp') }}" type="image/webp" media="(max-width: 480px)" fetchpriority="high">
-        
-        {{-- Preload other critical above-the-fold images --}}
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/img/itsfree.png') }}" type="image/png" fetchpriority="high">
-        <link rel="preload" as="image" href="{{ Vite::asset('resources/assets/img/itsfree-mob.png') }}" type="image/png" media="(max-width: 768px)" fetchpriority="high">
-    @endif
-    
-    <!-- Google Fonts - will be loaded asynchronously below -->
+    {{-- Optimized Google Fonts loading --}}
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Anton&family=Fredoka:wght@300..700&display=swap" rel="stylesheet"></noscript>
     <meta property="og:title" content="Exclusive Content, Memberships & More!" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="spennypiggy.co" />
@@ -65,92 +59,15 @@
     <meta property="og:site_name" content="spennypiggy.co" />
     <meta property="og:description" content="Join Memberships, adopt bills & more. Safe for all Creators who receive 100% payouts!" />
 
-    {{-- Defer Trustpilot widget loading --}}
-    <script>
-        // Lazy load Trustpilot widget after user interaction or idle time
-        function loadTrustpilot() {
-            if (!window.trustpilotLoaded) {
-                const script = document.createElement('script');
-                script.type = 'text/javascript';
-                script.async = true;
-                script.src = '//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js';
-                script.importance = 'low';
-                document.head.appendChild(script);
-                window.trustpilotLoaded = true;
-            }
-        }
-        
-        // Load after user interaction or idle time
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                setTimeout(loadTrustpilot, 3000);
-            });
-        } else {
-            setTimeout(loadTrustpilot, 3000);
-        }
-        
-        // Also load on user interaction
-        ['mousedown', 'touchstart', 'keydown', 'scroll'].forEach(event => {
-            document.addEventListener(event, loadTrustpilot, { once: true, passive: true });
-        });
-    </script>
-
     <link rel="manifest" href="{{ url('/manifest.json')}}" />
-    <script>
-        // Defer service worker registration
-        if ('serviceWorker' in navigator) {
-            function registerSW() {
-                navigator.serviceWorker.register('/new-service-worker.js')
-                .then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                });
-            }
-            
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(registerSW);
-            } else {
-                setTimeout(registerSW, 100);
-            }
-        }
-    </script>
-    
-    {{-- Defer Twitter ads tracking --}}
-    <script>
-        // Lazy load Twitter ads after user interaction or idle time
-        function loadTwitterAds() {
-            if (!window.twitterAdsLoaded) {
-                !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
-                },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.importance='low',u.src='https://static.ads-twitter.com/uwt.js',
-                a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-                twq('config','ozu4h');
-                window.twitterAdsLoaded = true;
-            }
-        }
-        
-        // Load after user interaction or idle time
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-                setTimeout(loadTwitterAds, 5000);
-            });
-        } else {
-            setTimeout(loadTwitterAds, 5000);
-        }
-        
-        // Also load on meaningful user interaction
-        ['click', 'scroll', 'keydown', 'touchstart'].forEach(event => {
-            document.addEventListener(event, loadTwitterAds, { once: true, passive: true });
-        });
-    </script>
 
 
-    <link rel="apple-touch-startup-image"
-      href="/splash-640x1136.png"
-      media="(device-width: 320px) and (device-height: 568px)
-             and (-webkit-device-pixel-ratio: 2)
-             and (orientation: portrait)">
+    {{-- iOS splash screens for different devices --}}
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+    <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 
     <script>
         const css1 = [
@@ -160,6 +77,46 @@
             "width: 100%",
             "padding:30px 30px",
         ];
+        
+        // PWA detection and behavior
+        (function() {
+            // Detect if running as PWA
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone || 
+                                document.referrer.includes('android-app://');
+            
+            // Add PWA class to body for styling
+            if (isStandalone) {
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.body.classList.add('pwa-mode');
+                    console.log('✅ Running in PWA mode');
+                });
+            }
+            
+            // iOS PWA viewport fix
+            if (isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Fix iOS PWA viewport issues
+                    const viewport = document.querySelector('meta[name="viewport"]');
+                    if (viewport) {
+                        viewport.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+                    }
+                    
+                    // Add iOS PWA specific styling
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        body.pwa-mode {
+                            padding-top: env(safe-area-inset-top);
+                            padding-bottom: env(safe-area-inset-bottom);
+                        }
+                    `;
+                    document.head.appendChild(style);
+                });
+            }
+        })();
+        
+        // Global platform fee configuration
+        window.platformFeePercentage = {{ config('app.platform_fee_percentage', 20) }};
     </script>
     <script type="application/ld+json">
         {
@@ -242,6 +199,10 @@
             }
         </script>
 
+    {{-- hCaptcha Script --}}
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
+    
     {{-- @laravelPWA --}}
     @routes
     @viteReactRefresh
@@ -261,6 +222,123 @@
 </head>
 
 <body className="font-sans antialiased">
+    <!-- Initial loading screen for PWA -->
+    <div id="initial-loading-screen" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: #000000;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.5s ease-out;
+    ">
+        <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out;
+        ">
+            <img 
+                src="{{ URL::asset('/siteicon.png') }}" 
+                alt="Spenny Piggy Logo" 
+                style="
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 20px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 24px;
+                    animation: pulse 2s ease-in-out infinite;
+                "
+            />
+            <h1 style="
+                font-family: 'Anton', sans-serif;
+                font-size: 28px;
+                color: #ffffff;
+                margin: 0 0 12px 0;
+                text-align: center;
+                font-weight: 400;
+                letter-spacing: 1px;
+            ">Spenny Piggy</h1>
+            <div style="
+                width: 40px;
+                height: 4px;
+                background: linear-gradient(90deg, #F94F96, #5D25FD);
+                border-radius: 2px;
+                margin-bottom: 20px;
+                animation: loadingBar 1.5s ease-in-out infinite;
+            "></div>
+            <p style="
+                font-family: 'Poppins', sans-serif;
+                font-size: 14px;
+                color: #ffffff;
+                margin: 0;
+                text-align: center;
+            ">Loading your experience...</p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes loadingBar {
+            0% {
+                transform: scaleX(0.3);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scaleX(0.3);
+                opacity: 0.5;
+            }
+        }
+        
+        /* Hide loading screen when app is ready */
+        .app-loaded #initial-loading-screen {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+
+    <script>
+        // Show loading screen only in PWA mode
+        function isPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true ||
+                   document.referrer.includes('android-app://');
+        }
+
+        if (isPWA()) {
+            document.getElementById('initial-loading-screen').style.display = 'flex';
+        }
+    </script>
+
     @inertia
 </body>
 

@@ -58,7 +58,11 @@ export default function ErrorPage(props) {
                         </div>
                     </div>
                     <div className="flex justify-center pt-6 text-white">
-                        <p>If your problem persists, please <button onClick={openform} className="text-pink">Report a Bug</button></p>
+                        <p>If your problem persists, please
+                             <a 
+                            //  onClick={openform} 
+                             className="cursor-pointer ms-2 text-pink livechat intercom-dud02y e11rlguj1">Report a Bug</a>
+                            </p>
                     </div>
                 </div>
             </div>

@@ -177,7 +177,10 @@ class ProfileController extends Controller
                     'social' => $request->social_handle !== $user->social_handle,
                 ];
 
-                if ($updatedFields['bio'] || $updatedFields['social']) {
+                // Only send email if:
+                // - Bio was updated AND has content (not empty)
+                // - OR social handle was updated
+                if (($updatedFields['bio'] && !empty($request->bio)) || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
                 $user->bio = $request->bio;
@@ -549,13 +552,13 @@ class ProfileController extends Controller
             $intro = UserIntro::create([
                 'uuid' => $media['uuid'],
                 'user_id' => Auth::id(),
-                'height' => $media['videoInfo']['video']['height'],
-                'width' => $media['videoInfo']['video']['width'],
+                'height' => 720, // Default height for videos
+                'width' => 1280, // Default width for videos
             ]);
         } else {
             $intro->uuid = $media['uuid'];
-            $intro->height = $media['videoInfo']['video']['height'];
-            $intro->width = $media['videoInfo']['video']['width'];
+            $intro->height = 720; // Default height for videos
+            $intro->width = 1280; // Default width for videos
             $intro->save();
         }
 
@@ -854,12 +857,24 @@ class ProfileController extends Controller
         $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $data = [];
+        // Get user IDs from active subscriptions for post access
         $subscription = WishItem::where('subscription', 1)->whereHas('wishItemsSubscription', function ($qu) use ($user) {
-            $qu->where('recurring_for', 'continue')->where(function ($que) {
-                $que->where('created_at', '<=', Carbon::now())->where('upcoming_payment', '>=', Carbon::now());
-            })->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            });
+            $qu->where('status', 'paid')
+               ->where('stripe_status', 'active') // Only truly active Stripe subscriptions
+               ->where(function ($q) use ($user) {
+                   $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+               })
+               ->where(function ($que) {
+                   $que->where(function ($recurring) {
+                       // Active recurring subscriptions
+                       $recurring->where('recurring_for', 'continue')
+                                ->where('upcoming_payment', '>=', Carbon::now());
+                   })->orWhere(function ($onetime) {
+                       // One-time subscriptions get 30-day access
+                       $onetime->where('recurring_for', 'onetime')
+                              ->where('created_at', '>=', Carbon::now()->subDays(30));
+                   });
+               });
         })->pluck('user_id');
 
         $bills = Bills::whereHas('payments', function ($qu) use ($user) {

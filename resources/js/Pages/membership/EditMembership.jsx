@@ -85,7 +85,7 @@ export default function EditMembership({ item }) {
     };
     const [close, setClose] = useState();
     const [rewardItems, setRewardItems] = useState(
-        JSON.parse(item?.rewards || "")
+        item?.rewards ? JSON.parse(item.rewards) : []
     );
     const [thumb, setThumb] = useState(null);
     const [data, setData] = useState({

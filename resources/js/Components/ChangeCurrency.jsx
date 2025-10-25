@@ -79,7 +79,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <>
          <Dropdown>
             <Dropdown.Toggle variant="info" id="pricebasic">
-               <span className="mb-0 px-2 text-white display-inline" > {selectedCurrency ? selectedCurrency : "$N/A"}</span>
+               <span className="mb-0 px-2 text-white display-inline" > {selectedCurrency ? selectedCurrency : "N/A"}</span>
             </Dropdown.Toggle>
             <Dropdown.Menu>
                {currencies && currencies.map((c, i)=>{
@@ -103,7 +103,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
             <LoaderButton onClick={()=>changeCurrency(data.currency)}
                disabled={processing}
                type='submit'
-                  className="flex w-100 btn-pink lg mx-auto"
+                  className="p w-full"
                   spinnerClassName="fill-red-600" >
                   {processing ? "Updating.." : "Update"}
             </LoaderButton>
