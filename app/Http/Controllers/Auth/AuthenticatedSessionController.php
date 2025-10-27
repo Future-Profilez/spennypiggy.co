@@ -129,7 +129,7 @@ class AuthenticatedSessionController extends Controller
         //     Auth::logout();
         //     return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
         // }
-        
+
         // Handle JSON requests differently
         if ($request->expectsJson()) {
             return response()->json([
@@ -138,7 +138,7 @@ class AuthenticatedSessionController extends Controller
                 'redirect_url' => route('user.show', ['username' => $user->username])
             ]);
         }
-        
+
         return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
     }
 
@@ -178,10 +178,10 @@ class AuthenticatedSessionController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-        
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return redirect(route("login"))->with("success", "Logged out successfully.");
     }
 
@@ -193,34 +193,34 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username, $page = 'about')
     {
-        $profileData = $this->profileService->preloadUserProfileData($username); 
-        
+        $profileData = $this->profileService->preloadUserProfileData($username);
+
         if (empty($profileData)) {
             return Inertia::render('NotFound');
-        } 
+        }
 
-        $user = $profileData['user']; 
+        $user = $profileData['user'];
 
         if ($user->suspended_account == 1) {
-            return Inertia::render('Suspanded'); 
-        } 
+            return Inertia::render('Suspanded');
+        }
 
-        
+
         $pageData = $this->getPageSpecificData($user->id, $page);
-        
+
         $this->setSeoMetaTags($user, $username);
-        
+
         $sociallinks = null;
         $userIntro = null;
         $isNeedToUpgrade = false;
         $cardCapabilities = true;
         $stripeRequirements = [];
-        
+
         // Get Stripe capabilities if user is a creator (for all pages)
         if ($user->role == 1 && !empty($user->account_id)) {
             [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
         }
-        
+
         if($page == 'about'){
             $sociallinks = $user->social_links;
             $userIntro = $user->intro;
@@ -256,7 +256,7 @@ class AuthenticatedSessionController extends Controller
     }
 
 
-    
+
 
     /**
      * Get Stripe account capabilities with caching
@@ -268,20 +268,20 @@ class AuthenticatedSessionController extends Controller
         }
 
         $cacheKey = "stripe_capabilities_{$user->account_id}";
-        
+
         return Cache::remember($cacheKey, 300, function () use ($user) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
-                
+
                 // Use the proper migration check to determine if upgrade is needed
                 $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
                 $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
-                
+
                 $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
-                
+
                 // Get comprehensive account requirements
                 $requirements = StripeControl::getAccountRequirements($user->account_id);
-                
+
                 // Add migration requirement if account needs upgrade
                 if ($isNeedToUpgrade) {
                     $requirements['has_requirements'] = true;
@@ -294,7 +294,7 @@ class AuthenticatedSessionController extends Controller
                         'action_url' => '/stripe/upgrade-express-account'
                     ];
                 }
-                
+
                 return [$isNeedToUpgrade, $cardCapabilities, $requirements];
             } catch (\Exception $e) {
                 // Update user if account is invalid
@@ -327,11 +327,11 @@ class AuthenticatedSessionController extends Controller
 
         // Use caching to avoid repeated Stripe API calls
         $cacheKey = "migration_status_{$user->id}";
-        
+
         return Cache::remember($cacheKey, 600, function () use ($user) {
             try {
                 $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-                
+
                 return [
                     'needs_migration' => $migrationCheck['needs_migration'] ?? false,
                     'show_warning' => $migrationCheck['needs_migration'] ?? false,
@@ -368,20 +368,20 @@ class AuthenticatedSessionController extends Controller
                 $categoryId = request()->query('category');
                 $data['items'] = $this->profileService->getUserWishItems($userId, $categoryId);
                 break;
-                
+
             case 'feed':
             case 'about':
                 $data['posts'] = $this->profileService->getUserPosts($userId);
                 break;
-                
+
             case 'memberships':
                 $data['memberships'] = $this->profileService->getUserMemberships($userId);
                 break;
-                
+
             case 'bills':
                 $data['bills'] = $this->profileService->getUserBills($userId);
                 break;
-                
+
             case 'shop':
                 $data['shops'] = $this->profileService->getUserShopItems($userId);
                 break;
@@ -396,7 +396,7 @@ class AuthenticatedSessionController extends Controller
     private function setSeoMetaTags($user, string $username): void
     {
         $image = $user->social_image ? "https://ucarecdn.com/{$user->social_image}/-/preview/" : null;
-        
+
         SeoMeta::addTag('title', "{$user->name} - Spenny Piggy - Financial Gifts, Exclusive Content & Memberships");
         SeoMeta::addTag('meta', ['property' => 'twitter:title', 'content' => 'Financial Gifts,Donations & Memberships']);
         SeoMeta::addTag('meta', ['property' => 'twitter:card', 'content' => 'summary_large_image']);
@@ -414,7 +414,7 @@ class AuthenticatedSessionController extends Controller
     public function usergoal($username)
     {
         $user = $this->profileService->getUserWithRelations($username);
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -923,7 +923,7 @@ class AuthenticatedSessionController extends Controller
         if ($user) {
             $createdAt = $user->created_at;
             $thirtyDaysAfterCreation = $createdAt->copy()->addDays(30);
-            
+
             // Get total earnings from deliverables within first 30 days
             $first30DayEarnings = Deliverable::where('creator_id', $user->id)
                 ->where('created_at', '>=', $createdAt)
