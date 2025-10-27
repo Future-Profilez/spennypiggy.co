@@ -61,7 +61,6 @@ import AddSocial from "./Auth/Social";
 import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
-import UpgradeStripeAccount from "./stripe/UpgradeStripeAccount";
 import ActionRequired from "./stripe/ActionRequired";
 import { DashboardStripeMigrationWarning } from "@/Components/StripeMigrationWarning";
 import ErrorBoundary from "@/Components/ErrorBoundary";
@@ -577,10 +576,6 @@ export default function Dashboard(props) {
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
                                                                             <EnableCardCapabilities  />
-                                                                        : ''}
-
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && isNeedToUpgrade && AuthUserStripeConnected ?
-                                                                            <UpgradeStripeAccount  />
                                                                         : ''}
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status == 0  ?
