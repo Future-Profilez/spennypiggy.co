@@ -125,9 +125,16 @@ class StripeControl
             self::setClient();
             try {
                 $account = self::$client->accounts->retrieve($accountId);
-                return isset($account->capabilities->card_payments) &&
-                    $account->capabilities->card_payments === 'active' &&
-                    $account->capabilities->transfers === 'active';
+                $agreement = $account->tos_acceptance->service_agreement ?? 'full';
+
+                // For recipient service agreement, only transfers capability is required
+                if ($agreement === 'recipient') {
+                    return ($account->capabilities->transfers ?? null) === 'active';
+                }
+
+                // For full service agreement, both card_payments and transfers must be active
+                return ($account->capabilities->card_payments ?? null) === 'active'
+                    && ($account->capabilities->transfers ?? null) === 'active';
             } catch (\Exception $e) {
                 Log::error("Failed to verify account capabilities: " . $e->getMessage());
                 return false;

@@ -721,6 +721,21 @@ class StripeController extends Controller
                 $user->default_currency = $account->default_currency;
                 $user->save();
             }
+            // Bust cached Stripe capability and migration status so the dashboard updates immediately
+            Cache::forget("stripe_capabilities_{$user->account_id}");
+            Cache::forget("migration_status_{$user->id}");
+
+            // Log updated capability status for diagnosis
+            Log::info('Stripe connectReturn status', [
+                'user_id' => $user->id,
+                'account_id' => $user->account_id,
+                'charges_enabled' => $account->charges_enabled ?? null,
+                'payouts_enabled' => $account->payouts_enabled ?? null,
+                'cap_card_payments' => $account->capabilities->card_payments ?? null,
+                'cap_transfers' => $account->capabilities->transfers ?? null,
+                'requirements_due' => $account->requirements->eventually_due ?? []
+            ]);
+
             return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe connected.");
         } catch (Exception $e) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", $e->getMessage());
@@ -2855,19 +2870,8 @@ class StripeController extends Controller
 
             $user = Auth::user();
 
-            $appUrl = config('app.url');
-            if (!in_array($appUrl, ['https://spennypiggy.co'])) {
-                $user->identity_status = 1;
-                $user->identity_verified_at = Carbon::now();
-                $user->save();
-
-                return response()->json([
-                    'status' => 'success',
-                    'msg' => 'Identity verification successfully submitted.',
-                    'url' => route('user.show', ['username' => $user->username]),
-                ]);
-                // return redirect()->route('user.show', ['username' => $user->username])->with('success', 'Identity verification successfully submitted.');
-            }
+            // Always create a real verification session, even in non-production environments
+            // This ensures admin can view actual Stripe document images
 
             // Create a new verification session
             $session = VerificationSession::create([

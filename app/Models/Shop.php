@@ -18,10 +18,9 @@ class Shop extends Model
         'name',
         'description',
         'image',
-        // Deprecated monetary fields - use supporterCount and social metrics instead
-        // 'price',
-        // 'currency',
-        // 'special_member_price',
+        'price',
+        'currency',
+        'special_member_price',
         'success_page_type',
         'success_page_value',
         'reward_file_type',

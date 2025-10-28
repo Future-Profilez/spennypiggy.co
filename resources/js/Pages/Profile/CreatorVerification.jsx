@@ -463,9 +463,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                            </div> :
                             ''
                         }
+                        
                         {auth?.user?.stripe_details_submitted == 1 ?
-                           <div> <span className="text-green-600">Connected</span> </div> :
-                            ''
+                           <div> <span className="text-green-600">Connected</span> </div> 
+                           : ''
                         }
 
                      </div>

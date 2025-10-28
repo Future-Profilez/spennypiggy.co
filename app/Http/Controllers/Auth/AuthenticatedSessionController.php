@@ -512,7 +512,7 @@ class AuthenticatedSessionController extends Controller
     {
         try {
             // $user = User::where('username', $username)->where('country', 'GB')->first();
-            $user = User::where('username', $username)->where('is_uk', 0)->first();
+            $user = User::where('username', $username)->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_shop_categories()->get();

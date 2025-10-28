@@ -682,24 +682,16 @@ export default function Dashboard(props) {
                                                                     </Suspense>
                                                                 )}
 
-                                                                {IsloggedIn &&
-                                                                UserStripeConnected !==
+                                                                {IsloggedIn && UserStripeConnected !==
                                                                     1 ? (
-                                                                    <CreatorVerification
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                    />
+                                                                    <CreatorVerification IsloggedIn={ IsloggedIn } />
                                                                 ) : (
                                                                     ""
                                                                 )}
-                                                                {IsloggedIn &&
-                                                                UserStripeConnected ==
+                                                                {IsloggedIn && UserStripeConnected ==
                                                                     1 ? (
                                                                     <ProfileSteps
-                                                                        sLinks={
-                                                                            sLinks
-                                                                        }
+                                                                        sLinks={ sLinks }
                                                                         user={
                                                                             user
                                                                         }
