@@ -19,9 +19,9 @@ class Shop extends Model
         'description',
         'image',
         // Deprecated monetary fields - use supporterCount and social metrics instead
-        // 'price',
-        // 'currency',
-        // 'special_member_price',
+        'price',
+        'currency',
+        'special_member_price',
         'success_page_type',
         'success_page_value',
         'reward_file_type',
@@ -126,7 +126,7 @@ class Shop extends Model
         $baseUrl = "https://ucarecdn.com/" . $this->image;
         $sizes = [320, 640, 768, 1024, 1280, 1920];
         $formats = ['original', 'webp', 'avif'];
-        
+
         $data = [
             'original' => $baseUrl . '/-/format/jpeg/-/quality/85/',
             'formats' => [

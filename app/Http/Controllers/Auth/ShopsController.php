@@ -90,6 +90,8 @@ class ShopsController extends Controller
             ]
         );
 
+        Log::info('Add Shop Item Request', ['request_data' => $request->all()]);
+
         if ($request->type == "physical") {
             $request->validate(
                 [
@@ -206,7 +208,7 @@ class ShopsController extends Controller
         $taxamount = round(($request->price * config('app.shop_tax') / 100), 2, PHP_ROUND_HALF_UP);
 
         $createpriceid = $request->price + $taxamount;
-        
+
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
@@ -346,7 +348,7 @@ class ShopsController extends Controller
 
             $taxamount = round(($request->price * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
             $createpriceid = $request->price + $taxamount;
-            
+
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
@@ -569,14 +571,14 @@ class ShopsController extends Controller
             }
 
             $shop = Shop::where('uuid', $shop_id)->first();
-            
+
             // NEW: Check creator subscription eligibility first
             $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($shop->user);
-            
+
             if (!$subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $shop->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $shop->price));
-                
+
                 // Log the blocked payment for subscription issues
                 Log::warning('Shop payment blocked due to subscription issue', [
                     'creator_id' => $shop->user->id,
@@ -586,21 +588,21 @@ class ShopsController extends Controller
                     'subscription_status' => $subscriptionCheck['status'],
                     'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
                 ]);
-                
+
                 // Return user-friendly error to fan
                 return response()->json([
                     'status' => false,
                     'message' => 'This creator is temporarily unavailable. Please try again later.'
                 ]);
             }
-            
+
             // NEW: Check creator activity eligibility
             $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($shop->user);
-            
+
             if (!$activityCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $shop->user->notify(new PaymentBlockedNotification($activityCheck, $shop->price));
-                
+
                 // Log the blocked payment for analytics
                 Log::info('Shop payment blocked due to insufficient creator activity', [
                     'creator_id' => $shop->user->id,
@@ -610,14 +612,14 @@ class ShopsController extends Controller
                     'activity_status' => $activityCheck['status'],
                     'content_count' => $activityCheck['content_count'] ?? 0
                 ]);
-                
+
                 // Return user-friendly error to fan
                 return response()->json([
                     'status' => false,
                     'message' => 'This creator is temporarily unavailable. Please try again later.'
                 ]);
             }
-            
+
             // Log successful activity check for analytics
             if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
                 Log::info('Shop payment allowed - creator activity check passed', [
@@ -764,7 +766,7 @@ class ShopsController extends Controller
                     // Get currency metadata to handle zero-decimal currencies properly
                     $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
                     $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-                    
+
                     $pricePayload = [
                         'unit_amount' => round($totalAmount * $multiplier, 2),
                         'currency' => $currency,
