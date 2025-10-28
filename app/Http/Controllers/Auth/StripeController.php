@@ -2852,19 +2852,19 @@ class StripeController extends Controller
 
             $user = Auth::user();
 
-            // $appUrl = config('app.url');
-            // if (!in_array($appUrl, ['https://spennypiggy.co'])) {
-            //     $user->identity_status = 1;
-            //     $user->identity_verified_at = Carbon::now();
-            //     $user->save();
+            $appUrl = config('app.url');
+            if (!in_array($appUrl, ['https://spennypiggy.co'])) {
+                $user->identity_status = 1;
+                $user->identity_verified_at = Carbon::now();
+                $user->save();
 
-            //     return response()->json([
-            //         'status' => 'success',
-            //         'msg' => 'Identity verification successfully submitted.',
-            //         'url' => route('user.show', ['username' => $user->username]),
-            //     ]);
-            //     // return redirect()->route('user.show', ['username' => $user->username])->with('success', 'Identity verification successfully submitted.');
-            // }
+                return response()->json([
+                    'status' => 'success',
+                    'msg' => 'Identity verification successfully submitted.',
+                    'url' => route('user.show', ['username' => $user->username]),
+                ]);
+                // return redirect()->route('user.show', ['username' => $user->username])->with('success', 'Identity verification successfully submitted.');
+            }
 
             // Create a new verification session
             $session = VerificationSession::create([
