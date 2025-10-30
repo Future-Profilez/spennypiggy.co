@@ -31,7 +31,6 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   };
 
   const [videoLoading, setVideoLoading] = useState(false);
-
   const addVideo = () => {
     if(msgMedia == null || undefined){
       return false;
@@ -81,6 +80,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         console.error("error", _err);
     });
   }
+
   const ProfileIntro = () => {
     return <>
       <Popup space="0" size="md" action={close} classes={`w-100`}
@@ -99,7 +99,28 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         </div>
         </>} >
           <div className='video-payer-pop' >
-            <video playsInline='false' autoPlay src={intro && intro?.perma_link || ''} controls controlsList='nodownload' />
+            {/* Prefer the real video UUID; fall back to perma_link if present */}
+            <video
+              playsInline
+              muted
+              autoPlay
+              controls
+              controlsList="nodownload"
+              disablePictureInPicture
+              poster={intro && intro.poster_url || undefined}
+            >
+              {/* Build from uuid to avoid incorrect perma_link values */}
+              <source
+                 src={
+                   intro && intro.uuid
+                     ? `https://ucarecdn.com/${intro.uuid}/`
+                     : (intro && intro.perma_link
+                         ? intro.perma_link
+                         : '')
+                 }
+                 type="video/mp4"
+               />
+            </video>
           </div>
       </Popup>
     </>
@@ -125,8 +146,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                         <p className='w-100 text-center mt-2' >Add Verification Video</p>
                     </div>
                   </div>
-                }
-              >
+                } >
               <div className='wrap' >
                 <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Verification Video</h2>
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
@@ -137,7 +157,6 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                     sendFile={getFileUID}  imgonly={false}
                     options={st.profileVideo}
                     accept="video/*"
-
                   />
                 </div>
                 <LoaderButton onClick={addVideo}

@@ -225,6 +225,8 @@ class AuthenticatedSessionController extends Controller
             $sociallinks = $user->social_links;
             $userIntro = $user->intro;
         }
+        // Removed stray debug return that broke the page rendering
+        // return($user->intro);
 
         // Check if account needs migration for cross-border payments
         $migrationStatus = $this->getMigrationStatus($user);

@@ -41,12 +41,12 @@ environments:
     warm: 5
     gateway-version: 2
     timeout: 60
-    cache: spennypiggy-cache
+    cache: spenny-piggy-redis-caches
     runtime: "php-8.2:al2"
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
-    health-checks: false
+    health-checks: false 
     build:
       - "composer install --no-dev"
       - "php artisan event:cache"

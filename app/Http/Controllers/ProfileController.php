@@ -2,56 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\IntroStatus;
 use App\Helpers;
-use App\Http\Requests\ProfileUpdateRequest;
-use App\Jobs\CheckProfilePhotosAdult;
-use App\Jobs\SendBioSocialUpdateEmail;
-use App\Jobs\SendBioSocialUpdateMail;
 use App\Jobs\SendIntroMailAdmin;
-use App\Models\BillPayment;
-use App\Models\Bills;
-use App\Models\Follow;
-use App\Models\GifterCardVerification;
-use App\Models\Logs;
-use App\Models\Membership;
-use App\Models\MembershipPayment;
-use App\Models\MonthlyCharge;
-use App\Models\Notification;
-use App\Models\Post;
-use App\Models\PostComment;
-use App\Models\PostCommentReplies;
-use App\Models\PostLike;
-use App\Models\Shop;
-use App\Models\ShopCategory;
-use App\Models\ShopPayment;
-use App\Models\ShopShippingInfo;
-use App\Models\ShopVarients;
-use App\Models\SocialLinks;
-use App\Models\StripePaymentDetail;
-use App\Models\StripePaymentItems;
-use App\Models\TipGoal;
-use App\Models\TipGoalsPayment;
-use App\Models\User;
-use App\Models\UserBackupCode;
-use App\Models\UserCart;
-use App\Models\UserCategory;
-use App\Models\UserDocuments;
 use App\Models\UserIntro;
-use App\Models\UserShopCategories;
-use App\Models\UserVerificationStatus;
-use App\Models\WishCategory;
-use App\Models\WishItem;
-use App\Models\WishItemSubscription;
-use App\StripeControl;
-use Carbon\Carbon;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use PhpParser\Node\Expr\Print_;
@@ -546,17 +504,31 @@ class ProfileController extends Controller
 
         $media = $request->media;
 
+        // Robustly derive UUID from payload (supports both uuid and url)
+        $uuid = $media['uuid'] ?? null;
+        if (empty($uuid) && !empty($media['url'])) {
+            $url = $media['url'];
+            // Extract the first path segment after host as UUID
+            $uuid = preg_replace('#https?://[^/]+/([^/]+)/?.*#', '$1', $url);
+        }
+        if (empty($uuid)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Unable to identify uploaded video. Please re-upload.'
+            ], 422);
+        }
+
         $intro = UserIntro::where('user_id', Auth::id())->first();
 
         if (empty($intro)) {
             $intro = UserIntro::create([
-                'uuid' => $media['uuid'],
+                'uuid' => $uuid,
                 'user_id' => Auth::id(),
                 'height' => 720, // Default height for videos
                 'width' => 1280, // Default width for videos
             ]);
         } else {
-            $intro->uuid = $media['uuid'];
+            $intro->uuid = $uuid;
             $intro->height = 720; // Default height for videos
             $intro->width = 1280; // Default width for videos
             $intro->save();
@@ -564,6 +536,7 @@ class ProfileController extends Controller
 
         $intro->refresh();
 
+        // Trigger poster generation/accessor side effects
         $intro->poster_url;
 
         SendIntroMailAdmin::dispatch($intro);
