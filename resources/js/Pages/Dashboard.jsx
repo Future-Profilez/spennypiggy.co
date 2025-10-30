@@ -661,15 +661,11 @@ export default function Dashboard(props) {
                                                                             )}
                                                                             </div>
                                                                     </div>
+                                                                    {IsloggedIn || user?.intro?.approved == 1?  
                                                                     <AddIntro
-                                                                        uuid={
-                                                                            user?.id ||
-                                                                            null
-                                                                        }
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                    />
+                                                                        uuid={user?.id ||null}
+                                                                        IsloggedIn={IsloggedIn}
+                                                                    /> : ''}
                                                                 </div>
                                                             </div>
                                                             <div className="ps-lg-4 col-lg-6">
