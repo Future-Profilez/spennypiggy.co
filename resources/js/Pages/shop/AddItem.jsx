@@ -149,18 +149,19 @@ export default function AddItem(props) {
         const [loading, setLoading] = useState(false);
 
         useEffect(() => {
-            const controller = new AbortController();
-            const { signal } = controller;
-            fetchAddedCategories(signal);
-            return () => controller.abort();
-        }, []);
+            // const controller = new AbortController();
+            // const { signal } = controller;
+            fetchAddedCategories();
+            console.log("asdf")
+            // return () => controller.abort();
+        }, [props]);
 
-        const fetchAddedCategories = async (signal) => {
+        const fetchAddedCategories = async () => {
             if(fetchingCats){
                 return false;
             }
             setFetchingCats(true);
-            axios.get(`/user_shop_category/${auth.user.username || user.username}`,{signal}) .then((res) =>{
+            await axios.get(`/shop/user_shop_category/${auth.user.username || user.username}`) .then((res) =>{
                 setCategories(res.data.categories);
                 setFetchingCats(false);
             })
@@ -269,7 +270,7 @@ export default function AddItem(props) {
             const value = inputRef.current.value;
             setAdding(true);
             axios
-                .post(`/shop/save-category`, { category: value })
+                .post(`/shop/add/save-category`, { category: value })
                 .then((res) => {
                     if (res.data.status) {
                         successAlert(res.data.msg || "Added");

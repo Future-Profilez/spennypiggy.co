@@ -512,21 +512,15 @@ class AuthenticatedSessionController extends Controller
 
     public function user_shop_category($username)
     {
-        try {
-            // $user = User::where('username', $username)->where('country', 'GB')->first();
-            $user = User::where('username', $username)->first();
-            $categories = [];
-            if (!empty($user)) {
-                $categories = $user->user_shop_categories()->get();
-                // $categories = UserCategory::whereUserId($user->id)->latest()->get();
-            }
-            return response()->json([
-                "success" => true,
-                "categories" => $categories,
-            ]);
-        } catch (\Throwable $th) {
-            //throw $th;
+        $user = User::where('username', $username)->first();
+        $categories = [];
+        if (!empty($user)) {
+            $categories = $user->user_shop_categories()->get();
         }
+        return response()->json([
+            "success" => true,
+            "categories" => $categories,
+        ]);
     }
 
     public function userGiftItems($username)
