@@ -15,6 +15,14 @@ import socialbg from "../../../assets/social-bg.png";
 
 export default function EditProfile({ user, text, classes, updateProfileSteps }) {
 
+    // utils/checkName.js
+    function hasFullName(name) {
+        if (!name || typeof name !== "string") return false;
+        const parts = name.trim().split(/\s+/);
+        return parts.length > 1;
+    }
+
+
     const { auth }= usePage().props;
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
@@ -63,8 +71,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                             <div class="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden shadow-lg">
                                 <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
                             </div>
-                            <div class="ps-3">
-                                <h1 class="image-name max-w-[200px] mt-[-20px] pb-2 uppercase break-all font-fre text-3xl text-start  ">
+                            <div class="ps-3"> 
+                                <h1 class="${`image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-start whitespace-normal ${!hasFullName(user?.name) ? 'break-all' : 'break-words'} `}">
                                     ${user?.name}
                                 </h1>
                             </div>
