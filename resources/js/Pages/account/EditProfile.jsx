@@ -64,7 +64,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                 <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
                             </div>
                             <div class="ps-3">
-                                <h1 class="image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-start  ">
+                                <h1 class="image-name max-w-[200px] mt-[-20px] pb-2 uppercase break-all font-fre text-3xl text-start  ">
                                     ${user?.name}
                                 </h1>
                             </div>
