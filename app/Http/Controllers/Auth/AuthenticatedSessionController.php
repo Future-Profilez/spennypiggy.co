@@ -247,7 +247,8 @@ class AuthenticatedSessionController extends Controller
             'slinks' => $sociallinks,
             'intro' => $userIntro,
             'supporters' => $profileData['supporters'],
-            'wish_categories' => $user->user_categories,
+            // Show only categories that have at least one wish item
+            'wish_categories' => $this->getCategoriesWithItems($user),
             'selectedCategory' => request()->query('category') ?? false,
             'page' => $page,
             'first30DayEarnings' => $founderData['first30DayEarnings'],
@@ -315,6 +316,25 @@ class AuthenticatedSessionController extends Controller
                 ]];
             }
         });
+    }
+
+    /**
+     * Get only user categories that have at least one wish item.
+     * For public viewers (not the owner), only count approved items.
+     */
+    private function getCategoriesWithItems($user)
+    {
+        $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+
+        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+            $q->where('user_id', $user->id);
+            if ($isPublicView) {
+                $q->where('is_approved', 1);
+            }
+        })->pluck('user_category_id')->unique()->filter();
+
+        // Return the filtered categories as a collection
+        return $user->user_categories()->whereIn('id', $categoryIds)->get();
     }
 
     /**

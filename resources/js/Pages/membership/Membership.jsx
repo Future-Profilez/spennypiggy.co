@@ -70,16 +70,64 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
     setrewards(item?.rewards ? JSON.parse(item.rewards) : []);
   },[item]);
 
+  const membershipclasses = {
+    'gold' : '!border-[#F94F97] !bg-yellow-500',
+    'silver' : '!border-[#A6A6A6] !bg-[#A6A6A6]',
+    'bronze' : '!border-[#CD7F32] !bg-[#CD7F32]',
+    'platinum' : '!border-gray-300 !bg-gray-300',
+    'lifetime' : '!border-[#F94F97] !bg-green-500',
+  }
+  const btnclasses = {
+    'gold' : 'bg-yellow-100 !text-yellow-600',
+    'silver' : '!bg-gray-500 !text-white',
+    'bronze' : '!bg-yellow-800 !text-white',
+    'platinum' : '!bg-[#E5E4E2] !text-black',
+    'lifetime' : '!bg-green-600 !text-white',
+  }
+  const borderclasses = {
+    'gold' : '!border-[#F94F97]',
+    'silver' : '!border-[#A6A6A6]',
+    'bronze' : '!border-[#CD7F32]',
+    'platinum' : '!border-[#E5E4E2]',
+    'lifetime' : '!border-green-500',
+  }
 
   return (
     <>
-            <div className="bg-white bg-opacity-90 relative rounded-[30px] overflow-hidden  border-3 md:border-4 !border-[#F94F97] h-full">
-              <div className='m-imag rounded-lg relative ' >
-                {IsloggedIn && item && item?.approved === 0 ?
-                <div className='absolute bottom-2 m-3 bg-yellow-500 text-sm p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
-                : ''}
-                <img src={item && item?.perma_link || dummy } alt='image' className='max-h-[200px] img-fluid w-100  ' />
+          <div className={`bg-opacity-90 relative rounded-[30px] overflow-hidden  
+            border-3 md:border-4 ${borderclasses[item?.level || 'default']} 
+            h-full bg-white `}>
+            {IsloggedIn && item && item?.approved === 0 ?
+              <div className='absolute top-8 z-1 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
+            : ''}
+
+
+            <div className={`${membershipclasses[item?.level || 'default']} text-white pt-6`}>
+              <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
+              relative' >
+                <img src={item && item?.perma_link || dummy } alt='image' className='w-full h-full img-fluid object-cover  ' />
               </div>
+              <div className="flex justify-center ">
+                <h2 className={`${btnclasses[item?.level || 'default']} 
+                  rounded-xl px-3 text-sm py-2 text-white uppercase mt-2`}>
+                  {item && item?.level}
+                </h2>
+              </div>
+
+                <div className="flex items-baseline  justify-center py-4 pt-2 ">
+                  <h2 className={`font-bold text-xl`}>
+                    {formatMultiPrice(item && item?.price, item && item?.currency)}
+                  </h2>
+                  <div className="ps-1">
+                    <p className="text-[17px]">/month</p>
+                  </div>
+                </div>
+
+            </div>
+
+
+
+              
 
               <div className='p-3'>
                 {IsloggedIn ? <DropdownButton
@@ -92,37 +140,27 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                 </div>}>
                   <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
                 </DropdownButton> : ''}
-                <h2 className="text-xl text-black font-bold uppercase mt-2">{item && item?.level}</h2>
-                <p className="text-2xl font-extrabold mb-6">{formatMultiPrice(item && item?.price, item && item?.currency)}  <span className="text-sm">Monthly</span></p>
-                <ul className="space-y-1 mb-6">
-                    <li key={`reward-`} className='flex items-center' >
-                        ✅ <span className="ml-2 text-sm">Access to Member only posts</span>
-                    </li>
+                <p className="font-bold mb-2 ">What's Included</p>
+                <ul className="space-y-1 mb-6 text-black">
                     {rewards && rewards.map((r, i)=>{
                       return <li key={`reward-${i} `} className='flex items-center' >
-                        ✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
+                        	✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
                       </li>
                     })}
+                    {/* <li key={`reward-`} className='flex items-center' >
+                        	✅ <span className="ml-2 text-sm">Access to Member only posts</span>
+                    </li> */}
                 </ul>
                 {hidebtn ? '' : <>
                   <div className='flex justify-center items-center'>
-                    {IsloggedIn ? <EditMembership  classes='btn-pink mt-2 block text-center !w-full'  item={item} /> :
-                    <Link className='btn-pink mt-2  text-center !w-full' method='get'
-                        href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
-                    </Link>
-                      // <>
-                      //   {auth && auth.user !== null ?
-                      //     :
-                      //     <button className='btn-pink mt-2 block text-center !w-full'
-                      //         onClick={gotologin}>Join Now
-                      //     </button>
-                      //   }
-                      // </>
+                    {IsloggedIn ? <EditMembership  classes='btn-pink block text-center !w-full'  item={item} /> :
+                      <Link className='btn-pink  text-center !w-full' method='get'
+                          href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
+                      </Link>
                     }
                   </div>
                 </>}
               </div>
-
             </div>
     </>
   )

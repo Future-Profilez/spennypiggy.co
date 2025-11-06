@@ -183,16 +183,16 @@ class OptimizedProfileController extends Controller
      */
     private function getCategoriesWithItems($user)
     {
-        // Get all wishitems for this user
-        $wishitems = \App\Models\WishItem::where('user_id', $user->id)->get();
-        
-        // Get the category IDs that have items
-        $categoryIds = $wishitems->pluck('category_id')->unique()->filter()->values();
-        
-        // Filter the user categories to only include those with items
-        return $user->user_categories->filter(function($category) use ($categoryIds) {
-            return $categoryIds->contains($category->id);
-        })->values();
+        $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+
+        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+            $q->where('user_id', $user->id);
+            if ($isPublicView) {
+                $q->where('is_approved', 1);
+            }
+        })->pluck('user_category_id')->unique()->filter();
+
+        return $user->user_categories()->whereIn('id', $categoryIds)->get();
     }
 
     /**
