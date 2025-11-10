@@ -59,7 +59,7 @@ export default function Userprofile({ IsloggedIn }) {
                         )}
                     </div>
                     <div className="ps-3">
-                        <h1 className="font-GillSans  flex   items-center  justify-center lg:justify-start text-center lg:text-left">
+                        <h1 className="font-GillSans flex items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
                             {user?.role == 1 && user?.profile_status_lock == 2 && <>
                                     {user?.is_founder ? 

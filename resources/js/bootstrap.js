@@ -9,13 +9,15 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-// Set up CSRF token for axios requests
-const token = document.head.querySelector('meta[name="csrf-token"]');
-if (token) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
-} else {
-    console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
-}
+// Configure axios to use CSRF cookies (better than meta tags)
+window.axios.defaults.withCredentials = true;
+window.axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
+
+// Remove static CSRF token setup - let axios handle it automatically
+
+// Import CSRF interceptor for automatic token refresh
+import './utils/csrfInterceptor';
 
 /**
  * Echo exposes an expressive API for subscribing to channels and listening

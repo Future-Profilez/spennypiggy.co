@@ -306,20 +306,51 @@ class CheckoutController extends Controller
                 $transferAmount = $totalChargeAmount - round($totalShowTaxWithQuantity * $multiplier);
             }
 
+            // Check if creator has card_payments capability to determine payment flow
+            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
+            
+            // Build payment_intent_data based on creator's capabilities
+            $paymentIntentData = [
+                'description' => "Spenny Piggy - Content purchase with platform fee",
+                'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalChargeAmount),
+            ];
+            
+            // Only add on_behalf_of if creator has card_payments capability
+            if ($hasCardPayments) {
+                // Standard flow for creators with card_payments capability
+                $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $connectedAccountId, // Creator's connected account
+                    'amount' => (int) $transferAmount, // What creator receives (item + VAT)
+                ];
+                Log::info('Using standard flow with on_behalf_of for creator', [
+                    'creator_id' => $creator_id,
+                    'connected_account_id' => $connectedAccountId,
+                    'has_card_payments' => true,
+                    'transfer_amount' => $transferAmount
+                ]);
+            } else {
+                // For restricted creators (transfers-only), charge on platform and transfer the creator amount
+                // Use simple destination transfer without application_fee_amount to avoid conflicts
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $connectedAccountId,
+                    'amount' => (int) $transferAmount, // Transfer only what creator should receive
+                ];
+                Log::info('Using fallback flow without on_behalf_of for restricted creator', [
+                    'creator_id' => $creator_id,
+                    'connected_account_id' => $connectedAccountId,
+                    'has_card_payments' => false,
+                    'reason' => 'Creator lacks card_payments capability',
+                    'transfer_amount' => $transferAmount
+                ]);
+            }
+
             $payload = [
                 'success_url' => route('checkout.success', [$creator_id]),
                 'cancel_url' => route('checkout.cancel', [$creator_id]),
                 "mode"  =>  "payment",
                 'line_items' => $lineItems, // This determines the total amount automatically
-                'payment_intent_data' => [
-                    'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
-                    'transfer_data' => [
-                        'destination' => $connectedAccountId, // Creator's connected account
-                        'amount' => (int) $transferAmount, // What creator receives (item + VAT)
-                    ],
-                    'description' => "Spenny Piggy - Content purchase with platform fee",
-                "metadata" => $this->buildSafeMetadata($owner, $getdata, $totalChargeAmount),
-                ],
+                'payment_intent_data' => $paymentIntentData,
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
@@ -1291,19 +1322,43 @@ class CheckoutController extends Controller
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
         
+        // Check if creator has card_payments capability to determine payment flow
+        $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($owner->account_id);
+        
+        $paymentIntentData = [
+            'transfer_data' => [
+                'destination' => $owner->account_id
+            ],
+        ];
+        
+        // Only add on_behalf_of if creator has card_payments capability
+        if ($hasCardPayments) {
+            $paymentIntentData['on_behalf_of'] = $owner->account_id;
+            $paymentIntentData['application_fee_amount'] = $tax * $multiplier;
+        } else {
+            // For restricted creators, charge on platform and transfer the creator amount
+            // Calculate the creator amount (total minus platform fees)
+            $totalAmount = array_sum(array_map(function($item) use ($multiplier) {
+                return $item['quantity'] * ($item['price'] ?? 0);
+            }, $items));
+            $creatorAmount = $totalAmount - ($tax * $multiplier);
+            $paymentIntentData['transfer_data']['amount'] = max(0, $creatorAmount); // Transfer creator amount
+        }
+        
         $payload = [
             "mode"  => "payment",
             "line_items"    => $items,
-            "payment_intent_data"   =>  [
-                'application_fee_amount'    => $tax * $multiplier,
-                'transfer_data' => [
-                    'destination'   => $owner->account_id
-                ],
-                'on_behalf_of'  => $owner->account_id
-            ],
+            "payment_intent_data" => $paymentIntentData,
             'success_url'   => route("test.stripe.callback"),
             'cancel_url'    => route("test.stripe.callback", ["status" => "cancel"])
         ];
+        
+        Log::info('Test checkout payment flow determined', [
+            'owner_id' => $owner->id,
+            'connected_account_id' => $owner->account_id,
+            'has_card_payments' => $hasCardPayments,
+            'using_on_behalf_of' => $hasCardPayments
+        ]);
 
         $session = StripeControl::createCheckoutSession($payload);
         Session::put("checkout_session", $session->id);

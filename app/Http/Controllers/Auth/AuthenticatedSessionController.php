@@ -84,6 +84,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->authenticate();
         $request->session()->regenerate();
+        $request->session()->regenerateToken();
         $user = Auth::user();
 
         $secret = $this->google2FA->generateSecretKey();
@@ -221,8 +222,9 @@ class AuthenticatedSessionController extends Controller
             [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
         }
         
+        // Always load social links so they are available to all dashboard tabs/pages
+        $sociallinks = $user->social_links;
         if($page == 'about'){
-            $sociallinks = $user->social_links;
             $userIntro = $user->intro;
         }
         // Removed stray debug return that broke the page rendering

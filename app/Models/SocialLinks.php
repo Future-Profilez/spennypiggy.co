@@ -16,7 +16,7 @@ class SocialLinks extends Model
         'whoyouinto',
         'twitter',
         'instagram',
-        // 'facebook',
+        'facebook',
         'youtube',
         'twitch',
         'tumblr',
@@ -33,7 +33,6 @@ class SocialLinks extends Model
     protected $hidden   =   [
         'id',
         'uuid',
-        'facebook',
         'user_id',
         'created_at',
         'updated_at',

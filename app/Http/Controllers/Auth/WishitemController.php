@@ -1464,6 +1464,9 @@ class WishitemController extends Controller
                     'message' => 'Stripe account details are missing.',
                 ], 422);
             }
+            
+            // Check if creator has card_payments capability to determine payment flow
+            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($orderDetails->creator->account_id);
 
             // $addressData = [
             //     'country' => $request->country,
@@ -1493,6 +1496,48 @@ class WishitemController extends Controller
                 'uuid' => $ryeProductPayment->uuid,
                 'orderUuid' => $orderDetails->uuid
             ]);
+            
+            // Build payment_intent_data based on creator's capabilities
+            $paymentIntentData = [
+                'metadata' => [
+                    'order_id' => $orderDetails->id,
+                    'user_id' => $orderDetails->user->id,
+                    'creator_id' => $orderDetails->creator->id,
+                    'payment_type' => 'product_purchase',
+                    'has_card_payments' => (string) $hasCardPayments,
+                ],
+            ];
+            
+            // Only add on_behalf_of if creator has card_payments capability
+            if ($hasCardPayments) {
+                $paymentIntentData['on_behalf_of'] = $orderDetails->creator->account_id;
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $orderDetails->creator->account_id,
+                    'amount' => $totalAmount,
+                ];
+                Log::info('Using standard flow with on_behalf_of for Rye product payment', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'connected_account_id' => $orderDetails->creator->account_id,
+                    'has_card_payments' => true,
+                    'order_id' => $orderDetails->id,
+                    'transfer_amount' => $totalAmount
+                ]);
+            } else {
+                // For restricted creators (transfers-only), charge on platform and transfer full amount to creator
+                // Use simple destination transfer without application_fee_amount
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $orderDetails->creator->account_id,
+                    'amount' => $totalAmount, // Transfer full amount to creator since no platform fee for product purchases
+                ];
+                Log::info('Using fallback flow without on_behalf_of for restricted Rye creator', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'connected_account_id' => $orderDetails->creator->account_id,
+                    'has_card_payments' => false,
+                    'reason' => 'Creator lacks card_payments capability',
+                    'order_id' => $orderDetails->id,
+                    'transfer_amount' => $totalAmount
+                ]);
+            }
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => $successUrl, // Include correct parameters
@@ -1500,24 +1545,13 @@ class WishitemController extends Controller
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'payment_method_types' => ['card'],
-                'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $orderDetails->creator->account_id,
-                        'amount' => $totalAmount,
-                    ],
-                    'on_behalf_of' => $orderDetails->creator->account_id,
-                    'metadata' => [
-                        'order_id' => $orderDetails->id,
-                        'user_id' => $orderDetails->user->id,
-                        'creator_id' => $orderDetails->creator->id,
-                        'payment_type' => 'product_purchase'
-                    ],
-                ],
+                'payment_intent_data' => $paymentIntentData,
                 'customer_email' => $orderDetails->user->email,
                 'metadata' => [
                     'order_id' => $orderDetails->id,
                     'user_email' => $orderDetails->user->email,
                     'payment_source' => 'website',
+                    'has_card_payments' => (string) $hasCardPayments,
                 ],
             ]);
 

@@ -117,6 +117,11 @@ export default function Dashboard(props) {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
+
+    // Keep local sLinks state in sync when server props change (e.g., after save/refresh)
+    useEffect(() => {
+        setLinks(slinks || []);
+    }, [slinks]);
     const [gifts, setGifts] = useState([]);
     const [activityStatus, setActivityStatus] = useState(null);
     const [activityLoading, setActivityLoading] = useState(false);

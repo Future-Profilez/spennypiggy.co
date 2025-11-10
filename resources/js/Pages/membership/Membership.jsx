@@ -97,70 +97,71 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
           <div className={`bg-opacity-90 relative rounded-[30px] overflow-hidden  
             border-3 md:border-4 ${borderclasses[item?.level || 'default']} 
             h-full bg-white `}>
-            {IsloggedIn && item && item?.approved === 0 ?
-              <div className='absolute top-8 z-1 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
-            : ''}
 
+                  {IsloggedIn && item && item?.approved === 0 ?
+                    <div className='absolute top-8 z-1 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
+                  : ''}
+                  <Link className='block' method='get'
+                      href={route('membership.checkout',{uuid: item?.uuid})}>
+                    {IsloggedIn ? 
+                      <DropdownButton
+                        className='edit-post pe-0 absolute top-2 m-1 right-2 z-1 ' id="dropdown-basic-button"
+                        title={
+                        <div className='dots' >
+                        <span className='bg-white' ></span>
+                        <span className='bg-white' ></span>
+                        <span className='bg-white' ></span>
+                      </div>}>
+                      <div> 
+                      </div>
+                        <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
+                      </DropdownButton> 
+                    : ''}
+                    <div className={`${membershipclasses[item?.level || 'default']} text-white pt-6`}>
+                        <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
+                        relative' >
+                          <img src={item && item?.perma_link || dummy } alt='image' className='w-full h-full img-fluid object-cover  ' />
+                        </div>
+                        <div className="flex justify-center ">
+                          <h2 className={`${btnclasses[item?.level || 'default']} 
+                            rounded-xl px-3 text-sm py-2 text-white uppercase mt-2`}>
+                            {item && item?.level}
+                          </h2>
+                        </div>
 
-            <div className={`${membershipclasses[item?.level || 'default']} text-white pt-6`}>
-              <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
-              relative' >
-                <img src={item && item?.perma_link || dummy } alt='image' className='w-full h-full img-fluid object-cover  ' />
-              </div>
-              <div className="flex justify-center ">
-                <h2 className={`${btnclasses[item?.level || 'default']} 
-                  rounded-xl px-3 text-sm py-2 text-white uppercase mt-2`}>
-                  {item && item?.level}
-                </h2>
-              </div>
+                        <div className="flex items-baseline  justify-center py-4 pt-2 ">
+                          <h2 className={`font-bold text-xl`}>
+                            {formatMultiPrice(item && item?.price, item && item?.currency)}
+                          </h2>
+                          <div className="ps-1">
+                            <p className="text-[17px]">/month</p>
+                          </div>
+                        </div>
+                    </div>
+                    <div className='p-3'>
+                      <p className="font-bold mb-2 ">What's Included</p>
+                      <ul className="space-y-1 text-black">
+                          {rewards && rewards.map((r, i)=>{
+                            return <li key={`reward-${i} `} className='flex items-center' >
+                                ✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
+                            </li>
+                          })}
+                          {/* <li key={`reward-`} className='flex items-center' >
+                                ✅ <span className="ml-2 text-sm">Access to Member only posts</span>
+                          </li> */}
+                      </ul>
+                    </div>
+                  </Link>
 
-                <div className="flex items-baseline  justify-center py-4 pt-2 ">
-                  <h2 className={`font-bold text-xl`}>
-                    {formatMultiPrice(item && item?.price, item && item?.currency)}
-                  </h2>
-                  <div className="ps-1">
-                    <p className="text-[17px]">/month</p>
-                  </div>
-                </div>
-
-            </div>
-
-
-
-              
-
-              <div className='p-3'>
-                {IsloggedIn ? <DropdownButton
-                  className='edit-post pe-0 absolute top-2 m-1 right-2 z-1 ' id="dropdown-basic-button"
-                  title={
-                  <div className='dots' >
-                  <span className='bg-white' ></span>
-                  <span className='bg-white' ></span>
-                  <span className='bg-white' ></span>
-                </div>}>
-                  <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
-                </DropdownButton> : ''}
-                <p className="font-bold mb-2 ">What's Included</p>
-                <ul className="space-y-1 mb-6 text-black">
-                    {rewards && rewards.map((r, i)=>{
-                      return <li key={`reward-${i} `} className='flex items-center' >
-                        	✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
-                      </li>
-                    })}
-                    {/* <li key={`reward-`} className='flex items-center' >
-                        	✅ <span className="ml-2 text-sm">Access to Member only posts</span>
-                    </li> */}
-                </ul>
                 {hidebtn ? '' : <>
                   <div className='flex justify-center items-center'>
-                    {IsloggedIn ? <EditMembership  classes='btn-pink block text-center !w-full'  item={item} /> :
-                      <Link className='btn-pink  text-center !w-full' method='get'
-                          href={route('membership.checkout',{uuid: item?.uuid})}>Join Now
-                      </Link>
+                    {IsloggedIn ? 
+                      <EditMembership  classes='btn-pink block text-center !w-full'  item={item} /> 
+                    :
+                      ''
                     }
                   </div>
                 </>}
-              </div>
             </div>
     </>
   )

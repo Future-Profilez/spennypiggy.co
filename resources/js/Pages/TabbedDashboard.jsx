@@ -33,6 +33,11 @@ export default function TabbedDashboard(props) {
         (auth && auth.user && auth.user.username) == (user && user.username)
     );
     const [sLinks, setLinks] = useState(slinks || []);
+
+    // Keep local sLinks state in sync when server props change
+    useEffect(() => {
+        setLinks(slinks || []);
+    }, [slinks]);
     const [gifts, setGifts] = useState([]);
     const [giftsloading, setGiftsLoading] = useState(false);
 

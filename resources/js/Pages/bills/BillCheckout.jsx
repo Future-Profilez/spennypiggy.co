@@ -356,7 +356,7 @@ export default function BillCheckout(props) {
                                                         automatically taken on a
                                                         daily,weekly,monthly or
                                                         yearly basis depending
-                                                        on yourchoice and can be
+                                                        on your choice and can be
                                                         cancelled anytime.{" "}
                                                     </li>
 
@@ -438,7 +438,7 @@ export default function BillCheckout(props) {
                                                 checking
                                                     ? "disabled"
                                                     : ""
-                                            } btn-pink md px-4 mt-3 text-center`}
+                                            } button p`}
                                             disabled={
                                                 !data.agree ||
                                                 processing ||

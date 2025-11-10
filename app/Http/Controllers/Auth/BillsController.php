@@ -463,11 +463,12 @@ class BillsController extends Controller
                 }
 
                 $priceId = $existingPriceEntry->price_id ?? null;
+                
+                // Get currency metadata to handle zero-decimal currencies properly
+                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 if (!$priceId) {
-                    // Get currency metadata to handle zero-decimal currencies properly
-                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
-                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
                     
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
