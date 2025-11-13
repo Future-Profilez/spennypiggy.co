@@ -95,6 +95,12 @@ export const getPreviewUrl = (platformId, value) => {
     return null;
   }
   
+  // Handle Tumblr values that may be pasted as full URLs
+  if (platformId === 'tumblr' && /^https?:\/\//i.test(value)) {
+    const handle = extractHandleFromUrl(platformId, value);
+    return toCanonicalUrl(platformId, handle);
+  }
+  
   return toCanonicalUrl(platformId, value);
 };
 
@@ -109,8 +115,12 @@ export const extractHandleFromUrl = (platformId, url) => {
 
   // Special case for Tumblr subdomain
   if (platformId === 'tumblr') {
-    const match = url.match(/https?:\/\/([^.]+)\.tumblr\.com/);
-    return match ? match[1] : url;
+    // Path-style: https://tumblr.com/<handle>
+    const pathMatch = url.match(/https?:\/\/(?:www\.)?tumblr\.com\/([^\/?#]+)/);
+    if (pathMatch) return pathMatch[1];
+    // Subdomain-style: https://<handle>.tumblr.com
+    const subdomainMatch = url.match(/https?:\/\/([^.]+)\.tumblr\.com/);
+    return subdomainMatch ? subdomainMatch[1] : url;
   }
 
   // Special case for Discord canonical URL (users/<handleOrId>)
@@ -156,6 +166,22 @@ export const validatePlatformValue = (platformId, value) => {
 
   // Validate format based on platform type
   let isValid = false;
+  
+  // Allow Tumblr handle inputs pasted as URLs (path or subdomain)
+  if (platform.type === 'handle' && platformId === 'tumblr' && /^https?:\/\//i.test(trimmedValue)) {
+    const extracted = extractHandleFromUrl(platformId, trimmedValue);
+    const handle = extracted?.trim() || '';
+    if (!handle) {
+      return { status: 'invalid', message: `Invalid ${platform.label} format`, canonical: '' };
+    }
+    const ok = isValidHandle(platformId, handle, platform.validation);
+    if (!ok) {
+      return { status: 'invalid', message: `Invalid ${platform.label} format`, canonical: '' };
+    }
+    const canonical = toCanonicalUrl(platformId, handle);
+    return { status: 'valid', message: '', canonical };
+  }
+
   if (platform.type === 'handle') {
     isValid = isValidHandle(platformId, trimmedValue, platform.validation);
   } else if (platform.type === 'url') {

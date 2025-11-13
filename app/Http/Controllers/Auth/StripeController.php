@@ -2943,9 +2943,19 @@ class StripeController extends Controller
             // Always create a real verification session, even in non-production environments
             // This ensures admin can view actual Stripe document images
 
-            // Create a new verification session
+            // Create a new verification session - restrict to passport only
             $session = VerificationSession::create([
                 'type' => 'document',
+                'options' => [
+                    'document' => [
+                        // Allow only passports; disallow ID cards and driver's licenses
+                        'allowed_types' => ['passport'],
+                        // Keep other defaults; adjust if business rules change
+                        // 'require_live_capture' => true,
+                        // 'require_matching_selfie' => false, 
+                        // 'require_id_number' => false, 
+                    ],
+                ],
                 'metadata' => [
                     'user_id' => $request->user() ? $request->user()->id : null,
                 ],
