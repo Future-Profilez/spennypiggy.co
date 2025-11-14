@@ -55,6 +55,7 @@ use App\Models\UserCategory;
 use App\Models\UserShopCategories;
 use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
+use App\Models\Deliverable;
 use App\Models\UserBackupCode;
 use App\StripeControl;
 
@@ -813,6 +814,173 @@ class ProfileController extends Controller
             "current_page" => $user_member->currentPage() ?? null,
             "total" => $user_member->total() ?? null,
             "per_page" => $user_member->perPage() ?? null,
+        ]);
+    }
+
+    public function gifterBills($username)
+    {
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
+
+        $billPayments = BillPayment::where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+            })
+            ->with(['bill', 'bill.user'])
+            ->orderBy('created_at', 'DESC')
+            ->paginate(30);
+
+        $trackData = [];
+        foreach ($billPayments as $key => $value) {
+            $trackData[$key] = [
+                'owner' => [
+                    'name' => $value->bill->user->name ?? '',
+                    'avatar' => $value->bill->user->avatar_url ?? null,
+                    'cover' => $value->bill->user->cover_url ?? null,
+                    'username' => $value->bill->user->username ?? '',
+                    'stripe_details_submitted' => $value->bill->user->stripe_details_submitted ?? null,
+                ],
+                'amount' => $value->amount,
+                'tax' => $value->tax,
+                'vat_tax_amount' => $value->vat_tax_amount,
+                'currency' => $value->currency,
+                'recurring_for' => $value->recurring_for,
+                'recurring_type' => $value->recurring_type,
+                'message' => $value->message,
+                'anonymous' => $value->anonymous,
+                'created_at' => \Carbon\Carbon::parse($value->created_at)->format('Y-m-d H:i:s'),
+            ];
+
+            if (!empty($value->bill)) {
+                $trackData[$key]['bill'] = [
+                    'name' => $value->bill->name,
+                    'perma_link' => $value->bill->perma_link,
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'bills' => $trackData,
+            'last_page' => $billPayments->lastPage() ?? null,
+            'current_page' => $billPayments->currentPage() ?? null,
+            'total' => $billPayments->total() ?? null,
+            'per_page' => $billPayments->perPage() ?? null,
+        ]);
+    }
+
+    public function gifterContentFiles($username)
+    {
+        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        // 1) Wish purchases (StripePaymentItems) -> prefer content_file_url, then reward_url, else message_url
+        $wishPurchases = \App\Models\StripePaymentItems::whereHas('payment', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->with(['wish', 'payment.owner'])
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        $items = [];
+        foreach ($wishPurchases as $wp) {
+            $wish = $wp->wish;
+            $url = $wish?->content_file_url ?? $wish?->reward_url ?? $wp->message_url;
+            if (!$url) { continue; }
+            $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+            // Prefer explicit types from DB when available
+            $type = $wish?->content_file_type ?: $wp->media_type;
+            if (!$type) {
+                // If reward URL is used, treat as image
+                if ($wish?->reward_url && $url === $wish->reward_url) {
+                    $type = 'image';
+                } else {
+                    $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
+                }
+            }
+            $items[] = [
+                'url' => $url,
+                'type' => $type,
+                'title' => $wish?->wishname ?? 'Wish Content',
+                'product_type' => 'wish',
+                'created_at' => $wp->created_at->toISOString(),
+                'owner' => [
+                    'username' => $wp->payment?->owner?->username,
+                    'name' => $wp->payment?->owner?->name,
+                ],
+            ];
+        }
+
+        // 2) Bill deliverables (Deliverable)
+        $deliverables = Deliverable::where('gifter_id', $user->id)
+            ->whereNotNull('deliverable_url')
+            ->whereIn('product_type', ['bill', 'wish'])
+            ->with(['wishItem', 'bill', 'creator'])
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        foreach ($deliverables as $d) {
+            $url = $d->deliverable_url ?: ($d->bill?->content_file_url ?? $d->wishItem?->content_file_url);
+            if (!$url) { continue; }
+            $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+            $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
+            $title = $d->wishItem?->wishname ?? $d->bill?->name ?? 'Content';
+            $items[] = [
+                'url' => $url,
+                'type' => $type,
+                'title' => $title,
+                'product_type' => $d->product_type,
+                'created_at' => $d->created_at->toISOString(),
+                'owner' => [
+                    'username' => $d->creator?->username,
+                    'name' => $d->creator?->name,
+                ],
+            ];
+        }
+
+        // 3) One-time subscriptions with reward (WishItemSubscription)
+        $subs = \App\Models\WishItemSubscription::where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+            })
+            ->with(['wish_item.user'])
+            ->where('recurring_for', 'onetime')
+            ->where('status', 'paid')
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        foreach ($subs as $sub) {
+            $wish = $sub->wish_item;
+            $url = $wish?->content_file_url ?? $wish?->reward_url;
+            if (!$url) { continue; }
+            $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+            $type = $wish?->content_file_type ?: ($wish?->reward_url ? 'image' : null);
+            if (!$type) {
+                $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
+            }
+            $items[] = [
+                'url' => $url,
+                'type' => $type,
+                'title' => $wish?->wishname ?? 'Wish Content',
+                'product_type' => 'wish',
+                'created_at' => $sub->created_at->toISOString(),
+                'owner' => [
+                    'username' => $wish?->user?->username,
+                    'name' => $wish?->user?->name,
+                ],
+            ];
+        }
+
+        // Sort newest first and remove duplicates by URL
+        usort($items, function ($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+        $unique = [];
+        $final = [];
+        foreach ($items as $it) {
+            if (isset($unique[$it['url']])) continue;
+            $unique[$it['url']] = true;
+            $final[] = $it;
+        }
+
+        return response()->json([
+            'status' => true,
+            'items' => $final,
         ]);
     }
 

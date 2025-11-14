@@ -35,7 +35,8 @@ class Bills extends Model
     ];
 
     protected $appends = [
-        'perma_link'
+        'perma_link',
+        'content_file_url'
     ];
 
     public static function boot()
@@ -64,5 +65,18 @@ class Bills extends Model
     public function payments()
     {
         return $this->hasMany(BillPayment::class);
+    }
+
+    public function getContentFileUrlAttribute()
+    {
+        $url = null;
+        if (!empty($this->content_file)) {
+            if (strpos($this->content_file, 'https://ucarecdn.com/') === 0) {
+                $url = $this->content_file;
+            } else {
+                $url = 'https://ucarecdn.com/' . $this->content_file . '/';
+            }
+        }
+        return $url;
     }
 }

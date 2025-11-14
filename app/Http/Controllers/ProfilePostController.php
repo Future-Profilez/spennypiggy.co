@@ -4,6 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\WishItem;
+use App\Models\Bills;
+use App\Models\Membership;
+use App\Models\TipGoalsPayment;
+use App\Models\Post;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use App\Services\UserProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,6 +60,154 @@ class ProfilePostController extends Controller
         }
 
         try {
+            $isOwner = Auth::check() && Auth::id() === $profileUser->id;
+
+            // If viewing own profile and user is a gifter (role == 0),
+            // aggregate posts from creators they have paid (accessible posts).
+            if ($isOwner && (int) $profileUser->role === 0 && $filter !== 'shoutouts') {
+                // Collect creator IDs by payment/access types
+                $subscriptionCreators = WishItem::where('subscription', 1)
+                    ->whereHas('wishItemsSubscription', function ($qu) use ($profileUser) {
+                        $qu->where('status', 'paid')
+                           ->where('stripe_status', 'active')
+                           ->where(function ($q) use ($profileUser) {
+                               $q->where('user_id', $profileUser->id)
+                                 ->orWhere('guest_email', $profileUser->email);
+                           })
+                           ->where(function ($que) {
+                               $que->where(function ($recurring) {
+                                   $recurring->where('recurring_for', 'continue')
+                                            ->where('upcoming_payment', '>=', Carbon::now());
+                               })->orWhere(function ($onetime) {
+                                   $onetime->where('recurring_for', 'onetime')
+                                          ->where('created_at', '>=', Carbon::now()->subDays(30));
+                               });
+                           });
+                    })
+                    ->pluck('user_id')
+                    ->toArray();
+
+                $billCreators = Bills::whereHas('payments', function ($qu) use ($profileUser) {
+                        $qu->where(function ($que) {
+                            $que->where('created_at', '<=', Carbon::now())
+                                ->where('upcoming_payment', '>=', Carbon::now());
+                        })->where(function ($q) use ($profileUser) {
+                            $q->where('user_id', $profileUser->id)
+                              ->orWhere('guest_email', $profileUser->email);
+                        });
+                    })
+                    ->pluck('user_id')
+                    ->toArray();
+
+                $membershipCreators = Membership::whereHas('payments', function ($q) use ($profileUser) {
+                        $q->where(function ($que) {
+                            $que->where('created_at', '<=', Carbon::now())
+                                ->where('upcoming_payment', '>=', Carbon::now());
+                        })->where(function ($q) use ($profileUser) {
+                            $q->where('user_id', $profileUser->id)
+                              ->orWhere('guest_email', $profileUser->email);
+                        });
+                    })
+                    ->pluck('user_id')
+                    ->toArray();
+
+                // Filter memberships to separate non-lifetime vs lifetime if needed
+                $nonLifetimeCreators = Membership::whereHas('payments', function ($q) use ($profileUser) {
+                        $q->where('recurring_type', '!=', 'lifetime')
+                          ->where(function ($que) {
+                              $que->where('created_at', '<=', Carbon::now())
+                                  ->where('upcoming_payment', '>=', Carbon::now());
+                          })
+                          ->where(function ($q) use ($profileUser) {
+                              $q->where('user_id', $profileUser->id)
+                                ->orWhere('guest_email', $profileUser->email);
+                          });
+                    })
+                    ->pluck('user_id')
+                    ->toArray();
+
+                $lifetimeCreators = array_diff($membershipCreators, $nonLifetimeCreators);
+
+                $supportCreators = TipGoalsPayment::where(function ($q) use ($profileUser) {
+                        $q->where('user_id', $profileUser->id)
+                          ->orWhere('guest_email', $profileUser->email);
+                    })
+                    ->pluck('creator_id')
+                    ->toArray();
+
+                // Map front-end filters to internal modules
+                $includeSupport = in_array($filter, ['all', 'supporters'], true);
+                $includeMembership = in_array($filter, ['all', 'members'], true);
+                $includeSubscription = in_array($filter, ['all', 'subscribers'], true);
+
+                // Build aggregated posts query
+                $postsQuery = Post::whereNotNull('image')
+                    ->with('user')
+                    ->where('approved', 1)
+                    ->where(function ($query) use (
+                        $supportCreators,
+                        $nonLifetimeCreators,
+                        $lifetimeCreators,
+                        $subscriptionCreators,
+                        $billCreators,
+                        $includeSupport,
+                        $includeMembership,
+                        $includeSubscription
+                    ) {
+                        if ($includeSupport && !empty($supportCreators)) {
+                            $query->orWhere(function ($qu) use ($supportCreators) {
+                                $qu->whereIn('user_id', $supportCreators)
+                                   ->where('for_module', 'support');
+                            });
+                        }
+
+                        if ($includeMembership && (!empty($nonLifetimeCreators) || !empty($lifetimeCreators))) {
+                            $query->orWhere(function ($qu) use ($nonLifetimeCreators, $lifetimeCreators) {
+                                $qu->where(function ($q) use ($nonLifetimeCreators, $lifetimeCreators) {
+                                    $q->whereIn('user_id', $nonLifetimeCreators)
+                                      ->orWhereIn('user_id', $lifetimeCreators);
+                                })
+                                ->where('for_module', 'membership');
+                            });
+                        }
+
+                        if ($includeSubscription && (!empty($subscriptionCreators) || !empty($billCreators))) {
+                            $query->orWhere(function ($qu) use ($subscriptionCreators, $billCreators) {
+                                $qu->where(function ($q) use ($subscriptionCreators, $billCreators) {
+                                    $q->whereIn('user_id', $subscriptionCreators)
+                                      ->orWhereIn('user_id', $billCreators);
+                                })
+                                ->where('for_module', 'subscription');
+                            });
+                        }
+                    })
+                    ->orderBy('created_at', 'DESC');
+
+                $posts = $postsQuery->paginate($perPage, ['*'], 'page', $page);
+
+                // Mark all aggregated posts as unlocked for the gifter (self-view)
+                $posts->through(function ($post) {
+                    $post->is_lock = 0;
+                    return $post;
+                });
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $posts->items(),
+                    'pagination' => [
+                        'current_page' => $posts->currentPage(),
+                        'last_page' => $posts->lastPage(),
+                        'per_page' => $posts->perPage(),
+                        'total' => $posts->total(),
+                        'from' => $posts->firstItem(),
+                        'to' => $posts->lastItem(),
+                        'has_more_pages' => $posts->hasMorePages(),
+                    ],
+                    'filter' => $filter,
+                ]);
+            }
+
+            // Default: return creator's own posts list with access checks
             $posts = $this->profileService->getUserPosts($profileUser->id, $filter, $perPage, $page);
 
             return response()->json([
