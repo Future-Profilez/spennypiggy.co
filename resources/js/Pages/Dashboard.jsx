@@ -117,6 +117,11 @@ export default function Dashboard(props) {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
+
+    // Keep local sLinks state in sync when server props change (e.g., after save/refresh)
+    useEffect(() => {
+        setLinks(slinks || []);
+    }, [slinks]);
     const [gifts, setGifts] = useState([]);
     const [activityStatus, setActivityStatus] = useState(null);
     const [activityLoading, setActivityLoading] = useState(false);
@@ -661,15 +666,11 @@ export default function Dashboard(props) {
                                                                             )}
                                                                             </div>
                                                                     </div>
+                                                                    {IsloggedIn || user?.intro?.approved == 1?  
                                                                     <AddIntro
-                                                                        uuid={
-                                                                            user?.id ||
-                                                                            null
-                                                                        }
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                    />
+                                                                        uuid={user?.id ||null}
+                                                                        IsloggedIn={IsloggedIn}
+                                                                    /> : ''}
                                                                 </div>
                                                             </div>
                                                             <div className="ps-lg-4 col-lg-6">
@@ -682,24 +683,16 @@ export default function Dashboard(props) {
                                                                     </Suspense>
                                                                 )}
 
-                                                                {IsloggedIn &&
-                                                                UserStripeConnected !==
+                                                                {IsloggedIn && UserStripeConnected !==
                                                                     1 ? (
-                                                                    <CreatorVerification
-                                                                        IsloggedIn={
-                                                                            IsloggedIn
-                                                                        }
-                                                                    />
+                                                                    <CreatorVerification IsloggedIn={ IsloggedIn } />
                                                                 ) : (
                                                                     ""
                                                                 )}
-                                                                {IsloggedIn &&
-                                                                UserStripeConnected ==
+                                                                {IsloggedIn && UserStripeConnected ==
                                                                     1 ? (
                                                                     <ProfileSteps
-                                                                        sLinks={
-                                                                            sLinks
-                                                                        }
+                                                                        sLinks={ sLinks }
                                                                         user={
                                                                             user
                                                                         }

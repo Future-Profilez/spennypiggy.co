@@ -721,6 +721,21 @@ class StripeController extends Controller
                 $user->default_currency = $account->default_currency;
                 $user->save();
             }
+            // Bust cached Stripe capability and migration status so the dashboard updates immediately
+            Cache::forget("stripe_capabilities_{$user->account_id}");
+            Cache::forget("migration_status_{$user->id}");
+
+            // Log updated capability status for diagnosis
+            Log::info('Stripe connectReturn status', [
+                'user_id' => $user->id,
+                'account_id' => $user->account_id,
+                'charges_enabled' => $account->charges_enabled ?? null,
+                'payouts_enabled' => $account->payouts_enabled ?? null,
+                'cap_card_payments' => $account->capabilities->card_payments ?? null,
+                'cap_transfers' => $account->capabilities->transfers ?? null,
+                'requirements_due' => $account->requirements->eventually_due ?? []
+            ]);
+
             return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe connected.");
         } catch (Exception $e) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", $e->getMessage());
@@ -1431,6 +1446,9 @@ class StripeController extends Controller
 
             // Total charge amount = wish price + creator's VAT + platform fees
             $totalChargeAmount = round($basePrice * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
+            
+            // Check if creator has card_payments capability to determine payment flow
+            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
             $payload = [
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
@@ -1442,12 +1460,7 @@ class StripeController extends Controller
             ];
 
             if ($reccure === 'onetime') {
-                $payload['payment_intent_data'] = [
-                    'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
-                    'transfer_data' => [
-                        'destination' => $connectedAccountId, // Creator's connected account
-                        'amount' => $transferAmount, // What creator receives (wish + VAT)
-                    ],
+                $paymentIntentData = [
                     'description' => "One-time Wish Subscription for {$wish->user->username} with platform fee",
                     'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
                         'creator_id' => (string) $wish->user->id,
@@ -1461,12 +1474,39 @@ class StripeController extends Controller
                         'transfer_amount' => (string) $transferAmount,
                         'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
-                        'payment_type' => 'One-time Wish Subscription - Destination Charges with transfers',
+                        'payment_type' => $hasCardPayments ? 'One-time Wish Subscription - Destination Charges with transfers' : 'One-time Wish Subscription - Platform Charges with transfers',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
+                        'has_card_payments' => (string) $hasCardPayments,
                     ]),
                 ];
+                
+                // Only add on_behalf_of if creator has card_payments capability
+                if ($hasCardPayments) {
+                    $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
+                    $paymentIntentData['transfer_data'] = [
+                        'destination' => $connectedAccountId, // Creator's connected account
+                        'amount' => $transferAmount, // What creator receives (wish + VAT)
+                    ];
+                } else {
+                    // For restricted creators, charge on platform and transfer the creator amount
+                    // Use simple destination transfer without application_fee_amount
+                    $paymentIntentData['transfer_data'] = [
+                        'destination' => $connectedAccountId,
+                        'amount' => $transferAmount, // Transfer only what creator should receive
+                    ];
+                }
+                
+                $payload['payment_intent_data'] = $paymentIntentData;
+                
+                Log::info('Wish subscription payment flow determined', [
+                    'creator_id' => $wish->user->id,
+                    'connected_account_id' => $connectedAccountId,
+                    'has_card_payments' => $hasCardPayments,
+                    'using_on_behalf_of' => $hasCardPayments,
+                    'payment_type' => 'onetime'
+                ]);
             } else {
-                $payload['subscription_data'] = [
+                $subscriptionData = [
                     'description' => 'Wish Item Subscription Content Purchase.',
                     'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
                         'creator_id' => (string) $wish->user->id,
@@ -1480,14 +1520,25 @@ class StripeController extends Controller
                         'transfer_amount' => (string) $transferAmount,
                         'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
-                        'payment_type' => 'Recurring Wish Subscription - Destination Charges with transfers',
+                        'payment_type' => $hasCardPayments ? 'Recurring Wish Subscription - Destination Charges with transfers' : 'Recurring Wish Subscription - Platform Charges with transfers',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
+                        'has_card_payments' => (string) $hasCardPayments,
                     ]),
                     'transfer_data' => [
                         'destination' => $connectedAccountId, // Creator's connected account
                         'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
                     ],
                 ];
+                
+                // For subscriptions, on_behalf_of is not used in subscription_data, but we still log the capability
+                $payload['subscription_data'] = $subscriptionData;
+                
+                Log::info('Wish subscription payment flow determined', [
+                    'creator_id' => $wish->user->id,
+                    'connected_account_id' => $connectedAccountId,
+                    'has_card_payments' => $hasCardPayments,
+                    'payment_type' => 'subscription'
+                ]);
             }
 
             try {
@@ -2415,29 +2466,63 @@ class StripeController extends Controller
                     'tax_behavior' => 'exclusive',
                 ],
             ];
+            
+            // Check if creator has card_payments capability to determine payment flow
+            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($creator->account_id);
+            
+            // Build payment_intent_data based on creator's capabilities
+            $paymentIntentData = [
+                'description' => "Spenny Piggy - Support payment to {$creator->name} with platform fee",
+                "metadata" => \App\Helpers::buildStripeMetadata('support_payment', $pay, [
+                    // 'support_goal_id' => (string) ($goal->id ?? ''),
+                    'item_amount' => (string) $unitAmount,
+                    'certificate' => true,
+                    'creator_vat_amount' => (string) $creatorVatAmount,
+                    'transfer_amount' => (string) $transferAmount,
+                    'platform_fee_amount' => (string) $applicationFeeAmount,
+                    'total_charge_amount' => (string) $totalChargeAmount,
+                    'payment_type' => $hasCardPayments ? 'Support Payment - Destination Charges with transfers' : 'Support Payment - Platform Charges with transfers',
+                    'anonymous' => (string) ($request->anonymous ? 'yes' : 'no'),
+                    'has_card_payments' => (string) $hasCardPayments,
+                ]),
+            ];
+            
+            // Only add on_behalf_of if creator has card_payments capability
+            if ($hasCardPayments) {
+                $paymentIntentData['on_behalf_of'] = $creator->account_id; // Shows creator as seller-of-record
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $creator->account_id, // Creator's connected account
+                    'amount' => $transferAmount, // What creator receives (item + VAT)
+                ];
+                Log::info('Using standard flow with on_behalf_of for support payment', [
+                    'creator_id' => $creator->id,
+                    'connected_account_id' => $creator->account_id,
+                    'has_card_payments' => true,
+                    'payment_type' => 'support_payment',
+                    'transfer_amount' => $transferAmount
+                ]);
+            } else {
+                // For restricted creators (transfers-only), charge on platform and transfer the creator amount
+                // Use simple destination transfer without application_fee_amount
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $creator->account_id,
+                    'amount' => $transferAmount, // Transfer only what creator should receive
+                ];
+                Log::info('Using fallback flow without on_behalf_of for restricted support payment creator', [
+                    'creator_id' => $creator->id,
+                    'connected_account_id' => $creator->account_id,
+                    'has_card_payments' => false,
+                    'reason' => 'Creator lacks card_payments capability',
+                    'payment_type' => 'support_payment',
+                    'transfer_amount' => $transferAmount
+                ]);
+            }
 
             $payload = [
                 "mode" => 'payment',
                 'payment_method_types' => ['card'],
                 'line_items' => $lineItems, // Total amount determined by line items
-                'payment_intent_data' => [
-                    'on_behalf_of' => $creator->account_id, // Shows creator as seller-of-record
-                    'transfer_data' => [
-                        'destination' => $creator->account_id, // Creator's connected account
-                        'amount' => $transferAmount, // What creator receives (item + VAT)
-                    ],
-                    'description' => "Spenny Piggy - Support payment to {$creator->name} with platform fee",
-                    "metadata" => \App\Helpers::buildStripeMetadata('support_payment', $pay, [
-                        'support_goal_id' => (string) ($goal->id ?? ''),
-                        'item_amount' => (string) $unitAmount,
-                        'creator_vat_amount' => (string) $creatorVatAmount,
-                        'transfer_amount' => (string) $transferAmount,
-                        'platform_fee_amount' => (string) $applicationFeeAmount,
-                        'total_charge_amount' => (string) $totalChargeAmount,
-                        'payment_type' => 'Support Payment - Destination Charges with transfers',
-                        'anonymous' => (string) ($request->anonymous ?? 0),
-                    ]),
-                ],
+                'payment_intent_data' => $paymentIntentData,
                 'customer_email' => $user->email ?? $request->email,
                 'success_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "success"]),
                 'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
@@ -2852,23 +2937,22 @@ class StripeController extends Controller
 
             $user = Auth::user();
 
-            $appUrl = config('app.url');
-            if (!in_array($appUrl, ['https://spennypiggy.co'])) {
-                $user->identity_status = 1;
-                $user->identity_verified_at = Carbon::now();
-                $user->save();
+            // Always create a real verification session, even in non-production environments
+            // This ensures admin can view actual Stripe document images
 
-                return response()->json([
-                    'status' => 'success',
-                    'msg' => 'Identity verification successfully submitted.',
-                    'url' => route('user.show', ['username' => $user->username]),
-                ]);
-                // return redirect()->route('user.show', ['username' => $user->username])->with('success', 'Identity verification successfully submitted.');
-            }
-
-            // Create a new verification session
+            // Create a new verification session - restrict to passport only
             $session = VerificationSession::create([
                 'type' => 'document',
+                'options' => [
+                    'document' => [
+                        // Allow only passports; disallow ID cards and driver's licenses
+                        'allowed_types' => ['passport'],
+                        // Keep other defaults; adjust if business rules change
+                        // 'require_live_capture' => true,
+                        // 'require_matching_selfie' => false, 
+                        // 'require_id_number' => false, 
+                    ],
+                ],
                 'metadata' => [
                     'user_id' => $request->user() ? $request->user()->id : null,
                 ],

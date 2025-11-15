@@ -42,6 +42,11 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
+// CSRF Cookie route for SPA authentication
+Route::get('/csrf-cookie', function () {
+    return response()->noContent(204);
+})->middleware('web');
+
 
 // Debug route to test subscription status
 Route::get('/debug-subscription/{userId}', function ($userId) {

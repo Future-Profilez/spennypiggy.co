@@ -119,15 +119,58 @@ class StripeControl
             return self::$client;
         }
 
+    /**
+     * Check if connected account has card_payments capability active
+     * This determines whether we can use on_behalf_of parameter in destination charges
+     *
+     * @param string $accountId Stripe Connected Account ID
+     * @return bool True if account can accept on_behalf_of charges, false otherwise
+     */
+    public static function hasCardPaymentsCapability(string $accountId): bool
+    {
+        // Use cache to avoid repeated API calls for the same account
+        $cacheKey = "stripe_card_payments_capability_{$accountId}";
+        
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($accountId) {
+            self::setClient();
+            try {
+                $account = self::$client->accounts->retrieve($accountId);
+                $hasCardPayments = ($account->capabilities->card_payments ?? null) === 'active';
+                
+                Log::info('Stripe capability check completed', [
+                    'account_id' => $accountId,
+                    'card_payments_capability' => $account->capabilities->card_payments ?? 'missing',
+                    'has_card_payments' => $hasCardPayments,
+                    'service_agreement' => $account->tos_acceptance->service_agreement ?? 'unknown'
+                ]);
+                
+                return $hasCardPayments;
+            } catch (\Exception $e) {
+                Log::error("Failed to check card_payments capability: " . $e->getMessage(), [
+                    'account_id' => $accountId
+                ]);
+                // Default to true to maintain existing behavior for API failures
+                return true;
+            }
+        });
+    }
+
     // ✅   Add a check in your class to validate capabilities
     public static function isAccountReadyForCheckout(string $accountId): bool
         {
             self::setClient();
             try {
                 $account = self::$client->accounts->retrieve($accountId);
-                return isset($account->capabilities->card_payments) &&
-                    $account->capabilities->card_payments === 'active' &&
-                    $account->capabilities->transfers === 'active';
+                $agreement = $account->tos_acceptance->service_agreement ?? 'full';
+
+                // For recipient service agreement, only transfers capability is required
+                if ($agreement === 'recipient') {
+                    return ($account->capabilities->transfers ?? null) === 'active';
+                }
+
+                // For full service agreement, both card_payments and transfers must be active
+                return ($account->capabilities->card_payments ?? null) === 'active'
+                    && ($account->capabilities->transfers ?? null) === 'active';
             } catch (\Exception $e) {
                 Log::error("Failed to verify account capabilities: " . $e->getMessage());
                 return false;

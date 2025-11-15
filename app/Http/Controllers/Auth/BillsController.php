@@ -324,41 +324,19 @@ class BillsController extends Controller
             );
         }
 
-        // NEW: Check creator activity eligibility
-        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($bill->user);
+        // NEW: Skip creator activity eligibility for bill payments
+        $activityCheck = [
+            'eligible' => true,
+            'status' => 'bill_exempt',
+            'message' => 'Bill payments bypass activity restriction'
+        ];
         
-        if (!$activityCheck['eligible']) {
-            DB::rollBack(); // Rollback the transaction before early return
-            
-            // Send notification to creator about blocked payment
-            $bill->user->notify(new PaymentBlockedNotification($activityCheck, $bill->price));
-            
-            // Log the blocked payment for analytics
-            Log::info('Bill payment blocked due to insufficient creator activity', [
-                'creator_id' => $bill->user->id,
-                'creator_username' => $bill->user->username,
-                'bill_id' => $bill->id,
-                'bill_price' => $bill->price,
-                'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
-            ]);
-            
-            // Return user-friendly error to fan
-            return redirect()->back()->with('error', 
-                'This creator is temporarily unavailable. Please try again later.'
-            );
-        }
-        
-        // Log successful activity check for analytics
-        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
-            Log::info('Payment allowed - creator activity check passed', [
-                'creator_id' => $bill->user->id,
-                'creator_username' => $bill->user->username,
-                'bill_id' => $bill->id,
-                'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
-            ]);
-        }
+        // Optional: Log exemption for analytics
+        Log::info('Bill payment allowed - activity check exempted for bills', [
+            'creator_id' => $bill->user->id,
+            'creator_username' => $bill->user->username,
+            'bill_id' => $bill->id,
+        ]);
 
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
@@ -485,11 +463,12 @@ class BillsController extends Controller
                 }
 
                 $priceId = $existingPriceEntry->price_id ?? null;
+                
+                // Get currency metadata to handle zero-decimal currencies properly
+                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 if (!$priceId) {
-                    // Get currency metadata to handle zero-decimal currencies properly
-                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
-                    $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
                     
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),

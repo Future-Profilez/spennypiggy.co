@@ -45,9 +45,10 @@ class UserProfileService
             'profile_status_lock', 'is_subscribed', 'is_founder', 'created_at'
         ])
         ->with([
-            'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,reddit,discord,other',
+            'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
             'user_categories:id,user_id,category,created_at',
-            'intro:id,user_id,poster,poster_token,height,width,approved,created_at'
+            // Include uuid so perma_link accessor can build a playable URL
+            'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
         ])
         ->where('username', $username);
 

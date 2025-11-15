@@ -104,7 +104,7 @@ export default function AddItem(props) {
         );
         const [pageUrl,setpageUrl] = useState( (item && item.success_page_value) || "" );
         const [checkboxes, setCheckboxes] = useState([]);
-        const [real_category, setreal_category] = useState(item && item.category);
+        const [real_category, setreal_category] = useState(item && item.real_category);
         const [shopItem, setShopItem] = useState({
             type: product_type || 'Digital Products',
             name: pre_title || "",
@@ -149,18 +149,19 @@ export default function AddItem(props) {
         const [loading, setLoading] = useState(false);
 
         useEffect(() => {
-            const controller = new AbortController();
-            const { signal } = controller;
-            fetchAddedCategories(signal);
-            return () => controller.abort();
-        }, []);
+            // const controller = new AbortController();
+            // const { signal } = controller;
+            fetchAddedCategories();
+            console.log("asdf")
+            // return () => controller.abort();
+        }, [props]);
 
-        const fetchAddedCategories = async (signal) => {
+        const fetchAddedCategories = async () => {
             if(fetchingCats){
                 return false;
             }
             setFetchingCats(true);
-            axios.get(`/user_shop_category/${auth.user.username || user.username}`,{signal}) .then((res) =>{
+            await axios.get(`/shop/user_shop_category/${auth.user.username || user.username}`) .then((res) =>{
                 setCategories(res.data.categories);
                 setFetchingCats(false);
             })
@@ -269,7 +270,7 @@ export default function AddItem(props) {
             const value = inputRef.current.value;
             setAdding(true);
             axios
-                .post(`/shop/save-category`, { category: value })
+                .post(`/shop/add/save-category`, { category: value })
                 .then((res) => {
                     if (res.data.status) {
                         successAlert(res.data.msg || "Added");
@@ -457,8 +458,11 @@ export default function AddItem(props) {
                         <h2 className="text-[22px]">What are you offering?</h2>
                     </div>
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
-                        <div className="shop-forms-field mb-4">
-                            <label className="w-full mb-1.5"> Select what you’re offering </label>
+                        {/* Basic Information Section */}
+                        <div className="bg-white p-6 rounded-lg mb-6 shadow-sm">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Basic Information</h3>
+                            <div className="shop-forms-field mb-4">
+                                <label className="w-full mb-1.5"> Select what you're offering </label>
                             <Select
                             defaultValue={product_type ? lists.filter((item) => item.value === product_type)  : { value: "Digital Products", label: "Digital Products" }}
                             classNamePrefix="react-select"
@@ -744,9 +748,10 @@ export default function AddItem(props) {
                             </div>
                         </div>
 
-                        <h2 className="text-lg font-bold mb-2 border-t pt-3 mt-4">
-                            Advanced Settings
-                        </h2>
+                        </div>
+
+                        <details className="border-t pt-3 mt-4">
+                            <summary className="text-lg font-bold cursor-pointer">Advanced Settings</summary>
 
                         <div className="ad-setting my-2">
                             <div className="inline-flex items-center cursor-pointer">
@@ -907,6 +912,8 @@ export default function AddItem(props) {
                                 </span>
                             </div>
                         </div>
+
+                        </details>
 
                         <div className="isCheckedRefernce py-4">
                             <label htmlFor="agreeterm" className="text-start">

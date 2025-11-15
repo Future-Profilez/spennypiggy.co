@@ -84,6 +84,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->authenticate();
         $request->session()->regenerate();
+        $request->session()->regenerateToken();
         $user = Auth::user();
 
         $secret = $this->google2FA->generateSecretKey();
@@ -220,11 +221,18 @@ class AuthenticatedSessionController extends Controller
         if ($user->role == 1 && !empty($user->account_id)) {
             [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
         }
+<<<<<<< HEAD
 
+=======
+        
+        // Always load social links so they are available to all dashboard tabs/pages
+        $sociallinks = $user->social_links;
+>>>>>>> 1e129cea40d774c5915c4ea4a0cfc5790cfbe693
         if($page == 'about'){
-            $sociallinks = $user->social_links;
             $userIntro = $user->intro;
         }
+        // Removed stray debug return that broke the page rendering
+        // return($user->intro);
 
         // Check if account needs migration for cross-border payments
         $migrationStatus = $this->getMigrationStatus($user);
@@ -245,7 +253,8 @@ class AuthenticatedSessionController extends Controller
             'slinks' => $sociallinks,
             'intro' => $userIntro,
             'supporters' => $profileData['supporters'],
-            'wish_categories' => $user->user_categories,
+            // Show only categories that have at least one wish item
+            'wish_categories' => $this->getCategoriesWithItems($user),
             'selectedCategory' => request()->query('category') ?? false,
             'page' => $page,
             'first30DayEarnings' => $founderData['first30DayEarnings'],
@@ -313,6 +322,25 @@ class AuthenticatedSessionController extends Controller
                 ]];
             }
         });
+    }
+
+    /**
+     * Get only user categories that have at least one wish item.
+     * For public viewers (not the owner), only count approved items.
+     */
+    private function getCategoriesWithItems($user)
+    {
+        $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+
+        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+            $q->where('user_id', $user->id);
+            if ($isPublicView) {
+                $q->where('is_approved', 1);
+            }
+        })->pluck('user_category_id')->unique()->filter();
+
+        // Return the filtered categories as a collection
+        return $user->user_categories()->whereIn('id', $categoryIds)->get();
     }
 
     /**
@@ -510,21 +538,15 @@ class AuthenticatedSessionController extends Controller
 
     public function user_shop_category($username)
     {
-        try {
-            // $user = User::where('username', $username)->where('country', 'GB')->first();
-            $user = User::where('username', $username)->where('is_uk', 0)->first();
-            $categories = [];
-            if (!empty($user)) {
-                $categories = $user->user_shop_categories()->get();
-                // $categories = UserCategory::whereUserId($user->id)->latest()->get();
-            }
-            return response()->json([
-                "success" => true,
-                "categories" => $categories,
-            ]);
-        } catch (\Throwable $th) {
-            //throw $th;
+        $user = User::where('username', $username)->first();
+        $categories = [];
+        if (!empty($user)) {
+            $categories = $user->user_shop_categories()->get();
         }
+        return response()->json([
+            "success" => true,
+            "categories" => $categories,
+        ]);
     }
 
     public function userGiftItems($username)

@@ -138,7 +138,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('shop')->group(function () {
             Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
             Route::post('/update/{uuid}', [ShopsController::class, 'updateShopItems'])->name('update-shop');
-            Route::post('/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
+            Route::post('/add/save-category', [ShopsController::class, 'saveUserShopCategory'])->name('shop.save-category');
             Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
             Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
         });
@@ -442,6 +442,8 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-access-posts/{username}', [ProfileController::class, 'gifterAccessPosts'])->name('gifter-access-posts');
         Route::get('gifter-memberships/{username}', [ProfileController::class, 'gifterMemberships'])->name('gifter-memberships');
         Route::get('gifter-medias/{username}', [ProfileController::class, 'gifterMedia'])->name('gifter-media');
+        Route::get('gifter-content/{username}', [ProfileController::class, 'gifterContentFiles'])->name('gifter-content');
+        Route::get('gifter-bills/{username}', [ProfileController::class, 'gifterBills'])->name('gifter-bills');
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
         Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
 
@@ -608,13 +610,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
 });
 
+// Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
+// Place specific data routes BEFORE the catch-all username route to avoid interception
+Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
+Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
+Route::get('/shop/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
+
+// Catch-all profile route must come after specific endpoints
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
     // ->where('username', '^(?!founder$).*$')
     ->name('user.show');
-// Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
-Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
-Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
-Route::get('/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
 
 Route::prefix("wish")->name("wish.")->group(function () {
     Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name("subscribe.checkout")->middleware('mustCompletedCardVerification');

@@ -46,7 +46,7 @@ environments:
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
-    health-checks: false
+    health-checks: false 
     build:
       - "composer install --no-dev"
       - "php artisan event:cache"

@@ -618,6 +618,9 @@ class MembershipController extends Controller
                 
                 // Total charge amount = membership price + creator's VAT + platform fees
                 $totalChargeAmount = round($membership->price * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
+                
+                // Check if creator has card_payments capability to determine payment flow
+                $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
                 $payload = [
                     'payment_method_types' => ['card'],
@@ -629,12 +632,7 @@ class MembershipController extends Controller
 
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
-                    $payload['payment_intent_data'] = [
-                        'on_behalf_of' => $connectedAccountId, // Shows creator as seller-of-record
-                        'transfer_data' => [
-                            'destination' => $connectedAccountId, // Creator's connected account
-                            'amount' => $transferAmount, // What creator receives (membership + VAT)
-                        ],
+                    $paymentIntentData = [
                         'description' => "Lifetime Membership for {$membership->user->username} with platform fee",
                         'metadata' => \App\Helpers::buildStripeMetadata('membership', $sub, [
                             'membership_level' => $membership->level,
@@ -643,10 +641,38 @@ class MembershipController extends Controller
                             'transfer_amount' => (string) $transferAmount,
                             'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                             'total_charge_amount' => (string) $totalChargeAmount,
-                            'payment_type' => 'Lifetime Membership - Destination Charges with transfers',
+                            'payment_type' => $hasCardPayments ? 'Lifetime Membership - Destination Charges with transfers' : 'Lifetime Membership - Platform Charges with transfers',
                             'anonymous' => (string) ($request->anonymous ?? 0),
+                            'has_card_payments' => (string) $hasCardPayments,
                         ]),
                     ];
+                    
+                    // Only add on_behalf_of if creator has card_payments capability
+                    if ($hasCardPayments) {
+                        $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
+                        $paymentIntentData['transfer_data'] = [
+                            'destination' => $connectedAccountId, // Creator's connected account
+                            'amount' => $transferAmount, // What creator receives (membership + VAT)
+                        ];
+                    } else {
+                        // For restricted creators, charge on platform and transfer the creator amount
+                        // Use simple destination transfer without application_fee_amount
+                        $paymentIntentData['transfer_data'] = [
+                            'destination' => $connectedAccountId,
+                            'amount' => $transferAmount, // Transfer only what creator should receive
+                        ];
+                    }
+                    
+                    $payload['payment_intent_data'] = $paymentIntentData;
+                    
+                    Log::info('Membership payment flow determined', [
+                        'creator_id' => $membership->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'has_card_payments' => $hasCardPayments,
+                        'using_on_behalf_of' => $hasCardPayments,
+                        'membership_level' => $membership->level,
+                        'payment_type' => 'lifetime'
+                    ]);
                 } else {
                     $payload['mode'] = 'subscription';
                     $payload['subscription_data'] = [
@@ -658,14 +684,23 @@ class MembershipController extends Controller
                             'transfer_amount' => (string) $transferAmount,
                             'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                             'total_charge_amount' => (string) $totalChargeAmount,
-                            'payment_type' => 'Monthly Membership - Destination Charges with transfers',
+                            'payment_type' => $hasCardPayments ? 'Monthly Membership - Destination Charges with transfers' : 'Monthly Membership - Platform Charges with transfers',
                             'anonymous' => (string) ($request->anonymous ?? 0),
+                            'has_card_payments' => (string) $hasCardPayments,
                         ]),
                         'transfer_data' => [
                             'destination' => $connectedAccountId, // Creator's connected account
                             'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
                         ],
                     ];
+                    
+                    Log::info('Membership payment flow determined', [
+                        'creator_id' => $membership->user->id,
+                        'connected_account_id' => $connectedAccountId,
+                        'has_card_payments' => $hasCardPayments,
+                        'membership_level' => $membership->level,
+                        'payment_type' => 'subscription'
+                    ]);
                 }
 
                 $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)

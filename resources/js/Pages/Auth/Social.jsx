@@ -3,44 +3,65 @@ import LoaderButton from "@/Components/LoaderButton";
 import Popup from "@/Components/Popup";
 import { router, usePage } from "@inertiajs/react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import clsx from "clsx";
+import { FaCheck, FaExclamationTriangle, FaTimes, FaExternalLinkAlt, FaCopy, FaInfoCircle } from "react-icons/fa";
 
-const regexValidators = {
-  twitter: /^@?(\w){1,15}$/,
-  instagram: /^@?([a-zA-Z0-9._]){1,30}$/,
-  facebook: /^(https?:\/\/)?(www\.)?facebook\.com\/[A-Za-z0-9_.-]+$/,
-  youtube: /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/,
-  twitch: /^(https?:\/\/)?(www\.)?twitch\.tv\/[A-Za-z0-9_]+$/,
-  tumblr: /^@?([a-zA-Z0-9-]){1,32}$/,
-  discord: /^.{3,32}#[0-9]{4}$/
-};
+import { 
+  getPrimaryPlatforms, 
+  getSecondaryPlatforms, 
+  getPlatform, 
+  SOCIAL_PLATFORMS 
+} from "@/utils/socialPlatforms";
 
-const validateField = (name, value) => {
-  const regex = regexValidators[name];
-  if (!value) return ""; // no error for empty field
-  if (regex && !regex.test(value.trim())) {
-    return `Invalid ${name} format.`;
-  }
-  return "";
-};
+import { 
+  validatePlatformValue, 
+  validateAllPlatforms, 
+  getPreviewUrl, 
+  extractHandleFromUrl, 
+  getCharacterInfo, 
+  debounce 
+} from "@/utils/socialValidation";
 
-export default function AddSocial({ removetext, openSocial, sLinks, type, redirect_url }) {
+export default function AddSocial({ removetext, openSocial, sLinks, links, type, redirect_url }) {
   const { auth } = usePage().props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const [close, setClose] = useState();
-  const [loading, setloading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showSecondaryPlatforms, setShowSecondaryPlatforms] = useState(false);
 
-  const [data, setData] = useState({
-    instagram: sLinks?.instagram || "",
-    discord: sLinks?.discord || "",
-    facebook: sLinks?.facebook || "",
-    youtube: sLinks?.youtube || "",
-    twitch: sLinks?.twitch || "",
-    tumblr: sLinks?.tumblr || "",
-    twitter: sLinks?.twitter || "",
-  });
+  // Initialize form data with all supported platforms
+  const initialData = useMemo(() => {
+    const data = {};
+    const sourceLinks = sLinks || links || {};
+    Object.keys(SOCIAL_PLATFORMS).forEach(platformId => {
+      const raw = sourceLinks?.[platformId] || "";
+      const platform = getPlatform(platformId);
+      // If a handle-type field came in as a full URL, normalize to handle
+      if (platform?.type === 'handle' && raw && raw.startsWith('http')) {
+        data[platformId] = extractHandleFromUrl(platformId, raw);
+      } else {
+        data[platformId] = raw;
+      }
+    });
+    return data;
+  }, [sLinks, links]);
 
-  const [errors, setErrors] = useState({});
+  const [data, setData] = useState(initialData);
+  const [validationResults, setValidationResults] = useState({});
+  const [displayValues, setDisplayValues] = useState({});
+
+  // Debounced validation
+  const debouncedValidate = useCallback(
+    debounce((platformId, value) => {
+      const result = validatePlatformValue(platformId, value);
+      setValidationResults(prev => ({
+        ...prev,
+        [platformId]: result
+      }));
+    }, 250),
+    []
+  );
 
   useEffect(() => {
     if (openSocial === "open") {
@@ -48,50 +69,100 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
     }
   }, [openSocial]);
 
+  // Initialize display values for existing data
   useEffect(() => {
-    if (!sLinks) {
-      setData({
-        instagram: "",
-        discord: "",
-        facebook: "",
-        youtube: "",
-        twitch: "",
-        tumblr: "",
-        twitter: "",
-      });
-    }
-  }, [sLinks]);
+    const newDisplayValues = {};
+    Object.entries(data).forEach(([platformId, value]) => {
+      if (value) {
+        const platform = getPlatform(platformId);
+        if (platform?.type === 'handle' && value.startsWith('http')) {
+          // Extract handle from URL for display
+          newDisplayValues[platformId] = extractHandleFromUrl(platformId, value);
+        } else {
+          newDisplayValues[platformId] = value;
+        }
+      } else {
+        newDisplayValues[platformId] = '';
+      }
+    });
+    setDisplayValues(newDisplayValues);
+  }, [data]);
 
   const handleInput = (e) => {
-    const { name, value } = e.target;
-    const err = validateField(name, value);
-    setData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: err }));
+    const { name: platformId, value } = e.target;
+    setDisplayValues(prev => ({ ...prev, [platformId]: value }));
+    setData(prev => ({ ...prev, [platformId]: value }));
+    debouncedValidate(platformId, value);
   };
 
-  const isFormValid = () => {
-    const hasAnyFilled = Object.values(data).some(val => val.trim() !== "");
-    const hasError = Object.values(errors).some(err => err);
-    return hasAnyFilled && !hasError;
+  const handleBlur = (platformId) => {
+    const value = displayValues[platformId];
+    const result = validatePlatformValue(platformId, value);
+    setValidationResults(prev => ({ ...prev, [platformId]: result }));
+    
+    // Store canonical form for submission
+    // For URL-type platforms, normalize and store the canonical URL.
+    // For handle-type platforms, keep the handle in state; we'll convert to URL at submit time.
+    const platform = getPlatform(platformId);
+    if (result.canonical && platform?.type === 'url') {
+      setData(prev => ({ ...prev, [platformId]: result.canonical }));
+    } else {
+      setData(prev => ({ ...prev, [platformId]: value }));
+    }
   };
-  const isValid = isFormValid();
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      successAlert('Copied to clipboard!');
+    } catch (err) {
+      errorAlert('Failed to copy to clipboard');
+    }
+  };
+
+  // Form validation
+  const formValidation = useMemo(() => {
+    return validateAllPlatforms(data);
+  }, [data]);
+
+  // Keep field-level validation UI in sync with full-form validation
+  useEffect(() => {
+    if (formValidation?.results) {
+      setValidationResults(formValidation.results);
+    }
+  }, [formValidation]);
+
   const createSocial = (e) => {
     e.preventDefault();
-    const isValid = isFormValid();
-    if(!isValid) {
-      errorAlert("Please fill at least one social link correctly.");
-      return false;
+    
+    // Allow submission as long as there are no invalid entries.
+    // Fields are optional; users can submit empty values.
+    if (formValidation.hasErrors) {
+      errorAlert("Please fix the invalid social links above.");
+      return;
     }
-    e.preventDefault();
-    setloading(true);
+
+    setLoading(true);
+    
+    // Prepare normalized data for submission
+    const submissionData = {};
+    Object.entries(data).forEach(([platformId, value]) => {
+      if (value) {
+        const result = validatePlatformValue(platformId, value);
+        submissionData[platformId] = result.canonical || value;
+      } else {
+        submissionData[platformId] = '';
+      }
+    });
+
     axios.post(route("save_social_links"), {
-      ...data,
+      ...submissionData,
       redirect_url
     })
       .then((res) => {
-        setloading(false);
+        setLoading(false);
         if (res.data.status) {
-          successAlert(res.data.message || "Updated successfully.");
+          successAlert(res.data.message || "Social links updated successfully!");
           setClose(false);
           router.visit(route("user.show", auth?.user?.username), {
             preserveScroll: true,
@@ -104,10 +175,131 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
         }
       })
       .catch((err) => {
-        setloading(false);
+        setLoading(false);
         errorsHandling(err);
       });
   };
+
+  const renderPlatformField = (platform) => {
+    const value = displayValues[platform.id] || '';
+    const validation = validationResults[platform.id] || { status: 'empty' };
+    const charInfo = getCharacterInfo(platform.id, value);
+    const previewUrl = getPreviewUrl(platform.id, value);
+    
+    const Icon = platform.icon;
+    
+    return (
+      <li key={platform.id} className="mb-6 border-t pt-8">
+        <div className="flex justify-between">
+          <label 
+            htmlFor={platform.id} 
+            className={clsx(
+              "block text-sm font-medium mb-2 flex items-center",
+              platform.color
+            )}
+          >
+            <Icon className="mr-2 text-lg" />
+            {platform.label}
+            {platform.type === 'handle' && (
+              <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                handle
+              </span>
+            )}
+          </label>
+          {platform.type === 'handle' && charInfo && value && (
+            <div className="mt-0 text-xs text-right">
+              <span className={clsx({
+                'text-gray-500': !charInfo.showWarning && !charInfo.isOverLimit,
+                'text-yellow-600': charInfo.showWarning,
+                'text-red-600': charInfo.isOverLimit
+              })}>
+                {charInfo.current}/{charInfo.max}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Icon className={clsx("text-lg", platform.color)} />
+            </div>
+            <input
+              id={platform.id}
+              name={platform.id}
+              type="text"
+              value={value}
+              placeholder={platform.placeholder}
+              maxLength={platform.maxLength}
+              className={clsx(
+                "block w-full pl-12 pr-12 py-3 rounded-[15px] text-sm transition-all duration-200",
+                "focus:outline-none focus:ring-2 focus:ring-opacity-50",
+                {
+                  'border-2 border-gray-300 focus:border-gray-400 focus:ring-gray-200': validation.status === 'empty',
+                  'border-2 border-green-500 bg-green-50 focus:ring-green-200': validation.status === 'valid',
+                  'border-2 border-red-500 bg-red-50 focus:ring-red-200': validation.status === 'invalid',
+                }
+              )}
+              onChange={handleInput}
+              onBlur={() => handleBlur(platform.id)}
+              aria-invalid={validation.status === 'invalid'}
+              aria-describedby={`${platform.id}-hint ${platform.id}-error`}
+            />
+            
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              {validation.status === 'valid' && (
+                <FaCheck className="text-green-500" />
+              )}
+              {validation.status === 'invalid' && (
+                <FaTimes className="text-red-500" />
+              )}
+            </div>
+            
+          </div>
+          
+          {/* Preview URL for handle platforms */}
+          {previewUrl && validation.status === 'valid' && (
+            <div className="mt-2 flex items-center text-sm text-blue-600">
+              <FaExternalLinkAlt className="mr-1 text-xs" />
+              <a 
+                href={previewUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:underline truncate "
+              >
+                {previewUrl}
+              </a>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(previewUrl)}
+                className="ml-2 p-1 hover:bg-blue-100 rounded"
+                title="Copy URL"
+              >
+                <FaCopy className="text-xs" />
+              </button>
+            </div>
+          )}
+          
+          {/* Hint text */}
+          
+          {/* Error message */}
+          {validation.status === 'invalid' && validation.message && (
+            <p id={`${platform.id}-error`} className="mt-1 text-sm text-red-600 flex items-center">
+              <FaExclamationTriangle className="mr-1" />
+              {validation.message}
+            </p>
+          )}
+        </div>
+        <p id={`${platform.id}-hint`} className="mt-1 mb-4 text-xs text-gray-600">
+          <FaInfoCircle className="inline mr-1" />
+          {platform.hint}
+        </p>
+      </li>
+    );
+  };
+
+  const primaryPlatforms = getPrimaryPlatforms();
+  const secondaryPlatforms = getSecondaryPlatforms();
+  const hasSecondaryData = secondaryPlatforms.some(platform => data[platform.id]);
 
   return (
     <Popup
@@ -116,57 +308,123 @@ export default function AddSocial({ removetext, openSocial, sLinks, type, redire
       modalclassName="pinkmodal full"
       size="md"
       classes=""
-      text={removetext ? "" : "Add Socials"}
+      text={removetext ? "" : "Add Social Links"}
     >
-      <div className="editprofileModalInner">
+      <div className="editprofileModalInner  ">
         <div className="swishinfo">
-          <h2 className="pb-4 font-GillSans text-xl text-uppercase">
-            Social Links
+          <h2 className="pb-4 font-GillSans text-xl text-uppercase flex items-center">
+            <FaInfoCircle className="mr-2 text-blue-500" />
+            Social Media Links
           </h2>
 
-          {!isValid?  <p className="text-red-500 mb-4">
-              Please add at least one social media handle. This is required to verify your account.
-            </p> : ''}
+          {/* Information Banner */}
+          <div className={clsx(
+            "mb-6 p-4 rounded-lg border-l-4 flex items-start",
+            {
+              'bg-yellow-50 border-yellow-500': !formValidation.hasValidFields,
+              'bg-green-50 border-green-500': formValidation.hasValidFields
+            }
+          )}>
+            <div className={clsx(
+              "mr-3 mt-1",
+              {
+                'text-yellow-500': !formValidation.hasValidFields,
+                'text-green-500': formValidation.hasValidFields
+              }
+            )}>
+              {formValidation.hasValidFields ? <FaCheck /> : <FaInfoCircle />}
+            </div>
+            <div className="flex-1">
+              <p className={clsx(
+                "text-sm font-medium",
+                {
+                  'text-yellow-800': !formValidation.hasValidFields,
+                  'text-green-800': formValidation.hasValidFields
+                }
+              )}>
+                {formValidation.hasValidFields 
+                  ? 'Great! Your social links look good.' 
+                  : 'Social verification required'
+                }
+              </p>
+              <p className={clsx(
+                "text-sm mt-1",
+                {
+                  'text-yellow-700': !formValidation.hasValidFields,
+                  'text-green-700': formValidation.hasValidFields
+                }
+              )}>
+                {formValidation.hasValidFields
+                  ? 'These links will help verify your creator account and improve discoverability.'
+                  : 'Please add at least one social media profile to verify your creator account and unlock all features.'
+                }
+              </p>
+            </div>
+          </div>
 
-          <form onSubmit={createSocial}>
-            <ul className="ps-0 row">
-              {[
-                { name: "twitter", label: "X (Twitter)", placeholder: "@username" },
-                { name: "instagram", label: "Instagram", placeholder: "@username" },
-                // { name: "facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage" },
-                { name: "youtube", label: "YouTube", placeholder: "https://youtube.com/yourchannel" },
-                { name: "twitch", label: "Twitch", placeholder: "https://twitch.tv/yourchannel" },
-                { name: "tumblr", label: "Tumblr", placeholder: "@yourname" },
-                { name: "discord", label: "Discord", placeholder: "Username#1234" },
-              ].map((field, idx) => (
-                <li className={`mb-4 ${idx < 2 ? "col-md-6" : "col-md-12"}`} key={field.name}>
-                  <label htmlFor={field.name} className="mb-2 text-start d-block">
-                    {field.label}
-                  </label>
-                  <input
-                    id={field.name}
-                    name={field.name}
-                    type="text"
-                    value={data[field.name]}
-                    placeholder={field.placeholder}
-                    className={`form-input px-2 py-2 border w-full rounded-md ${errors[field.name] ? "border-red-500" : "border-gray-300"}`}
-                    onChange={handleInput}
-                  />
-                  {errors[field.name] && (
-                    <p className="text-sm text-red-500 mt-1">{errors[field.name]}</p>
-                  )}
-                </li>
-              ))}
-            </ul>
+          <form onSubmit={createSocial} className="space-y-0">
+            {/* Primary Platforms */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+                Main Social Platforms
+              </h3>
+              <ul className="space-y-0">
+                {primaryPlatforms.map(renderPlatformField)}
+              </ul>
+            </div>
 
-            <LoaderButton
-              disabled={loading  }
-              type="submit"
-              className="p w-full"
-              spinnerClassName="fill-red-600"
-            >
-              {loading ? "Processing" : "Add Social Links"}
-            </LoaderButton>
+            {/* Secondary Platforms Toggle */}
+            {/* <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => setShowSecondaryPlatforms(!showSecondaryPlatforms)}
+                className="flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <span className="mr-2">
+                  {showSecondaryPlatforms ? '▼' : '▶'}
+                </span>
+                Additional Platforms 
+                {hasSecondaryData && (
+                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                    {secondaryPlatforms.filter(p => data[p.id]).length} added
+                  </span>
+                )}
+              </button>
+            </div> */}
+
+            {/* Secondary Platforms */}
+            {/* {(showSecondaryPlatforms || hasSecondaryData) && (
+              <div className="mb-8">
+                <ul className="space-y-0">
+                  {secondaryPlatforms.map(renderPlatformField)}
+                </ul>
+              </div>
+            )} */}
+
+            {/* Submit Button */}
+            <div className="pt-6 border-t">
+              <LoaderButton
+                // disabled={loading || !formValidation.isFormValid}
+                type="submit"
+                className={clsx(
+                  "button p w-full  mb-4 font-medium text-white transition-all duration-200",
+                  {
+                    'hover:from-pink-600 hover:to-purple-700 shadow-lg': formValidation.isFormValid && !loading,
+                    'bg-gray-300 cursor-not-allowed': !formValidation.isFormValid || loading
+                  }
+                )}
+                spinnerClassName="fill-white"
+              >
+                {loading ? "Saving Links..." : "Save Social Links"}
+              </LoaderButton>
+              
+              {!formValidation.isFormValid && formValidation.hasErrors && (
+                <p className="text-red-600 text-sm mt-2 text-center">
+                  Please fix the invalid links above before saving.
+                </p>
+              )}
+              {/* Optional fields: No need to show a blocker when none are filled */}
+            </div>
           </form>
         </div>
       </div>

@@ -324,7 +324,7 @@ export default function SubCheckout(props) {
                                                         automatically taken on a
                                                         daily,weekly,monthly or
                                                         yearly basis depending
-                                                        on yourchoice and can be
+                                                        on your choice and can be
                                                         cancelled anytime.{" "}
                                                     </li>
                                                     <li>

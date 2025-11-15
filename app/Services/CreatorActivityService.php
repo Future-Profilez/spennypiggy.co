@@ -125,8 +125,13 @@ class CreatorActivityService
             ->where('approved', 1)
             ->where('created_at', '>=', $since)
             ->count();
+        
+        $bills = Bills::where('user_id', $creator->id)
+            ->where('approved', 1)
+            ->where('created_at', '>=', $since)
+            ->count();
             
-        return $posts + $wishes + $memberships + $shops;
+        return $posts + $wishes + $memberships + $shops + $bills;
     }
 
     /**
@@ -157,6 +162,11 @@ class CreatorActivityService
                     ->count(),
                     
                 'shops' => Shop::where('user_id', $creator->id)
+                    ->where('approved', 1)
+                    ->where('created_at', '>=', $since)
+                    ->count(),
+                
+                'bills' => Bills::where('user_id', $creator->id)
                     ->where('approved', 1)
                     ->where('created_at', '>=', $since)
                     ->count(),
@@ -207,6 +217,16 @@ class CreatorActivityService
                 'description' => 'Sell physical or digital products directly',
                 'action_url' => '/shop/create',
                 'estimated_time' => '7 minutes'
+            ];
+        }
+        
+        if (isset($breakdown['bills']) && $breakdown['bills'] === 0) {
+            $suggestions[] = [
+                'type' => 'bills',
+                'title' => 'Add Bill Item',
+                'description' => 'Create a bill item your supporters can help pay monthly',
+                'action_url' => '/dashboard?page=bills',
+                'estimated_time' => '5 minutes'
             ];
         }
         
@@ -305,6 +325,15 @@ class CreatorActivityService
      */
     public function validatePaymentAndLog(User $creator, array $paymentData): array
     {
+        // Exempt bill payments from activity restriction
+        if (($paymentData['payment_type'] ?? null) === 'bill') {
+            return [
+                'eligible' => true,
+                'status' => 'bill_exempt',
+                'message' => 'Bill payments bypass activity restriction',
+            ];
+        }
+
         $validation = $this->validateCreatorActivity($creator);
         
         // If payment is not eligible, log the blocked payment

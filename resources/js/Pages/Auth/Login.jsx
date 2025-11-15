@@ -27,6 +27,13 @@ export default function Login({ status, canResetPassword }) {
         setLoading(processing);
     }, [processing]);
     
+    // Prime CSRF cookie when component mounts
+    useEffect(() => {
+        axios.get('/csrf-cookie').catch(err => {
+            console.warn('Failed to prime CSRF cookie:', err);
+        });
+    }, []);
+    
     useEffect(() => {
         return () => {
             reset("password");
@@ -63,14 +70,11 @@ export default function Login({ status, canResetPassword }) {
         };
         setLoading(true);
         
-        // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
+        // axios will automatically handle CSRF token from cookie
         axios.post(route('login-user'), loginData, {
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
+                'Content-Type': 'application/json'
             }
         })
         .then((response) => {

@@ -128,36 +128,28 @@ export default function Hero({auth}) {
                   Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
                   </h3>
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
+                    
+                    
+                    <div>
+
+                    </div>
                     {auth?.user?.username
                       ?
                       <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} className="btn-shadow
                       btn-pink py-[8px] px-5 lg log" >
                         My Wishlist
+                        <span className="absolute bottom-[-45px] animate-pulse right-[-10px] sm:right-[-50px] font-poppins capitalize text-mint font-bold text-shadow-none  p-2 text-sm rounded-xl">It's Free 🎉</span>
                       </Link>
                       :  <Link href="/register"
                       // className="bg-[#E6EA7B] font-anton text-black px-5 py-1 uppercase flex text-center items-center tracking-[1px] justify-center text-lg rounded-[30px] border-[2px] border-yellow transition-all duration-300 ease-in-out"
                       className="btn-shadow
                       btn-pink py-[8px] px-5 lg log">
                           Create  your page
+                          <span className="absolute bottom-[-45px] animate-pulse right-[-10px] sm:right-[-50px] font-poppins capitalize text-mint font-bold text-shadow-none  p-2 text-sm rounded-xl">It's Free 🎉</span>
                          </Link>
                     }
-
-                    <div className='absolute top-[35px] -right-[77%] max-w-[300px] hidden md:block' >
-                      <ModernImage
-                        src={itsfree}
-                        alt="It's free badge"
-                        className=""
-                        priority={true}
-                        responsive={true}
-                        formats={['webp', 'avif']}
-                        quality={85}
-                        loading="eager"
-                        decoding="async"
-                        width={300}
-                        height={"auto"}
-                      />
-                    </div>
-                    <div className='itsfree-tag block md:hidden' >
+                   
+                    {/* <div className='itsfree-tag block md:hidden' >
                       <ModernImage
                         src={itsfreemob}
                         alt="It's free mobile badge"
@@ -171,7 +163,7 @@ export default function Hero({auth}) {
                         width={200}
                         height={"auto"}
                       />
-                    </div>
+                    </div> */}
                   </div>
                   <div className="mt-7 md:mt-1 flex justify-center pt-4 md:pt-0">
                     <TrustBox />

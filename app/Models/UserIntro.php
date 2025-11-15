@@ -18,9 +18,8 @@ class UserIntro extends Model
         'poster',
         'height',
         'width',
-        'approved'
+        'approved',
     ];
-
 
     protected $appends = [
         'perma_link',
@@ -41,7 +40,6 @@ class UserIntro extends Model
         }
         return $url;
     }
-
 
     public function getPosterUrlAttribute()
     {
