@@ -18,7 +18,7 @@ import { FaLock } from "react-icons/fa";
 import { empty } from "@apollo/client";
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
-    
+
     const { auth, user, global_currency, slinks } = usePage().props;
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
@@ -148,7 +148,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </h2>
                             <p className="text-gray-500 text-[14px]">
                                 Update at least one social media handle to help
-                                fans connect with you. 
+                                fans connect with you.
                             </p>
                             {!hasAnySocialMedia && <p className="text-red-500 text-[14px]">
                                 It must show an active account. Older than 6 months.

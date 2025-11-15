@@ -2,8 +2,8 @@ import { Link, usePage } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 import EditProfile from "../account/EditProfile";
 import Social from "../Auth/Social";
-import { 
-    BsCheckCircleFill, 
+import {
+    BsCheckCircleFill,
     BsXCircleFill,
     BsClockFill,
     BsShieldCheck,
@@ -16,13 +16,13 @@ import {
     BsBarChart,
     BsInfoCircle
 } from "react-icons/bs";
-import { 
-    FaCheckCircle, 
-    FaClock, 
-    FaLock, 
+import {
+    FaCheckCircle,
+    FaClock,
+    FaLock,
     FaPlay,
-    FaRocket, 
-    FaUserCheck, 
+    FaRocket,
+    FaUserCheck,
     FaCoins,
     FaArrowRight,
     FaStar,
@@ -89,10 +89,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const getStepCompletion = () => {
         const basicSteps = verificationSteps.filter(s => s.category === 'basic');
         const verificationStepsOnly = verificationSteps.filter(s => s.category === 'verification');
-        
+
         const basicCompleted = basicSteps.filter(s => s.isCompleted || s.isPending).length;
         const verificationCompleted = verificationStepsOnly.filter(s => s.isCompleted).length;
-        
+
         return {
             basicSteps: basicSteps.length,
             basicCompleted,
@@ -192,8 +192,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     const canProceedToFinalSteps = () => {
         const basicSteps = ['subscription', 'social', 'avatar', 'bio'];
-        return basicSteps.every(stepId => 
-            completedSteps.includes(stepId) || 
+        return basicSteps.every(stepId =>
+            completedSteps.includes(stepId) ||
             verificationSteps.find(s => s.id === stepId)?.isPending
         );
     };
@@ -219,7 +219,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 icon: BsShieldCheck
             };
         }
-        
+
         if (auth?.user?.profile_status_lock == 2) {
             const remainingSteps = verificationStepsFiltered.filter(step => !step.isCompleted).length;
             return {
@@ -229,7 +229,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 icon: FaUserCheck
             };
         }
-        
+
         if (auth?.user?.profile_status_lock == 1) {
             return {
                 type: 'warning',
@@ -238,7 +238,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 icon: MdPending
             };
         }
-        
+
         if (areBasicStepsCompleted()) {
             return {
                 type: 'info',
@@ -247,7 +247,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 icon: FaRocket
             };
         }
-        
+
         const remainingBasicSteps = basicSteps.filter(step => !step.isCompleted && !step.isPending).length;
         return {
             type: 'pending',
@@ -260,7 +260,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const getStepEstimatedTime = (step) => {
         const timeEstimates = {
             subscription: '2 minutes',
-            social: '1 minute', 
+            social: '1 minute',
             avatar: '3 minutes',
             bio: '5 minutes',
             identity: '10 minutes',
@@ -308,7 +308,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Step Progress Indicator */}
                         <div className="flex items-center justify-between mb-4">
                             {verificationSteps.map((step, index) => {
@@ -333,10 +333,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 );
                             })}
                         </div>
-                        
+
                     </div>
                 </div>
-                
+
                 <div className="p-8">
                     {/* Enhanced Status Banner */}
                     {(() => {
@@ -368,7 +368,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             <div className="bg-white bg-opacity-50 p-3 rounded-lg mt-3">
                                                 <p className="text-sm font-medium mb-1">🚀 Next Steps:</p>
                                                 <p className="text-sm">Your profile will be automatically submitted for admin review within a few minutes</p>
-                                                <Link 
+                                                <Link
                                                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm mt-2"
                                                     href="/update-profile-lock-status"
                                                 >
@@ -376,7 +376,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 </Link>
                                             </div>
                                         )}
-                                        
+
                                         {isFullyVerified() && (
                                             <div className="bg-white bg-opacity-50 p-3 rounded-lg mt-3">
                                                 <p className="text-sm font-medium mb-1">🎯 What's Next:</p>
@@ -385,7 +385,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     <p>• Share your profile with supporters</p>
                                                     <p>• Start receiving payments and support</p>
                                                 </div>
-                                                <Link 
+                                                <Link
                                                     className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm mt-2"
                                                     href="/dashboard"
                                                 >
@@ -398,7 +398,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                         );
                     })()}
-                    
+
                     {/* Rejection Message */}
                     {IsloggedIn && user?.profile_reject_reason != null && user?.profile_status_lock == 0 && (
                         <div className="bg-red-50 border-l-4 border-red-500 p-6 mb-8 rounded-r-lg">
@@ -413,7 +413,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <p className="text-sm font-medium mb-1">📝 How to Fix:</p>
                                         <p className="text-sm">Review the rejection reason above, make necessary changes to your profile, then resubmit for review.</p>
                                     </div>
-                                    <Link 
+                                    <Link
                                         className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                                         href="/update-profile-lock-status"
                                     >
@@ -434,10 +434,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         {basicSteps.map((step, index) => {
                             const status = getStepStatus(step);
                             const stepNumber = index + 1;
-                            
+
                             return (
-                                <div 
-                                    key={step.id} 
+                                <div
+                                    key={step.id}
                                     className={`step-card rounded-xl p-6 transition-all duration-300 step-${status}`}
                                 >
                                     <div className="flex items-start justify-between">
@@ -452,7 +452,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     stepNumber
                                                 )}
                                             </div>
-                                            
+
                                             {/* Step Content */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center mb-2">
@@ -479,11 +479,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                         </p>
                                                     </div>
                                                 )}
-                                                
+
                                                 {/* Enhanced Status Messages with Validation */}
                                                 {(() => {
                                                     const validation = validateStep(step);
-                                                    
+
                                                     if (step.isPending) {
                                                         return (
                                                             <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -500,7 +500,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                             </div>
                                                         );
                                                     }
-                                                    
+
                                                     if (step.isCompleted) {
                                                         return (
                                                             <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -514,7 +514,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                             </div>
                                                         );
                                                     }
-                                                    
+
                                                     // Show validation requirements for incomplete steps
                                                     return (
                                                         <div className="mt-3">
@@ -542,7 +542,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 })()}
                                             </div>
                                         </div>
-                                        
+
                                         {/* Action Buttons */}
                                         <div className="ml-6">
                                             {step.id === 'subscription' && !step.isCompleted && (
@@ -553,13 +553,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     Start Free Trial
                                                 </Link>
                                             )}
-                                            
+
                                             {step.id === 'social' && !step.isCompleted && (
                                                 <div className="flex items-center">
                                                     <Social links={slinks} />
                                                 </div>
                                             )}
-                                            
+
                                             {step.id === 'avatar' && !step.isCompleted && !step.isPending && (
                                                 <EditProfile
                                                     text="Upload Photo"
@@ -569,7 +569,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     global_currency={global_currency}
                                                 />
                                             )}
-                                            
+
                                             {step.id === 'bio' && !step.isCompleted && !step.isPending && (
                                                 <EditProfile
                                                     text="Write Bio"
@@ -579,7 +579,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     global_currency={global_currency}
                                                 />
                                             )}
-                                            
+
                                             {step.isCompleted && (
                                                 <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium">
                                                     ✓ Complete
@@ -602,10 +602,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         {verificationStepsFiltered.map((step, index) => {
                             const status = getStepStatus(step);
                             const stepNumber = basicSteps.length + index + 1;
-                            
+
                             return (
-                                <div 
-                                    key={step.id} 
+                                <div
+                                    key={step.id}
                                     className={`step-card rounded-xl p-6 transition-all duration-300 step-${status}`}
                                 >
                                     <div className="flex items-start justify-between">
@@ -620,7 +620,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     stepNumber
                                                 )}
                                             </div>
-                                            
+
                                             {/* Step Content */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center mb-2">
@@ -634,7 +634,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 <p className="text-gray-600 mb-3 leading-relaxed">
                                                     {step.description}
                                                 </p>
-                                                
+
                                                 {/* Status Messages */}
                                                 {status === 'locked' && (
                                                     <div className="flex items-center mt-3 text-gray-500 bg-gray-100 px-3 py-2 rounded-lg">
@@ -669,7 +669,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 )}
                                                 </div>
                                         </div>
-                                        
+
                                         {/* Action Buttons */}
                                         <div className="ml-6">
                                             {step.id === 'identity' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && (
@@ -680,7 +680,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     {auth?.user?.identity_admin_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
                                                 </Link>
                                             )}
-                                            
+
                                             {step.id === 'stripe' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && auth?.user?.identity_status == 1 && (
                                                 <Link
                                                     className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all font-medium whitespace-nowrap shadow-lg"
@@ -689,13 +689,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     Connect Stripe
                                                 </Link>
                                             )}
-                                            
+
                                             {step.isCompleted && (
                                                 <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium">
                                                     ✓ Complete
                                                 </div>
                                             )}
-                                            
+
                                             {status === 'locked' && (
                                                 <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg font-medium">
                                                     Locked
@@ -707,7 +707,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             );
                         })}
                     </div>
-                    
+
                     {/* Help Section */}
                     {!isFullyVerified() && (
                         <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
