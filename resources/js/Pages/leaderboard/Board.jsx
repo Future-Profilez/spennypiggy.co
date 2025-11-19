@@ -56,7 +56,7 @@ export default function Board(props) {
 
     const Rank = ({ r }) => {
         return (
-            <div className="rank py-3 border-bottom flex items-center justify-between">
+            <div className="fading rank py-3 border-bottom flex items-center justify-between">
                 <div className="flex items-center justify-between">
                     <div className="sno me-2 me-md-4 ps-2">
                         <p className="font-gulfs">#{r && r.rank}</p>
@@ -92,7 +92,7 @@ export default function Board(props) {
                 {p && p.username ? (
                     <Link
                         href={p && p.username}
-                        className={`position-${position} position text-center rounded-[20px] md:rounded-[30px]  
+                        className={` position-${position} position text-center rounded-[20px] md:rounded-[30px]  
                               border-[#F94F97] !shadow-none shadow-pinks bg-white m-0`}
                     >
                         <div className="profile p-2 sm:p-3 pb-0">
@@ -116,16 +116,16 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className=" !text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
+                                <h2 className="fading !text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
                                         <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 inline-block text-pink" />
                                         : ''}
                                 </h2>
-                                <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
+                                <h2 className="fading !text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
                                     @{p && p.username} 
                                 </h2>
-                                <p className="toppercentage text-center font-gulfs">
+                                <p className="fading toppercentage text-center font-gulfs">
                                     {p && p.top}%{" "}
                                 </p>
                                 {/* Display engagement metrics if available */}
@@ -136,19 +136,19 @@ export default function Board(props) {
                                 ) : null}
                             </div>
                             {position === 1 ? 
-                                <div className={`rank-position p-1  `}>
+                                <div className={`fading rank-position p-1  `}>
                                     <h2 className="font-gulfs !text-[80px] md:!text-[95px] xl:!text-[130px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 2 ? 
-                                <div className={`rank-position p-1  `}>
+                                <div className={`fading rank-position p-1  `}>
                                     <h2 className="font-gulfs  !text-[45px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 3 ? 
-                                <div className={`rank-position p-1  `}>
+                                <div className={`fading rank-position p-1  `}>
                                     <h2 className="font-gulfs  !text-[30px] md:!text-[35px] xl:!text-[50px]">{position}</h2>
                                 </div>
                                 : ''

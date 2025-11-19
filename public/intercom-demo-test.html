@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Intercom Demo Test</title>
+</head>
+<body>
+    <h1>Intercom Demo Test</h1>
+    <p>Testing with a known working demo app ID</p>
+    
+    <button onclick="showIntercom()">Show Intercom</button>
+    <button onclick="hideIntercom()">Hide Intercom</button>
+    
+    <script>
+        console.log('🧪 Testing with demo Intercom app...');
+        
+        // Using a common demo/test app ID that should work
+        window.intercomSettings = {
+            api_base: "https://api-iam.intercom.io",
+            app_id: "wpnjk0z7", // Demo app ID
+            name: "Test User",
+            email: "test@example.com",
+            user_id: "demo123"
+        };
+        
+        console.log('📋 Demo settings:', window.intercomSettings);
+        
+        // Standard Intercom installation
+        (function(){
+            var w=window;var ic=w.Intercom;
+            if(typeof ic==="function"){
+                ic('reattach_activator');
+                ic('update',w.intercomSettings);
+            } else {
+                var d=document;
+                var i=function(){i.c(arguments);};
+                i.q=[];
+                i.c=function(args){i.q.push(args);};
+                w.Intercom=i;
+                
+                // Boot immediately
+                w.Intercom('boot', w.intercomSettings);
+                console.log('✅ Boot command queued');
+                
+                var l=function(){
+                    var s=d.createElement('script');
+                    s.type='text/javascript';
+                    s.async=true;
+                    s.src='https://widget.intercom.io/widget/wpnjk0z7';
+                    s.onload = function() {
+                        console.log('✅ Demo script loaded');
+                        setTimeout(() => {
+                            console.log('🔍 Checking demo result...');
+                            const frames = document.querySelectorAll('iframe');
+                            console.log('  - Total frames:', frames.length);
+                            frames.forEach((frame, i) => {
+                                console.log(`    Frame ${i}:`, frame.src);
+                            });
+                        }, 2000);
+                    };
+                    var x=d.getElementsByTagName('script')[0];
+                    x.parentNode.insertBefore(s,x);
+                };
+                
+                if(document.readyState==='complete'){
+                    l();
+                } else {
+                    w.addEventListener('load',l,false);
+                }
+            }
+        })();
+        
+        function showIntercom() {
+            if (window.Intercom) {
+                window.Intercom('show');
+                console.log('✅ Show command sent');
+            }
+        }
+        
+        function hideIntercom() {
+            if (window.Intercom) {
+                window.Intercom('hide');
+                console.log('✅ Hide command sent');
+            }
+        }
+    </script>
+</body>
+</html>

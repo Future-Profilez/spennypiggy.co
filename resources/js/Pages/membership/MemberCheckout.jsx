@@ -113,70 +113,76 @@ export default function SubCheckout(props) {
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${membership?.level} membership`} />
                 <div className={`px-0 mb-3 px-lg-2`}>
-                    <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
+                    <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-[20px] md:rounded-[40px]">
                         <div className="cartMain">
-                            <h2 className="pb-1 wishtitle">
-                                Membership Basket for{" "}
-                                {membership?.user?.name || " "}
-                                <Link
-                                    className="text-voilet"
-                                    target="_blank"
-                                    href={`/${
-                                        membership?.user?.username || ""
-                                    }`}
-                                >
-                                    @{membership?.user?.username || ""}
-                                </Link>
-                            </h2>
-                            <p className="pb-4">
-                                You are about to join {membership?.level}{" "}
-                                membership.
-                            </p>
-
-                            <Membership hidebtn={true} item={membership} />
-
-                            <div className="cartTotal px-0 pt-4 flex justify-end">
-                                <ul className="max-w-[300px] w-full">
-                                    <li className="flex justify-content-between">
-                                        <span className="min-w-[100px] block">Subtotal :</span>
-                                        <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
-                                    </li>
-                                    <li className="flex justify-content-between">
-                                        <span className="min-w-[100px] block">Platform Fee :</span>
-                                        <div>
-                                            <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
-                                            <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
-                                            ?
-                                            <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
-                                            all transactions.
-                                            </p>
-                                            </button>
-                                        </div>
-                                    </li>
-                                    {vat_amount && vat_amount > 0 ? (
-                                        <li className="flex justify-content-between">
-                                            <span className="min-w-[100px] block">VAT :</span>
-                                            <strong>{formatMultiPrice(
-                                                    vat_amount || "",
-                                                    membership &&
-                                                        membership.currency
+                            <div className="md:flex w-full gap-5">
+                                <div className="w-full md:max-w-[40%]">
+                                    <Membership hidebtn={true} item={membership} />
+                                </div>
+                                <div className="pt-6">
+                                    <h2 className="pb-1 wishtitle">
+                                        Membership Basket for{" "}
+                                        {membership?.user?.name || " "}
+                                        <Link
+                                            className="text-voilet"
+                                            target="_blank"
+                                            href={`/${
+                                                membership?.user?.username || ""
+                                            }`}
+                                        >
+                                            @{membership?.user?.username || ""}
+                                        </Link>
+                                    </h2>
+                                    <p className="pb-4">
+                                        You are about to join {membership?.level}{" "}
+                                        membership.
+                                    </p>
+                                    <div className="w-full max-w-[300px] cartTotal px-0 pt-4 flex justify-end">
+                                        <ul className="w-full">
+                                            <li className="flex justify-content-between">
+                                                <span className="min-w-[100px] block">Subtotal :</span>
+                                                <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
+                                            </li>
+                                            <li className="flex justify-content-between">
+                                                <span className="min-w-[100px] block">Platform Fee :</span>
+                                                <div>
+                                                    <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
+                                                    <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
+                                                    ?
+                                                    <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                                        {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
+                                                    all transactions.
+                                                    </p>
+                                                    </button>
+                                                </div>
+                                            </li>
+                                            {vat_amount && vat_amount > 0 ? (
+                                                <li className="flex justify-content-between">
+                                                    <span className="min-w-[100px] block">VAT :</span>
+                                                    <strong>{formatMultiPrice(
+                                                            vat_amount || "",
+                                                            membership &&
+                                                                membership.currency
+                                                        )}</strong>
+                                                </li>
+                                            ) : (
+                                                ""
+                                            )}
+                                            <li className="flex justify-content-between">
+                                                <span className="min-w-[100px] block">Total :</span>
+                                                <strong>{formatMultiPrice(
+                                                    membership?.tax_amount +
+                                                        membership?.price +
+                                                        vat_amount || "",
+                                                    membership && membership?.currency, 'adminfee'
                                                 )}</strong>
-                                        </li>
-                                    ) : (
-                                        ""
-                                    )}
-                                    <li className="flex justify-content-between">
-                                        <span className="min-w-[100px] block">Total :</span>
-                                        <strong>{formatMultiPrice(
-                                            membership?.tax_amount +
-                                                membership?.price +
-                                                vat_amount || "",
-                                            membership && membership?.currency, 'adminfee'
-                                        )}</strong>
-                                    </li>
-                                </ul>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
                             </div>
+
                             <div className="addMessage mt-5">
                                 <form onSubmit={executeCaptcha}>
                                     <ul className="row">

@@ -47,4 +47,10 @@ return [
         'secret' => env('UPLOADCARE_SECRET_KEY'),
     ],
 
+    'intercom' => [
+        'enabled' => env('INTERCOM_ENABLED', false),
+        'app_id' => env('INTERCOM_APP_ID'),
+        'identity_secret' => env('INTERCOM_IDENTITY_VERIFICATION_SECRET'),
+    ],
+
 ];

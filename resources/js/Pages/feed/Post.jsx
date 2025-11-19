@@ -65,10 +65,10 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className="post-wrap bg-light rounded-[20px] md:rounded-[35px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pinks sborder-2 sborder-[#F94F97]">
+      <div className=" post-wrap bg-light rounded-[20px] md:rounded-[35px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pinks sborder-2 sborder-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
-                <img alt='spenny piggy' className="author-img" src={item?.user?.avatar_url || userphoto} />
+                <img alt='spenny piggy' className="fading author-img" src={item?.user?.avatar_url || userphoto} />
                 <div>
                   <p className="authors text-dark !capitalize"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
                   <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
@@ -76,10 +76,10 @@ export default function Post({item}) {
             </Link>
             :
             <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
-                <img alt='spenny piggy' className="author-img" src={user && user.avatar_url || userphoto} />
+                <img alt='spenny piggy' className="fading author-img" src={user && user.avatar_url || userphoto} />
               <div>
-                <p className="authors text-dark !capitalize"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
-                <p className="authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
+                <p className="fading authors text-dark !capitalize"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
+                <p className="fading authors text-muted text-small"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
               </div>
             </Link> }
 
@@ -102,7 +102,7 @@ export default function Post({item}) {
         </div> : ''}
 
         {item && item.type =='image' || item && item.type == 'support_thanks' ?
-          <div className='post-images lazywrap position-relative  w-full' >
+          <div className='fading post-images lazywrap position-relative  w-full' >
               
               {posturl() ?<>
                 <span className='rounded-xl pinkbg position-absolute py-1 px-2 top-3 right-3 text-uppercase text-[10px] text-light ' >{postBadge()}</span>
@@ -128,16 +128,16 @@ export default function Post({item}) {
         : ''}
 
         <div>
-          <p className="description text-dark mt-3 mb-1 pe-5"><b>{item?.title || ''}</b></p>
-          <p className="description text-muted">{item?.content || ''}</p>
+          <p className="fading  description text-dark mt-3 mb-1 pe-5"><b>{item?.title || ''}</b></p>
+          <p className="fading  description text-muted">{item?.content || ''}</p>
         </div>
 
-        <div className="interactions flex items-center"  >
+        <div className="fading interactions flex items-center"  >
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
           <div onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
         </div>
 
-        <div className='flex' >
+        <div className='flex fading'  >
           <p className="like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
           <p className="like-count text-dark"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
         </div>

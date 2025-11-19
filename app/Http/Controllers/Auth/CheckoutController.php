@@ -91,6 +91,9 @@ class CheckoutController extends Controller
             if (!$owner) {
                 return redirect()->back()->with('error', 'Creator not found.');
             }
+            if ($owner['is_subscribed'] !== 1) {
+                return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
+            }
             
             // Calculate preliminary total for activity check notification
             $preliminaryTotal = $getdata->sum(function ($item) {

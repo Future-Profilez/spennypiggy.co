@@ -44,7 +44,7 @@ const LiveBar = (props) => {
       <ScrollingContainer>
         <ScrollingContent>
           {counts && counts.map((i)=>{
-            return <p className={`${props.textClass ? props.textClass :"mb-0 mx-4 font-GillSans text-uppercase"}`}>{props.text}</p>
+            return <p className={`${props.textClass ? props.textClass :"mb-0 mx-4 font-GillSans text-uppercase fading whitespace-nowrap"}`}>{props.text}</p>
           })}
         </ScrollingContent>
       </ScrollingContainer>

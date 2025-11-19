@@ -175,7 +175,7 @@ export default function Login({ status, canResetPassword }) {
                         <div className='login-step1 loginform'>
                             <p className='text-center font-CeraGRBold text-red-600 text-lg mb-4'>{redirectmessage}</p>
                             <ul>
-                                <li className="formfield mb-6">
+                                <li className="formfield fading mb-6">
                                     <label>Enter Email</label>
                                     <input
                                         id="email"
@@ -193,7 +193,7 @@ export default function Login({ status, canResetPassword }) {
                                         <InputError message={errors.email} className="mt-2" />
                                     </div>
                                 </li>
-                                <li className="formfield mb-6">
+                                <li className="formfield fading mb-6">
                                     <label>Password</label>
                                     <input
                                         id="password"

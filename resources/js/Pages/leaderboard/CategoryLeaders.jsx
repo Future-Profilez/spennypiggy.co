@@ -48,7 +48,7 @@ export default function CategoryLeaders() {
     ];
 
     const CategoryItem = ({ creator, rank }) => (
-        <div className="category-item relative bg-white rounded-xl p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="fading category-item relative bg-white rounded-xl p-3 mb-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <div className="flex items-center ">
                     <div className="absolute top-2 left-2 z-1 rank-badge bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
@@ -88,7 +88,7 @@ export default function CategoryLeaders() {
     );
 
     const EmptyState = ({ category }) => (
-        <div className="text-center py-12">
+        <div className="fading text-center py-12">
             <div className="mb-4">
                 <RiGiftLine size={48} className="text-gray-400 mx-auto" />
             </div>
@@ -99,7 +99,7 @@ export default function CategoryLeaders() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 d-flex justify-content-center align-items-center" style={{minHeight: '400px'}}>
+            <div className="fading bg-gray-100 rounded-[25px] p-4 mb-6 d-flex justify-content-center align-items-center" style={{minHeight: '400px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -109,7 +109,7 @@ export default function CategoryLeaders() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 text-center">
+            <div className="fading bg-gray-100 rounded-[25px] p-4 mb-6 text-center">
                 <div className="alert alert-danger" role="alert">
                     {error}
                     <button 
@@ -140,7 +140,7 @@ export default function CategoryLeaders() {
                             <button
                                 key={category.key}
                                 onClick={() => setActiveTab(category.key)}
-                                className={`category-tab flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                className={`fading category-tab flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
                                     activeTab === category.key
                                         ? 'bg-white shadow-md text-gray-900'
                                         : 'text-gray-600 hover:bg-white/50'

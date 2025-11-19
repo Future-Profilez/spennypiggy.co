@@ -34,12 +34,12 @@ export default function FAQ() {
   `}</style>
     <div id={`faq`} className='faq-section pt-10 pb-5' >
       <div className='container' >
-          <h2 className='headingSm shadow-none font-gulfs stroke-none text-center mb-4 lg:!mb-8 pb-2' >Frequently Asked questions</h2>
+          <h2 className='fading headingSm shadow-none font-gulfs stroke-none text-center mb-4 lg:!mb-8 pb-2' >Frequently Asked questions</h2>
           <div className='max-width-1100 m-auto d-table' >
               <div className='faqaccordian' >
                   <Accordion defaultActiveKey={0}>
                     {faqs && faqs.map((f, i)=>{
-                      return <Accordion.Item eventKey={i} data-aos="zoom-in-up" className='mb-4' >
+                      return <Accordion.Item eventKey={i}   className='mb-4 fading' >
                           <Accordion.Header onClick={(e) => setOpen(i)}>
                               {f.title}
                           </Accordion.Header>

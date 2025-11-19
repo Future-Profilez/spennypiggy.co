@@ -27,7 +27,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const hasAnySocialMedia =
         slinks &&
         Object.values(slinks).some((value) => value !== null && value !== "");
-
     const updateProfileSteps = () => {
         window.location.reload(false);
     };
@@ -129,33 +128,38 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 </div>
 
                 {/* Step 2: Social Handles */}
-                <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                    <div className="step-title flex max-w-[390px] pe-3">
-                        <div
-                            className={`check-icon me-2 pt-1 ${
-                                hasAnySocialMedia ? "checked" : ""
-                            }`}
-                        >
+                <div className="profile-steps border border-gray-200 rounded-xl p-3 mt-3">
+                    <div className="flex items-center   justify-between">
+                        <div className="step-title flex max-w-[390px] pe-3">
                             <div
-                                dangerouslySetInnerHTML={{
-                                    __html: checkedItem,
-                                }}
-                            />
+                                className={`check-icon me-2 pt-1 ${
+                                    hasAnySocialMedia ? "checked" : ""
+                                }`}
+                            >
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: checkedItem,
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <h2 className="text-dark font-bold">
+                                    Add Social Handles
+                                </h2>
+                                <p className="text-gray-500 text-[14px]">
+                                    Update at least one social media handle to help
+                                    fans connect with you. {slinks?.status !== 1 ? <span className="text-red-500 text-[14px]">
+                                    It must show an active account. Older than 6 months.
+                                </span> : ''}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-dark font-bold">
-                                Add Social Handles
-                            </h2>
-                            <p className="text-gray-500 text-[14px]">
-                                Update at least one social media handle to help
-                                fans connect with you. 
-                            </p>
-                            {!hasAnySocialMedia && <p className="text-red-500 text-[14px]">
-                                It must show an active account. Older than 6 months.
-                            </p>}
-                        </div>
+                        {slinks?.status !== 1 && <Social links={slinks} />}
+
+
                     </div>
-                    {!hasAnySocialMedia && <Social links={slinks} />}
+                    {slinks?.status == 2 ? <p className="px-3 text-red-500 text-sm mt-2">Social Media Handle Update Request : Rejected due to {slinks?.reason ? slinks?.reason : ""}</p> : null}
+                    {hasAnySocialMedia && slinks?.status == 0 ? <p className="px-3 text-yellow-500 text-sm mt-2"><strong>Verification</strong> : Social Media Handle are under review. Please move to the next step.</p> : null}
                 </div>
 
                 {/* Step 3: Avatar */}
@@ -331,6 +335,19 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             🎉 You're almost done. Your profile is currently
                             under review. Please wait for the review to
                             complete.
+                        </p>
+                    </div>
+                ) : (
+                    ""
+                )}
+
+                {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ? (
+                    <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-lg mt-3">
+                        <strong className="text-red-800">
+                            Profile Verification Rejected
+                        </strong>
+                        <p className="text-sm  capitalize">
+                           {auth?.user?.profile_reject_reason}
                         </p>
                     </div>
                 ) : (

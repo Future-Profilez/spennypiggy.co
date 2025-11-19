@@ -334,7 +334,6 @@ class MembershipController extends Controller
             return to_route('user.show', ['username' => $user->username])
                 ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
-
         $user = Auth::user();
         if ($user) {
             $isSocilAdded = SocialLinks::where('user_id', $user->id)
@@ -355,7 +354,7 @@ class MembershipController extends Controller
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($membership->user);
-        
+        return $subscriptionCheck;
         if (!$subscriptionCheck['eligible']) {
             // Send notification to creator about blocked payment
             $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));

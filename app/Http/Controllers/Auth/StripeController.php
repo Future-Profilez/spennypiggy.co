@@ -2976,6 +2976,10 @@ class StripeController extends Controller
             $user->stripe_user_id = $session->id;
             $user->identity_verification_error = null;
 
+            if(env('APP_ENV') !== 'production'){
+                $user->identity_status = 1;
+            }
+
             if ($user->save()) {
                 return response()->json([
                     'sessionId' => $session->id,

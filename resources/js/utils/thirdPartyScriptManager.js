@@ -5,6 +5,38 @@
  * and implement proper governance over external integrations.
  */
 
+/**
+ * Utility function to ensure a script is loaded only once
+ * @param {Object} params - Script parameters
+ * @param {string} params.id - Unique ID for the script
+ * @param {string} params.src - Script source URL
+ * @param {boolean} params.async - Whether script should load async
+ * @param {boolean} params.defer - Whether script should be deferred
+ * @param {Object} params.attributes - Additional attributes for the script tag
+ * @returns {Promise}
+ */
+export function ensureScript({ id, src, async = true, defer = true, attributes = {} }) {
+    return new Promise((resolve, reject) => {
+        if (typeof document === 'undefined') return resolve();
+        
+        const existing = document.getElementById(id);
+        if (existing) return resolve();
+        
+        const s = document.createElement('script');
+        s.id = id;
+        s.src = src;
+        s.async = async;
+        s.defer = defer;
+        
+        Object.entries(attributes).forEach(([k, v]) => s.setAttribute(k, v));
+        
+        s.onload = () => resolve();
+        s.onerror = (e) => reject(e);
+        
+        document.head.appendChild(s);
+    });
+}
+
 class ThirdPartyScriptManager {
     constructor() {
         this.loadedScripts = new Set();
@@ -212,7 +244,7 @@ class ThirdPartyScriptManager {
             });
 
             // Fallback: Load after idle time
-            const delay = config.delay || 8000;
+            const delay = config.delay || 1000; // Reduced to 1 second for testing
             if ('requestIdleCallback' in window) {
                 requestIdleCallback(() => {
                     setTimeout(loadIntercomWidget, delay);

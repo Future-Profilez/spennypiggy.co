@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Intercom Minimal Test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>Intercom Minimal Test Page</h1>
+    <p>This is a minimal test to verify Intercom loading.</p>
+    <button onclick="testIntercom()">Test Intercom</button>
+    <div id="status">Loading...</div>
+
+    <script>
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = message;
+            console.log('Status:', message);
+        }
+
+        function testIntercom() {
+            updateStatus('Testing Intercom...');
+            
+            // Basic Intercom test
+            window.intercomSettings = {
+                app_id: "xomg14o9"
+            };
+
+            (function () {
+                var w = window;
+                var ic = w.Intercom;
+                if (typeof ic === "function") {
+                    ic('reattach_activator');
+                    ic('update', w.intercomSettings);
+                    updateStatus('Intercom updated');
+                } else {
+                    var d = document;
+                    var i = function () { i.c(arguments); };
+                    i.q = [];
+                    i.c = function (args) { i.q.push(args); };
+                    w.Intercom = i;
+                    
+                    var l = function () {
+                        var s = d.createElement("script");
+                        s.type = "text/javascript";
+                        s.async = true;
+                        s.src = "https://widget.intercom.io/widget/xomg14o9";
+                        var x = d.getElementsByTagName("script")[0];
+                        x.parentNode.insertBefore(s, x);
+                        updateStatus('Intercom script loaded');
+                    };
+                    
+                    if (document.readyState === "complete") { 
+                        l(); 
+                    } else if (w.attachEvent) { 
+                        w.attachEvent("onload", l); 
+                    } else { 
+                        w.addEventListener("load", l, false); 
+                    }
+                    
+                    w.Intercom('boot', w.intercomSettings);
+                    updateStatus('Intercom booted');
+                }
+            })();
+            
+            setTimeout(() => {
+                if (window.Intercom) {
+                    window.Intercom('show');
+                    updateStatus('Intercom shown');
+                } else {
+                    updateStatus('Intercom not available');
+                }
+            }, 2000);
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', function() {
+            updateStatus('Page loaded, testing Intercom...');
+            setTimeout(testIntercom, 1000);
+        });
+    </script>
+</body>
+</html>

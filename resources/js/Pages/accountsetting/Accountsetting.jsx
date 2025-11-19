@@ -120,12 +120,12 @@ export default function Accountsetting(props) {
                                             <span className={`
                                                 text-gray  text-start
                                                 uppercase
-                                                ${site_subscription && site_subscription.status == "ACTIVE" || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"}
-                                            `}>
+                                                ${site_subscription && site_subscription.status == "ACTIVE" || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"} `}>
                                                 {site_subscription?.trial_status === "active" ? "Free Trial" : 
                                                 <>
                                                 {site_subscription && site_subscription.status || "Start"}
-                                                </>}
+                                                </>
+                                                }
                                             </span>
                                         </div>
                                     }

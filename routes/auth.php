@@ -264,7 +264,7 @@ Route::middleware('auth')->group(function () {
 
             $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
             $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
-            $isSubscriptionActive = $user->is_subscribed == 1 && $subEndCarbon && $now->lessThan($subEndCarbon);
+            $isSubscriptionActive = in_array($subscription->status, ['paid', 'active', 'renew']) && $subEndCarbon && $now->lessThan($subEndCarbon);
             $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
 
             // Format output
@@ -279,8 +279,9 @@ Route::middleware('auth')->group(function () {
 
             $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
 
-            // Correct status logic
-            if ($isSubscriptionActive) {
+            if ($subscription && $subscription->status === 'trialing') {
+                $site_subscription['status'] = 'FREE_TRIAL';
+            } elseif ($isSubscriptionActive) {
                 $site_subscription['status'] = 'ACTIVE';
             } elseif ($isTrialOngoing && !$isSubscriptionActive) {
                 $site_subscription['status'] = 'FREE_TRIAL';
@@ -288,28 +289,7 @@ Route::middleware('auth')->group(function () {
                 $site_subscription['status'] = 'EXPIRED';
             }
         } else {
-            // Handle users without subscription records (new users)
-            // This matches the logic in User model's getSubscriptionStatusAttribute method
-            if ($user->role == 1) {
-                $createdAt = Carbon::parse($user->created_at);
-                $trialEndDate = $createdAt->copy()->addDays(3); // 3-day trial - use copy() to avoid mutating original
-                $now = Carbon::now();
-                
-                // If within trial period and not subscribed, show as trial
-                if ($now->lessThan($trialEndDate) && $user->is_subscribed == 0) {
-                    $site_subscription['status'] = 'FREE_TRIAL';
-                    $site_subscription['trial_status'] = 'active';
-                    $site_subscription['trial_start'] = $createdAt->format('d F Y');
-                    $site_subscription['trial_end_in'] = $trialEndDate->diffForHumans($now);
-                } else {
-                    // Trial expired and not subscribed
-                    $site_subscription['status'] = 'EXPIRED';
-                    $site_subscription['trial_status'] = 'ended';
-                }
-            } else {
-                // Non-creator users default to inactive
-                $site_subscription['status'] = 'INACTIVE';
-            }
+            $site_subscription['status'] = 'INACTIVE';
         }
 
         return Inertia::render('accountsetting/Accountsetting', [
@@ -570,6 +550,10 @@ Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'fi
 Route::get('/test/test', function () {
     return Inertia::render('Test');
 })->name("test");
+
+Route::get('/test-intercom-diagnostic', function () {
+    return view('intercom-test');
+})->name("intercom.diagnostic");
 
 Route::get('/problem-solving', function () {
     $nums = [3, 4, 2, 5];

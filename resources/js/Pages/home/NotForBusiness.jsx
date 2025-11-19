@@ -155,10 +155,10 @@ export default function NotForBusiness() {
             </div> */}
             <section className="bg-black pt-8 sm:py-16 px-4 text-white">
                 <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-16">
-                    <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-5xl uppercase">
+                    <h2 className="fading headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-5xl uppercase">
                         How It Works
                     </h2>
-                    <p className="mt-4 font-poppins text-base md:text-lg text-[#FFFCFC]">
+                    <p className="fading mt-4 font-poppins text-base md:text-lg text-[#FFFCFC]">
                         Setting up your Spenny Piggy Wishlist is a breeze—quick,
                         simple, and fun! You'll be ready to roll in just 5
                         minutes!
@@ -168,29 +168,28 @@ export default function NotForBusiness() {
                     data?.map((item, index) => (
                         <div
                             key={index}
-                            data-aos="zoom-out-up"
                             className="flex flex-col lg:flex-row items-center justify-center gap-12 max-w-6xl mx-auto mb-10"
                         >
                             <div className="lg:w-1/2  md:text-right relative px-4">
-                                <div className="lg:mb-4 relative">
+                                <div className="fading lg:mb-4 relative">
                                 <div className="lg:absolute lg:right-0 lg:!top-[-47px] font-gulfs text-3xl md:text-4xl flex items-center justify-center w-12 h-12 pt-1 bg-pink-500 text-white font-bold rounded-full mx-auto lg:mx-0">
                                         {index+1}
                                     </div>
                                 </div>
-                                <h3 className="font-gulfs text-center lg:!text-right text-3xl md:text-4xl uppercase font-anton mt-4 sm:mt-12 lg:mt-0 lg:whitespace-pre-line">
+                                <h3 className="fading font-gulfs text-center lg:!text-right text-3xl md:text-4xl uppercase font-anton mt-4 sm:mt-12 lg:mt-0 lg:whitespace-pre-line">
                                     {item?.title}
                                 </h3>
-                                <p className="mt-4 font-poppins text-center lg:!text-right text-base text-[#05EFB8] lg:whitespace-pre-line">
+                                <p className="fading mt-4 font-poppins text-center lg:!text-right text-base text-[#05EFB8] lg:whitespace-pre-line">
                                     {item?.description}
                                 </p>
                             </div>
 
-                            <div className="lg:w-1/2 w-full px-4">
+                            <div className=" lg:w-1/2 w-full px-4">
                                 <div className="p-2 rounded-[20px] shadow-[0px_2px_2px_0px_#05EFB8]">
                                     <img
                                         src={item?.image || ""}
                                         alt="Create Wishlist"
-                                        className="w-full rounded-[16px]"
+                                        className=" w-full rounded-[16px]"
                                     />
                                 </div>
                             </div>

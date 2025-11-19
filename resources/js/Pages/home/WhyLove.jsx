@@ -197,10 +197,10 @@ export default function WhyLove() {
             </div> */}
             <section className="bg-black py-16 px-4 text-center">
             <div className="container">
-                <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-center w-full max-w-2xl mx-auto block mb-4">
+                <h2 className="fading headingSm shadow-none text-light font-gulfs stroke-none text-center w-full max-w-2xl mx-auto block mb-4">
                     Add Gifts From Any Brand
                 </h2>
-                <p className="text-[#F94F96] text-sm md:text-base max-w-3xl mx-auto font-poppins leading-snug mb-12">
+                <p className="fading text-[#F94F96] text-sm md:text-base max-w-3xl mx-auto font-poppins leading-snug mb-12">
                     With Spenny Piggy, you can seamlessly add gifts from any
                     brand to your Wishlist, offering your supporters a diverse
                     range of options to choose from. All you need is a link! You
@@ -208,9 +208,9 @@ export default function WhyLove() {
                     brands, or any other online store on Shopify or Amazon.
                 </p>
 
-                <div data-aos="zoom-out-right" className="flex flex-wrap justify-center gap-3">
+                <div  className="flex flex-wrap justify-center gap-3">
                   {brandLogos.map((brand, index) => (
-                     <div key={index} className="shadow-pink rounded-full h-28 sm:h-36 w-28 sm:w-36 overflow-hidden  p-4 bg-white">
+                     <div key={index} className="fading shadow-pink rounded-full h-28 sm:h-36 w-28 sm:w-36 overflow-hidden  p-4 bg-white">
                        <img
                          src={brand.src}
                          alt={brand.name}

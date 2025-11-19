@@ -47,10 +47,16 @@ class SocialLinksController extends Controller
                 'updated_at' => now(),
             ];
 
+            $moderation = [
+                'status' => 0,
+                'reason' => $request->has('reason') ? $request->reason : null,
+            ];
+            $payload = array_filter(array_merge($data, $moderation), fn($v) => $v !== null);
+
             // Add UUID and created_at only if creating
             $socialLink = SocialLinks::updateOrCreate(
                 ['user_id' => $userId],
-                array_merge($data, [
+                array_merge($payload, [
                     'uuid'       => Uuid::uuid4(),
                     'created_at' => now(),
                 ])

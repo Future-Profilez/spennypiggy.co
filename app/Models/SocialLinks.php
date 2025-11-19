@@ -27,6 +27,8 @@ class SocialLinks extends Model
         'fansly',
         'manyvids',
         'other',
+        'status',
+        'other',
         'deleted_at'
     ];
 

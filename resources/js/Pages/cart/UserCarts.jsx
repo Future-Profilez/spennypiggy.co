@@ -161,7 +161,7 @@ export default function UserCarts(props) {
                         <span className=' border-black border-2 bg-mint me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                     </div>
                     <div className="cartMain md:p-4 m-2 md:p-12">
-                        <h2 className="pb-1 wishtitle">
+                        <h2 className="pb-1 wishtitle fading">
                             Your Basket for {datas?.user?.name || ""}
                             <Link className="text-voilet" href={`/${datas?.user?.username || ""}`}>
                                 (@{datas?.user?.username || ""})
@@ -186,18 +186,18 @@ export default function UserCarts(props) {
                         </div>
 
                         <div className="cartTotal pt-3 pb-6">
-                            <div className="cartSubTotal text-right mt-1">
+                            <div className="fading cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>
                                 <strong className="text-end text-black">
                                     {formatMultiPrice(subtotal || "",datas?.user && datas?.user?.default_currency)}
                                 </strong>
                             </div>
-                            <div className="cartSubTotal whitespace-nowrap text-right mt-1">
+                            <div className="fading cartSubTotal whitespace-nowrap text-right mt-1">
                                 <span className="sm:ps-[5px]">Platform Fee :</span>{" "}
                                 <strong className="text-end text-black">  
                                     {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
-                                        <p className="max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-md top-[20px] right-[-28px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                        <p className="fading max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-[20px] bottom-[20px] right-[10px] text-left font-normal text-[15px] z-[99] hidden group-hover:block">
                                             {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
                                             all transactions.
                                         </p>
@@ -205,7 +205,7 @@ export default function UserCarts(props) {
                                 </strong>
                             </div>
 
-                            <div className="cartSubTotal text-right mt-1">
+                            <div className="fading cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>
                                 <strong className="text-end text-black">
                                     {formatMultiPrice((fee + subtotal) || "",datas?.user && datas?.user?.default_currency, 'adminfees')}
@@ -216,7 +216,7 @@ export default function UserCarts(props) {
                         <div className="addMessage">
                             <form onSubmit={executeCaptcha}>
                                 <ul className="row">
-                                    <li>
+                                    <li className="fading">
                                         <label>Add Message </label>
                                         <textarea rows={2}
                                             onChange={(e) =>
@@ -225,7 +225,7 @@ export default function UserCarts(props) {
                                             placeholder="Send some words of support..."
                                         ></textarea>
                                     </li>
-                                    <li className="w-100 mt-3">
+                                    <li className="w-100 mt-3 fading">
                                         <li className="row">
                                             <div className="col-md-12 mb-4">
                                                 <label className="d-block text-start">
@@ -270,7 +270,7 @@ export default function UserCarts(props) {
                                             </div>
                                         </li>
                                     </li>
-                                    <li className="cheklistbox">
+                                    <li className="cheklistbox fading">
                                         <label
                                             htmlFor="anonymous"
                                             className="text-start"
@@ -296,7 +296,7 @@ export default function UserCarts(props) {
 
                                         <label
                                             htmlFor="agreeterm"
-                                            className="text-start"
+                                            className="text-start fading"
                                         >
                                             <input
                                                 onChange={(e) =>
@@ -329,7 +329,7 @@ export default function UserCarts(props) {
                                             and the following statements:
                                         </label>
                                         <div className="tearmlist ps-3">
-                                            <ul className="ps-0">
+                                            <ul className="ps-0  ">
                                                 <li> 
                                                     For Memberships and
                                                     subscriptions, I understand I am
@@ -391,11 +391,11 @@ export default function UserCarts(props) {
                                         </div>
                                     </li>
                                 </ul>
-                                <div className="mt-4 sm:flex gap-3 items-center justify-between">
+                                <div className=" mt-4 sm:flex gap-3 items-center justify-between">
                                     <button
                                         type="button"
                                         onClick={() => clearcart(datas?.user?.id)}
-                                        className={`  w-full main-button b`}
+                                        className={`  w-full main-button b mb-3 md:!mb-0`}
                                     >
                                         {loading ? "Wait.." : "Clear"}{" "}
                                     </button>
