@@ -132,24 +132,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <div className="flex items-center   justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
                             <div
-<<<<<<< HEAD
-                                dangerouslySetInnerHTML={{
-                                    __html: checkedItem,
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <h2 className="text-dark font-bold">
-                                Add Social Handles
-                            </h2>
-                            <p className="text-gray-500 text-[14px]">
-                                Update at least one social media handle to help
-                                fans connect with you.
-                            </p>
-                            {!hasAnySocialMedia && <p className="text-red-500 text-[14px]">
-                                It must show an active account. Older than 6 months.
-                            </p>}
-=======
                                 className={`check-icon me-2 pt-1 ${
                                     hasAnySocialMedia ? "checked" : ""
                                 }`}
@@ -171,7 +153,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </span> : ''}
                                 </p>
                             </div>
->>>>>>> d4011a4e5d4ece21388e63d1f4d0c9bb9ddb82dd
                         </div>
                         {slinks?.status !== 1 && <Social links={slinks} />}
 
