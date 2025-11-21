@@ -49,6 +49,7 @@ class User extends Authenticatable
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
         'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
     ];
+    protected $with = ['social_links'];
 
     public static function boot()
     {
@@ -135,33 +136,7 @@ class User extends Authenticatable
             }
             
             if (!$subscription) {
-                try {
-                    $createdAt = Carbon::parse($this->created_at);
-                    $trialEndDate = $createdAt->copy()->addDays(3); // 3-day trial - use copy() to avoid mutating original
-                    $now = Carbon::now();
-                    
-                    \Log::info('Subscription Status Debug - No MonthlyCharge record', [
-                        'user_id' => $this->id,
-                        'created_at' => $this->created_at,
-                        'trial_end_date' => $trialEndDate->toDateTimeString(),
-                        'now' => $now->toDateTimeString(),
-                        'is_within_trial' => $now->lessThan($trialEndDate)
-                    ]);
-                    
-                    // If within trial period, return trial status
-                    if ($now->lessThan($trialEndDate)) {
-                        return 2; // FREE_TRIAL
-                    }
-                    
-                    // If trial expired and not subscribed, return expired
-                    return 0; // EXPIRED
-                } catch (\Exception $e) {
-                    \Log::error('Error parsing subscription dates for user without MonthlyCharge', [
-                        'user_id' => $this->id,
-                        'error' => $e->getMessage()
-                    ]);
-                    return 0; // EXPIRED on error
-                }
+                return 0;
             }
             
             // Use the same logic as account settings route

@@ -85,7 +85,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
     'lifetime' : '!bg-green-600 !text-white',
   }
   const borderclasses = {
-    'gold' : '!border-[#F94F97]',
+    'gold' : '!border-yellow-600',
     'silver' : '!border-[#A6A6A6]',
     'bronze' : '!border-[#CD7F32]',
     'platinum' : '!border-[#E5E4E2]',
@@ -154,7 +154,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                   </Link>
 
                 {hidebtn ? '' : <>
-                  <div className='flex justify-center items-center'>
+                  <div className='flex p-3 pt-0 justify-center items-center'>
                     {IsloggedIn ? 
                       <EditMembership  classes='btn-pink block text-center !w-full'  item={item} /> 
                     :

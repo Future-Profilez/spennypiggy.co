@@ -153,7 +153,7 @@ export default function VipSupporters() {
             <div className="space-y-3">
                 <VipCard supporter={vipSupporters[0]} />
                 {vipSupporters.slice(0, 5).map((supporter, index) => (
-                    <div key={supporter.id} className={`${index === 0 ? 'hidden':""} rank py-3 border-bottom flex items-center justify-between relative`}>
+                    <div key={supporter.id} className={`${index === 0 ? 'hidden':""} fading  rank py-3 border-bottom flex items-center justify-between relative`}>
                         <div className="flex items-center space-x-3">
                             <div className="absolute top-2 left-1 z-1 rank-badge bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
                                 {supporter.rank}

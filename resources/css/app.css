@@ -1,7 +1,32 @@
 /* app.css */
+/* @import "https://unpkg.com/open-props" layer(design.system);
+@import "https://unpkg.com/open-props/normalize.light.min.css" layer(reset); */
+
 @import "react-lazy-load-image-component/src/effects/blur.css";
 @import "./retro-bottombar.css";
 @import "./retro-enhancements.css";
+
+@keyframes fading-effect {
+  from {
+    opacity: 0;
+    box-shadow: none;
+    transform: scale(.8) translateY(8vh);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .fading {
+      animation: fading-effect both;
+      animation-timeline: view();
+      animation-range: contain 0% contain 30%;
+    }
+  }
+}
+
+
+
+
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .font-poppins{font-family:'Poppins',sans-serif}
 .font-anton{font-family:'Anton',sans-serif}
@@ -193,3 +218,4 @@ lr-config {
 .pl-8 { 
     padding-left: 2rem !important;
 }
+

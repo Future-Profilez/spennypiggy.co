@@ -34,7 +34,7 @@ export default function VerifyEmail({auth}) {
     useEffect(() => {
         const timer = setInterval(() => {
             window.location.reload();
-        }, 15000); 
+        }, 5000); 
         return () => clearInterval(timer);
     }, []);
 

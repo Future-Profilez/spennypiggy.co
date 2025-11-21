@@ -127,6 +127,8 @@
             ['label' => 'Posts', 'count' => isset($items['posts']) ? count($items['posts']) : 0, 'icon' => $icons['Posts'] ?? '📝'],
             // New identity row
             ['label' => 'Stripe Identity', 'count' => isset($items['stripe_identity']) ? count($items['stripe_identity']) : 0, 'icon' => $icons['Stripe Identity'] ?? '🪪'],
+            // New social media row
+            ['label' => 'Social Media Links', 'count' => isset($items['social_media']) ? count($items['social_media']) : 0, 'icon' => $icons['Social Media Links'] ?? '🔗'],
         ];
 
         // Filter out zero-count entries to reduce noise

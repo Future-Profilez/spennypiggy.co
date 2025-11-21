@@ -53,9 +53,6 @@ export default function Home({ auth, user, founderBonus }) {
     console.log("Sentry enabled in ENV:", appEnv);
 
     return <>
-
-
-        <div className="overflow-hidden" >
         <Guest auth={auth.user} user={auth.user}>
         <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
         <Hero auth={auth} />
@@ -144,6 +141,5 @@ export default function Home({ auth, user, founderBonus }) {
                 />
         <SitelinksSearchBox />
         </Guest>
-        </div>
     </>
 }

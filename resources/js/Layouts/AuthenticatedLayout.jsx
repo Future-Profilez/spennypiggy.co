@@ -4,6 +4,7 @@ import BottomBar from './BottomBar';
 import PwaInstallPrompt from '@/Components/PwaInstallPrompt';
 import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
+import IntercomProviderFixed from '@/Components/IntercomProviderFixed';
 const Footer = lazy(() => import('@/includes/Footer'));
 const Header = lazy(() => import('@/includes/Header'));
 
@@ -40,7 +41,7 @@ export default function Authenticated(props){
         <PwaInstallPrompt />
         <PullToRefresh />
         <FlashMessenger />
-    
+        {/* <IntercomProviderFixed /> */}
     </>
 }
 

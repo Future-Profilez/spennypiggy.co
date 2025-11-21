@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Models\WishItem;
+use App\Services\IntercomService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
@@ -85,7 +86,8 @@ class HandleInertiaRequests extends Middleware
             'rates'     =>  Currency::rates(),
             'currencies' => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO'),
             'global_currency'   =>  Cookie::get('currency'),
-            'hcaptchakey'   =>  env('HCAPTCHA')
+            'hcaptchakey'   =>  env('HCAPTCHA'),
+            'intercom' => app(IntercomService::class)->buildSettings($user)
         ];
     }
 }

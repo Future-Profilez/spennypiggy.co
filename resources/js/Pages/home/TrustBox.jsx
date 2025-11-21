@@ -10,7 +10,7 @@ const TrustBox = () => {
     }, []);
   return (
     <>
-    <div className="trust-pilot pt-4 pb-2 mt-4 lg:mt-0" >
+    <div className=" trust-pilot pt-4 pb-2 mt-4 lg:mt-0" >
         <div ref={ref} className="trustpilot-widget"
             data-locale="en-GB"
             data-template-id="56278e9abfbbba0bdcd568bc"

@@ -106,18 +106,18 @@ export default function Membership() {
         </div>
 
     </div> */}
-    <section  id='features' className="bg-black text-white py-16 px-4 text-center">
+    <section  id='features' className=" bg-black text-white py-16 px-4 text-center">
     <div className=" ">
-      <div className="flex justify-center mb-6">
+      <div className="fading flex justify-center mb-6">
         <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain" />
       </div>
 
-      <h2 className="headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-4xl uppercase mb-6 max-w-3xl mx-auto text-center">
+      <h2 className="fading headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-4xl uppercase mb-6 max-w-3xl mx-auto text-center">
         Supporting Creators! Empowering Gifters! Made for Everyone!
       </h2>
-      <div data-aos="zoom-out-up" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-8 max-w-7xl mx-auto">
+      <div   className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-8 max-w-7xl mx-auto">
         {supportData.map((item, index) => (
-          <div  key={index} className="flex flex-col membershipitems items-center text-center mb-3 ">
+          <div key={index} className="fading flex flex-col membershipitems items-center text-center mb-3 ">
           <div className={`relative w-full max-w-[250px] min-h-[150px] ${item.bg} rounded-2xl flex items-center justify-center`}>
           <div className="absolute bg-white/20 rounded-full" />
             <div className="relative z-10 text-white">
@@ -125,11 +125,11 @@ export default function Membership() {
             </div>
           </div>
 
-          <h3 className="mt-3 leading-tight md:leading-[1.35rem] text-lg md:text-xl uppercase font-gulfs">
+          <h3 className=" mt-3 leading-tight md:leading-[1.35rem] text-lg md:text-xl uppercase font-gulfs">
             {item.title}
           </h3>
 
-          <p className="mt-1 md:mt-1.5 text-sm text-white leading-tight sm:leading-normal max-w-[17rem] font-poppins">
+          <p className=" mt-1 md:mt-1.5 text-sm text-white leading-tight sm:leading-normal max-w-[17rem] font-poppins">
             {item.description}
           </p>
         </div>

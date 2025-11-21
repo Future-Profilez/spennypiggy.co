@@ -42,7 +42,7 @@ export default function LeaderboardStars() {
   }, [period]);
 
   const GiftItem = ({ gift, index }) => (
-    <div className="rank py-3 border-bottom flex items-center justify-between">
+    <div className="fading rank py-3 border-bottom flex items-center justify-between">
       <div className="flex items-center justify-between">
         <div className="wisher wisher-rank">
           <Avatar

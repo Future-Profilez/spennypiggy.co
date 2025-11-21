@@ -222,7 +222,7 @@ class AuthenticatedSessionController extends Controller
             [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
         }        
         // Always load social links so they are available to all dashboard tabs/pages
-        $sociallinks = $user->social_links;
+        $sociallinks = SocialLinks::where('user_id', $user->id)->first();
         if($page == 'about'){
             $userIntro = $user->intro;
         }

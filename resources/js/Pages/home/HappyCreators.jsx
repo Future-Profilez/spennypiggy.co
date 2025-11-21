@@ -49,50 +49,9 @@ export default function HappyCreators() {
 
     return (
         <>
-            {/* Old Code */}
-            {/* <div id="reviews" className="happycreator py-5 lightpink-50">
-                <div className="containerbox">
-                    <h2 className="headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6 max-width-1000 m-auto d-table">
-                        Happy Creators
-                    </h2>
-                    <div className="creatorslider">
-                        <Swiper
-                            spaceBetween={20}
-                            pagination={{ clickable: true }}
-                            modules={[Pagination]}
-                            slidesPerView={width < "1199" ? 1 : 2}
-                        >
-                            {msg &&
-                                msg.map((m, i) => {
-                                    return (
-                                        <SwiperSlide key={`swiper-item-${i}`}>
-                                            <div
-                                                data-aos="fade-left"
-                                                className="happyclientSec shadow-black-sm"
-                                            >
-                                                <div className="clientdetail">
-                                                    <div className="clientname ps-0">
-                                                        <strong className="font-CeraGRBold">
-                                                            @{m.name}
-                                                        </strong>
-                                                    </div>
-                                                </div>
-                                                <p>{m.message}</p>
-                                                <div className="postdate">
-                                                    {m.date}
-                                                </div>
-                                            </div>
-                                        </SwiperSlide>
-                                    );
-                                })}
-                        </Swiper>
-                    </div>
-                </div>
-            </div> */}
-
             <div id="reviews" className="happycreator pt-12 pb-4 lg:pb-12 ">
                 <div className="containerbox">
-                    <h2 className="headingSm shadow-none text-light mb-6 font-gulfs stroke-none text-center max-width-1000 mx-auto block">
+                    <h2 className="fading headingSm shadow-none text-light mb-6 font-gulfs stroke-none text-center max-width-1000 mx-auto block">
                         Happy Creators
                     </h2>
 
@@ -107,8 +66,8 @@ export default function HappyCreators() {
                                 msg.map((m, i) => (
                                     <SwiperSlide key={`swiper-item-${i}`}>
                                         <div
-                                          data-aos="fade-left"
-                                          className="min-h-[245px] rounded-[37.02px] bg-white p-[25px] shadow-[6px_6px_0_0_#F94F96]"
+                                           
+                                          className="fading min-h-[245px] rounded-[37.02px] bg-white p-[25px] shadow-[6px_6px_0_0_#F94F96]"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">

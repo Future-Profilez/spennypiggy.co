@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Intercom Direct Test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>Intercom Direct Test Page</h1>
+    <p>This loads Intercom immediately without lazy loading.</p>
+    <div id="status">Loading Intercom...</div>
+
+    <script>
+        // Direct Intercom integration (no lazy loading)
+        window.intercomSettings = {
+            app_id: "xomg14o9"
+        };
+
+        (function () {
+            var w = window;
+            var ic = w.Intercom;
+            if (typeof ic === "function") {
+                ic('reattach_activator');
+                ic('update', w.intercomSettings);
+            } else {
+                var d = document;
+                var i = function () { i.c(arguments); };
+                i.q = [];
+                i.c = function (args) { i.q.push(args); };
+                w.Intercom = i;
+                
+                function l() {
+                    var s = d.createElement("script");
+                    s.type = "text/javascript";
+                    s.async = true;
+                    s.src = "https://widget.intercom.io/widget/xomg14o9";
+                    var x = d.getElementsByTagName("script")[0];
+                    x.parentNode.insertBefore(s, x);
+                }
+                
+                if (w.attachEvent) {
+                    w.attachEvent("onload", l);
+                } else {
+                    w.addEventListener("load", l, false);
+                }
+            }
+        })();
+
+        // Test after 3 seconds
+        setTimeout(function() {
+            if (window.Intercom) {
+                window.Intercom('boot', window.intercomSettings);
+                window.Intercom('show');
+                document.getElementById('status').innerHTML = 'Intercom loaded and shown!';
+            } else {
+                document.getElementById('status').innerHTML = 'Intercom failed to load. Check console for errors.';
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
