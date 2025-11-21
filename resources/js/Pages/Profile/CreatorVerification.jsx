@@ -346,9 +346,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <strong className="text-red-800">
                             Profile Verification Rejected
                         </strong>
-                        <p className="text-sm  capitalize">
+                        <p className="text-sm capitalize">
                            {auth?.user?.profile_reject_reason}
-                        </p>
+                        </p> 
                     </div>
                 ) : (
                     ""

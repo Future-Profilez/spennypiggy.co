@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intercom Test - Simple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #8C52FF;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #7a45e6;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        .error {
+            background: #ffeaea;
+            border-color: #f44336;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Intercom Test Page</h1>
+        <p>This page tests the Intercom integration to see if the icon appears.</p>
+        
+        <div id="status" class="status">
+            ⏳ Loading Intercom...
+        </div>
+
+        <h2>Test Links:</h2>
+        <button class="test-button livechat" onclick="testIntercom()">Test Intercom Launcher</button>
+        <button class="test-button" onclick="showIntercom()">Show Messenger</button>
+        <button class="test-button" onclick="hideIntercom()">Hide Messenger</button>
+        
+        <h2>Console Logs:</h2>
+        <div id="logs" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+            Waiting for Intercom to load...
+        </div>
+    </div>
+
+    <script>
+        // Log function
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}<br>`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[Intercom Test] ${message}`);
+        }
+
+        // Test Intercom functions
+        function testIntercom() {
+            if (window.Intercom) {
+                log('Intercom is available! Testing launcher...');
+                window.Intercom('show');
+                log('Called Intercom("show")');
+            } else {
+                log('❌ Intercom not loaded yet');
+            }
+        }
+
+        function showIntercom() {
+            if (window.Intercom) {
+                window.Intercom('show');
+                log('Showed Intercom messenger');
+            } else {
+                log('❌ Intercom not available');
+            }
+        }
+
+        function hideIntercom() {
+            if (window.Intercom) {
+                window.Intercom('hide');
+                log('Hid Intercom messenger');
+            } else {
+                log('❌ Intercom not available');
+            }
+        }
+
+        // Configure Intercom
+        window.intercomSettings = {
+            api_base: "https://api-iam.intercom.io",
+            app_id: "xomg14o9",
+            custom_launcher_selector: ".livechat"
+        };
+
+        // Load Intercom script
+        (function() {
+            var w = window;
+            var ic = w.Intercom;
+            if (typeof ic === "function") {
+                ic('reattach_activator');
+                ic('update', w.intercomSettings);
+            } else {
+                var d = document;
+                var i = function() {
+                    i.c(arguments);
+                };
+                i.q = [];
+                i.c = function(args) {
+                    i.q.push(args);
+                };
+                w.Intercom = i;
+                var l = function() {
+                    var s = d.createElement('script');
+                    s.type = 'text/javascript';
+                    s.async = true;
+                    s.src = 'https://widget.intercom.io/widget/xomg14o9';
+                    var x = d.getElementsByTagName('script')[0];
+                    x.parentNode.insertBefore(s, x);
+                };
+                if (document.readyState === 'complete') {
+                    l();
+                } else if (w.attachEvent) {
+                    w.attachEvent('onload', l);
+                } else {
+                    w.addEventListener('load', l, false);
+                }
+            }
+        })();
+
+        // Wait for Intercom to load
+        let checkCount = 0;
+        const maxChecks = 20;
+        
+        function checkIntercom() {
+            checkCount++;
+            
+            if (window.Intercom && typeof window.Intercom === 'function') {
+                const status = document.getElementById('status');
+                status.innerHTML = '✅ Intercom loaded successfully!';
+                status.className = 'status';
+                log('Intercom script loaded and available');
+                
+                // Test if we can call Intercom
+                try {
+                    window.Intercom('update', window.intercomSettings);
+                    log('Successfully called Intercom("update")');
+                } catch (e) {
+                    log('❌ Error calling Intercom: ' + e.message);
+                }
+                
+                return;
+            }
+            
+            if (checkCount < maxChecks) {
+                log(`Checking for Intercom... (${checkCount}/${maxChecks})`);
+                setTimeout(checkIntercom, 1000);
+            } else {
+                const status = document.getElementById('status');
+                status.innerHTML = '❌ Intercom failed to load after 20 seconds';
+                status.className = 'status error';
+                log('❌ Intercom did not load within timeout period');
+            }
+        }
+
+        // Start checking
+        setTimeout(checkIntercom, 2000);
+    </script>
+</body>
+</html>

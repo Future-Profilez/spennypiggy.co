@@ -9,6 +9,7 @@ use App\Models\Shop;
 use App\Models\UserIntro;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\SocialLinks;
 use Exception;
 use App\Mail\PendingApprovalSummary;
 use Illuminate\Support\Facades\Log;
@@ -60,6 +61,8 @@ class PendingApprovalService
             'user_avatars' => $this->getPendingUserAvatars(),
             // New: Stripe Identity submissions awaiting admin review
             'stripe_identity' => $this->getPendingStripeIdentitySubmissions(),
+            // New: Social media links awaiting admin review
+            'social_media' => $this->getPendingSocialMediaLinks(),
         ];
     }
 
@@ -166,28 +169,15 @@ class PendingApprovalService
     {
         // Match admin counter logic for profile verification
         $creatorQuery = User::where('role', 1)
-            ->where('is_uk', 0)
-            ->where('suspended_account', 0)
-            ->where('profile_status_lock', 1) // Pending approval
-            ->where('is_subscribed', 1)
-            ->whereNotNull('avatar')
-            ->whereNotNull('bio')
-            ->whereHas('social_links', function ($query) {
-                $query->where(function ($q) {
-                    $q->whereNotNull('twitter')
-                      ->orWhereNotNull('instagram')
-                      ->orWhereNotNull('youtube')
-                      ->orWhereNotNull('twitch')
-                      ->orWhereNotNull('tumblr')
-                      ->orWhereNotNull('reddit')
-                      ->orWhereNotNull('discord')
-                      ->orWhereNotNull('onlyfans')
-                      ->orWhereNotNull('loyalfans')
-                      ->orWhereNotNull('fansly')
-                      ->orWhereNotNull('manyvids')
-                      ->orWhereNotNull('other');
-                });
-            });
+        ->where('is_uk', 0)
+        ->where('suspended_account', 0)
+        ->where('profile_status_lock', 1) // Pending approval
+        ->where('is_subscribed', 1)
+        ->whereNotNull('avatar')
+        ->whereNotNull('bio')
+        ->whereHas('social_links', function ($query) {
+            $query->where('status', 1);
+        });
 
         $gifterQuery = User::where('role', 0)
             ->where('is_uk', 0)
@@ -227,14 +217,42 @@ class PendingApprovalService
         return User::query()
             ->where('role', 1) // creators only
             ->where('suspended_account', 0) // not suspended
-            ->where('identity_status', 1) // user submitted/verified by Stripe
-            ->where(function ($q) {
+            ->where('identity_status', 1)
+            ->whereHas('social_links', function ($query) {
+                $query->where('status', 1);
+            })->where(function ($q) {
                 $q->whereNull('identity_admin_status')
                   ->orWhere('identity_admin_status', 0); // pending admin approval
-            })
-
-            ->orderBy('identity_verified_at', 'desc')
+            })->orderBy('identity_verified_at', 'desc')
             ->get(['id', 'uuid', 'name', 'username', 'email', 'identity_status', 'identity_admin_status', 'identity_verified_at']);
+    }
+
+    /**
+     * Get pending social media links awaiting admin review
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPendingSocialMediaLinks()
+    {
+        return SocialLinks::where('status', 0) // 0 = pending approval
+            ->where(function ($query) {
+                $query->whereNotNull('twitter')->where('twitter', '!=', '')
+                    ->orWhereNotNull('instagram')->where('instagram', '!=', '')
+                    ->orWhereNotNull('facebook')->where('facebook', '!=', '')
+                    ->orWhereNotNull('youtube')->where('youtube', '!=', '')
+                    ->orWhereNotNull('twitch')->where('twitch', '!=', '')
+                    ->orWhereNotNull('tumblr')->where('tumblr', '!=', '')
+                    ->orWhereNotNull('reddit')->where('reddit', '!=', '')
+                    ->orWhereNotNull('discord')->where('discord', '!=', '')
+                    ->orWhereNotNull('onlyfans')->where('onlyfans', '!=', '')
+                    ->orWhereNotNull('loyalfans')->where('loyalfans', '!=', '')
+                    ->orWhereNotNull('fansly')->where('fansly', '!=', '')
+                    ->orWhereNotNull('manyvids')->where('manyvids', '!=', '')
+                    ->orWhereNotNull('other')->where('other', '!=', '');
+            })
+            ->with('user:id,name,username,email')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'uuid', 'user_id', 'twitter', 'instagram', 'facebook', 'youtube', 'twitch', 'tumblr', 'reddit', 'discord', 'onlyfans', 'loyalfans', 'fansly', 'manyvids', 'other', 'created_at']);
     }
 
     /**

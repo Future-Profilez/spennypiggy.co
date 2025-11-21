@@ -40,4 +40,12 @@ class SocialLinks extends Model
         'updated_at',
         'deleted_at'
     ];
+
+    /**
+     * Get the user that owns the social links.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
