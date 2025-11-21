@@ -220,14 +220,9 @@ class AuthenticatedSessionController extends Controller
         // Get Stripe capabilities if user is a creator (for all pages)
         if ($user->role == 1 && !empty($user->account_id)) {
             [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
-        }
-<<<<<<< HEAD
-
-=======
-        
+        }        
         // Always load social links so they are available to all dashboard tabs/pages
         $sociallinks = $user->social_links;
->>>>>>> 1e129cea40d774c5915c4ea4a0cfc5790cfbe693
         if($page == 'about'){
             $userIntro = $user->intro;
         }

@@ -140,29 +140,65 @@ class StripeWebhookController extends Controller
      */
     private function checkForFraud($session)
     {
-        // Analyze the session details for fraud
-        $lastError = $session->last_error;
-        $verificationChecks = $session->verification_checks;
-
-        if ($lastError) {
-            Log::warning('Fraud detected based on last error', ['error' => $lastError]);
-            return true; // Fraud detected due to error
+        // Check for last error
+        if ($session->last_error) {
+            Log::warning('Fraud detected based on last error', ['error' => $session->last_error]);
+            return true;
         }
 
-        // Check if any verification checks failed
-        if ($verificationChecks) {
-            foreach ($verificationChecks as $check) {
+        // Check failed verification checks
+        if (!empty($session->verification_checks)) {
+            foreach ($session->verification_checks as $check) {
                 if ($check->status !== 'passed') {
                     Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
-                    return true; // Fraud detected due to failed checks
+                    return true;
                 }
             }
         }
 
-        // Additional fraud detection logic can go here (e.g., comparing with other systems)
+        // Check document type (allow only passport)
+        $report = $session->last_verification_report->document ?? null;
 
-        return false; // No fraud detected
+        if ($report && isset($report->type)) {
+            if ($report->type !== 'passport') {
+                Log::warning('Fraud detected: wrong document type uploaded', [
+                    'uploaded_type' => $report->type
+                ]);
+                return true;
+            }
+        } else {
+            Log::warning('Fraud detected: No document found in verification report');
+            return true;
+        }
+
+        return false;
     }
+
+    // private function checkForFraud($session)
+    // {
+    //     // Analyze the session details for fraud
+    //     $lastError = $session->last_error;
+    //     $verificationChecks = $session->verification_checks;
+
+    //     if ($lastError) {
+    //         Log::warning('Fraud detected based on last error', ['error' => $lastError]);
+    //         return true; // Fraud detected due to error
+    //     }
+
+    //     // Check if any verification checks failed
+    //     if ($verificationChecks) {
+    //         foreach ($verificationChecks as $check) {
+    //             if ($check->status !== 'passed') {
+    //                 Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
+    //                 return true; // Fraud detected due to failed checks
+    //             }
+    //         }
+    //     }
+
+    //     // Additional fraud detection logic can go here (e.g., comparing with other systems)
+
+    //     return false; // No fraud detected
+    // }
 
     /**
      * Handle Stripe Webhook for all subscription updates
@@ -661,7 +697,6 @@ class StripeWebhookController extends Controller
 
             // Send renewal notification email if needed
             $this->sendSubscriptionRenewalEmail($wishSubscription, $invoiceData);
-
         } catch (\Exception $e) {
             Log::error('Failed to process wish subscription renewal', [
                 'subscription_id' => $wishSubscription->stripe_id ?? null,
@@ -702,7 +737,6 @@ class StripeWebhookController extends Controller
                 'amount' => $renewalAmount,
                 'creator_name' => $wishSubscription->wish_item->user->name
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to send subscription renewal email', [
                 'subscription_id' => $wishSubscription->stripe_id,
@@ -787,8 +821,7 @@ class StripeWebhookController extends Controller
                         'invoice_id' => $invoiceData->id,
                         'billing_reason' => $invoiceData->billing_reason ?? null,
                         'deliverable_url' => !empty($wishSubscription->wish_item->content_file) ?
-                            $wishSubscription->wish_item->content_file_url :
-                            ($wishSubscription->wish_item->reward_url ?? null)
+                            $wishSubscription->wish_item->content_file_url : ($wishSubscription->wish_item->reward_url ?? null)
                     ])
                 ]);
 
@@ -830,7 +863,6 @@ class StripeWebhookController extends Controller
                     'wish_item_id' => $wishSubscription->wish_item->id
                 ]);
             }
-
         } catch (\Exception $e) {
             Log::error('Failed to process wish subscription invoice.paid', [
                 'subscription_id' => $wishSubscription->stripe_id,
@@ -1045,27 +1077,27 @@ class StripeWebhookController extends Controller
                 }
                 break;
 
-                case 'review.closed':
-                    $review = $event->data->object;
+            case 'review.closed':
+                $review = $event->data->object;
 
-                    if ($review->reason === 'approved') {
-                        $paymentIntentId = $review->payment_intent;
+                if ($review->reason === 'approved') {
+                    $paymentIntentId = $review->payment_intent;
 
-                        if ($paymentIntentId) {
-                            try {
-                                $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+                    if ($paymentIntentId) {
+                        try {
+                            $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
 
-                                // Only capture if it's still requires_capture
-                                if ($paymentIntent->status === 'requires_capture') {
-                                    $stripe->paymentIntents->capture($paymentIntentId);
-                                    Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
-                                }
-                            } catch (\Exception $e) {
-                                Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+                            // Only capture if it's still requires_capture
+                            if ($paymentIntent->status === 'requires_capture') {
+                                $stripe->paymentIntents->capture($paymentIntentId);
+                                Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
                             }
+                        } catch (\Exception $e) {
+                            Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
                         }
                     }
-                    break;
+                }
+                break;
 
             case 'invoice.payment_failed':
                 $subs->status = 'failed';
@@ -1203,7 +1235,6 @@ class StripeWebhookController extends Controller
             ]);
 
             return $deliverable;
-
         } catch (\Exception $e) {
             Log::error('Failed to create bill renewal deliverable', [
                 'error' => $e->getMessage(),
@@ -1233,7 +1264,7 @@ class StripeWebhookController extends Controller
                 ->whereNotNull('certificate_url')
                 ->whereNotNull('payment_intent_id')
                 ->get()
-                ->filter(function($deliverable) {
+                ->filter(function ($deliverable) {
                     // Check if Stripe metadata hasn't been updated yet
                     $metadata = json_decode($deliverable->metadata, true) ?? [];
                     $alreadyUpdated = $metadata['stripe_metadata_updated'] ?? false;
@@ -1252,7 +1283,7 @@ class StripeWebhookController extends Controller
                     $eventPaymentIntentId = $data->payment_intent ?? null;
 
                     $isRelated = ($sessionId && $sessionId === $eventSessionId) ||
-                                ($paymentIntentId && $paymentIntentId === $eventPaymentIntentId);
+                        ($paymentIntentId && $paymentIntentId === $eventPaymentIntentId);
 
                     if ($isRelated) {
                         Log::info('StripeWebhookController: Found related support payment deliverable needing metadata update', [
@@ -1283,7 +1314,6 @@ class StripeWebhookController extends Controller
             if ($readyDeliverables->count() === 0) {
                 Log::info('StripeWebhookController: No support payment deliverables found needing metadata updates');
             }
-
         } catch (\Exception $e) {
             Log::error('StripeWebhookController: Error in handleSupportPaymentDeliverableReady', [
                 'error' => $e->getMessage(),
