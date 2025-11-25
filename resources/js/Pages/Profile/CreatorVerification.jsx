@@ -133,7 +133,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <div className="step-title flex max-w-[390px] pe-3">
                             <div
                                 className={`check-icon me-2 pt-1 ${
-                                    hasAnySocialMedia ? "checked" : ""
+                                    hasAnySocialMedia && slinks?.status !== 2 ? "checked" : ""
                                 }`}
                             >
                                 <div
@@ -143,104 +143,25 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 />
                             </div>
                             <div>
-                                <h2 className="text-dark font-bold">
-                                    Add Social Handles
-                                </h2>
-                                <p className="text-gray-500 text-[14px]">
+                                <h2 className="text-dark font-bold">Add Social Handles</h2>
+                                <p className="text-gray-500 text-[14px]" >
                                     Update at least one social media handle to help
-                                    fans connect with you. {slinks?.status !== 1 ? <span className="text-red-500 text-[14px]">
+                                    fans connect with you. {slinks?.status !== 1 ? <span className="text-pink text-[14px]">
                                     It must show an active account. Older than 6 months.
                                 </span> : ''}
                                 </p>
                             </div>
                         </div>
                         {slinks?.status !== 1 && <Social links={slinks} />}
-
-
                     </div>
-                    {slinks?.status == 2 ? <p className="px-3 text-red-500 text-sm mt-2">Social Media Handle Update Request : Rejected due to {slinks?.reason ? slinks?.reason : ""}</p> : null}
-                    {hasAnySocialMedia && slinks?.status == 0 ? <p className="px-3 text-yellow-500 text-sm mt-2"><strong>Verification</strong> : Social Media Handle are under review. Please move to the next step.</p> : null}
+
+                    
+                    {hasAnySocialMedia && slinks?.status == 0 ? 
+                        <p className="px-3 text-yellow-500 text-sm mt-2">
+                            <strong>Verification</strong> : Social Media Handle are under review. Please move to the next step.
+                        </p> : null}
                 </div>
 
-                {/* Step 3: Avatar */}
-                {auth?.user?.avatar ? (
-                    auth?.user?.avatar_approved == 0 ? (
-                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon me-2 pt-1`}>
-                                    <div
-                                        dangerouslySetInnerHTML={{
-                                            __html: checkedItem,
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <h2 className="text-dark font-bold">
-                                        Avatar Approval Pending
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Your profile picture is currently under
-                                        review.
-                                    </p>
-                                </div>
-                            </div>
-                            <BsStopwatch color="#dd9100" size={"28px"} />
-                        </div>
-                    ) : (
-                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon checked me-2 pt-1`}>
-                                    <div
-                                        dangerouslySetInnerHTML={{
-                                            __html: checkedItem,
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <h2 className="text-dark font-bold">
-                                        Profile Avatar Approved
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Your profile picture has been approved.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                ) : (
-                    <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
-                            <div
-                                className={`check-icon me-2 pt-1 ${
-                                    auth?.user?.avatar_approved == 1
-                                        ? "checked"
-                                        : ""
-                                }`}
-                            >
-                                <div
-                                    dangerouslySetInnerHTML={{
-                                        __html: checkedItem,
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <h2 className="text-dark font-bold">
-                                    Update Profile Picture
-                                </h2>
-                                <p className="text-gray-500 text-[14px]">
-                                    Add a profile picture. This is required.
-                                </p>
-                            </div>
-                        </div>
-                        <EditProfile
-                            text="Update Avatar"
-                            updateProfileSteps={updateProfileSteps}
-                            user={user}
-                            classes="updatebtn whitespace-nowrap text-pink"
-                            global_currency={global_currency}
-                        />
-                    </div>
-                )}
 
                 {/* Step 4: Bio */}
                 {auth?.user?.bio ? (
@@ -322,6 +243,86 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
                 )}
 
+                {/* Step 3: Avatar */}
+                {auth?.user?.avatar ? (
+                    auth?.user?.avatar_approved == 0 ? (
+                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
+                                <div className={`check-icon me-2 pt-1`}>
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: checkedItem,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Avatar Approval Pending
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Your profile picture is currently under
+                                        review.
+                                    </p>
+                                </div>
+                            </div>
+                            <BsStopwatch color="#dd9100" size={"28px"} />
+                        </div>
+                    ) : (
+                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
+                                <div className={`check-icon checked me-2 pt-1`}>
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: checkedItem,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Profile Avatar Approved
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Your profile picture has been approved.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                ) : (
+                    <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                        <div className="step-title flex max-w-[390px] pe-3">
+                            <div
+                                className={`check-icon me-2 pt-1 ${
+                                    auth?.user?.avatar_approved == 1
+                                        ? "checked"
+                                        : ""
+                                }`}
+                            >
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: checkedItem,
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <h2 className="text-dark font-bold">
+                                    Update Profile Picture
+                                </h2>
+                                <p className="text-gray-500 text-[14px]">
+                                    Add a profile picture. This is required.
+                                </p>
+                            </div>
+                        </div>
+                        <EditProfile
+                            text="Update Avatar"
+                            updateProfileSteps={updateProfileSteps}
+                            user={user}
+                            classes="updatebtn whitespace-nowrap text-pink"
+                            global_currency={global_currency}
+                        />
+                    </div>
+                )}
+
                 {/* Status Message */}
                 {auth?.user?.is_subscribed == 1 &&
                 auth?.user?.bio &&
@@ -336,6 +337,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             under review. Please wait for the review to
                             complete.
                         </p>
+
+                        {slinks?.status == 2 ? <p className="text-lg text-red-500 text-sm mt-2">Social Media Handle Update Request : Rejected due to {slinks?.reason ? slinks?.reason : ""}</p> : null}
+
                     </div>
                 ) : (
                     ""
@@ -349,6 +353,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <p className="text-sm capitalize">
                            {auth?.user?.profile_reject_reason}
                         </p> 
+                        <Link href={route('update.profile.lock.status')} method='get'  >Submit For Re-Verification</Link>
                     </div>
                 ) : (
                     ""

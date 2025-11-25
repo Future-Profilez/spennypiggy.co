@@ -124,8 +124,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function updateProfile(Request $request)
-    {
+    public function updateProfile(Request $request) {
 
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
@@ -136,9 +135,6 @@ class ProfileController extends Controller
         // if($request->min_surprise_amount < 5){
         //     return redirect()->back()->with("error", "Please set the minimum amount greater than 5.");
         // }
-
-
-
 
         $checkdata = Helpers::checkBlockData($request);
         if ($checkdata == 1) {
@@ -173,9 +169,6 @@ class ProfileController extends Controller
                     'social' => $request->social_handle !== $user->social_handle,
                 ];
 
-                // Only send email if:
-                // - Bio was updated AND has content (not empty)
-                // - OR social handle was updated
                 if (($updatedFields['bio'] && !empty($request->bio)) || $updatedFields['social']) {
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
@@ -190,10 +183,8 @@ class ProfileController extends Controller
             if (!empty($avatar)) {
                 $user->avatar = $avatar['uuid'] ?? null;
                 $user->avatar_approved = 0;
-                $user->profile_status_lock = 1;
+                // $user->profile_status_lock = 1;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
-
-                // user profile status column update when avatar update
                 $userProfileStatus->user_profile_status = 0;
                 $userProfileStatus->save();
             }
@@ -261,6 +252,7 @@ class ProfileController extends Controller
         try {
             $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
             if ($user->role == 1) {
+                $user->profile_status_lock = 1;
                 $user->profile_status_lock = 1;
                 $user->save();
             }

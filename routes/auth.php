@@ -100,7 +100,6 @@ Route::get('discover/creators/categories', [WishitemController::class, 'all_crea
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
 
-
 Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -152,7 +151,6 @@ Route::middleware('auth')->group(function () {
             Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
         });
-        
         // Categories and basic functionality
         Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
         Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
@@ -162,7 +160,6 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
-
             // gifter card verification routes
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
