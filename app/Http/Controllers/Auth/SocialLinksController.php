@@ -28,7 +28,6 @@ class SocialLinksController extends Controller
             if (Helpers::checkBlockData($request) === 1) {
                 return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute, dick, goddess, master, mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
             }
-
             $data = [
                 'whoyouinto' => $request->whoyouinto,
                 'twitter'    => $request->twitter,
@@ -51,12 +50,14 @@ class SocialLinksController extends Controller
                 'status' => 0,
                 'reason' => $request->has('reason') ? $request->reason : null,
             ];
-            $payload = array_filter(array_merge($data, $moderation), fn($v) => $v !== null);
 
+            $payload = array_filter(array_merge($data, $moderation), fn($v) => $v !== null);
             // Add UUID and created_at only if creating
             $socialLink = SocialLinks::updateOrCreate(
                 ['user_id' => $userId],
                 array_merge($payload, [
+                    // 'status'       => 1,
+                    // 'reason'       => null,
                     'uuid'       => Uuid::uuid4(),
                     'created_at' => now(),
                 ])
