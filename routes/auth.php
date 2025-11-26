@@ -366,6 +366,9 @@ Route::middleware('auth')->group(function () {
 
         // stripe identity verification routes
         Route::get('/stripe/identity-verification', function () {
+            $user = Auth::user();
+            $user->identity_admin_status = 0;
+            $user->save();
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,
                 'message' => 'Please complete your Stripe identity verification.',
