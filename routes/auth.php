@@ -116,14 +116,14 @@ Route::middleware('auth')->group(function () {
         Route::post('save_wish_item', [WishitemController::class, 'addWishItem'])->name('save_wish_item');
         Route::post('/update_wish_item/{uuid}', [WishitemController::class, 'updateWishItem'])->name('update_wish_item');
         Route::get('/delete-wish-item/{uuid}', [WishitemController::class, 'deleteWishItem'])->name('delete_wish_item');
-        
+
         // Bills - accessible without subscription
         Route::prefix("bill")->name("bill.")->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
         });
-        
+
         // Memberships - accessible without subscription
         Route::prefix("membership")->name("membership.")->group(function () {
             Route::post('save', [MembershipController::class, 'membershipLevelSave'])->name('save');
@@ -132,7 +132,7 @@ Route::middleware('auth')->group(function () {
             Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
         });
-        
+
         // Shop items - accessible without subscription
         Route::prefix('shop')->group(function () {
             Route::post('/add', [ShopsController::class, 'addShopItems'])->name('add-shop');
@@ -141,7 +141,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/delete/{uuid}', [ShopsController::class, 'deleteShop'])->name('delete-shop');
             Route::get('/deactivate/{uuid}', [ShopsController::class, 'deactivateShop'])->name('deactivate-shop');
         });
-        
+
         // Posts - accessible without subscription
         Route::prefix("post")->name("post.")->group(function () {
             Route::post('save', [PostsController::class, 'savePost'])->name('save');
@@ -183,127 +183,127 @@ Route::middleware('auth')->group(function () {
 
 
 
-    Route::get('account', function () {
-        $user = Auth::user();
-        $auto_tweet = $user->auto_tweet == 1;
-        $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
+            Route::get('account', function () {
+                $user = Auth::user();
+                $auto_tweet = $user->auto_tweet == 1;
+                $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
-        // Find the currently active subscription period
-        $now = Carbon::now();
-        $subscription = MonthlyCharge::where('user_id', $user->id)
-            ->where(function($query) use ($now) {
-                $query->where(function($q) use ($now) {
-                    // Active subscription period
-                    $q->whereDate('current_start_subscription_date', '<=', $now)
-                      ->whereDate('current_end_subscription_date', '>=', $now);
-                })->orWhere(function($q) use ($now) {
-                    // Active trial period
-                    $q->whereDate('current_start_trial_date', '<=', $now)
-                      ->whereDate('current_end_trial_date', '>=', $now);
-                });
-            })
-            // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
-            ->orderByDesc('current_start_subscription_date')
-            ->first();
-        
-        // If no active period found, get the most recent one
-        if (!$subscription) {
-            $subscription = MonthlyCharge::where('user_id', $user->id)
-                ->orderByDesc('current_start_subscription_date')
-                ->first();
-        }
+                // Find the currently active subscription period
+                $now = Carbon::now();
+                $subscription = MonthlyCharge::where('user_id', $user->id)
+                    ->where(function ($query) use ($now) {
+                        $query->where(function ($q) use ($now) {
+                            // Active subscription period
+                            $q->whereDate('current_start_subscription_date', '<=', $now)
+                                ->whereDate('current_end_subscription_date', '>=', $now);
+                        })->orWhere(function ($q) use ($now) {
+                            // Active trial period
+                            $q->whereDate('current_start_trial_date', '<=', $now)
+                                ->whereDate('current_end_trial_date', '>=', $now);
+                        });
+                    })
+                    // Order by start date DESC to get the newest period first (handles overlapping periods on transition dates)
+                    ->orderByDesc('current_start_subscription_date')
+                    ->first();
 
-        // Get complete subscription history for the user
-        $subscription_history = MonthlyCharge::where('user_id', $user->id)
-            ->orderByDesc('current_start_subscription_date')
-            ->get()
-            ->map(function ($charge) {
-                return [
-                    'id' => $charge->id,
-                    'uuid' => $charge->uuid,
-                    'stripe_id' => $charge->stripe_id,
-                    'amount' => $charge->amount ?? 0,
-                    'currency' => $charge->currency ?? 'GBP',
-                    'status' => $charge->status ?? 'pending',
-                    'current_start_trial_date' => $charge->current_start_trial_date,
-                    'current_end_trial_date' => $charge->current_end_trial_date,
-                    'current_start_subscription_date' => $charge->current_start_subscription_date,
-                    'current_end_subscription_date' => $charge->current_end_subscription_date,
-                    'upcoming_payment' => $charge->upcoming_payment,
-                    'created_at' => $charge->created_at,
-                    'updated_at' => $charge->updated_at,
+                // If no active period found, get the most recent one
+                if (!$subscription) {
+                    $subscription = MonthlyCharge::where('user_id', $user->id)
+                        ->orderByDesc('current_start_subscription_date')
+                        ->first();
+                }
+
+                // Get complete subscription history for the user
+                $subscription_history = MonthlyCharge::where('user_id', $user->id)
+                    ->orderByDesc('current_start_subscription_date')
+                    ->get()
+                    ->map(function ($charge) {
+                        return [
+                            'id' => $charge->id,
+                            'uuid' => $charge->uuid,
+                            'stripe_id' => $charge->stripe_id,
+                            'amount' => $charge->amount ?? 0,
+                            'currency' => $charge->currency ?? 'GBP',
+                            'status' => $charge->status ?? 'pending',
+                            'current_start_trial_date' => $charge->current_start_trial_date,
+                            'current_end_trial_date' => $charge->current_end_trial_date,
+                            'current_start_subscription_date' => $charge->current_start_subscription_date,
+                            'current_end_subscription_date' => $charge->current_end_subscription_date,
+                            'upcoming_payment' => $charge->upcoming_payment,
+                            'created_at' => $charge->created_at,
+                            'updated_at' => $charge->updated_at,
+                        ];
+                    });
+
+                $site_subscription = [
+                    'status' => 'INACTIVE',
+                    'trial_status' => null,
+                    'trial_start' => null,
+                    'trial_end_in' => null,
+                    'subscription_start' => null,
+                    'subscription_end' => null,
+                    'subscription_renew_in' => null,
+                    'next_payment_date' => null,
+                    'expired_at' => null,
                 ];
+
+                if ($subscription) {
+                    $trial_start = $subscription->current_start_trial_date;
+                    $trial_end = $subscription->current_end_trial_date;
+                    $subscription_start = $subscription->current_start_subscription_date;
+                    $subscription_end = $subscription->current_end_subscription_date;
+
+                    $now = Carbon::now();
+                    $trialStartCarbon = $trial_start ? Carbon::parse($trial_start) : null;
+                    $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
+                    $subStartCarbon = $subscription_start ? Carbon::parse($subscription_start) : null;
+                    $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
+
+                    $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
+                    $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
+                    $isSubscriptionActive = in_array($subscription->status, ['paid', 'active', 'renew']) && $subEndCarbon && $now->lessThan($subEndCarbon);
+                    $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
+
+                    // Format output
+                    $site_subscription['trial_start'] = $trialStartCarbon ? $trialStartCarbon->format('d F Y') : null;
+                    $site_subscription['trial_end_in'] = $trialEndCarbon ? $trialEndCarbon->diffForHumans($now) : null;
+                    $site_subscription['trial_status'] = $isTrialOngoing ? 'active' : 'ended';
+
+                    $site_subscription['subscription_start'] = $subStartCarbon ? $subStartCarbon->format('d F Y') : null;
+                    $site_subscription['subscription_end'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+                    $site_subscription['subscription_renew_in'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+                    $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
+
+                    $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
+
+                    if ($subscription && $subscription->status === 'trialing') {
+                        $site_subscription['status'] = 'FREE_TRIAL';
+                    } elseif ($isSubscriptionActive) {
+                        $site_subscription['status'] = 'ACTIVE';
+                    } elseif ($isTrialOngoing && !$isSubscriptionActive) {
+                        $site_subscription['status'] = 'FREE_TRIAL';
+                    } elseif ($isExpired || $user->is_subscribed == 0) {
+                        $site_subscription['status'] = 'EXPIRED';
+                    }
+                } else {
+                    $site_subscription['status'] = 'INACTIVE';
+                }
+
+                return Inertia::render('accountsetting/Accountsetting', [
+                    'auto_tweet' => $auto_tweet,
+                    'site_subscription' => $site_subscription,
+                    'subscription_history' => $subscription_history,
+                    'pwa_notification_details' => $pwaNotificationDetails ?? null,
+                    'subscription_status' => $user->subscription_status, // Add numeric status for debugging
+                ]);
             });
 
-        $site_subscription = [
-            'status' => 'INACTIVE',
-            'trial_status' => null,
-            'trial_start' => null,
-            'trial_end_in' => null,
-            'subscription_start' => null,
-            'subscription_end' => null,
-            'subscription_renew_in' => null,
-            'next_payment_date' => null,
-            'expired_at' => null,
-        ];
-
-        if ($subscription) {
-            $trial_start = $subscription->current_start_trial_date;
-            $trial_end = $subscription->current_end_trial_date;
-            $subscription_start = $subscription->current_start_subscription_date;
-            $subscription_end = $subscription->current_end_subscription_date;
-
-            $now = Carbon::now();
-            $trialStartCarbon = $trial_start ? Carbon::parse($trial_start) : null;
-            $trialEndCarbon = $trial_end ? Carbon::parse($trial_end) : null;
-            $subStartCarbon = $subscription_start ? Carbon::parse($subscription_start) : null;
-            $subEndCarbon = $subscription_end ? Carbon::parse($subscription_end) : null;
-
-            $isTrialOngoing = $trialEndCarbon && $now->lessThan($trialEndCarbon);
-            $isTrialEnded = $trialEndCarbon && $now->greaterThanOrEqualTo($trialEndCarbon);
-            $isSubscriptionActive = in_array($subscription->status, ['paid', 'active', 'renew']) && $subEndCarbon && $now->lessThan($subEndCarbon);
-            $isExpired = $subEndCarbon && $now->greaterThanOrEqualTo($subEndCarbon);
-
-            // Format output
-            $site_subscription['trial_start'] = $trialStartCarbon ? $trialStartCarbon->format('d F Y') : null;
-            $site_subscription['trial_end_in'] = $trialEndCarbon ? $trialEndCarbon->diffForHumans($now) : null;
-            $site_subscription['trial_status'] = $isTrialOngoing ? 'active' : 'ended';
-
-            $site_subscription['subscription_start'] = $subStartCarbon ? $subStartCarbon->format('d F Y') : null;
-            $site_subscription['subscription_end'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-            $site_subscription['subscription_renew_in'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-            $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
-
-            $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-
-            if ($subscription && $subscription->status === 'trialing') {
-                $site_subscription['status'] = 'FREE_TRIAL';
-            } elseif ($isSubscriptionActive) {
-                $site_subscription['status'] = 'ACTIVE';
-            } elseif ($isTrialOngoing && !$isSubscriptionActive) {
-                $site_subscription['status'] = 'FREE_TRIAL';
-            } elseif ($isExpired || $user->is_subscribed == 0) {
-                $site_subscription['status'] = 'EXPIRED';
-            }
-        } else {
-            $site_subscription['status'] = 'INACTIVE';
-        }
-
-        return Inertia::render('accountsetting/Accountsetting', [
-            'auto_tweet' => $auto_tweet,
-            'site_subscription' => $site_subscription,
-            'subscription_history' => $subscription_history,
-            'pwa_notification_details' => $pwaNotificationDetails ?? null,
-            'subscription_status' => $user->subscription_status, // Add numeric status for debugging
-        ]);
-    });
 
 
 
 
 
-
-            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content'); 
+            Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
             Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
@@ -366,9 +366,12 @@ Route::middleware('auth')->group(function () {
 
         // stripe identity verification routes
         Route::get('/stripe/identity-verification', function () {
-            $user = Auth::user();
-            $user->identity_admin_status = 0;
-            $user->save();
+            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+                $user = Auth::user();
+                $user->identity_admin_status = 0;
+                $user->save();
+            }
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,
                 'message' => 'Please complete your Stripe identity verification.',
@@ -473,7 +476,7 @@ Route::prefix('shop')->group(function () {
     Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
 });
 
-    Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
+Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');
 
 Route::get('/success-checkout/{id}', [CheckoutController::class, 'successCheckout'])->name('checkout.success');
 
