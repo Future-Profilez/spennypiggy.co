@@ -75,6 +75,7 @@
         "@magicbell/webpush": "^2.1.0",
         "@midudev/tailwind-animations": "^0.2.0",
         "@reduxjs/toolkit": "^1.9.7",
+        "@rollup/rollup-win32-x64-msvc": "^4.52.5",
         "@rye-api/rye-sdk": "^1.4.2",
         "@sentry/react": "^9.39.0",
         "@sentry/replay": "^7.116.0",

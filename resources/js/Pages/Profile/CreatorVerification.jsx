@@ -18,7 +18,7 @@ import { FaLock } from "react-icons/fa";
 import { empty } from "@apollo/client";
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
-    
+
     const { auth, user, global_currency, slinks } = usePage().props;
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);

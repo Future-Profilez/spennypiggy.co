@@ -149,7 +149,7 @@ class RegisteredUserController extends Controller
             ]);
             $user->refresh();
             $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
-            
+
             if(!empty($spennyPiggyAcc)){
                 $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
                 if ($user) {

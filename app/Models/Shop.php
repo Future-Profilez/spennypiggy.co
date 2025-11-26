@@ -125,7 +125,7 @@ class Shop extends Model
         $baseUrl = "https://ucarecdn.com/" . $this->image;
         $sizes = [320, 640, 768, 1024, 1280, 1920];
         $formats = ['original', 'webp', 'avif'];
-        
+
         $data = [
             'original' => $baseUrl . '/-/format/jpeg/-/quality/85/',
             'formats' => [

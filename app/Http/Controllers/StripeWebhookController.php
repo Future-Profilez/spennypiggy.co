@@ -140,29 +140,65 @@ class StripeWebhookController extends Controller
      */
     private function checkForFraud($session)
     {
-        // Analyze the session details for fraud
-        $lastError = $session->last_error;
-        $verificationChecks = $session->verification_checks;
-
-        if ($lastError) {
-            Log::warning('Fraud detected based on last error', ['error' => $lastError]);
-            return true; // Fraud detected due to error
+        // Check for last error
+        if ($session->last_error) {
+            Log::warning('Fraud detected based on last error', ['error' => $session->last_error]);
+            return true;
         }
 
-        // Check if any verification checks failed
-        if ($verificationChecks) {
-            foreach ($verificationChecks as $check) {
+        // Check failed verification checks
+        if (!empty($session->verification_checks)) {
+            foreach ($session->verification_checks as $check) {
                 if ($check->status !== 'passed') {
                     Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
-                    return true; // Fraud detected due to failed checks
+                    return true;
                 }
             }
         }
 
-        // Additional fraud detection logic can go here (e.g., comparing with other systems)
+        // Check document type (allow only passport)
+        $report = $session->last_verification_report->document ?? null;
 
-        return false; // No fraud detected
+        if ($report && isset($report->type)) {
+            if ($report->type !== 'passport') {
+                Log::warning('Fraud detected: wrong document type uploaded', [
+                    'uploaded_type' => $report->type
+                ]);
+                return true;
+            }
+        } else {
+            Log::warning('Fraud detected: No document found in verification report');
+            return true;
+        }
+
+        return false;
     }
+
+    // private function checkForFraud($session)
+    // {
+    //     // Analyze the session details for fraud
+    //     $lastError = $session->last_error;
+    //     $verificationChecks = $session->verification_checks;
+
+    //     if ($lastError) {
+    //         Log::warning('Fraud detected based on last error', ['error' => $lastError]);
+    //         return true; // Fraud detected due to error
+    //     }
+
+    //     // Check if any verification checks failed
+    //     if ($verificationChecks) {
+    //         foreach ($verificationChecks as $check) {
+    //             if ($check->status !== 'passed') {
+    //                 Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
+    //                 return true; // Fraud detected due to failed checks
+    //             }
+    //         }
+    //     }
+
+    //     // Additional fraud detection logic can go here (e.g., comparing with other systems)
+
+    //     return false; // No fraud detected
+    // }
 
     /**
      * Handle Stripe Webhook for all subscription updates
@@ -222,7 +258,7 @@ class StripeWebhookController extends Controller
                 Log::info("Handling Invoice Paid");
                 $this->handleInvoicePaid($data, $metadata);
                 break;
-                
+
             case 'invoice.payment_succeeded':
                 Log::info("Handling Invoice Payment Succeeded");
                 $this->handleInvoicePaymentSucceeded($data, $metadata);
@@ -324,7 +360,7 @@ class StripeWebhookController extends Controller
         $wishItem = null;
         $deliverableType = $metadata->deliverable_type ?? 'media_bundle';
         $contentUrl = null;
-        
+
         if (isset($metadata->wish_id)) {
             $wishItem = \App\Models\WishItem::find($metadata->wish_id);
             if ($wishItem && $wishItem->content_file) {
@@ -335,7 +371,7 @@ class StripeWebhookController extends Controller
 
         // Get payment details to retrieve message and anonymous data
         $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
-        
+
         // Create deliverable record with proper fields
         $deliverable = \App\Models\Deliverable::create([
             'uuid' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
@@ -387,17 +423,17 @@ class StripeWebhookController extends Controller
             if ($payment) {
                 // Check if user exists and has is_uk = 0 (to match the relationship constraint)
                 $user = \App\Models\User::where('id', $metadata->user_id)->where('is_uk', 0)->first();
-                
+
                 if ($user) {
                     $currency = \App\Models\Currency::where('iso', strtoupper($session->currency))->first();
                     $currencySymbol = $currency ? $currency->symbol : '£';
-                    
+
                     Log::info("Skipping CheckoutMailToUser dispatch in webhook - already handled by checkout controller", [
                         'payment_id' => $payment->id,
                         'user_id' => $metadata->user_id,
                         'currency' => $currencySymbol
                     ]);
-                    
+
                     // \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
                     // NOTE: Disabled to prevent duplicate emails - checkout controller handles this
                 } else {
@@ -468,13 +504,13 @@ class StripeWebhookController extends Controller
         $this->createBillRenewalDeliverable($newSubs);
 
         SendRenewMail::dispatch($array, 'renew', 'bill');
-        
+
         // Dispatch content delivery email if bill has content file
         if (!empty($newSubs->bill->content_file)) {
             // Get currency symbol for email
             $currency = \App\Models\Currency::where('iso', strtoupper($newSubs->currency))->first();
             $currencySymbol = $currency ? $currency->symbol : '£';
-            
+
             \App\Jobs\BillContentDeliveryMail::dispatch($newSubs, $currencySymbol);
             \Log::info('StripeWebhookController: Content delivery email dispatched for bill renewal', [
                 'bill_payment_id' => $newSubs->id,
@@ -554,7 +590,7 @@ class StripeWebhookController extends Controller
     public function handleInvoicePaymentSucceeded($data, $metadata)
     {
         $subscriptionId = $data->subscription ?? null;
-        
+
         if (!$subscriptionId) {
             Log::info("Invoice payment succeeded but no subscription ID found", ['invoice_id' => $data->id]);
             return;
@@ -567,20 +603,20 @@ class StripeWebhookController extends Controller
             'amount' => $data->amount_paid ?? 0,
             'metadata' => $metadata
         ]);
-        
+
         // Check if this is a wish item subscription renewal
         $wishSubscription = WishItemSubscription::where('stripe_id', $subscriptionId)
             ->where('status', 'paid')
             ->first();
-        
+
         if ($wishSubscription) {
             $this->handleWishSubscriptionRenewal($data, $wishSubscription);
         }
-        
+
         // Check for other subscription types (membership, bills) here if needed
         // For now, focusing on wish subscriptions
     }
-    
+
     /**
      * Handle wish subscription renewal payments
      */
@@ -593,11 +629,11 @@ class StripeWebhookController extends Controller
                 'invoice_id' => $invoiceData->id,
                 'amount' => $invoiceData->amount_paid ?? 0
             ]);
-            
+
             // Get the subscription details from Stripe to update period information
             $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
             $stripeSubscription = $stripeClient->subscriptions->retrieve($wishSubscription->stripe_id);
-            
+
             // Update subscription with new period information
             $wishSubscription->current_period_start = Carbon::createFromTimestamp($stripeSubscription->current_period_start);
             $wishSubscription->current_period_end = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
@@ -605,17 +641,17 @@ class StripeWebhookController extends Controller
             $wishSubscription->stripe_status = $stripeSubscription->status;
             $wishSubscription->updated_at = Carbon::now();
             $wishSubscription->save();
-            
+
             Log::info('Wish subscription updated with new period', [
                 'subscription_id' => $wishSubscription->id,
                 'stripe_id' => $wishSubscription->stripe_id,
                 'new_period_end' => $wishSubscription->current_period_end,
                 'new_upcoming_payment' => $wishSubscription->upcoming_payment
             ]);
-            
+
             // If wish item has content to deliver for renewals, create deliverable
             if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
-                
+
                 // Create deliverable record for renewal content delivery with certificate support
                 $deliverable = \App\Models\Deliverable::create([
                     'uuid' => \Illuminate\Support\Str::uuid(),
@@ -648,20 +684,19 @@ class StripeWebhookController extends Controller
                         'renewal_period_end' => $wishSubscription->current_period_end
                     ])
                 ]);
-                
+
                 // Dispatch job to process renewal content delivery
                 \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-                
+
                 Log::info('Subscription renewal content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,
                     'subscription_id' => $wishSubscription->stripe_id,
                     'wish_item_id' => $wishSubscription->wish_item->id
                 ]);
             }
-            
+
             // Send renewal notification email if needed
             $this->sendSubscriptionRenewalEmail($wishSubscription, $invoiceData);
-            
         } catch (\Exception $e) {
             Log::error('Failed to process wish subscription renewal', [
                 'subscription_id' => $wishSubscription->stripe_id ?? null,
@@ -672,7 +707,7 @@ class StripeWebhookController extends Controller
             ]);
         }
     }
-    
+
     /**
      * Send subscription renewal email notification
      */
@@ -686,7 +721,7 @@ class StripeWebhookController extends Controller
             $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
             $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
             $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
-            
+
             // Use the existing wish subscription email system for renewals
             \App\Jobs\WishSubscriptionMailToUser::dispatch(
                 $wishSubscription,
@@ -695,14 +730,13 @@ class StripeWebhookController extends Controller
                 $wishSubscription->wish_item->user->name,
                 true // is_renewal = true
             );
-            
+
             Log::info('Wish subscription renewal email dispatched', [
                 'subscription_id' => $wishSubscription->stripe_id,
                 'customer_email' => $wishSubscription->guest_email,
                 'amount' => $renewalAmount,
                 'creator_name' => $wishSubscription->wish_item->user->name
             ]);
-            
         } catch (\Exception $e) {
             Log::error('Failed to send subscription renewal email', [
                 'subscription_id' => $wishSubscription->stripe_id,
@@ -717,7 +751,7 @@ class StripeWebhookController extends Controller
     public function handleInvoicePaid($data, $metadata)
     {
         $subscriptionId = $data->subscription ?? null;
-        
+
         if (!$subscriptionId) {
             Log::info("Invoice paid but no subscription ID found", ['invoice_id' => $data->id]);
             return;
@@ -733,7 +767,7 @@ class StripeWebhookController extends Controller
         $wishSubscription = \App\Models\WishItemSubscription::where('stripe_id', $subscriptionId)
             ->where('status', 'paid')
             ->first();
-        
+
         if ($wishSubscription && $wishSubscription->wish_item) {
             $this->handleWishSubscriptionInvoicePaid($data, $wishSubscription);
         } else {
@@ -754,10 +788,10 @@ class StripeWebhookController extends Controller
                 'wish_item_id' => $wishSubscription->wish_item->id,
                 'invoice_id' => $invoiceData->id
             ]);
-            
+
             // Check if wish item has content to deliver
             if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
-                
+
                 // Create deliverable record for tracking with certificate support
                 $deliverable = \App\Models\Deliverable::create([
                     'uuid' => \Illuminate\Support\Str::uuid(),
@@ -786,15 +820,14 @@ class StripeWebhookController extends Controller
                         'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                         'invoice_id' => $invoiceData->id,
                         'billing_reason' => $invoiceData->billing_reason ?? null,
-                        'deliverable_url' => !empty($wishSubscription->wish_item->content_file) ? 
-                            $wishSubscription->wish_item->content_file_url : 
-                            ($wishSubscription->wish_item->reward_url ?? null)
+                        'deliverable_url' => !empty($wishSubscription->wish_item->content_file) ?
+                            $wishSubscription->wish_item->content_file_url : ($wishSubscription->wish_item->reward_url ?? null)
                     ])
                 ]);
-                
+
                 // Dispatch ProcessWishItemDeliverable job for content processing
                 \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-                
+
                 Log::info('Wish subscription content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,
                     'subscription_id' => $wishSubscription->stripe_id,
@@ -802,14 +835,14 @@ class StripeWebhookController extends Controller
                     'has_content_file' => !empty($wishSubscription->wish_item->content_file),
                     'has_reward' => !empty($wishSubscription->wish_item->reward)
                 ]);
-                
+
                 // Send subscription payment notification using existing wish subscription email
                 $currency = \App\Models\Currency::where('iso', strtoupper($wishSubscription->currency ?? 'gbp'))->first();
                 $currencySymbol = $currency ? $currency->symbol : '£';
                 $formattedAmount = $currencySymbol . number_format($wishSubscription->amount, 2);
                 $subscriptionPeriod = $wishSubscription->wish_item->subscription_period ?? 'monthly';
                 $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
-                
+
                 // Use existing wish subscription email system
                 \App\Jobs\WishSubscriptionMailToUser::dispatch(
                     $wishSubscription,
@@ -818,7 +851,7 @@ class StripeWebhookController extends Controller
                     $wishSubscription->wish_item->user->name,
                     true // is_renewal = true for subscription payments
                 );
-                
+
                 Log::info('Wish subscription email notification dispatched', [
                     'subscription_id' => $wishSubscription->stripe_id,
                     'wish_item_id' => $wishSubscription->wish_item->id,
@@ -830,7 +863,6 @@ class StripeWebhookController extends Controller
                     'wish_item_id' => $wishSubscription->wish_item->id
                 ]);
             }
-            
         } catch (\Exception $e) {
             Log::error('Failed to process wish subscription invoice.paid', [
                 'subscription_id' => $wishSubscription->stripe_id,
@@ -1028,7 +1060,7 @@ class StripeWebhookController extends Controller
                             '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!',
                             $customerEmail ?? null
                         );
-                    } else { 
+                    } else {
                         Helpers::sendNotification(
                             '🎉 You’ve successfully started your subscription!',
                             'Get ready to unlock all premium features 🚀 — no limits, no restrictions!',
@@ -1045,27 +1077,27 @@ class StripeWebhookController extends Controller
                 }
                 break;
 
-                case 'review.closed':
-                    $review = $event->data->object;
+            case 'review.closed':
+                $review = $event->data->object;
 
-                    if ($review->reason === 'approved') {
-                        $paymentIntentId = $review->payment_intent;
+                if ($review->reason === 'approved') {
+                    $paymentIntentId = $review->payment_intent;
 
-                        if ($paymentIntentId) {
-                            try {
-                                $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
-                                
-                                // Only capture if it's still requires_capture
-                                if ($paymentIntent->status === 'requires_capture') {
-                                    $stripe->paymentIntents->capture($paymentIntentId);
-                                    Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
-                                }
-                            } catch (\Exception $e) {
-                                Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+                    if ($paymentIntentId) {
+                        try {
+                            $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+
+                            // Only capture if it's still requires_capture
+                            if ($paymentIntent->status === 'requires_capture') {
+                                $stripe->paymentIntents->capture($paymentIntentId);
+                                Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
                             }
+                        } catch (\Exception $e) {
+                            Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
                         }
                     }
-                    break;
+                }
+                break;
 
             case 'invoice.payment_failed':
                 $subs->status = 'failed';
@@ -1152,7 +1184,7 @@ class StripeWebhookController extends Controller
     {
         try {
             $bill = $billPayment->bill;
-            
+
             // Create deliverable entry for renewal tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
@@ -1203,7 +1235,6 @@ class StripeWebhookController extends Controller
             ]);
 
             return $deliverable;
-
         } catch (\Exception $e) {
             Log::error('Failed to create bill renewal deliverable', [
                 'error' => $e->getMessage(),
@@ -1213,7 +1244,7 @@ class StripeWebhookController extends Controller
             return null;
         }
     }
-    
+
     /**
      * Handle support payment deliverables that are ready for Stripe metadata updates
      * This is a safety-net to catch any support payments that didn't get their
@@ -1226,34 +1257,34 @@ class StripeWebhookController extends Controller
                 'event_data' => get_class($data),
                 'metadata' => $metadata
             ]);
-            
+
             // Look for support payment deliverables that are ready but haven't had Stripe metadata updated
             $readyDeliverables = \App\Models\Deliverable::where('product_type', 'support_payment')
                 ->where('status', 'delivered')
                 ->whereNotNull('certificate_url')
                 ->whereNotNull('payment_intent_id')
                 ->get()
-                ->filter(function($deliverable) {
+                ->filter(function ($deliverable) {
                     // Check if Stripe metadata hasn't been updated yet
                     $metadata = json_decode($deliverable->metadata, true) ?? [];
                     $alreadyUpdated = $metadata['stripe_metadata_updated'] ?? false;
-                    
+
                     if ($alreadyUpdated) {
                         return false; // Skip already updated ones
                     }
-                    
+
                     // Additional check: verify this deliverable is related to current webhook event
                     // by checking session_id or payment_intent_id matches webhook data
                     $sessionId = $deliverable->session_id;
                     $paymentIntentId = $deliverable->payment_intent_id;
-                    
+
                     // Check if this webhook event relates to this deliverable
                     $eventSessionId = $data->id ?? null;
                     $eventPaymentIntentId = $data->payment_intent ?? null;
-                    
+
                     $isRelated = ($sessionId && $sessionId === $eventSessionId) ||
-                                ($paymentIntentId && $paymentIntentId === $eventPaymentIntentId);
-                    
+                        ($paymentIntentId && $paymentIntentId === $eventPaymentIntentId);
+
                     if ($isRelated) {
                         Log::info('StripeWebhookController: Found related support payment deliverable needing metadata update', [
                             'deliverable_id' => $deliverable->id,
@@ -1264,26 +1295,25 @@ class StripeWebhookController extends Controller
                         ]);
                         return true;
                     }
-                    
+
                     return false;
                 });
-            
+
             // Dispatch UpdateSupportPaymentStripeMetadata job for any found deliverables
             foreach ($readyDeliverables as $deliverable) {
                 \App\Jobs\UpdateSupportPaymentStripeMetadata::dispatch($deliverable->id)
                     ->delay(now()->addSeconds(5)); // Short delay for webhook safety-net
-                
+
                 Log::info('StripeWebhookController: Dispatched safety-net UpdateSupportPaymentStripeMetadata job', [
                     'deliverable_id' => $deliverable->id,
                     'certificate_url' => $deliverable->certificate_url,
                     'payment_intent_id' => $deliverable->payment_intent_id
                 ]);
             }
-            
+
             if ($readyDeliverables->count() === 0) {
                 Log::info('StripeWebhookController: No support payment deliverables found needing metadata updates');
             }
-            
         } catch (\Exception $e) {
             Log::error('StripeWebhookController: Error in handleSupportPaymentDeliverableReady', [
                 'error' => $e->getMessage(),
