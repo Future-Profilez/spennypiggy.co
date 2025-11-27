@@ -269,7 +269,6 @@ class StripeController extends Controller
                 'new_service_agreement' => $serviceAgreementType,
                 'onboarding_required' => true
             ];
-
         } catch (Exception $e) {
             Log::error('Account migration failed', [
                 'user_id' => $user->id,
@@ -601,7 +600,6 @@ class StripeController extends Controller
                         ?? 'Your Stripe account could not be onboarded. Please contact support.'
                 );
             }
-
         } catch (ApiErrorException $e) {
             return back()->with(
                 'error',
@@ -982,7 +980,8 @@ class StripeController extends Controller
                     ]);
 
                     // Return user-friendly error to fan
-                    return redirect()->back()->with('error',
+                    return redirect()->back()->with(
+                        'error',
                         'This creator is temporarily unavailable. Please try again later.'
                     );
                 }
@@ -1153,7 +1152,8 @@ class StripeController extends Controller
             ]);
 
             // Return user-friendly error to fan
-            return redirect()->back()->with('error',
+            return redirect()->back()->with(
+                'error',
                 'This creator is temporarily unavailable. Please try again later.'
             );
         }
@@ -1171,7 +1171,6 @@ class StripeController extends Controller
 
         if ($wish->user['is_subscribed'] !== 1) {
             return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please again later when gift payments are active.');
-
         }
 
 
@@ -1204,9 +1203,9 @@ class StripeController extends Controller
 
             // ✅ FIXED: Prevent duplicate subscriptions by canceling existing ones
             $existingSubscriptions = WishItemSubscription::where('wish_item_id', $wish->id)
-                ->where(function($q) use ($user, $request) {
+                ->where(function ($q) use ($user, $request) {
                     $q->where('user_id', $user->id)
-                      ->orWhere('guest_email', $request->email);
+                        ->orWhere('guest_email', $request->email);
                 })
                 ->whereIn('status', ['paid', 'initiated'])
                 ->where('recurring_for', 'continue') // Only cancel recurring subscriptions
@@ -1446,7 +1445,7 @@ class StripeController extends Controller
 
             // Total charge amount = wish price + creator's VAT + platform fees
             $totalChargeAmount = round($basePrice * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
-            
+
             // Check if creator has card_payments capability to determine payment flow
             $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
@@ -1479,7 +1478,7 @@ class StripeController extends Controller
                         'has_card_payments' => (string) $hasCardPayments,
                     ]),
                 ];
-                
+
                 // Only add on_behalf_of if creator has card_payments capability
                 if ($hasCardPayments) {
                     $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
@@ -1495,9 +1494,9 @@ class StripeController extends Controller
                         'amount' => $transferAmount, // Transfer only what creator should receive
                     ];
                 }
-                
+
                 $payload['payment_intent_data'] = $paymentIntentData;
-                
+
                 Log::info('Wish subscription payment flow determined', [
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
@@ -1529,10 +1528,10 @@ class StripeController extends Controller
                         'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
                     ],
                 ];
-                
+
                 // For subscriptions, on_behalf_of is not used in subscription_data, but we still log the capability
                 $payload['subscription_data'] = $subscriptionData;
-                
+
                 Log::info('Wish subscription payment flow determined', [
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
@@ -1631,7 +1630,6 @@ class StripeController extends Controller
                         'currency_symbol' => $currencySymbol,
                         'email_address' => $sub->guest_email
                     ]);
-
                 } catch (\Exception $e) {
                     \Log::error('StripeController: Failed to dispatch CheckoutMailToUser for subscription', [
                         'subscription_id' => $sub->id,
@@ -1698,7 +1696,6 @@ class StripeController extends Controller
                             'cancel_at_period_end' => $sub->cancel_at_period_end,
                             'upcoming_payment' => $sub->upcoming_payment
                         ]);
-
                     } else {
                         // Fallback for one-time payments or sessions without subscriptions
                         \Log::warning('StripeController: No subscription ID in session, using fallback calculation', [
@@ -1720,7 +1717,6 @@ class StripeController extends Controller
                         $sub->upcoming_payment = $current;
                         $sub->stripe_status = 'active'; // Default for one-time payments
                     }
-
                 } catch (\Exception $e) {
                     \Log::error('StripeController: Failed to retrieve Stripe subscription details', [
                         'subscription_id' => $sub->id,
@@ -1793,7 +1789,7 @@ class StripeController extends Controller
             $sub->save();
             return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('warning', "Subscription is in {$session->payment_status} status.");
         } catch (Exception $e) {
-        return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', $e->getMessage());
+            return to_route('user.show', ['username' => $sub->wish_item->user->username])->with('error', $e->getMessage());
         }
         // return response()->json([
         //     'success'   =>  true,
@@ -1851,7 +1847,6 @@ class StripeController extends Controller
             ]);
 
             return $stripePayment;
-
         } catch (\Exception $e) {
             \Log::error('StripeController: Failed to create StripePaymentDetail for subscription', [
                 'subscription_id' => $subscription->id,
@@ -2172,7 +2167,6 @@ class StripeController extends Controller
                     'wish_item_id' => $wishSubscription->wish_item->id
                 ]);
             }
-
         } catch (\Exception $e) {
             Log::error('Failed to process subscription renewal', [
                 'subscription_id' => $subscriptionId,
@@ -2213,7 +2207,6 @@ class StripeController extends Controller
                 'amount' => $renewalAmount,
                 'creator_name' => $wishSubscription->wish_item->user->name
             ]);
-
         } catch (\Exception $e) {
             Log::error('Failed to send renewal email notification', [
                 'subscription_id' => $wishSubscription->stripe_id,
@@ -2235,7 +2228,7 @@ class StripeController extends Controller
     public function tipToJar(Request $request, $creator_uid)
     {
         $user = Auth::user();
-        if ( !empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
@@ -2466,10 +2459,10 @@ class StripeController extends Controller
                     'tax_behavior' => 'exclusive',
                 ],
             ];
-            
+
             // Check if creator has card_payments capability to determine payment flow
             $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($creator->account_id);
-            
+
             // Build payment_intent_data based on creator's capabilities
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Support payment to {$creator->name} with platform fee",
@@ -2486,7 +2479,7 @@ class StripeController extends Controller
                     'has_card_payments' => (string) $hasCardPayments,
                 ]),
             ];
-            
+
             // Only add on_behalf_of if creator has card_payments capability
             if ($hasCardPayments) {
                 $paymentIntentData['on_behalf_of'] = $creator->account_id; // Shows creator as seller-of-record
@@ -2929,69 +2922,120 @@ class StripeController extends Controller
     //     return response()->json(['status' => 'success']);
     // }
 
+    // public function createVerificationSession(Request $request)
+    // {
+    //     try {
+    //         // Set Stripe secret key
+    //         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+
+    //         $user = Auth::user();
+
+    //         // Always create a real verification session, even in non-production environments
+    //         // This ensures admin can view actual Stripe document images
+
+    //         // Create a new verification session - restrict to passport only
+    //         $session = VerificationSession::create([
+    //             'type' => 'document',
+    //             'options' => [
+    //                 'document' => [
+    //                     // Allow only passports; disallow ID cards and driver's licenses
+    //                     'allowed_types' => ['passport'],
+    //                     // Keep other defaults; adjust if business rules change
+    //                     // 'require_live_capture' => true,
+    //                     // 'require_matching_selfie' => false, 
+    //                     // 'require_id_number' => false, 
+    //                 ],
+    //             ],
+    //             'metadata' => [
+    //                 'user_id' => $request->user() ? $request->user()->id : null,
+    //             ],
+    //             'provided_details' => ['email' => $request->user() ? $request->user()->email : null],
+    //             'return_url' => route('user.show', [$user->username]), // Redirect here after success or failure
+    //         ]);
+
+    //         // Retrieve the user
+    //         // $user = User::find($user->id); // Update 228 to dynamic user ID logic if necessary
+
+    //         if (!$user) {
+    //             return response()->json([
+    //                 'error' => 'User not found.',
+    //             ], 404);
+    //         }
+
+    //         // Update the user's Stripe session ID
+    //         $user->stripe_user_id = $session->id;
+    //         $user->identity_verification_error = null;
+
+    //         if (env('APP_ENV') !== 'production') {
+    //             $user->identity_status = 1;
+    //         }
+
+    //         if ($user->save()) {
+    //             return response()->json([
+    //                 'sessionId' => $session->id,
+    //                 'url' => $session->url,
+    //             ]);
+    //         } else {
+    //             return response()->json([
+    //                 'error' => 'Failed to update user Stripe session ID.',
+    //             ], 500);
+    //         }
+    //     } catch (\Exception $e) {
+    //         // Log the error for debugging purposes
+    //         Log::error('Error creating verification session', ['message' => $e->getMessage()]);
+
+    //         // Handle any errors
+    //         return response()->json([
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
     public function createVerificationSession(Request $request)
     {
         try {
-            // Set Stripe secret key
             Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
             $user = Auth::user();
+            if (!$user) {
+                return response()->json(['error' => 'User not found.'], 404);
+            }
 
-            // Always create a real verification session, even in non-production environments
-            // This ensures admin can view actual Stripe document images
-
-            // Create a new verification session - restrict to passport only
+            // Create Passport-Only Stripe Identity Verification Session
             $session = VerificationSession::create([
                 'type' => 'document',
                 'options' => [
                     'document' => [
-                        // Allow only passports; disallow ID cards and driver's licenses
-                        'allowed_types' => ['passport'],
-                        // Keep other defaults; adjust if business rules change
-                        // 'require_live_capture' => true,
-                        // 'require_matching_selfie' => false, 
-                        // 'require_id_number' => false, 
+                        'allowed_types' => ['passport'], // ONLY PASSPORT ALLOWED
                     ],
                 ],
                 'metadata' => [
-                    'user_id' => $request->user() ? $request->user()->id : null,
+                    'user_id' => $user->id,
                 ],
-                'provided_details' => ['email' => $request->user() ? $request->user()->email : null],
-                'return_url' => route('user.show', [$user->username]), // Redirect here after success or failure
+                'provided_details' => [
+                    'email' => $user->email,
+                ],
+                'return_url' => route('user.show', $user->username),
             ]);
 
-            // Retrieve the user
-            // $user = User::find($user->id); // Update 228 to dynamic user ID logic if necessary
-
-            if (!$user) {
-                return response()->json([
-                    'error' => 'User not found.',
-                ], 404);
-            }
-
-            // Update the user's Stripe session ID
+            // Update user with verification session ID
             $user->stripe_user_id = $session->id;
             $user->identity_verification_error = null;
 
-            if(env('APP_ENV') !== 'production'){
+            // Skip verification in dev environment
+            if (env('APP_ENV') !== 'production') {
                 $user->identity_status = 1;
             }
 
-            if ($user->save()) {
-                return response()->json([
-                    'sessionId' => $session->id,
-                    'url' => $session->url,
-                ]);
-            } else {
-                return response()->json([
-                    'error' => 'Failed to update user Stripe session ID.',
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            // Log the error for debugging purposes
-            Log::error('Error creating verification session', ['message' => $e->getMessage()]);
+            $user->save();
 
-            // Handle any errors
+            return response()->json([
+                'sessionId' => $session->id,
+                'url' => $session->url,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating verification session', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
