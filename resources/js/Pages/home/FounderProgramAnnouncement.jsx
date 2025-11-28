@@ -112,8 +112,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                                     href="/founder/bonus"
                                     className="button b !px-4 !py-3 flex items-center justify-center"
                                 >
-                                    <FaCrown className="mr-2" />
-                                    Join Founder Program
+                                    Explore the Program
                                 </Link>
                                 
                                 {/* <Link 

@@ -51,6 +51,10 @@ export default function FounderBonusIndex() {
                         <p className="fading text-xl text-gray-600 max-w-2xl mx-auto">
                             New creators compete to earn £{minEarnings.toLocaleString()} in their first 30 days to join our exclusive Founder Program.
                         </p>
+                        <div className='mt-8'>
+                            <Link href={'/register'} className="button p text-lg">Become a creator</Link>
+                        </div>
+
                     </div>
 
                     {/* Founder Congratulations Section */}
@@ -341,7 +345,10 @@ export default function FounderBonusIndex() {
                     <div className="mt-16 mb-8">
                         <div>
                             <h2 className="fading text-xl md:text-3xl font-gulfs uppercase font-bold flex items-center">
-                                {currentMonth} Leaderboard
+                                {/* {currentMonth} {currentYear} */}
+
+                                {new Date().toLocaleDateString('en-GB', { year: 'numeric' })} &nbsp;
+                                Leaderboard
                             </h2>
                             <p className="fading text-gray-600 mt-1">
                                 New creators racing for Founder status
@@ -442,10 +449,10 @@ export default function FounderBonusIndex() {
                         </div>
                     </div>
 
+                           {/* {availableSeats} */}
                     <div className="mt-8 text-center">
                         <p className="text-sm text-gray-500">
-                            Only {availableSeats} founder seats available. Qualification checked on the 1st of each month.
-                            Bonuses paid on the 7th. Only new creators who joined this month can participate in the race.
+                                    Hit £2,500 in your first 30 days and unlock a year-long 10% platform-fee bonus (150 seats only; new creators from Nov 1st). We only confirm eligibility on the 1st of each month — so your first bonus pays on the 7th of the next month, no matter when you qualify during the month.
                         </p>
                     </div>
                 </div>

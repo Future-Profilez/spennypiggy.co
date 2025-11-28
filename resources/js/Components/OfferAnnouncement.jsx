@@ -81,12 +81,12 @@ export default function OfferAnnouncement({
                 </div>
                 
                 <p className="text-normal opacity-95">
-                    Earn <span className="font-bold text-yellow-200">£2,500</span> in your first 30 days and get <span className="font-bold text-yellow-200">10% monthly bonus</span>! Exclusive founder badge, priority support & up to £1,000 monthly bonus.
+                    Earn <span className="font-bold text-yellow-200">£2,500</span> in your first 30 days and  <span className="font-bold text-yellow-200"> get up to a 10% monthly bonus</span>! Exclusive founder badge, priority support & up to £1,000 monthly bonus.
                 </p>
             </div>
             <div className='mt-4'>
                 <Link href="/founder/bonus" className="cursor-pointer button bg-yellow-600 ">
-                     Learn More & Join Now
+                     Learn More 
                 </Link>
             </div>
         </div>

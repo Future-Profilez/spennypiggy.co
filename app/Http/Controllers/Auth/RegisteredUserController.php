@@ -117,18 +117,18 @@ class RegisteredUserController extends Controller
         } else {
 
             $randomBio = null;
-            if ($request->role == 1) {
-                // $defaultBios = [
-                //     // "I haven’t written my bio yet, but you can still spoil me 😘",
-                //     // "No bio. Just vibes… and a wishlist 💅",
-                //     "Still working on my About Me. In the meantime… gifts welcome 🛍️",
-                //     // "Bio coming soon. But like, feel free to click that wishlist link.",
-                //     // "New here. Wishlist isn’t 💸"
-                // ];
+            // if ($request->role == 1) {
+            //     // $defaultBios = [
+            //     //     // "I haven’t written my bio yet, but you can still spoil me 😘",
+            //     //     // "No bio. Just vibes… and a wishlist 💅",
+            //     //     "Still working on my About Me. In the meantime… gifts welcome 🛍️",
+            //     //     // "Bio coming soon. But like, feel free to click that wishlist link.",
+            //     //     // "New here. Wishlist isn’t 💸"
+            //     // ];
 
-                // $randomBio = $defaultBios[array_rand($defaultBios)];
-                $randomBio = "Still working on my About Me. In the meantime… gifts welcome 🛍️";
-            }
+            //     // $randomBio = $defaultBios[array_rand($defaultBios)];
+            //     $randomBio = "Still working on my About Me. In the meantime… gifts welcome 🛍️";
+            // }
             //saving the google secret of an particular user
             $secret = $this->google2FA->generateSecretKey();
 
@@ -144,7 +144,8 @@ class RegisteredUserController extends Controller
                 'ip_address' => $ip_address,
                 'country' => $request->country_code ?? null,
                 'bio' => $randomBio, // Here goes the random bio
-                'bio_approved' => $request->role == 1 ? 0 : 0,
+                // 'bio_approved' => $request->role == 1 ? 0 : 0,
+                'bio_approved' => 1,
                 'profile_status_lock' => 0,
             ]);
             $user->refresh();
