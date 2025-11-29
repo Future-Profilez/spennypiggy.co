@@ -89,18 +89,31 @@ class StripeWebhookController extends Controller
         $user = User::where('stripe_user_id', $session->id)->first();
 
         if ($user) {
-            // Check for fraud based on the last error or session details
             $isFraudulent = $this->checkForFraud($session);
+
+            $errorPayload = $session->last_error ? json_encode($session->last_error) : json_encode([
+                'code' => 'requires_input',
+                'reason' => 'Additional information is required to complete verification.'
+            ]);
 
             $user->update([
                 'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
-                'identity_verification_error' => $session->last_error ? json_encode($session->last_error) : null,
+                'identity_verification_error' => $errorPayload,
                 'identity_verification_details' => json_encode($session),
                 'identity_verified_at' => null,
             ]);
 
             $emailType = $isFraudulent ? 'fraud' : 'failed';
             SendIdentityVerificationEmail::dispatch($user, $emailType);
+
+            $err = $session->last_error ?? null;
+            $code = data_get($err, 'code', 'requires_input');
+            $reason = data_get($err, 'reason', 'Additional information is required to complete verification.');
+            Helpers::sendNotification(
+                'Identity verification rejected ❌',
+                "Reason: {$reason} (code: {$code})",
+                $user->email
+            );
         } else {
             Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
         }
@@ -116,7 +129,31 @@ class StripeWebhookController extends Controller
         $user = User::where('stripe_user_id', $session->id)->first();
 
         if ($user) {
-            // Check for fraud even if the session is verified
+            $docType = data_get($session, 'verified_outputs.document.type')
+                ?: data_get($session, 'last_verification_report.document.type');
+
+            if ($docType && strtolower($docType) !== 'passport') {
+                $error = [
+                    'code' => 'document_type_not_allowed',
+                    'reason' => 'Only passports are accepted for identity verification.'
+                ];
+
+                $user->update([
+                    'identity_status' => 0, // Failed per policy
+                    'identity_verified_at' => null,
+                    'identity_verification_error' => json_encode($error),
+                    'identity_verification_details' => json_encode($session),
+                ]);
+
+                SendIdentityVerificationEmail::dispatch($user, 'failed');
+                Helpers::sendNotification(
+                    'Identity verification rejected ❌',
+                    'Reason: Only passports are accepted for identity verification.',
+                    $user->email
+                );
+                return;
+            }
+
             $isFraudulent = $this->checkForFraud($session);
 
             $user->update([
@@ -127,6 +164,20 @@ class StripeWebhookController extends Controller
 
             $emailType = $isFraudulent ? 'fraud' : 'success';
             SendIdentityVerificationEmail::dispatch($user, $emailType);
+
+            if ($isFraudulent) {
+                Helpers::sendNotification(
+                    'Identity verification rejected ❌',
+                    'Reason: Verification checks did not pass or suspected fraud.',
+                    $user->email
+                );
+            } else {
+                Helpers::sendNotification(
+                    'Identity verification successful ✅',
+                    'Your identity has been verified successfully.',
+                    $user->email
+                );
+            }
         } else {
             Log::error('User not found for verified verification session', ['session_id' => $session->id]);
         }
@@ -140,35 +191,24 @@ class StripeWebhookController extends Controller
      */
     private function checkForFraud($session)
     {
-        // Check for last error
+        if (isset($session->status) && $session->status === 'verified') {
+            return false;
+        }
+
         if ($session->last_error) {
             Log::warning('Fraud detected based on last error', ['error' => $session->last_error]);
             return true;
         }
 
-        // Check failed verification checks
-        if (!empty($session->verification_checks)) {
-            foreach ($session->verification_checks as $check) {
-                if ($check->status !== 'passed') {
+        $checks = data_get($session, 'verification_checks', []);
+        if (is_array($checks)) {
+            foreach ($checks as $check) {
+                $status = is_object($check) ? ($check->status ?? 'passed') : (data_get($check, 'status') ?? 'passed');
+                if ($status !== 'passed') {
                     Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
                     return true;
                 }
             }
-        }
-
-        // Check document type (allow only passport)
-        $report = $session->last_verification_report->document ?? null;
-
-        if ($report && isset($report->type)) {
-            if ($report->type !== 'passport') {
-                Log::warning('Fraud detected: wrong document type uploaded', [
-                    'uploaded_type' => $report->type
-                ]);
-                return true;
-            }
-        } else {
-            Log::warning('Fraud detected: No document found in verification report');
-            return true;
         }
 
         return false;

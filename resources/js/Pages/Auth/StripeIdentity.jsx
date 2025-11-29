@@ -79,11 +79,10 @@ export default function StripeIdentity({ auth }) {
                         To access all features, please complete your Stripe identity verification. This process ensures your account's security and compliance.
                     </p>
 
-                    {/* Guidelines Link */}
-                    <div className="mt-4 text-center text-sm text-gray-700">
-                        For details on acceptable documents and instructions on how to upload, visit the
-                        <a href="https://docs.stripe.com/acceptable-verification-documents" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline"> Stripe Verification Guidelines
-                        </a>.
+                    {/* Policy Notice */}
+                    <div className="mt-4 text-center text-sm text-red-700 bg-red-50 rounded-md p-3 border border-red-200">
+                        <p className="font-semibold">Important:</p>
+                        <p>We accept only passports for identity verification. Driver’s licenses, national ID cards, or other documents will be rejected.</p>
                     </div>
 
                     {/* Verification Button */}
@@ -92,8 +91,7 @@ export default function StripeIdentity({ auth }) {
                             disabled={loading || (auth?.user?.identity_status == 1 && adminIdentity?.status !== 2)}
                             onClick={handleVerification}
                             className="p  px-6 py-[13px]"
-                            spinnerClassName="fill-white"
-                        >
+                            spinnerClassName="fill-white" >
                             {loading ? "Processing..." : adminIdentity?.status === 2 ? "Reverify Now" : auth?.user?.identity_status == 1 ? "Verification Submitted" : "Verify Now"}
                         </LoaderButton>
                     </div>
