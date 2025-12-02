@@ -28,7 +28,7 @@
 
 
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.font-poppins{font-family:'Poppins',sans-serif}
+.font-poppins{font-family:'Poppins',sans-serif !important}
 .font-anton{font-family:'Anton',sans-serif}
 input[type="number"]{-moz-appearance:textfield;appearance:textfield}
 body{position:relative;font-family:var(--para-font)}

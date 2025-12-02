@@ -35,7 +35,7 @@ function InstantTabSystem({
         { id: 'memberships', label: 'Memberships', icon: '⭐' },
         { id: 'bills', label: 'Bills', icon: '💳' },
         { id: 'shop', label: 'Shop', icon: '🛍️' },
-        { id: 'gifts', label: 'Gifts', icon: '🎁' }
+        // { id: 'gifts', label: 'Gifts', icon: '🎁' }
     ];
 
     // Get effective active tab (including pending state)

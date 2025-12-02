@@ -405,7 +405,7 @@ export default function Dashboard(props) {
                                                                 product_type="digital_products"
                                                             />
                                                             <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
-                                                            <AddGift
+                                                            {/* <AddGift
                                                                 text="Add Gift "
                                                                 classes="font-bold py-3 px-3 mb-2 text-center"
                                                                 fetch_gifts={
@@ -415,7 +415,7 @@ export default function Dashboard(props) {
                                                                     auth?.user
                                                                         ?.is_creator_address_found
                                                                 }
-                                                            />
+                                                            /> */}
                                                             <AddMembership />
                                                             <AddBills />
                                                         </div>

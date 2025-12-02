@@ -338,7 +338,11 @@
             document.getElementById('initial-loading-screen').style.display = 'flex';
         }
     </script>
-
+    <script type="speculationrules">
+    {
+    "prerender": [{ "source": "document", "eagerness": "moderate" }]
+    }
+</script>
     @inertia
 </body>
 
