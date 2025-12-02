@@ -150,7 +150,7 @@ export default function SubCheckout(props) {
                                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                                     ?
                                                     <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                        {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
+                                                        {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
                                                     all transactions.
                                                     </p>
                                                     </button>

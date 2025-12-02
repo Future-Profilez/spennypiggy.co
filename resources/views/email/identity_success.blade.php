@@ -12,13 +12,14 @@
              <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; text-align: center;">
                  <tr>
                      <td style=" font-weight: bold; font-size: 22px; color:#000; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
-                         <span style="color: #28A745">Identity Verification Successful</span>
+                        <span style="color: #28A745">Identity Verification Successful</span>
                      </td>
-                 </tr>
+                 </tr> 
                  <tr>
                      <td style="padding: 0 0 25px 0;  font-size: 18px; line-height: 27px; color: #141414; text-align: center;">
-                         Hello {{ ucfirst(strtolower($user->name)) }}, <br><br>
-                         Congratulations! Your identity verification was successfully completed. You now have full access to our platform.
+                        Hello {{ ucfirst(strtolower($user->name)) }}, <br><br>
+                        Congratulations 🙌 <br><br>
+                        Your verification was successfully completed. We will now complete our final check to match your ID Image to your uploaded profile picture and social media accounts. Please allow 1-2 hours.
                      </td>
                  </tr>
              </table>

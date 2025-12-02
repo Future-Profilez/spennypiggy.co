@@ -344,7 +344,7 @@ export default function BuyShopItem({
                                             ?
                                             <p className="!text-start">
                                                 {window.platformFeePercentage || 20}% Card Fees and £1
-                                                administrative fee of applies to
+                                                administrative fee applies to
                                                 all transactions.
                                             </p>
                                         </button>

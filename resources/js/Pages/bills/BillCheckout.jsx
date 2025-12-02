@@ -171,7 +171,7 @@ export default function BillCheckout(props) {
                                                 ?
                                                 <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                                     {window.platformFeePercentage || 20}% Card Fees and £1
-                                                    administrative fee of
+                                                    administrative fee 
                                                     applies to all transactions.
                                                 </p>
                                             </button>

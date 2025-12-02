@@ -1,7 +1,0 @@
-Test this simple URL first:
-
-https://ucarecdn.com/44b15634-1da0-43b0-b64e-23d98acdfd7e/-/resize/600x400/-/overlay/text/THANK+YOU/72/ffffff/300,150/
-
-If this works, then try the more complex one:
-
-https://ucarecdn.com/44b15634-1da0-43b0-b64e-23d98acdfd7e/-/resize/1200x630/-/overlay/text/THANK+YOU%21/72/ffffff/600,150/-/overlay/text/Thank+you+Sarah+Miller/36/ffffff/600,220/-/overlay/text/USD+75.00/56/ffd700/600,290/-/quality/smart/-/format/auto/

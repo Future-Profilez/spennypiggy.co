@@ -198,7 +198,7 @@ export default function UserCarts(props) {
                                     {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
                                         <p className="fading max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-[20px] bottom-[20px] right-[10px] text-left font-normal text-[15px] z-[99] hidden group-hover:block">
-                                            {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee of applies to
+                                            {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
                                             all transactions.
                                         </p>
                                     </button>

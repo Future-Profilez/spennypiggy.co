@@ -1,9 +1,0 @@
-{
-  "scripts": {
-    "analyze-bundle": "ANALYZE=true npm run build",
-    "build:dev": "vite build --mode development",
-    "build:prod": "vite build --mode production",
-    "preload-critical": "npm run build && node scripts/generate-preload.js",
-    "perf:test": "lighthouse --chrome-flags='--headless' --output=html --output-path=./performance-report.html http://localhost:8000"
-  }
-}
