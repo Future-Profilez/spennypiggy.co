@@ -195,7 +195,6 @@ class AuthenticatedSessionController extends Controller
     public function getUserProfile($username, $page = 'about')
     {
         $profileData = $this->profileService->preloadUserProfileData($username);
-
         if (empty($profileData)) {
             return Inertia::render('NotFound');
         }

@@ -5,9 +5,11 @@ import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 
 export default function StripeIdentity({ auth }) {
+
     const [loading, setLoading] = useState(false);
     const { successAlert, errorAlert } = useAlerts();
     const adminIdentity = auth?.admin_identity;
+
     // Parse error details if available
     const error = (() => {
         try {
@@ -38,7 +40,7 @@ export default function StripeIdentity({ auth }) {
 
     return (
         <Authenticated>
-            <div className="flex flex-col items-center justify-center h-[80vh] bg-gray-100">
+            <div className="flex flex-col py-12 items-center justify-center min-h-[80vh] bg-gray-100">
                 <div className="rounded-lg p-6 sm:p-10 max-w-xl w-full">
                     {/* Admin Review Banners */}
                     {auth?.user?.identity_status == 1 && (!adminIdentity || adminIdentity?.status !== 1) && (

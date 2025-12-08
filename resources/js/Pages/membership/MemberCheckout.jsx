@@ -137,13 +137,13 @@ export default function SubCheckout(props) {
                                         You are about to join {membership?.level}{" "}
                                         membership.
                                     </p>
-                                    <div className="w-full max-w-[300px] cartTotal px-0 pt-4 flex justify-end">
+                                    <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            <li className="flex justify-content-between">
+                                            <li className="flex justify-content-between  border p-2">
                                                 <span className="min-w-[100px] block">Subtotal :</span>
                                                 <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
                                             </li>
-                                            <li className="flex justify-content-between">
+                                            <li className="flex justify-content-between   border p-2">
                                                 <span className="min-w-[100px] block">Platform Fee :</span>
                                                 <div>
                                                     <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
@@ -157,7 +157,7 @@ export default function SubCheckout(props) {
                                                 </div>
                                             </li>
                                             {vat_amount && vat_amount > 0 ? (
-                                                <li className="flex justify-content-between">
+                                                <li className="flex justify-content-between   border p-2">
                                                     <span className="min-w-[100px] block">VAT :</span>
                                                     <strong>{formatMultiPrice(
                                                             vat_amount || "",
@@ -168,7 +168,7 @@ export default function SubCheckout(props) {
                                             ) : (
                                                 ""
                                             )}
-                                            <li className="flex justify-content-between">
+                                            <li className="flex justify-content-between border p-2">
                                                 <span className="min-w-[100px] block">Total :</span>
                                                 <strong>{formatMultiPrice(
                                                     membership?.tax_amount +

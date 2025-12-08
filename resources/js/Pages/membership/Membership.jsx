@@ -59,7 +59,6 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   }
   const {auth} = usePage().props;
   const { formatMultiPrice } = PriceFormat();
-
   const [rewards ,setrewards ] = useState(item?.rewards ? JSON.parse(item.rewards) : []);
   const getRewardTitle = (e) => {
     const item = rewards_lists.filter((item)=> item?.value == e);
@@ -94,16 +93,15 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
 
   return (
     <>
-          <div className={`bg-opacity-90 relative rounded-[30px] overflow-hidden  
+          <div className={`bg-opacity-90 relative rounded-[30px] 
             border-3 md:border-4 ${borderclasses[item?.level || 'default']} 
             h-full bg-white `}>
-
                   {IsloggedIn && item && item?.approved === 0 ?
                     <div className='absolute top-8 z-1 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
                   : ''}
                   <Link className='block' method='get'
-                      href={route('membership.checkout',{uuid: item?.uuid})}>
-                    {IsloggedIn ? 
+                    href={route('membership.checkout',{uuid: item?.uuid})}>
+                    {IsloggedIn ?  
                       <DropdownButton
                         className='edit-post pe-0 absolute top-2 m-1 right-2 z-1 ' id="dropdown-basic-button"
                         title={
@@ -117,10 +115,10 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                         <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
                       </DropdownButton> 
                     : ''}
-                    <div className={`${membershipclasses[item?.level || 'default']} text-white pt-6`}>
+                    <div className={`${membershipclasses[item?.level || 'default']} rounded-[26px]  text-white pt-6`}>
                         <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
                         relative' >
-                          <img src={item && item?.perma_link || dummy } alt='image' className='w-full h-full img-fluid object-cover  ' />
+                          <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-[30px]  w-full h-full img-fluid object-cover  ' />
                         </div>
                         <div className="flex justify-center ">
                           <h2 className={`${btnclasses[item?.level || 'default']} 
@@ -142,7 +140,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                       <p className="font-bold mb-2 ">What's Included</p>
                       <ul className="space-y-1 text-black">
                           {rewards && rewards.map((r, i)=>{
-                            return <li key={`reward-${i} `} className='flex items-center' >
+                            return <li key={`reward-${i} `} className='fading flex items-center' >
                                 ✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
                             </li>
                           })}

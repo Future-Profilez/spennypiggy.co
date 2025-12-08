@@ -160,7 +160,6 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
-            // gifter card verification routes
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
             Route::get('card-verification-success/{uuid}', [RegisteredUserController::class, 'cardVerificationSuccess'])->name('card.verification.success');
             Route::get('card-verification-failed/{id}', [AuthenticatedSessionController::class, 'cardVerificationFailed'])->name('card.verification.failed');
@@ -180,9 +179,6 @@ Route::middleware('auth')->group(function () {
             Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
-
-
-
             Route::get('account', function () {
                 $user = Auth::user();
                 $auto_tweet = $user->auto_tweet == 1;
@@ -298,11 +294,6 @@ Route::middleware('auth')->group(function () {
                 ]);
             });
 
-
-
-
-
-
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
@@ -349,13 +340,9 @@ Route::middleware('auth')->group(function () {
                 Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
                 Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
             });
-
-
             Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
-
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
-
             Route::get('/activate-subscription', function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
@@ -370,6 +357,7 @@ Route::middleware('auth')->group(function () {
             if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
                 $user = Auth::user();
                 $user->identity_admin_status = 0;
+                $user->identity_status = 1;
                 $user->save();
             }
             return Inertia::render('Auth/StripeIdentity', [
@@ -603,9 +591,7 @@ Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::
 Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 Route::get('/shop/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
 
-// Catch-all profile route must come after specific endpoints
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
-    // ->where('username', '^(?!founder$).*$')
     ->name('user.show');
 
 Route::prefix("wish")->name("wish.")->group(function () {

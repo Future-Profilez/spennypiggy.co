@@ -39,7 +39,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                         <p className="text-red-700">Bio Edit Request</p>
                         <p className="text-red-500 text-sm">Reason : {user?.edit_bio_reason } Please update your bio as per requested.</p>
                     </div>
-                    : ''}
+                  : ''}
 
                   <SocialLinks textcolor="text-gray-300 giftersocials" links={sLinks} />
                   {IsloggedIn ? <div className="addsocial flex">

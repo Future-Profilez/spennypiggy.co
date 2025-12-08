@@ -42,6 +42,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         setFilledSteps(steps);
     }, []);
 
+     const error = (() => {
+        try {
+            return JSON.parse(auth?.user?.identity_verification_error);
+        } catch {
+            return null;
+        }
+    })();
+
     return (
         <>
             <style>{`
@@ -434,11 +442,27 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                         )}
 
+                        {auth?.user?.identity_verification_error && (
+                            <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-start">
+                                <p className="font-semibold mb-2">Why are you seeing this error?</p>
+                                <p className="text-sm">
+                                    Your last attempt to complete identity verification was unsuccessful. Please review the details below and try again.
+                                </p>
+                            </div>
+                        )}
+
+                        {auth?.user?.identity_verification_error && (
+                            <div className="text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-red-600 text-start flex flex-col gap-1 capitalize">
+                                <p>Error: {error?.code?.replaceAll("_", " ") || error?.code || "Unknown Error Occurred"}</p>
+                                <p>Possible Reason: {error?.reason || "N/A"}</p>
+                            </div>
+                        )}
+
                         {auth?.user?.identity_admin_status == 2 && (
                             <div className="mt-2">
                                 {auth?.user?.identity_admin_notes && (
-                                    <div className="mt-2 px-3 py-2 bg-red-100 text-red-800 rounded-lg text-sm">
-                                        <h2>Rejected By Admin</h2>
+                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-lg text-sm">
+                                        <h2 className="mb-1 text-normal font-bold">Your Identity Is Rejected By Admin</h2>
                                         <p>Reason : {auth?.user?.identity_admin_notes}</p>
                                     </div>
                                 )}
@@ -448,18 +472,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
-                            <div
-                                className={`check-icon me-2 pt-1 ${
-                                    auth?.user?.stripe_details_submitted == 1
-                                        ? "checked"
-                                        : ""
-                                }`}
-                            >
-                                <div
-                                    dangerouslySetInnerHTML={{
-                                        __html: checkedItem,
-                                    }}
-                                />
+                            <div className={`check-icon me-2 pt-1 ${
+                                    auth?.user?.stripe_details_submitted == 1 ? "checked" : "" }`} >
+                                <div dangerouslySetInnerHTML={{ __html: checkedItem, }} />
                             </div>
                             <div>
                                 <h2 className="text-dark font-bold">
@@ -478,9 +493,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             { auth?.user?.identity_admin_status == 1 ?
                             <Link className={"text-pink"} href="/stripe">Connect</Link>
                              :
-                             <>
                              <p className={"text-gray-400"}  >Connect</p>
-                             </>
                             }
                            </div> :
                             ''

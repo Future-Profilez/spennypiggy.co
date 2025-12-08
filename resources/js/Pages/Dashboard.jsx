@@ -594,7 +594,7 @@ export default function Dashboard(props) {
                                                                         
 
                                                                         <div className="pink-round mb-4">
-                                                                            <h2 className='text-large  font-GillSans text-uppercase pinkbg p-3 goaltitle text-white btn-shadow'>About Me</h2>
+                                                                            <h2 className='text-large  font-GillSans text-uppercase pinkbg p-3 text-white btn-shadow'>About Me</h2>
                                                                             <div className="p-4">
                                                                                 <p className={`text-muted text-start mt-2 ${user &&!user.bio? "d-none": ""}`}>
                                                                                     {(user &&user.bio) ||"Hy, I am a creator on SpennyPiggy."}

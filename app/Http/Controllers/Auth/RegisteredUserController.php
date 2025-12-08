@@ -143,9 +143,9 @@ class RegisteredUserController extends Controller
                 'creator_category' => $request->creator_category ?? null,
                 'ip_address' => $ip_address,
                 'country' => $request->country_code ?? null,
-                'bio' => $randomBio, // Here goes the random bio
+                // 'bio' => $randomBio, // Here goes the random bio
                 // 'bio_approved' => $request->role == 1 ? 0 : 0,
-                'bio_approved' => 1,
+                'bio_approved' => 0,
                 'profile_status_lock' => 0,
             ]);
             $user->refresh();

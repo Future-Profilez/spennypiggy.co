@@ -42,7 +42,7 @@ class UserProfileService
             'avatar', 'avatar_approved', 'cover', 'suspended_account',
             'social_image', 'account_id', 'stripe_details_submitted',
             'default_currency', 'country', 'creator_category', 'identity_status',
-            'profile_status_lock', 'is_subscribed', 'is_founder', 'created_at'
+            'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at'
         ])
         ->with([
             'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',

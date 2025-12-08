@@ -29,7 +29,7 @@ class User extends Authenticatable
         'identity_verified_at', 'identity_verification_error', 'identity_verification_details',
         'identity_admin_status', 'identity_admin_reviewed_at', 'identity_admin_notes',
         'ip_address', 'profile_status_lock', 'profile_reject_reason', 'is_500_limit_exceeded',
-        'is_subscribed', 'is_founder',
+        'is_subscribed', 'is_founder', 'show_piggy_bank'
     ];
 
     protected $hidden = [

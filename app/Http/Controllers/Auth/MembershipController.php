@@ -354,22 +354,10 @@ class MembershipController extends Controller
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($membership->user);
-        return $subscriptionCheck;
+        // return $subscriptionCheck;
         if (!$subscriptionCheck['eligible']) {
-            // Send notification to creator about blocked payment
             $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));
             
-            // Log the blocked payment for subscription issues
-            Log::warning('Membership payment blocked due to subscription issue', [
-                'creator_id' => $membership->user->id,
-                'creator_username' => $membership->user->username,
-                'membership_id' => $membership->id,
-                'membership_price' => $membership->price,
-                'subscription_status' => $subscriptionCheck['status'],
-                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
-            ]);
-            
-            // Return user-friendly error to fan
             return redirect()->back()->with('error', 
                 'This creator is temporarily unavailable. Please try again later.'
             );
@@ -379,20 +367,8 @@ class MembershipController extends Controller
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($membership->user);
         
         if (!$activityCheck['eligible']) {
-            // Send notification to creator about blocked payment
             $membership->user->notify(new PaymentBlockedNotification($activityCheck, $membership->price));
             
-            // Log the blocked payment for analytics
-            Log::info('Membership payment blocked due to insufficient creator activity', [
-                'creator_id' => $membership->user->id,
-                'creator_username' => $membership->user->username,
-                'membership_id' => $membership->id,
-                'membership_price' => $membership->price,
-                'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
-            ]);
-            
-            // Return user-friendly error to fan
             return redirect()->back()->with('error', 
                 'This creator is temporarily unavailable. Please try again later.'
             );
@@ -400,13 +376,7 @@ class MembershipController extends Controller
         
         // Log successful activity check for analytics
         if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
-            Log::info('Membership payment allowed - creator activity check passed', [
-                'creator_id' => $membership->user->id,
-                'creator_username' => $membership->user->username,
-                'membership_id' => $membership->id,
-                'activity_status' => $activityCheck['status'],
-                'content_count' => $activityCheck['content_count'] ?? 0
-            ]);
+           
         }
 
         // if (!in_array($membership->user->subscription_status, [1, 2])) {
@@ -664,14 +634,6 @@ class MembershipController extends Controller
                     
                     $payload['payment_intent_data'] = $paymentIntentData;
                     
-                    Log::info('Membership payment flow determined', [
-                        'creator_id' => $membership->user->id,
-                        'connected_account_id' => $connectedAccountId,
-                        'has_card_payments' => $hasCardPayments,
-                        'using_on_behalf_of' => $hasCardPayments,
-                        'membership_level' => $membership->level,
-                        'payment_type' => 'lifetime'
-                    ]);
                 } else {
                     $payload['mode'] = 'subscription';
                     $payload['subscription_data'] = [
@@ -693,13 +655,6 @@ class MembershipController extends Controller
                         ],
                     ];
                     
-                    Log::info('Membership payment flow determined', [
-                        'creator_id' => $membership->user->id,
-                        'connected_account_id' => $connectedAccountId,
-                        'has_card_payments' => $hasCardPayments,
-                        'membership_level' => $membership->level,
-                        'payment_type' => 'subscription'
-                    ]);
                 }
 
                 $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)

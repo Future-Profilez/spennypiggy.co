@@ -111,7 +111,9 @@ function Bill(props) {
                 :
                 <Link method='get'
                   href={route('bill.checkout',{uuid: itm.uuid})}
-                  className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</Link>
+                  className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >
+                    Pay Bill
+                </Link>
                 // <>
                 // { auth && auth.user !== null ?
                 //   :

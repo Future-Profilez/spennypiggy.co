@@ -115,7 +115,7 @@ export default function Membership() {
       <h2 className="fading headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-4xl uppercase mb-6 max-w-3xl mx-auto text-center">
         Supporting Creators! Empowering Gifters! Made for Everyone!
       </h2>
-      <div   className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-8 max-w-7xl mx-auto">
         {supportData.map((item, index) => (
           <div key={index} className="fading flex flex-col membershipitems items-center text-center mb-3 ">
           <div className={`relative w-full max-w-[250px] min-h-[150px] ${item.bg} rounded-2xl flex items-center justify-center`}>
