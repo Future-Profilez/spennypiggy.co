@@ -3,7 +3,7 @@
 
 <head>
     {{-- EMERGENCY: React Children patch must load before ANY other JavaScript --}}
-    <script src="{{ asset('react-emergency-patch.js') }}"></script>
+    <script nonce="{{ $cspNonce ?? '' }}" src="{{ asset('react-emergency-patch.js') }}"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <meta name="robots" content="index, follow">
@@ -69,7 +69,7 @@
     <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
     <link rel="apple-touch-startup-image" href="/apple-touch-icon.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         const css1 = [
             "font-size: 15px",
             "display:block",
@@ -118,7 +118,7 @@
         // Global platform fee configuration
         window.platformFeePercentage = {{ config('app.platform_fee_percentage', 20) }};
     </script>
-    <script type="application/ld+json">
+    <script nonce="{{ $cspNonce ?? '' }}" type="application/ld+json">
         {
             "@context": "https://schema.org",
             "@type": "WebSite",
@@ -131,7 +131,7 @@
         }
     </script>
 
-    <script async type="application/ld+json">
+    <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -147,7 +147,7 @@
       ]
     }
     </script>
-    <script async type="application/ld+json">
+    <script nonce="{{ $cspNonce ?? '' }}" async type="application/ld+json">
         {
         "@context":"http://schema.org",
         "@type":"SiteNavigationElement",
@@ -200,8 +200,8 @@
         </script>
 
     {{-- hCaptcha Script --}}
-    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-    <script async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
+    <script nonce="{{ $cspNonce ?? '' }}" src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <script nonce="{{ $cspNonce ?? '' }}" async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
     
     {{-- @laravelPWA --}}
     @routes
@@ -326,7 +326,7 @@
         }
     </style>
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         // Show loading screen only in PWA mode
         function isPWA() {
             return window.matchMedia('(display-mode: standalone)').matches ||
@@ -338,7 +338,7 @@
             document.getElementById('initial-loading-screen').style.display = 'flex';
         }
     </script>
-    <script type="speculationrules">
+    <script nonce="{{ $cspNonce ?? '' }}" type="speculationrules">
     {
     "prerender": [{ "source": "document", "eagerness": "moderate" }]
     }
