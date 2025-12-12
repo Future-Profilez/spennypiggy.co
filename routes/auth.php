@@ -293,7 +293,6 @@ Route::middleware('auth')->group(function () {
                     'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                 ]);
             });
-
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
@@ -346,7 +345,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/activate-subscription', function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
-
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
         });
