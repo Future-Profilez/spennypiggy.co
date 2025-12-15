@@ -73,7 +73,7 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
               <img
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid rounded-[12px]" 
+                className="img-fluid rounded-[12px] bg-gray-200" 
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -95,26 +95,21 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
                 ) : (
                   <RiVerifiedBadgeFill
                     size="1.5rem"
-                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full p-[2px]"
+                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]"
                   />
                 )
               )}
             </div>
             <div className="avatar-content">
-        <h2 className="flex items-center gap-1 capitalize">
-          
-          <span className="line-clamp-1 ">
-            {name}
-          </span>
-
-          
-
-        </h2>
-
-  <p className="text-gray-500">
-    {subhead || username}
-  </p>
-</div>
+            <h2 className="flex items-center gap-1 capitalize">
+              <span className="line-clamp-1 ">
+                {name}
+              </span>
+            </h2>
+          <p className="text-gray-500">
+            {subhead || username}
+          </p>
+        </div>
 
           </Link>
         </div>

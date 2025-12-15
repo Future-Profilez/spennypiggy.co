@@ -155,7 +155,7 @@ Route::get('/', function () {
         ->where('suspended_account', 0)
         ->where('profile_status_lock', 2)
         ->where('identity_status', 1)
-        ->where('created_at', '>=', $nowUtc->copy()->subDays(7))
+        ->where('created_at', '>=', $nowUtc->copy()->subDays(30))
         ->inRandomOrder()
         ->limit(12)
         ->get(['id', 'name', 'username', 'avatar', 'profile_status_lock', 'role'])
@@ -169,6 +169,8 @@ Route::get('/', function () {
                 'role' => $u->role,
             ];
         });
+
+
     // $period = request()->query('top_earners_period', 'all_time');
     $period = request()->query('top_earners_period', '');
     $limit = (int) request()->query('top_earners_limit', 9);
