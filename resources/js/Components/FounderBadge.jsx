@@ -53,7 +53,7 @@ export default function FounderBadge({
             `}
             title={`SpennyPiggy Founder - Earned £${minEarnings}+ in first ${qualificationDays} days`}
         >
-            <FaCrown className={`${currentSize.icon} ${variant === 'outline' ? 'text-yellow-500' : ''}`} />
+            <FaCrown className={`${currentSize.icon} ${variant === 'outline' ? 'text-[#eab308]' : ''}`} />
             {showText && (
                 <span className={`font-bold ${currentSize.text}`}>
                     FOUNDER

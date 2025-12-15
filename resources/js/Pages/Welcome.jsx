@@ -28,7 +28,7 @@ import FounderProgramAnnouncement from "./home/FounderProgramAnnouncement";
 import TrendingCreators from './home/TrendingCreators';
 import NewVerified from './home/NewVerified';
 import TopEarners from './home/TopEarners';
-export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarnersWeek }) {
+export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
     useEffect(()=>{
         AOS && AOS.init({
@@ -64,7 +64,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
 
         {trendingCreators && trendingCreators.length > 0 ? <TrendingCreators creators={trendingCreators} /> : ''}
         {newVerifiedCreators && newVerifiedCreators.length > 0 ? <NewVerified creators={newVerifiedCreators} /> : ''}
-        {topEarnersWeek && topEarnersWeek.length > 0 ? <TopEarners creators={topEarnersWeek} /> : ''}
+        {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
 
         <PaymentSlider/>
         {/* <ForCreators /> */}

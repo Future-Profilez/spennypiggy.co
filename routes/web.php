@@ -107,6 +107,7 @@ Route::get('/send-test-mail', function () {
     return 'Test email sent!';
 });
 
+
 // seeding command
 Route::get('seed/{seeder}', function ($seeder) {
     Artisan::call("db:seed --className=$seeder");
@@ -114,6 +115,7 @@ Route::get('seed/{seeder}', function ($seeder) {
         'seed completed'
     ]);
 });
+
 
 Route::get('/', function () {
     $nowUtc = \Carbon\Carbon::now('UTC');
@@ -123,7 +125,7 @@ Route::get('/', function () {
         ->where('role', 1)
         ->where('suspended_account', 0)
         ->where('profile_status_lock', 2)
-        ->where('identity_status', 1)
+        // ->where('identity_status', 1)
         ->join('search_clicks', 'search_clicks.creator_id', '=', 'users.id')
         ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.profile_status_lock', 'users.role')
         ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_24h', [$clicks24hStart])
@@ -167,49 +169,85 @@ Route::get('/', function () {
                 'role' => $u->role,
             ];
         });
-    // Top Earners of the Week (Mon–Sun) - UK time window
-    $startLondon = \Carbon\Carbon::now('Europe/London')->startOfWeek(\Carbon\Carbon::MONDAY)->startOfDay();
-    $endLondon = \Carbon\Carbon::now('Europe/London')->endOfWeek(\Carbon\Carbon::SUNDAY)->endOfDay();
-    $startUtc = $startLondon->copy()->setTimezone('UTC');
-    $endUtc = $endLondon->copy()->setTimezone('UTC');
-    $topEarnersWeek = \App\Models\User::where('stripe_details_submitted', 1)
+    // $period = request()->query('top_earners_period', 'all_time');
+    $period = request()->query('top_earners_period', '');
+    $limit = (int) request()->query('top_earners_limit', 9);
+    if ($limit < 1) { $limit = 9; }
+    if ($limit > 50) { $limit = 50; }
+
+    $nowLondon = \Carbon\Carbon::now('Europe/London');
+    if ($period === 'weekly') {
+        $startLondon = $nowLondon->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->startOfDay();
+        $endLondon = $nowLondon->copy()->endOfWeek(\Carbon\Carbon::SUNDAY)->endOfDay();
+        $label = 'Week';
+    } elseif ($period === 'monthly') {
+        $startLondon = $nowLondon->copy()->startOfMonth()->startOfDay();
+        $endLondon = $nowLondon->copy()->endOfMonth()->endOfDay();
+        $label = 'Month';
+    } elseif ($period === 'daily') {
+        $startLondon = $nowLondon->copy()->startOfDay();
+        $endLondon = $nowLondon->copy()->endOfDay();
+        $label = 'Today';
+    } else {
+        $startLondon = null;
+        $endLondon = null;
+        $label = 'All Time';
+    }
+
+    $startUtc = $startLondon ? $startLondon->copy()->setTimezone('UTC') : null;
+    $endUtc = $endLondon ? $endLondon->copy()->setTimezone('UTC') : null;
+
+    $topEarners = \App\Models\User::where('stripe_details_submitted', 1)
         ->where('suspended_account', 0)
         ->withCount([
-            'paymentitems as total_payments' => function ($query) use ($startUtc, $endUtc) {
+            'paymentitems as total_payments' => function ($query) use ($startUtc, $endUtc, $period) {
                 $query->select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(amount), 0)'))
-                    ->whereHas('payment', function($q) use ($startUtc, $endUtc) { 
-                        $q->where('payment_status', 'paid')
-                          ->whereBetween('stripe_payment_details.created_at', [$startUtc, $endUtc]); 
+                    ->whereHas('payment', function($q) use ($startUtc, $endUtc, $period) { 
+                        $q->where('payment_status', 'paid');
+                        if ($period !== 'all_time' && $startUtc && $endUtc) {
+                            $q->whereBetween('stripe_payment_details.created_at', [$startUtc, $endUtc]);
+                        }
                     });
             },
-            'subscriptions as total_subscriptions' => function ($query) use ($startUtc, $endUtc) {
+            'subscriptions as total_subscriptions' => function ($query) use ($startUtc, $endUtc, $period) {
                 $query->select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(amount), 0)'))
-                    ->where('wish_item_subscriptions.status', 'paid')
-                    ->whereBetween('wish_item_subscriptions.created_at', [$startUtc, $endUtc]);
+                    ->where('wish_item_subscriptions.status', 'paid');
+                if ($period !== 'all_time' && $startUtc && $endUtc) {
+                    $query->whereBetween('wish_item_subscriptions.created_at', [$startUtc, $endUtc]);
+                }
             },
-            'tip_goal_payment as total_tips' => function ($query) use ($startUtc, $endUtc) {
+            'tip_goal_payment as total_tips' => function ($query) use ($startUtc, $endUtc, $period) {
                 $query->select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(amount), 0)'))
-                    ->where('tip_goals_payments.status', 'paid')
-                    ->whereBetween('tip_goals_payments.created_at', [$startUtc, $endUtc]);
+                    ->where('tip_goals_payments.status', 'paid');
+                if ($period !== 'all_time' && $startUtc && $endUtc) {
+                    $query->whereBetween('tip_goals_payments.created_at', [$startUtc, $endUtc]);
+                }
             },
-            'membership_payments as total_member' => function ($query) use ($startUtc, $endUtc) {
+            'membership_payments as total_member' => function ($query) use ($startUtc, $endUtc, $period) {
                 $query->select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(amount), 0)'))
-                    ->where('membership_payments.status', 'paid')
-                    ->whereBetween('membership_payments.created_at', [$startUtc, $endUtc]);
+                    ->where('membership_payments.status', 'paid');
+                if ($period !== 'all_time' && $startUtc && $endUtc) {
+                    $query->whereBetween('membership_payments.created_at', [$startUtc, $endUtc]);
+                }
             },
-            'bill_payments as total_bill' => function ($query) use ($startUtc, $endUtc) {
+            'bill_payments as total_bill' => function ($query) use ($startUtc, $endUtc, $period) {
                 $query->select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(amount), 0)'))
-                    ->where('bill_payments.status', 'paid')
-                    ->whereBetween('bill_payments.created_at', [$startUtc, $endUtc]);
+                    ->where('bill_payments.status', 'paid');
+                if ($period !== 'all_time' && $startUtc && $endUtc) {
+                    $query->whereBetween('bill_payments.created_at', [$startUtc, $endUtc]);
+                }
             },
-            'shop_payments as total_shop' => function ($query) use ($startUtc, $endUtc) {
+            'shop_payments as total_shop' => function ($query) use ($startUtc, $endUtc, $period) {
                 $query->select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(amount), 0)'))
-                    ->where('shop_payments.payment_status', 'paid')
-                    ->whereBetween('shop_payments.created_at', [$startUtc, $endUtc]);
+                    ->where('shop_payments.payment_status', 'paid');
+                if ($period !== 'all_time' && $startUtc && $endUtc) {
+                    $query->whereBetween('shop_payments.created_at', [$startUtc, $endUtc]);
+                }
             },
         ])
+        ->havingRaw('(total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop) > 0')
         ->orderByDesc(\Illuminate\Support\Facades\DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
-        ->take(9)
+        ->take($limit)
         ->get(['id','name','username','avatar','profile_status_lock','role','default_currency'])
         ->map(function ($u, $index) {
             $sum = ($u->total_payments ?? 0) + ($u->total_subscriptions ?? 0) + ($u->total_tips ?? 0) + ($u->total_member ?? 0) + ($u->total_bill ?? 0) + ($u->total_shop ?? 0);
@@ -240,7 +278,8 @@ Route::get('/', function () {
         ],
         'trendingCreators' => $trendingCreators,
         'newVerifiedCreators' => $newVerifiedCreators,
-        'topEarnersWeek' => $topEarnersWeek,
+        'topEarners' => $topEarners,
+        'topEarnersLabel' => $label,
     ]);
 })->name("home");
 

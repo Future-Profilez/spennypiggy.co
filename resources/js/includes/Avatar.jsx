@@ -69,11 +69,11 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
-            <div className="avatar ">
+            <div className="avatar !overflow-visible relative ">
               <img
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid"
+                className="img-fluid rounded-[12px]" 
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -89,24 +89,33 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
                   e.target.src = userphoto;
                 }}
               />
+              {role && profile_status_lock && (
+                is_founder ? (
+                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
+                ) : (
+                  <RiVerifiedBadgeFill
+                    size="1.5rem"
+                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full p-[2px]"
+                  />
+                )
+              )}
             </div>
             <div className="avatar-content">
-              <h2 className='flex items-center capitalize '>{name} 
-                {role && profile_status_lock ?
-                  <>
-                    {is_founder ? 
-                      <div className="mb-1">
-                        <FounderBadge classes="w-4 h-4" icon={true}  />
-                      </div>
-                      :
-                      <RiVerifiedBadgeFill  size={'1.2rem'} 
-                      className="ms-1 mt-1 text-pink" /> 
-                    }
-                  </>
-                : ''}
-              </h2>
-              <p className='text-gray-500'>{subhead || username}</p>
-            </div>
+        <h2 className="flex items-center gap-1 capitalize">
+          
+          <span className="line-clamp-1 ">
+            {name}
+          </span>
+
+          
+
+        </h2>
+
+  <p className="text-gray-500">
+    {subhead || username}
+  </p>
+</div>
+
           </Link>
         </div>
       ) : (
