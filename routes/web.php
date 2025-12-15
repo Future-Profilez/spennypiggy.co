@@ -117,7 +117,6 @@ Route::get('seed/{seeder}', function ($seeder) {
 
 Route::get('/', function () {
     $nowUtc = \Carbon\Carbon::now('UTC');
-
     $clicks24hStart = $nowUtc->copy()->subHours(24);
     $clicks7dStart = $nowUtc->copy()->subDays(7);
     $trendingCreators = \App\Models\User::query()
@@ -168,13 +167,11 @@ Route::get('/', function () {
                 'role' => $u->role,
             ];
         });
-
     // Top Earners of the Week (Mon–Sun) - UK time window
     $startLondon = \Carbon\Carbon::now('Europe/London')->startOfWeek(\Carbon\Carbon::MONDAY)->startOfDay();
     $endLondon = \Carbon\Carbon::now('Europe/London')->endOfWeek(\Carbon\Carbon::SUNDAY)->endOfDay();
     $startUtc = $startLondon->copy()->setTimezone('UTC');
     $endUtc = $endLondon->copy()->setTimezone('UTC');
-
     $topEarnersWeek = \App\Models\User::where('stripe_details_submitted', 1)
         ->where('suspended_account', 0)
         ->withCount([

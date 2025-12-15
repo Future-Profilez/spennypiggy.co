@@ -62,10 +62,10 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <FounderProgramAnnouncement founderBonus={founderBonus} />
         <LiveBarSection />
 
-        <TrendingCreators creators={trendingCreators} />
-        <NewVerified creators={newVerifiedCreators} />
-        <TopEarners creators={topEarnersWeek} />
-        
+        {trendingCreators && trendingCreators.length > 0 ? <TrendingCreators creators={trendingCreators} /> : ''}
+        {newVerifiedCreators && newVerifiedCreators.length > 0 ? <NewVerified creators={newVerifiedCreators} /> : ''}
+        {topEarnersWeek && topEarnersWeek.length > 0 ? <TopEarners creators={topEarnersWeek} /> : ''}
+
         <PaymentSlider/>
         {/* <ForCreators /> */}
 
