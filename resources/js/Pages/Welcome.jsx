@@ -25,7 +25,10 @@ import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";
 import PaymentSlider from "./home/PaymentSlider";
 import FounderProgramAnnouncement from "./home/FounderProgramAnnouncement";
-export default function Home({ auth, user, founderBonus }) {
+import TrendingCreators from './home/TrendingCreators';
+import NewVerified from './home/NewVerified';
+import TopEarners from './home/TopEarners';
+export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarnersWeek }) {
 
     useEffect(()=>{
         AOS && AOS.init({
@@ -58,6 +61,11 @@ export default function Home({ auth, user, founderBonus }) {
         <Hero auth={auth} />
         <FounderProgramAnnouncement founderBonus={founderBonus} />
         <LiveBarSection />
+
+        <TrendingCreators creators={trendingCreators} />
+        <NewVerified creators={newVerifiedCreators} />
+        <TopEarners creators={topEarnersWeek} />
+        
         <PaymentSlider/>
         {/* <ForCreators /> */}
 

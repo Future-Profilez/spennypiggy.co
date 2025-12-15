@@ -54,6 +54,7 @@ export default function VipSupporters() {
                             username={supporter.username}
                             link={supporter.username}
                             size="md"
+                            onClick={() => { try { const payload = { creator_id: supporter.id, creator_username: supporter.username }; if (payload.creator_id || payload.creator_username) { axios.post('/analytics/search-click', payload); } } catch(_e) {} }}
                         />
                         {/* <div className="flex flex-col">
                             <h3 className="font-semibold text-gray-900 text-sm">{supporter.name}</h3>
@@ -166,6 +167,7 @@ export default function VipSupporters() {
                                 username={supporter.username}
                                 link={supporter.username}
                                 size="md"
+                                onClick={() => { try { const payload = { creator_id: supporter.id, creator_username: supporter.username }; if (payload.creator_id || payload.creator_username) { axios.post('/analytics/search-click', payload); } } catch(_e) {} }}
                             />
                             {/* <div className="flex flex-col">
                                 <h3 className="font-semibold text-gray-900 text-sm">{supporter.name}</h3>

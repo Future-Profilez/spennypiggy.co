@@ -48,6 +48,7 @@ export default function TopSupporters() {
             subhead={`@${supporter.username || "anonymous"}`}
             username={supporter.username || ""}
             src={supporter.avatar_url}
+            onClick={() => { try { const payload = { creator_id: supporter.id, creator_username: supporter.username }; if (payload.creator_id || payload.creator_username) { axios.post('/analytics/search-click', payload); } } catch(_e) {} }}
           />
           <div className="index-badge">{index + 1}</div>
         </div>

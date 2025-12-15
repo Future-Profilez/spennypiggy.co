@@ -39,6 +39,7 @@ class LeaderBoardController extends Controller
         $rank = 1;
         foreach ($paginator as $query) {
             $data[] = [
+                'id' => $query->id,
                 'rank' => $rank,
                 'name' => $query->name ?? '',
                 'username' => $query->username ?? '',
@@ -413,6 +414,7 @@ class LeaderBoardController extends Controller
                 $user = $item->payment->user ?? null;
                 if ($user) {
                     $gifters[] = [ 
+                        'id' => $user->id,
                         'name' => $user->name ?? "Anonymous",
                         'username' => $user->username ?? "Anonymous",
                         'avatar_url' => $user->avatar_url ?? null,
@@ -434,6 +436,7 @@ class LeaderBoardController extends Controller
             foreach ($subscriptions as $sub) {
                 $user = $sub->user;
                 $gifters[] = [
+                    'id' => $user->id,
                     'name' => $user->name ?? "Anonymous",
                     'username' => $user->username ?? "Anonymous",
                     'avatar_url' => $user->avatar_url ?? null,
@@ -454,6 +457,7 @@ class LeaderBoardController extends Controller
             foreach ($tips as $tip) {
                 $user = $tip->user;
                 $gifters[] = [
+                    'id' => $user->id,
                     'name' => $user->name ?? "Anonymous",
                     'username' => $user->username ?? "Anonymous",
                     'avatar_url' => $user->avatar_url ?? null,
@@ -474,6 +478,7 @@ class LeaderBoardController extends Controller
             foreach ($members as $member) {
                 $user = $member->user;
                 $gifters[] = [
+                    'id' => $user->id,
                     'name' => $user->name ?? "Anonymous",
                     'username' => $user->username ?? "Anonymous",
                     'avatar_url' => $user->avatar_url ?? null,
@@ -494,6 +499,7 @@ class LeaderBoardController extends Controller
             foreach ($bills as $bill) {
                 $user = $bill->user;
                 $gifters[] = [
+                    'id' => $user->id,
                     'name' => $user->name ?? "Anonymous",
                     'username' => $user->username ?? "Anonymous",
                     'avatar_url' => $user->avatar_url ?? null,
@@ -710,6 +716,7 @@ class LeaderBoardController extends Controller
 
                 if (!isset($gifters[$username])) {
                     $gifters[$username] = [
+                        'id' => $user->id ?? null,
                         'name' => $user->name ?? "Anonymous",
                         'username' => $user->username ?? "Anonymous",
                         'avatar_url' => $user->avatar_url ?? null,
@@ -814,6 +821,7 @@ class LeaderBoardController extends Controller
                 $amount > $gifters[$username]['amount']
             ) {
                 $gifters[$username] = [
+                    'id' => $user->id ?? null,
                     'type' => $type,
                     'name' => $user->name ?? "Anonymous",
                     'username' => $user->username ?? "Anonymous",
@@ -912,6 +920,7 @@ class LeaderBoardController extends Controller
             $periodFollowers = $this->calculatePeriodFollowers($query, $type);
             
             $data[] = [
+                'id' => $query->id,
                 'rank' => $rank,
                 'name' => $query->name ?? '',
                 'username' => $query->username ?? '',
@@ -976,6 +985,7 @@ class LeaderBoardController extends Controller
 
                 if (!isset($supporters[$username])) {
                     $supporters[$username] = [
+                        'id' => $user->id,
                         'name' => $user->name ?? "Anonymous",
                         'username' => $user->username ?? "Anonymous", 
                         'avatar_url' => $user->avatar_url ?? null,

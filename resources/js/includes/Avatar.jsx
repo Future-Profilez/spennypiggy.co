@@ -4,7 +4,7 @@ import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
 
-export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder }) {
+export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
 
   return (
     <>
@@ -67,7 +67,8 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
 
       {username ? (
         <div className="avatar-wrap">
-          <Link href={url || `/${link || username}`} className="useravatar">
+          <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
+          >
             <div className="avatar ">
               <img
                 src={imageSrc || src || userphoto}

@@ -70,6 +70,14 @@ export default function Board(props) {
                             subhead={`@${(r && r.username) || null}`}
                             username={(r && r.username) || null}
                             src={(r && r.avatar) || userphoto}
+                            onClick={() => {
+                                try {
+                                    const payload = { creator_id: r && r.id, creator_username: r && r.username };
+                                    if (payload.creator_id || payload.creator_username) {
+                                        axios.post('/analytics/search-click', payload);
+                                    }
+                                } catch(_e) {}
+                            }}
                         />
                     </div>
                 </div>
@@ -88,13 +96,21 @@ export default function Board(props) {
 
     const Position = ({ p, position }) => {
         return (
-            <>
+            <> 
                 {p && p.username ? (
                     <Link
                         href={p && p.username}
+                        onClick={() => {
+                            try {
+                                const payload = { creator_id: p && p.id, creator_username: p && p.username };
+                                if (payload.creator_id || payload.creator_username) {
+                                    axios.post('/analytics/search-click', payload);
+                                }
+                            } catch(_e) {}
+                        }}
                         className={` position-${position} position text-center rounded-[20px] md:rounded-[30px]  
                               border-[#F94F97] !shadow-none shadow-pinks bg-white m-0`}
-                    >
+                    > {p.id}
                         <div className="profile p-2 sm:p-3 pb-0">
                             <div className="position-relative">
                                 {position == 1 ? (

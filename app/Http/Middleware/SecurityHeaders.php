@@ -22,13 +22,11 @@ class SecurityHeaders
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
 
-        $csp = "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https:; font-src 'self' https: data:; connect-src 'self' https: wss:; script-src 'self' 'nonce-{$nonce}' https://js.stripe.com https://challenges.cloudflare.com https://js.hcaptcha.com https://app.termly.io; style-src 'self' 'unsafe-inline' https:; frame-src 'self' https://js.stripe.com https://challenges.cloudflare.com https://ucarecdn.com https://*.uploadcare.com";
+        $csp = "default-src 'self' data: blob: https: http:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https: http:; font-src 'self' https: http: data:; connect-src 'self' https: http: wss: ws:; script-src 'self' 'nonce-{$nonce}' https: http: https://js.stripe.com https://challenges.cloudflare.com https://js.hcaptcha.com https://app.termly.io; style-src 'self' 'unsafe-inline' https: http:; frame-src 'self' https: http: https://js.stripe.com https://challenges.cloudflare.com https://ucarecdn.com https://*.uploadcare.com";
         $response->headers->set('Content-Security-Policy', $csp);
 
-        if ($request->isSecure()) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-        }
-
+        
+        
         return $response;
     }
 }

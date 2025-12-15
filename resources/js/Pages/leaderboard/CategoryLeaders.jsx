@@ -62,6 +62,14 @@ export default function CategoryLeaders() {
                         username={creator.username}
                         link={creator.username}
                         size="md"
+                        onClick={() => {
+                            try {
+                                const payload = { creator_id: creator.id, creator_username: creator.username };
+                                if (payload.creator_id || payload.creator_username) {
+                                    axios.post('/analytics/search-click', payload);
+                                }
+                            } catch(_e) {}
+                        }}
                     />
                     {/* <div>
                         <h4 className="font-semibold text-gray-900">{creator.name}</h4>

@@ -69,7 +69,11 @@ export default function IntroVideos(props) {
       </>} />
       <div className='absolute bottom-0 bg-black  left-0 w-full p-3 md:p-4 z-[99px] text-white transition-colors   ' >
         {w && w.user && w.user.username ? (
-          <Link href={`/${w.user.username}`}  >
+          <Link href={`/${w.user.username}`} onClick={() => {
+            try {
+              axios.post('/analytics/search-click', { creator_id: w.user.id });
+            } catch(_e) {}
+          }} >
             <p className='text-normal md:text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
             <p className='text-normal mt-0' >@{w.user.username}</p>
           </Link>
@@ -119,4 +123,3 @@ export default function IntroVideos(props) {
     </>
 
 }
-
