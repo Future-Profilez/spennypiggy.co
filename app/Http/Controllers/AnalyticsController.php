@@ -52,8 +52,7 @@ class AnalyticsController extends Controller
             if ($isBot) {
                 return response()->json(['status' => true]);
             }
-
-            $recentWindow = now()->subMinutes(1);
+            $recentWindow = now()->subMinutes(5);
             if ($userId) {
                 $exists = SearchClick::where('creator_id', $creatorId)
                     ->where('user_id', $userId)
