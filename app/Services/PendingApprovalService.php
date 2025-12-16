@@ -59,9 +59,7 @@ class PendingApprovalService
             'posts' => $this->getPendingPosts(),
             'user_profiles' => $this->getPendingUserProfiles(),
             'user_avatars' => $this->getPendingUserAvatars(),
-            // New: Stripe Identity submissions awaiting admin review
             'stripe_identity' => $this->getPendingStripeIdentitySubmissions(),
-            // New: Social media links awaiting admin review
             'social_media' => $this->getPendingSocialMediaLinks(),
         ];
     }
@@ -216,13 +214,13 @@ class PendingApprovalService
     {
         return User::query()
             ->where('role', 1) // creators only
-            ->where('suspended_account', 0) // not suspended
+            ->where('suspended_account', 0)
             ->where('identity_status', 1)
             ->whereHas('social_links', function ($query) {
                 $query->where('status', 1);
             })->where(function ($q) {
                 $q->whereNull('identity_admin_status')
-                  ->orWhere('identity_admin_status', 0); // pending admin approval
+                  ->orWhere('identity_admin_status', 0);
             })->orderBy('identity_verified_at', 'desc')
             ->get(['id', 'uuid', 'name', 'username', 'email', 'identity_status', 'identity_admin_status', 'identity_verified_at']);
     }

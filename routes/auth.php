@@ -352,12 +352,12 @@ Route::middleware('auth')->group(function () {
         // stripe identity verification routes
         Route::get('/stripe/identity-verification', function () {
             $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
-            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                $user = Auth::user();
-                $user->identity_admin_status = 0;
-                $user->identity_status = 1;
-                $user->save();
-            }
+            // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+            //     $user = Auth::user();
+            //     $user->identity_admin_status = 0;
+            //     $user->identity_status = 1;
+            //     $user->save();
+            // }
             return Inertia::render('Auth/StripeIdentity', [
                 'status' => false,
                 'message' => 'Please complete your Stripe identity verification.',

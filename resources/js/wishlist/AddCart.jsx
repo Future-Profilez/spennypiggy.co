@@ -246,7 +246,15 @@ export default function AddCart(props) {
 
 
                 {showall ? (
-                    <Link
+                    <Link 
+                        onClick={() => {
+                            try {
+                                const payload = { creator_id: item && item.id, creator_username: item && item.username };
+                                if (payload.creator_id || payload.creator_username) {
+                                    axios.post('/analytics/search-click', payload);
+                                }
+                            } catch(_e) {}
+                        }}
                         href={`/${item.user && item.user.username}`}
                         className="m-auto d-table text-primary"
                     >

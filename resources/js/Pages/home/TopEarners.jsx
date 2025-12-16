@@ -1,5 +1,6 @@
 import Avatar from '@/includes/Avatar';
 import PriceFormat from '@/includes/PriceFormat';
+import { Link } from '@inertiajs/react';
 
 export default function TopEarners({ creators, periodLabel }) {
   if (!creators || creators.length === 0) return null;
@@ -19,7 +20,7 @@ export default function TopEarners({ creators, periodLabel }) {
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3">
         {creators.map((c, idx) => (
-          <div key={c.id} className="fading bg-white rounded-2xl p-3 border border-3 !border-pink-500 sshadow-[6px_6px_0_0_#F94F96] relative">
+          <Link key={c.id} href={`/${c.username}`}  className="fading bg-white rounded-2xl p-3 border border-3 !border-pink-500 hover:scale-[1.01] transition-[all] relative">
             {c.is_number_one ? (
               <div className="absolute top-[-13px] left-[-13px] bg-[#F94F96] text-white text-xs font-bold px-2 py-1 rounded-full">#1 {periodLabel ? ` — ${periodLabel}` : ''}</div>
             ) : null}
@@ -30,14 +31,14 @@ export default function TopEarners({ creators, periodLabel }) {
                 src={c.avatar_url}
                 role={c.role}
                 profile_status_lock={c.profile_status_lock}
-                link={c.username}
+                // link={c.username}
               />
               <div className="text-right">
                 <div className="font-bold">{formatMultiPrice(c.total_amount, c.currency || 'USD')}</div>
                 {periodLabel ? <div className="text-xs text-gray-500">{periodLabel} total</div> : ''}
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>

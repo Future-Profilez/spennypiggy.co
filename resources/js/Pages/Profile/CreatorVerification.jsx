@@ -140,10 +140,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <div className="flex items-center   justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
                             <div
-                                className={`check-icon me-2 pt-1 ${
-                                    hasAnySocialMedia && slinks?.status !== 2 ? "checked" : ""
-                                }`}
-                            >
+                                // className={`check-icon me-2 pt-1 ${ hasAnySocialMedia && slinks?.status !== 2 ? "checked" : "" }`} >
+                                className={`check-icon me-2 pt-1 ${slinks?.status == 1 ? "checked" : "" }`} >
                                 <div
                                     dangerouslySetInnerHTML={{
                                         __html: checkedItem,
@@ -397,7 +395,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             <div className="step-title flex max-w-[390px] pe-3">
                                 <div
                                     className={`check-icon me-2 pt-1 ${
-                                        auth?.user?.identity_admin_status == 1
+                                        auth?.user?.identity_status == 1
                                             ? "checked"
                                             : ""
                                     }`} >
@@ -416,17 +414,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </div>
                             </div>
                             <>
-                                {auth?.user?.identity_admin_status == 1 ? (
+                                {auth?.user?.identity_status == 1 ? (
                                     <span className="text-green-600">Verified</span>
-                                ) : auth?.user?.identity_admin_status == 2 ? (
-                                    <>
-                                        {/* <span className="text-red-600">Rejected</span>{" "} */}
-                                        <Link className={"text-pink"} href="/stripe/identity-verification">Re-verify</Link>
-                                    </>
-                                ) : auth?.user?.identity_status == 1 ? (
-                                    <span className="text-yellow-600">
-                                        {/* Pending Admin Review */}
-                                        </span>
+                                ) : auth?.user?.identity_status == 2 ? (
+                                    <Link className={"text-pink"} href="/stripe/identity-verification">Re-verify</Link>
                                 ) : auth?.user?.profile_status_lock == 2 ? (
                                     <Link className={"text-pink"} href="/stripe/identity-verification">Verify</Link>
                                 ) : (
@@ -436,11 +427,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
 
 
-                        {auth?.user?.identity_admin_status !== 2 && auth?.user?.identity_status == 1 && auth?.user?.identity_admin_status != 1 && (
+                        {/* {auth?.user?.identity_admin_status !== 2 && auth?.user?.identity_status == 1 && auth?.user?.identity_admin_status != 1 && (
                             <div className="mt-2 text-yellow-700 bg-yellow-50 px-3 py-2 rounded">
                                 ⏳ Your documents has been submitted. Waiting for admin review. Please check again after 1-2 hrs.
                             </div>
-                        )}
+                        )} */}
 
                         {auth?.user?.identity_verification_error && (
                             <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-start">
@@ -458,7 +449,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                         )}
 
-                        {auth?.user?.identity_admin_status == 2 && (
+                        {/* {auth?.user?.identity_admin_status == 2 && (
                             <div className="mt-2">
                                 {auth?.user?.identity_admin_notes && (
                                     <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-lg text-sm">
@@ -467,7 +458,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     </div>
                                 )}
                             </div>
-                        )}
+                        )} */}
                      </div>
 
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
@@ -490,7 +481,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                         {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
                            <div>
-                            { auth?.user?.identity_admin_status == 1 ?
+                            { auth?.user?.identity_status == 1 ?
                             <Link className={"text-pink"} href="/stripe">Connect</Link>
                              :
                              <p className={"text-gray-400"}  >Connect</p>

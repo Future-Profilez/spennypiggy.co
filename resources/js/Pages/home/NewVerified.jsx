@@ -1,4 +1,5 @@
 import Avatar from '@/includes/Avatar';
+import { Link } from '@inertiajs/react';
 
 export default function NewVerified({ creators }) {
   if (!creators || creators.length === 0) return null;
@@ -9,17 +10,17 @@ export default function NewVerified({ creators }) {
       <p className="fading text-center text-gray-300 mb-6">Joined within the last 30 days</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
         {creators.map((c) => (
-          <div key={c.id} className="fading bg-white rounded-2xl p-3 border  border-3 !border-green-500 sshadow-[6px_6px_0_0_#1AD1A6]">
-              <div className="absolute top-[-13px] right-[-13px] bg-[#F94F96] text-white text-xs  px-2 py-1 rounded-full">New</div>
+          <Link key={c.id} href={`/${c.username}`} className="fading bg-white rounded-2xl p-3 border  border-3 !border-green-500 hover:scale-[1.01] transition-[all] relative">
+              <div className="absolute top-[-13px] right-[-13px] bg-red-500 text-white text-xs  px-2 py-1 rounded-full">New</div>
             <Avatar 
               name={c.name}
               username={c.username}
               src={c.avatar_url}
               role={c.role}
               profile_status_lock={c.profile_status_lock}
-              link={c.username}
+              // link={c.username}
             />
-          </div>
+          </Link>
         ))}
       </div>
     </section>

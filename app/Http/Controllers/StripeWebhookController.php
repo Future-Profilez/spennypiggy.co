@@ -58,18 +58,18 @@ class StripeWebhookController extends Controller
                     break;
 
                 default:
-                    Log::warning('Unhandled event type', ['type' => $event->type]);
+            \Log::warning('Unhandled event type', ['type' => $event->type]);
                     break;
             }
 
             return response()->json(['status' => 'success']);
         } catch (\UnexpectedValueException $e) {
             // Invalid payload
-            Log::error('Invalid Payload', ['message' => $e->getMessage()]);
+            \Log::error('Invalid Payload', ['message' => $e->getMessage()]);
             return response()->json(['error' => 'Invalid payload'], 400);
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
             // Invalid signature
-            Log::error('Invalid Signature', [
+            \Log::error('Invalid Signature', [
                 'message' => $e->getMessage(),
                 'sig_header' => $sigHeader,
                 'payload' => $payload,
@@ -99,7 +99,7 @@ class StripeWebhookController extends Controller
             $user->update([
                 'identity_status' => $isFraudulent ? 3 : 0, // 3 = Fraud, 0 = Failed
                 'identity_verification_error' => $errorPayload,
-                'identity_verification_details' => json_encode($session),
+                'identity_verification_details' => null,
                 'identity_verified_at' => null,
             ]);
 
@@ -115,7 +115,7 @@ class StripeWebhookController extends Controller
                 $user->email
             );
         } else {
-            Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+            \Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
         }
     }
 
@@ -142,7 +142,7 @@ class StripeWebhookController extends Controller
                     'identity_status' => 0, // Failed per policy
                     'identity_verified_at' => null,
                     'identity_verification_error' => json_encode($error),
-                    'identity_verification_details' => json_encode($session),
+                    'identity_verification_details' => null,
                 ]);
 
                 SendIdentityVerificationEmail::dispatch($user, 'failed');
@@ -156,14 +156,33 @@ class StripeWebhookController extends Controller
 
             $isFraudulent = $this->checkForFraud($session);
 
-            $user->update([
+            $updateData = [
                 'identity_status' => $isFraudulent ? 3 : 1, // 3 = Fraud, 1 = Verified
                 'identity_verified_at' => $isFraudulent ? null : now(),
-                'identity_verification_details' => json_encode($session),
-            ]);
+                'identity_verification_details' => null,
+            ];
+
+            if (!$isFraudulent) {
+                $updateData['identity_admin_status'] = 1;
+                $updateData['identity_admin_reviewed_at'] = now();
+            }
+
+            $user->update($updateData);
 
             $emailType = $isFraudulent ? 'fraud' : 'success';
             SendIdentityVerificationEmail::dispatch($user, $emailType);
+
+            // Request redaction of verification session to avoid storing sensitive images at Stripe
+            try {
+                $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $client->identity->verificationSessions->redact($session->id, []);
+            } catch (\Throwable $e) {
+                \Log::warning('Stripe Identity redaction failed', [
+                    'user_id' => $user->id,
+                    'session_id' => $session->id ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             if ($isFraudulent) {
                 Helpers::sendNotification(
@@ -179,7 +198,7 @@ class StripeWebhookController extends Controller
                 );
             }
         } else {
-            Log::error('User not found for verified verification session', ['session_id' => $session->id]);
+            \Log::error('User not found for verified verification session', ['session_id' => $session->id]);
         }
     }
 
@@ -278,7 +297,7 @@ class StripeWebhookController extends Controller
         }
 
         if (!$event || !isset($event->type)) {
-            Log::warning('Stripe webhook: invalid payload');
+            \Log::warning('Stripe webhook: invalid payload');
             return response()->json(['error' => 'Invalid payload'], 400);
         }
 
@@ -289,18 +308,18 @@ class StripeWebhookController extends Controller
 
         switch ($type) {
             case 'checkout.session.completed':
-                Log::info("Handling Checkout Session Completed");
+                \Log::info("Handling Checkout Session Completed");
                 $this->handleCheckoutSessionCompleted($data, $metadata);
                 $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
 
             case 'invoice.paid':
-                Log::info("Handling Invoice Paid");
+                \Log::info("Handling Invoice Paid");
                 $this->handleInvoicePaid($data, $metadata);
                 break;
 
             case 'invoice.payment_succeeded':
-                Log::info("Handling Invoice Payment Succeeded");
+                \Log::info("Handling Invoice Payment Succeeded");
                 $this->handleInvoicePaymentSucceeded($data, $metadata);
                 $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
@@ -310,29 +329,29 @@ class StripeWebhookController extends Controller
 
                 switch ($productType) {
                     case 'bill':
-                        Log::info("Handling Bill Subscription Update");
+                        \Log::info("Handling Bill Subscription Update");
                         $this->handleBillSubscriptionUpdate($data, $metadata);
                         break;
 
                     case 'membership':
-                        Log::info("Handling Membership Subscription Update");
+                        \Log::info("Handling Membership Subscription Update");
                         $this->handleMembershipSubscriptionUpdate($data, $metadata);
                         break;
 
                     case 'wish':
-                        Log::info("Handling Wish Subscription Update");
+                        \Log::info("Handling Wish Subscription Update");
                         $this->handleWishSubscriptionUpdate($data, $metadata);
                         break;
 
                     default:
-                        Log::warning("Unknown product type in metadata: " . json_encode($metadata));
+                        \Log::warning("Unknown product type in metadata: " . json_encode($metadata));
                         break;
                 }
                 break;
 
             case 'customer.subscription.deleted':
                 $this->customerSubscriptionDeleted($data);
-                Log::info("Subscription canceled: " . $data->id);
+                \Log::info("Subscription canceled: " . $data->id);
                 break;
 
             // case 'customer.subscription.trial_will_end':
@@ -359,7 +378,7 @@ class StripeWebhookController extends Controller
             //     break;
             // $this->customerSubscriptionTrialWillEnd($data);
             default:
-                Log::info("Unhandled event type: " . $type);
+                \Log::info("Unhandled event type: " . $type);
         }
         return response()->json(['status' => 'success']);
     }

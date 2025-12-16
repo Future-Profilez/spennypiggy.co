@@ -43,18 +43,18 @@ export default function StripeIdentity({ auth }) {
             <div className="flex flex-col py-12 items-center justify-center min-h-[80vh] bg-gray-100">
                 <div className="rounded-lg p-6 sm:p-10 max-w-xl w-full">
                     {/* Admin Review Banners */}
-                    {auth?.user?.identity_status == 1 && (!adminIdentity || adminIdentity?.status !== 1) && (
+                    {/* {auth?.user?.identity_status == 1 && (!adminIdentity || adminIdentity?.status !== 1) && (
                         <div className="mb-4 text-blue-800 bg-blue-100 p-4 rounded-lg border border-blue-200 text-center">
                             <p className="font-semibold mb-1">Identity Submitted</p>
                             <p className="text-sm">Your documents are with our admin team for review. You'll receive an email once approved.</p>
                         </div>
-                    )}
-                    {adminIdentity?.status === 2 && (
+                    )} */}
+                    {/* {auth?.user?.identity_status === 2 && (
                         <div className="mb-4 text-red-800 bg-red-100 p-4 rounded-lg border border-red-200 text-center">
                             <p className="font-semibold mb-1">Admin Review: Rejected</p>
                             <p className="text-sm">{adminIdentity?.notes || "Please re-submit your identity documents following the guidelines below."}</p>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Display error explanation */}
                     {auth?.user?.identity_verification_error && (
@@ -63,16 +63,11 @@ export default function StripeIdentity({ auth }) {
                             <p className="text-sm">
                                 Your last attempt to complete identity verification was unsuccessful. Please review the details below and try again.
                             </p>
-                        </div>
-                    )}
-
-                    {/* Display error details */}
-                    {auth?.user?.identity_verification_error && (
-                        <div className="mb-4 text-red-600 text-center flex flex-col gap-1 capitalize">
                             <p>Error: {error?.code?.replaceAll("_", " ") || error?.code || "Unknown Error Occurred"}</p>
                             <p>Possible Reason: {error?.reason || "N/A"}</p>
                         </div>
                     )}
+
 
                     <h2 className="text-center welcomeHeading !text-3xl shadow-yellow font-GillSans text-uppercase mb-1">
                         Identity Verification Required
@@ -81,20 +76,13 @@ export default function StripeIdentity({ auth }) {
                         To access all features, please complete your Stripe identity verification. This process ensures your account's security and compliance.
                     </p>
 
-                    {/* Policy Notice */}
-                    <div className="mt-4 text-center text-sm text-red-700 bg-red-50 rounded-md p-3 border border-red-200">
-                        <p className="font-semibold">Important:</p>
-                        <p>We accept only passports for identity verification. Driver’s licenses, national ID cards, or other documents will be rejected.</p>
-                    </div>
-
-                    {/* Verification Button */}
                     <div className="mt-6 flex justify-center">
                         <LoaderButton
-                            disabled={loading || (auth?.user?.identity_status == 1 && adminIdentity?.status !== 2)}
+                            disabled={loading || (auth?.user?.identity_status == 1)}
                             onClick={handleVerification}
                             className="p  px-6 py-[13px]"
                             spinnerClassName="fill-white" >
-                            {loading ? "Processing..." : adminIdentity?.status === 2 ? "Reverify Now" : auth?.user?.identity_status == 1 ? "Verification Submitted" : "Verify Now"}
+                            {loading ? "Processing..." :auth?.user?.identity_status === 2 ? "Reverify Now" : auth?.user?.identity_status == 1 ? "Verification Submitted" : "Verify Now"}
                         </LoaderButton>
                     </div>
                 </div>
