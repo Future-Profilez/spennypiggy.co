@@ -2995,12 +2995,10 @@ class StripeController extends Controller
     {
         try {
             Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
-
             $user = Auth::user();
             if (!$user) {
                 return response()->json(['error' => 'User not found.'], 404);
             }
-
             if($user->identity_admin_status == 2){
                 // $appUrl = config('app.url');
                 // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
@@ -3008,7 +3006,6 @@ class StripeController extends Controller
                 // }
                 $user->save();
             }
-
             // Create Passport-Only Stripe Identity Verification Session
             $session = VerificationSession::create([
                 'type' => 'document',

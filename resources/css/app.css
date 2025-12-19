@@ -10,7 +10,7 @@
   from {
     opacity: 0;
     box-shadow: none;
-    transform: scale(.8) translateY(8vh);
+    transform: scale(.9) translateY(8vh);
   }
 }
 

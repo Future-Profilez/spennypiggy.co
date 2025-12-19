@@ -136,8 +136,8 @@ export default function CategoryLeaders() {
 
     return (
         <div className="bg-gray-100 rounded-[25px] p-4 mb-6 mt-6">
-            <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-2">🏆 Category Leaders Creators</h2>
-            <p className="text-gray-500 mb-6 ">Top performers in each category</p>
+            <h2 className="fading font-GillSans text-2xl uppercase text-dark text-start mb-2">🏆 Category Leaders Creators</h2>
+            <p className="fading text-gray-500 mb-6 ">Top performers in each category</p>
 
             {/* Category Tabs */}
             <div className="category-tabs mb-6 mt-2">
@@ -167,9 +167,9 @@ export default function CategoryLeaders() {
                 {currentData.length > 0 ? (
                     <>
                         {currentCategory && (
-                            <div className="flex items-center mb-4">
+                            <div className="fading flex items-center mb-4">
                                 <currentCategory.icon size={24} className={currentCategory.color} />
-                                <h3 className="text-lg font-semibold ml-2">
+                                <h3 className=" text-lg font-semibold ml-2">
                                     Top {currentCategory.label} Creators
                                 </h3>
                             </div>
