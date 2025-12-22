@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\DiscoveryService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\BillsController;
@@ -90,12 +91,60 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
-Route::get('discover', function () {
-    return Inertia::render('discover/Discover');
-})->name("discover");
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
+
+Route::get('discover/suggestions', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService) {
+    $term = $request->input('q');
+    return response()->json($discoveryService->getSuggestions($term));
+})->name('discover.suggestions');
+
+Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = null, $category = null) {
+    $filters = $request->only(['search', 'verified', 'minPrice', 'maxPrice', 'sortBy', 'categories', 'contentType']);
+    $isSearch = false;
+
+    if ($type) {
+        $normalizedType = strtolower($type);
+        if (in_array($normalizedType, ['creators', 'wishes'])) {
+            $filters['contentType'] = ucfirst($normalizedType);
+            $isSearch = true;
+        } else {
+            $filters['categories'] = $type;
+            $filters['contentType'] = $request->input('contentType', 'Creators');
+            $isSearch = true;
+        }
+    } else {
+        $filters['contentType'] = $request->input('contentType', 'Creators');
+    }
+
+    if ($category) {
+        $filters['categories'] = $category;
+        $isSearch = true;
+    }
+
+    if (!empty($request->query())) {
+        $isSearch = true;
+    }
+
+    $searchResults = [];
+    if ($isSearch) {
+        if (($filters['contentType'] ?? 'Creators') === 'Creators') {
+            $searchResults = $discoveryService->getSearchCreators($filters);
+        } else {
+            $searchResults = $discoveryService->getSearchWishes($filters);
+        }
+    }
+
+    return Inertia::render('discover/Discover', [
+        'featuredCreators' => $discoveryService->getTrendingCreators(12),
+        'newVerifiedCreators' => $discoveryService->getNewVerifiedCreators(12),
+        'featuredWishes' => $discoveryService->getFeaturedWishes(12),
+        'topEarners' => $discoveryService->getTopEarners('', 12)['data'],
+        'filters' => $filters,
+        'searchResults' => $searchResults,
+    ]);
+})->name("discover");
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');

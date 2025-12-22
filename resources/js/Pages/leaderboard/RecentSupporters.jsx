@@ -3,6 +3,7 @@ import { useState } from 'react';
 import  axios  from 'axios';
 import { useEffect } from 'react';
 import Nocontent from '@/includes/Nocontent';
+import { trackSearchClick } from "@/includes/Analytics";
 
 export default function RecentSupporters() {
 
@@ -45,7 +46,7 @@ export default function RecentSupporters() {
             subhead={`@${supporter.username || "anonymous"}`}
             username={supporter.username || ""}
             src={supporter.avatar_url}
-            onClick={() => { try { const payload = { creator_id: supporter.id, creator_username: supporter.username }; if (payload.creator_id || payload.creator_username) { axios.post('/analytics/search-click', payload); } } catch(_e) {} }}
+            onClick={() => trackSearchClick(supporter.id, supporter.username)}
           />
           <div className="index-badge">{index + 1}</div>
         </div>

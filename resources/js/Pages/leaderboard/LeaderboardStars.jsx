@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
+import { trackSearchClick } from "@/includes/Analytics";
+
 export default function LeaderboardStars() {
 
   const { formatMultiPrice } = PriceFormat();
@@ -53,7 +55,7 @@ export default function LeaderboardStars() {
             subhead={`@${gift.username || "anonymous"}`}
             username={gift.username || ""}
             src={gift.avatar_url}
-            onClick={() => { try { const payload = { creator_id: gift.id, creator_username: gift.username }; if (payload.creator_id || payload.creator_username) { axios.post('/analytics/search-click', payload); } } catch(_e) {} }}
+            onClick={() => trackSearchClick(gift.id, gift.username)}
           />
           <div className="index-badge">{index + 1}</div>
         </div>

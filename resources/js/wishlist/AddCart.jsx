@@ -8,6 +8,8 @@ const Popup = lazy(() => import("@/Components/Popup"));
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
+import { trackSearchClick } from "@/includes/Analytics";
+
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
     const { auth} = usePage().props;
@@ -247,14 +249,7 @@ export default function AddCart(props) {
 
                 {showall ? (
                     <Link 
-                        onClick={() => {
-                            try {
-                                const payload = { creator_id: item && item.id, creator_username: item && item.username };
-                                if (payload.creator_id || payload.creator_username) {
-                                    axios.post('/analytics/search-click', payload);
-                                }
-                            } catch(_e) {}
-                        }}
+                        onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
                         href={`/${item.user && item.user.username}`}
                         className="m-auto d-table text-primary"
                     >

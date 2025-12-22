@@ -390,6 +390,11 @@ class User extends Authenticatable
         return $this->hasMany(WishItem::class, 'user_id');
     }
 
+    public function wishes()
+    {
+        return $this->hasMany(WishItem::class, 'user_id');
+    }
+
     public function user_categories()
     {
         return $this->hasMany(UserCategory::class, 'user_id');

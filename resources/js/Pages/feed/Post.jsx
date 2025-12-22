@@ -132,14 +132,14 @@ export default function Post({item}) {
           <p className="fading  description text-muted">{item?.content || ''}</p>
         </div>
 
-        <div className="fading interactions flex items-center"  >
+        <div className=" interactions flex items-center"  >
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
           <div onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
         </div>
 
-        <div className='flex fading'  >
-          <p className="like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
-          <p className="like-count text-dark"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
+        <div className='flex '  >
+          <p className="fading like-count text-dark me-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
+          <p className="fading like-count text-dark"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
         </div>
 
         {showComments ? <CommentList updateComments={updateComments}  post_uuid={item.uuid} /> : ''}

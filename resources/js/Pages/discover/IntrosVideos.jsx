@@ -8,6 +8,7 @@ const LoadingScreen = lazy(() => import('@/includes/LoadingScreen'));
 const Nocontent = lazy(() => import('@/includes/Nocontent'));
 import userphoto from "../../../assets/siteicon.png";
 import Popup from '@/Components/Popup';
+import { trackSearchClick } from "@/includes/Analytics";
 
 export default function IntroVideos(props) {
 
@@ -69,11 +70,7 @@ export default function IntroVideos(props) {
       </>} />
       <div className='absolute bottom-0 bg-black  left-0 w-full p-3 md:p-4 z-[99px] text-white transition-colors   ' >
         {w && w.user && w.user.username ? (
-          <Link href={`/${w.user.username}`} onClick={() => {
-            try {
-              axios.post('/analytics/search-click', { creator_id: w.user.id });
-            } catch(_e) {}
-          }} >
+          <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)}>
             <p className='text-normal md:text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
             <p className='text-normal mt-0' >@{w.user.username}</p>
           </Link>

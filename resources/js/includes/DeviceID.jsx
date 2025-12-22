@@ -7,7 +7,8 @@ export default function DeviceID(){
         const screenWidth = window.screen.width;
         const screenHeight = window.screen.height;
         const uniqueString = `${userAgent}_${platform}_${screenWidth}_${screenHeight}`;
-        const hashedIdentifier = btoa(uniqueString);
+        // Make base64 URL-safe by replacing + with -, / with _ and removing =
+        const hashedIdentifier = btoa(uniqueString).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         return hashedIdentifier;
       } else {
           return null
