@@ -30,7 +30,7 @@ class DiscoveryService
             ->limit($limit)
             ->with(['wishes' => function($q) {
                 $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
-            }])
+            }, 'intro'])
             ->get()
             ->map(function ($u) {
                 return [
@@ -44,6 +44,11 @@ class DiscoveryService
                     'clicks_24h' => (int) $u->clicks_24h,
                     'clicks_7d' => (int) $u->clicks_7d,
                     'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                    'intro' => $u->intro ? [
+                        'poster_url' => $u->intro->poster_url,
+                        'perma_link' => $u->intro->perma_link,
+                        'approved' => (int) $u->intro->approved,
+                    ] : null,
                 ];
             })
             ->values();
@@ -62,7 +67,7 @@ class DiscoveryService
             ->limit($limit)
             ->with(['wishes' => function($q) {
                 $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
-            }])
+            }, 'intro'])
             ->get(['id', 'name', 'username', 'avatar', 'profile_status_lock', 'role', 'bio'])
             ->map(function ($u) {
                 return [
@@ -74,6 +79,11 @@ class DiscoveryService
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
                     'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                    'intro' => $u->intro ? [
+                        'poster_url' => $u->intro->poster_url,
+                        'perma_link' => $u->intro->perma_link,
+                        'approved' => (int) $u->intro->approved,
+                    ] : null,
                 ];
             });
     }
@@ -83,6 +93,9 @@ class DiscoveryService
         $query = User::query()
             ->where('suspended_account', 0);
             // ->where('profile_status_lock', 2); // Relaxed for testing/debugging
+        
+        $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
+        $offset = ($page - 1) * $limit;
         
         if (!empty($filters['verified']) && filter_var($filters['verified'], FILTER_VALIDATE_BOOLEAN)) {
             $query->where('role', 1); 
@@ -127,10 +140,13 @@ class DiscoveryService
             $query->orderByDesc('id'); 
         }
 
-        return $query->limit($limit)
-            ->with(['wishes' => function($q) {
+        return $query->offset($offset)->limit($limit)
+            ->with([
+                'wishes' => function($q) {
                 $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
-            }])
+                },
+                'intro'
+            ])
             ->get(['id', 'name', 'username', 'avatar', 'profile_status_lock', 'role', 'bio'])
             ->map(function ($u) {
                 return [
@@ -142,6 +158,11 @@ class DiscoveryService
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
                     'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                    'intro' => $u->intro ? [
+                        'poster_url' => $u->intro->poster_url,
+                        'perma_link' => $u->intro->perma_link,
+                        'approved' => (int) $u->intro->approved,
+                    ] : null,
                 ];
             });
     }
@@ -152,6 +173,9 @@ class DiscoveryService
             ->where('is_approved', 1)
             ->with('wishCategories.category');
 
+        $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
+        $offset = ($page - 1) * $limit;
+        
         if (!empty($filters['minPrice'])) {
             $query->where('price', '>=', $filters['minPrice']);
         }
@@ -194,15 +218,17 @@ class DiscoveryService
                 break;
         }
 
-        return $query->limit($limit)
+        return $query->offset($offset)->limit($limit)
             ->with('user:id,name,username,avatar')
             ->get()
             ->map(function ($w) {
+                // dd($w);
                 return [
                     'id' => $w->id,
                     'uuid' => $w->uuid, // Needed for cart
                     'title' => $w->wishname,
                     'amount' => $w->price,
+                    'perma_link' => $w->perma_link,
                     'funded_percent' => $w->fullfill_amount > 0 ? round(($w->fullfill_amount / $w->price) * 100) : 0,
                     'image_url' => $w->thumbnail,
                     'type' => $w->category,
@@ -386,5 +412,143 @@ class DiscoveryService
             'creators' => $users,
             'wishes' => $wishes
         ];
+    }
+
+    public function getFeaturedBills($limit = 12)
+    {
+        return \App\Models\Bills::where('status', 'active')
+            ->orderByDesc('supporter_count')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->with('user:id,name,username,avatar')
+            ->get()
+            ->map(function ($b) {
+                return [
+                    'id' => $b->id,
+                    'uuid' => $b->uuid,
+                    'title' => $b->name,
+                    'amount' => null, // Bills might not have a fixed price display in the card same as wishes
+                    'image_url' => $b->thumbnail,
+                    'type' => 'Bill',
+                    'user' => $b->user ? [
+                        'name' => $b->user->name,
+                        'username' => $b->user->username,
+                        'avatar_url' => $b->user->avatar_url,
+                    ] : null,
+                ];
+            });
+    }
+
+    public function getFeaturedMemberships($limit = 12)
+    {
+        return \App\Models\Membership::where('status', 'active')
+            ->orderByDesc('supporter_count')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->with('user:id,name,username,avatar')
+            ->get()
+            ->map(function ($m) {
+                return [
+                    'id' => $m->id,
+                    'uuid' => $m->uuid,
+                    'title' => $m->level . ' Membership',
+                    'amount' => null,
+                    'image_url' => $m->thumbnail,
+                    'type' => 'Membership',
+                    'user' => $m->user ? [
+                        'name' => $m->user->name,
+                        'username' => $m->user->username,
+                        'avatar_url' => $m->user->avatar_url,
+                    ] : null,
+                ];
+            });
+    }
+
+    public function getSearchBills($filters, $limit = 24)
+    {
+        $query = \App\Models\Bills::query()
+            ->where('status', 'active');
+
+        if (!empty($filters['search'])) {
+             $query->where('name', 'like', '%' . $filters['search'] . '%');
+        }
+        
+        // Bills specific filtering if needed
+
+        $sort = $filters['sortBy'] ?? 'Trending';
+        switch ($sort) {
+            case 'New':
+                $query->orderByDesc('created_at');
+                break;
+            case 'Most Supported':
+                $query->orderByDesc('supporter_count');
+                break;
+            default:
+                $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
+                      ->orderByDesc('rising_score')
+                      ->orderByDesc('supporter_count');
+        }
+
+        return $query->limit($limit)
+            ->with('user:id,name,username,avatar')
+            ->get()
+            ->map(function ($b) {
+                return [
+                    'id' => $b->id,
+                    'uuid' => $b->uuid,
+                    'title' => $b->name,
+                    'amount' => null,
+                    'image_url' => $b->thumbnail,
+                    'type' => 'Bill',
+                    'user' => $b->user ? [
+                        'name' => $b->user->name,
+                        'username' => $b->user->username,
+                        'avatar_url' => $b->user->avatar_url,
+                    ] : null,
+                ];
+            });
+    }
+
+    public function getSearchMemberships($filters, $limit = 24)
+    {
+        $query = \App\Models\Membership::query()
+            ->where('status', 'active');
+
+        if (!empty($filters['search'])) {
+             $query->where('level', 'like', '%' . $filters['search'] . '%');
+        }
+
+        $sort = $filters['sortBy'] ?? 'Trending';
+        switch ($sort) {
+            case 'New':
+                $query->orderByDesc('created_at');
+                break;
+            case 'Most Supported':
+                $query->orderByDesc('supporter_count');
+                break;
+            default:
+                $query->orderByRaw("CASE WHEN trending_status='hot' THEN 1 ELSE 0 END DESC")
+                      ->orderByDesc('rising_score')
+                      ->orderByDesc('supporter_count');
+        }
+
+        return $query->limit($limit)
+            ->with('user:id,name,username,avatar')
+            ->get()
+            ->map(function ($m) {
+                return [
+                    'id' => $m->id,
+                    'uuid' => $m->uuid,
+                    'title' => $m->level . ' Membership',
+                    'amount' => null,
+                    'image_url' => $m->thumbnail,
+                    'type' => 'Membership',
+                    'user' => $m->user ? [
+                        'name' => $m->user->name,
+                        'username' => $m->user->username,
+                        'avatar_url' => $m->user->avatar_url,
+                    ] : null,
+                ];
+            });
     }
 }

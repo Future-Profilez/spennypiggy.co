@@ -1,21 +1,37 @@
 import { Link, router } from '@inertiajs/react';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import DeviceID from '@/includes/DeviceID';
-import { RiLayoutGridFill, RiUserHeartLine, RiGiftLine, RiCloseLine, RiFireLine, RiCheckDoubleLine, RiSearchLine } from 'react-icons/ri';
+import { RiLayoutGridFill, RiUserHeartLine, RiGiftLine, RiCloseLine, RiFireLine, RiCheckDoubleLine, RiSearchLine, RiFileList3Line, RiVipCrownLine } from 'react-icons/ri';
+import Popup from '@/Components/Popup';
 
-export default function ResultsGrid({ results, mode, setMode, totalCount, activeFilters, removeFilter }) {
-    
-    // Helper to inject spotlight sections
-    const renderItemsWithSpotlights = () => {
+export default function ResultsGrid({ results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
+    const renderedItems = useMemo(() => {
         const items = [];
         (results || []).forEach((item, index) => {
+            let card;
+            switch(mode) {
+                case 'creator':
+                    card = <CreatorGridCard item={item} />;
+                    break;
+                case 'wish':
+                    card = <WishGridCard item={item} />;
+                    break;
+                case 'bill':
+                    card = <BillGridCard item={item} />;
+                    break;
+                case 'membership':
+                    card = <MembershipGridCard item={item} />;
+                    break;
+                default:
+                    card = <WishGridCard item={item} />;
+            }
+
             items.push(
                 <div key={item.id} className="h-full">
-                    {mode === 'creator' ? <CreatorGridCard item={item} /> : <WishGridCard item={item} />}
+                    {card}
                 </div>
             );
             
-            // Inject spotlight every 12 items
             if ((index + 1) % 12 === 0 && index !== results.length - 1) {
                 items.push(
                     <div key={`spotlight-${index}`} className="col-span-full my-8">
@@ -33,7 +49,7 @@ export default function ResultsGrid({ results, mode, setMode, totalCount, active
                      </div>
                      <h3 className="text-xl font-bold text-gray-900 mb-2">No matches found</h3>
                      <p className="text-gray-500 max-w-md mb-8">
-                        We couldn't find any {mode === 'creator' ? 'creators' : 'wishes'} matching your current filters. Try adjusting your search or filters.
+                        We couldn't find any items matching your current filters. Try adjusting your search or filters.
                      </p>
                      <button 
                         onClick={() => window.location.reload()} 
@@ -46,7 +62,7 @@ export default function ResultsGrid({ results, mode, setMode, totalCount, active
         }
         
         return items;
-    };
+    }, [results, mode]);
 
     return (
         <div className="flex-1">
@@ -101,12 +117,15 @@ export default function ResultsGrid({ results, mode, setMode, totalCount, active
 
             {/* Block 5: Results Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {renderItemsWithSpotlights()}
+                {renderedItems}
             </div>
             
             {/* Load More / Pagination */}
             <div className="mt-12 text-center">
-                <button className="px-8 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm">
+                <button 
+                    onClick={onLoadMore}
+                    className="px-8 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm"
+                >
                     Load More Results
                 </button>
             </div>
@@ -125,7 +144,7 @@ function Chip({ label, onRemove }) {
     );
 }
 
-function CreatorGridCard({ item }) {
+const CreatorGridCard = React.memo(function CreatorGridCard({ item }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-lg transition-all duration-300 h-full flex flex-col relative group">
             {/* Full Card Link */}
@@ -137,6 +156,8 @@ function CreatorGridCard({ item }) {
                         src={item.avatar_url || 'https://via.placeholder.com/150'} 
                         alt={item.name}
                         className="w-12 h-12 rounded-full object-cover border-2 border-gray-50 group-hover:border-pink-200 transition-colors"
+                        loading="lazy"
+                        decoding="async"
                     />
                     <div>
                         <h3 className="font-bold text-gray-900 line-clamp-1 group-hover:text-pink-600 transition-colors">{item.name}</h3>
@@ -149,25 +170,48 @@ function CreatorGridCard({ item }) {
             <div className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow group-hover:text-gray-900 z-10 relative pointer-events-none">
                 {item.bio || `Support ${item.name} to help them achieve their dreams!`}
             </div>
-
-            {/* Mini Wishes Preview */}
-            <div className="flex gap-2 mb-4 overflow-hidden h-20 z-10 relative pointer-events-none">
-                {(item.top_wishes && item.top_wishes.length > 0) ? (
-                    item.top_wishes.map((img, i) => (
-                        <div key={i} className="w-1/3 aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                            <img 
-                                src={img ? `https://ucarecdn.com/${img}/-/preview/` : `https://via.placeholder.com/100?text=Wish+${i+1}`} 
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
-                                alt="" 
-                            />
+            
+            {/* Intro Video Poster */}
+            {item.intro && item.intro.poster_url ? (
+                <div className="mb-4 z-10 relative pointer-events-auto">
+                    <Popup
+                        space="0"
+                        size="md"
+                        classes="block w-full"
+                        text={
+                            <div className="relative rounded-xl overflow-hidden h-40 bg-black">
+                                <img
+                                    src={item.intro.poster_url}
+                                    alt={`${item.name} intro`}
+                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="32" cy="32" r="32" fill="#F94F97"/>
+                                        <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        }
+                    >
+                        <div className="video-payer-pop">
+                            <video
+                                playsInline
+                                controls
+                                autoPlay
+                                controlsList="nodownload"
+                                poster={item.intro.poster_url}
+                            >
+                                <source src={item.intro.perma_link} type="video/mp4" />
+                            </video>
                         </div>
-                    ))
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg text-xs text-gray-400">
-                        No active wishes
-                    </div>
-                )}
-            </div>
+                    </Popup>
+                </div>
+            ) : null}
+
+            {/* Removed wishes preview in creator cards as requested */}
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto z-10 relative pointer-events-none">
                 <span className="text-xs font-medium text-gray-900">
@@ -184,9 +228,9 @@ function CreatorGridCard({ item }) {
             </div>
         </div>
     );
-}
+});
 
-function WishGridCard({ item }) {
+const WishGridCard = React.memo(function WishGridCard({ item }) {
     const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
     const profileUrl = item.user ? route('user.show', item.user.username) : '#';
     
@@ -222,12 +266,70 @@ function WishGridCard({ item }) {
                     src={imageUrl} 
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
+                    fetchpriority="low"
                 />
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold text-gray-900 shadow-sm">
                     £{item.amount}
                 </div>
                 <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium text-white">
                     {item.type || 'Wish'}
+                </div>
+            </div>
+
+            <div className="p-4 flex flex-col flex-grow z-10 relative pointer-events-none">
+                <div className="font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
+                    {item.title}
+                </div>
+                
+                <div className="flex items-center gap-2 mb-4 pointer-events-auto">
+                     {item.user && (
+                        <Link href={profileUrl} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
+                             <img 
+                                src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
+                                alt={item.user.name}
+                                className="w-5 h-5 rounded-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                             />
+                             <span className="text-xs text-gray-500 truncate">by @{item.user.username}</span>
+                        </Link>
+                    )}
+                </div>
+
+                <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
+                     <button 
+                        onClick={handleAddToCart}
+                        className="flex-1 py-2 text-sm font-bold text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
+                    >
+                        Send Gift
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+const BillGridCard = React.memo(function BillGridCard({ item }) {
+    const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
+    const profileUrl = item.user ? route('user.show', item.user.username) : '#';
+    
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
+            <Link href={profileUrl} className="absolute inset-0 z-0" />
+
+            <div className="block relative aspect-[4/3] bg-gray-100 overflow-hidden z-10 pointer-events-none">
+                <img 
+                    src={imageUrl} 
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
+                    fetchpriority="low"
+                />
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold text-gray-900 shadow-sm">
+                   Bill
                 </div>
             </div>
 
@@ -250,22 +352,73 @@ function WishGridCard({ item }) {
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
-                     <button 
-                        onClick={handleAddToCart}
-                        className="flex-1 py-2 text-sm font-bold text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
-                    >
-                        Send Gift
-                    </button>
-                </div>
+                        <Link href={profileUrl}
+                            className="flex-1 py-2 text-sm font-bold text-center text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
+                        >
+                            Support Bill
+                        </Link>
+                    </div>
             </div>
         </div>
     );
-}
+});
+
+const MembershipGridCard = React.memo(function MembershipGridCard({ item }) {
+    const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
+    const profileUrl = item.user ? route('user.show', item.user.username) : '#';
+    
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
+            <Link href={profileUrl} className="absolute inset-0 z-0" />
+
+            <div className="block relative aspect-[4/3] bg-gray-100 overflow-hidden z-10 pointer-events-none">
+                <img 
+                    src={imageUrl} 
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
+                    fetchpriority="low"
+                />
+                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold text-gray-900 shadow-sm">
+                   Membership
+                </div>
+            </div>
+
+            <div className="p-4 flex flex-col flex-grow z-10 relative pointer-events-none">
+                <div className="font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
+                    {item.title}
+                </div>
+                
+                <div className="flex items-center gap-2 mb-4 pointer-events-auto">
+                     {item.user && (
+                        <Link href={profileUrl} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
+                             <img 
+                                src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
+                                alt={item.user.name}
+                                className="w-5 h-5 rounded-full object-cover"
+                            />
+                            <span className="text-xs text-gray-500 truncate">by @{item.user.username}</span>
+                        </Link>
+                    )}
+                </div>
+
+                <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
+                        <Link href={profileUrl}
+                            className="flex-1 py-2 text-sm font-bold text-center text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
+                        >
+                            Join Now
+                        </Link>
+                    </div>
+            </div>
+        </div>
+    );
+});
 
 function SpotlightSection({ index }) {
     const spotlights = [
         { title: "Ending Soon ⏳", subtitle: "Wishes expiring in 24h", color: "bg-orange-50 border-orange-100" },
-        { title: "Bills to Cover 🧾", subtitle: "Help creators with essentials", color: "bg-blue-50 border-blue-100" },
+        { title: "Trending Now 🔥", subtitle: "Popular creators and wishes", color: "bg-pink-50 border-pink-100" },
         { title: "Quick Wins ⚡", subtitle: "Wishes under £20", color: "bg-green-50 border-green-100" },
     ];
     const spot = spotlights[index % spotlights.length];
@@ -276,9 +429,19 @@ function SpotlightSection({ index }) {
                 <h3 className="text-2xl font-bold text-gray-900 mb-1">{spot.title}</h3>
                 <p className="text-gray-600">{spot.subtitle}</p>
             </div>
-            <button className="px-6 py-3 bg-white text-gray-900 font-bold rounded-xl shadow-sm hover:shadow-md transition-all">
-                View Collection
-            </button>
+            {spot.title === "Trending Now 🔥" ? (
+                <Link href={route('discover', { type: 'trending', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-xl shadow-sm hover:shadow-md transition-all">
+                    View Collection
+                </Link>
+            ) : spot.title === "Quick Wins ⚡" ? (
+                <Link href={route('discover', { search: 'under 20', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-xl shadow-sm hover:shadow-md transition-all">
+                    View Collection
+                </Link>
+            ) : (
+                <Link href={route('discover', { search: 'expiring', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-xl shadow-sm hover:shadow-md transition-all">
+                    View Collection
+                </Link>
+            )}
         </div>
     );
 }

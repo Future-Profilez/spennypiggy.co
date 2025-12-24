@@ -4,11 +4,17 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+
 const LoadingScreen = lazy(() => import('@/includes/LoadingScreen'));
 const Nocontent = lazy(() => import('@/includes/Nocontent'));
 import userphoto from "../../../assets/siteicon.png";
 import Popup from '@/Components/Popup';
 import { trackSearchClick } from "@/includes/Analytics";
+import { RiVerifiedBadgeFill } from "react-icons/ri";
 
 export default function IntroVideos(props) {
 
@@ -16,6 +22,7 @@ export default function IntroVideos(props) {
     const [order, setorder] = useState('new');
     const [gender, setgender] = useState('all');
     const [loading, setloading] = useState(false);
+    const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
 
     const fetch_videos = () => {
         setloading(true);
@@ -27,6 +34,12 @@ export default function IntroVideos(props) {
             setloading(false);
         });
     }
+
+    useEffect(() => {
+        const handleResize = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(()=>{
       !loading && fetch_videos();
@@ -52,35 +65,50 @@ export default function IntroVideos(props) {
 
 
     const Intro = ({w}) => {
-      return  <div className="relative rounded-[25px]  h-[250px] md:h-[350px]  overflow-hidden border-3 !border-[#F94F97] "> 
-      <ProfileIntro data={w}  text={<>
-        <div className='h-full' >
-            <div className='introvideobox h-full bg-black  position-relative' >
+      const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
+      return  <div className="relative rounded-[25px] h-[250px] md:h-[350px] overflow-hidden border border-pink-200 bg-black group"> 
+        <ProfileIntro data={w}  text={
+          <>
+            <div className="h-full relative">
               <LazyLoadImage
-              alt={"image"}  effect="blur"  
-              height={360} src={ w && w?.poster_url || w?.user && w?.user?.avatar_url|| userphoto} className='w-full !h-full object-cover ' width={260} />
-              <div className='cursor-pointer playicon ' >
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="32" cy="32" r="32" fill="#F94F97"/>
-                <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
-                </svg>
+                alt={"image"}
+                effect="blur"
+                height={360}
+                src={(w && w?.poster_url) || (w && w?.user && w?.user?.avatar_url) || userphoto}
+                className="w-full !h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                width={260}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70"></div>
+              <div className="absolute top-3 left-3 bg-white/85 text-gray-900 text-xs font-medium px-2 py-1 rounded-md">
+                Intro Video
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="transform transition-transform duration-300 group-hover:scale-105">
+                  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="32" cy="32" r="32" fill="#F94F97"/>
+                    <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
+                  </svg>
+                </div>
               </div>
             </div>
+          </>
+        } />
+        <div className="absolute bottom-0 left-0 w-full p-3 md:p-4 z-[99] text-white">
+          {w && w.user && w.user.username ? (
+            <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)} className="block">
+              <p className="text-normal md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
+                {w.user.name}
+                {verified ? <RiVerifiedBadgeFill size={'1rem'} className="text-pink" /> : ''}
+              </p>
+              <p className="text-normal mt-0 opacity-90">@{w.user.username}</p>
+            </Link>
+          ) : (
+            <div>
+              <p className="text-lg font-GillSans uppercase mb-0">{(w && w.user && w.user.name) || 'Unknown User'}</p>
+              <p className="text-normal mt-0 text-gray-300">@unavailable</p>
+            </div>
+          )}
         </div>
-      </>} />
-      <div className='absolute bottom-0 bg-black  left-0 w-full p-3 md:p-4 z-[99px] text-white transition-colors   ' >
-        {w && w.user && w.user.username ? (
-          <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)}>
-            <p className='text-normal md:text-lg font-GillSans hover !uppercase mb-0' >{w.user.name}</p>
-            <p className='text-normal mt-0' >@{w.user.username}</p>
-          </Link>
-        ) : (
-          <div>
-            <p className='text-lg font-GillSans hover !uppercase mb-0' >{w && w.user && w.user.name || 'Unknown User'}</p>
-            <p className='text-normal mt-0 text-gray-400' >@unavailable</p>
-          </div>
-        )}
-      </div>
       </div>
     }
 
@@ -108,10 +136,19 @@ export default function IntroVideos(props) {
           :
           <>
             {intros && intros.length ?
-            <div className='grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 lg:!gap-4' >
-              {intros.map((w, i)=> {
-                return <Intro w={w} />
-              })}
+            <div className='creatorslider w-full'>
+              <Swiper
+                  spaceBetween={width < 640 ? 8 : (width < 1024 ? 12 : 16)}
+                  pagination={{ clickable: true }}
+                  modules={[Pagination]}
+                  slidesPerView={width < 640 ? 1 : (width < 1024 ? 2 : (width < 1280 ? 3 : 4))}
+              >
+                {intros.map((w, i)=> (
+                  <SwiperSlide key={i}>
+                    <Intro w={w} />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
             </div>
             : <div className='my-5' ><Nocontent text={'No Result Found'} /></div> }
           </>}

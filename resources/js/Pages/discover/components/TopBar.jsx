@@ -3,8 +3,8 @@ import { RiSearchLine, RiFilter3Line, RiTimeLine, RiCloseLine } from 'react-icon
 import { Link } from '@inertiajs/react';
 import axios from 'axios';
 
-export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuickFilter }) {
-    const [query, setQuery] = useState('');
+export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuickFilter, initialSearch = '' }) {
+    const [query, setQuery] = useState(initialSearch || '');
     const [isFocused, setIsFocused] = useState(false);
     const [recentSearches, setRecentSearches] = useState([]);
     const [suggestions, setSuggestions] = useState({ creators: [], wishes: [] });
@@ -71,8 +71,6 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
         { id: 'verified', label: 'Verified ✅' },
         { id: 'new', label: 'New 🆕' },
         { id: 'trending', label: 'Trending 🔥' },
-        { id: 'tasks', label: 'Tasks 💼' },
-        { id: 'bills', label: 'Bills 🧾' },
     ];
 
     return (
@@ -87,7 +85,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         ref={inputRef}
                         type="text"
                         className="w-full pl-10 pr-4 py-3 rounded-full border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all shadow-sm text-base"
-                        placeholder="Search creators, wishes, bills, tasks..."
+                        placeholder="Search creators and wishes..."
                         value={query}
                         onChange={(e) => {
                             setQuery(e.target.value);
@@ -190,27 +188,31 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                 </div>
 
                 {/* Quick Filters */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                    <button 
-                        onClick={onFilterToggle}
-                        className="flex-shrink-0 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                    >
-                        <RiFilter3Line size={20} />
-                    </button>
-                    {quickFilters.map(filter => (
-                        <button
-                            key={filter.id}
-                            onClick={() => onQuickFilter(filter.id)}
-                            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                                activeFilters.includes(filter.id)
-                                    ? 'bg-pink-500 text-white shadow-md transform scale-105'
-                                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-                            }`}
-                        >
-                            {filter.label}
-                        </button>
-                    ))}
-                </div>
+                {onQuickFilter && Array.isArray(activeFilters) && (
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                        {onFilterToggle && (
+                            <button 
+                                onClick={onFilterToggle}
+                                className="flex-shrink-0 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                            >
+                                <RiFilter3Line size={20} />
+                            </button>
+                        )}
+                        {quickFilters.map(filter => (
+                            <button
+                                key={filter.id}
+                                onClick={() => onQuickFilter(filter.id)}
+                                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                                    activeFilters.includes(filter.id)
+                                        ? 'bg-pink-500 text-white shadow-md transform scale-105'
+                                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                {filter.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

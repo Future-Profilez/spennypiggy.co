@@ -102,37 +102,72 @@ Route::get('discover/suggestions', function (Illuminate\Http\Request $request, D
 
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = null, $category = null) {
     $filters = $request->only(['search', 'verified', 'minPrice', 'maxPrice', 'sortBy', 'categories', 'contentType']);
-    $isSearch = false;
-
+    
+    // Normalize type and apply shortcut filters
     if ($type) {
         $normalizedType = strtolower($type);
-        if (in_array($normalizedType, ['creators', 'wishes'])) {
+        
+        if ($normalizedType === 'trending') {
+            $filters['sortBy'] = 'Trending';
+        } elseif ($normalizedType === 'new') {
+            $filters['sortBy'] = 'New';
+        } elseif ($normalizedType === 'verified') {
+            $filters['verified'] = true;
+        } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships'])) {
             $filters['contentType'] = ucfirst($normalizedType);
-            $isSearch = true;
         } else {
+            // Assume category if not a keyword
             $filters['categories'] = $type;
-            $filters['contentType'] = $request->input('contentType', 'Creators');
-            $isSearch = true;
+            if (!$request->has('contentType')) {
+                $filters['contentType'] = 'Creators';
+            }
         }
     } else {
-        $filters['contentType'] = $request->input('contentType', 'Creators');
+        // If searching by keyword and no explicit content type, search across all
+        if (!$request->has('contentType') && $request->has('search')) {
+            $filters['contentType'] = 'All';
+        }
     }
 
     if ($category) {
         $filters['categories'] = $category;
-        $isSearch = true;
     }
 
-    if (!empty($request->query())) {
-        $isSearch = true;
+    // Determine if we should show search results (Grid) or default sections (Carousels)
+    $isSearch = !empty($request->query()) || !empty($type);
+    
+    // Special case: If user just visits /discover/trending or /discover/new without other query params,
+    // they might want to see the grid sorted by that.
+    
+    // But if we want to show sections on /discover (root), we keep isSearch = false.
+    if (!$type && empty($request->query())) {
+        $isSearch = false;
     }
 
     $searchResults = [];
     if ($isSearch) {
-        if (($filters['contentType'] ?? 'Creators') === 'Creators') {
-            $searchResults = $discoveryService->getSearchCreators($filters);
-        } else {
-            $searchResults = $discoveryService->getSearchWishes($filters);
+        // Fetch all types unless specific contentType is set
+        $ctype = $filters['contentType'] ?? 'All';
+        
+        // If contentType is default "Creators" but user didn't explicitly select it (e.g. just /discover/trending),
+        // we might want to show everything.
+        // However, the logic above sets contentType to Creators if missing.
+        // Let's adjust: if type is a shortcut (trending/new/verified), unset contentType to allow fetching all?
+        if ($type && in_array(strtolower($type), ['trending', 'new', 'verified']) && !$request->has('contentType')) {
+            $ctype = 'All';
+        }
+
+        if ($ctype === 'Creators' || $ctype === 'All') {
+            $searchResults['creators'] = $discoveryService->getSearchCreators($filters);
+        }
+        if ($ctype === 'Wishes' || $ctype === 'All') {
+            $searchResults['wishes'] = $discoveryService->getSearchWishes($filters);
+        }
+        if ($ctype === 'Bills' || $ctype === 'All') {
+             $searchResults['bills'] = $discoveryService->getSearchBills($filters);
+        }
+        if ($ctype === 'Memberships' || $ctype === 'All') {
+             $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
         }
     }
 
@@ -141,6 +176,8 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         'newVerifiedCreators' => $discoveryService->getNewVerifiedCreators(12),
         'featuredWishes' => $discoveryService->getFeaturedWishes(12),
         'topEarners' => $discoveryService->getTopEarners('', 12)['data'],
+        'featuredBills' => $discoveryService->getFeaturedBills(12),
+        'featuredMemberships' => $discoveryService->getFeaturedMemberships(12),
         'filters' => $filters,
         'searchResults' => $searchResults,
     ]);
