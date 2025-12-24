@@ -1,10 +1,11 @@
 import { Link } from '@inertiajs/react';
 import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.jpg";
 import Avatar from '../../../includes/Avatar';
+import { trackSearchClick } from "@/includes/Analytics";
 
 export default function CreatorCard({item}) {
    return (
-       <Link href={route('user.show', item.username)} className="overflow-hidden !rounded-xl flex flex-col items-center text-start group cursor-pointer block ">
+       <Link href={route('user.show', item.username)} onClick={() => trackSearchClick(item.id, item.username)} className="overflow-hidden !rounded-xl flex flex-col items-center text-start group cursor-pointer block ">
            <div className="relative">
                <div className="h-full w-full bg-black max-h-[260px] overflow-hidden group-hover:border-pink-500 transition-colors">
                    <img src={item.cover_url || wishlistbannerimg} alt={item.name} className="w-full h-full object-cover bg-black" loading="lazy" />

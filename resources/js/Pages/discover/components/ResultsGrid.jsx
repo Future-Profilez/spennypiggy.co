@@ -6,6 +6,7 @@ import Popup from '@/Components/Popup';
 import Wishlistbox from '../../../wishlist/Wishlistbox';
 import Avatar from '../../../includes/Avatar';
 import CreatorCard from './CreatorCard';
+import { trackSearchClick } from "@/includes/Analytics";
 
 export default function ResultsGrid({auth, global_currency, results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
     const renderedItems = useMemo(() => {
@@ -27,6 +28,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                                 itemid={item?.id}
                                 // setuped={AuthUserStripeConnected ==1? true: false}
                                 itm={item}
+                                trackClick={true}
                             />;
                     break;
                 case 'bill':
@@ -181,9 +183,9 @@ const WishGridCard = React.memo(function WishGridCard({ item }) {
                 
                 <div className="flex items-center gap-2 mb-4 pointer-events-auto">
                      {item.user && (
-                        <Link href={profileUrl} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
+                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
                              <img 
-                                src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
+                                src={item.user.avatar_url || 'https://via.placeholder.com/30'}  
                                 alt={item.user.name}
                                 className="w-5 h-5 rounded-full object-cover"
                                 loading="lazy"
@@ -213,7 +215,7 @@ const BillGridCard = React.memo(function BillGridCard({ item }) {
     
     return (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
-            <Link href={profileUrl} className="absolute inset-0 z-0" />
+            <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="absolute inset-0 z-0" />
 
             <div className="block relative aspect-[4/3] bg-gray-100 overflow-hidden z-10 pointer-events-none">
                 <img 
@@ -236,7 +238,7 @@ const BillGridCard = React.memo(function BillGridCard({ item }) {
                 
                 <div className="flex items-center gap-2 mb-4 pointer-events-auto">
                      {item.user && (
-                        <Link href={profileUrl} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
+                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
                              <img 
                                 src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
                                 alt={item.user.name}
@@ -248,7 +250,7 @@ const BillGridCard = React.memo(function BillGridCard({ item }) {
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
-                        <Link href={profileUrl}
+                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)}
                             className="flex-1 py-2 text-sm font-bold text-center text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
                         >
                             Support Bill
@@ -288,7 +290,7 @@ const MembershipGridCard = React.memo(function MembershipGridCard({ item }) {
                 
                 <div className="flex items-center gap-2 mb-4 pointer-events-auto">
                      {item.user && (
-                        <Link href={profileUrl} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
+                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
                              <img 
                                 src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
                                 alt={item.user.name}
@@ -300,7 +302,7 @@ const MembershipGridCard = React.memo(function MembershipGridCard({ item }) {
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
-                        <Link href={profileUrl}
+                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)}
                             className="flex-1 py-2 text-sm font-bold text-center text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
                         >
                             Join Now

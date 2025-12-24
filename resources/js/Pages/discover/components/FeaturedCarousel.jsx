@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import Wishlistbox from '../../../wishlist/Wishlistbox';
 import CreatorCard from './CreatorCard';
+import { trackSearchClick } from "@/includes/Analytics";
+
 export default function FeaturedCarousel({ title, items, type = 'creator', icon }) {
     
     const {global_currency, auth, IsloggedIn} = usePage().props;
@@ -49,7 +51,7 @@ function BillCard({ item }) {
     const linkUrl = item.user ? route('user.show', item.user.username) : '#';
 
     return (
-        <Link href={linkUrl} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col block">
+        <Link href={linkUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col block">
             <div className="relative h-32 bg-gray-100">
                  <img 
                     src={item.image_url || 'https://via.placeholder.com/300'} 

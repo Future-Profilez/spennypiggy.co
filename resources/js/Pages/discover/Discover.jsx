@@ -194,6 +194,7 @@ export default function Discover(props) {
                                                 itemid={item?.id}
                                                 // setuped={AuthUserStripeConnected ==1? true: false}
                                                 itm={item}
+                                                trackClick={true}
                                             />
                                             ))}
                                         </div>

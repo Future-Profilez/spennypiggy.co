@@ -6,6 +6,7 @@ import userphoto from "../../../../assets/siteicon.png";
 
 import axios from 'axios';
 import Avatar from '../../../includes/Avatar';
+import { trackSearchClick } from "@/includes/Analytics";
 
 export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuickFilter, initialSearch = '' }) {
     const [query, setQuery] = useState(initialSearch || '');
@@ -78,7 +79,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="stickys top-[100px] z-40 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
+        <div className="stickys relative top-[100px] z-40 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
                 <div className="relative mb-3">
@@ -100,7 +101,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
                     {isFocused && (recentSearches.length > 0 || query) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="!z-10 absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
                                 {recentSearches.length > 0 && !query && (
                                     <>
@@ -139,7 +140,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                     <>
                                                         <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider">Creators</div>
                                                         {suggestions.creators.map((item, i) => (
-                                                            <Link href={`/${item?.username}`} className='w-full block px-3 py-2 hover:bg-gray-200'>
+                                                            <Link href={`/${item?.username}`} onClick={() => trackSearchClick(item.id, item.username)} className='w-full block px-3 py-2 hover:bg-gray-200'>
                                                                 <Avatar role={item.role}
                                                                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
                                                                     name={item.name} link={item.username || null} src={item.avatar_url}
