@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import wishlistbannerimg from "../../../../assets/img/wishlistbannerimg.jpg";
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
+import { RiFireLine, RiCheckboxCircleLine, RiGiftLine, RiMoneyPoundCircleLine } from 'react-icons/ri';
 
 export default function CreatorCard({item}) {
    return (
