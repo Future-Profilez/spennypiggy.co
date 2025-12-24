@@ -247,7 +247,7 @@ export default function AddCart(props) {
                 )}
 
 
-                {showall ? (
+                {item.user ? (
                     <Link 
                         onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
                         href={`/${item.user && item.user.username}`}

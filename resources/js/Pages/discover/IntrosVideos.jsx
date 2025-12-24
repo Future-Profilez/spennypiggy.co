@@ -113,44 +113,32 @@ export default function IntroVideos(props) {
     }
 
     return <>
-     <div className='filters d-block d-sm-flex  items-center justify-between w-100 mb-4' >
-                <Switch />
-            <div className='flex items-center' >
-              <div className='filter-select-wrap' >
-                  <select onChange={(e)=> setgender(e.target.value)} id="types" className="me-2 filter-select bg-gray-50 border border-gray-300 text-gray-900
-                  text-sm rounded-md focus:ring-blue-500 focus:border-blue-500
-                  block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
-                  dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                      <option selected value="all" >All Gender </option>
-                      <option value="he">He</option>
-                      <option value="she">She</option>
-                      <option value="they">They</option>
-                  </select>
-              </div>
-            </div>
+        <div className={`filters d-block  items-center justify-between w-100 mb-4 ${intros && intros.length < 1 ? '!hidden' : ''}`} >
+            <h2 className='text-2xl text-gray-900 font-gulfs uppercase'>Intro Videos</h2>
+            {/* <div className='flex gap-1 mt-3 items-center' >
+              <button onClick={()=>setorder('new')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${order == 'new' ? '!bg-blue-600 text-white' : ''}`} >Newest</button>
+              <button onClick={()=>setorder('old')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${order == 'old' ? '!bg-blue-600 text-white' : ''}`} >Oldest</button>
+              <button onClick={(e)=> setgender('he')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${gender == 'he' ? '!bg-blue-600 text-white' : ''}`} >He</button>
+              <button onClick={(e)=> setgender('she')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${gender == 'she' ? '!bg-blue-600 text-white' : ''}`} >She</button>
+              <button onClick={(e)=> setgender('they')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${gender == 'they' ? '!bg-blue-600 text-white' : ''}`} >They</button>
+            </div> */}
+            
         </div>
 
-        <div className='row' >
+        <div className='' >
           {loading ?
           <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>
           :
           <>
             {intros && intros.length ?
-            <div className='creatorslider w-full'>
-              <Swiper
-                  spaceBetween={width < 640 ? 8 : (width < 1024 ? 12 : 16)}
-                  pagination={{ clickable: true }}
-                  modules={[Pagination]}
-                  slidesPerView={width < 640 ? 1 : (width < 1024 ? 2 : (width < 1280 ? 3 : 4))}
-              >
+            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3'>
                 {intros.map((w, i)=> (
-                  <SwiperSlide key={i}>
                     <Intro w={w} />
-                  </SwiperSlide>
                 ))}
-              </Swiper>
             </div>
-            : <div className='my-5' ><Nocontent text={'No Result Found'} /></div> }
+            : <div className='my-5' >
+              {/* <Nocontent text={'New Creators are on their way! Start exploring now!'} /> */}
+            </div> }
           </>}
 
       </div>

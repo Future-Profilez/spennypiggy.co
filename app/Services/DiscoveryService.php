@@ -226,17 +226,14 @@ class DiscoveryService
                 return [
                     'id' => $w->id,
                     'uuid' => $w->uuid, // Needed for cart
+                    'wishname' => $w->wishname,
                     'title' => $w->wishname,
-                    'amount' => $w->price,
+                    'price' => $w->price,
                     'perma_link' => $w->perma_link,
                     'funded_percent' => $w->fullfill_amount > 0 ? round(($w->fullfill_amount / $w->price) * 100) : 0,
                     'image_url' => $w->thumbnail,
                     'type' => $w->category,
-                    'user' => $w->user ? [
-                        'name' => $w->user->name,
-                        'username' => $w->user->username,
-                        'avatar_url' => $w->user->avatar_url,
-                    ] : null,
+                    'user' => $w->user ?  : null,
                 ];
             });
     }
@@ -351,16 +348,13 @@ class DiscoveryService
                 return [
                     'id' => $w->id,
                     'uuid' => $w->uuid,
-                    'title' => $w->wishname,
-                    'amount' => $w->price,
+                    'wishname' => $w->wishname,
+                    'price' => $w->price,
+                    'perma_link' => $w->perma_link,
                     'funded_percent' => $w->fullfill_amount > 0 ? round(($w->fullfill_amount / $w->price) * 100) : 0,
                     'image_url' => $w->thumbnail,
                     'type' => $w->category,
-                    'user' => $w->user ? [
-                        'name' => $w->user->name,
-                        'username' => $w->user->username,
-                        'avatar_url' => $w->user->avatar_url,
-                    ] : null,
+                    'user' => $w->user ?? null,
                 ];
             });
     }
@@ -380,37 +374,38 @@ class DiscoveryService
                   ->orWhere('username', 'like', $term);
             })
             ->limit(5)
-            ->get(['id', 'name', 'username', 'avatar', 'role'])
-            ->map(function ($u) {
-                return [
-                    'type' => 'creator',
-                    'text' => $u->name,
-                    'subtext' => '@' . $u->username,
-                    'image' => $u->avatar_url,
-                    'url' => route('user.show', $u->username),
-                    'verified' => $u->role === 1
-                ];
-            });
+            ->get(['id', 'name', 'username', 'avatar', 'role']);
+            // ->map(function ($u) {
+            //     return [
+            //         'type' => 'creator',
+            //         'text' => $u->name,
+            //         'subtext' => '@' . $u->username,
+            //         'image' => $u->avatar_url,
+            //         'url' => route('user.show', $u->username),
+            //         'verified' => $u->role === 1
+            //     ];
+            // });
 
-        $wishes = WishItem::query()
-            ->where('is_approved', 1)
-            ->where('wishname', 'like', $term)
-            ->limit(5)
-            ->get(['id', 'wishname', 'thumbnail', 'uuid'])
-            ->map(function ($w) {
-                return [
-                    'type' => 'wish',
-                    'text' => $w->wishname,
-                    'subtext' => 'Wish',
-                    'image' => $w->thumbnail ? (str_starts_with($w->thumbnail, 'http') ? $w->thumbnail : "https://ucarecdn.com/{$w->thumbnail}/-/preview/") : null,
-                    'url' => null, // Wishes might just trigger a search or open a modal, for now let's just use the title for search
-                    'search_term' => $w->wishname
-                ];
-            });
+        // $wishes = WishItem::query()
+        //     ->where('is_approved', 1)
+        //     ->where('wishname', 'like', $term)
+        //     ->limit(5)
+        //     ->get(['id', 'wishname', 'thumbnail', 'uuid'])
+        //     ->map(function ($w) {
+        //         return [
+        //             'type' => 'wish',
+        //             'text' => $w->wishname,
+        //             'subtext' => 'Wish',
+        //             'image' => $w->thumbnail ? (str_starts_with($w->thumbnail, 'http') ? $w->thumbnail : "https://ucarecdn.com/{$w->thumbnail}/-/preview/") : null,
+        //             'url' => null, // Wishes might just trigger a search or open a modal, for now let's just use the title for search
+        //             'search_term' => $w->wishname
+        //         ];
+        //     });
 
         return [
             'creators' => $users,
-            'wishes' => $wishes
+            'wishes' => []
+            // 'wishes' => $wishes
         ];
     }
 

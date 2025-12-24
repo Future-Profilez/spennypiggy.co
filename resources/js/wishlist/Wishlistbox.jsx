@@ -18,7 +18,7 @@ import RemoveWish from './RemoveWish';
 export default function Wishlistbox(props) {
 
   const { format, formatMultiPrice } = PriceFormat();
-  const { currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
+  const { imagesize, currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = {
     transform: CSS.Translate.toString(transform)
@@ -75,10 +75,10 @@ export default function Wishlistbox(props) {
             <RemoveWish uuid={itm.uuid} text="Remove Wish" />
           </Dropdown.Item>
         </DropdownButton> : ''}
-        <div onClick={openAddtocart} className='rounded-[12px] h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer'>
+        <div onClick={openAddtocart} className={`rounded-[12px] h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize}`}>
           <LazyLoadImage
           alt={"image"}  effect="blur"
-          height={193} className='rounded-t-3xl block w-full h-full object-cover'
+          height={193} className={`rounded-t-3xl block w-full h-full object-cover `}
           src={itm?.perma_link ? itm?.perma_link : uploadedimg}
           width={243} />
         </div>

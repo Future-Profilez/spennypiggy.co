@@ -60,9 +60,11 @@ export default function TopSupporters() {
           <p className="toppercentage income font-semibold">
             {supporter.gift_count} {supporter.gift_count === 1 ? 'gift' : 'gifts'}
           </p>
-          {/* <p className="text-xs text-gray-500" title={`Support types: ${supporter.support_types?.join(', ')}`}>
+          {/* 
+          <p className="text-xs text-gray-500" title={`Support types: ${supporter.support_types?.join(', ')}`}>
             {supporter.support_types?.length} {supporter.support_types?.length === 1 ? 'type' : 'types'}
-          </p> */}
+          </p>
+           */}
         </div>
       </div>
     </div>

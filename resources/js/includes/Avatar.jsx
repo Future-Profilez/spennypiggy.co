@@ -4,7 +4,7 @@ import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
 
-export default function Avatar({ src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
+export default function Avatar({ hidename, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
 
   return (
     <>
@@ -100,16 +100,19 @@ export default function Avatar({ src, role, profile_status_lock, imageSrc, name,
                 )
               )}
             </div>
-            <div className="avatar-content">
-            <h2 className="flex items-center gap-1 capitalize">
-              <span className="line-clamp-1 ">
-                {name}
-              </span>
-            </h2>
-          <p className="text-gray-500">
-            {subhead || username}
-          </p>
-        </div>
+            {hidename ? "" : 
+            <>
+              <div className="avatar-content">
+                  <h2 className="flex items-center gap-1 capitalize">
+                    <span className="line-clamp-1 ">
+                      {name}
+                    </span>
+                  </h2>
+                  <p className="text-gray-500">
+                    {subhead || username}
+                  </p>
+              </div>
+            </>}
 
           </Link>
         </div>

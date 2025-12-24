@@ -8,9 +8,10 @@ import debounce from 'lodash/debounce';
 import { RiFireLine, RiCheckboxCircleLine, RiGiftLine, RiMoneyPoundCircleLine } from 'react-icons/ri';
 import IntroVideos from './IntrosVideos';
 import TopSupporters from '../leaderboard/TopSupporters';
+import Wishlistbox from "../../wishlist/Wishlistbox";
 
 export default function Discover(props) {
-    const { auth, featuredCreators, newVerifiedCreators, featuredWishes, topEarners, searchResults, filters: initialFilters } = props;
+    const { auth, global_currency, featuredCreators, newVerifiedCreators, featuredWishes, topEarners, searchResults, filters: initialFilters } = props;
 
     // State
     const [searchQuery, setSearchQuery] = useState(initialFilters?.search || '');
@@ -155,7 +156,7 @@ export default function Discover(props) {
 
                
 
-                <div className="container max-w-7xl mx-auto px-4 py-6 relative">
+                <div className="container max-w-7xl mx-auto px-4 py-6 relative z-0">
                     <div className={`min-w-0 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
                         
                         {!isSearching && !filters.type && (
@@ -176,7 +177,30 @@ export default function Discover(props) {
                                     <TopSupporters />
                                 </div>
 
-                                <div className="mb-8 rounded-3xl bg-gradient-to-r from-pink-50 via-pink-100 to-pink-50 border border-pink-100 p-6">
+                                {featuredWishes && featuredWishes.length ? (
+                                    <div className="mb-8 mt-6">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h2 className="text-2xl text-gray-900 font-gulfs uppercase">Spotlight Wish 🎯</h2>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                                            {featuredWishes && featuredWishes.map((item, i) => (
+                                                <Wishlistbox
+                                                key={`wish-item-${item.id}`}
+                                                classes=""
+                                                imagesize="max-h-[150px]"
+                                                currency={global_currency}
+                                                IsloggedIn={false}
+                                                auth={auth?.user}
+                                                itemid={item?.id}
+                                                // setuped={AuthUserStripeConnected ==1? true: false}
+                                                itm={item}
+                                            />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : ''}
+
+                                {/* <div className="mb-8 rounded-3xl bg-gradient-to-r from-pink-50 via-pink-100 to-pink-50 border border-pink-100 p-6">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div className="flex-1">
                                             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Discover & Explore</h2>
@@ -217,7 +241,7 @@ export default function Discover(props) {
                                             </button>
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
                                 
                                 <div className="space-y-2 mb-8">
                                     <FeaturedCarousel 
@@ -248,13 +272,8 @@ export default function Discover(props) {
                             <div className="space-y-12">
                                 {searchResults.creators && searchResults.creators.length > 0 && (
                                     <div>
-                                        <div className="flex items-center gap-2 mb-6">
-                                            <h2 className="text-2xl font-bold text-gray-900">Creators</h2>
-                                            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-sm font-medium">
-                                                {searchResults.creators.length}
-                                            </span>
-                                        </div>
-                                        <ResultsGrid 
+                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
+                                        <ResultsGrid  global_currency={global_currency} auth={auth}
                                             results={searchResults.creators}
                                             mode="creator"
                                             totalCount={searchResults.creators.length}
@@ -266,13 +285,8 @@ export default function Discover(props) {
                                 )}
 
                                 {searchResults.wishes && searchResults.wishes.length > 0 && (
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-6">
-                                            <h2 className="text-2xl font-bold text-gray-900">Wishes</h2>
-                                            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-sm font-medium">
-                                                {searchResults.wishes.length}
-                                            </span>
-                                        </div>
+                                    <>
+                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">WishLists</span> : Showing  {searchResults.wishes.length} Results</h2>
                                         <ResultsGrid 
                                             results={searchResults.wishes}
                                             mode="wish"
@@ -281,7 +295,7 @@ export default function Discover(props) {
                                             removeFilter={() => {}}
                                             onLoadMore={handleLoadMore}
                                         />
-                                    </div>
+                                    </>
                                 )}
 
                                 

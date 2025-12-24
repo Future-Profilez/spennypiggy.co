@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RiSearchLine, RiFilter3Line, RiTimeLine, RiCloseLine } from 'react-icons/ri';
 import { Link } from '@inertiajs/react';
+import userphoto from "../../../../assets/siteicon.png";
+
+
 import axios from 'axios';
+import Avatar from '../../../includes/Avatar';
 
 export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuickFilter, initialSearch = '' }) {
     const [query, setQuery] = useState(initialSearch || '');
@@ -74,7 +78,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="sticky top-[100px] z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 pb-2 transition-all">
+        <div className="stickys top-[100px] z-40 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
                 <div className="relative mb-3">
@@ -95,8 +99,6 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
-                    
-                    {/* Autocomplete / Recent Searches Dropdown */}
                     {isFocused && (recentSearches.length > 0 || query) && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
@@ -124,32 +126,47 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                 
                                 {query && (
                                     <>
-                                        {/* Suggestions */}
+                                        <div 
+                                            onClick={() => handleSearchSubmit(query)}
+                                            className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 text-pink-600 font-medium border-t border-gray-100 mt-1"
+                                        >
+                                            <RiSearchLine />
+                                            Search for "{query}"
+                                        </div>
                                         {(suggestions.creators?.length > 0 || suggestions.wishes?.length > 0) && (
                                             <div className="mb-2">
                                                 {suggestions.creators?.length > 0 && (
                                                     <>
                                                         <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider">Creators</div>
-                                                        {suggestions.creators.map((s, i) => (
-                                                            <Link 
-                                                                key={`c-${i}`} 
-                                                                href={s.url}
-                                                                className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3"
-                                                            >
-                                                                <img src={s.image || 'https://via.placeholder.com/30'} className="w-8 h-8 rounded-full object-cover" />
-                                                                <div>
-                                                                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                                                        {s.text}
-                                                                        {s.verified && <span className="text-blue-500 text-xs">✅</span>}
-                                                                    </div>
-                                                                    <div className="text-xs text-gray-500">{s.subtext}</div>
-                                                                </div>
+                                                        {suggestions.creators.map((item, i) => (
+                                                            <Link href={`/${item?.username}`} className='w-full block px-3 py-2 hover:bg-gray-200'>
+                                                                <Avatar role={item.role}
+                                                                    profile_status_lock={item.profile_status_lock == 2 ? true : false}
+                                                                    name={item.name} link={item.username || null} src={item.avatar_url}
+                                                                    subhead={`@${item.username || "anonymous"}`} username={item.username || ""}
+                                                                    // onClick={() => trackSearchClick(item.id, item.username)}
+                                                                />
                                                             </Link>
+
+                                                            // <Link 
+                                                            //     key={`c-${i}`} 
+                                                            //     href={s.url}
+                                                            //     className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3"
+                                                            // >
+                                                            //     <img src={s.image || userphoto} className="w-8 h-8 rounded-full object-cover" />
+                                                            //     <div>
+                                                            //         <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                                            //             {s.text}
+                                                            //             {s.verified && <span className="text-blue-500 text-xs">✅</span>}
+                                                            //         </div>
+                                                            //         <div className="text-xs text-gray-500">{s.subtext}</div>
+                                                            //     </div>
+                                                            // </Link>
                                                         ))}
                                                     </>
                                                 )}
                                                 
-                                                {suggestions.wishes?.length > 0 && (
+                                                {/* {suggestions.wishes?.length > 0 && (
                                                     <>
                                                         <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider mt-2">Wishes</div>
                                                         {suggestions.wishes.map((s, i) => (
@@ -169,17 +186,11 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                             </div>
                                                         ))}
                                                     </>
-                                                )}
+                                                )} */}
                                             </div>
                                         )}
                                     
-                                        <div 
-                                            onClick={() => handleSearchSubmit(query)}
-                                            className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 text-pink-600 font-medium border-t border-gray-100 mt-1"
-                                        >
-                                            <RiSearchLine />
-                                            Search for "{query}"
-                                        </div>
+                                        
                                     </>
                                 )}
                             </div>

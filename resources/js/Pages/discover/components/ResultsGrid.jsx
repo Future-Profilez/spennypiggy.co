@@ -3,18 +3,31 @@ import React, { useState, useMemo } from 'react';
 import DeviceID from '@/includes/DeviceID';
 import { RiLayoutGridFill, RiUserHeartLine, RiGiftLine, RiCloseLine, RiFireLine, RiCheckDoubleLine, RiSearchLine, RiFileList3Line, RiVipCrownLine } from 'react-icons/ri';
 import Popup from '@/Components/Popup';
+import Wishlistbox from '../../../wishlist/Wishlistbox';
+import Avatar from '../../../includes/Avatar';
+import CreatorCard from './CreatorCard';
 
-export default function ResultsGrid({ results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
+export default function ResultsGrid({auth, global_currency, results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
     const renderedItems = useMemo(() => {
         const items = [];
         (results || []).forEach((item, index) => {
             let card;
             switch(mode) {
                 case 'creator':
-                    card = <CreatorGridCard item={item} />;
+                    card = <CreatorCard item={item} />;
                     break;
                 case 'wish':
-                    card = <WishGridCard item={item} />;
+                    card =  <Wishlistbox
+                                key={`wish-item-${item.id}`}
+                                classes=""
+                                imagesize="max-h-[150px]"
+                                currency={global_currency}
+                                IsloggedIn={false}
+                                auth={auth?.user}
+                                itemid={item?.id}
+                                // setuped={AuthUserStripeConnected ==1? true: false}
+                                itm={item}
+                            />;
                     break;
                 case 'bill':
                     card = <BillGridCard item={item} />;
@@ -65,68 +78,36 @@ export default function ResultsGrid({ results, mode, setMode, totalCount, active
     }, [results, mode]);
 
     return (
-        <div className="flex-1">
-            {/* Block 4: Results Header */}
+        <div className="mt-0">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                        Showing {totalCount} results
-                    </h2>
-                    {/* Active Filter Chips */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {Object.entries(activeFilters).map(([key, value]) => {
-                             if (Array.isArray(value)) {
-                                 return value.map(v => (
-                                     <Chip key={`${key}-${v}`} label={v} onRemove={() => removeFilter(key, v)} />
-                                 ));
-                             }
-                             if (typeof value === 'boolean' && value) {
-                                 return <Chip key={key} label="Verified Only" onRemove={() => removeFilter(key, false)} />;
-                             }
-                             if (key.includes('Price') && value) {
-                                 // Simple handling for min/max price display
-                                 return null; 
-                             }
-                             return null;
-                        })}
-                    </div>
-                </div>
-
-                {/* Mode Toggle & Sort */}
-                <div className="flex items-center gap-4">
-                    <div className="bg-gray-100 p-1 rounded-lg flex items-center">
-                        <button
-                            onClick={() => setMode('creator')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                mode === 'creator' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                        >
-                            <RiUserHeartLine /> Creators
-                        </button>
-                        <button
-                            onClick={() => setMode('wish')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                                mode === 'wish' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                        >
-                            <RiGiftLine /> Wishes
-                        </button>
-                    </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                    {Object.entries(activeFilters).map(([key, value]) => {
+                            if (Array.isArray(value)) {
+                                return value.map(v => (
+                                    <Chip key={`${key}-${v}`} label={v} onRemove={() => removeFilter(key, v)} />
+                                ));
+                            }
+                            if (typeof value === 'boolean' && value) {
+                                return <Chip key={key} label="Verified Only" onRemove={() => removeFilter(key, false)} />;
+                            }
+                            if (key.includes('Price') && value) {
+                                return null; 
+                            }
+                            return null;
+                    })}
                 </div>
             </div>
 
             {/* Block 5: Results Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                 {renderedItems}
             </div>
             
             {/* Load More / Pagination */}
-            <div className="mt-12 text-center">
+            <div className="mt-6 text-center">
                 <button 
                     onClick={onLoadMore}
-                    className="px-8 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-50 transition-colors shadow-sm"
-                >
-                    Load More Results
+                    className="p-2 px-3 mb-6 text-gray-700 font-medium rounded-full hover:bg-gray-200 transition-colors" > Load More Results
                 </button>
             </div>
         </div>
@@ -143,92 +124,7 @@ function Chip({ label, onRemove }) {
         </span>
     );
 }
-
-const CreatorGridCard = React.memo(function CreatorGridCard({ item }) {
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-lg transition-all duration-300 h-full flex flex-col relative group">
-            {/* Full Card Link */}
-            <Link href={route('user.show', item.username)} className="absolute inset-0 z-0" />
-
-            <div className="flex items-start justify-between mb-4 z-10 relative pointer-events-none">
-                <div className="flex items-center gap-3 group pointer-events-auto">
-                    <img 
-                        src={item.avatar_url || 'https://via.placeholder.com/150'} 
-                        alt={item.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-50 group-hover:border-pink-200 transition-colors"
-                        loading="lazy"
-                        decoding="async"
-                    />
-                    <div>
-                        <h3 className="font-bold text-gray-900 line-clamp-1 group-hover:text-pink-600 transition-colors">{item.name}</h3>
-                        <p className="text-xs text-gray-500">@{item.username}</p>
-                    </div>
-                </div>
-                {(item.role === 1 || item.is_verified) && <span className="text-blue-500 bg-blue-50 p-1 rounded-full text-xs" title="Verified"><RiCheckDoubleLine /></span>}
-            </div>
-            
-            <div className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow group-hover:text-gray-900 z-10 relative pointer-events-none">
-                {item.bio || `Support ${item.name} to help them achieve their dreams!`}
-            </div>
-            
-            {/* Intro Video Poster */}
-            {item.intro && item.intro.poster_url ? (
-                <div className="mb-4 z-10 relative pointer-events-auto">
-                    <Popup
-                        space="0"
-                        size="md"
-                        classes="block w-full"
-                        text={
-                            <div className="relative rounded-xl overflow-hidden h-40 bg-black">
-                                <img
-                                    src={item.intro.poster_url}
-                                    alt={`${item.name} intro`}
-                                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition"
-                                    loading="lazy"
-                                    decoding="async"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="32" cy="32" r="32" fill="#F94F97"/>
-                                        <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        }
-                    >
-                        <div className="video-payer-pop">
-                            <video
-                                playsInline
-                                controls
-                                autoPlay
-                                controlsList="nodownload"
-                                poster={item.intro.poster_url}
-                            >
-                                <source src={item.intro.perma_link} type="video/mp4" />
-                            </video>
-                        </div>
-                    </Popup>
-                </div>
-            ) : null}
-
-            {/* Removed wishes preview in creator cards as requested */}
-
-            <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto z-10 relative pointer-events-none">
-                <span className="text-xs font-medium text-gray-900">
-                    {item.clicks_24h ? `${item.clicks_24h} views today` : 'New Creator'}
-                </span>
-                <div className="flex gap-2 pointer-events-auto">
-                    <Link href={route('user.show', item.username)} className="px-3 py-1.5 text-xs font-medium text-pink-600 bg-pink-50 rounded-lg hover:bg-pink-100">
-                        View
-                    </Link>
-                    <Link href={route('user.show', item.username)} className="px-3 py-1.5 text-xs font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 shadow-sm">
-                        Support
-                    </Link>
-                </div>
-            </div>
-        </div>
-    );
-});
+ 
 
 const WishGridCard = React.memo(function WishGridCard({ item }) {
     const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
