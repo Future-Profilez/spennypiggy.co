@@ -106,6 +106,7 @@ class MembershipController extends Controller
         $mem->tax_amount = $taxAmount;
         $mem->thumbnail = $request->thumbnail ?? null;
         $mem->rewards = $rewards;
+        $mem->status = 1;
 
         $mem->save();
 

@@ -412,7 +412,11 @@ class DiscoveryService
 
     public function getFeaturedBills($limit = 12)
     {
-        return \App\Models\Bills::where('status', 'active')
+        return \App\Models\Bills::where(function ($q) {
+                $q->where('status', 'active')
+                  ->orWhere('status', 1)
+                  ->orWhereNull('status');
+            })
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
@@ -438,7 +442,11 @@ class DiscoveryService
 
     public function getFeaturedMemberships($limit = 12)
     {
-        return \App\Models\Membership::where('status', 'active')
+        return \App\Models\Membership::where(function ($q) {
+                $q->where('status', 'active')
+                  ->orWhere('status', 1)
+                  ->orWhereNull('status');
+            })
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
@@ -465,7 +473,11 @@ class DiscoveryService
     public function getSearchBills($filters, $limit = 24)
     {
         $query = \App\Models\Bills::query()
-            ->where('status', 'active');
+            ->where(function ($q) {
+                $q->where('status', 'active')
+                  ->orWhere('status', 1)
+                  ->orWhereNull('status');
+            });
 
         if (!empty($filters['search'])) {
              $query->where('name', 'like', '%' . $filters['search'] . '%');
@@ -511,7 +523,11 @@ class DiscoveryService
     public function getSearchMemberships($filters, $limit = 24)
     {
         $query = \App\Models\Membership::query()
-            ->where('status', 'active');
+            ->where(function ($q) {
+                $q->where('status', 'active')
+                  ->orWhere('status', 1)
+                  ->orWhereNull('status');
+            });
 
         if (!empty($filters['search'])) {
              $query->where('level', 'like', '%' . $filters['search'] . '%');

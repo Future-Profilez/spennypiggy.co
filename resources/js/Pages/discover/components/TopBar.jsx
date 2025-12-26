@@ -72,6 +72,8 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     const quickFilters = [
         { id: 'creators', label: 'Creators' },
         { id: 'wishes', label: 'Wish List' },
+        { id: 'bills', label: 'Bills' },
+        { id: 'memberships', label: 'Memberships' },
         { id: 'new', label: 'New 🆕' },
         { id: 'trending', label: 'Trending 🔥' },
     ];

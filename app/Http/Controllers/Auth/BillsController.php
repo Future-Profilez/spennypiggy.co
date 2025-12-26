@@ -93,6 +93,7 @@ class BillsController extends Controller
         $bill->tax_amount = $taxAmount;
         $bill->thumbnail = !empty($media) ? $media : null;
         $bill->period = $request->period;
+        $bill->status = 1;
 
         $bill->save();
 

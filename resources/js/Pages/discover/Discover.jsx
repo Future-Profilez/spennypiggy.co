@@ -8,28 +8,37 @@ import debounce from 'lodash/debounce';
 import { RiFireLine, RiCheckboxCircleLine, RiGiftLine, RiMoneyPoundCircleLine } from 'react-icons/ri';
 import IntroVideos from './IntrosVideos';
 import TopSupporters from '../leaderboard/TopSupporters';
-import Wishlistbox from "../../wishlist/Wishlistbox";
 
 export default function Discover(props) {
-    const { auth, global_currency, featuredCreators, newVerifiedCreators, featuredWishes, topEarners, searchResults, filters: initialFilters } = props;
-
-    // State
+    
+    const { auth, global_currency, featuredCreators, newVerifiedCreators, featuredWishes, topEarners, featuredBills, featuredMemberships, searchResults, filters: initialFilters } = props;
     const [searchQuery, setSearchQuery] = useState(initialFilters?.search || '');
     const [filters, setFilters] = useState(initialFilters || {});
+    
     const getActiveQuickFilters = () => {
         const active = [];
         if (filters.type === 'new') active.push('new');
         if (filters.type === 'trending') active.push('trending');
         if ((filters.contentType || '').toLowerCase() === 'creators') active.push('creators');
         if ((filters.contentType || '').toLowerCase() === 'wishes') active.push('wishes');
+        if ((filters.contentType || '').toLowerCase() === 'bills') active.push('bills');
+        if ((filters.contentType || '').toLowerCase() === 'memberships') active.push('memberships');
         return active;
     };
+
     const [activeQuickFilters, setActiveQuickFilters] = useState(getActiveQuickFilters());
     useEffect(() => {
         setActiveQuickFilters(getActiveQuickFilters());
     }, [filters]);
     
-    const [viewMode, setViewMode] = useState(initialFilters?.contentType === 'Wishes' ? 'wish' : 'creator');
+    const [viewMode, setViewMode] = useState(() => {
+        const ct = initialFilters?.contentType;
+        if (ct === 'Wishes') return 'wish';
+        if (ct === 'Bills') return 'bill';
+        if (ct === 'Memberships') return 'membership';
+        return 'creator';
+    });
+
     const [isLoading, setIsLoading] = useState(false);
     const updateContentTypeUrl = (ct) => {
         const url = new URL(window.location.href);
@@ -39,7 +48,6 @@ export default function Discover(props) {
         window.history.replaceState({}, '', url.toString());
     };
 
-    // Listen for Inertia start/finish for loading state
     useEffect(() => {
         const removeStart = router.on('start', () => setIsLoading(true));
         const removeFinish = router.on('finish', () => setIsLoading(false));
@@ -48,7 +56,6 @@ export default function Discover(props) {
             removeFinish();
         };
     }, []);
-    // If not searching, we show the discovery blocks (carousels) and maybe a default grid.
     
     const isSearching = (() => {
         const hasQuery = !!(searchQuery && searchQuery.trim().length > 0);
@@ -60,9 +67,18 @@ export default function Discover(props) {
         });
         return hasQuery || hasNonContentTypeFilter;
     })();
-    const results = isSearching ? (searchResults || []) : (viewMode === 'creator' ? featuredCreators : featuredWishes);
 
-    // Debounced search trigger
+
+    const results = isSearching 
+        ? (searchResults || [])
+        : (
+            viewMode === 'creator' ? featuredCreators :
+            viewMode === 'wish' ? featuredWishes :
+            viewMode === 'bill' ? featuredBills :
+            viewMode === 'membership' ? featuredMemberships :
+            featuredCreators
+        );
+
     const applyFilters = useCallback(
         debounce((newFilters) => {
             const params = { ...newFilters };
@@ -87,6 +103,10 @@ export default function Discover(props) {
                     onlyProps.push('featuredCreators','newVerifiedCreators','topEarners');
                 } else if (contentTypeParam === 'Wishes') {
                     onlyProps.push('featuredWishes');
+                } else if (contentTypeParam === 'Bills') {
+                    onlyProps.push('featuredBills');
+                } else if (contentTypeParam === 'Memberships') {
+                    onlyProps.push('featuredMemberships');
                 }
             }
             router.get(url, {}, {
@@ -99,9 +119,6 @@ export default function Discover(props) {
         []
     );
 
-    useEffect(() => {}, []);
-
-    // Effect to trigger search when filters change
 
     const handleSearch = (query) => {
         setSearchQuery(query);
@@ -156,6 +173,9 @@ export default function Discover(props) {
                 setSearchQuery('');
                 setViewMode('creator');
                 updateContentTypeUrl(newFilters.contentType || null);
+                if (!(featuredCreators && featuredCreators.length)) {
+                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
+                }
                 return;
             case 'wishes':
                 newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Wishes' ? null : 'Wishes'), page: 1 };
@@ -163,6 +183,29 @@ export default function Discover(props) {
                 setSearchQuery('');
                 setViewMode('wish');
                 updateContentTypeUrl(newFilters.contentType || null);
+                if (!(featuredWishes && featuredWishes.length)) {
+                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
+                }
+                return;
+            case 'bills':
+                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Bills' ? null : 'Bills'), page: 1 };
+                setFilters(newFilters);
+                setSearchQuery('');
+                setViewMode('bill');
+                updateContentTypeUrl(newFilters.contentType || null);
+                if (!(featuredBills && featuredBills.length)) {
+                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
+                }
+                return;
+            case 'memberships':
+                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Memberships' ? null : 'Memberships'), page: 1 };
+                setFilters(newFilters);
+                setSearchQuery('');
+                setViewMode('membership');
+                updateContentTypeUrl(newFilters.contentType || null);
+                if (!(featuredMemberships && featuredMemberships.length)) {
+                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
+                }
                 return;
             default:
                 break;
@@ -251,6 +294,24 @@ export default function Discover(props) {
                                         icon={<RiGiftLine />}
                                     />
                                 )}
+
+                                {(filters.contentType === 'Bills' || (!filters.contentType && filters.contentType !== 'Creators')) && (
+                                    <FeaturedCarousel 
+                                        title="Featured Bills" 
+                                        items={featuredBills} 
+                                        type="bill"
+                                        icon={<RiGiftLine />}
+                                    />
+                                )}
+
+                                {(filters.contentType === 'Memberships' || (!filters.contentType && filters.contentType !== 'Creators')) && (
+                                    <FeaturedCarousel 
+                                        title="Featured Memberships" 
+                                        items={featuredMemberships} 
+                                        type="membership"
+                                        icon={<RiGiftLine />}
+                                    />
+                                )}
                             </>
                         )}
 
@@ -277,6 +338,34 @@ export default function Discover(props) {
                                             results={searchResults.wishes}
                                             mode="wish"
                                             totalCount={searchResults.wishes.length}
+                                            activeFilters={{}}
+                                            removeFilter={() => {}}
+                                            onLoadMore={handleLoadMore}
+                                        />
+                                    </>
+                                )}
+
+                                {searchResults.bills && searchResults.bills.length > 0 && (
+                                    <>
+                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Bills</span> : Showing  {searchResults.bills.length} Results</h2>
+                                        <ResultsGrid 
+                                            results={searchResults.bills}
+                                            mode="bill"
+                                            totalCount={searchResults.bills.length}
+                                            activeFilters={{}}
+                                            removeFilter={() => {}}
+                                            onLoadMore={handleLoadMore}
+                                        />
+                                    </>
+                                )}
+
+                                {searchResults.memberships && searchResults.memberships.length > 0 && (
+                                    <>
+                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Memberships</span> : Showing  {searchResults.memberships.length} Results</h2>
+                                        <ResultsGrid 
+                                            results={searchResults.memberships}
+                                            mode="membership"
+                                            totalCount={searchResults.memberships.length}
                                             activeFilters={{}}
                                             removeFilter={() => {}}
                                             onLoadMore={handleLoadMore}
