@@ -2,8 +2,6 @@ import { useState, lazy, useEffect } from "react";
 import ToCart from "./ToCart";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import ProgressBar from "react-bootstrap/ProgressBar";
-
-// Lazy-loaded components
 const Popup = lazy(() => import("@/Components/Popup"));
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, router, usePage } from "@inertiajs/react";
@@ -54,36 +52,35 @@ export default function AddCart(props) {
     return (
         <Popup
             size="md"
-            action={close}
+            action={close} space='p-0'
             modalclassName="pinkmodal"
-            classes="d-none"
-        >
-            <div className="addCartModalHead rounded-3xl relative ">
-                <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center">
-                    Add to Cart{" "}
-                </h2>
-            </div>
-            {/* <div className="cartModimgs absolute left-0  w-full top-0">
-                <img src={giftimg} className="w-full" alt="img" />
-            </div> */}
+            classes="d-none" >
+           
             <div className="bannerrr !rounded-none p-4">
-                <div className="cartbanner">
-                    <img
-                        src={item.perma_link ? item.perma_link : uploadedimg}
-                        alt="img"
-                    />
+                
+                <div className="flex items-center mb-4">
+                    <div className="h-[100px] bg-gray-200 rounded-xl border !border-gray-200 overflow-hidden w-[100px]">
+                        <img
+                            src={item.perma_link ? item.perma_link : uploadedimg}
+                            alt="img" className="max-h-[100px] w-full object-cover"
+                        />
+                    </div>
+                    <div className="ps-3">
+                        <div className="text-xl font-bold line-clamp-2 ">{item.wishname}</div>
+                        <div className="cartPrice font-CeraGRBold text-voilet mt-1 text-center">
+                            {IsloggedIn ?
+                                <>
+                                    {formatMultiPrice(item.price, item?.currency || 'USD')}
+                                </> :
+                                <>
+                                    {formatMultiPrice((parseInt(item.price)+parseInt(processingFee || 0)), item?.currency || 'USD', 'adminfee')}
+                                </>
+                            }
+                        </div>
+                    </div>
                 </div>
-                <div className="cartTitle text-center">{item.wishname}</div>
-                <div className="cartPrice font-CeraGRBold text-voilet mt-1 mb-3 text-center">
-                    {IsloggedIn ?
-                        <>
-                            {formatMultiPrice(item.price, item?.currency || 'USD')}
-                        </> :
-                        <>
-                            {formatMultiPrice((parseInt(item.price)+parseInt(processingFee || 0)), item?.currency || 'USD', 'adminfee')}
-                        </>
-                    }
-                </div>
+
+
                 {item.subscription == "2" ? (
                     <>
                         <p className="mb-0">Amount </p>
@@ -130,7 +127,6 @@ export default function AddCart(props) {
                 ) : (
                     ""
                 )}
-
                 {item.subscription == 1 ? (
                     <>
                     <div className=" pb-2">
@@ -245,7 +241,6 @@ export default function AddCart(props) {
                         />
                     </div>
                 )}
-
 
                 {item.user ? (
                     <Link 

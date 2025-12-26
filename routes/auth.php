@@ -101,7 +101,7 @@ Route::get('discover/suggestions', function (Illuminate\Http\Request $request, D
 })->name('discover.suggestions');
 
 Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = null, $category = null) {
-    $filters = $request->only(['search', 'verified', 'minPrice', 'maxPrice', 'sortBy', 'categories', 'contentType']);
+    $filters = $request->only(['search', 'minPrice', 'maxPrice', 'sortBy', 'categories', 'contentType']);
     
     // Normalize type and apply shortcut filters
     if ($type) {
@@ -111,8 +111,6 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             $filters['sortBy'] = 'Trending';
         } elseif ($normalizedType === 'new') {
             $filters['sortBy'] = 'New';
-        } elseif ($normalizedType === 'verified') {
-            $filters['verified'] = true;
         } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships'])) {
             $filters['contentType'] = ucfirst($normalizedType);
         } else {
@@ -134,7 +132,10 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     }
 
     // Determine if we should show search results (Grid) or default sections (Carousels)
-    $isSearch = !empty($request->query()) || !empty($type);
+    // Ignore contentType/page-only toggles for performance; they should not trigger search
+    $queryParams = $request->query();
+    unset($queryParams['contentType'], $queryParams['page']);
+    $isSearch = (!empty($queryParams)) || (!empty($type) && !in_array(strtolower($type), ['creators','wishes','bills','memberships']));
     
     // Special case: If user just visits /discover/trending or /discover/new without other query params,
     // they might want to see the grid sorted by that.
@@ -153,7 +154,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         // we might want to show everything.
         // However, the logic above sets contentType to Creators if missing.
         // Let's adjust: if type is a shortcut (trending/new/verified), unset contentType to allow fetching all?
-        if ($type && in_array(strtolower($type), ['trending', 'new', 'verified']) && !$request->has('contentType')) {
+        if ($type && in_array(strtolower($type), ['trending', 'new']) && !$request->has('contentType')) {
             $ctype = 'All';
         }
 

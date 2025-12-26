@@ -21,10 +21,10 @@ class DiscoveryService
             ->where('profile_status_lock', 2)
             // ->where('identity_status', 1)
             ->join('search_clicks', 'search_clicks.creator_id', '=', 'users.id')
-            ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.profile_status_lock', 'users.role', 'users.bio')
+            ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio')
             ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_24h', [$clicks24hStart])
             ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_7d', [$clicks7dStart])
-            ->groupBy('users.id', 'users.name', 'users.username', 'users.avatar', 'users.profile_status_lock', 'users.role', 'users.bio')
+            ->groupBy('users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio')
             ->orderByDesc('clicks_24h')
             ->orderByDesc('clicks_7d')
             ->limit($limit)
@@ -38,6 +38,7 @@ class DiscoveryService
                     'name' => $u->name,
                     'username' => $u->username,
                     'avatar_url' => $u->avatar_url,
+                    'cover_url' => $u->cover_url,
                     'bio' => $u->bio,
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
@@ -68,13 +69,14 @@ class DiscoveryService
             ->with(['wishes' => function($q) {
                 $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
             }, 'intro'])
-            ->get(['id', 'name', 'username', 'avatar', 'profile_status_lock', 'role', 'bio'])
+            ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio'])
             ->map(function ($u) {
                 return [
                     'id' => $u->id,
                     'name' => $u->name,
                     'username' => $u->username,
                     'avatar_url' => $u->avatar_url,
+                    'cover_url' => $u->cover_url,
                     'bio' => $u->bio,
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
@@ -91,15 +93,12 @@ class DiscoveryService
     public function getSearchCreators($filters, $limit = 24)
     {
         $query = User::query()
-            ->where('suspended_account', 0);
-            // ->where('profile_status_lock', 2); // Relaxed for testing/debugging
+            ->where('suspended_account', 0)
+            ->where('role', 1)
+            ->where('profile_status_lock', 2);
         
         $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
         $offset = ($page - 1) * $limit;
-        
-        if (!empty($filters['verified']) && filter_var($filters['verified'], FILTER_VALIDATE_BOOLEAN)) {
-            $query->where('role', 1); 
-        }
         
         if (!empty($filters['categories'])) {
             // If it's a comma-separated string, explode it
@@ -147,13 +146,14 @@ class DiscoveryService
                 },
                 'intro'
             ])
-            ->get(['id', 'name', 'username', 'avatar', 'profile_status_lock', 'role', 'bio'])
+            ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio'])
             ->map(function ($u) {
                 return [
                     'id' => $u->id,
                     'name' => $u->name,
                     'username' => $u->username,
                     'avatar_url' => $u->avatar_url,
+                    'cover_url' => $u->cover_url,
                     'bio' => $u->bio,
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
@@ -219,7 +219,7 @@ class DiscoveryService
         }
 
         return $query->offset($offset)->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
             ->get()
             ->map(function ($w) {
                 // dd($w);
@@ -317,7 +317,7 @@ class DiscoveryService
             ->havingRaw('(total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop) > 0')
             ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
             ->take($limit)
-            ->get(['id','name','username','avatar','profile_status_lock','role','default_currency'])
+            ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency'])
             ->map(function ($u, $index) {
                 $sum = ($u->total_payments ?? 0) + ($u->total_subscriptions ?? 0) + ($u->total_tips ?? 0) + ($u->total_member ?? 0) + ($u->total_bill ?? 0) + ($u->total_shop ?? 0);
                 return [
@@ -325,6 +325,7 @@ class DiscoveryService
                     'name' => $u->name,
                     'username' => $u->username,
                     'avatar_url' => $u->avatar_url,
+                    'cover_url' => $u->cover_url,
                     'profile_status_lock' => $u->profile_status_lock,
                     'role' => $u->role,
                     'total_amount' => \App\Helpers::priceFormat($u->default_currency, $sum, 'USD'),
@@ -342,7 +343,7 @@ class DiscoveryService
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
             ->get()
             ->map(function ($w) {
                 return [
@@ -415,7 +416,7 @@ class DiscoveryService
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
             ->get()
             ->map(function ($b) {
                 return [
@@ -429,6 +430,7 @@ class DiscoveryService
                         'name' => $b->user->name,
                         'username' => $b->user->username,
                         'avatar_url' => $b->user->avatar_url,
+                        'cover_url' => $b->user->cover_url,
                     ] : null,
                 ];
             });
@@ -440,7 +442,7 @@ class DiscoveryService
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
-            ->with('user:id,name,username,avatar')
+            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
             ->get()
             ->map(function ($m) {
                 return [
@@ -454,6 +456,7 @@ class DiscoveryService
                         'name' => $m->user->name,
                         'username' => $m->user->username,
                         'avatar_url' => $m->user->avatar_url,
+                        'cover_url' => $m->user->cover_url,
                     ] : null,
                 ];
             });
@@ -499,6 +502,7 @@ class DiscoveryService
                         'name' => $b->user->name,
                         'username' => $b->user->username,
                         'avatar_url' => $b->user->avatar_url,
+                        'cover_url' => $b->user->cover_url,
                     ] : null,
                 ];
             });
@@ -542,6 +546,7 @@ class DiscoveryService
                         'name' => $m->user->name,
                         'username' => $m->user->username,
                         'avatar_url' => $m->user->avatar_url,
+                        'cover_url' => $m->user->cover_url,
                     ] : null,
                 ];
             });

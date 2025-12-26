@@ -66,7 +66,7 @@ export default function IntroVideos(props) {
 
     const Intro = ({w}) => {
       const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
-      return  <div className="relative rounded-[25px] h-[250px] md:h-[350px] overflow-hidden border border-pink-200 bg-black group"> 
+      return  <div className="relative rounded-[20px] h-[250px] md:h-[270px] overflow-hidden border border-pink-200 bg-black group"> 
         <ProfileIntro data={w}  text={
           <>
             <div className="h-full relative">
@@ -79,12 +79,12 @@ export default function IntroVideos(props) {
                 width={260}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70"></div>
-              <div className="absolute top-3 left-3 bg-white/85 text-gray-900 text-xs font-medium px-2 py-1 rounded-md">
+              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-md">
                 Intro Video
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="transform transition-transform duration-300 group-hover:scale-105">
-                  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="h-10 w-10" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="32" cy="32" r="32" fill="#F94F97"/>
                     <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
                   </svg>
@@ -96,9 +96,9 @@ export default function IntroVideos(props) {
         <div className="absolute bottom-0 left-0 w-full p-3 md:p-4 z-[99] text-white">
           {w && w.user && w.user.username ? (
             <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)} className="block">
-              <p className="text-normal md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
+              <p className="text-normal !line-clamp-1 md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
                 {w.user.name}
-                {verified ? <RiVerifiedBadgeFill size={'1rem'} className="text-pink" /> : ''}
+                {/* {verified ? <RiVerifiedBadgeFill size={'1rem'} className="text-pink" /> : ''} */}
               </p>
               <p className="text-normal mt-0 opacity-90">@{w.user.username}</p>
             </Link>
@@ -131,7 +131,7 @@ export default function IntroVideos(props) {
           :
           <>
             {intros && intros.length ?
-            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3'>
+            <div className=' w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2'>
                 {intros.map((w, i)=> (
                     <Intro w={w} />
                 ))}

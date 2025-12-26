@@ -18,9 +18,10 @@ export default function Discover(props) {
     const [filters, setFilters] = useState(initialFilters || {});
     const getActiveQuickFilters = () => {
         const active = [];
-        if (filters.type === 'verified') active.push('verified');
         if (filters.type === 'new') active.push('new');
         if (filters.type === 'trending') active.push('trending');
+        if ((filters.contentType || '').toLowerCase() === 'creators') active.push('creators');
+        if ((filters.contentType || '').toLowerCase() === 'wishes') active.push('wishes');
         return active;
     };
     const [activeQuickFilters, setActiveQuickFilters] = useState(getActiveQuickFilters());
@@ -42,7 +43,16 @@ export default function Discover(props) {
     }, []);
     // If not searching, we show the discovery blocks (carousels) and maybe a default grid.
     
-    const isSearching = Object.keys(filters).length > 0 || searchQuery;
+    const isSearching = (() => {
+        const hasQuery = !!(searchQuery && searchQuery.trim().length > 0);
+        const filterKeys = Object.keys(filters || {});
+        const hasNonContentTypeFilter = filterKeys.some(k => {
+            if (k === 'contentType' || k === 'page') return false;
+            const v = filters[k];
+            return v !== null && v !== undefined && v !== '';
+        });
+        return hasQuery || hasNonContentTypeFilter;
+    })();
     const results = isSearching ? (searchResults || []) : (viewMode === 'creator' ? featuredCreators : featuredWishes);
 
     // Debounced search trigger
@@ -52,20 +62,31 @@ export default function Discover(props) {
             const hasSearch = params.search && params.search.trim().length > 0;
             const typeParam = params.type || null;
             const page = params.page || 1;
+            const contentTypeParam = params.contentType || null;
             
             let url;
             if (hasSearch) {
-                url = route('discover', { search: params.search, page });
+                url = route('discover', { search: params.search, page, contentType: contentTypeParam });
             } else if (typeParam) {
-                url = route('discover', { type: typeParam, page });
+                url = route('discover', { type: typeParam, page, contentType: contentTypeParam });
             } else {
-                url = route('discover', { page });
+                url = route('discover', { page, contentType: contentTypeParam });
             }
             
+            const onlyProps = [];
+            if (contentTypeParam && !hasSearch && !typeParam) {
+                onlyProps.push('filters');
+                if (contentTypeParam === 'Creators') {
+                    onlyProps.push('featuredCreators','newVerifiedCreators','topEarners');
+                } else if (contentTypeParam === 'Wishes') {
+                    onlyProps.push('featuredWishes');
+                }
+            }
             router.get(url, {}, {
                 preserveState: true,
                 preserveScroll: true,
-                replace: true
+                replace: true,
+                ...(onlyProps.length > 0 ? { only: onlyProps } : {})
             });
         }, 300),
         []
@@ -80,7 +101,8 @@ export default function Discover(props) {
         applyFilters({
             type: null,
             search: query,
-            page: 1
+            page: 1,
+            contentType: filters.contentType || null
         });
     };
     
@@ -89,7 +111,8 @@ export default function Discover(props) {
         applyFilters({
             type: filters.type || null,
             search: searchQuery || '',
-            page: 1
+            page: 1,
+            contentType: filters.contentType || null
         });
     }
     
@@ -104,23 +127,28 @@ export default function Discover(props) {
         applyFilters({
             type: updatedFilters.type || null,
             search: searchQuery || '',
-            page: updatedFilters.page || 1
+            page: updatedFilters.page || 1,
+            contentType: updatedFilters.contentType || null
         });
     };
     
     const handleQuickFilter = (id) => {
         let newFilters = { ...filters };
         switch(id) {
-            case 'verified':
-                newFilters = { type: newFilters.type === 'verified' ? null : 'verified', page: 1 };
-                setSearchQuery('');
-                break;
             case 'new':
                 newFilters = { type: newFilters.type === 'new' ? null : 'new', page: 1 };
                 setSearchQuery('');
                 break;
             case 'trending':
                 newFilters = { type: newFilters.type === 'trending' ? null : 'trending', page: 1 };
+                setSearchQuery('');
+                break;
+            case 'creators':
+                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Creators' ? null : 'Creators'), page: 1 };
+                setSearchQuery('');
+                break;
+            case 'wishes':
+                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Wishes' ? null : 'Wishes'), page: 1 };
                 setSearchQuery('');
                 break;
             default:
@@ -161,114 +189,58 @@ export default function Discover(props) {
                         
                         {!isSearching && !filters.type && (
                             <>
-                                <FeaturedCarousel 
-                                    title="Wishes Trending Now 🎁" 
-                                    items={featuredWishes} 
-                                    type="wish"
-                                    icon={<RiGiftLine />}
-                                />
-                                
-                                <div className="mb-8">
-                                    <IntroVideos />
-                                </div>
-                                
-                                
-                                <div className="mb-8">
-                                    <TopSupporters />
-                                </div>
-
-                                {featuredWishes && featuredWishes.length ? (
-                                    <div className="mb-8 mt-6">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <h2 className="text-2xl text-gray-900 font-gulfs uppercase">Spotlight Wish 🎯</h2>
+                                {(!filters.contentType || filters.contentType === 'All') && (
+                                    <>
+                                        <FeaturedCarousel 
+                                            title="Wishes Trending Now 🎁" 
+                                            items={featuredWishes} 
+                                            type="wish"
+                                            icon={<RiGiftLine />}
+                                        />
+                                        <div className="mb-8">
+                                            <TopSupporters grid={true} />
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                                            {featuredWishes && featuredWishes.map((item, i) => (
-                                                <Wishlistbox
-                                                key={`wish-item-${item.id}`}
-                                                classes=""
-                                                imagesize="max-h-[150px]"
-                                                currency={global_currency}
-                                                IsloggedIn={false}
-                                                auth={auth?.user}
-                                                itemid={item?.id}
-                                                // setuped={AuthUserStripeConnected ==1? true: false}
-                                                itm={item}
-                                                trackClick={true}
-                                            />
-                                            ))}
+                                        <div className="mb-8">
+                                            <IntroVideos />
                                         </div>
+                                    </>
+                                )}
+                                
+                                {(filters.contentType === 'Creators' || !filters.contentType || filters.contentType === 'All') && (
+                                    <div className="space-y-2 mb-8">
+                                        <FeaturedCarousel 
+                                            title="Trending Creators 🔥" 
+                                            items={featuredCreators} 
+                                            type="creator"
+                                            icon={<RiFireLine />}
+                                        />
+                                        <FeaturedCarousel 
+                                            title="New & Verified 🆕" 
+                                            items={newVerifiedCreators} 
+                                            type="creator"
+                                            icon={<RiCheckboxCircleLine />}
+                                        />
+                                        
+                                        <FeaturedCarousel 
+                                            title="Top Earners This Week 💰" 
+                                            items={topEarners} 
+                                            type="creator"
+                                            icon={<RiMoneyPoundCircleLine />}
+                                        />
                                     </div>
-                                ) : ''}
+                                )}
 
-                                {/* <div className="mb-8 rounded-3xl bg-gradient-to-r from-pink-50 via-pink-100 to-pink-50 border border-pink-100 p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <div className="flex-1">
-                                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Discover & Explore</h2>
-                                            <p className="text-gray-700 mt-1">Find creators and wishes you’ll love. Quick filters keep browsing fast.</p>
-                                            <div className="flex flex-wrap gap-2 mt-4">
-                                                <button
-                                                    onClick={() => handleQuickFilter('trending')}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-xl border border-pink-200 hover:border-pink-300 shadow-sm"
-                                                >
-                                                    <RiFireLine /> Trending
-                                                </button>
-                                                <button
-                                                    onClick={() => handleQuickFilter('new')}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-xl border border-pink-200 hover:border-pink-300 shadow-sm"
-                                                >
-                                                    🆕 New
-                                                </button>
-                                                <button
-                                                    onClick={() => handleQuickFilter('verified')}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-xl border border-pink-200 hover:border-pink-300 shadow-sm"
-                                                >
-                                                    ✅ Verified
-                                                </button>
-                                                <button
-                                                    onClick={() => { handleViewModeChange('wish'); handleQuickFilter('trending'); }}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-xl border border-pink-200 hover:border-pink-300 shadow-sm"
-                                                >
-                                                    <RiGiftLine /> Trending Wishes
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="w-full md:w-auto">
-                                            <button
-                                                onClick={() => router.get(route('discover'))}
-                                                className="px-5 py-2.5 bg-gray-900 text-white rounded-xl shadow-sm hover:bg-black"
-                                            >
-                                                Explore All
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div> */}
-                                
-                                <div className="space-y-2 mb-8">
+                                {filters.contentType === 'Wishes' && (
                                     <FeaturedCarousel 
-                                        title="Trending Creators 🔥" 
-                                        items={featuredCreators} 
-                                        type="creator"
-                                        icon={<RiFireLine />}
+                                        title="Wishes Trending Now 🎁" 
+                                        items={featuredWishes} 
+                                        type="wish"
+                                        icon={<RiGiftLine />}
                                     />
-                                    <FeaturedCarousel 
-                                        title="New & Verified 🆕" 
-                                        items={newVerifiedCreators} 
-                                        type="creator"
-                                        icon={<RiCheckboxCircleLine />}
-                                    />
-                                    
-                                    <FeaturedCarousel 
-                                        title="Top Earners This Week 💰" 
-                                        items={topEarners} 
-                                        type="creator"
-                                        icon={<RiMoneyPoundCircleLine />}
-                                    />
-                                </div>
+                                )}
                             </>
                         )}
 
-                        {/* Block 4 & 5: Results Grid */}
                         {isSearching && searchResults ? (
                             <div className="space-y-12">
                                 {searchResults.creators && searchResults.creators.length > 0 && (
@@ -310,18 +282,18 @@ export default function Discover(props) {
                                 )}
                             </div>
                         ) : (
-                            <ResultsGrid 
-                                results={results}
-                                mode={viewMode}
-                                setMode={handleViewModeChange}
-                                totalCount={results?.length || 0}
-                                activeFilters={{}}
-                                removeFilter={() => {}}
-                                onLoadMore={handleLoadMore}
-                            />
+                            <>
+                                <ResultsGrid 
+                                    results={results}
+                                    mode={viewMode}
+                                    setMode={handleViewModeChange}
+                                    totalCount={results?.length || 0}
+                                    activeFilters={{}}
+                                    removeFilter={() => {}}
+                                    onLoadMore={handleLoadMore}
+                                />
+                            </>
                         )}
-
-                        
                     </div>
                 </div>
             </div>

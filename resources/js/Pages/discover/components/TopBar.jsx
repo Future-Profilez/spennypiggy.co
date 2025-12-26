@@ -1,9 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { RiSearchLine, RiFilter3Line, RiTimeLine, RiCloseLine } from 'react-icons/ri';
+import { useState, useEffect, useRef } from 'react';
+import { RiSearchLine, RiFilter3Line, RiTimeLine } from 'react-icons/ri';
 import { Link } from '@inertiajs/react';
-import userphoto from "../../../../assets/siteicon.png";
-
-
 import axios from 'axios';
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
@@ -73,16 +70,17 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     };
 
     const quickFilters = [
-        { id: 'verified', label: 'Verified ✅' },
+        { id: 'creators', label: 'Creators' },
+        { id: 'wishes', label: 'Wish List' },
         { id: 'new', label: 'New 🆕' },
         { id: 'trending', label: 'Trending 🔥' },
     ];
 
     return (
-        <div className="sticky top-[100px] z-40 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
+        <div className="sticky top-[100px] z-1 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
-                <div className="relative mb-3">
+                <div className="relative mb-2">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <RiSearchLine className="text-gray-400" size={20} />
                     </div>

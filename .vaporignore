@@ -1,0 +1,9 @@
+node_modules
+.git
+tests
+coverage
+storage/logs
+storage/framework
+bootstrap/cache
+.env
+.env.*

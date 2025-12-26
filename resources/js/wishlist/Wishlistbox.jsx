@@ -15,10 +15,13 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import RemoveWish from './RemoveWish';
 import { trackSearchClick } from "@/includes/Analytics";
+import { usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
-
+  const {ziggy} = usePage().props; 
   const { format, formatMultiPrice } = PriceFormat();
+
+  
   const { imagesize, currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key, trackClick } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
   const style = {
@@ -27,6 +30,7 @@ export default function Wishlistbox(props) {
   const stylenone = {
     transform: '',
   };
+  console.log("itm",itm);
 
   const [itemUID, setItemUID] = useState(itemid);
   const [open, setOpen] = useState();
@@ -117,9 +121,11 @@ export default function Wishlistbox(props) {
           
           <div className="absolute top-1 left-1 text-xl">👀</div>
           <div className="absolute bottom-2 right-2 text-xl">⭐</div>
-          <div className='flex justify-center items-center mt-3'  >
-            <ShareProfile username={itm.wishname} custom={`${window.location.href}?item=${itm.uuid}`} >
-              <div className='bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow'>Share Link</div>
+          <div className='flex justify-center items-center mt-3 '  >
+
+
+            <ShareProfile username={itm.wishname} custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
+              <div className=' bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow'>Share Link</div>
             </ShareProfile>
           </div>
         </div>

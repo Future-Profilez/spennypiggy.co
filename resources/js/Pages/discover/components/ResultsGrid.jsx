@@ -100,17 +100,12 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                 </div>
             </div>
 
-            {/* Block 5: Results Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                 {renderedItems}
             </div>
-            
-            {/* Load More / Pagination */}
             <div className="mt-6 text-center">
-                <button 
-                    onClick={onLoadMore}
-                    className="p-2 px-3 mb-6 text-gray-700 font-medium rounded-full hover:bg-gray-200 transition-colors" > Load More Results
-                </button>
+                <button  onClick={onLoadMore} className="p-2 px-3 mb-6 text-gray-700 font-medium 
+                rounded-full hover:bg-gray-200 transition-colors" > Load More </button>
             </div>
         </div>
     );

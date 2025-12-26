@@ -8,7 +8,7 @@ import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
 import { trackSearchClick } from "@/includes/Analytics";
 
-export default function TopSupporters() {
+export default function TopSupporters({grid = false}) {
 
   const { formatMultiPrice } = PriceFormat();
   const [ period, setPeriod] = useState('frequency');
@@ -39,7 +39,7 @@ export default function TopSupporters() {
   }, [period]);
 
   const SupporterItem = ({ supporter, index }) => (
-    <div className="rank py-3 border-bottom flex items-center justify-between">
+    <div className="fading rank py-3 border-bottom flex items-center justify-between">
       <div className="flex items-center justify-between">
         <div className="wisher wisher-rank">
           <Avatar
@@ -105,9 +105,21 @@ export default function TopSupporters() {
       <p className='text-gray-500 mb-3'>Most active supporters by gift count</p>
     
       {data.length ? (
-        data.map((supporter, index) => (
-          <SupporterItem key={`${supporter.username}-${index}`} supporter={supporter} index={index} />
-        ))
+        <>
+        {grid ? 
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+            {data.map((supporter, index) => (
+              <SupporterItem key={`${supporter.username}-${index}`} supporter={supporter} index={index} />
+            ))}
+          </div>
+          :
+          <>
+            {data.map((supporter, index) => (
+              <SupporterItem key={`${supporter.username}-${index}`} supporter={supporter} index={index} />
+            ))}
+          </>
+        }
+        </>
       ) : (
         <div className="my-4">
           <Nocontent classes="bg-white" text="No supporters yet" />
