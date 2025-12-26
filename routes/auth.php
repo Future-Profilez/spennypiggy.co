@@ -42,6 +42,7 @@ use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;
@@ -172,13 +173,21 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         }
     }
 
+    $isProd = app()->environment('production');
+    $featuredCreators = $isProd ? Cache::remember('discover:featured_creators:12', 300, fn() => $discoveryService->getTrendingCreators(12)) : $discoveryService->getTrendingCreators(12);
+    $newVerifiedCreators = $isProd ? Cache::remember('discover:new_verified_creators:12', 300, fn() => $discoveryService->getNewVerifiedCreators(12)) : $discoveryService->getNewVerifiedCreators(12);
+    $featuredWishes = $isProd ? Cache::remember('discover:featured_wishes:12', 300, fn() => $discoveryService->getFeaturedWishes(12)) : $discoveryService->getFeaturedWishes(12);
+    $topEarnersData = $isProd ? Cache::remember('discover:top_earners::12', 300, fn() => $discoveryService->getTopEarners('', 12)['data']) : $discoveryService->getTopEarners('', 12)['data'];
+    $featuredBills = $isProd ? Cache::remember('discover:featured_bills:12', 300, fn() => $discoveryService->getFeaturedBills(12)) : $discoveryService->getFeaturedBills(12);
+    $featuredMemberships = $isProd ? Cache::remember('discover:featured_memberships:12', 300, fn() => $discoveryService->getFeaturedMemberships(12)) : $discoveryService->getFeaturedMemberships(12);
+
     return Inertia::render('discover/Discover', [
-        'featuredCreators' => $discoveryService->getTrendingCreators(12),
-        'newVerifiedCreators' => $discoveryService->getNewVerifiedCreators(12),
-        'featuredWishes' => $discoveryService->getFeaturedWishes(12),
-        'topEarners' => $discoveryService->getTopEarners('', 12)['data'],
-        'featuredBills' => $discoveryService->getFeaturedBills(12),
-        'featuredMemberships' => $discoveryService->getFeaturedMemberships(12),
+        'featuredCreators' => $featuredCreators,
+        'newVerifiedCreators' => $newVerifiedCreators,
+        'featuredWishes' => $featuredWishes,
+        'topEarners' => $topEarnersData,
+        'featuredBills' => $featuredBills,
+        'featuredMemberships' => $featuredMemberships,
         'filters' => $filters,
         'searchResults' => $searchResults,
     ]);

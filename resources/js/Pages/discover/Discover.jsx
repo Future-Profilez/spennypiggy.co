@@ -31,6 +31,13 @@ export default function Discover(props) {
     
     const [viewMode, setViewMode] = useState(initialFilters?.contentType === 'Wishes' ? 'wish' : 'creator');
     const [isLoading, setIsLoading] = useState(false);
+    const updateContentTypeUrl = (ct) => {
+        const url = new URL(window.location.href);
+        if (ct) url.searchParams.set('contentType', ct);
+        else url.searchParams.delete('contentType');
+        url.searchParams.delete('page');
+        window.history.replaceState({}, '', url.toString());
+    };
 
     // Listen for Inertia start/finish for loading state
     useEffect(() => {
@@ -145,12 +152,18 @@ export default function Discover(props) {
                 break;
             case 'creators':
                 newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Creators' ? null : 'Creators'), page: 1 };
+                setFilters(newFilters);
                 setSearchQuery('');
-                break;
+                setViewMode('creator');
+                updateContentTypeUrl(newFilters.contentType || null);
+                return;
             case 'wishes':
                 newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Wishes' ? null : 'Wishes'), page: 1 };
+                setFilters(newFilters);
                 setSearchQuery('');
-                break;
+                setViewMode('wish');
+                updateContentTypeUrl(newFilters.contentType || null);
+                return;
             default:
                 break;
         }
