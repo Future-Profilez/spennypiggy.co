@@ -118,7 +118,7 @@ function Bill(props) {
                       <span className="text-xs text-gray-700 font-medium">
                       by 
                     </span>
-                    <Link
+                    <Link as="button"
                       method="get"
                       href={route('user.show', { username: itm.user.username })}
                       className="ml-1 text-xs text-[#F94F97] underline hover:opacity-90"

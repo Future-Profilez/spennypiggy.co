@@ -167,7 +167,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                         <p className="text-xs font-semibold text-black me-1">
                           By
                         </p>
-                        <Link method="get"
+                        <Link method="get" as="button"
                           href={route('user.show', { username: item.user.username })}
                           className="text-xs text-[#F94F97] underline hover:opacity-90" >
                           @{item.user.username}
