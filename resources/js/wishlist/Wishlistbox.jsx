@@ -15,7 +15,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import RemoveWish from './RemoveWish';
 import { trackSearchClick } from "@/includes/Analytics";
-import { usePage } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
   const {ziggy} = usePage().props; 
@@ -122,12 +122,32 @@ export default function Wishlistbox(props) {
           <div className="absolute top-1 left-1 text-xl">👀</div>
           <div className="absolute bottom-2 right-2 text-xl">⭐</div>
           <div className='flex justify-center items-center mt-3 '  >
-
-
             <ShareProfile username={itm.wishname} custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
               <div className=' bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow'>Share Link</div>
             </ShareProfile>
           </div>
+          {itm.user ?
+          <div className="flex px-2 mt-3 justify-center">
+            {itm?.user ? (
+              <>
+                <p className="text-xs font-semibold text-black me-1">
+                  By
+                </p>
+                <Link method="get" as="button"
+                  href={route('user.show', { username: itm.user.username })}
+                  className="text-xs text-[#F94F97] underline hover:opacity-90" >
+                  @{itm.user.username}
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold text-black me-1">
+                  By @Unavailable
+                </p>
+              </>
+            )}
+          </div> : ''
+          }
         </div>
       </div>
     </div>

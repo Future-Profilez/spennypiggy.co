@@ -225,7 +225,6 @@ export default function Discover(props) {
             
             <div className="min-h-screen bg-gray-50 ">
                 
-                {/* Block 1: Top Bar */}
                 <TopBar 
                     onSearch={handleSearch}
                     initialSearch={searchQuery}
@@ -233,11 +232,8 @@ export default function Discover(props) {
                     onQuickFilter={handleQuickFilter}
                 />
 
-               
-
                 <div className="container max-w-7xl mx-auto px-4 py-6 relative z-0">
                     <div className={`min-w-0 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
-                        
                         {!isSearching && (
                             <>
                                 {(!filters.contentType || filters.contentType === 'All') && (
