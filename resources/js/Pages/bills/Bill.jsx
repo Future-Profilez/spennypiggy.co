@@ -112,6 +112,7 @@ function Bill(props) {
                 </Link>
               }
             </div>
+             {itm.user ?
             <div className="flex items-center justify-center mt-2">
                 {itm?.user ? (
                     <>
@@ -129,7 +130,7 @@ function Bill(props) {
                 ) : (
                   <span className="text-xs text-gray-500">Creator Unavailable</span>
                 )}
-            </div>
+            </div> : '' }
           </div>
       </div>
     </div>

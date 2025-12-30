@@ -199,28 +199,20 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                     )}
                 </div>
 
-                {/* Quick Filters */}
                 {onQuickFilter && Array.isArray(activeFilters) && (
                     <div className="flex items-center ps-2 gap-2 overflow-x-auto no-scrollbar pb-1">
                         {onFilterToggle && (
                             <button 
                                 onClick={onFilterToggle}
-                                className="flex-shrink-0 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                            >
+                                className="flex-shrink-0 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors" >
                                 <RiFilter3Line size={20} />
                             </button>
                         )}
                         {quickFilters.map(filter => (
-                            <button
-                                key={filter.id}
-                                onClick={() => onQuickFilter(filter.id)}
+                            <button key={filter.id} onClick={() => onQuickFilter(filter.id)}
                                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                                    activeFilters.includes(filter.id)
-                                        ? 'bg-pink-500 text-white shadow-md transform scale-105'
-                                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                {filter.label}
+                                    activeFilters.includes(filter.id) ? 'bg-pink-500 text-white shadow-md transform scale-105' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                }`} > {filter.label} 
                             </button>
                         ))}
                     </div>

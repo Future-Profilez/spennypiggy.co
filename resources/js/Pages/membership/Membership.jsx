@@ -137,7 +137,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                       <p className="font-bold mb-2 ">What's Included</p>
                       <ul className="space-y-1 text-black">
                           {rewards && rewards.map((r, i)=>{
-                            return <li key={`reward-${i} `} className='fading flex items-center' >
+                            return <li key={`reward-${i} `} className=' flex items-center' >
                                 ✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
                             </li>
                           })}
@@ -154,33 +154,36 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                     :
                       <Link method='get' as="button"
                         href={route('membership.checkout',{uuid: item?.uuid})}
-                        className={`${btnclasses[item?.level || 'default']} block text-center !w-full py-2 rounded-xl font-bold uppercase shadow-sm hover:opacity-90`}
+                        className={`${btnclasses[item?.level || 'default']}  block text-center !w-full py-2 rounded-xl font-bold uppercase shadow-sm hover:opacity-90`}
                       >
                         Join {item?.level}
                       </Link>
                     }
                   </div>
                 </>}
-                 <div className="flex px-2 mb-3 justify-center">
-                    {item?.user ? (
-                      <>
-                        <p className="text-xs font-semibold text-black me-1">
-                          By
-                        </p>
-                        <Link method="get" as="button"
-                          href={route('user.show', { username: item.user.username })}
-                          className="text-xs text-[#F94F97] underline hover:opacity-90" >
-                          @{item.user.username}
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-xs font-semibold text-black me-1">
-                          By @Unavailable
-                        </p>
-                      </>
-                    )}
-                  </div>
+
+                {item.user ?
+                <div className="flex px-2 mb-3 justify-center">
+                  {item?.user ? (
+                    <>
+                      <p className="text-xs font-semibold text-black me-1">
+                        By
+                      </p>
+                      <Link method="get" as="button"
+                        href={route('user.show', { username: item.user.username })}
+                        className="text-xs text-[#F94F97] underline hover:opacity-90" >
+                        @{item.user.username}
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-semibold text-black me-1">
+                        By @Unavailable
+                      </p>
+                    </>
+                  )}
+                </div> : ''
+                }
             </div>
     </>
   )
