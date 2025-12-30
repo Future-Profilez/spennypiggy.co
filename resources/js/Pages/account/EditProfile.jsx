@@ -22,7 +22,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         return parts.length > 1;
     }
 
-
     const { auth }= usePage().props;
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
@@ -45,12 +44,11 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         min_surprise_amount: user?.min_surprise_amount || '',
         social_image: socialFile || null,
     });
+    const [loading, setLoading] = useState(processing);
+
 
     const generateCardAndUpload = async (avataruid) => {
-        console.log('Generating banner with avatar:', avataruid);
-        console.log('Background image:', socialbg);
-        console.log('Logo image:', spennypiggy);
-        
+        setLoading(true);
         const container = document.createElement('div');
         container.style.position = 'absolute';
         container.style.left = '-9999px';
@@ -91,7 +89,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         const card = container.querySelector('#card-to-capture');
         const images = card.querySelectorAll('img');
         
-        // Wait for all images to load
         await Promise.all(Array.from(images).map(img => {
             return new Promise((resolve, reject) => {
                 if (img.complete) {
@@ -106,16 +103,13 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             });
         }));
         
-        // Add a small delay to ensure rendering is complete
         await new Promise(resolve => setTimeout(resolve, 500));
-        // 4. Convert to canvas
         const canvas = await html2canvas(card, {
         useCORS: true,
         scale: 2,
         allowTaint: false,
         });
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png',1.0));
-        console.log("blob",blob)
         if (!blob) {
             console.log('❌ Failed to convert card to image');
             return;
@@ -140,7 +134,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [CoverUploadingStart, setCoverUploadingStart] = useState(false);
     const [localAvatar, setLocalAvatar] = useState('');
     const [generatingBanner, setGeneratingBanner] = useState(false);
-    const [currentSocialBanner, setCurrentSocialBanner] = useState(user?.social_image_url || null);
+    const [currentSocialBanner, setCurrentSocialBanner] = useState(auth?.user?.social_url || null);
 
     useEffect(() => {
         if(localAvatar){
@@ -165,7 +159,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
     const updateProfile = async (e) => {
         e.preventDefault();
-        auth?.user?.role == 1 && await generateCardAndUpload(localAvatar || user?.avatar);
+        // auth?.user?.role == 1 && await generateCardAndUpload(localAvatar || user?.avatar);
         post(route('edit-profile', {...data}), {
             preserveScroll: true,
             onSuccess: (resp) => {
@@ -285,20 +279,17 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                         {currentSocialBanner && (
                                             <div className="mb-4">
                                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Your Social Media Banner:</h4>
-                                                <div className="border-2 border-gray-200 rounded-[25px] p-2 bg-gray-50">
+                                                <div className="border-2 border-gray-200 rounded-[25px] p-0 bg-gray-50">
                                                     <img 
-                                                        src={currentSocialBanner} 
-                                                        alt="Social Media Banner" 
-                                                        className="w-full max-w-md mx-auto rounded-[20px] shadow-sm"
+                                                        src={currentSocialBanner || auth?.user?.social_url} 
+                                                        alt="Social Media Banner" className="w-full max-w-md mx-auto rounded-[20px] shadow-sm"
                                                     />
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-2">Right-click and save to download your banner</p>
                                             </div>
-                                        )}
+                                         )} 
                                        
-                                        <button 
-                                            type="button"
-                                            onClick={async () => {
+                                        <button  type="button" onClick={async () => {
                                                 const avatarToUse = localAvatar || user?.avatar;
                                                 if (avatarToUse) {
                                                     setGeneratingBanner(true);
@@ -314,12 +305,11 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 }
                                             }}
                                             disabled={generatingBanner || (!localAvatar && !user?.avatar)}
-                                            className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[30px] mb-3 disabled:opacity-50"
-                                        >
+                                            className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[30px] mb-3 disabled:opacity-50" >
                                             {generatingBanner ? 'Generating Banner...' : (currentSocialBanner ? 'Regenerate Social Media Banner' : 'Generate Social Media Banner')}
                                         </button> 
                                     </div>
-                                        : ''}
+                                    : ''}
 
                                     <div className=" text-center mb-7">
                                         <LoaderButton type='submit' disabled={processing} className='p '

@@ -311,8 +311,20 @@ export default function Discover(props) {
                         {isSearching && searchResults ? (
                             <div className="space-y-12">
                                 {searchResults.creators && searchResults.creators.length > 0 && (
-                                    <div>
-                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
+                                    <div className="pb-6">
+                                        <h2 className=" text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
+                                        {filters.type === 'trending' && (
+                                            <p className="text-gray-600">Trending creators are selected based on their recent activity, supporter engagement, and overall popularity on the platform.</p>
+                                        )}
+                                        {filters.type === 'new' && (
+                                            <p className="text-gray-600">Fresh faces just joining the platform. Be one of their first supporters!</p>
+                                        )}
+                                        {searchQuery && (
+                                            <p className="text-gray-600">Found these creators matching your search terms "{searchQuery}".</p>
+                                        )}
+                                        {filters.contentType === 'Creators' && !filters.type && !searchQuery && (
+                                            <p className="text-gray-600">Explore our diverse community of creators.</p>
+                                        )}
                                         <ResultsGrid  global_currency={global_currency} auth={auth}
                                             results={searchResults.creators}
                                             mode="creator"
@@ -325,8 +337,20 @@ export default function Discover(props) {
                                 )}
 
                                 {searchResults.wishes && searchResults.wishes.length > 0 && (
-                                    <>
-                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">WishLists</span> : Showing  {searchResults.wishes.length} Results</h2>
+                                    <div className="pb-6 ">
+                                        <h2 className="text-2xl text-gray-900 !mt-8 mb-0 font-gulfs uppercase"><span className="text-pink">WishLists</span> : Showing  {searchResults.wishes.length} Results</h2>
+                                        {filters.type === 'trending' && (
+                                            <p className="text-gray-600 mt-0">These wishes are currently receiving the most attention and support from the community.</p>
+                                        )}
+                                        {filters.type === 'new' && (
+                                            <p className="text-gray-600 mt-0">Recently added wishes from creators.</p>
+                                        )}
+                                        {searchQuery && (
+                                            <p className="text-gray-600 mt-0">Wishes matching your search criteria "{searchQuery}".</p>
+                                        )}
+                                        {filters.contentType === 'Wishes' && !filters.type && !searchQuery && (
+                                            <p className="text-gray-600 mt-0">Browse through wishes from various creators.</p>
+                                        )}
                                         <ResultsGrid 
                                             results={searchResults.wishes}
                                             mode="wish"
@@ -335,12 +359,24 @@ export default function Discover(props) {
                                             removeFilter={() => {}}
                                             onLoadMore={handleLoadMore}
                                         />
-                                    </>
+                                    </div>
                                 )}
 
                                 {searchResults.bills && searchResults.bills.length > 0 && (
-                                    <>
+                                    <div className="pb-8 ">
                                         <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Bills</span> : Showing  {searchResults.bills.length} Results</h2>
+                                        {filters.type === 'trending' && (
+                                            <p className="text-gray-600 mt-0">Bills that are urgently seeking support or have high community interest right now.</p>
+                                        )}
+                                        {filters.type === 'new' && (
+                                            <p className="text-gray-600 mt-0">Latest bills posted by creators needing support.</p>
+                                        )}
+                                        {searchQuery && (
+                                            <p className="text-gray-600 mt-0">Bills matching your search "{searchQuery}".</p>
+                                        )}
+                                        {filters.contentType === 'Bills' && !filters.type && !searchQuery && (
+                                            <p className="text-gray-600 mt-0">Support creators by helping with their bills.</p>
+                                        )}
                                         <ResultsGrid 
                                             results={searchResults.bills}
                                             mode="bill"
@@ -349,12 +385,24 @@ export default function Discover(props) {
                                             removeFilter={() => {}}
                                             onLoadMore={handleLoadMore}
                                         />
-                                    </>
+                                    </div>
                                 )}
 
                                 {searchResults.memberships && searchResults.memberships.length > 0 && (
-                                    <>
-                                        <h2 className="text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Memberships</span> : Showing  {searchResults.memberships.length} Results</h2>
+                                    <div className="pb-6 ">
+                                        <h2 className="text-2xl  text-gray-900 font-gulfs uppercase"><span className="text-pink">Memberships</span> : Showing  {searchResults.memberships.length} Results</h2>
+                                        {filters.type === 'trending' && (
+                                            <p className="text-gray-600 mt-0">The most popular membership tiers offering exclusive perks and content.</p>
+                                        )}
+                                        {filters.type === 'new' && (
+                                            <p className="text-gray-600 mt-0">Newest membership tiers available.</p>
+                                        )}
+                                        {searchQuery && (
+                                            <p className="text-gray-600 mt-0">Membership tiers matching your search "{searchQuery}".</p>
+                                        )}
+                                        {filters.contentType === 'Memberships' && !filters.type && !searchQuery && (
+                                            <p className="text-gray-600 mt-0">Exclusive membership options.</p>
+                                        )}
                                         <ResultsGrid 
                                             results={searchResults.memberships}
                                             mode="membership"
@@ -363,7 +411,7 @@ export default function Discover(props) {
                                             removeFilter={() => {}}
                                             onLoadMore={handleLoadMore}
                                         />
-                                    </>
+                                    </div>
                                 )}
 
                                 

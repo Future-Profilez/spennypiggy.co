@@ -45,7 +45,7 @@ class User extends Authenticatable
     ];
 
     protected $appends = [
-        'avatar_url', 'cover_url', 'twitter_username', 
+        'social_url','avatar_url', 'cover_url', 'twitter_username', 
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
         'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
     ];
@@ -70,6 +70,13 @@ class User extends Authenticatable
             : "-/format/jpeg/";
 
         return "https://ucarecdn.com/{$this->avatar}/{$modifier}";
+    }
+
+    public function getSocialUrlAttribute()
+    {
+        if (!$this->social_image) return false;
+        $modifier = "-/format/jpeg/";
+        return "https://ucarecdn.com/{$this->social_image}/{$modifier}";
     }
 
     public function getCoverUrlAttribute()
