@@ -347,7 +347,7 @@ export default function AddressForm({
 
     const fetchAddressData = () => {
         axios
-            .get(`get-creator-address`)
+            .get(`/get-creator-address`)
             .then((resp) => {
                 if (resp?.data?.status) {
                     setAddressData(resp?.data?.data);

@@ -97,7 +97,6 @@ class MembershipController extends Controller
         $price = $request->month_price;
         $taxAmount = round(($price * $memberTax / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
         $totalPrice = $price + $taxAmount; // Total price including tax
-
         $mem = new Membership();
         $mem->user_id = Auth::id();
         $mem->level = $request->level;
@@ -107,7 +106,6 @@ class MembershipController extends Controller
         $mem->thumbnail = $request->thumbnail ?? null;
         $mem->rewards = $rewards;
         $mem->status = 1;
-
         $mem->save();
 
         // Get currency metadata to handle zero-decimal currencies properly
@@ -352,6 +350,10 @@ class MembershipController extends Controller
 
         $membership = Membership::with('user')->whereUuid($uuid)->first();
         if (!$membership) return redirect()->back()->with('error', 'Membership not found!');
+
+        if (!$membership->user) {
+            return redirect()->back()->with('error', 'Creator account not found or deactivated.');
+        }
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($membership->user);

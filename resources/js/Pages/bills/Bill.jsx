@@ -45,11 +45,6 @@ function Bill(props) {
         }
     }, [itemUID, itm.uuid]);
 
-    const gotologin = useMemo(() => () => {
-        errorAlert("You must login first.");
-        router.visit(`/login?redirect=${`/bill/checkout/${itm.uuid}`}`);
-    }, [errorAlert, itm.uuid]);
-    
     // Memoize formatted price to avoid recalculation
     const formattedPrice = useMemo(() => 
         formatMultiPrice(itm.price, itm?.currency || 'GBP'), 
@@ -80,8 +75,8 @@ function Bill(props) {
               <LazyLoadImage
               alt={"image"}  effect="blur"
               height={193}
-              src={imageSrc} className=''
-              width={243} />
+              src={imageSrc} className='object-cover w-full '
+              width={220} />
               <div className='bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full capitalize absolute bottom-3 right-3' >{periodDisplay} Subscribable </div>
               {IsloggedIn ?
                 <DropdownButton
@@ -99,6 +94,7 @@ function Bill(props) {
             <div onClick={openAddtocart} className='wishlistdetial cursor-pointer relative'>
               <div>
                 <h4 className={`text-lg  !text-gray-800 text-center el1 `} >{itm.name}</h4>
+                
                 <h5 className='text-center font-bold font-poppins  text-black my-2 titleprice'>{formattedPrice}
                     <button className='tooltipbtn' >?<p>*just not including service fee.</p></button>
                 </h5>
@@ -106,25 +102,35 @@ function Bill(props) {
             <p className=' text-[12px] mt-3 text-center' >Pay bill and gain access to member only posts</p>
             <div className='flex justify-center mt-2' >
               {IsloggedIn ?
-                  <AddBills classes="pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow" text="Update Bill"
+                  <AddBills classes="pinkbg hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
-                <Link method='get'
+                <Link method='get' as="button"
                   href={route('bill.checkout',{uuid: itm.uuid})}
                   className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >
                     Pay Bill
                 </Link>
-                // <>
-                // { auth && auth.user !== null ?
-                //   :
-                //   <button
-                //      onClick={gotologin}
-                //     className='pinkbg hover:opacity-[0.8] text-white   text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >Pay Bill</button>
-                //   }
-                // </>
               }
             </div>
+            <div className="flex items-center justify-center mt-2">
+                {itm?.user ? (
+                    <>
+                      <span className="text-xs text-gray-700 font-medium">
+                      by 
+                    </span>
+                    <Link
+                      method="get"
+                      href={route('user.show', { username: itm.user.username })}
+                      className="ml-1 text-xs text-[#F94F97] underline hover:opacity-90"
+                    >
+                      @{itm.user.username}
+                    </Link>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-500">Creator Unavailable</span>
+                )}
             </div>
+          </div>
       </div>
     </div>
   </>

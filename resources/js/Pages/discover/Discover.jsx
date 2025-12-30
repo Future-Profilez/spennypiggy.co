@@ -40,10 +40,23 @@ export default function Discover(props) {
     });
 
     const [isLoading, setIsLoading] = useState(false);
-    const updateContentTypeUrl = (ct) => {
+    const updateContentTypeUrl = (ct, currentFilters) => {
         const url = new URL(window.location.href);
-        if (ct) url.searchParams.set('contentType', ct);
-        else url.searchParams.delete('contentType');
+        const type = currentFilters?.type;
+        
+        let path = '/discover';
+        if (type) {
+            path += `/${type.toLowerCase()}`;
+            if (ct) url.searchParams.set('contentType', ct);
+            else url.searchParams.delete('contentType');
+        } else if (ct) {
+            path += `/${ct.toLowerCase()}`;
+            url.searchParams.delete('contentType');
+        } else {
+            url.searchParams.delete('contentType');
+        }
+        
+        url.pathname = path;
         url.searchParams.delete('page');
         window.history.replaceState({}, '', url.toString());
     };
@@ -65,7 +78,9 @@ export default function Discover(props) {
             const v = filters[k];
             return v !== null && v !== undefined && v !== '';
         });
-        return hasQuery || hasNonContentTypeFilter;
+        const hasContentTypeSelection = !!(filters.contentType);
+        const hasTypeSelection = !!(filters.type);
+        return hasQuery || hasNonContentTypeFilter || hasContentTypeSelection || hasTypeSelection;
     })();
 
 
@@ -92,22 +107,15 @@ export default function Discover(props) {
                 url = route('discover', { search: params.search, page, contentType: contentTypeParam });
             } else if (typeParam) {
                 url = route('discover', { type: typeParam, page, contentType: contentTypeParam });
+            } else if (contentTypeParam && ['creators', 'wishes', 'bills', 'memberships'].includes(contentTypeParam.toLowerCase())) {
+                 url = route('discover', { type: contentTypeParam.toLowerCase(), page });
             } else {
                 url = route('discover', { page, contentType: contentTypeParam });
             }
             
             const onlyProps = [];
             if (contentTypeParam && !hasSearch && !typeParam) {
-                onlyProps.push('filters');
-                if (contentTypeParam === 'Creators') {
-                    onlyProps.push('featuredCreators','newVerifiedCreators','topEarners');
-                } else if (contentTypeParam === 'Wishes') {
-                    onlyProps.push('featuredWishes');
-                } else if (contentTypeParam === 'Bills') {
-                    onlyProps.push('featuredBills');
-                } else if (contentTypeParam === 'Memberships') {
-                    onlyProps.push('featuredMemberships');
-                }
+                onlyProps.push('filters','searchResults');
             }
             router.get(url, {}, {
                 preserveState: true,
@@ -160,57 +168,44 @@ export default function Discover(props) {
         let newFilters = { ...filters };
         switch(id) {
             case 'new':
-                newFilters = { type: newFilters.type === 'new' ? null : 'new', page: 1 };
+                // Clear contentType, set type
+                newFilters = { type: newFilters.type === 'new' ? null : 'new', contentType: null, page: 1 };
                 setSearchQuery('');
                 break;
             case 'trending':
-                newFilters = { type: newFilters.type === 'trending' ? null : 'trending', page: 1 };
+                // Clear contentType, set type
+                newFilters = { type: newFilters.type === 'trending' ? null : 'trending', contentType: null, page: 1 };
                 setSearchQuery('');
                 break;
             case 'creators':
-                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Creators' ? null : 'Creators'), page: 1 };
-                setFilters(newFilters);
+                // Clear type, set contentType
+                newFilters = { type: null, contentType: (newFilters.contentType === 'Creators' ? null : 'Creators'), page: 1 };
                 setSearchQuery('');
                 setViewMode('creator');
-                updateContentTypeUrl(newFilters.contentType || null);
-                if (!(featuredCreators && featuredCreators.length)) {
-                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
-                }
-                return;
+                break;
             case 'wishes':
-                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Wishes' ? null : 'Wishes'), page: 1 };
-                setFilters(newFilters);
+                // Clear type, set contentType
+                newFilters = { type: null, contentType: (newFilters.contentType === 'Wishes' ? null : 'Wishes'), page: 1 };
                 setSearchQuery('');
                 setViewMode('wish');
-                updateContentTypeUrl(newFilters.contentType || null);
-                if (!(featuredWishes && featuredWishes.length)) {
-                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
-                }
-                return;
+                break;
             case 'bills':
-                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Bills' ? null : 'Bills'), page: 1 };
-                setFilters(newFilters);
+                // Clear type, set contentType
+                newFilters = { type: null, contentType: (newFilters.contentType === 'Bills' ? null : 'Bills'), page: 1 };
                 setSearchQuery('');
                 setViewMode('bill');
-                updateContentTypeUrl(newFilters.contentType || null);
-                if (!(featuredBills && featuredBills.length)) {
-                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
-                }
-                return;
+                break;
             case 'memberships':
-                newFilters = { ...newFilters, contentType: (newFilters.contentType === 'Memberships' ? null : 'Memberships'), page: 1 };
-                setFilters(newFilters);
+                // Clear type, set contentType
+                newFilters = { type: null, contentType: (newFilters.contentType === 'Memberships' ? null : 'Memberships'), page: 1 };
                 setSearchQuery('');
                 setViewMode('membership');
-                updateContentTypeUrl(newFilters.contentType || null);
-                if (!(featuredMemberships && featuredMemberships.length)) {
-                    applyFilters({ type: null, search: '', page: 1, contentType: newFilters.contentType || null });
-                }
-                return;
+                break;
             default:
                 break;
         }
-        handleFilterUpdate(newFilters);
+        setFilters(newFilters);
+        applyFilters(newFilters);
     };
     
     const handleLoadMore = () => {
@@ -243,7 +238,7 @@ export default function Discover(props) {
                 <div className="container max-w-7xl mx-auto px-4 py-6 relative z-0">
                     <div className={`min-w-0 transition-opacity duration-200 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
                         
-                        {!isSearching && !filters.type && (
+                        {!isSearching && (
                             <>
                                 {(!filters.contentType || filters.contentType === 'All') && (
                                     <>
@@ -314,6 +309,8 @@ export default function Discover(props) {
                                 )}
                             </>
                         )}
+
+
 
                         {isSearching && searchResults ? (
                             <div className="space-y-12">
@@ -395,7 +392,7 @@ export default function Discover(props) {
                                     onLoadMore={handleLoadMore}
                                 />
                             </>
-                        )}
+                        )}  
                     </div>
                 </div>
             </div>

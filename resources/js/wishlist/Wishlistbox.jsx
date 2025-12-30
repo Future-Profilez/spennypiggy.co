@@ -80,10 +80,10 @@ export default function Wishlistbox(props) {
             <RemoveWish uuid={itm.uuid} text="Remove Wish" />
           </Dropdown.Item>
         </DropdownButton> : ''}
-        <div onClick={openAddtocart} className={`rounded-[12px] h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize}`}>
+        <div onClick={openAddtocart} className={`h-[110px] sm:h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize}`}>
           <LazyLoadImage
           alt={"image"}  effect="blur"
-          height={193} className={`rounded-t-3xl block w-full h-full object-cover `}
+          height={193} className={`block w-full h-full object-cover `}
           src={itm?.perma_link ? itm?.perma_link : uploadedimg}
           width={243} />
         </div>

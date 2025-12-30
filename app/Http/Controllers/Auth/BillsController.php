@@ -298,7 +298,15 @@ class BillsController extends Controller
         // if (!in_array($bill->user->subscription_status, [1, 2])) {
         //     return redirect()->back()->with('error', "Currently creator has paused gift payments. Please again later when gift payments are active.");
         // }
-        if (!$bill) return redirect()->back()->with('error', 'Bill not found!');
+        if (!$bill) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Bill not found!');
+        }
+
+        if (!$bill->user) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Creator account not found or deactivated.');
+        }
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);

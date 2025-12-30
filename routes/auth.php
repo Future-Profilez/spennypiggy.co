@@ -95,31 +95,24 @@ Route::post('stripe/identity/verify', [StripeController::class, 'createVerificat
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');
 Route::get('discover/creators/categories', [WishitemController::class, 'all_creators_categories'])->name('allcreators_categories');
-
 Route::get('discover/suggestions', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService) {
     $term = $request->input('q');
     return response()->json($discoveryService->getSuggestions($term));
 })->name('discover.suggestions');
 
-Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = null, $category = null) {
-    $filters = $request->only(['search', 'minPrice', 'maxPrice', 'sortBy', 'categories', 'contentType']);
-    
+Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $request, DiscoveryService $discoveryService, $type = 'trending', $category = null) {
+    $filters = $request->only(['search', 'contentType']);
     // Normalize type and apply shortcut filters
     if ($type) {
         $normalizedType = strtolower($type);
-        
         if ($normalizedType === 'trending') {
             $filters['sortBy'] = 'Trending';
+            $filters['type'] = 'trending';
         } elseif ($normalizedType === 'new') {
             $filters['sortBy'] = 'New';
+            $filters['type'] = 'new';
         } elseif (in_array($normalizedType, ['creators', 'wishes', 'bills', 'memberships'])) {
             $filters['contentType'] = ucfirst($normalizedType);
-        } else {
-            // Assume category if not a keyword
-            $filters['categories'] = $type;
-            if (!$request->has('contentType')) {
-                $filters['contentType'] = 'Creators';
-            }
         }
     } else {
         // If searching by keyword and no explicit content type, search across all
@@ -128,21 +121,21 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         }
     }
 
-    if ($category) {
-        $filters['categories'] = $category;
-    }
-
     // Determine if we should show search results (Grid) or default sections (Carousels)
-    // Ignore contentType/page-only toggles for performance; they should not trigger search
     $queryParams = $request->query();
-    unset($queryParams['contentType'], $queryParams['page']);
-    $isSearch = (!empty($queryParams)) || (!empty($type) && !in_array(strtolower($type), ['creators','wishes','bills','memberships']));
+    $hasSearchParam = $request->has('search') && strlen((string) $request->input('search')) > 0;
+    $hasTypeParamQuery = $request->has('type') && in_array(strtolower($request->input('type')), ['new','trending']);
+    $hasTypeParamRoute = $type && in_array(strtolower($type), ['new','trending']);
+    $hasTypeParam = $hasTypeParamQuery || $hasTypeParamRoute;
     
-    // Special case: If user just visits /discover/trending or /discover/new without other query params,
-    // they might want to see the grid sorted by that.
+    // Check contentType from filters (which includes route params) or query params
+    $activeContentType = $filters['contentType'] ?? ($request->input('contentType') ?? null);
+    $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators','Wishes','Bills','Memberships']);
     
-    // But if we want to show sections on /discover (root), we keep isSearch = false.
-    if (!$type && empty($request->query())) {
+    // Grid view when searching or selecting a specific content type
+    $isSearch = $hasSearchParam || $hasTypeParam || $hasContentTypeParam;
+    // Root discover shows sections
+    if (!$type && empty($queryParams)) {
         $isSearch = false;
     }
 
@@ -163,7 +156,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             $searchResults['creators'] = $discoveryService->getSearchCreators($filters);
         }
         if ($ctype === 'Wishes' || $ctype === 'All') {
-            $searchResults['wishes'] = $discoveryService->getSearchWishes($filters);
+             $searchResults['wishes'] = $discoveryService->getSearchWishes($filters);
         }
         if ($ctype === 'Bills' || $ctype === 'All') {
              $searchResults['bills'] = $discoveryService->getSearchBills($filters);
@@ -173,13 +166,40 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         }
     }
 
+    // Section data (top 10)
     $isProd = app()->environment('production');
-    $featuredCreators = $isProd ? Cache::remember('discover:featured_creators:12', 300, fn() => $discoveryService->getTrendingCreators(12)) : $discoveryService->getTrendingCreators(12);
-    $newVerifiedCreators = $isProd ? Cache::remember('discover:new_verified_creators:12', 300, fn() => $discoveryService->getNewVerifiedCreators(12)) : $discoveryService->getNewVerifiedCreators(12);
-    $featuredWishes = $isProd ? Cache::remember('discover:featured_wishes:12', 300, fn() => $discoveryService->getFeaturedWishes(12)) : $discoveryService->getFeaturedWishes(12);
-    $topEarnersData = $isProd ? Cache::remember('discover:top_earners::12', 300, fn() => $discoveryService->getTopEarners('', 12)['data']) : $discoveryService->getTopEarners('', 12)['data'];
-    $featuredBills = $isProd ? Cache::remember('discover:featured_bills:12', 300, fn() => $discoveryService->getFeaturedBills(12)) : $discoveryService->getFeaturedBills(12);
-    $featuredMemberships = $isProd ? Cache::remember('discover:featured_memberships:12', 300, fn() => $discoveryService->getFeaturedMemberships(12)) : $discoveryService->getFeaturedMemberships(12);
+    $limit = 10;
+    $sortBy = $filters['sortBy'] ?? null;
+    // Creators
+    $featuredCreators = $isProd 
+        ? Cache::remember("discover:featured_creators:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
+            return $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
+        })
+        : ($sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit));
+    $newVerifiedCreators = $isProd 
+        ? Cache::remember("discover:new_verified_creators:$limit", 300, fn() => $discoveryService->getNewVerifiedCreators($limit)) 
+        : $discoveryService->getNewVerifiedCreators($limit);
+    // Wishes
+    $featuredWishes = $isProd 
+        ? Cache::remember("discover:featured_wishes:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
+            return $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
+        })
+        : ($sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit));
+    // Top earners this week
+    $topEarnersData = $isProd 
+        ? Cache::remember("discover:top_earners:weekly:$limit", 300, fn() => $discoveryService->getTopEarners('weekly', $limit)['data']) 
+        : $discoveryService->getTopEarners('weekly', $limit)['data'];
+    // Bills & Memberships
+    $featuredBills = $isProd 
+        ? Cache::remember("discover:featured_bills:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
+            return $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
+        })
+        : ($sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit));
+    $featuredMemberships = $isProd 
+        ? Cache::remember("discover:featured_memberships:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
+            return $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
+        })
+        : ($sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit));
 
     return Inertia::render('discover/Discover', [
         'featuredCreators' => $featuredCreators,
@@ -192,6 +212,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         'searchResults' => $searchResults,
     ]);
 })->name("discover");
+
 // Route::get('discover/creators_videos', [WishitemController::class, 'discover_creators_videos'])->name('discover_videos');save_social_links
 Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
     ->name('password.request');
@@ -218,6 +239,8 @@ Route::middleware('auth')->group(function () {
             Route::post('save', [BillsController::class, 'billSave'])->name('save');
             Route::post('edit/{id}', [BillsController::class, 'billEdit'])->name('edit');
             Route::get('remove/{uuid}', [BillsController::class, 'removeBill'])->name('remove');
+            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [BillsController::class, 'buyBill'])->name('checkout');
+            Route::get('handle/{uuid}/{status?}', [BillsController::class, 'handlePayment'])->name('handle');
         });
 
         // Memberships - accessible without subscription
@@ -227,6 +250,8 @@ Route::middleware('auth')->group(function () {
             Route::get('remove/{uuid}', [MembershipController::class, 'removeLevel'])->name('remove');
             Route::get('dashboard', [MembershipController::class, 'membershipDashboard'])->name('dashboard');
             Route::get('graph', [MembershipController::class, 'membershipGraph'])->name('graph');
+            Route::match(['get', 'post'], 'checkout/{uuid}/{reccure?}', [MembershipController::class, 'buyLevel'])->name('checkout');
+            Route::get('handle/{uuid}/{status?}', [MembershipController::class, 'handlePayment'])->name('handle');
         });
 
         // Shop items - accessible without subscription

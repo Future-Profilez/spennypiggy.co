@@ -7,6 +7,8 @@ import Wishlistbox from '../../../wishlist/Wishlistbox';
 import Avatar from '../../../includes/Avatar';
 import CreatorCard from './CreatorCard';
 import { trackSearchClick } from "@/includes/Analytics";
+import Bill from '../../bills/Bill';
+import Membership from '../../membership/Membership';
 
 export default function ResultsGrid({auth, global_currency, results, mode, setMode, totalCount, activeFilters, removeFilter, onLoadMore }) {
     const renderedItems = useMemo(() => {
@@ -32,13 +34,24 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                             />;
                     break;
                 case 'bill':
-                    card = <BillGridCard item={item} />;
+                    card = <Bill classes=" " itm={item} />;
                     break;
                 case 'membership':
-                    card = <MembershipGridCard item={item} />;
+                    card = <Membership  item={item} />;
                     break;
                 default:
-                    card = <WishGridCard item={item} />;
+                    card = <Wishlistbox
+                            key={`wish-item-${item.id}`}
+                            classes=""
+                            imagesize="max-h-[150px]"
+                            currency={global_currency}
+                            IsloggedIn={false}
+                            auth={auth?.user}
+                            itemid={item?.id}
+                            // setuped={AuthUserStripeConnected ==1? true: false}
+                            itm={item}
+                            trackClick={true}
+                        />;
             }
 
             items.push(
@@ -122,192 +135,6 @@ function Chip({ label, onRemove }) {
     );
 }
  
-
-const WishGridCard = React.memo(function WishGridCard({ item }) {
-    const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
-    const profileUrl = item.user ? route('user.show', item.user.username) : '#';
-    
-    const handleAddToCart = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const deviceId = DeviceID();
-        if (!deviceId) {
-            console.error("Could not generate device ID");
-            return;
-        }
-
-        router.get(route('add-to-cart', { 
-            uuid: item.uuid, 
-            device_id: deviceId, 
-            sub: 'onetime' 
-        }), {}, {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Could trigger a global cart update event or toast here if needed
-            }
-        });
-    };
-    
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
-            {/* Full Card Link */}
-            <Link href={profileUrl} className="absolute inset-0 z-0" />
-
-            <div className="block relative aspect-[4/3] bg-gray-100 overflow-hidden z-10 pointer-events-none">
-                <img 
-                    src={imageUrl} 
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    decoding="async"
-                    fetchpriority="low"
-                />
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold text-gray-900 shadow-sm">
-                    £{item.amount}
-                </div>
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium text-white">
-                    {item.type || 'Wish'}
-                </div>
-            </div>
-
-            <div className="p-4 flex flex-col flex-grow z-10 relative pointer-events-none">
-                <div className="font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
-                    {item.title}
-                </div>
-                
-                <div className="flex items-center gap-2 mb-4 pointer-events-auto">
-                     {item.user && (
-                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
-                             <img 
-                                src={item.user.avatar_url || 'https://via.placeholder.com/30'}  
-                                alt={item.user.name}
-                                className="w-5 h-5 rounded-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                             />
-                             <span className="text-xs text-gray-500 truncate">by @{item.user.username}</span>
-                        </Link>
-                    )}
-                </div>
-
-                <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
-                     <button 
-                        onClick={handleAddToCart}
-                        className="flex-1 py-2 text-sm font-bold text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
-                    >
-                        Send Gift
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-});
-
-const BillGridCard = React.memo(function BillGridCard({ item }) {
-    const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
-    const profileUrl = item.user ? route('user.show', item.user.username) : '#';
-    
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
-            <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="absolute inset-0 z-0" />
-
-            <div className="block relative aspect-[4/3] bg-gray-100 overflow-hidden z-10 pointer-events-none">
-                <img 
-                    src={imageUrl} 
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    decoding="async"
-                    fetchpriority="low"
-                />
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold text-gray-900 shadow-sm">
-                   Bill
-                </div>
-            </div>
-
-            <div className="p-4 flex flex-col flex-grow z-10 relative pointer-events-none">
-                <div className="font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
-                    {item.title}
-                </div>
-                
-                <div className="flex items-center gap-2 mb-4 pointer-events-auto">
-                     {item.user && (
-                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
-                             <img 
-                                src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
-                                alt={item.user.name}
-                                className="w-5 h-5 rounded-full object-cover"
-                            />
-                            <span className="text-xs text-gray-500 truncate">by @{item.user.username}</span>
-                        </Link>
-                    )}
-                </div>
-
-                <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
-                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)}
-                            className="flex-1 py-2 text-sm font-bold text-center text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
-                        >
-                            Support Bill
-                        </Link>
-                    </div>
-            </div>
-        </div>
-    );
-});
-
-const MembershipGridCard = React.memo(function MembershipGridCard({ item }) {
-    const imageUrl = item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `https://ucarecdn.com/${item.image_url}/-/preview/`) : 'https://via.placeholder.com/400';
-    const profileUrl = item.user ? route('user.show', item.user.username) : '#';
-    
-    return (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col group relative">
-            <Link href={profileUrl} className="absolute inset-0 z-0" />
-
-            <div className="block relative aspect-[4/3] bg-gray-100 overflow-hidden z-10 pointer-events-none">
-                <img 
-                    src={imageUrl} 
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    decoding="async"
-                    fetchpriority="low"
-                />
-                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-sm font-bold text-gray-900 shadow-sm">
-                   Membership
-                </div>
-            </div>
-
-            <div className="p-4 flex flex-col flex-grow z-10 relative pointer-events-none">
-                <div className="font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
-                    {item.title}
-                </div>
-                
-                <div className="flex items-center gap-2 mb-4 pointer-events-auto">
-                     {item.user && (
-                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)} className="flex items-center gap-2 hover:opacity-80 transition-opacity relative z-20">
-                             <img 
-                                src={item.user.avatar_url || 'https://via.placeholder.com/30'} 
-                                alt={item.user.name}
-                                className="w-5 h-5 rounded-full object-cover"
-                            />
-                            <span className="text-xs text-gray-500 truncate">by @{item.user.username}</span>
-                        </Link>
-                    )}
-                </div>
-
-                <div className="mt-auto pt-4 border-t border-gray-50 flex gap-2 pointer-events-auto">
-                        <Link href={profileUrl} onClick={() => item.user && trackSearchClick(item.user.id, item.user.username)}
-                            className="flex-1 py-2 text-sm font-bold text-center text-white bg-pink-600 rounded-xl hover:bg-pink-700 shadow-md transform active:scale-95 transition-all relative z-20"
-                        >
-                            Join Now
-                        </Link>
-                    </div>
-            </div>
-        </div>
-    );
-});
-
 function SpotlightSection({ index }) {
     const spotlights = [
         { title: "Ending Soon ⏳", subtitle: "Wishes expiring in 24h", color: "bg-orange-50 border-orange-100" },

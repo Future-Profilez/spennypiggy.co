@@ -59,15 +59,15 @@ export default function AddCart(props) {
             <div className="bannerrr !rounded-none p-4">
                 
                 <div className="flex items-center mb-4">
-                    <div className="h-[100px] bg-gray-200 rounded-xl border !border-gray-200 overflow-hidden w-[100px]">
+                    <div className="h-[100px] bg-gray-200 rounded-xl border !border-gray-200 overflow-hidden w-[140px]">
                         <img
                             src={item.perma_link ? item.perma_link : uploadedimg}
-                            alt="img" className="max-h-[100px] w-full object-cover"
+                            alt="img" className="h-full w-full object-cover"
                         />
                     </div>
                     <div className="ps-3">
                         <div className="text-xl font-bold line-clamp-2 ">{item.wishname}</div>
-                        <div className="cartPrice font-CeraGRBold text-voilet mt-1 text-center">
+                        <div className="cartPrice font-CeraGRBold text-voilet mt-1">
                             {IsloggedIn ?
                                 <>
                                     {formatMultiPrice(item.price, item?.currency || 'USD')}

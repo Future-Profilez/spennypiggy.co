@@ -26,7 +26,7 @@ export default function IntroVideos(props) {
 
     const fetch_videos = () => {
         setloading(true);
-        axios.get(`discover/creators/${order}/${gender}`).then((resp) => {
+        axios.get(`/discover/creators/${order}/${gender}`).then((resp) => {
             setIntros(resp.data && resp.data?.intro?.data);
             setloading(false);
         }).catch((_err) => {

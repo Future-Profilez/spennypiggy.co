@@ -572,6 +572,20 @@ class ShopsController extends Controller
 
             $shop = Shop::where('uuid', $shop_id)->first();
 
+            if (!$shop) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Shop item not found.'
+                ]);
+            }
+
+            if (!$shop->user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Creator account not found or deactivated.'
+                ]);
+            }
+
             // NEW: Check creator subscription eligibility first
             $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($shop->user);
 

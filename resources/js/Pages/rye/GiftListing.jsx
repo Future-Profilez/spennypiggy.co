@@ -31,7 +31,7 @@ export default function GiftListing({
 
     const DeleteItem = async (id) => {
         try {
-            const removeItem = await axios.get(`delete-creator-products/${id}`);
+            const removeItem = await axios.get(`/delete-creator-products/${id}`);
             if (removeItem?.data?.status) {
                 successAlert(removeItem?.data?.message);
                 fetch_gifts();

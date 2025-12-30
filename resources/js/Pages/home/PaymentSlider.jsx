@@ -3,11 +3,11 @@ import 'swiper/css';
 import 'swiper/css/free-mode';
 import { Autoplay, FreeMode } from 'swiper/modules';
 import PaymentIcon1 from "../../../assets/new/PaymentIcon1.png";
-// import PaymentIcon2 from "../../../assets/new/PaymentIcon2.png";
+import PaymentIcon6 from "../../../assets/new/PaymentIcon6.png";
 import PaymentIcon3 from "../../../assets/new/PaymentIcon3.png";
+// import PaymentIcon2 from "../../../assets/new/PaymentIcon2.png";
 // import PaymentIcon4 from "../../../assets/new/PaymentIcon4.png";
 // import PaymentIcon5 from "../../../assets/new/PaymentIcon5.png";
-import PaymentIcon6 from "../../../assets/new/PaymentIcon6.png";
 
 const logos = [
     { src: PaymentIcon1, alt: 'Plaid' },
@@ -24,8 +24,6 @@ const logos = [
 </svg></>, alt: 'Visa' },
     { src: PaymentIcon6, alt: 'Mastercard' },
   ];
-
-
 
 
 export default function PaymentSlider() {

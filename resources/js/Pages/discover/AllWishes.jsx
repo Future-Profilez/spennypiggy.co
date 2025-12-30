@@ -35,7 +35,7 @@ export default function Allwishes(props) {
     const fetch_wishes = (p, t) => {
         setTag(t);
         setLoading(true);
-        axios.get(`discover/wishes/${order}/${type}/${price}?page=${p}&tag=${t.replace(" ", "-")}`)
+        axios.get(`/discover/wishes/${order}/${type}/${price}?page=${p}&tag=${t.replace(" ", "-")}`)
         .then((resp) => {
             setwishes(resp.data && resp.data.wishes.data);
             setLoading(false);

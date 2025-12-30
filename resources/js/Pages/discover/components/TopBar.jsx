@@ -70,19 +70,19 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     };
 
     const quickFilters = [
+        { id: 'trending', label: 'Trending 🔥' },
+        { id: 'new', label: 'New 🆕' },
         { id: 'creators', label: 'Creators' },
         { id: 'wishes', label: 'Wish List' },
         { id: 'bills', label: 'Bills' },
-        { id: 'memberships', label: 'Memberships' },
-        { id: 'new', label: 'New 🆕' },
-        { id: 'trending', label: 'Trending 🔥' },
+        { id: 'memberships', label: 'Memberships' }
     ];
 
     return (
         <div className="sticky top-[100px] z-1 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
-                <div className="relative mb-2">
+                <div className="relative mb-3">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <RiSearchLine className="text-gray-400" size={20} />
                     </div>
@@ -201,7 +201,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
 
                 {/* Quick Filters */}
                 {onQuickFilter && Array.isArray(activeFilters) && (
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <div className="flex items-center ps-2 gap-2 overflow-x-auto no-scrollbar pb-1">
                         {onFilterToggle && (
                             <button 
                                 onClick={onFilterToggle}

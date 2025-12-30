@@ -109,6 +109,7 @@ export default function Dashboard(props) {
         }
     }, [items, selectedCategory]);
 
+
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState(
         (auth && auth.user && auth.user.username) == (user && user.username)

@@ -62,7 +62,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   }
 
   const removeVideo = () => {
-    axios.get(`intro/remove`).then(resp => {
+    axios.get(`/intro/remove`).then(resp => {
       if(resp.data.status){
           router.visit(route('user.show', auth?.user?.username), {
             method: 'get',

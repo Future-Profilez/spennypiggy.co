@@ -171,6 +171,10 @@ class DiscoveryService
     {
         $query = WishItem::query()
             ->where('is_approved', 1)
+            ->whereHas('user', function($q) {
+                $q->where('suspended_account', 0)
+                  ->where('profile_status_lock', 2);
+            })
             ->with('wishCategories.category');
 
         $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
@@ -340,6 +344,10 @@ class DiscoveryService
     public function getFeaturedWishes($limit = 12)
     {
         return WishItem::where('is_approved', 1)
+            ->whereHas('user', function($q) {
+                $q->where('suspended_account', 0)
+                  ->where('profile_status_lock', 2);
+            })
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
@@ -417,6 +425,10 @@ class DiscoveryService
                   ->orWhere('status', 1)
                   ->orWhereNull('status');
             })
+            ->whereHas('user', function($q) {
+                $q->where('suspended_account', 0)
+                  ->where('profile_status_lock', 2);
+            })
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
@@ -426,9 +438,16 @@ class DiscoveryService
                 return [
                     'id' => $b->id,
                     'uuid' => $b->uuid,
+                    'name' => $b->name,
                     'title' => $b->name,
                     'amount' => null, // Bills might not have a fixed price display in the card same as wishes
                     'image_url' => $b->thumbnail,
+                    'perma_link' => $b->perma_link,
+                    'period' => $b->period,
+                    'price' => $b->price ?? null,
+                    'currency' => $b->currency ?? null,
+                    'approved' => $b->approved ?? null,
+                    'created_at' => $b->created_at,
                     'type' => 'Bill',
                     'user' => $b->user ? [
                         'name' => $b->user->name,
@@ -447,6 +466,10 @@ class DiscoveryService
                   ->orWhere('status', 1)
                   ->orWhereNull('status');
             })
+            ->whereHas('user', function($q) {
+                $q->where('suspended_account', 0)
+                  ->where('profile_status_lock', 2);
+            })
             ->orderByDesc('supporter_count')
             ->orderByDesc('id')
             ->limit($limit)
@@ -456,9 +479,18 @@ class DiscoveryService
                 return [
                     'id' => $m->id,
                     'uuid' => $m->uuid,
+                    'name' => $m->level,
+                    'level' => $m->level,
                     'title' => $m->level . ' Membership',
                     'amount' => null,
                     'image_url' => $m->thumbnail,
+                    'perma_link' => $m->perma_link,
+                    'price' => $m->price ?? null,
+                    'currency' => $m->currency ?? null,
+                    'rewards' => $m->rewards ?? null,
+                    'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
+                    'approved' => $m->approved ?? null,
+                    'created_at' => $m->created_at,
                     'type' => 'Membership',
                     'user' => $m->user ? [
                         'name' => $m->user->name,
@@ -477,6 +509,10 @@ class DiscoveryService
                 $q->where('status', 'active')
                   ->orWhere('status', 1)
                   ->orWhereNull('status');
+            })
+            ->whereHas('user', function($q) {
+                $q->where('suspended_account', 0)
+                  ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
@@ -506,9 +542,16 @@ class DiscoveryService
                 return [
                     'id' => $b->id,
                     'uuid' => $b->uuid,
+                    'name' => $b->name,
                     'title' => $b->name,
                     'amount' => null,
                     'image_url' => $b->thumbnail,
+                    'perma_link' => $b->perma_link,
+                    'period' => $b->period,
+                    'price' => $b->price ?? null,
+                    'currency' => $b->currency ?? null,
+                    'approved' => $b->approved ?? null,
+                    'created_at' => $b->created_at,
                     'type' => 'Bill',
                     'user' => $b->user ? [
                         'name' => $b->user->name,
@@ -527,6 +570,10 @@ class DiscoveryService
                 $q->where('status', 'active')
                   ->orWhere('status', 1)
                   ->orWhereNull('status');
+            })
+            ->whereHas('user', function($q) {
+                $q->where('suspended_account', 0)
+                  ->where('profile_status_lock', 2);
             });
 
         if (!empty($filters['search'])) {
@@ -554,9 +601,18 @@ class DiscoveryService
                 return [
                     'id' => $m->id,
                     'uuid' => $m->uuid,
+                    'name' => $m->level,
+                    'level' => $m->level,
                     'title' => $m->level . ' Membership',
                     'amount' => null,
                     'image_url' => $m->thumbnail,
+                    'perma_link' => $m->perma_link,
+                    'price' => $m->price ?? null,
+                    'currency' => $m->currency ?? null,
+                    'rewards' => $m->rewards ?? null,
+                    'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
+                    'approved' => $m->approved ?? null,
+                    'created_at' => $m->created_at,
                     'type' => 'Membership',
                     'user' => $m->user ? [
                         'name' => $m->user->name,

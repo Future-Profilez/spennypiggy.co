@@ -53,10 +53,7 @@ const rewards_lists = [
 
 export default function Membership({item, hidebtn, IsloggedIn }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
-  const gotologin = () => {
-    errorAlert("You must login first.");
-    router.visit(`/login?redirect=${`/membership/checkout/${item?.uuid}`}`);
-  }
+  
   const {auth} = usePage().props;
   const { formatMultiPrice } = PriceFormat();
   const [rewards ,setrewards ] = useState(item?.rewards ? JSON.parse(item.rewards) : []);
@@ -99,8 +96,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                   {IsloggedIn && item && item?.approved === 0 ?
                     <div className='absolute top-8 z-1 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
                   : ''}
-                  <Link className='block' method='get'
-                    href={route('membership.checkout',{uuid: item?.uuid})}>
+                  
                     {IsloggedIn ?  
                       <DropdownButton
                         className='edit-post pe-0 absolute top-2 m-1 right-2 z-1 ' id="dropdown-basic-button"
@@ -137,6 +133,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                         </div>
                     </div>
                     <div className='p-3'>
+                     
                       <p className="font-bold mb-2 ">What's Included</p>
                       <ul className="space-y-1 text-black">
                           {rewards && rewards.map((r, i)=>{
@@ -149,17 +146,41 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                           </li> */}
                       </ul>
                     </div>
-                  </Link>
-
+                  
                 {hidebtn ? '' : <>
                   <div className='flex p-3 pt-0 justify-center items-center'>
                     {IsloggedIn ? 
                       <EditMembership  classes='btn-pink block text-center !w-full'  item={item} /> 
                     :
-                      ''
+                      <Link method='get' as="button"
+                        href={route('membership.checkout',{uuid: item?.uuid})}
+                        className={`${btnclasses[item?.level || 'default']} block text-center !w-full py-2 rounded-xl font-bold uppercase shadow-sm hover:opacity-90`}
+                      >
+                        Join {item?.level}
+                      </Link>
                     }
                   </div>
                 </>}
+                 <div className="flex px-2 mb-3 justify-center">
+                    {item?.user ? (
+                      <>
+                        <p className="text-xs font-semibold text-black me-1">
+                          By
+                        </p>
+                        <Link method="get"
+                          href={route('user.show', { username: item.user.username })}
+                          className="text-xs text-[#F94F97] underline hover:opacity-90" >
+                          @{item.user.username}
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs font-semibold text-black me-1">
+                          By @Unavailable
+                        </p>
+                      </>
+                    )}
+                  </div>
             </div>
     </>
   )

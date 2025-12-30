@@ -98,23 +98,23 @@ export default function TopSupporters({grid = false}) {
 
   return (
     <>
-    {data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
+    {data && data.length > 0 ? <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
       <h2 className="font-GillSans text-start text-2xl uppercase text-dark" title="Ranked by number of support transactions">
         🏆 Top Supporters
       </h2>
       <p className='text-gray-500 mb-3'>Most active supporters by gift count</p>
     
-      {data.length ? (
+      {data && data.length ? (
         <>
         {grid ? 
           <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-            {data.map((supporter, index) => (
+            {data && data.map((supporter, index) => (
               <SupporterItem key={`${supporter.username}-${index}`} supporter={supporter} index={index} />
             ))}
           </div>
           :
           <>
-            {data.map((supporter, index) => (
+            {data && data.map((supporter, index) => (
               <SupporterItem key={`${supporter.username}-${index}`} supporter={supporter} index={index} />
             ))}
           </>

@@ -40,6 +40,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -203,7 +204,7 @@ class WishitemController extends Controller
     public function addWishItem(Request $request): RedirectResponse
     {
         // Temporary debug logging
-        \Log::info('Wish creation attempt', [
+        Log::info('Wish creation attempt', [
             'user_id' => Auth::id(),
             'request_data' => $request->except(['password', '_token']),
             'user_role' => Auth::user()?->role,
@@ -790,7 +791,6 @@ class WishitemController extends Controller
             })
             ->with(['user' => function ($q) use ($gender) {
                 $q->where('is_uk', 0)
-                  ->where('stripe_details_submitted', 1)
                   ->where('suspended_account', 0)
                   ->whereNotNull('username')
                   ->where('username', '!=', '');
@@ -804,7 +804,6 @@ class WishitemController extends Controller
         $query->whereHas('user', function ($q) use ($gender) {
             $q->whereNull('deleted_at')
               ->where('is_uk', 0)
-              ->where('stripe_details_submitted', 1)
               ->where('suspended_account', 0)
               ->where('username', '!=', '');
             if ($gender != 'all') {
@@ -979,7 +978,7 @@ class WishitemController extends Controller
             $cart->updated_at    = now();
             
             $saveResult = $cart->save();
-            $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
+            $dbVerification = DB::table('user_carts')->where('id', $cart->id)->first();
         } else {
             $cartData = [
                 "user_id"      => Auth::check() ? Auth::id() : null,
@@ -997,7 +996,7 @@ class WishitemController extends Controller
             try {
                 $cart = UserCart::create($cartData);
                 
-                $dbVerification = \DB::table('user_carts')->where('id', $cart->id)->first();
+                $dbVerification = DB::table('user_carts')->where('id', $cart->id)->first();
                 Log::info('Database verification after create', [
                     'cart_id' => $cart->id,
                     'found_in_db' => $dbVerification ? true : false,
@@ -1389,6 +1388,13 @@ class WishitemController extends Controller
                 ], 404);
             }
 
+            if (!$orderDetails->creator) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Creator account not found or deactivated.'
+                ], 404);
+            }
+
             // Check creator subscription eligibility
             $subscriptionCheck = app(\App\Services\CreatorSubscriptionService::class)->validateCreatorSubscription($orderDetails->creator);
             
@@ -1397,7 +1403,7 @@ class WishitemController extends Controller
                 $orderDetails->creator->notify(new \App\Notifications\SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
                 
                 // Log the blocked payment for subscription issues
-                \Log::warning('Rye product payment blocked due to subscription issue', [
+                Log::warning('Rye product payment blocked due to subscription issue', [
                     'creator_id' => $orderDetails->creator->id,
                     'creator_username' => $orderDetails->creator->username,
                     'cart_id' => $request->cart_id,
