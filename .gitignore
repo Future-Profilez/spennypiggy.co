@@ -18,6 +18,7 @@ yarn-error.log
 /.idea
 /.vscode
 /.vapor
+/package-lock.json
 .env.uk_live
 
 # Sentry Config File
