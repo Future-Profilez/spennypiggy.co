@@ -615,3 +615,7 @@ Route::get('/test-intercom', function () {
 
 // Intercom debug route
 Route::get('/debug-intercom', [\App\Http\Controllers\IntercomDebugController::class, 'debug'])->name('debug.intercom');
+
+
+
+// Moved /task/* routes to routes/auth.php to respect username catch-all ordering

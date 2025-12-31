@@ -72,8 +72,26 @@ class UserProfileService
         $data['bills'] = $this->getOptimizedBills($userId, $isOwner);
         $data['shops'] = $this->getOptimizedShopItems($userId, $isOwner);
         $data['posts'] = $this->getOptimizedPosts($userId, $isOwner, 5);
+        $data['tasks'] = $this->getOptimizedTasks($userId, $isOwner);
         
         return $data;
+    }
+
+    /**
+     * Get tasks optimized for profile display
+     */
+    public function getOptimizedTasks(int $userId, bool $isOwner): array
+    {
+        $query = \App\Models\Task::where('creator_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('status', 'active');
+        }
+
+        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at'])
+            ->latest()
+            ->get()
+            ->toArray();
     }
     
     /**

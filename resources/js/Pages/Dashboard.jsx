@@ -49,8 +49,9 @@ import {
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
-import ProfileProductLists from "./shop/profile/ProfileProductLists";
-import AddItem from "./shop/AddItem";
+const ProfileProductLists = lazy(() => import("./shop/profile/ProfileProductLists"));
+const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
+const AddItem = lazy(() => import("./shop/AddItem"));
 import AddGift from "./feed/AddGift";
 import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
@@ -84,6 +85,7 @@ export default function Dashboard(props) {
         slinks,
         wish_categories,
         items,
+        tasks,
         page,
         selectedCategory,
         stripe_requirements,
@@ -902,6 +904,23 @@ export default function Dashboard(props) {
                                                                         IsloggedIn
                                                                     }
                                                                     initialFilter="all"
+                                                                />
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page === "tasks" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <ProfileTaskLists
+                                                                    tasks={tasks}
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
                                                                 />
                                                             </Suspense>
                                                         ) : (
