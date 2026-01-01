@@ -12,7 +12,7 @@
         <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 296px; width: 100%; text-align: center;">
             <tr>
                 <td style="font-family:Arial;font-weight:bold;font-size: 21px;color:#000;line-height: 26px;padding:0 0 25px 0;text-align:center">
-                    New <span style="color: #8C52FF">Task Order</span> Received! 📋
+                    Task <span style="color: #8C52FF">Proof Submitted</span>! 🚀
                 </td>
             </tr>
             <tr>
@@ -21,17 +21,13 @@
 
             <tr>
                 <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 18px; line-height: 27px; color: 141414; text-align: center;">
-                    Great news! <br>
-                    {{ $supporter ? $supporter->name : "A Guest" }} just purchased your task <strong>{{ $task->title }}</strong> for ${{ $purchase->amount }}.
+                    Good news! <br>
+                    <strong>{{ $creator->name }}</strong> has submitted proof for your task <strong>{{ $task->title }}</strong>.
                 </td>
             </tr>
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    @if($task->type === 'instant')
-                        This is an <strong>Instant Delivery</strong> task, so the content has been automatically delivered to the supporter. No action is required from you!
-                    @else
-                        This is a <strong>Timed Delivery</strong> task. Please log in to your dashboard to view the requirements and deliver the work within the SLA timeframe.
-                    @endif
+                    Please review the submitted work and either accept it to complete the order or reject it if revisions are needed.
                 </td>
             </tr>
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>
@@ -39,7 +35,7 @@
                 <td style="padding:0 0 10px 0; text-align: center;">
                     <a href="{{ env('APP_URL') . '/tasks/dashboard' }}"
                         style="display: inline-block; border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">
-                        Manage Order
+                        Review Proof
                     </a>
                 </td>
             </tr>

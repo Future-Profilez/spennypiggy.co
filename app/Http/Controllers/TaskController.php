@@ -14,7 +14,11 @@ use Illuminate\Support\Str;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
 use App\Mail\TaskPurchasedMail;
+use App\Mail\TaskProofSubmittedMail;
+use App\Mail\TaskProofAcceptedMail;
+use App\Mail\TaskProofRejectedMail;
 use Illuminate\Support\Facades\Mail;
+use App\Helpers;
 
 class TaskController extends Controller
 {
@@ -244,6 +248,12 @@ class TaskController extends Controller
                     $supporter = Auth::user();
                     if ($creator) {
                         Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                        
+                        Helpers::sendNotification(
+                            "New Task Order! 💰", 
+                            ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title, 
+                            $creator->email
+                        );
                     }
                 } catch (\Exception $e) {
                     // Log error or silently fail so purchase flow isn't interrupted
@@ -295,6 +305,22 @@ class TaskController extends Controller
         $purchase->status = 'pending_review';
         $purchase->save();
         
+        try {
+            $supporter = $purchase->supporter;
+            $task = $purchase->task;
+            $creator = Auth::user();
+            
+            if ($supporter) {
+                Mail::to($supporter->email)->send(new TaskProofSubmittedMail($purchase, $task, $creator));
+                
+                Helpers::sendNotification(
+                    "Proof Submitted! 🚀", 
+                    $creator->name . " submitted proof for task: " . $task->title, 
+                    $supporter->email
+                );
+            }
+        } catch (\Exception $e) {}
+        
         return back()->with('success', 'Proof uploaded successfully. Waiting for supporter review.');
     }
 
@@ -326,6 +352,30 @@ class TaskController extends Controller
         
         $purchase->reviewed_at = now();
         $purchase->save();
+        
+        try {
+            $creator = $purchase->creator;
+            $task = $purchase->task;
+            $supporter = Auth::user();
+            
+            if ($creator) {
+                if ($request->action === 'accept') {
+                    Mail::to($creator->email)->send(new TaskProofAcceptedMail($purchase, $task, $supporter));
+                    Helpers::sendNotification(
+                        "Proof Accepted! ✅", 
+                        $supporter->name . " accepted your proof for task: " . $task->title, 
+                        $creator->email
+                    );
+                } else {
+                    Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
+                    Helpers::sendNotification(
+                        "Proof Rejected ⚠️", 
+                        $supporter->name . " rejected your proof for task: " . $task->title, 
+                        $creator->email
+                    );
+                }
+            }
+        } catch (\Exception $e) {}
         
         return back()->with('success', 'Review submitted.');
     }
