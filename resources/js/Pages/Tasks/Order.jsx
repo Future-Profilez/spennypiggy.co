@@ -1,9 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import GlobalUploader from "@/uploadcare/Uploader";
+import PriceFormat from "@/includes/PriceFormat";
 
-export default function Order({ auth, purchase, task, isCreator, isSupporter }) {
+const Countdown = ({ createdAt, hours }) => {
+    if (!hours) return null;
+
+    const targetDate = new Date(new Date(createdAt).getTime() + hours * 60 * 60 * 1000);
+
+    const calculateTimeLeft = () => {
+        const difference = +targetDate - +new Date();
+        
+        if (difference <= 0) {
+            return null;
+        }
+
+        return {
+            days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+            minutes: Math.floor((difference / 1000 / 60) % 60),
+            seconds: Math.floor((difference / 1000) % 60),
+        };
+    };
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(calculateTimeLeft());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [createdAt, hours]);
+
+    if (!timeLeft) {
+        return <span className="text-red-600">Overdue</span>;
+    }
+
+    return (
+        <span className="text-pink-600">
+            {timeLeft.days > 0 && `${timeLeft.days}d `}
+            {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+        </span>
+    );
+};
+
+export default function Order({ auth, purchase, task, isCreator, isSupporter, currencySymbol }) {
+    const { formatMultiPrice } = PriceFormat();
     const { data: uploadData, setData: setUploadData, post: postUpload, processing: uploadProcessing, errors: uploadErrors } = useForm({
         proof_file: null,
         notes: '',
@@ -72,10 +116,18 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter }) 
                             TYPE: <span className="uppercase text-pink-600">{task.type}</span>
                         </span>
                         <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            PRICE: <span className="text-green-600">${purchase.amount}</span>
+                            PRICE: <span className="text-green-600">{formatMultiPrice(purchase.amount, task.currency || 'USD')}</span>
                         </span>
                         <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            SLA Hours : <span className="text-green-600">{purchase.sla_hours} hours</span>
+                            ASSIGNED: <span className="text-blue-600">{new Date(purchase.created_at).toLocaleDateString()}</span>
+                        </span>
+                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated'].includes(purchase.status) && task.sla_hours && (
+                            <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                REMAINING: <Countdown createdAt={purchase.created_at} hours={task.sla_hours} />
+                            </span>
+                        )}
+                        <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            SLA Deadline : <span className="text-green-600">{purchase.sla_deadline}</span>
                         </span>
                     </div>
                         

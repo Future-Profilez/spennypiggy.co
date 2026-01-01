@@ -16,6 +16,7 @@ const Popup = lazy(() => import("@/Components/Popup"));
 const MembershipsLists = lazy(() =>
     import("./membership/MembershipsLists")
 );
+import { BiTask } from "react-icons/bi";
 const AddMembership = lazy(() => import("./membership/AddMembership"));
 const Gifter = lazy(() => import("./gifter/Gifter"));
 const AddBills = lazy(() => import("./bills/AddBills"));
@@ -402,6 +403,27 @@ export default function Dashboard(props) {
                                                                     </div>
                                                                 </div>
                                                             </div>
+
+                                                            <Link className='w-full block font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer' href="/task/create"
+                                                                >
+                                                                <div className=" flex items-center">
+                                                                    <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                        <BiTask
+                                                                            color="var(--pink)"
+                                                                            size="1.5rem"
+                                                                        />
+
+                                                                    </div>
+                                                                    <div className="ps-3 text-start">
+                                                                        <h2 className="text-md font-normal font-GillSans uppercase">
+                                                                            Create Task
+                                                                        </h2>
+                                                                        <p className="text-sm font-poppins">
+                                                                            Offer something unique to your supporters.
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </Link>
 
                                                             <AddItem
                                                                 classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"

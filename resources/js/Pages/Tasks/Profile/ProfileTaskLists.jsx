@@ -4,21 +4,20 @@ import Nocontent from '@/includes/Nocontent';
 
 export default function ProfileTaskLists({ tasks, IsloggedIn }) {
     return (
-        <section className="py-4">
+        <section className="">
             <div className="shadow-layout pink-shadow-layout !border-3 border-black bg-white shadow-pink overflow-hidden rounded-xl">
-                <div className='p-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between'>
-                    <div className="flex items-center">
-                        <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
-                    </div>
-                    <h3 className="font-bold text-lg">{IsloggedIn ? "My Task Definitions" : "Available Tasks"}</h3>
+                <div className='p-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between'>
+                    <h3 className="font-bold text-xl text-white">{IsloggedIn ? "My Task Definitions" : "Available Tasks"}</h3>
                     {IsloggedIn ? (
-                         <Link href={route('task.create')} className="bg-black text-white px-4 py-1 rounded-full text-xs font-bold uppercase hover:bg-gray-800 transition-colors">
+                        <Link href={route('task.create')} className="button b">
                             + New Task
                         </Link>
                     ) : (
-                        <div></div>
+                        <div className="flex items-center">
+                            <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
+                            <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
+                            <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
+                        </div>
                     )}
                 </div>
 

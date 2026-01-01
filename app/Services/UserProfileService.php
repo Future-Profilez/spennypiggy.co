@@ -88,7 +88,7 @@ class UserProfileService
             $query->where('status', 'active');
         }
 
-        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at'])
+        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', ])
             ->latest()
             ->get()
             ->toArray();

@@ -56,7 +56,14 @@ class TaskController extends Controller
         if (Auth::user()->role !== 1) {
             return redirect()->route('task.dashboard')->with('error', 'Only creators can create tasks.');
         }
-        return Inertia::render('Tasks/Create');
+
+        $userCurrency = Auth::user()->default_currency ?? 'USD';
+        $currencySymbol = \App\Models\Currency::where('ISO', $userCurrency)->value('symbol') ?? '$';
+
+        return Inertia::render('Tasks/Create', [
+            'currency' => $userCurrency,
+            'currencySymbol' => $currencySymbol
+        ]);
     }
 
     public function store(Request $request)
@@ -90,6 +97,7 @@ class TaskController extends Controller
         $task->title = $request->title;
         $task->description = $request->description;
         $task->price = $request->price;
+        $task->currency = Auth::user()->default_currency ?? 'USD';
         $task->category = $request->category;
         $task->type = $request->type;
         $task->sla_hours = $request->type === 'timed' ? $request->sla_hours : null;
@@ -130,11 +138,14 @@ class TaskController extends Controller
             $task->makeHidden(['deliverable_content', 'deliverable_note', 'deliverable_content_type']);
         }
 
+        $currencySymbol = \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$';
+
         return Inertia::render('Tasks/Show', [
             'task' => $task,
             'purchase' => $purchase,
             'isCreator' => Auth::id() === $task->creator_id,
-            'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['delivered', 'completed_accepted'])) ? route('task.download', $task->uuid) : null
+            'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['delivered', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
+            'currencySymbol' => $currencySymbol
         ]);
     }
 
@@ -185,7 +196,7 @@ class TaskController extends Controller
             'payment_method_types' => ['card'],
             'line_items' => [[
                 'price_data' => [
-                    'currency' => 'usd',
+                    'currency' => strtolower($task->currency ?? 'usd'),
                     'product_data' => [
                         'name' => $task->title,
                         'description' => "You are purchasing a digital task. This is a PG-13 digital service. Delivery method: " . ucfirst($task->type) . ". No adult or sexual content.",
@@ -267,7 +278,8 @@ class TaskController extends Controller
 
         return Inertia::render('Tasks/Success', [
             'task' => $task,
-            'purchase' => $purchase
+            'purchase' => $purchase,
+            'currencySymbol' => \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$'
         ]);
     }
 
@@ -387,12 +399,15 @@ class TaskController extends Controller
         if (Auth::id() !== $purchase->supporter_id && Auth::id() !== $purchase->creator_id) {
             abort(403);
         }
-        
+
+        $currencySymbol = \App\Models\Currency::where('ISO', $purchase->task->currency)->value('symbol') ?? '$';
+
         return Inertia::render('Tasks/Order', [
             'purchase' => $purchase,
             'task' => $purchase->task,
             'isCreator' => Auth::id() === $purchase->creator_id,
             'isSupporter' => Auth::id() === $purchase->supporter_id,
+            'currencySymbol' => $currencySymbol
         ]);
     }
 }

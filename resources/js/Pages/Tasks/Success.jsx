@@ -1,8 +1,11 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
+import PriceFormat from "@/includes/PriceFormat";
 
-export default function Success({ auth, purchase, task }) {
+export default function Success({ auth, purchase, task, currencySymbol }) {
+    const { formatMultiPrice } = PriceFormat();
+
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="Payment Successful" />
@@ -32,7 +35,7 @@ export default function Success({ auth, purchase, task }) {
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-gray-600 font-bold uppercase text-sm">Amount</span>
-                                <span className="font-black text-xl text-green-600">${purchase.amount}</span>
+                                <span className="font-black text-xl text-green-600">{formatMultiPrice(purchase.amount, task.currency || 'USD')}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-gray-600 font-bold uppercase text-sm">Status</span>

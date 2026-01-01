@@ -27,8 +27,11 @@ class TaskPurchasedMail extends Mailable
         $supporterName = $this->supporter ? $this->supporter->name : 'A Guest';
         $subject = "$supporterName purchased your task: " . $this->task->title;
 
+        $currencySymbol = \App\Models\Currency::where('ISO', $this->task->currency)->value('symbol') ?? '$';
+
         return $this->view('email.taskpurchased')
             ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
-            ->subject($subject);
+            ->subject($subject)
+            ->with(['currencySymbol' => $currencySymbol]);
     }
 }

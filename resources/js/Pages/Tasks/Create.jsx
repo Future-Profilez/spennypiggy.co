@@ -3,7 +3,7 @@ import Guest from '@/Layouts/GuestLayout';
 import GlobalUploader from "@/uploadcare/Uploader";
 import InputError from '@/Components/InputError';
 
-export default function Create({ auth }) {
+export default function Create({ auth, currencySymbol }) {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         description: '',
@@ -47,9 +47,9 @@ export default function Create({ auth }) {
                         <div className="">
                            
 
-                            <form onSubmit={submit} className="p-6 md:p-10 space-y-8 bg-white">
+                            <form onSubmit={submit} className="p-6 md:p-10 space-y-4 bg-white">
                                 {/* Title */}
-                                <div className="group">
+                                <div className="mb-0">
                                     {/* <label className="block font-black text-normal mb-2 capitalize tracking-wide">Title</label> */}
                                     <input
                                         type="text"
@@ -62,7 +62,7 @@ export default function Create({ auth }) {
                                 </div>
 
                                 {/* Description */}
-                                <div className="group">
+                                <div className="mb-0">
                                     {/* <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-blue-500 pl-3">Description (PG-13)</label> */}
                                     <textarea
                                         className="w-full border-3 border-black rounded-[20px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
@@ -74,14 +74,14 @@ export default function Create({ auth }) {
                                     <InputError message={errors.description} className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block" />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Price */}
-                                    <div className="group">
-                                        {/* <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-green-500 pl-3">Price ($)</label> */}
+                                    <div className="mb-0">
+                                        {/* <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-green-500 pl-3">Price ({currencySymbol})</label> */}
                                         <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700">$</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700">{currencySymbol}</span>
                                             <input
-                                                type="number" placeholder='Price'
+                                                type="number" placeholder={`Price (${currencySymbol})`}
                                                 step="0.01"
                                                 className="w-full border-3 border-black rounded-[15px] p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                 value={data.price}
@@ -92,7 +92,7 @@ export default function Create({ auth }) {
                                     </div>
 
                                     {/* Category */}
-                                    <div className="group">
+                                    <div className="mb-0">
                                         {/* <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-purple-500 pl-3">Category</label> */}
                                         <input
                                             type="text"
@@ -214,9 +214,9 @@ export default function Create({ auth }) {
                                 </div> */}
 
                                 {/* Terms */}
-                                <div className="flex items-center mt-6">
+                                <div className="flex items-center !mt-12">
                                     <input id="terms-checkbox" type="checkbox" required className="mt-1 mr-3 h-6 w-6 text-pink-600 border-2 border-black rounded focus:ring-0 focus:ring-offset-0 cursor-pointer" />
-                                    <label htmlFor="terms-checkbox" className="text-normal text-black font-bold leading-relaxed">
+                                    <label htmlFor="terms-checkbox" className="cursor-pointer text-normal text-black font-bold leading-relaxed">
                                         I accept the terms: PG-13 only, No sexual content, No custom requests outside of these parameters.
                                     </label>
                                 </div>
@@ -224,7 +224,7 @@ export default function Create({ auth }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full button b" >
+                                    className="w-full button b mt-4" >
                                     {processing ? 'Creating...' : 'Create Task'}
                                 </button>
                             </form>
