@@ -25,6 +25,11 @@ class TaskPurchase extends Model
         'sla_deadline',
         'reviewed_at',
         'completed_at',
+        'admin_fee',
+        'platform_fee',
+        'vat_amount',
+        'transfer_amount',
+        'dispute_status',
     ];
 
     protected $casts = [

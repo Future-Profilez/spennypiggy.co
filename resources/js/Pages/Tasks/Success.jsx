@@ -6,6 +6,45 @@ import PriceFormat from "@/includes/PriceFormat";
 export default function Success({ auth, purchase, task, currencySymbol }) {
     const { formatMultiPrice } = PriceFormat();
 
+    if (!purchase) {
+        return (
+            <Guest auth={auth.user} user={auth.user}>
+                <Head title="Payment Processing" />
+                <div className="bg-white py-8 mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-[700px] mx-auto bg-white p-8 text-center">
+                        <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-yellow-100 border-2 border-black mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                            <svg className="h-10 w-10 text-yellow-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        
+                        <h2 className="text-3xl font-black text-gray-900 mb-2 uppercase">Payment Processing...</h2>
+                        <p className="text-gray-600 mb-8 font-medium">
+                            We've received your payment for <strong className="text-pink-600">{task.title}</strong> and are creating your order. 
+                            <br/>This usually takes a few seconds.
+                        </p>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                             <Link 
+                                href={window.location.href}
+                                className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black text-sm font-black rounded-[20px] text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                            >
+                                Refresh Status
+                            </Link>
+
+                            <Link 
+                                href={route('task.dashboard')}
+                                className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-[20px] text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            >
+                                Go to My Tasks
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </Guest>
+        );
+    }
+
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="Payment Successful" />

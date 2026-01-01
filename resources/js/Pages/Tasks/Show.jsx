@@ -17,7 +17,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
             <div className="bg-white px-3 py-3 min-h-screen">
                 <div className="max-w-3xl mx-auto">
                     {/* Back Button */}
-                    <Link href={route('task.dashboard')} className="inline-block mb-6 text-white font-bold uppercase tracking-widest hover:text-pink-500 transition-colors">
+                    <Link href={route('task.dashboard')} className="inline-block mb-6 mt-6 text-black font-bold uppercase tracking-wide hover:text-pink-500 transition-colors">
                         &larr; Back to Dashboard
                     </Link>
 
@@ -42,7 +42,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                         <div className="p-8">
                             <div className='flex justify-between items-start'>
                                 <div>
-                                    <h1 className="text-3xl font-black font-fre uppercase font-light  text-gray-900  ">
+                                    <h1 className="text-2xl font-black font-fre uppercase font-light  text-gray-900  ">
                                         {task.title}
                                     </h1>
                                     <div className="mt-2 mb-4 prose prose-lg text-gray-600 leading-relaxed border-l-4 border-pink-300 pl-4">
@@ -50,7 +50,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                     </div>
                                 </div>
 
-                                <span className="text-3xl font-black text-pink font-anton tracking-wider">
+                                <span className="text-2xl font-black text-pink font-anton tracking-wider">
                                     {formatMultiPrice(task.price, task.currency || 'USD')}
                                 </span>
                             </div>
@@ -70,8 +70,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                 </span>
                             </div>
 
-                            {/* Creator Info */}
-                            <div className=" items-center gap-4 ">
+                            <div className="items-center gap-4 ">
                                 <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
                                 <div className='flex'>
                                     <Link href={route('user.show', task.creator.username)} className="flex items-center gap-4 group">
@@ -93,7 +92,6 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                 </div>
                             </div>
                             
-                            {/* Action Area */}
                             <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
                                 {isCreator ? (
                                     <div className="text-center  rounded-xl py-6">

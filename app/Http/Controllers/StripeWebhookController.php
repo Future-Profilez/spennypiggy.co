@@ -9,6 +9,7 @@ use App\Mail\PaymentSuccessMail;
 use App\Models\MonthlyCharge;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 use App\Services\StripeControl;
@@ -17,6 +18,8 @@ use App\Models\BillPayment;
 use App\Models\Deliverable;
 use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
+use App\Models\Task;
+use App\Models\TaskPurchase;
 use App\Models\WishItemSubscription;
 use App\StripeControl as AppStripeControl;
 // use App\StripeControl as AppStripeControl;
@@ -324,6 +327,16 @@ class StripeWebhookController extends Controller
                 $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
 
+            case 'charge.dispute.created':
+                \Log::info("Handling Charge Dispute Created");
+                $this->handleChargeDisputeCreated($data);
+                break;
+
+            case 'charge.dispute.closed':
+                \Log::info("Handling Charge Dispute Closed");
+                $this->handleChargeDisputeClosed($data);
+                break;
+
             case 'customer.subscription.updated':
                 $productType = $metadata->type ?? null;
 
@@ -397,6 +410,11 @@ class StripeWebhookController extends Controller
             // Check if this is a wish item purchase
             if (isset($metadata->deliverable_type) && $metadata->deliverable_type === 'media_bundle') {
                 $this->processWishItemDeliverable($session, $metadata);
+            }
+
+            // Check if this is a task purchase
+            if (isset($metadata->type) && $metadata->type === 'task_purchase') {
+                $this->processTaskPurchase($session, $metadata);
             }
 
             return response()->json(['status' => 'success']);
@@ -503,6 +521,151 @@ class StripeWebhookController extends Controller
             } else {
                 Log::warning("Payment record not found for session", ['session_id' => $session->id]);
             }
+        }
+    }
+
+    /**
+     * Process task purchase creation
+     */
+    private function processTaskPurchase($session, $metadata)
+    {
+        Log::info("Processing task purchase", ['session_id' => $session->id]);
+
+        $taskId = $metadata->task_id ?? null;
+        $buyerId = $metadata->buyer_id ?? null;
+        $creatorId = $metadata->creator_id ?? null;
+        
+        if (!$taskId || !$buyerId) {
+            Log::error("Missing task_id or buyer_id in metadata for task purchase");
+            return;
+        }
+
+        // Idempotency check
+        if (TaskPurchase::where('stripe_session_id', $session->id)->exists()) {
+            Log::info("Task purchase already exists for session", ['session_id' => $session->id]);
+            return;
+        }
+
+        $task = Task::find($taskId);
+        if (!$task) {
+             Log::error("Task not found for purchase", ['task_id' => $taskId]);
+             return;
+        }
+
+        // Calculate amount from session amount_total (in cents/smallest unit)
+        $amount = ($session->amount_total ?? 0) / 100;
+
+        // Create TaskPurchase
+        $purchase = TaskPurchase::create([
+            'task_id' => $taskId,
+            'supporter_id' => $buyerId,
+            'creator_id' => $creatorId ?? $task->creator_id,
+            'stripe_session_id' => $session->id,
+            'payment_intent_id' => $session->payment_intent,
+            'amount' => $amount,
+            'status' => 'pending', // Initial status
+            'admin_fee' => $metadata->admin_fee ?? 0,
+            'platform_fee' => $metadata->platform_fee ?? 0,
+            'vat_amount' => $metadata->vat_amount ?? 0,
+            'transfer_amount' => $metadata->transfer_amount ?? 0,
+            'dispute_status' => 'none',
+        ]);
+
+        // SLA logic
+        $slaHours = (int) ($metadata->sla_hours ?? 0);
+        if ($slaHours > 0) {
+             $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
+             $purchase->save();
+        }
+
+        // Create Deliverable
+        $deliverable = Deliverable::create([
+            'uuid' => (string) Str::uuid(),
+            'product_id' => (string) $taskId,
+            'item_id' => $taskId, 
+            'order_id' => $purchase->id,
+            'creator_id' => $creatorId ?? $task->creator_id,
+            'gifter_id' => $buyerId,
+            'payment_intent_id' => $session->payment_intent,
+            'session_id' => $session->id,
+            'deliverable_type' => 'digital_task',
+            'product_type' => 'task',
+            'transaction_amount' => $amount,
+            'status' => 'pending',
+            'sla_hours' => $slaHours,
+            'due_at' => $slaHours > 0 ? Carbon::now()->addHours($slaHours) : null,
+            'refund_eligible' => $slaHours > 0, 
+            'payment_status' => 'paid',
+            'payment_currency' => strtoupper($session->currency ?? 'GBP'),
+            'customer_email' => $session->customer_details->email ?? null,
+            'customer_name' => $session->customer_details->name ?? null,
+            'metadata' => json_encode($metadata),
+        ]);
+        
+        // Handle Instant Task
+        if (($metadata->task_type ?? '') === 'instant') {
+            $purchase->status = 'completed';
+            $purchase->completed_at = Carbon::now();
+            $purchase->save();
+            
+            $deliverable->status = 'delivered';
+            $deliverable->delivered_at = Carbon::now();
+            $deliverable->save();
+            
+            Log::info("Instant task purchase completed", ['purchase_id' => $purchase->id]);
+        } else {
+            Log::info("Timed task purchase created", ['purchase_id' => $purchase->id]);
+        }
+    }
+
+    /**
+     * Handle Charge Dispute Created
+     */
+    private function handleChargeDisputeCreated($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        
+        if (!$paymentIntentId) {
+             return;
+        }
+
+        $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+        if ($purchase) {
+            $purchase->dispute_status = 'open';
+            $purchase->save();
+            Log::info("Dispute opened for TaskPurchase", ['id' => $purchase->id]);
+        }
+    }
+
+    /**
+     * Handle Charge Dispute Closed
+     */
+    private function handleChargeDisputeClosed($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        
+        if (!$paymentIntentId) {
+             return;
+        }
+
+        $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+        if ($purchase) {
+            $status = $dispute->status; // won, lost, warning_closed
+            
+            // Map Stripe status to our enum ['none', 'open', 'won', 'lost']
+            if ($status === 'won') {
+                $purchase->dispute_status = 'won';
+            } elseif ($status === 'lost') {
+                $purchase->dispute_status = 'lost';
+            } else {
+                // Keep open or set to none if it was just a warning
+                if (str_contains($status, 'warning')) {
+                     $purchase->dispute_status = 'none';
+                }
+            }
+            
+            $purchase->save();
+            Log::info("Dispute closed for TaskPurchase", ['id' => $purchase->id, 'status' => $status]);
         }
     }
 

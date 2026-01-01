@@ -17,6 +17,7 @@ class Deliverable extends Model
         'uuid',
         'product_id',
         'item_id', // NEW: Database wish item ID
+        'order_id', // Linked to task_purchases
         'price_id',
         'creator_id',
         'gifter_id',
@@ -29,6 +30,9 @@ class Deliverable extends Model
         'certificate_url',
         'metadata',
         'status',
+        'sla_hours',
+        'due_at',
+        'refund_eligible',
         'is_deliverable', // NEW: Flag for admin interface
         'delivered_at',
         'customer_email',

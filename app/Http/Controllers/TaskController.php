@@ -19,6 +19,8 @@ use App\Mail\TaskProofAcceptedMail;
 use App\Mail\TaskProofRejectedMail;
 use Illuminate\Support\Facades\Mail;
 use App\Helpers;
+use App\StripeControl;
+use App\Models\Currency;
 
 class TaskController extends Controller
 {
@@ -190,23 +192,123 @@ class TaskController extends Controller
             return redirect()->route('login');
         }
 
+        $creator = $task->creator;
+        
+        // Currency Handling
+        $currency = strtolower($task->currency ?? 'usd');
+        $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
+        // Fee Calculations
+        $adminFeeConfig = config('app.administration_fee', 0.50); // Default 0.50 if not set
+        $platformFeePercent = config('app.platform_fee_percentage', 20);
+        $vatPercent = $creator->vat_amount_percentage ?? 0;
+
+        $price = $task->price;
+        
+        // 1. Creator VAT
+        $creatorVatAmount = round($price * ($vatPercent / 100), 2);
+        
+        // 2. Admin Fee (Convert from GBP/Default to Task Currency)
+        // Helpers::priceFormat($fromCurrency, $amount, $toCurrency)
+        $convertedAdminFee = Helpers::priceFormat('GBP', $adminFeeConfig, strtoupper($currency));
+        
+        // 3. Platform Fee (Percentage of Price) + Admin Fee
+        $platformFeeBase = round($price * ($platformFeePercent / 100), 2);
+        $totalPlatformFee = round($platformFeeBase + $convertedAdminFee, 2);
+
+        // 4. Totals
+        $transferAmount = round(($price + $creatorVatAmount) * $multiplier); // What Creator receives
+        $totalChargeAmount = round(($price + $creatorVatAmount + $totalPlatformFee) * $multiplier); // What Supporter pays
+
         Stripe::setApiKey(config('services.stripe.secret'));
+
+        $lineItems = [];
+
+        // Item 1: The Task
+        $lineItems[] = [
+            'price_data' => [
+                'currency' => $currency,
+                'product_data' => [
+                    'name' => $task->title,
+                    'description' => "You are purchasing a digital task. This is a PG-13 digital service. Delivery method: " . ucfirst($task->type) . ". No adult or sexual content.",
+                    'images' => $task->media_url ? [asset($task->media_url)] : [],
+                ],
+                'unit_amount' => (int) ($price * $multiplier),
+            ],
+            'quantity' => 1,
+        ];
+
+        // Item 2: Creator VAT (if applicable)
+        if ($creatorVatAmount > 0) {
+            $lineItems[] = [
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => 'Creator VAT (' . $vatPercent . '%)',
+                    ],
+                    'unit_amount' => (int) ($creatorVatAmount * $multiplier),
+                ],
+                'quantity' => 1,
+            ];
+        }
+
+        // Item 3: Platform Fee
+        if ($totalPlatformFee > 0) {
+            $lineItems[] = [
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => 'Platform Fee (' . $platformFeePercent . '% + Admin Fee)',
+                    ],
+                    'unit_amount' => (int) ($totalPlatformFee * $multiplier),
+                ],
+                'quantity' => 1,
+            ];
+        }
+
+        // Prepare Transfer Data
+        $connectedAccountId = $creator->account_id;
+        $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
+        
+        $paymentIntentData = [
+            'description' => "Spenny Piggy - Task purchase: " . $task->title,
+            'metadata' => [
+                'creator_id' => $creator->id,
+                'buyer_id' => $user->id, // Mapped to supporter_id in DB
+                'purpose' => 'paid_task',
+                'task_id' => $task->id,
+                'task_uuid' => $task->uuid,
+                'task_type' => $task->type, // instant | timed
+                'deliverable_type' => 'digital_task', // Generic for now, could be refined based on category
+                'value_summary' => "Digital task service: " . $task->title,
+                'caps_version' => 'v1',
+                'sla_hours' => $task->sla_hours ?? 0,
+            ],
+        ];
+
+        if ($connectedAccountId) {
+            if ($hasCardPayments) {
+                $paymentIntentData['on_behalf_of'] = $connectedAccountId;
+                $paymentIntentData['transfer_data'] = [
+                    'destination' => $connectedAccountId,
+                    'amount' => $transferAmount,
+                ];
+            } else {
+                 // Fallback if no card payments capability (rare for verified creators)
+                 // We still try to transfer
+                 $paymentIntentData['transfer_data'] = [
+                    'destination' => $connectedAccountId,
+                    'amount' => $transferAmount,
+                ];
+            }
+        }
 
         $checkout_session = Session::create([
             'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => strtolower($task->currency ?? 'usd'),
-                    'product_data' => [
-                        'name' => $task->title,
-                        'description' => "You are purchasing a digital task. This is a PG-13 digital service. Delivery method: " . ucfirst($task->type) . ". No adult or sexual content.",
-                        'images' => $task->media_url ? [asset($task->media_url)] : [],
-                    ],
-                    'unit_amount' => (int) ($task->price * 100),
-                ],
-                'quantity' => 1,
-            ]],
+            'line_items' => $lineItems,
             'mode' => 'payment',
+            'payment_intent_data' => $paymentIntentData,
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('task.show', $task->uuid),
             'metadata' => [
@@ -215,7 +317,10 @@ class TaskController extends Controller
                 'creator_id' => $task->creator_id,
                 'supporter_id' => $user->id,
                 'delivery_mode' => $task->type,
-                'value_summary' => 'PG-13 Digital Service - ' . ucfirst($task->type) . ' Delivery',
+                'admin_fee' => $convertedAdminFee,
+                'platform_fee' => $totalPlatformFee,
+                'vat_amount' => $creatorVatAmount,
+                'transfer_amount' => ($transferAmount / $multiplier),
             ],
             'customer_email' => $user->email,
         ]);
@@ -243,6 +348,12 @@ class TaskController extends Controller
                 $purchase->stripe_session_id = $session->id;
                 $purchase->payment_intent_id = $session->payment_intent;
                 $purchase->amount = $session->amount_total / 100;
+                
+                // Save fee details from metadata
+                $purchase->admin_fee = $session->metadata->admin_fee ?? 0;
+                $purchase->platform_fee = $session->metadata->platform_fee ?? 0;
+                $purchase->vat_amount = $session->metadata->vat_amount ?? 0;
+                $purchase->transfer_amount = $session->metadata->transfer_amount ?? 0;
                 
                 if ($task->type === 'instant') {
                     $purchase->status = 'delivered';
