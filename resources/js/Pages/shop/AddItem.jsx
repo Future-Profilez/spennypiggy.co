@@ -152,7 +152,6 @@ export default function AddItem(props) {
             // const controller = new AbortController();
             // const { signal } = controller;
             fetchAddedCategories();
-            console.log("asdf")
             // return () => controller.abort();
         }, [props]);
 

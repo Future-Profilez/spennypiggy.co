@@ -70,7 +70,6 @@ export default function ToCart({
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : "/onetime"}${amount ? `/${amount}/` : ""}`)
             .then((resp) => {
-                console.log("Add to cart response:", resp.data);
                 if (resp.data.success) {
                     if (resp.data.added == true) {
                         successAlert(resp.data.msg);
@@ -79,7 +78,6 @@ export default function ToCart({
                         // Refresh cart items, rye items, and cart counter
                         if (typeof window !== 'undefined') {
                             if (window.refreshCartItems) {
-                                console.log("Refreshing cart items after successful add-to-cart");
                                 setTimeout(() => {
                                     window.refreshCartItems();
                                 }, 500); // Small delay to ensure backend has processed the addition
@@ -87,7 +85,6 @@ export default function ToCart({
                                 console.warn("window.refreshCartItems function not found - Cart component may not be loaded");
                             }
                             if (window.refreshRyeItems) {
-                                console.log("Refreshing rye items after successful add-to-cart");
                                 setTimeout(() => {
                                     window.refreshRyeItems();
                                 }, 500);
@@ -95,7 +92,6 @@ export default function ToCart({
                                 console.warn("window.refreshRyeItems function not found - Cart component may not be loaded");
                             }
                             if (window.refreshCartCounter) {
-                                console.log("Refreshing cart counter after successful add-to-cart");
                                 setTimeout(() => {
                                     window.refreshCartCounter();
                                 }, 100); // Refresh counter immediately

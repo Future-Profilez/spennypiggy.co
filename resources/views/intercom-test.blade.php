@@ -80,7 +80,6 @@
             const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
             logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
             logElement.scrollTop = logElement.scrollHeight;
-            console.log(`[Intercom Test] ${message}`);
         }
         
         function clearLog() {

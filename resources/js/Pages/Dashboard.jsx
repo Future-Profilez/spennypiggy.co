@@ -73,7 +73,6 @@ const CreatorActivityWidget = lazy(() => import('@/Components/CreatorActivityWid
 const CreatorSubscriptionWidget = lazy(() => import('@/Components/CreatorSubscriptionWidget'));
 export default function Dashboard(props) {
     
-    console.log("props",props)
     const w = useWidthCount();
     const {
         auth,

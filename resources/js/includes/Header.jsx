@@ -28,7 +28,7 @@ import { FiGift } from "react-icons/fi";
 import { LiaShoppingCartSolid } from "react-icons/lia";
 import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
-export default function Header({classMagicword}) {
+export default function Header({ classMagicword }) {
     const { global_currency, auth } = usePage().props;
 
     const deviceid = DeviceID();
@@ -44,7 +44,7 @@ export default function Header({classMagicword}) {
     const cart = useSelector((state) => state.data.cart.cart);
     const [count, setCount] = useState();
     const dispatch = useDispatch();
-    
+
     const fetchCounter = useCallback(async () => {
         try {
             const resp = await axios.get(`/counter/${deviceid}`);
@@ -62,16 +62,22 @@ export default function Header({classMagicword}) {
                 // dispatch(add_to_cart(event.detail.counter));
             }
         };
-        
+
         // Add event listener for global cart counter refresh
-        window.addEventListener('cartCounterRefreshed', handleCartCounterRefresh);
-        
+        window.addEventListener(
+            "cartCounterRefreshed",
+            handleCartCounterRefresh
+        );
+
         // Initial fetch
         fetchCounter();
-        
+
         // Cleanup event listener
         return () => {
-            window.removeEventListener('cartCounterRefreshed', handleCartCounterRefresh);
+            window.removeEventListener(
+                "cartCounterRefreshed",
+                handleCartCounterRefresh
+            );
         };
     }, [fetchCounter, dispatch]);
 
@@ -81,7 +87,6 @@ export default function Header({classMagicword}) {
             <div className="blackbg headermain py-6 ">
                 <div className="containerbox">
                     <div className="header flex w-full items-center  justify-between ">
-
                         <div className="md:flex hidden leftspaces items-center justify-content-start">
                             <div
                                 className=" menu-toggle cursor-pointer cartLink position-relative"
@@ -140,15 +145,21 @@ export default function Header({classMagicword}) {
                             />
 
                             {/* {auth && auth.user ? <Notifications /> : ""} */}
-                            {auth && auth.user ?
+                            {auth && auth.user ? (
                                 <div className="mr-2">
-                                    <MagicBellNotification word={classMagicword} />
+                                    <MagicBellNotification
+                                        word={classMagicword}
+                                    />
                                 </div>
-                            : ""}
+                            ) : (
+                                ""
+                            )}
 
-                            <Link title="Discover"
+                            <Link
+                                title="Discover"
                                 href={route("discover")}
-                                className="me-2 md:me-3 discover-icon  " >
+                                className="me-2 md:me-3 discover-icon  "
+                            >
                                 <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <svg
                                         width="24"
@@ -178,13 +189,29 @@ export default function Header({classMagicword}) {
                                 </div>
                             </Link>
 
-                            <Link title='cart page'
-                                href={route("cart")} as="button"
-                                className={`cartLink me-3 relative flex ${auth?.user && window?.innerWidth < 768 ? 'hidden' :''}`}>
+                            <Link
+                                title="cart page"
+                                href={route("cart")}
+                                as="button"
+                                className={`cartLink me-3 relative flex ${
+                                    auth?.user && window?.innerWidth < 768
+                                        ? "hidden"
+                                        : ""
+                                }`}
+                            >
                                 <div className="bg-[#F94F96] p-1 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                                    <LiaShoppingCartSolid color="#ffffff"  size={32} />
+                                    <LiaShoppingCartSolid
+                                        color="#ffffff"
+                                        size={32}
+                                    />
                                 </div>
-                                {count > 0 ?  <span className="site-counter d-block">{count}</span> : ''}
+                                {count > 0 ? (
+                                    <span className="site-counter d-block">
+                                        {count}
+                                    </span>
+                                ) : (
+                                    ""
+                                )}
                             </Link>
 
                             {auth?.user?.username || false ? (
@@ -206,7 +233,7 @@ export default function Header({classMagicword}) {
                                 </div>
                             )}
                             <div
-                                className= "block md:hidden menu-toggle cursor-pointer cartLink position-relative"
+                                className="block md:hidden menu-toggle cursor-pointer cartLink position-relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -230,112 +257,123 @@ export default function Header({classMagicword}) {
                 </div>
             </div>
 
-            {isActive ? <div
-                className={`fixed top-0 z-50 h-full w-full  rounded-r-2xl
+            {isActive ? (
+                <div
+                    className={`fixed top-0 z-50 h-full w-full  rounded-r-2xl
                     transform transition-transform duration-600 ease-in-out
                      {isActive ? 'opacity-100' : '-opacity-100'}
                     flex flex-col p-8 bg-[#0008]
                     select-none  opacity-[0]
                     `}
-                onClick={toggleClass}
-            ></div> : ''}
-                    <div className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-2xl
+                    onClick={toggleClass}
+                ></div>
+            ) : (
+                ""
+            )}
+            <div
+                className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-2xl
                     transform transition-transform duration-500 ease-in-out
-                    ${isActive ? 'translate-x-0' : '-translate-x-full'}
-                    flex flex-col p-8 select-none${isActive ? "Open" : null}`}>
-                        <div className="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
-                            <button
-                                onClick={toggleClass}
-                                className="absolute top-3 right-4"
-                            >
-                                <MdClose color="#fff" size={"2rem"} />
-                            </button>
-                            <div className="overflow-y-auto overflow-x-hidden flex-grow">
-                                <div className="pb-[100px]">
-                                    <ul className=" flex flex-col pt-8 space-y-1 ">
+                    ${isActive ? "translate-x-0" : "-translate-x-full"}
+                    flex flex-col p-8 select-none${isActive ? "Open" : null}`}
+            >
+                <div className="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
+                    <button
+                        onClick={toggleClass}
+                        className="absolute top-3 right-4"
+                    >
+                        <MdClose color="#fff" size={"2rem"} />
+                    </button>
+                    <div className="overflow-y-auto overflow-x-hidden flex-grow">
+                        <div className="pb-[100px]">
+                            <ul className=" flex flex-col pt-8 space-y-1 ">
+                                <>
+                                    {auth?.user?.username ? (
                                         <>
-                                            {auth?.user?.username ?
-                                                <>
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={"/account"}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <IoSettingsOutline
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                                My Account
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={`/${
-                                                                (auth &&
-                                                                    auth?.user?.username) ||
-                                                                ""
-                                                            }`}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <FaHeart
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                            {auth?.user?.role == 1 ? "My Wishlist" : "My Profile" }
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                </>
-                                            : ''}
                                             <li>
-                                                <a
-                                                    href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={"/account"}
                                                     className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
-                                                        <SlCalender
+                                                        <IoSettingsOutline
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
                                                     <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        Subscription Billing
+                                                        My Account
                                                     </span>
-                                                </a>
+                                                </Link>
                                             </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/${
+                                                        (auth &&
+                                                            auth?.user
+                                                                ?.username) ||
+                                                        ""
+                                                    }`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <FaHeart
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        {auth?.user?.role == 1
+                                                            ? "My Wishlist"
+                                                            : "My Profile"}
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                        </>
+                                    ) : (
+                                        ""
+                                    )}
+                                    <li>
+                                        <a
+                                            href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        >
+                                            <span className="inline-flex justify-center items-center ml-4">
+                                                <SlCalender
+                                                    color="#fff"
+                                                    size={"1.2rem"}
+                                                />
+                                            </span>
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                Subscription Billing
+                                            </span>
+                                        </a>
+                                    </li>
 
-                                            {auth &&
-                                            auth.user &&
-                                            auth.user.stripe_details_submitted ==
-                                                "1" ? (
-                                                <>
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={`/shop`}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <FaBasketShopping
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span className="ml-2 text-[17px]  tracking-wide truncate text-white">
-                                                                Shop
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                    {/* <li>
+                                    {auth &&
+                                    auth.user &&
+                                    auth.user.stripe_details_submitted ==
+                                        "1" ? (
+                                        <>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/shop`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <FaBasketShopping
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px]  tracking-wide truncate text-white">
+                                                        Shop
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            {/* <li>
                                                         <Link
                                                             onClick={toggleClass}
                                                             href={"giftstore"}
@@ -352,353 +390,379 @@ export default function Header({classMagicword}) {
                                                             </span>
                                                         </Link>
                                                     </li> */}
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={`/earnings`}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <GiTwoCoins
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                                Earnings
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={`/membership-dashboard`}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <FaHouseChimneyUser
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span
-                                                                className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                            >
-                                                                Membership Dashboard
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                </>
-                                            ) : (
-                                                ""
-                                            )}
-                                            {auth?.user?.username ?
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
-                                                    href={`/purchases`}
+                                                    href={`/earnings`}
                                                     className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
-                                                        <SiBuymeacoffee
+                                                        <GiTwoCoins
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        className="ml-2 text-[17px]
-                                tracking-wide truncate text-white"
-                                                    >
-                                                        All Purchases
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Earnings
                                                     </span>
                                                 </Link>
-                                            </li> : ''}
-
+                                            </li>
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
-                                                    href={`/wish-tracker`}
+                                                    href={`/membership-dashboard`}
                                                     className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
-                                                        <SlCalculator
+                                                        <FaHouseChimneyUser
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
                                                     <span
                                                         className="ml-2 text-[17px]
-                                tracking-wide truncate text-white"
+                                    tracking-wide truncate text-white"
                                                     >
-                                                        Wish tracker
+                                                        Membership Dashboard
                                                     </span>
                                                 </Link>
                                             </li>
                                         </>
-
-                                        {auth?.user?.username ?
-                                        '' : (
-                                            <>
-                                                <li>
-                                                    <Link
-                                                        onClick={toggleClass}
-                                                        href={route("register")}
-                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                    >
-                                                        <span className="inline-flex justify-center items-center ml-4">
-                                                            <FaUserAlt
-                                                                color="#fff"
-                                                                size={"1.2rem"}
-                                                            />
-                                                        </span>
-                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                            Sign Up
-                                                        </span>
-                                                    </Link>
-                                                </li>
-                                                <li>
-                                                    <Link
-                                                        onClick={toggleClass}
-                                                        href={route("login")}
-                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                    >
-                                                        <span className="inline-flex justify-center items-center ml-4">
-                                                            <IoIosUnlock
-                                                                color="#fff"
-                                                                size={"1.2rem"}
-                                                            />
-                                                        </span>
-                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                            Login
-                                                        </span>
-                                                    </Link>
-                                                </li>
-                                            </>
-                                        )}
-
+                                    ) : (
+                                        ""
+                                    )}
+                                    {auth?.user?.username ? (
                                         <li>
                                             <Link
                                                 onClick={toggleClass}
-                                                href={route("leaderboard")}
+                                                href={`/purchases`}
                                                 className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
                                                 <span className="inline-flex justify-center items-center ml-4">
-                                                    <FaRegStar
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                    Leaderboard
-                                                </span>
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-                                                href={"giftstore"}
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <FiGift
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                    Gift Store
-                                                </span>
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-                                                href={route("how-it-works")}
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <TbSettingsCog
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                    How it works
-                                                </span>
-                                            </Link>
-                                        </li>
-
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-
-                                                className="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-    >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <MdOutlineSupportAgent
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                    Need help ?
-                                                </span>
-                                            </Link>
-                                        </li>
-                                        <li className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3"></li>
-                                    </ul>
-                                    <ul className="pt-3 text-white ">
-                                        <li>
-                                            <a target="_blank"
-                                                onClick={toggleClass}
-                                                href="https://blog.spennypiggy.co"
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <ImBlog
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span
-                                                    className="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                    Blog
-                                                </span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                onClick={toggleClass}
-                                                target="_blank"
-                                                href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <MdOutlinePrivacyTip
+                                                    <SiBuymeacoffee
                                                         color="#fff"
                                                         size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span
                                                     className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
+                                tracking-wide truncate text-white"
                                                 >
-                                                    Privacy Policy
-                                                </span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a
-                                                onClick={toggleClass}
-                                                target="_blank"
-                                                href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <BsCookie
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span
-                                                    className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
-                                                >
-                                                    Cookies Policy
-                                                </span>
-                                            </a>
-                                        </li>
-
-                                        <li>
-                                            <a
-                                                onClick={toggleClass}
-                                                target="_blank"
-                                                href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <LuBookMinus
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span
-                                                    className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
-                                                >
-                                                    Acceptable Use Policy
-                                                </span>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-                                                target="_blank"
-                                                href={route("terms-and-conditions")}
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <GiInjustice
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span
-                                                    className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
-                                                >
-                                                    Terms
+                                                    All Purchases
                                                 </span>
                                             </Link>
                                         </li>
+                                    ) : (
+                                        ""
+                                    )}
+
+                                    <li>
+                                        <Link
+                                            onClick={toggleClass}
+                                            href={`/wish-tracker`}
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        >
+                                            <span className="inline-flex justify-center items-center ml-4">
+                                                <SlCalculator
+                                                    color="#fff"
+                                                    size={"1.2rem"}
+                                                />
+                                            </span>
+                                            <span
+                                                className="ml-2 text-[17px]
+                                tracking-wide truncate text-white"
+                                            >
+                                                Wish tracker
+                                            </span>
+                                        </Link>
+                                    </li>
+                                </>
+
+                                {auth?.user?.username ? (
+                                    ""
+                                ) : (
+                                    <>
                                         <li>
                                             <Link
                                                 onClick={toggleClass}
-                                                target="_blank"
-                                                href={route("promotion-terms")}
+                                                href={route("register")}
                                                 className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                             >
                                                 <span className="inline-flex justify-center items-center ml-4">
-                                                    <CiDiscount1
+                                                    <FaUserAlt
                                                         color="#fff"
-                                                        size={"1.4rem"}
+                                                        size={"1.2rem"}
                                                     />
                                                 </span>
                                                 <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                    Promotion Terms
+                                                    Sign Up
                                                 </span>
                                             </Link>
                                         </li>
+                                        <li>
+                                            <Link
+                                                onClick={toggleClass}
+                                                href={route("login")}
+                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            >
+                                                <span className="inline-flex justify-center items-center ml-4">
+                                                    <IoIosUnlock
+                                                        color="#fff"
+                                                        size={"1.2rem"}
+                                                    />
+                                                </span>
+                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    Login
+                                                </span>
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
 
-                                        {auth && auth?.user?.username ? (
-                                            <li className="d-block">
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    method="post"
-                                                    href={route("logout")}
-                                                    as="button"
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-4">
-                                                        <AiOutlineLogout
-                                                            color="#fff"
-                                                            size={"1.4rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        Logout
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                        ) : (
-                                            ""
-                                        )}
-                                    </ul>
-                                </div>
-                            </div>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={route("leaderboard")}
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <FaRegStar
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            Leaderboard
+                                        </span>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={"giftstore"}
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <FiGift
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            Gift Store
+                                        </span>
+                                    </Link>
+                                </li>
+                                {auth?.user?.role == 1 && (
+                                    <li>
+                                        <Link
+                                            onClick={toggleClass}
+                                            href={`/refer-and-earn`}
+                                            className="relative flex flex-row items-center h-11 
+                                                focus:outline-none hover:opacity-[0.8] 
+                                                text-gray-600 hover:text-gray-800 
+                                                border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        >
+                                            <span className="inline-flex justify-center items-center ml-4">
+                                                <GiTwoCoins
+                                                    color="#fff"
+                                                    size={"1.2rem"}
+                                                />
+                                            </span>
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                Refer & Earn
+                                            </span>
+                                        </Link>
+                                    </li>
+                                )}
+
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        href={route("how-it-works")}
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <TbSettingsCog
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            How it works
+                                        </span>
+                                    </Link>
+                                </li>
+
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        className="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <MdOutlineSupportAgent
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            Need help ?
+                                        </span>
+                                    </Link>
+                                </li>
+                                <li className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3"></li>
+                            </ul>
+                            <ul className="pt-3 text-white ">
+                                <li>
+                                    <a
+                                        target="_blank"
+                                        onClick={toggleClass}
+                                        href="https://blog.spennypiggy.co"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <ImBlog
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            Blog
+                                        </span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        onClick={toggleClass}
+                                        target="_blank"
+                                        href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <MdOutlinePrivacyTip
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span
+                                            className="ml-2 text-[17px]
+                                        tracking-wide truncate text-white"
+                                        >
+                                            Privacy Policy
+                                        </span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        onClick={toggleClass}
+                                        target="_blank"
+                                        href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <BsCookie
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span
+                                            className="ml-2 text-[17px]
+                                        tracking-wide truncate text-white"
+                                        >
+                                            Cookies Policy
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a
+                                        onClick={toggleClass}
+                                        target="_blank"
+                                        href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <LuBookMinus
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span
+                                            className="ml-2 text-[17px]
+                                        tracking-wide truncate text-white"
+                                        >
+                                            Acceptable Use Policy
+                                        </span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        target="_blank"
+                                        href={route("terms-and-conditions")}
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <GiInjustice
+                                                color="#fff"
+                                                size={"1.2rem"}
+                                            />
+                                        </span>
+                                        <span
+                                            className="ml-2 text-[17px]
+                                        tracking-wide truncate text-white"
+                                        >
+                                            Terms
+                                        </span>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        onClick={toggleClass}
+                                        target="_blank"
+                                        href={route("promotion-terms")}
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                    >
+                                        <span className="inline-flex justify-center items-center ml-4">
+                                            <CiDiscount1
+                                                color="#fff"
+                                                size={"1.4rem"}
+                                            />
+                                        </span>
+                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            Promotion Terms
+                                        </span>
+                                    </Link>
+                                </li>
+
+                                {auth && auth?.user?.username ? (
+                                    <li className="d-block">
+                                        <Link
+                                            onClick={toggleClass}
+                                            method="post"
+                                            href={route("logout")}
+                                            as="button"
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        >
+                                            <span className="inline-flex justify-center items-center ml-4">
+                                                <AiOutlineLogout
+                                                    color="#fff"
+                                                    size={"1.4rem"}
+                                                />
+                                            </span>
+                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                Logout
+                                            </span>
+                                        </Link>
+                                    </li>
+                                ) : (
+                                    ""
+                                )}
+                            </ul>
                         </div>
+                    </div>
                 </div>
+            </div>
         </>
     );
 }

@@ -118,19 +118,16 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                 // Refresh cart items, rye items, and cart counter
                 if (typeof window !== 'undefined') {
                     if (window.refreshCartItems) {
-                        console.log("Refreshing cart items after successful gift add-to-cart");
                         setTimeout(() => {
                             window.refreshCartItems();
                         }, 500);
                     }
                     if (window.refreshRyeItems) {
-                        console.log("Refreshing rye items after successful gift add-to-cart");
                         setTimeout(() => {
                             window.refreshRyeItems();
                         }, 500);
                     }
                     if (window.refreshCartCounter) {
-                        console.log("Refreshing cart counter after successful gift add-to-cart");
                         setTimeout(() => {
                             window.refreshCartCounter();
                         }, 100); // Refresh counter immediately

@@ -2,7 +2,7 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
-import { visualizer } from 'rollup-plugin-visualizer';
+// import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
     plugins: [
@@ -16,12 +16,12 @@ export default defineConfig({
             project: "javascript-react"
         }),
         // Add bundle analyzer (only when needed)
-        process.env.ANALYZE && visualizer({
-            filename: 'dist/bundle-analysis.html',
-            open: true,
-            gzipSize: true,
-            brotliSize: true,
-        })
+        // process.env.ANALYZE && visualizer({
+        //     filename: 'dist/bundle-analysis.html',
+        //     open: true,
+        //     gzipSize: true,
+        //     brotliSize: true,
+        // })
     ].filter(Boolean),
 
     build: {

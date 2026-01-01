@@ -24,6 +24,7 @@ use App\Http\Controllers\Auth\TestController;
 use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\WishitemController;
+use App\Http\Controllers\ReferAndEarnController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
@@ -124,14 +125,14 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     // Determine if we should show search results (Grid) or default sections (Carousels)
     $queryParams = $request->query();
     $hasSearchParam = $request->has('search') && strlen((string) $request->input('search')) > 0;
-    $hasTypeParamQuery = $request->has('type') && in_array(strtolower($request->input('type')), ['new','trending']);
-    $hasTypeParamRoute = $type && in_array(strtolower($type), ['new','trending']);
+    $hasTypeParamQuery = $request->has('type') && in_array(strtolower($request->input('type')), ['new', 'trending']);
+    $hasTypeParamRoute = $type && in_array(strtolower($type), ['new', 'trending']);
     $hasTypeParam = $hasTypeParamQuery || $hasTypeParamRoute;
-    
+
     // Check contentType from filters (which includes route params) or query params
     $activeContentType = $filters['contentType'] ?? ($request->input('contentType') ?? null);
-    $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators','Wishes','Bills','Memberships']);
-    
+    $hasContentTypeParam = $activeContentType && in_array($activeContentType, ['Creators', 'Wishes', 'Bills', 'Memberships']);
+
     // Grid view when searching or selecting a specific content type
     $isSearch = $hasSearchParam || $hasTypeParam || $hasContentTypeParam;
     // Root discover shows sections
@@ -143,7 +144,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     if ($isSearch) {
         // Fetch all types unless specific contentType is set
         $ctype = $filters['contentType'] ?? 'All';
-        
+
         // If contentType is default "Creators" but user didn't explicitly select it (e.g. just /discover/trending),
         // we might want to show everything.
         // However, the logic above sets contentType to Creators if missing.
@@ -156,13 +157,13 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             $searchResults['creators'] = $discoveryService->getSearchCreators($filters);
         }
         if ($ctype === 'Wishes' || $ctype === 'All') {
-             $searchResults['wishes'] = $discoveryService->getSearchWishes($filters);
+            $searchResults['wishes'] = $discoveryService->getSearchWishes($filters);
         }
         if ($ctype === 'Bills' || $ctype === 'All') {
-             $searchResults['bills'] = $discoveryService->getSearchBills($filters);
+            $searchResults['bills'] = $discoveryService->getSearchBills($filters);
         }
         if ($ctype === 'Memberships' || $ctype === 'All') {
-             $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
+            $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
         }
     }
 
@@ -171,31 +172,31 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     $limit = 10;
     $sortBy = $filters['sortBy'] ?? null;
     // Creators
-    $featuredCreators = $isProd 
+    $featuredCreators = $isProd
         ? Cache::remember("discover:featured_creators:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
             return $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
         })
         : ($sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit));
-    $newVerifiedCreators = $isProd 
-        ? Cache::remember("discover:new_verified_creators:$limit", 300, fn() => $discoveryService->getNewVerifiedCreators($limit)) 
+    $newVerifiedCreators = $isProd
+        ? Cache::remember("discover:new_verified_creators:$limit", 300, fn() => $discoveryService->getNewVerifiedCreators($limit))
         : $discoveryService->getNewVerifiedCreators($limit);
     // Wishes
-    $featuredWishes = $isProd 
+    $featuredWishes = $isProd
         ? Cache::remember("discover:featured_wishes:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
             return $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
         })
         : ($sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit));
     // Top earners this week
-    $topEarnersData = $isProd 
-        ? Cache::remember("discover:top_earners:weekly:$limit", 300, fn() => $discoveryService->getTopEarners('weekly', $limit)['data']) 
+    $topEarnersData = $isProd
+        ? Cache::remember("discover:top_earners:weekly:$limit", 300, fn() => $discoveryService->getTopEarners('weekly', $limit)['data'])
         : $discoveryService->getTopEarners('weekly', $limit)['data'];
     // Bills & Memberships
-    $featuredBills = $isProd 
+    $featuredBills = $isProd
         ? Cache::remember("discover:featured_bills:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
             return $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
         })
         : ($sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit));
-    $featuredMemberships = $isProd 
+    $featuredMemberships = $isProd
         ? Cache::remember("discover:featured_memberships:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
             return $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
         })
@@ -414,6 +415,12 @@ Route::middleware('auth')->group(function () {
                     'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                 ]);
             });
+
+            Route::get('/refer-and-earn', [ReferAndEarnController::class, 'index'])->name('refer-and-earn');
+            Route::post('/refer-and-earn/create-link',
+                [ReferAndEarnController::class, 'createReferralLink']
+            )->name('create-referral-link');
+
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');

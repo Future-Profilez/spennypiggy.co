@@ -89,7 +89,6 @@
             if (isStandalone) {
                 document.addEventListener('DOMContentLoaded', function() {
                     document.body.classList.add('pwa-mode');
-                    console.log('✅ Running in PWA mode');
                 });
             }
             

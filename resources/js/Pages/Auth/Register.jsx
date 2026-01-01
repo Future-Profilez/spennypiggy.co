@@ -1,20 +1,55 @@
-import {  useState } from "react";
-import GuestLayout from '@/Layouts/GuestLayout';
-import InputError from '@/Components/InputError';
+import { useEffect, useState } from "react";
+import GuestLayout from "@/Layouts/GuestLayout";
+import InputError from "@/Components/InputError";
 import { useAlerts } from "@/Components/Alerts";
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import LoaderButton from '@/Components/LoaderButton';
-import { useRef } from 'react';
-import axios from 'axios';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
-import { handleIpRedirection } from '../../includes/useIpRedirection';
-import Countries from '../../includes/Countries';
-import Popup from '@/Components/Popup';
+import { Head, Link, useForm, usePage } from "@inertiajs/react";
+import LoaderButton from "@/Components/LoaderButton";
+import { useRef } from "react";
+import axios from "axios";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
+import { handleIpRedirection } from "../../includes/useIpRedirection";
+import Countries from "../../includes/Countries";
+import Popup from "@/Components/Popup";
 
 export default function Register(props) {
     const CheckCircleIcon = () => {
-        return <><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <path opacity="0.1" d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="#000000"></path> <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#000000" strokeWidth="2"></path> <path d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10" stroke="#000000" strokeWidth="2" stroke-linecap="round" strokeLinejoin="round"></path> </g></svg></>
-    }
+        return (
+            <>
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+                    <g
+                        id="SVGRepo_tracerCarrier"
+                        stroke-linecap="round"
+                        strokeLinejoin="round"
+                    ></g>
+                    <g id="SVGRepo_iconCarrier">
+                        {" "}
+                        <path
+                            opacity="0.1"
+                            d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                            fill="#000000"
+                        ></path>{" "}
+                        <path
+                            d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                            stroke="#000000"
+                            strokeWidth="2"
+                        ></path>{" "}
+                        <path
+                            d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10"
+                            stroke="#000000"
+                            strokeWidth="2"
+                            stroke-linecap="round"
+                            strokeLinejoin="round"
+                        ></path>{" "}
+                    </g>
+                </svg>
+            </>
+        );
+    };
     const captchaRef = useRef(null);
     const checkRef = useRef();
     const gifterref = useRef();
@@ -25,109 +60,127 @@ export default function Register(props) {
     const numberLetter = /[0-9]/g;
     const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/g;
 
-    const inputField = (typeof window !== 'undefined') && document.getElementById('password');
-    const letter = (typeof window !== 'undefined') && document.getElementById('letter');
-    const capital = (typeof window !== 'undefined') && document.getElementById('capital');
-    const number = (typeof window !== 'undefined') && document.getElementById('number');
-    const special = (typeof window !== 'undefined') && document.getElementById('special');
-    const length = (typeof window !== 'undefined') && document.getElementById('length');
+    const inputField =
+        typeof window !== "undefined" && document.getElementById("password");
+    const letter =
+        typeof window !== "undefined" && document.getElementById("letter");
+    const capital =
+        typeof window !== "undefined" && document.getElementById("capital");
+    const number =
+        typeof window !== "undefined" && document.getElementById("number");
+    const special =
+        typeof window !== "undefined" && document.getElementById("special");
+    const length =
+        typeof window !== "undefined" && document.getElementById("length");
     const [mypass, setmypass] = useState();
 
     const creatortypes = [
-        { "label": "Artist", "value": "Artist" },
-        { "label": "Activist", "value": "Activist" },
-        { "label": "DJ", "value": "DJ" },
-        { "label": "Beauty Creator", "value": "Beauty Creator" },
-        { "label": "Dancer", "value": "Dancer" },
-        { "label": "Developer", "value": "Developer" },
-        { "label": "Cosplay Creator", "value": "Cosplay Creator" },
-        { "label": "Education Creator", "value": "Education Creator" },
-        { "label": "Fashionista", "value": "Fashionista" },
-        { "label": "Gamer", "value": "Gamer" },
-        { "label": "Gym Bunny", "value": "Gym Bunny" },
-        { "label": "Musician", "value": "Musician" },
-        { "label": "Model", "value": "Model" },
-        { "label": "Podcaster", "value": "Podcaster" },
-        { "label": "Streamer", "value": "Streamer" },
-        { "label": "Video Creator", "value": "Video Creator" },
-        { "label": "Writer", "value": "Writer" }
-    ]
+        { label: "Artist", value: "Artist" },
+        { label: "Activist", value: "Activist" },
+        { label: "DJ", value: "DJ" },
+        { label: "Beauty Creator", value: "Beauty Creator" },
+        { label: "Dancer", value: "Dancer" },
+        { label: "Developer", value: "Developer" },
+        { label: "Cosplay Creator", value: "Cosplay Creator" },
+        { label: "Education Creator", value: "Education Creator" },
+        { label: "Fashionista", value: "Fashionista" },
+        { label: "Gamer", value: "Gamer" },
+        { label: "Gym Bunny", value: "Gym Bunny" },
+        { label: "Musician", value: "Musician" },
+        { label: "Model", value: "Model" },
+        { label: "Podcaster", value: "Podcaster" },
+        { label: "Streamer", value: "Streamer" },
+        { label: "Video Creator", value: "Video Creator" },
+        { label: "Writer", value: "Writer" },
+    ];
 
     const { ziggy } = usePage().props;
     const { url } = usePage(); // Access the current URL
 
     // Extract query parameters from the URL
-    const params = new URLSearchParams(url.split('?')[1]); // Extract the query string
-    const type = params.get('type'); // Get the 'type' parameter
+    const params = new URLSearchParams(url.split("?")[1]); // Extract the query string
+    const referralFromUrl = params.get("ref");
+    const type = params.get("type"); // Get the 'type' parameter
     const { data, setData, post, get, processing, errors, reset } = useForm({
-        name: '',
-        username: '',
-        email: '',
-        password: '',
-        gender: 'he',
-        password_confirmation: '',
-        promo: '',
+        name: "",
+        username: "",
+        email: "",
+        password: "",
+        gender: "he",
+        password_confirmation: "",
+        promo: "",
         role: type && type === "creator" ? 1 : 0,
-        creator_category:''
+        creator_category: "",
     });
+
+    const [promoInputValue, setPromoInputValue] = useState("");
+    useEffect(() => {
+        if (referralFromUrl) {
+            setPromoInputValue(referralFromUrl); // show in input
+            setData("promo", referralFromUrl); // send to backend
+            setCodeValid(true); // mark applied
+        }
+    }, [referralFromUrl]);
 
     const [step, setStep] = useState(type && type === "creator" ? 1 : 0);
     const [role, setRole] = useState(null);
-    const handleBecomeCreator = async(e)=> {
+    const handleBecomeCreator = async (e) => {
         setData("role", e);
         setRole(e);
-        if(e == 1){
+        if (e == 1) {
             // await handleIpRedirection(ziggy);
             setStep(1);
         } else {
             setStep(3);
         }
-    }
+    };
 
     const [address, setAddressData] = useState({
-        country_code : '',
-        country : '',
-        state : '',
-        city : '',
-        postal_code : '',
-        street_address : '',
+        country_code: "",
+        country: "",
+        state: "",
+        city: "",
+        postal_code: "",
+        street_address: "",
     });
     const getCountry = (e) => {
         const c = JSON.parse(e);
         setAddressData({
             ...address,
-            country : c.label,
-            country_code : c.code
+            country: c.label,
+            country_code: c.code,
         });
-    }
+    };
 
     const handleAddressInput = (e) => {
         setAddressData({
             ...address,
-            [e.target.name]: e.target.value
+            [e.target.name]: e.target.value,
         });
-    }
+    };
 
-
-    const [validMsg, setValidMsg] = useState('');
+    const [validMsg, setValidMsg] = useState("");
     const [usernameValid, setUsernameValid] = useState(null);
     const checkUsername = (e) => {
-        axios.get(`/check-username/${e.target.value}`).then(resp => {
-            if (resp.data.status == false) {
-                setUsernameValid(0);
-                setValidMsg(resp.data.msg);
-            } else {
-                setUsernameValid(1);
-                setValidMsg(resp.data.msg);
-            }
-        }).catch(_err => {
-            console.error("error", _err);
-        });
-    }
+        axios
+            .get(`/check-username/${e.target.value}`)
+            .then((resp) => {
+                if (resp.data.status == false) {
+                    setUsernameValid(0);
+                    setValidMsg(resp.data.msg);
+                } else {
+                    setUsernameValid(1);
+                    setValidMsg(resp.data.msg);
+                }
+            })
+            .catch((_err) => {
+                console.error("error", _err);
+            });
+    };
 
     const [verified, setVerified] = useState(false);
     const onVerify = (token) => {
-        if(token){
+        if (token) {
             setVerified(true);
         } else {
             setVerified(false);
@@ -137,7 +190,7 @@ export default function Register(props) {
     const resetCaptcha = () => {
         captchaRef.current && captchaRef.current.resetCaptcha();
         setVerified(false);
-    }
+    };
 
     const [profileTags, setProfileTags] = useState([]);
     const handleProfileTags = (e) => {
@@ -154,37 +207,37 @@ export default function Register(props) {
         }
         setData("creator_category", JSON.stringify(tagsArray));
         setProfileTags(tagsArray);
-    }
+    };
 
     const handleNext = () => {
-        if(step === 2 && profileTags && profileTags.length < 1){
+        if (step === 2 && profileTags && profileTags.length < 1) {
             errorAlert("Please select at least one tag");
             return false;
-        } else { 
-            setStep(step+1);
+        } else {
+            setStep(step + 1);
         }
-    }
+    };
 
     const [hasPop, setHasPop] = useState(false);
     const hasNotifiedRef = useRef();
     const accepted = () => {
-        if(hasNotifiedRef && !hasNotifiedRef.current?.checked){
+        if (hasNotifiedRef && !hasNotifiedRef.current?.checked) {
             errorAlert("Please check and accept the terms and conditions.");
             hasNotifiedRef.current.focus();
             return false;
         } else {
-            setHasPop(false)
+            setHasPop(false);
             submit();
         }
-    }
+    };
 
     const submit = (e) => {
         e && e.preventDefault();
         if (!verified) {
-            errorAlert("Please verify you are not a robot.")
+            errorAlert("Please verify you are not a robot.");
             return false;
         }
-        if (role !==1 && (address.country === '') ) {
+        if (role !== 1 && address.country === "") {
             errorAlert("Country is required.");
             return false;
         }
@@ -194,7 +247,6 @@ export default function Register(props) {
             checkRef.current.focus();
             return false;
         }
-
 
         // if (role == 0 && !gifterref.current.checked) {
         //     errorAlert("Please accept all terms and conditions.");
@@ -207,11 +259,11 @@ export default function Register(props) {
             return false;
         }
 
-        if( role == 0 && hasNotifiedRef && !hasNotifiedRef?.current?.checked){
+        if (role == 0 && hasNotifiedRef && !hasNotifiedRef?.current?.checked) {
             setHasPop(true);
-            setTimeout(()=>{
+            setTimeout(() => {
                 setHasPop();
-            },[]);
+            }, []);
             return false;
         }
         // if (role == 0 && !hasNotifiedRef.current.checked) {
@@ -220,14 +272,18 @@ export default function Register(props) {
         //     return false;
         // }
 
-        post(route('register', {...data, ...address}), {
+        post(route("register", { ...data, ...address }), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 if (resp.props.flash?.success) {
-                    successAlert(resp.props.flash?.success || "Signup successfully.");
+                    successAlert(
+                        resp.props.flash?.success || "Signup successfully."
+                    );
                 }
                 if (resp.props.flash?.error) {
-                    errorAlert(resp.props.flash?.error || "Something went wrong.")
+                    errorAlert(
+                        resp.props.flash?.error || "Something went wrong."
+                    );
                 }
             },
             onError: (err) => {
@@ -235,7 +291,7 @@ export default function Register(props) {
                     errorAlert(err[key]);
                 });
                 resetCaptcha();
-            }
+            },
         });
     };
 
@@ -243,25 +299,28 @@ export default function Register(props) {
     const [codevalid, setCodeValid] = useState(false);
     const checkPromo = (e) => {
         const p = promoinput.current && promoinput.current.value;
-        axios.get(`/check-coupon-code/${p}`).then(resp => {
-            if (resp.data.status) {
-                setCodeValid(true);
-                setData("promo", p);
-            } else {
+        axios
+            .get(`/check-coupon-code/${p}`)
+            .then((resp) => {
+                if (resp.data.status) {
+                    setCodeValid(true);
+                    setData("promo", p);
+                } else {
+                    setCodeValid(false);
+                    errorAlert(resp.data.msg);
+                }
+            })
+            .catch((_err) => {
+                console.error("error", _err);
                 setCodeValid(false);
-                errorAlert(resp.data.msg);
-            }
-        }).catch(_err => {
-            console.error("error", _err);
-            setCodeValid(false);
-        });
+            });
     };
 
     const removecode = () => {
         setCodeValid(false);
-        promoinput.current.value = '';
-        setData("promo", '');
-    }
+        promoinput.current.value = "";
+        setData("promo", "");
+    };
     const inputFieldRef = useRef(null);
     const letterRef = useRef(null);
     const capitalRef = useRef(null);
@@ -273,336 +332,727 @@ export default function Register(props) {
         setmypass(value);
 
         if (letterRef.current)
-            letterRef.current.className = value.match(lowerLetter) ? 'valid' : 'text-grey';
+            letterRef.current.className = value.match(lowerLetter)
+                ? "valid"
+                : "text-grey";
 
         if (capitalRef.current)
-            capitalRef.current.className = value.match(capitalLetter) ? 'valid' : 'text-grey';
+            capitalRef.current.className = value.match(capitalLetter)
+                ? "valid"
+                : "text-grey";
 
         if (numberRef.current)
-            numberRef.current.className = value.match(numberLetter) ? 'valid' : 'text-grey';
+            numberRef.current.className = value.match(numberLetter)
+                ? "valid"
+                : "text-grey";
 
         if (specialRef.current)
-            specialRef.current.className = value.match(specialLetter) ? 'valid' : 'text-grey';
+            specialRef.current.className = value.match(specialLetter)
+                ? "valid"
+                : "text-grey";
 
         if (lengthRef.current)
-            lengthRef.current.className = value.length > 7 ? 'valid' : 'text-grey';
+            lengthRef.current.className =
+                value.length > 7 ? "valid" : "text-grey";
     };
-
 
     return (
         <GuestLayout>
             {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
-            <div className='loginPage  blackbg pb-4 pb-md-5'>
-                <div className='containerbox   md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center'>
-                    <div className='shadow-layout inputs max-w-[570px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden'>
-                        <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
-                            <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
-                            <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
-                            <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
+            <div className="loginPage  blackbg pb-4 pb-md-5">
+                <div className="containerbox   md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center">
+                    <div className="shadow-layout inputs max-w-[570px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden">
+                        <div className="p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center ">
+                            <span className=" border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
+                            <span className=" border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
+                            <span className=" border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block"></span>
                         </div>
 
-                        <h1 className='text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2'>Create Wishlist</h1>
-                        <h2 className='text-[30px] font-GillSans text-uppercase pt-8 text-center px-2'>Create Account</h2>
-                        <p className='text-center text-[18px] text-dark mb-4 '>Already registered? <Link className={'text-pink'} href={route('login')}  > Log In</Link></p>
-                        {step === 0 && 
-                            <div className={`${step === 0 ? '' : 'd-none'}    px-3 py-3 pb-5`} >
-                                <div className='p-2 w-full max-w-[400px] m-auto'>
-                                    <div  onClick={()=>handleBecomeCreator(1)}  className={`${role==1 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
-                                        <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Creator</h2>
-                                        <p className='text-muted text-[16px] mt-1 mb-0' >I'd like to create a wishlist</p>
+                        <h1 className="text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2">
+                            Create Wishlist
+                        </h1>
+                        <h2 className="text-[30px] font-GillSans text-uppercase pt-8 text-center px-2">
+                            Create Account
+                        </h2>
+                        <p className="text-center text-[18px] text-dark mb-4 ">
+                            Already registered?{" "}
+                            <Link className={"text-pink"} href={route("login")}>
+                                {" "}
+                                Log In
+                            </Link>
+                        </p>
+                        {step === 0 && (
+                            <div
+                                className={`${
+                                    step === 0 ? "" : "d-none"
+                                }    px-3 py-3 pb-5`}
+                            >
+                                <div className="p-2 w-full max-w-[400px] m-auto">
+                                    <div
+                                        onClick={() => handleBecomeCreator(1)}
+                                        className={`${
+                                            role == 1 ? "active" : ""
+                                        }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
+                                    >
+                                        <h2 className="text-[22px] font-GillSans text-uppercase">
+                                            I'm a Creator
+                                        </h2>
+                                        <p className="text-muted text-[16px] mt-1 mb-0">
+                                            I'd like to create a wishlist
+                                        </p>
                                     </div>
                                 </div>
-                                <div className='p-2 w-full max-w-[400px] m-auto'>
-                                    <div  onClick={()=>handleBecomeCreator(0)}  className={`${role==0 ? 'active' : '' }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}>
-                                        <h2 className='text-[22px] font-GillSans text-uppercase' >I'm a Fan</h2>
-                                        <p className='text-muted text-[16px] mt-1 mb-0' >I'm here to follow and support creators</p>
+                                <div className="p-2 w-full max-w-[400px] m-auto">
+                                    <div
+                                        onClick={() => handleBecomeCreator(0)}
+                                        className={`${
+                                            role == 0 ? "active" : ""
+                                        }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
+                                    >
+                                        <h2 className="text-[22px] font-GillSans text-uppercase">
+                                            I'm a Fan
+                                        </h2>
+                                        <p className="text-muted text-[16px] mt-1 mb-0">
+                                            I'm here to follow and support
+                                            creators
+                                        </p>
                                     </div>
                                 </div>
-                                <p className='text-muted text-base text-center max-w-[450px] m-auto mt-4' >You can support other creators with either of the account types and can change your account type anytime.</p>
+                                <p className="text-muted text-base text-center max-w-[450px] m-auto mt-4">
+                                    You can support other creators with either
+                                    of the account types and can change your
+                                    account type anytime.
+                                </p>
                             </div>
-                        }
+                        )}
 
-                        {step === 1 && 
-                            <div className={`${step === 1 ? '' : 'd-none'}    px-3`} >
-                                <div className='px-0 px-md-4 px-lg-5 pb-4'>
-                                    <h2 className="font-gulfs uppercase text-center text-xl md:text-2xl mb-2">Heads up, Babe! 🚨</h2>
-                                    <p className='text-center text-[17px] text-muted ' >
-                                        Your social media link is how we verify you’re real — no bots, no fakes, no funny business.
-                                        Make sure it’s an active profile with clear posts, or your application might be rejected.
+                        {step === 1 && (
+                            <div
+                                className={`${
+                                    step === 1 ? "" : "d-none"
+                                }    px-3`}
+                            >
+                                <div className="px-0 px-md-4 px-lg-5 pb-4">
+                                    <h2 className="font-gulfs uppercase text-center text-xl md:text-2xl mb-2">
+                                        Heads up, Babe! 🚨
+                                    </h2>
+                                    <p className="text-center text-[17px] text-muted ">
+                                        Your social media link is how we verify
+                                        you’re real — no bots, no fakes, no
+                                        funny business. Make sure it’s an active
+                                        profile with clear posts, or your
+                                        application might be rejected.
                                     </p>
-                                    <button onClick={handleNext} className='btn-pink !font-normal md m-auto mt-3 w-full' > Got it – I’ll link my socials</button>
+                                    <button
+                                        onClick={handleNext}
+                                        className="btn-pink !font-normal md m-auto mt-3 w-full"
+                                    >
+                                        {" "}
+                                        Got it – I’ll link my socials
+                                    </button>
                                 </div>
-                            </div> 
-                        }
-
-
-                        {step === 2 && <div className={`${step === 2 ? '' : 'd-none'}    px-3`} >
-                            <div className='px-0 px-md-4 px-lg-5 pb-4'>
-                                <p className='text-center text-[17px] text-muted ' >Choose from the following categories. This helps people find your profile. You can change these at any time.</p>
-
-                                <div className='flex creator-tags justify-content-center flex-wrap mt-4' >
-                                    {creatortypes.map((s, index) => (
-                                        <div key={s.value} className="flex items-center">
-                                            <input
-                                                id={`tyeps-${index}`}
-                                                name={s.value}
-                                                type="checkbox"
-                                                value={s.value}
-                                                className="mr-2  text-indigo-500  hidden"
-                                                onChange={handleProfileTags}
-                                            /> 
-                                            <label
-                                                htmlFor={`tyeps-${index}`}
-                                                className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer" >
-                                                {s.label}
-                                            </label>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button onClick={handleNext} className={`${profileTags && profileTags.length < 1 ? 'disabled' : ''} btn-pink md m-auto mt-3 w-full`} >  Next</button>
                             </div>
-                        </div> }
+                        )}
 
-                        {step === 3 && <div className={`${ step === 3 ? '' : 'd-none'}`} >
-                            <form onSubmit={submit} className='p-4' >
-                                <div className='login-step1 loginform'>
-                                    <div className='row'>
-                                        <div className='col-md-6 mb-4 formfield'>
-                                            <label>Display Name</label>
-                                            <input id="name"
-                                                name="name"
-                                                value={data.name}
-                                                className="mt-1 block w-full"
-                                                autoComplete="name"
-                                                onChange={(e) => setData('name', e.target.value)}
-                                                required
-                                            />
-                                            <InputError>{errors?.name || ''}</InputError>
-                                        </div>
-                                        <div className='col-md-6 mb-4 formfield'>
-                                            <label>Username</label>
-                                            <input id="username"
-                                                name="username" onBlur={checkUsername}
-                                                value={data.username}
-                                                className="mt-1 block w-full"
-                                                autoComplete="username"
-                                                isFocused={true}
-                                                onChange={(e) => setData('username', e.target.value)}
-                                                required
-                                            />
-                                            {/* {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''} */}
-                                            {data.username && usernameValid == 0 ? <p className='text-danger text-small username-text' >{validMsg}</p> : ''}
-                                        </div>
-                                        <div className='col-md-6 mb-4 formfield'>
-                                            <label>Gender</label>
-                                            <select onChange={(e) => setData('gender', e.target.value)} >
-                                                <option disabled >Choose Gender</option>
-                                                <option value={'he'} >He</option>
-                                                <option value={'she'} >She</option>
-                                                <option value={'they'} >They</option>
-                                            </select>
-                                            <InputError>{errors?.gender || ''}</InputError>
-                                        </div>
-                                        <div className='col-md-6 mb-4 formfield'>
-                                            <label>Email</label>
-                                            <input id="email"
-                                                type="email"
-                                                name="email"
-                                                value={data.email}
-                                                className="mt-1 block w-full"
-                                                autoComplete="username"
-                                                onChange={(e) => setData('email', e.target.value)}
-                                                required
-                                            />
-                                            <InputError>{errors?.email || ''}</InputError>
-                                        </div>
-                                        <div className='col-md-6 mb-4 formfield'>
-                                            <label>Password</label>
-                                            <input id="password"
-                                                type="password"
-                                                name="password"
-                                                value={mypass} ref={inputFieldRef}
-                                                className="mt-1 block w-full"
-                                                autoComplete="off"
-                                                onKeyUp={(e)=>setData('password', e.target.value)}
-                                                onChange={handlePassHints} required
-                                            />
-                                            <InputError>{errors?.password || ''}</InputError>
-                                        </div>
-                                        <div className='col-md-6 formfield'>
-                                            <div>
-                                                <label>Confirm Password</label>
+                        {step === 2 && (
+                            <div
+                                className={`${
+                                    step === 2 ? "" : "d-none"
+                                }    px-3`}
+                            >
+                                <div className="px-0 px-md-4 px-lg-5 pb-4">
+                                    <p className="text-center text-[17px] text-muted ">
+                                        Choose from the following categories.
+                                        This helps people find your profile. You
+                                        can change these at any time.
+                                    </p>
+
+                                    <div className="flex creator-tags justify-content-center flex-wrap mt-4">
+                                        {creatortypes.map((s, index) => (
+                                            <div
+                                                key={s.value}
+                                                className="flex items-center"
+                                            >
                                                 <input
-                                                    id="password_confirmation"
-                                                    type="password"
-                                                    name="password_confirmation"
-                                                    value={data.password_confirmation}
+                                                    id={`tyeps-${index}`}
+                                                    name={s.value}
+                                                    type="checkbox"
+                                                    value={s.value}
+                                                    className="mr-2  text-indigo-500  hidden"
+                                                    onChange={handleProfileTags}
+                                                />
+                                                <label
+                                                    htmlFor={`tyeps-${index}`}
+                                                    className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer"
+                                                >
+                                                    {s.label}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        onClick={handleNext}
+                                        className={`${
+                                            profileTags &&
+                                            profileTags.length < 1
+                                                ? "disabled"
+                                                : ""
+                                        } btn-pink md m-auto mt-3 w-full`}
+                                    >
+                                        {" "}
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className={`${step === 3 ? "" : "d-none"}`}>
+                                <form onSubmit={submit} className="p-4">
+                                    <div className="login-step1 loginform">
+                                        <div className="row">
+                                            <div className="col-md-6 mb-4 formfield">
+                                                <label>Display Name</label>
+                                                <input
+                                                    id="name"
+                                                    name="name"
+                                                    value={data.name}
                                                     className="mt-1 block w-full"
-                                                    autoComplete="off"
-                                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                                    autoComplete="name"
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "name",
+                                                            e.target.value
+                                                        )
+                                                    }
                                                     required
                                                 />
-                                                <InputError>{errors?.password_confirmation || ''}</InputError>
+                                                <InputError>
+                                                    {errors?.name || ""}
+                                                </InputError>
+                                            </div>
+                                            <div className="col-md-6 mb-4 formfield">
+                                                <label>Username</label>
+                                                <input
+                                                    id="username"
+                                                    name="username"
+                                                    onBlur={checkUsername}
+                                                    value={data.username}
+                                                    className="mt-1 block w-full"
+                                                    autoComplete="username"
+                                                    isFocused={true}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "username",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                                {/* {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''} */}
+                                                {data.username &&
+                                                usernameValid == 0 ? (
+                                                    <p className="text-danger text-small username-text">
+                                                        {validMsg}
+                                                    </p>
+                                                ) : (
+                                                    ""
+                                                )}
+                                            </div>
+                                            <div className="col-md-6 mb-4 formfield">
+                                                <label>Gender</label>
+                                                <select
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "gender",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                >
+                                                    <option disabled>
+                                                        Choose Gender
+                                                    </option>
+                                                    <option value={"he"}>
+                                                        He
+                                                    </option>
+                                                    <option value={"she"}>
+                                                        She
+                                                    </option>
+                                                    <option value={"they"}>
+                                                        They
+                                                    </option>
+                                                </select>
+                                                <InputError>
+                                                    {errors?.gender || ""}
+                                                </InputError>
+                                            </div>
+                                            <div className="col-md-6 mb-4 formfield">
+                                                <label>Email</label>
+                                                <input
+                                                    id="email"
+                                                    type="email"
+                                                    name="email"
+                                                    value={data.email}
+                                                    className="mt-1 block w-full"
+                                                    autoComplete="username"
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "email",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                                <InputError>
+                                                    {errors?.email || ""}
+                                                </InputError>
+                                            </div>
+                                            <div className="col-md-6 mb-4 formfield">
+                                                <label>Password</label>
+                                                <input
+                                                    id="password"
+                                                    type="password"
+                                                    name="password"
+                                                    value={mypass}
+                                                    ref={inputFieldRef}
+                                                    className="mt-1 block w-full"
+                                                    autoComplete="off"
+                                                    onKeyUp={(e) =>
+                                                        setData(
+                                                            "password",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    onChange={handlePassHints}
+                                                    required
+                                                />
+                                                <InputError>
+                                                    {errors?.password || ""}
+                                                </InputError>
+                                            </div>
+                                            <div className="col-md-6 formfield">
+                                                <div>
+                                                    <label>
+                                                        Confirm Password
+                                                    </label>
+                                                    <input
+                                                        id="password_confirmation"
+                                                        type="password"
+                                                        name="password_confirmation"
+                                                        value={
+                                                            data.password_confirmation
+                                                        }
+                                                        className="mt-1 block w-full"
+                                                        autoComplete="off"
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "password_confirmation",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        required
+                                                    />
+                                                    <InputError>
+                                                        {errors?.password_confirmation ||
+                                                            ""}
+                                                    </InputError>
+                                                </div>
+                                            </div>
+                                            <div
+                                                className={`mb-3  ${
+                                                    mypass
+                                                        ? "d-block"
+                                                        : "d-none"
+                                                }`}
+                                            >
+                                                <div className="pass greybox border-0 p-3">
+                                                    <div id="msgText">
+                                                        <h3 className="mt-2">
+                                                            Password must
+                                                            contain the
+                                                            following:
+                                                        </h3>
+                                                        <p
+                                                            ref={letterRef}
+                                                            id="letter"
+                                                            className="text-grey"
+                                                        >
+                                                            <CheckCircleIcon />{" "}
+                                                            &nbsp;A{" "}
+                                                            <b> lowercase</b>{" "}
+                                                            letter
+                                                        </p>
+                                                        <p
+                                                            ref={capitalRef}
+                                                            id="capital"
+                                                            className="text-grey"
+                                                        >
+                                                            <CheckCircleIcon />{" "}
+                                                            &nbsp;A{" "}
+                                                            <b>
+                                                                {" "}
+                                                                capital
+                                                                (uppercase)
+                                                            </b>{" "}
+                                                            letter
+                                                        </p>
+                                                        <p
+                                                            ref={numberRef}
+                                                            id="number"
+                                                            className="text-grey"
+                                                        >
+                                                            <CheckCircleIcon />{" "}
+                                                            &nbsp;A{" "}
+                                                            <b> number</b>
+                                                        </p>
+                                                        <p
+                                                            ref={specialRef}
+                                                            id="special"
+                                                            className="text-grey"
+                                                        >
+                                                            <CheckCircleIcon />{" "}
+                                                            &nbsp;Special
+                                                            characters
+                                                        </p>
+                                                        <p
+                                                            ref={lengthRef}
+                                                            id="length"
+                                                            className="text-grey mb-0"
+                                                        >
+                                                            <CheckCircleIcon />{" "}
+                                                            &nbsp;Password
+                                                            should minimum 8
+                                                            characters.
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className={`mb-3  ${mypass ? 'd-block' : 'd-none'}`} >
-                                            <div className="pass greybox border-0 p-3" >
-                                                <div id="msgText">
-                                                    <h3 className='mt-2'>Password must contain the following:</h3>
-                                                    <p ref={letterRef} id="letter" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> lowercase</b> letter</p>
-                                                    <p ref={capitalRef} id="capital" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> capital (uppercase)</b> letter</p>
-                                                    <p ref={numberRef} id="number" className="text-grey"><CheckCircleIcon /> &nbsp;A <b> number</b></p>
-                                                    <p ref={specialRef} id="special" className="text-grey"><CheckCircleIcon /> &nbsp;Special characters</p>
-                                                    <p ref={lengthRef} id="length" className="text-grey mb-0"><CheckCircleIcon /> &nbsp;Password should minimum 8 characters.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    {role == 0 && role !== 1 ?
-                                        <>
-                                        <p className='border-t mt-3 pt-4 text-grey uppercase text-normal mb-2'>Billing address information</p>
-                                            <div className='row'>
-                                                <div className='col-md-12 mb-4 formfield'>
-                                                    <label>street_address</label>
-                                                    <input id="street_address"
-                                                        name="street_address"
-                                                        className="mt-1 block w-full"
-                                                        autoComplete="street_address"
-                                                        onChange={handleAddressInput}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className='col-md-6 mb-4 formfield'>
-                                                    <label>Choose Country</label>
-                                                    <Countries send={getCountry} />
-                                                </div>
-                                                <div className='col-md-6 mb-4 formfield'>
-                                                    <label>State</label>
-                                                    <input id="state"
-                                                        name="state"
-                                                        className="mt-1 block w-full"
-                                                        autoComplete="state"
-                                                        onChange={handleAddressInput}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className='col-md-6 mb-4 formfield'>
-                                                    <label>City</label>
-                                                    <input id="city"
-                                                        name="city"
-                                                        className="mt-1 block w-full"
-                                                        autoComplete="city"
-                                                        onChange={handleAddressInput}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className='col-md-6 mb-4 formfield'>
-                                                    <label>Postal Code</label>
-                                                    <input id="postal_code"
-                                                        name="postal_code"
-                                                        onChange={handleAddressInput}
-                                                        className="mt-1 block w-full"
-                                                        autoComplete="postal_code"
-                                                        required
-                                                    />
-                                                </div>
-
-                                            </div>
-                                        </>
-                                        :
-                                        <>
-                                        </>
-                                    }
-
-                                    <div className='promocode mb-4' >
-                                        <div className='flex items-center justify-between' >
-                                            <label className='mb-2'>Referral (optional) {codevalid ? <span className='text-success text-small' >Code Applied.</span> : ''}</label>
-                                        </div>
-                                        <div className='flex items-center relative' >
-                                            <input ref={promoinput}
-                                            placeholder="Enter Referral Code..." className='form-control ' />
-                                            {codevalid ? <div  onClick={removecode}
-                                            className={`cursor-pointer ${codevalid ? "mintbg text-dark" : "pinkbg"} promocode-btn ms-2 text-center`}
-                                            >Remove</div>
-                                                :
-                                            <div className='absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn ms-2 !py-2 text-center' onClick={checkPromo}
-                                            >{ codevalid ? "Applied" : "Apply" }</div>}
-                                        </div>
-                                    </div>
-
-                                    <div className='termselect'>
-                                        <label htmlFor="termaccept">
-                                            <p className='tersms-accept' >
-                                                <input type="checkbox" ref={checkRef} id="termaccept" name="termaccept" value="termaccept"
-                                                required onChange={(e) => setData("termaccept", e.target.value)}></input>
-                                                By signing up you agree to our <a className='text-voilet font-bold' target='_blank' href={route('terms-and-conditions')} >Terms & Conditions</a>  and <a className='text-voilet font-bold' target='_blank' href={'https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6'} >Privacy Policy,</a>  and confirm that you are at least 18. years old. Pages that break our terms will be unpublished.
-                                            </p>
-                                        </label>
-                                        {role == 0 ?
+                                        {role == 0 && role !== 1 ? (
                                             <>
-                                                {/* <label htmlFor="gifterCheck">
+                                                <p className="border-t mt-3 pt-4 text-grey uppercase text-normal mb-2">
+                                                    Billing address information
+                                                </p>
+                                                <div className="row">
+                                                    <div className="col-md-12 mb-4 formfield">
+                                                        <label>
+                                                            street_address
+                                                        </label>
+                                                        <input
+                                                            id="street_address"
+                                                            name="street_address"
+                                                            className="mt-1 block w-full"
+                                                            autoComplete="street_address"
+                                                            onChange={
+                                                                handleAddressInput
+                                                            }
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-4 formfield">
+                                                        <label>
+                                                            Choose Country
+                                                        </label>
+                                                        <Countries
+                                                            send={getCountry}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-4 formfield">
+                                                        <label>State</label>
+                                                        <input
+                                                            id="state"
+                                                            name="state"
+                                                            className="mt-1 block w-full"
+                                                            autoComplete="state"
+                                                            onChange={
+                                                                handleAddressInput
+                                                            }
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-4 formfield">
+                                                        <label>City</label>
+                                                        <input
+                                                            id="city"
+                                                            name="city"
+                                                            className="mt-1 block w-full"
+                                                            autoComplete="city"
+                                                            onChange={
+                                                                handleAddressInput
+                                                            }
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-4 formfield">
+                                                        <label>
+                                                            Postal Code
+                                                        </label>
+                                                        <input
+                                                            id="postal_code"
+                                                            name="postal_code"
+                                                            onChange={
+                                                                handleAddressInput
+                                                            }
+                                                            className="mt-1 block w-full"
+                                                            autoComplete="postal_code"
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <></>
+                                        )}
+
+                                        <div className="promocode mb-4">
+                                            <div className="flex items-center justify-between">
+                                                <label className="mb-2">
+                                                    Referral (optional){" "}
+                                                    {codevalid ? (
+                                                        <span className="text-success text-small">
+                                                            Code Applied.
+                                                        </span>
+                                                    ) : (
+                                                        ""
+                                                    )}
+                                                </label>
+                                            </div>
+                                            <div className="flex items-center relative">
+                                                <input
+                                                    placeholder="Enter Referral Code..."
+                                                    className="form-control"
+                                                    value={promoInputValue}
+                                                    disabled={!!referralFromUrl}
+                                                    onChange={(e) => {
+                                                        setPromoInputValue(
+                                                            e.target.value
+                                                        );
+                                                        setCodeValid(false);
+                                                        setData("promo", "");
+                                                    }}
+                                                />
+
+                                                {codevalid ? (
+                                                    <div
+                                                        onClick={removecode}
+                                                        className={`cursor-pointer ${
+                                                            codevalid
+                                                                ? "mintbg text-dark"
+                                                                : "pinkbg"
+                                                        } promocode-btn ms-2 text-center`}
+                                                    >
+                                                        Remove
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn ms-2 !py-2 text-center"
+                                                        onClick={checkPromo}
+                                                    >
+                                                        {codevalid
+                                                            ? "Applied"
+                                                            : "Apply"}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="termselect">
+                                            <label htmlFor="termaccept">
+                                                <p className="tersms-accept">
+                                                    <input
+                                                        type="checkbox"
+                                                        ref={checkRef}
+                                                        id="termaccept"
+                                                        name="termaccept"
+                                                        value="termaccept"
+                                                        required
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "termaccept",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    ></input>
+                                                    By signing up you agree to
+                                                    our{" "}
+                                                    <a
+                                                        className="text-voilet font-bold"
+                                                        target="_blank"
+                                                        href={route(
+                                                            "terms-and-conditions"
+                                                        )}
+                                                    >
+                                                        Terms & Conditions
+                                                    </a>{" "}
+                                                    and{" "}
+                                                    <a
+                                                        className="text-voilet font-bold"
+                                                        target="_blank"
+                                                        href={
+                                                            "https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                        }
+                                                    >
+                                                        Privacy Policy,
+                                                    </a>{" "}
+                                                    and confirm that you are at
+                                                    least 18. years old. Pages
+                                                    that break our terms will be
+                                                    unpublished.
+                                                </p>
+                                            </label>
+                                            {role == 0 ? (
+                                                <>
+                                                    {/* <label htmlFor="gifterCheck">
                                                     <p className='tersms-accept mt-3' >
                                                         <input type="checkbox" ref={gifterref} id="gifterCheck" name="gifterCheck" value="gifterCheck"
                                                         required ></input>
                                                         The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.
                                                     </p>
                                                 </label> */}
-                                                <label htmlFor="addressCheck">
-                                                    <p className='tersms-accept mt-3' >
-                                                        <input type="checkbox" ref={addressCheck} id="addressCheck" name="addressCheck" value="addressCheck"
-                                                        required ></input>
-                                                        The above address and name matches on the bank card I will later use for purchases. My account will be suspended if I use any other details.
+                                                    <label htmlFor="addressCheck">
+                                                        <p className="tersms-accept mt-3">
+                                                            <input
+                                                                type="checkbox"
+                                                                ref={
+                                                                    addressCheck
+                                                                }
+                                                                id="addressCheck"
+                                                                name="addressCheck"
+                                                                value="addressCheck"
+                                                                required
+                                                            ></input>
+                                                            The above address
+                                                            and name matches on
+                                                            the bank card I will
+                                                            later use for
+                                                            purchases. My
+                                                            account will be
+                                                            suspended if I use
+                                                            any other details.
+                                                        </p>
+                                                    </label>
+                                                </>
+                                            ) : (
+                                                ""
+                                            )}
+                                        </div>
+
+                                        <div className="m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3">
+                                            <HCaptcha
+                                                ref={captchaRef}
+                                                sitekey={
+                                                    props.hcaptchakey ||
+                                                    "10000000-ffff-ffff-ffff-000000000001"
+                                                }
+                                                data-theme="light"
+                                                data-size="compact"
+                                                onVerify={onVerify}
+                                            />
+                                        </div>
+
+                                        <div className="wishlistbtn text-center flex justify-center mt-2">
+                                            <Popup
+                                                action={hasPop}
+                                                modalclassName=" full stripe-terms shadow-pink ps-0"
+                                                space="4"
+                                                size="md"
+                                                classes={`hidden`}
+                                                text={`Create Account`}
+                                            >
+                                                <div className="addgoal">
+                                                    <h2 className="text-uppercase font-GillSans pb-4 font-large">
+                                                        Important notice !
+                                                    </h2>
+                                                    <p className="mb-2">
+                                                        {" "}
+                                                        You must not use any
+                                                        other individual’s
+                                                        information. Only a
+                                                        single account can be
+                                                        used with the
+                                                        information you confirm
+                                                        to us.{" "}
                                                     </p>
-                                                </label>
-                                            </>
-                                            : ''
-                                        }
-                                    </div>
-
-                                    <div className='m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3' >
-                                        <HCaptcha ref={captchaRef}
-                                        sitekey={props.hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                        data-theme="light"
-                                        data-size="compact"
-                                        onVerify={onVerify}
-                                        />
-                                    </div>
-
-                                    <div className='wishlistbtn text-center flex justify-center mt-2'>
-                                        <Popup action={hasPop} modalclassName=" full stripe-terms shadow-pink ps-0"
-                                            space="4" size="md"
-                                            classes={`hidden`}
-                                            text={`Create Account`} >
-                                                <div className="addgoal" >
-                                                    <h2 className="text-uppercase font-GillSans pb-4 font-large">Important notice !</h2>
-                                                    <p className='mb-2' > You must not use any other individual’s information. Only a single account can be used with the information you confirm to us.  </p>
-                                                    <ol className='d-block py-3' >
-                                                        <li className='font-bold  text-[16px] mb-2 w-full' >1. First and Last name </li>
-                                                        <li className='font-bold  text-[16px] mb-2 w-full' >2. Address registered for the bank card that will be used during checkouts </li>
-                                                        <li className='font-bold  text-[16px] mb-2 w-full' >3. The e-mail used during checkouts. </li>
+                                                    <ol className="d-block py-3">
+                                                        <li className="font-bold  text-[16px] mb-2 w-full">
+                                                            1. First and Last
+                                                            name{" "}
+                                                        </li>
+                                                        <li className="font-bold  text-[16px] mb-2 w-full">
+                                                            2. Address
+                                                            registered for the
+                                                            bank card that will
+                                                            be used during
+                                                            checkouts{" "}
+                                                        </li>
+                                                        <li className="font-bold  text-[16px] mb-2 w-full">
+                                                            3. The e-mail used
+                                                            during checkouts.{" "}
+                                                        </li>
                                                     </ol>
-                                                    <div className='termselect mt-4 mb-4'>
+                                                    <div className="termselect mt-4 mb-4">
                                                         <label htmlFor="hasNotified">
-                                                            <p className='text-[15px]' >
-                                                                <input type="checkbox" ref={hasNotifiedRef} id="hasNotified" name="hasNotified" value="hasNotified"
-                                                                required ></input>
-                                                                I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.
+                                                            <p className="text-[15px]">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    ref={
+                                                                        hasNotifiedRef
+                                                                    }
+                                                                    id="hasNotified"
+                                                                    name="hasNotified"
+                                                                    value="hasNotified"
+                                                                    required
+                                                                ></input>
+                                                                I confirm that
+                                                                the above
+                                                                details are
+                                                                correct and the
+                                                                only details I
+                                                                will use. If I
+                                                                use other
+                                                                information than
+                                                                the above. My
+                                                                account will be
+                                                                suspended. If I
+                                                                need to update
+                                                                any details, I
+                                                                will contact
+                                                                support via live
+                                                                chat who can
+                                                                update my
+                                                                account.
                                                             </p>
                                                         </label>
                                                     </div>
-                                                    <LoaderButton onClick={accepted} disabled={processing} className='p w-full mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Accept Terms"}</LoaderButton>
+                                                    <LoaderButton
+                                                        onClick={accepted}
+                                                        disabled={processing}
+                                                        className="p w-full mb-4 mb-md-0"
+                                                        spinnerClassName="fill-red-600"
+                                                    >
+                                                        {processing
+                                                            ? "Processing"
+                                                            : " Accept Terms"}
+                                                    </LoaderButton>
                                                 </div>
-                                        </Popup>
-                                        <LoaderButton disabled={processing} className='p w-full mb-4 mb-md-0' spinnerClassName='fill-red-600'>{processing ? "Processing" : " Create Account"}</LoaderButton>
+                                            </Popup>
+                                            <LoaderButton
+                                                disabled={processing}
+                                                className="p w-full mb-4 mb-md-0"
+                                                spinnerClassName="fill-red-600"
+                                            >
+                                                {processing
+                                                    ? "Processing"
+                                                    : " Create Account"}
+                                            </LoaderButton>
+                                        </div>
                                     </div>
-
-                                </div>
-                            </form>
-                        </div> 
-                        }
+                                </form>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -65,7 +65,6 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
       if (eventCtx && eventCtx !== ctxName) return;
       
       const data = e.detail.data; // final files array
-      console.log('Upload finished', data, 'for context:', ctxName);
       checkAdult(data);
       // sendFile(data[0]);
       // setFiles(data);

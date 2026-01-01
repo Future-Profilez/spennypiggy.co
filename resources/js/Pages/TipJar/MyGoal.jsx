@@ -9,7 +9,6 @@ import { useEffect } from 'react';
 export default function MyGoal({  IsloggedIn}) {
 
   const { user } = usePage().props;
-  console.log("suer", user)
   const { formatMultiPrice } = PriceFormat();
   const [goal, setGoal] = useState(null);
 

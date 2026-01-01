@@ -24,17 +24,44 @@ class User extends Authenticatable
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
-        'uuid', '2fa_key', 'name', 'email', 'role', 'username', 'country', 'bio', 'bio_approved',
-        'gender', 'password', 'deleted_at', 'creator_category', 'identity_status',
-        'identity_verified_at', 'identity_verification_error', 'identity_verification_details',
-        'identity_admin_status', 'identity_admin_reviewed_at', 'identity_admin_notes',
-        'ip_address', 'profile_status_lock', 'profile_reject_reason', 'is_500_limit_exceeded',
-        'is_subscribed', 'is_founder', 'show_piggy_bank'
+        'uuid',
+        '2fa_key',
+        'name',
+        'email',
+        'role',
+        'username',
+        'country',
+        'bio',
+        'bio_approved',
+        'gender',
+        'password',
+        'deleted_at',
+        'creator_category',
+        'identity_status',
+        'identity_verified_at',
+        'identity_verification_error',
+        'identity_verification_details',
+        'identity_admin_status',
+        'identity_admin_reviewed_at',
+        'identity_admin_notes',
+        'ip_address',
+        'profile_status_lock',
+        'profile_reject_reason',
+        'is_500_limit_exceeded',
+        'is_subscribed',
+        'is_founder',
+        'show_piggy_bank',
+        'referral_code',
     ];
 
     protected $hidden = [
-        'password', 'remember_token', 'created_at', 'account_id',
-        'updated_at', 'deleted_at', 'stripe_id',
+        'password',
+        'remember_token',
+        'created_at',
+        'account_id',
+        'updated_at',
+        'deleted_at',
+        'stripe_id',
     ];
 
     protected $casts = [
@@ -45,16 +72,25 @@ class User extends Authenticatable
     ];
 
     protected $appends = [
-        'avatar_url', 'cover_url', 'twitter_username', 
-        'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
-        'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
+        'avatar_url',
+        'cover_url',
+        'twitter_username',
+        'monthly_charge_enabled',
+        'is_creator_address_found',
+        'followers_count',
+        'following_count',
+        'subscription_status',
+        'grace_period_started_at',
+        'grace_period_ends_at',
+        'is_in_grace_period',
+        'grace_period_days_remaining'
     ];
     protected $with = ['social_links'];
 
     public static function boot()
     {
         parent::boot();
-        static::creating(fn ($u) => $u->uuid = Uuid::uuid4());
+        static::creating(fn($u) => $u->uuid = Uuid::uuid4());
     }
 
     // ───────────────────────
@@ -93,7 +129,8 @@ class User extends Authenticatable
         return $this->twitter_token->username ?? false;
     }
 
-    public function getMonthlyChargeEnabledAttribute() {
+    public function getMonthlyChargeEnabledAttribute()
+    {
         if (Auth::check() && $this->id === Auth::id()) {
             return MonthlyCharge::where('user_id', $this->id)
                 ->whereIn('status', ['paid', 'trialing', 'active'])
@@ -101,44 +138,45 @@ class User extends Authenticatable
         }
         return false;
     }
-     
 
-    public function getIsCreatorAddressFoundAttribute(): bool {
+
+    public function getIsCreatorAddressFoundAttribute(): bool
+    {
         return $this->creatorShippingAddress()->exists();
     }
 
     public function getSubscriptionStatusAttribute()
     {
-        if ($this->role == 1) { 
+        if ($this->role == 1) {
             // Find the currently active subscription period (same logic as account route)
             $now = Carbon::now();
             $subscription = MonthlyCharge::where('user_id', $this->id)
-                ->where(function($query) use ($now) {
-                    $query->where(function($q) use ($now) {
+                ->where(function ($query) use ($now) {
+                    $query->where(function ($q) use ($now) {
                         // Active subscription period
                         $q->whereDate('current_start_subscription_date', '<=', $now)
-                          ->whereDate('current_end_subscription_date', '>=', $now);
-                    })->orWhere(function($q) use ($now) {
+                            ->whereDate('current_end_subscription_date', '>=', $now);
+                    })->orWhere(function ($q) use ($now) {
                         // Active trial period
                         $q->whereDate('current_start_trial_date', '<=', $now)
-                          ->whereDate('current_end_trial_date', '>=', $now);
+                            ->whereDate('current_end_trial_date', '>=', $now);
                     });
                 })
                 // Order by start date DESC to get the newest period first (handles overlaps)
                 ->orderByDesc('current_start_subscription_date')
                 ->first();
-            
+
             // If no active period found, get the most recent one
             if (!$subscription) {
                 $subscription = MonthlyCharge::where('user_id', $this->id)
                     ->orderByDesc('current_start_subscription_date')
                     ->first();
             }
-            
+
             if (!$subscription) {
                 return 0;
             }
-            
+
             // Use the same logic as account settings route
             $trial_start = $subscription->current_start_trial_date;
             $trial_end = $subscription->current_end_trial_date;
@@ -158,7 +196,7 @@ class User extends Authenticatable
             if ($subscription->status === 'trialing') {
                 return 2; // FREE_TRIAL
             }
-            
+
             // Return status based on subscription table status
             if ($isSubscriptionActive) {
                 return 1; // ACTIVE
@@ -167,7 +205,7 @@ class User extends Authenticatable
             } elseif ($isExpired || !in_array($subscription->status, ['paid', 'renew', 'active', 'trialing'])) {
                 return 0; // EXPIRED
             }
-            
+
             // Fallback to original Stripe API logic for edge cases
             if ($subscription->status === 'trial_ending') {
                 return 2;
@@ -177,7 +215,7 @@ class User extends Authenticatable
                     if ($subscription->status === 'trialing') {
                         return 2;
                     }
-                    return 1; 
+                    return 1;
                 }
                 try {
                     // Skip Stripe API call in background jobs to prevent token errors
@@ -185,7 +223,7 @@ class User extends Authenticatable
                         // In background jobs, just use the local subscription status
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
-                    
+
                     $stripeKey = env('STRIPE_SECRET_KEY');
                     if (empty($stripeKey)) {
                         Log::warning('Stripe API key not configured, falling back to local subscription status', [
@@ -195,7 +233,7 @@ class User extends Authenticatable
                         // Return based on local status instead of throwing exception
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
-                    
+
                     // Check if stripe_id is valid before making API call
                     if (empty($subscription->stripe_id)) {
                         Log::warning('Empty stripe_id, falling back to local subscription status', [
@@ -204,18 +242,18 @@ class User extends Authenticatable
                         ]);
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
-                    
+
                     Stripe::setApiKey($stripeKey);
                     Log::info("About to retrieve Stripe subscription", [
                         'user_id' => $this->id,
                         'stripe_id' => $subscription->stripe_id,
                         'subscription_status' => $subscription->status
                     ]);
-                    
+
                     // Set timeout to prevent long-running API calls
                     $timeout = 3; // 3 seconds timeout
                     $stripeSubscription = null;
-                    
+
                     try {
                         // Use a timeout to prevent long API calls
                         $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
@@ -233,7 +271,7 @@ class User extends Authenticatable
                         // Return based on local status
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
-                    
+
                     if (isset($stripeSubscription) && $stripeSubscription->status === 'active') {
                         return 1;
                     } elseif (isset($stripeSubscription) && $stripeSubscription->status === 'trialing') {
@@ -265,7 +303,7 @@ class User extends Authenticatable
                         'error' => $e->getMessage(),
                         'error_type' => get_class($e)
                     ]);
-                    
+
                     // Fallback when Stripe API fails
                     if ($subscription->status === 'trialing') {
                         // Check trial dates first
@@ -308,12 +346,12 @@ class User extends Authenticatable
         if (!$this->isFullyVerified()) {
             return null;
         }
-        
+
         // Use identity_verified_at as the primary grace period start date
         if ($this->identity_verified_at) {
             return Carbon::parse($this->identity_verified_at);
         }
-        
+
         // Fallback to updated_at if identity_verified_at is not set
         return $this->updated_at ? Carbon::parse($this->updated_at) : null;
     }
@@ -335,7 +373,7 @@ class User extends Authenticatable
         if (!$this->grace_period_ends_at) {
             return false;
         }
-        
+
         return Carbon::now()->lessThan($this->grace_period_ends_at);
     }
 
@@ -347,7 +385,7 @@ class User extends Authenticatable
         if (!$this->is_in_grace_period || !$this->grace_period_ends_at) {
             return 0;
         }
-        
+
         return max(0, Carbon::now()->diffInDays($this->grace_period_ends_at, false));
     }
 
@@ -358,7 +396,7 @@ class User extends Authenticatable
     {
         // Skip verification check - always return true for creators
         return $this->role == 1;
-        
+
         // Original verification logic (commented out):
         // return $this->role == 1 && // Is creator
         //        $this->is_subscribed == 1 && // Has subscription
@@ -479,7 +517,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(MonthlyCharge::class, 'user_id')->latestOfMany();
     }
-    
+
     /**
      * Get all subscription records (for history)
      */
@@ -488,26 +526,26 @@ class User extends Authenticatable
         return $this->hasMany(MonthlyCharge::class, 'user_id')->orderBy('created_at', 'desc');
     }
 
- public function followers()
-{
-    return $this->hasMany(Follow::class, 'followed_id');
-}
+    public function followers()
+    {
+        return $this->hasMany(Follow::class, 'followed_id');
+    }
 
-public function following()
-{
-    return $this->hasMany(Follow::class, 'follower_id');
-}
+    public function following()
+    {
+        return $this->hasMany(Follow::class, 'follower_id');
+    }
 
 
-public function getFollowersCountAttribute()
-{
-    return $this->followers()->count();
-}
+    public function getFollowersCountAttribute()
+    {
+        return $this->followers()->count();
+    }
 
-public function getFollowingCountAttribute()
-{
-    return $this->following()->count();
-}
+    public function getFollowingCountAttribute()
+    {
+        return $this->following()->count();
+    }
 
 
 
@@ -521,7 +559,8 @@ public function getFollowingCountAttribute()
         return $this->hasManyThrough(
             StripePaymentItems::class,
             StripePaymentDetail::class,
-            'owner_id', 'stripe_payment_detail_id'
+            'owner_id',
+            'stripe_payment_detail_id'
         );
     }
 
@@ -564,8 +603,18 @@ public function getFollowingCountAttribute()
     protected function getOptimizedColumns(): array
     {
         return [
-            'id', 'uuid', 'username', 'name', 'email', 'avatar', 'cover',
-            'bio', 'country', 'default_currency', 'approved', 'created_at'
+            'id',
+            'uuid',
+            'username',
+            'name',
+            'email',
+            'avatar',
+            'cover',
+            'bio',
+            'country',
+            'default_currency',
+            'approved',
+            'created_at'
         ];
     }
 
@@ -594,9 +643,9 @@ public function getFollowingCountAttribute()
             $q->whereHas('wishItems', function ($wishQuery) use ($days) {
                 $wishQuery->where('created_at', '>=', now()->subDays($days));
             })
-            ->orWhereHas('posts', function ($postQuery) use ($days) {
-                $postQuery->where('created_at', '>=', now()->subDays($days));
-            });
+                ->orWhereHas('posts', function ($postQuery) use ($days) {
+                    $postQuery->where('created_at', '>=', now()->subDays($days));
+                });
         });
     }
 
@@ -654,5 +703,27 @@ public function getFollowingCountAttribute()
         // Check if user has been active for at least 30 days
         $thirtyDaysAgo = now()->subDays(30);
         return $this->created_at <= $thirtyDaysAgo && !$this->is_founder;
+    }
+
+    /* =========================
+    | Referral Relationships
+    ========================= */
+
+    // Referrals this user has made (as referrer)
+    public function referralsMade()
+    {
+        return $this->hasMany(CreatorReferral::class,'referrer_creator_id');
+    }
+
+    // Referral record if this user was referred by someone
+    public function referralReceived()
+    {
+        return $this->hasOne(CreatorReferral::class,'referred_creator_id');
+    }
+
+    // Referral payouts earned by this user
+    public function referralPayouts()
+    {
+        return $this->hasMany(CreatorReferralPayout::class,'creator_id');
     }
 }

@@ -86,7 +86,6 @@ class ChunkPreloader {
             this.preloadedChunks.add(pageName);
             this.preloadQueue.delete(pageName);
             
-            console.log(`Preloaded chunk: ${pageName}`);
         } catch (error) {
             console.warn(`Failed to preload chunk ${pageName}:`, error);
             this.preloadQueue.delete(pageName);

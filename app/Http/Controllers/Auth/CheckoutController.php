@@ -11,6 +11,7 @@ use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
 use App\Mail\CommandFailed;
 use App\Models\ConnectedAccountCustomer;
+use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -31,12 +32,14 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
     /* create checkout */
-    public function createCheckout($creator_id, $user_id_or_device = null) {
-       
+    public function createCheckout($creator_id, $user_id_or_device = null)
+    {
+
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         Log::info('Gifter card verification status', ['status' => $checkGifterStatus]);
@@ -46,7 +49,7 @@ class CheckoutController extends Controller
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        $user = Auth::user();  
+        $user = Auth::user();
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {
@@ -57,7 +60,7 @@ class CheckoutController extends Controller
                     return redirect()->back()->with("error", "Max limit for message is 100 words");
                 }
             }
-            
+
             // Get cart data filtered by specific creator
             if (Auth::check()) {
                 // For authenticated users, filter by user_id AND owner_id (creator_id)
@@ -69,23 +72,23 @@ class CheckoutController extends Controller
             } else {
                 // For guests, filter by device_id AND owner_id (creator_id)
                 $device_id = $user_id_or_device ?? request()->get('device_id');
-                 
+
                 if (!$device_id) {
-                     
+
                     return redirect()->back()->with('error', 'Device ID is required for guest checkout.');
                 }
-                
+
                 $getdata = UserCart::where('device_id', $device_id)
                     ->where('owner_id', $creator_id)  // Filter by specific creator
                     ->where('status', 1)
                     ->with(['wish', 'owner'])
                     ->get();
             }
-            
+
             if ($getdata->isEmpty()) {
                 return redirect()->back()->with('error', 'No items in cart to checkout for this creator.');
             }
-            
+
             // Get creator by ID
             $owner = User::find($creator_id);
             if (!$owner) {
@@ -94,41 +97,43 @@ class CheckoutController extends Controller
             if ($owner['is_subscribed'] !== 1) {
                 return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
             }
-            
+
             // Calculate preliminary total for activity check notification
             $preliminaryTotal = $getdata->sum(function ($item) {
                 return $item->amount * $item->quantity;
             });
-            
+
             // NEW: Check creator subscription eligibility first
             $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($owner);
-            
+
             if (!$subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
-                
-                
-                
+
+
+
                 // Return user-friendly error to fan
-                return redirect()->back()->with('error', 
+                return redirect()->back()->with(
+                    'error',
                     'This creator is temporarily unavailable. Please try again later.'
                 );
             }
-            
+
             // Check creator activity eligibility
             $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($owner);
-            
+
             if (!$activityCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $owner->notify(new PaymentBlockedNotification($activityCheck, $preliminaryTotal));
-                
-                 
-                
+
+
+
                 // Return user-friendly error to fan
-                return redirect()->back()->with('error', 
+                return redirect()->back()->with(
+                    'error',
                     'This creator is temporarily unavailable. Please try again later.'
                 );
-            } 
+            }
             if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
                 Log::info('Cart payment allowed - creator activity check passed', [
                     'creator_id' => $owner->id,
@@ -137,15 +142,15 @@ class CheckoutController extends Controller
                     'content_count' => $activityCheck['content_count'] ?? 0
                 ]);
             }
-            
+
 
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-            
+
             // Initialize connectedAccountId outside the loop to avoid undefined variable error
             $connectedAccountId = null;
-            
+
             // Find the first valid cart item to get the connected account ID
             foreach ($getdata as $item) {
                 if ($item->wish_item_id && $item->wish && $item->owner && $item->owner->account_id) {
@@ -153,7 +158,7 @@ class CheckoutController extends Controller
                     break;
                 }
             }
-            
+
             // If no valid connected account ID found, return error
             if (!$connectedAccountId) {
                 Log::error('No valid connected account ID found for checkout', [
@@ -163,14 +168,14 @@ class CheckoutController extends Controller
                 ]);
                 return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
             }
-            
+
             // Log the connected account ID for debugging
             Log::info('Connected account ID found for checkout', [
                 'connected_account_id' => $connectedAccountId,
                 'creator_id' => $creator_id,
                 'owner_username' => $owner->username ?? 'unknown'
             ]);
-            
+
             $lineItems = [];
             $subtotal = 0;
             $transfer_amount = 0;
@@ -186,7 +191,7 @@ class CheckoutController extends Controller
                     ]);
                     continue;
                 }
-                
+
                 if (!$user) {
                     $email = request()->query('email');
                     $user = User::where('email', $email)->first();
@@ -258,7 +263,7 @@ class CheckoutController extends Controller
                         'unit_amount' => (int) round($ConvertedAmount * $multiplier),
                     ]
                 ];
-                
+
                 // Add platform fee as separate line item for each product
                 $lineItems[] = [
                     'quantity' => 1,
@@ -298,26 +303,26 @@ class CheckoutController extends Controller
             if (isset($owner->vat_amount_percentage) && $owner->vat_amount_percentage > 0) {
                 $creatorVatAmount = round(($subtotal * $owner->vat_amount_percentage / 100) * $multiplier);
             }
-            
+
             // Transfer amount = only the item amount (subtotal) + creator's VAT
             $transferAmount = round($subtotal * $multiplier) + $creatorVatAmount;
-            
+
             // Total charged to customer = item amount + platform fees
             $totalChargeAmount = round($subtotal * $multiplier) + $creatorVatAmount + round($totalShowTaxWithQuantity * $multiplier);
-            
+
             if ($transferAmount > $totalChargeAmount) {
                 $transferAmount = $totalChargeAmount - round($totalShowTaxWithQuantity * $multiplier);
             }
 
             // Check if creator has card_payments capability to determine payment flow
             $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
-            
+
             // Build payment_intent_data based on creator's capabilities
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Content purchase with platform fee",
                 'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalChargeAmount),
             ];
-            
+
             // Only add on_behalf_of if creator has card_payments capability
             if ($hasCardPayments) {
                 // Standard flow for creators with card_payments capability
@@ -363,7 +368,7 @@ class CheckoutController extends Controller
                 Log::error("Stripe payload validation failed: " . $validationError);
                 return redirect()->back()->with('error', 'Payment configuration error. Please try again.');
             }
-            
+
             try {
                 // For destination charges with 'on_behalf_of', don't pass connectedAccountId as parameter
                 // The connected account is specified in the payload's payment_intent_data
@@ -396,13 +401,13 @@ class CheckoutController extends Controller
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
-            
+
             // Store device_id for guest checkouts to enable cart retrieval in success callback
             if (!Auth::check() && isset($device_id)) {
                 session(['device_id' => $device_id]);
                 Log::info('Stored device_id in session for guest checkout', ['device_id' => $device_id]);
             }
-            
+
             // Build comprehensive metadata for storage
             $paymentMetadata = [
                 'wish_items' => json_decode($this->buildWishItemsMetadata($getdata), true),
@@ -415,7 +420,7 @@ class CheckoutController extends Controller
                     'name' => $owner->name
                 ]
             ];
-            
+
             $stripePaymentDetail = StripePaymentDetail::create([
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
@@ -445,7 +450,52 @@ class CheckoutController extends Controller
             throw $th;
         }
     }
-    
+
+    public function handleCreatorReferralGMV(User $creator, float $gmvAmount): void
+    {
+        // Creator must have referral_code
+        if (empty($creator->referral_code)) {
+            return;
+        }
+
+        // Find referrer creator by referral_code
+        $referrer = User::where('referral_code', $creator->referral_code)
+            ->where('role', 1) // creator only
+            ->first();
+
+        if (!$referrer || $referrer->id === $creator->id) {
+            return;
+        }
+
+        DB::transaction(function () use ($referrer, $creator, $gmvAmount) {
+
+            $referral = CreatorReferral::firstOrCreate(
+                [
+                    'referrer_creator_id' => $referrer->id,
+                    'referred_creator_id' => $creator->id,
+                ],
+                [
+                    'lifetime_gmv' => 0,
+                    'status' => 'IN_PROGRESS',
+                ]
+            );
+
+            // Update GMV
+            $referral->increment('lifetime_gmv', $gmvAmount);
+
+            // Qualification check (£1000)
+            if (
+                $referral->status === 'IN_PROGRESS' &&
+                $referral->lifetime_gmv >= 1000
+            ) {
+                $referral->update([
+                    'status' => 'QUALIFIED',
+                    'qualified_at' => now(),
+                ]);
+            }
+        });
+    }
+
     /**
      * Validate Stripe payload before sending to API
      */
@@ -454,53 +504,53 @@ class CheckoutController extends Controller
         try {
             // Required fields
             $requiredFields = ['success_url', 'cancel_url', 'mode', 'line_items'];
-            
+
             foreach ($requiredFields as $field) {
                 if (!isset($payload[$field]) || empty($payload[$field])) {
                     return "Missing required field: {$field}";
                 }
             }
-            
+
             // Validate mode
             if (!in_array($payload['mode'], ['payment', 'setup', 'subscription'])) {
                 return "Invalid mode: {$payload['mode']}";
             }
-            
+
             // Validate line items
             if (!is_array($payload['line_items']) || empty($payload['line_items'])) {
                 return "line_items must be a non-empty array";
             }
-            
+
             // Validate each line item
             foreach ($payload['line_items'] as $index => $lineItem) {
                 if (!is_array($lineItem)) {
                     return "Line item {$index} must be an array";
                 }
-                
+
                 if (!isset($lineItem['quantity']) || !is_numeric($lineItem['quantity'])) {
                     return "Line item {$index} missing valid quantity";
                 }
-                
+
                 if (!isset($lineItem['price_data']) || !is_array($lineItem['price_data'])) {
                     return "Line item {$index} missing valid price_data";
                 }
-                
+
                 $priceData = $lineItem['price_data'];
                 if (!isset($priceData['currency']) || !isset($priceData['product_data']) || !is_array($priceData['product_data'])) {
                     return "Line item {$index} price_data missing currency or product_data";
                 }
-                
+
                 if (!isset($priceData['unit_amount']) && !isset($priceData['unit_amount_decimal'])) {
                     return "Line item {$index} price_data missing unit_amount or unit_amount_decimal";
                 }
             }
-            
+
             // Validate payment_intent_data if present
             if (isset($payload['payment_intent_data'])) {
                 if (!is_array($payload['payment_intent_data'])) {
                     return "payment_intent_data must be an array";
                 }
-                
+
                 // Validate transfer_data if present
                 if (isset($payload['payment_intent_data']['transfer_data'])) {
                     $transferData = $payload['payment_intent_data']['transfer_data'];
@@ -514,13 +564,13 @@ class CheckoutController extends Controller
                         return "transfer_data missing valid amount";
                     }
                 }
-                
+
                 // Validate metadata if present
                 if (isset($payload['payment_intent_data']['metadata'])) {
                     if (!is_array($payload['payment_intent_data']['metadata'])) {
                         return "metadata must be an array";
                     }
-                    
+
                     // Check metadata key/value constraints
                     foreach ($payload['payment_intent_data']['metadata'] as $key => $value) {
                         if (!is_string($key) || !is_string($value)) {
@@ -533,29 +583,29 @@ class CheckoutController extends Controller
                             return "metadata value for '{$key}' exceeds 500 character limit";
                         }
                     }
-                    
+
                     // Check total metadata count (Stripe limit: 50 keys)
                     if (count($payload['payment_intent_data']['metadata']) > 50) {
                         return "metadata exceeds 50 key limit";
                     }
                 }
             }
-            
+
             Log::info('Stripe payload validation passed', [
                 'line_items_count' => count($payload['line_items']),
                 'mode' => $payload['mode'],
                 'has_payment_intent_data' => isset($payload['payment_intent_data']),
                 'has_metadata' => isset($payload['payment_intent_data']['metadata'])
             ]);
-            
+
             return null; // No validation errors
-            
+
         } catch (\Exception $e) {
             Log::error('Error during payload validation: ' . $e->getMessage());
             return "Payload validation error: " . $e->getMessage();
         }
     }
-    
+
     /**
      * Build NEW FLATTENED metadata format for checkout - implements NEW_STRIPE_METADATA_FORMAT.md
      */
@@ -570,36 +620,36 @@ class CheckoutController extends Controller
                 'creator_name' => $owner->name ?? 'Unknown Creator',
                 'creator_username' => $owner->username ?? 'unknown',
             ];
-            
+
             // Add buyer info if available
             $buyerId = Auth::id();
             $buyerName = request()->query('from') ?? (Auth::user()->name ?? 'Anonymous');
             $buyerEmail = request()->query('email') ?? (Auth::user()->email ?? 'anonymous@spennypiggy.co');
             $buyerUsername = Auth::user()->username ?? 'guest';
-            
+
             $metadata['buyer_id'] = (string) $buyerId;
             $metadata['buyer_name'] = $buyerName;
             $metadata['buyer_email'] = $buyerEmail;
             $metadata['buyer_username'] = $buyerUsername;
-            
+
             // Payment details - REQUIRED fields
             $metadata['payment_type'] = 'Destination Charges with transfers';
             $metadata['product_type'] = 'wish_one_off';
             $metadata['quantity'] = (string) array_sum(array_column($getdata->toArray(), 'quantity'));
             $metadata['items_count'] = (string) count($getdata);
-            
+
             // Content delivery status - REQUIRED field
             $contentItems = [];
             $hasContent = false;
-            
+
             foreach ($getdata as $item) {
                 $wish = $item->wish;
                 if (!$wish) continue;
-                
+
                 $contentUrl = null;
                 $contentType = 'file';
                 $source = 'content_file';
-                
+
                 // Priority: content_file → reward
                 if (!empty($wish->content_file)) {
                     $contentUrl = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
@@ -612,7 +662,7 @@ class CheckoutController extends Controller
                     $source = 'reward';
                     $hasContent = true;
                 }
-                
+
                 $contentItems[] = [
                     'wish_id' => $wish->id,
                     'wish_name' => $wish->wishname ?? 'Unknown Wish',
@@ -621,16 +671,16 @@ class CheckoutController extends Controller
                     'source' => $source
                 ];
             }
-            
+
             // Content summary - REQUIRED fields
             $metadata['has_content'] = $hasContent ? 'true' : 'false';
             $metadata['content_items_count'] = (string) count($contentItems);
             $metadata['content_delivery_status'] = 'delivered'; // STATIC: Always delivered
-            
+
             // Certificate field - REQUIRED - STATIC: Always true
             $metadata['certificate'] = 'true';
             $metadata['delivery_status'] = 'delivered'; // STATIC: Always delivered
-            
+
             // Deliverable type - REQUIRED
             $primaryWish = $getdata[0]->wish ?? null;
             if ($primaryWish) {
@@ -642,22 +692,22 @@ class CheckoutController extends Controller
                     $metadata['deliverable_type'] = 'no_content';
                 }
             }
-            
+
             // Flatten individual content items - item_1_*, item_2_*, etc.
             foreach ($contentItems as $index => $item) {
                 $itemNum = $index + 1;
                 $prefix = "item_{$itemNum}_";
-                
+
                 $metadata[$prefix . 'wish_id'] = (string) $item['wish_id'];
                 $metadata[$prefix . 'wish_name'] = substr($item['wish_name'], 0, 100); // Stripe limit
-                
+
                 if (!empty($item['content_url'])) {
                     $metadata[$prefix . 'content_url'] = $item['content_url'];
                     $metadata[$prefix . 'content_type'] = $item['content_type'];
                     $metadata[$prefix . 'content_source'] = $item['source'];
                 }
             }
-            
+
             // Build backward compatibility JSON - clean format
             if (!empty($contentItems)) {
                 $cleanContentUrls = [];
@@ -672,12 +722,12 @@ class CheckoutController extends Controller
                         ];
                     }
                 }
-                
+
                 if (!empty($cleanContentUrls)) {
                     $metadata['content_urls'] = json_encode($cleanContentUrls);
                 }
             }
-            
+
             // Build wish items summary (clean JSON format)
             $wishItemsSummary = [
                 'total_items' => count($getdata),
@@ -685,16 +735,16 @@ class CheckoutController extends Controller
                 'wish_ids' => [],
                 'wish_names' => []
             ];
-            
+
             foreach ($getdata as $item) {
                 if ($item->wish) {
                     $wishItemsSummary['wish_ids'][] = $item->wish->id;
                     $wishItemsSummary['wish_names'][] = $item->wish->wishname ?? 'Unknown';
                 }
             }
-            
+
             $metadata['wish_items_summary'] = json_encode($wishItemsSummary);
-            
+
             // Ensure all values are strings and within Stripe limits
             foreach ($metadata as $key => $value) {
                 if (!is_string($value)) {
@@ -706,19 +756,18 @@ class CheckoutController extends Controller
                     Log::warning('Checkout metadata value truncated (NEW FORMAT)', ['key' => $key]);
                 }
             }
-            
+
             Log::info('Successfully built NEW FLATTENED checkout metadata', [
                 'metadata_count' => count($metadata),
                 'content_items' => count($contentItems),
                 'has_content' => $hasContent,
                 'total_items' => count($getdata)
             ]);
-            
+
             return $metadata;
-            
         } catch (\Exception $e) {
             Log::error('Error building NEW FLATTENED checkout metadata: ' . $e->getMessage());
-            
+
             // Return minimal safe metadata as fallback
             return [
                 'platform' => 'SpennyPiggy',
@@ -733,19 +782,19 @@ class CheckoutController extends Controller
             ];
         }
     }
-    
-    
+
+
     /**
      * Build content URLs metadata for Stripe - handles multiple wish items with content
      */
     private function buildContentUrlsMetadata($cartItems)
     {
         $contentUrls = [];
-        
+
         foreach ($cartItems as $item) {
             $wish = $item->wish;
             if (!$wish) continue;
-            
+
             $wishContentData = [
                 'wish_id' => $wish->id,
                 'wish_name' => $wish->wishname,
@@ -755,7 +804,7 @@ class CheckoutController extends Controller
                 'delivery_status' => 'pending',
                 'source' => null
             ];
-            
+
             // Priority: content_file → reward → message_media (for future thank-you messages)
             if (!empty($wish->content_file)) {
                 $wishContentData['has_content'] = true;
@@ -770,25 +819,25 @@ class CheckoutController extends Controller
                 $wishContentData['delivery_status'] = 'ready'; // Rewards are immediately available
                 $wishContentData['source'] = 'reward';
             }
-            
+
             $contentUrls[] = $wishContentData;
         }
-        
+
         // Return as JSON string to fit in Stripe metadata limits
         return json_encode($contentUrls);
     }
-    
+
     /**
      * Build wish items metadata for Stripe - comprehensive item details
      */
     private function buildWishItemsMetadata($cartItems)
     {
         $wishItems = [];
-        
+
         foreach ($cartItems as $item) {
             $wish = $item->wish;
             if (!$wish) continue;
-            
+
             $wishItems[] = [
                 'wish_id' => $wish->id,
                 'wish_name' => $wish->wishname,
@@ -801,10 +850,10 @@ class CheckoutController extends Controller
                 'subscription_type' => $wish->subscription ?? 0
             ];
         }
-        
+
         return json_encode($wishItems);
     }
-    
+
     /**
      * DEPRECATED: Build clean wish items metadata to avoid duplication with individual content keys
      * This function is no longer used - metadata is now built using refined structures
@@ -832,7 +881,7 @@ class CheckoutController extends Controller
         return json_encode($summary);
     }
     */
-    
+
     /**
      * Generate content URL from file path/identifier
      */
@@ -841,26 +890,26 @@ class CheckoutController extends Controller
         if (empty($fileIdentifier)) {
             return null;
         }
-        
+
         // Handle Uploadcare URLs
         if (str_starts_with($fileIdentifier, 'https://ucarecdn.com/')) {
             return $fileIdentifier;
         }
-        
+
         // Handle Uploadcare UUIDs
         if (preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $fileIdentifier)) {
             return "https://ucarecdn.com/{$fileIdentifier}/";
         }
-        
+
         // Handle relative paths or other formats
         if (str_starts_with($fileIdentifier, '/')) {
             return url($fileIdentifier);
         }
-        
+
         // Default: assume it's a filename in storage
         return asset('storage/' . $fileIdentifier);
     }
-    
+
     /**
      * Build delivery summary for comprehensive tracking
      */
@@ -874,15 +923,15 @@ class CheckoutController extends Controller
             'content_types' => [],
             'delivery_methods' => []
         ];
-        
+
         foreach ($cartItems as $item) {
             $wish = $item->wish;
             if (!$wish) continue;
-            
+
             $hasContent = false;
             $deliveryStatus = 'no_content';
             $contentType = null;
-            
+
             // Check for content and determine delivery status
             if (!empty($wish->content_file)) {
                 $hasContent = true;
@@ -895,7 +944,7 @@ class CheckoutController extends Controller
                 $contentType = 'image';
                 $summary['items_ready_for_delivery']++;
             }
-            
+
             if ($hasContent) {
                 $summary['items_with_content']++;
                 if ($contentType && !in_array($contentType, $summary['content_types'])) {
@@ -903,7 +952,7 @@ class CheckoutController extends Controller
                 }
             }
         }
-        
+
         // Determine primary delivery method
         if ($summary['items_with_content'] > 0) {
             $summary['delivery_methods'][] = 'email_with_attachments';
@@ -911,19 +960,19 @@ class CheckoutController extends Controller
         } else {
             $summary['primary_delivery_method'] = 'thank_you_email_only';
         }
-        
+
         return $summary;
     }
 
- 
+
     public function successCheckout($id)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        
+
         // Get the payment record to determine how to query cart items
         $sessionId = session('session_id');
         $paymentRecord = StripePaymentDetail::where('session_id', $sessionId)->first();
-        
+
         if (Auth::check()) {
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with(['wish', 'owner', 'user'])->get();
         } else {
@@ -958,16 +1007,16 @@ class CheckoutController extends Controller
                 'creator_id' => $id,
                 'user_id' => Auth::id()
             ]);
-            
+
             $existingPayment = StripePaymentDetail::where('session_id', $sessionId)->first();
-            
+
             if ($existingPayment) {
                 Log::info("Found existing payment", [
                     'session_id' => $sessionId,
                     'payment_status' => $existingPayment->payment_status,
                     'payment_id' => $existingPayment->id
                 ]);
-                
+
                 if ($existingPayment->payment_status === 'paid') {
                     Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
                     return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
@@ -1029,20 +1078,21 @@ class CheckoutController extends Controller
 
             $sessionId = session('session_id');
             Log::info("Updating payment status", ['session_id' => $sessionId]);
-            
+
             $updateResult = StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
+            
             Log::info("Payment update result", ['updated_rows' => $updateResult]);
-            
+
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
-            
+
             if (!$stripeid) {
                 Log::error("StripePaymentDetail not found after update", ['session_id' => $sessionId]);
                 throw new \Exception("Payment record not found for session: " . $sessionId);
             }
-            
+
             Log::info("Retrieved StripePaymentDetail", [
                 'id' => $stripeid->id,
                 'session_id' => $stripeid->session_id,
@@ -1065,12 +1115,12 @@ class CheckoutController extends Controller
                     'message' => $dd->message ?? null
                 ]);
                 $payment_data->refresh();
-                
+
                 Log::info("About to access payment->currency", [
                     'payment_data_id' => $payment_data->id,
                     'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id
                 ]);
-                
+
                 // Check if payment relationship exists
                 if (!$payment_data->payment) {
                     Log::error("Payment relationship is null", [
@@ -1079,7 +1129,7 @@ class CheckoutController extends Controller
                     ]);
                     throw new \Exception("Payment relationship not found for payment item: " . $payment_data->id);
                 }
-                
+
                 Log::info("Payment relationship exists", [
                     'payment_id' => $payment_data->payment->id,
                     'payment_currency' => $payment_data->payment->currency ?? 'NULL'
@@ -1092,24 +1142,24 @@ class CheckoutController extends Controller
                         'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id,
                         'has_payment_relationship' => $payment_data->payment ? 'yes' : 'no'
                     ]);
-                    
+
                     if (!$payment_data->payment) {
                         Log::error("Payment relationship is null");
                         throw new \Exception("Payment relationship not found");
                     }
-                    
+
                     Log::info("About to access currency property on payment model");
                     $currencyValue = $payment_data->payment->currency;
                     Log::info("Successfully accessed currency value", ['currency' => $currencyValue]);
-                    
+
                     $symbol = Currency::where('iso', strtoupper($currencyValue))->first();
                     Log::info("Currency lookup completed", ['symbol_found' => !is_null($symbol)]);
-                    
+
                     if (!$symbol) {
                         Log::error("Currency not found for ISO: " . strtoupper($currencyValue));
                         return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Currency configuration error. Please contact support.');
                     }
-                    
+
                     Log::info("About to calculate VAT percentage");
                     $vat_percentage = $dd->owner ? $dd->owner->vat_amount_percentage : 0; // Default to 0 if not set
                     Log::info("VAT percentage calculated", ['vat_percentage' => $vat_percentage]);
@@ -1127,7 +1177,6 @@ class CheckoutController extends Controller
                     Log::info("About to get message");
                     $message = $stripeid->message;
                     Log::info("Message retrieved", ['message_length' => strlen($message ?? '')]);
-                    
                 } catch (\Exception $e) {
                     Log::error("Error accessing payment currency", [
                         'error_message' => $e->getMessage(),
@@ -1140,7 +1189,7 @@ class CheckoutController extends Controller
 
                 Log::info("Skipping individual CheckoutUser job dispatch - will be handled by consolidated email");
                 // NOTE: CheckoutUser jobs have been moved outside the loop to prevent multiple creator emails
-                
+
                 Log::info("Jobs dispatched, continuing with auto_tweet check");
 
                 Log::info("About to check auto_tweet setting");
@@ -1185,22 +1234,22 @@ class CheckoutController extends Controller
             }
 
 
-                Log::info("About to dispatch checkout email (authenticated or guest)");
-                // Use actual payment currency instead of cookie currency
-                $actualCurrency = $stripeid->currency ?? $currency;
-                $curr = Currency::where('iso', strtoupper($actualCurrency))->first();
-                if ($curr) {
-                    Log::info("Currency found, dispatching CheckoutMailToUser", ['currency' => $actualCurrency, 'symbol' => $curr->symbol]);
-                    CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
-                    Log::info("CheckoutMailToUser job dispatched successfully");
-                } else {
-                    Log::warning("Currency not found for checkout email: " . strtoupper($actualCurrency));
-                    CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
-                    Log::info("CheckoutMailToUser job dispatched with default symbol");
-                }
+            Log::info("About to dispatch checkout email (authenticated or guest)");
+            // Use actual payment currency instead of cookie currency
+            $actualCurrency = $stripeid->currency ?? $currency;
+            $curr = Currency::where('iso', strtoupper($actualCurrency))->first();
+            if ($curr) {
+                Log::info("Currency found, dispatching CheckoutMailToUser", ['currency' => $actualCurrency, 'symbol' => $curr->symbol]);
+                CheckoutMailToUser::dispatch($stripeid, $curr->symbol);
+                Log::info("CheckoutMailToUser job dispatched successfully");
+            } else {
+                Log::warning("Currency not found for checkout email: " . strtoupper($actualCurrency));
+                CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
+                Log::info("CheckoutMailToUser job dispatched with default symbol");
+            }
 
-                Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);
-                return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
+            Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);
+            return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             $errorMessage = $th->getMessage();
             Log::error("Error in successCheckout: " . $errorMessage, [
@@ -1208,14 +1257,14 @@ class CheckoutController extends Controller
                 'file' => $th->getFile(),
                 'line' => $th->getLine()
             ]);
-            
+
             // Check if this is a Stripe token error, which we can safely ignore
             if (strpos($errorMessage, 'token was invalid') !== false) {
                 Log::info("Ignoring Stripe token error and continuing checkout process");
                 // Continue with the checkout process despite the token error
                 return redirect(route('thank-you', [$stripeid->owner->username]))->with('success', 'Payment Successful.');
             }
-            
+
             return redirect(route('user.show', [$stripeid->owner->username ?? $getdata[0]->owner->username]))->with('error', 'Something went wrong!');
         }
     }
@@ -1227,18 +1276,18 @@ class CheckoutController extends Controller
             'is_authenticated' => Auth::check(),
             'auth_user_id' => Auth::id()
         ]);
-        
+
         if (Auth::check()) {
             $getdata = UserCart::where('user_id', Auth::id())->where('owner_id', $id)->where('status', 1)->with(['wish'])->get();
         } else {
             $getdata = UserCart::where('device_id', $id)->where('status', 1)->with(['wish'])->get();
         }
-        
+
         Log::info('Cart data found for cancellation', [
             'cart_items_count' => $getdata->count(),
             'creator_id' => $id
         ]);
-        
+
         $sessionId = session('session_id');
         if ($sessionId) {
             StripePaymentDetail::where('session_id', $sessionId)->update([
@@ -1247,14 +1296,14 @@ class CheckoutController extends Controller
             ]);
             Log::info('Payment status updated to unpaid', ['session_id' => $sessionId]);
         }
-        
+
         // Handle case where no cart data is found
         if ($getdata->isEmpty()) {
             Log::warning('No cart data found for cancel checkout', [
                 'creator_id' => $id,
                 'is_authenticated' => Auth::check()
             ]);
-            
+
             // Try to find the creator by ID to get their username
             $creator = User::find($id);
             if ($creator) {
@@ -1264,7 +1313,7 @@ class CheckoutController extends Controller
                 return redirect(route('cart'))->with('error', 'Payment cancelled.');
             }
         }
-        
+
         return redirect(route('user.show', [$getdata[0]->owner->username]))->with('error', 'Payment cancelled.');
     }
 
@@ -1273,16 +1322,17 @@ class CheckoutController extends Controller
      *
      * @return mixed
      */
-    public function debugCheckout($id) {
+    public function debugCheckout($id)
+    {
         try {
             Log::info('Debug checkout called with ID: ' . $id);
-            
+
             $user = Auth::user();
             Log::info('User authenticated: ' . ($user ? 'Yes - ID: ' . $user->id : 'No'));
-            
+
             $owner = User::find($id);
             Log::info('Owner found: ' . ($owner ? 'Yes - Name: ' . $owner->name : 'No'));
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Checkout controller is working',
@@ -1324,16 +1374,16 @@ class CheckoutController extends Controller
         $currency = 'gbp'; // Test method uses GBP by default
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-        
+
         // Check if creator has card_payments capability to determine payment flow
         $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($owner->account_id);
-        
+
         $paymentIntentData = [
             'transfer_data' => [
                 'destination' => $owner->account_id
             ],
         ];
-        
+
         // Only add on_behalf_of if creator has card_payments capability
         if ($hasCardPayments) {
             $paymentIntentData['on_behalf_of'] = $owner->account_id;
@@ -1341,13 +1391,13 @@ class CheckoutController extends Controller
         } else {
             // For restricted creators, charge on platform and transfer the creator amount
             // Calculate the creator amount (total minus platform fees)
-            $totalAmount = array_sum(array_map(function($item) use ($multiplier) {
+            $totalAmount = array_sum(array_map(function ($item) use ($multiplier) {
                 return $item['quantity'] * ($item['price'] ?? 0);
             }, $items));
             $creatorAmount = $totalAmount - ($tax * $multiplier);
             $paymentIntentData['transfer_data']['amount'] = max(0, $creatorAmount); // Transfer creator amount
         }
-        
+
         $payload = [
             "mode"  => "payment",
             "line_items"    => $items,
@@ -1355,7 +1405,7 @@ class CheckoutController extends Controller
             'success_url'   => route("test.stripe.callback"),
             'cancel_url'    => route("test.stripe.callback", ["status" => "cancel"])
         ];
-        
+
         Log::info('Test checkout payment flow determined', [
             'owner_id' => $owner->id,
             'connected_account_id' => $owner->account_id,

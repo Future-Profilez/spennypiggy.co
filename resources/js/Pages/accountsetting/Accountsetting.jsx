@@ -21,10 +21,8 @@ import SubscriptionHistory from "@/Components/SubscriptionHistory";
 
 export default function Accountsetting(props) {
 
-    console.log('props', props);
     const { successAlert, errorAlert } = useAlerts();
     const { auth, user, global_currency, auto_tweet, pwa_notification_details, site_subscription, subscription_history, subscription_status } = props;
-    console.log('pwa_notification_details',pwa_notification_details);
     const [showModal, setShowModal] = useState(false);
 
     const [emailEnabled, setSetEnabled] = useState(

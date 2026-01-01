@@ -28,7 +28,6 @@ export default function Cart(props) {
         };
         Axios.get(`anonymous-cart/${deviceid}?_t=${timestamp}`, config)
             .then((resp) => {
-                console.log("Anonymous cart response:", resp.data);
                 setCartItems(resp.data.carts);
                 setLoading(false);
             })
@@ -53,7 +52,6 @@ export default function Cart(props) {
         const timestamp = new Date().getTime();
         Axios.get(`authenticated-cart?_t=${timestamp}`)
             .then((resp) => {
-                console.log("Authenticated cart response:", resp.data);
                 if (resp.data.success) {
                     setCartItems(resp.data.carts);
                 }

@@ -19,6 +19,7 @@ use Inertia\Response;
 use Ramsey\Uuid\Uuid;
 use App\Jobs\WelcomeUser;
 use App\Models\AllowedDomain;
+use App\Models\CreatorReferral;
 use App\Models\Follow;
 use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
@@ -58,170 +59,143 @@ class RegisteredUserController extends Controller
         return Inertia::render('Auth/Register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+
     public function store(Request $request): RedirectResponse
     {
+        /* =========================BASIC VALIDATION========================== */
         $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255'
-            ],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
-            'role' => ['required'],
+            'role'     => ['required'],
+            'promo'    => ['nullable', 'string'], // referral code
         ]);
 
+        /* =========================FAN ADDRESS VALIDATION========================== */
         if ($request->role == 0) {
             $request->validate([
-                'country' => 'required|string',
+                'country'        => 'required|string',
                 'street_address' => 'required|string|min:20',
-                'city' => 'required|string',
-                'state' => 'required|string',
-                'postal_code' => 'required|integer|digits_between:4,8',
+                'city'           => 'required|string',
+                'state'          => 'required|string',
+                'postal_code'    => 'required|integer|digits_between:4,8',
             ]);
         }
 
+        /* =========================IP CHECK (LIVE ONLY)========================== */
         $ip_address = $request->ip();
-        $appUrl = config('app.url');
-        $checkIpExist = false;
-        if (in_array($appUrl, ['https://spennypiggy.co'])) {
-            $checkIpExist = User::where('ip_address', $ip_address)->where('is_uk', 0)->exists();
-        }
-        if ($checkIpExist) {
-            return redirect()->back()->with('error', "You can not create multiple account with same IP address. You have already registered with this IP address.");
-        }
 
-        $exist = User::where('email', $request->email)->where('is_uk', 0)->whereNull('deleted_at')->first();
-        if (!empty($exist)) {
-            return redirect()->back()->with('error', "This email already has been taken.");
+        if (config('app.url') === 'https://spennypiggy.co') {
+            $ipExists = User::where('ip_address', $ip_address)
+                ->where('is_uk', 0)
+                ->exists();
+
+            if ($ipExists) {
+                return back()->with('error', 'You can not create multiple accounts with the same IP address.');
+            }
         }
 
-        $email = $request->email;
-        $domain = explode('@', $email);
-        $secure = AllowedDomain::all()->pluck('name')->toArray();
+        /* =========================EMAIL DOMAIN CHECK========================== */
+        $domain = explode('@', $request->email)[1] ?? '';
+        $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
-        if (!in_array($domain[1], $secure)) {
-            return redirect()->back()->with('error', "Invalid Email Id.");
+        if (!in_array($domain, $allowedDomains)) {
+            return back()->with('error', 'Invalid Email Id.');
         }
 
-        $checkdata = Helpers::checkBlockData($request);
-        if ($checkdata == 1) {
-            return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
-        } else {
+        /* =========================BLOCKED CONTENT CHECK========================== */
+        if (Helpers::checkBlockData($request) == 1) {
+            return back()->with('error', 'Some words or emojis are not allowed.');
+        }
 
-            $randomBio = null;
-            // if ($request->role == 1) {
-            //     // $defaultBios = [
-            //     //     // "I haven’t written my bio yet, but you can still spoil me 😘",
-            //     //     // "No bio. Just vibes… and a wishlist 💅",
-            //     //     "Still working on my About Me. In the meantime… gifts welcome 🛍️",
-            //     //     // "Bio coming soon. But like, feel free to click that wishlist link.",
-            //     //     // "New here. Wishlist isn’t 💸"
-            //     // ];
+        /* =========================CREATE USER========================== */
+        $secret = $this->google2FA->generateSecretKey();
 
-            //     // $randomBio = $defaultBios[array_rand($defaultBios)];
-            //     $randomBio = "Still working on my About Me. In the meantime… gifts welcome 🛍️";
-            // }
-            //saving the google secret of an particular user
-            $secret = $this->google2FA->generateSecretKey();
+        $user = User::create([
+            'tfa_key'             => $secret,
+            'name'                => $request->name,
+            'email'               => strtolower($request->email),
+            'username'            => $request->username,
+            'gender'              => $request->gender ?? null,
+            'password'            => Hash::make($request->password),
+            'role'                => $request->role,
+            'creator_category'    => $request->creator_category ?? null,
+            'ip_address'          => $ip_address,
+            'country'             => $request->country_code ?? null,
+            'bio_approved'        => 0,
+            'profile_status_lock' => 0,
+        ]);
 
-            $user = User::create([
-                'tfa_key' => $secret,
-                'name' => $request->name,
-                'email' => strtolower($request->email),
-                'username' => $request->username,
-                'gender' => $request->gender ?? null,
-                'password' => Hash::make($request->password),
-                'role' => $request->role ?? 0,
-                'creator_category' => $request->creator_category ?? null,
-                'ip_address' => $ip_address,
-                'country' => $request->country_code ?? null,
-                // 'bio' => $randomBio, // Here goes the random bio
-                // 'bio_approved' => $request->role == 1 ? 0 : 0,
-                'bio_approved' => 0,
-                'profile_status_lock' => 0,
+        Auth::login($user);
+
+        /* =========================AUTO FOLLOW SPENNY========================== */
+        $spenny = User::where('username', 'spenny_piggy')->first();
+        if ($spenny) {
+            Follow::updateOrCreate(
+                ['follower_id' => $user->id, 'followed_id' => $spenny->id],
+                []
+            );
+        }
+
+        /* =========================VERIFICATION / ADDRESS========================== */
+        if ($request->role == 1) {
+            UserVerificationStatus::create([
+                'user_id'        => $user->id,
+                'role'           => 1,
+                'bio_status'     => 1,
+                'address_status' => 0,
             ]);
-            $user->refresh();
-            $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
+        }
 
-            if(!empty($spennyPiggyAcc)){
-                $spennyPiggyAcc = User::where('username', 'spenny_piggy')->first();
-                if ($user) {
-                    Follow::UpdateOrCreate(
-                        ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id],
-                        ['follower_id' => $user->id, 'followed_id' => $spennyPiggyAcc->id]
-                    );
-                    $content = ucfirst($user->name) . " (@$user->username)" . " just followed you.";
-                    if($spennyPiggyAcc->email){
-                        Helpers::sendNotification('👥 New Follower!', $content, $spennyPiggyAcc->email ?? null);
-                    }
-                }
+        if ($request->role == 0) {
+            GifterAddress::create([
+                'user_id'        => $user->id,
+                'country'        => $request->country,
+                'street_address' => $request->street_address,
+                'city'           => $request->city,
+                'state'          => $request->state,
+                'postal_code'    => $request->postal_code,
+            ]);
+        }
+
+        /* =========================✅ CREATOR REFERRAL LOGIC========================== */
+        if ($request->filled('promo') && $request->role == 1) {
+
+            $referrer = User::where('referral_code', $request->promo)
+                ->where('role', 1)
+                ->first();
+
+            if (!$referrer) {
+                return back()->with('error', 'Invalid referral code.');
             }
 
-            if ($request->role == 1) {
-                UserVerificationStatus::create(
-                    ['user_id' => $user->id, 'role' => $request->role, 'bio_status' => 1, 'address_status' => 0]
-                );
+            if ($referrer->id === $user->id) {
+                return back()->with('error', 'You cannot use your own referral code.');
             }
 
+            $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)->exists();
 
-            if ($request->role == 0) {
-                // UserVerificationStatus::create(
-                //     [
-                //         'user_id' => $user->id,
-                //         'role' => $request->role,
-                //         'bio_status' => 1,
-                //         'social_status' => 1,
-                //         'address_status' => 0
-                //     ]
-                // );
-
-                GifterAddress::create([
-                    'user_id' => $user->id,
-                    'country' => $request->country,
-                    'street_address' => $request->street_address,
-                    'city' => $request->city,
-                    'state' => $request->state,
-                    'postal_code' => $request->postal_code,
+            if (!$alreadyExists) {
+                CreatorReferral::create([
+                    'referrer_creator_id' => $referrer->id,
+                    'referred_creator_id' => $user->id,
+                    'lifetime_gmv'        => 0,
+                    'status'              => 'IN_PROGRESS',
                 ]);
-            }
-
-            // UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->update(['address_status' => 0]);
-
-            if (!empty($request->promo)) {
-                $promocode = PromoCode::whereCode($request->promo)->first();
-                $user->promo_code_id = $promocode->id;
-                $user->save();
-            }
-
-            Auth::login($user);
-
-            $promocode = PromoCode::whereCode($request->promocode)->first();
-            if (!empty($promocode)) {
-                Referal::insert([
-                    'user_id' => Auth::id(),
-                    'promocode_id' => $promocode->id,
-                ]);
-            }
-
-            //send email
-            WelcomeUser::dispatch($user);
-
-            $checkemailverify = User::whereId(Auth::id())->where('is_uk', 0)->first();
-
-            if ($checkemailverify->email_verified_at != NUll) {
-                return redirect(route("user.show", [$user->username]))->with("success", "Registration successful.");
-            } else {
-                return redirect(route('verification.notice'));
             }
         }
+
+        /* =========================SEND WELCOME EMAIL========================== */
+        WelcomeUser::dispatch($user);
+
+        /* =========================REDIRECT========================== */
+        if ($user->email_verified_at) {
+            return redirect(route('user.show', $user->username))
+                ->with('success', 'Registration successful.');
+        }
+
+        return redirect(route('verification.notice'));
     }
 
     // public function verification()

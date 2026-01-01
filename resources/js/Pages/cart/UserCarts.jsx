@@ -89,12 +89,9 @@ export default function UserCarts(props) {
 
     const [items, setItems] = useState(datas?.items);
     const removeCart = (id) => {
-        console.log("Auth status:", auth, "Auth user:", auth?.user, "Auth user ID:", auth?.user?.id);
         const removeUrl = auth && auth.user && auth.user.id 
             ? `/api/remove-from-cart/${id}` 
             : `/api/remove-from-cart/${id}/${deviceid}`;
-        
-        console.log("Remove URL:", removeUrl);
         
         axios.get(removeUrl, {
             headers: {
@@ -103,7 +100,6 @@ export default function UserCarts(props) {
             }
         })
         .then((response) => {
-            console.log("Cart item removed successfully:", response.data);
             if (response.data.success) {
                 const updatedItems = items.filter((item) => item.uuid !== id);
                 setItems(updatedItems || []);
