@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import { useState, useEffect } from 'react';
 import PriceFormat from "@/includes/PriceFormat";
+import Nocontent from '../../includes/Nocontent';
 
 const Countdown = ({ createdAt, hours }) => {
     if (!hours) return null;
@@ -56,7 +57,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                     <div className="max-w-4xl mx-auto space-y-8">
                         
                         {/* Active Orders Section */}
-                        {orders && orders.length > 0 && (
+                        {orders && orders.length > 0 &&
                             <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-xl">
                                 <div className='py-3 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between'>
                                     <h3 className="font-bold text-xl text-white">Active Orders (Action Required)</h3>
@@ -68,39 +69,44 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                 </div>
                                 
                                 <ul className="divide-y divide-gray-200">
-                                    {orders.map(order => (
-                                        <li key={order.id} className="p-6 hover:bg-red-50 transition-colors">
-                                            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                                <div>
-                                                    <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
-                                                        Order #{order.uuid.substring(0, 8)} - {order.task.title}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600 mt-1">
-                                                        Supporter: <span className="font-semibold">{order.supporter?.name || 'Guest'}</span> | 
-                                                        Ordered: {new Date(order.created_at).toLocaleDateString()}
-                                                        {order.task.sla_hours && (
-                                                            <> | Remaining: <Countdown createdAt={order.created_at} hours={order.task.sla_hours} /></>
-                                                        )}
-                                                    </p>
-                                                    <div className="mt-2">
-                                                        <span className="px-3 py-1 rounded-full text-xs font-bold uppercase border border-red-200 bg-red-100 text-red-800">
-                                                            {order.status.replace('_', ' ')}
-                                                        </span>
+                                    {orders?.length > 0 ?
+                                        <>
+                                            {orders && orders.map(order => (
+                                                <li key={order.id} className="p-6 hover:bg-red-50 transition-colors">
+                                                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                                        <div>
+                                                            <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
+                                                                Order #{order.uuid.substring(0, 8)} - {order.task.title}
+                                                            </h3>
+                                                            <p className="text-sm text-gray-600 mt-1">
+                                                                Supporter: <span className="font-semibold">{order.supporter?.name || 'Guest'}</span> | 
+                                                                Ordered: {new Date(order.created_at).toLocaleDateString()}
+                                                                {order.task.sla_hours && (
+                                                                    <> | Remaining: <Countdown createdAt={order.created_at} hours={order.task.sla_hours} /></>
+                                                                )}
+                                                            </p>
+                                                            <div className="mt-2">
+                                                                <span className="px-3 py-1 rounded-full text-xs font-bold uppercase border border-red-200 bg-red-100 text-red-800">
+                                                                    {order.status.replace('_', ' ')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <Link 
+                                                                href={route('task.order', order.uuid)} 
+                                                                className="button p !text-sm sm" >
+                                                                Manage Order
+                                                            </Link>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <Link 
-                                                        href={route('task.order', order.uuid)} 
-                                                        className="button p !text-sm sm" >
-                                                        Manage Order
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
+                                                </li>
+                                            ))}
+                                        </>
+                                        :
+                                        <Nocontent text="No active orders found." />
+                                    }
                                 </ul>
-                            </div>
-                        )}
+                            </div> }
                     
                         {/* Purchased Tasks */}
                         {purchased_tasks && purchased_tasks.length > 0 && (

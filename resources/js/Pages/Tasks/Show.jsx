@@ -71,24 +71,26 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                             </div>
 
                             {/* Creator Info */}
-                            <div className="flex items-center gap-4 mt-6 mb-6 p-4 bg-gray-50 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
-                                <Link href={route('user.show', task.creator.username)} className="flex items-center gap-4 group">
-                                    <img 
-                                        src={task.creator.avatar_url} 
-                                        alt={task.creator.name} 
-                                        className="w-14 h-14 rounded-full border-2 border-black object-cover"
-                                    />
-                                    <div>
-                                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Created By</p>
-                                        <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
-                                            {task.creator.name}
-                                        </h4>
-                                        <p className="text-sm text-gray-600 font-medium">@{task.creator.username}</p>
-                                        <p className="text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
-                                            On {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                                        </p>
-                                    </div>
-                                </Link>
+                            <div className=" items-center gap-4 ">
+                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
+                                <div className='flex'>
+                                    <Link href={route('user.show', task.creator.username)} className="flex items-center gap-4 group">
+                                        <img 
+                                            src={task.creator.avatar_url} 
+                                            alt={task.creator.name} 
+                                            className="w-14 h-14 rounded-full border-2 border-black object-cover"
+                                        />
+                                        <div>
+                                            <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
+                                                {task.creator.name}
+                                            </h4>
+                                            <p className="text-sm text-gray-600 font-medium">@{task.creator.username}</p>
+                                            <p className="text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
+                                                On {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                    </Link>
+                                </div>
                             </div>
                             
                             {/* Action Area */}
@@ -119,7 +121,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                                         {deliverableUrl && (
                                                             <a 
                                                                 href={deliverableUrl} 
-                                                                className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[20px] hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-lg border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+                                                                className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[20px] hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                             >

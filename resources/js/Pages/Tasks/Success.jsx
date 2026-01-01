@@ -9,9 +9,9 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="Payment Successful" />
-            <div className="py-12 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl p-8 text-center">
-                    <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 border-2 border-black mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+            <div className="bg-white py-8  mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-[700px] mx-auto bg-white p-8 text-center">
+                    <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 border-2 border-black mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
                         <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                         </svg>
@@ -22,9 +22,9 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                         Thank you for your purchase. Your order for <strong className="text-pink-600">{task.title}</strong> has been confirmed.
                     </p>
 
-                    <div className="bg-gray-50 border-2 border-black rounded-xl p-6 mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)]">
-                        <h3 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-4 border-b-2 border-gray-200 pb-2">Order Details</h3>
-                        <div className="space-y-4">
+                    <div className="bg-gray-50 border-2 border-black rounded-[22px]  mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                        <h3 className="p-6 text-normal font-bold !pb-4 font-black text-black uppercase tracking-wider border-b-2 border-gray-200 pb-2">Order Details</h3>
+                        <div className="space-y-4 p-6">
                             <div className="flex justify-between items-center">
                                 <span className="text-gray-600 font-bold uppercase text-sm">Task</span>
                                 <span className="font-bold text-gray-900">{task.title}</span>
@@ -49,14 +49,12 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link 
                             href={route('task.order', purchase.uuid)}
-                            className="inline-flex justify-center items-center px-6 py-3 border-2 border-black text-sm font-black rounded-lg text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
-                        >
-                            View Order Details
+                            className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black text-sm font-black rounded-[20px] text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase" > View Order Details
                         </Link>
                         
                         <Link 
                             href={route('task.dashboard')}
-                            className="inline-flex justify-center items-center px-6 py-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-lg text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-[20px] text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                         >
                             Go to My Tasks
                         </Link>

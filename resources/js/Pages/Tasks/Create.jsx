@@ -35,7 +35,7 @@ export default function Create({ auth, currencySymbol }) {
             <div className="loginPage bg-white px-3 py-5 min-h-screen font-public-sans">
                 <div className='container'>
                     <div className="mx-auto max-w-[900px]">
-                        <div className="text-center mb-4">
+                        <div className="text-center">
                             <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider ">
                                 Create New Task
                             </h2>
@@ -47,13 +47,13 @@ export default function Create({ auth, currencySymbol }) {
                         <div className="">
                            
 
-                            <form onSubmit={submit} className="p-6 md:p-10 space-y-4 bg-white">
+                            <form onSubmit={submit} className="p-6 md:p-10 space-y-6 bg-white">
                                 {/* Title */}
                                 <div className="mb-0">
                                     {/* <label className="block font-black text-normal mb-2 capitalize tracking-wide">Title</label> */}
                                     <input
                                         type="text"
-                                        className="w-full border-3 border-black rounded-[15px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400"
+                                        className="w-full border-2 border-black rounded-[15px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400"
                                         value={data.title}
                                         onChange={e => setData('title', e.target.value)}
                                         placeholder="Task Title e.g. Custom Video Greeting"
@@ -65,7 +65,7 @@ export default function Create({ auth, currencySymbol }) {
                                 <div className="mb-0">
                                     {/* <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-blue-500 pl-3">Description (PG-13)</label> */}
                                     <textarea
-                                        className="w-full border-3 border-black rounded-[20px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
+                                        className="w-full border-2 border-black rounded-[20px] p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
                                         rows="4"
                                         value={data.description}
                                         onChange={e => setData('description', e.target.value)}
@@ -83,7 +83,7 @@ export default function Create({ auth, currencySymbol }) {
                                             <input
                                                 type="number" placeholder={`Price (${currencySymbol})`}
                                                 step="0.01"
-                                                className="w-full border-3 border-black rounded-[15px] p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                className="w-full border-2 border-black rounded-[15px] p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                 value={data.price}
                                                 onChange={e => setData('price', e.target.value)}
                                             />
@@ -96,7 +96,7 @@ export default function Create({ auth, currencySymbol }) {
                                         {/* <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-purple-500 pl-3">Category</label> */}
                                         <input
                                             type="text"
-                                            className="w-full border-3 border-black rounded-[15px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 placeholder-gray-400"
+                                            className="w-full border-2 border-black rounded-[15px] p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 placeholder-gray-400"
                                             value={data.category}
                                             onChange={e => setData('category', e.target.value)}
                                             placeholder="Category (e.g. Shoutout, Art)"
@@ -112,7 +112,7 @@ export default function Create({ auth, currencySymbol }) {
                                         <button
                                             type="button"
                                             onClick={() => setData('type', 'instant')}
-                                            className={`p-4 rounded-[18px] border-3 border-black text-left transition-all ${
+                                            className={`p-4 rounded-[18px] border-2 border-black text-left transition-all ${
                                                 data.type === 'instant' 
                                                 ? 'bg-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]' 
                                                 : 'bg-white hover:bg-gray-50'
@@ -127,7 +127,7 @@ export default function Create({ auth, currencySymbol }) {
                                         <button
                                             type="button"
                                             onClick={() => setData('type', 'timed')}
-                                            className={`p-4 rounded-[18px] border-3 border-black text-left transition-all ${
+                                            className={`p-4 rounded-[18px] border-2 border-black text-left transition-all ${
                                                 data.type === 'timed' 
                                                 ? 'bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]' 
                                                 : 'bg-white hover:bg-gray-50'
@@ -147,7 +147,7 @@ export default function Create({ auth, currencySymbol }) {
                                         <label className="block font-black text-lg mb-2 text-blue-900 uppercase">SLA (Hours to complete)</label>
                                         <input
                                             type="number"
-                                            className="w-full border-3 bg-blue-100 border-black rounded-[18px] p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-bold text-xl"
+                                            className="w-full border-2 bg-blue-100 border-black rounded-[18px] p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-bold text-xl"
                                             value={data.sla_hours}
                                             onChange={e => setData('sla_hours', e.target.value)}
                                             min="1"
@@ -163,13 +163,13 @@ export default function Create({ auth, currencySymbol }) {
                                 {/* Deliverable File (Only for Instant) */}
                                 {data.type === 'instant' && (
                                     <div className="">
-                                        <div className="border-3 border-black rounded-[20px] p-4 bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="border-2 border-black rounded-[20px] p-4 bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             <label className="block font-black text-lg mb-3 text-pink-900 uppercase flex items-center gap-2">
                                                 <span className="bg-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm border-2 border-black">1</span>
                                                 Upload Deliverable Content
                                             </label>
                                             <textarea
-                                                className="bg-white w-full border-3 border-black rounded-[15px] p-3 mb-4 font-medium focus:!shadow-none"
+                                                className="bg-white w-full border-2 border-black rounded-[15px] p-3 mb-4 font-medium focus:!shadow-none"
                                                 rows="2"
                                                 placeholder="Add a note or external link (optional if file provided)..."
                                                 value={data.deliverable_note}
@@ -196,7 +196,7 @@ export default function Create({ auth, currencySymbol }) {
                                 {/* Cover Image */}
                                 {/* <div className="group">
                                     <label className="block font-black text-xl mb-2 uppercase tracking-wide border-l-4 border-gray-500 pl-3">Cover Image (Optional)</label>
-                                    <div className="border-3 border-black rounded-xl p-6 bg-gray-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="border-2 border-black rounded-xl p-6 bg-gray-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <GlobalUploader
                                             ctxName="task-cover"
                                             type="minimal"

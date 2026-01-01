@@ -53,24 +53,19 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
         notes: '',
     });
 
-    console.log("task",task)
-
     const { data: reviewData, setData: setReviewData, post: postReview, processing: reviewProcessing, errors: reviewErrors } = useForm({
         action: '',
         reason: '',
     });
 
     const [showRejectForm, setShowRejectForm] = useState(false);
-
     const handleUpload = (e) => {
         e.preventDefault();
         postUpload(route('task.upload-proof', purchase.uuid));
     };
-
     const handleProofUpload = (file) => {
         setUploadData('proof_file', file);
     };
-
     const handleAccept = () => {
         if (confirm('Are you sure you want to accept this proof? This will release the funds to the creator.')) {
             reviewData.action = 'accept';
@@ -126,9 +121,9 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                 REMAINING: <Countdown createdAt={purchase.created_at} hours={task.sla_hours} />
                             </span>
                         )}
-                        <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            SLA Deadline : <span className="text-green-600">{purchase.sla_deadline}</span>
-                        </span>
+                       {task?.sla_hours ? <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            SLA Deadline : <span className="text-green-600">{task?.sla_hours} hours</span>
+                        </span> : ''}
                     </div>
                         
                     {task.type === 'timed' && (
@@ -272,21 +267,21 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
 
                     {task.type === 'instant' && (
                         <div>
-                            <div className="bg-green-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 rounded-xl text-center">
+                            <div className="bg-green-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 rounded-[20px] text-center mt-6">
                                 {isCreator ? (
                                     <>
-                                        <h2 className="text-3xl font-black text-green-800 mb-2 uppercase">Order Completed!</h2>
+                                        <h2 className="text-2xl font-black text-green-800 mb-2 uppercase">Order Completed!</h2>
                                         <p className="text-green-700 mb-8 font-medium text-lg">
                                             This is an instant delivery task. The content has been automatically delivered to the supporter.
                                         </p>
                                     </>
                                 ) : (
                                     <>
-                                        <h2 className="text-3xl font-black text-green-800 mb-2 uppercase">Content Unlocked!</h2>
+                                        <h2 className="text-2xl font-black text-green-800 mb-2 uppercase">Content Unlocked!</h2>
                                         <p className="text-green-700 mb-8 font-medium text-lg">Your purchase was successful.</p>
                                         <a 
                                             href={route('task.download', task.uuid)} 
-                                            className="inline-block bg-green-500 text-white px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                            className="inline-block bg-green-500 text-white px-4 py-[12px] rounded-[20px] font-black uppercase tracking-widest text-sm border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                         >
                                             Download Content
                                         </a>
