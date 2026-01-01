@@ -30,14 +30,14 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                 <span className='border-2 border-black bg-yellow-400 w-4 h-4 rounded-full block'></span>
                                 <span className='border-2 border-black bg-green-400 w-4 h-4 rounded-full block'></span>
                             </div>
-                        </div>
+                        </div> 
 
                         {/* Media Cover */}
                         {/* {task.media_url && (
                             <div className="border-b-2 border-black">
                                 <img src={task.media_url} alt={task.title} className="w-full h-80 object-cover" />
                             </div>
-                        )} */}
+                        )} */} 
 
                         <div className="p-8">
                             <div className='flex justify-between items-start'>
@@ -48,8 +48,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                     <div className="mt-2 mb-4 prose prose-lg text-gray-600 leading-relaxed border-l-4 border-pink-300 pl-4">
                                         {task.description}
                                     </div>
-                                </div>
-
+                                </div> 
                                 <span className="text-2xl font-black text-pink font-anton tracking-wider">
                                     {formatMultiPrice(task.price, task.currency || 'USD')}
                                 </span>
