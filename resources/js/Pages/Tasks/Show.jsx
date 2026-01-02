@@ -21,17 +21,10 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                         &larr; Back to Dashboard
                     </Link>
 
-                    <div className="bg-white border-2 !border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-[22px] overflow-hidden">
+                    <div className="">
                         
                         {/* Retro Header */}
-                        <div className='px-4 p-3 bg-pink-100 flex !border-b-2 !border-black items-center justify-between'>
-                            <h3 className="font-bold text-xl uppercase font-anton  tracking-wide">Task Details</h3>
-                            <div className="flex items-center gap-2">
-                                <span className='border-2 border-black bg-red-500 w-4 h-4 rounded-full block'></span>
-                                <span className='border-2 border-black bg-yellow-400 w-4 h-4 rounded-full block'></span>
-                                <span className='border-2 border-black bg-green-400 w-4 h-4 rounded-full block'></span>
-                            </div>
-                        </div> 
+                        
 
                         {/* Media Cover */}
                         {/* {task.media_url && (
@@ -40,7 +33,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                             </div>
                         )} */} 
 
-                        <div className="p-8">
+                        <div className="py-8">
                             <div className='flex justify-between items-start'>
                                 <div>
                                     <h1 className="text-2xl font-black font-fre uppercase font-light  text-gray-900  ">
