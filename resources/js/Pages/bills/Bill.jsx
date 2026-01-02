@@ -105,10 +105,10 @@ function Bill(props) {
                   <AddBills classes="pinkbg hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow" text="Update Bill"
                   item={itm} isEdit={true} />
                 :
-                <Link method='get' as="button"
-                  href={route('bill.checkout',{uuid: itm.uuid})}
-                  className='pinkbg hover:opacity-[0.8] text-white  text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >
-                    Pay Bill
+                <Link method='get' as="button"  
+                  href={route('bill.checkout',{uuid: itm.uuid})}  
+                  className='pinkbg hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow' >
+                  Pay Bill
                 </Link>
               }
             </div>

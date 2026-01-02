@@ -26,6 +26,12 @@ class Kernel extends ConsoleKernel
         // $schedule->job(new SendMailSubscriptions)->everyMinute(); // Runs MyJob every hour
         $schedule->command("app:sync-exchange-rate")->hourly()->withoutOverlapping(4);
 
+        // Process SLA Refunds
+        $schedule->command('app:process-sla-refunds')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+
         $schedule->command("app:auto-suspend-account")->daily()->withoutOverlapping(4);
         
         // Schedule pending approval notifications based on configuration

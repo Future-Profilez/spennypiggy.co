@@ -711,6 +711,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/founder/settle-payouts', [FounderBonusController::class, 'settlePayouts'])->name('founder.settle-payouts');
 });
 
+// Paid Tasks Routes (Phase 1) - Prefixed to avoid username collisions
+Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\TaskController::class, 'index'])->name('dashboard');
+    Route::get('/create', [\App\Http\Controllers\TaskController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\TaskController::class, 'store'])->name('store');
+    Route::post('/{uuid}/purchase', [\App\Http\Controllers\TaskController::class, 'purchase'])->name('purchase');
+    Route::get('/{uuid}/success', [\App\Http\Controllers\TaskController::class, 'success'])->name('success');
+    Route::get('/{uuid}/download', [\App\Http\Controllers\TaskController::class, 'download'])->name('download');
+    Route::get('/order/{uuid}', [\App\Http\Controllers\TaskController::class, 'order'])->name('order');
+    Route::post('/purchase/{uuid}/upload', [\App\Http\Controllers\TaskController::class, 'uploadProof'])->name('upload-proof');
+    Route::post('/purchase/{uuid}/review', [\App\Http\Controllers\TaskController::class, 'reviewProof'])->name('review-proof');
+});
+Route::get('/task/{uuid}', [\App\Http\Controllers\TaskController::class, 'show'])->name('task.show');
+
 // Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');
 // Place specific data routes BEFORE the catch-all username route to avoid interception
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');

@@ -12,6 +12,7 @@ use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PurchasesController extends Controller
@@ -25,14 +26,14 @@ class PurchasesController extends Controller
         
         // Get deliverables for the authenticated user (as gifter)
         $sentDeliverables = Deliverable::where('gifter_id', $user->id)
-            ->with(['creator', 'wishItem', 'bill', 'membership'])
+            ->with(['creator', 'wishItem', 'bill', 'membership', 'task'])
             ->select(['id', 'uuid', 'creator_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
             
         // Get deliverables received by the user (as creator)
         $receivedDeliverables = Deliverable::where('creator_id', $user->id)
-            ->with(['gifter', 'wishItem', 'bill', 'membership'])
+            ->with(['gifter', 'wishItem', 'bill', 'membership', 'task'])
             ->select(['id', 'uuid', 'gifter_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -229,7 +230,7 @@ class PurchasesController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('Failed to cancel subscription', [
+            Log::error('Failed to cancel subscription', [
                 'type' => $type,
                 'uuid' => $uuid,
                 'user_id' => $user->id,
@@ -289,7 +290,7 @@ class PurchasesController extends Controller
             return back()->with('error', 'Subscription not found.');
             
         } catch (\Exception $e) {
-            \Log::error('Failed to cancel subscription by ID', [
+            Log::error('Failed to cancel subscription by ID', [
                 'subscription_id' => $id,
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
@@ -359,7 +360,7 @@ class PurchasesController extends Controller
             return back()->with('success', 'Subscription will be canceled at the end of the current billing period.');
             
         } catch (\Exception $e) {
-            \Log::error('Failed to cancel Stripe subscription', [
+            Log::error('Failed to cancel Stripe subscription', [
                 'subscription_id' => $subscription->id,
                 'stripe_id' => $subscription->stripe_id,
                 'error' => $e->getMessage()
@@ -391,7 +392,7 @@ class PurchasesController extends Controller
             return back()->with('success', 'Membership subscription cancelled successfully.');
             
         } catch (\Exception $e) {
-            \Log::error('Failed to cancel membership subscription', [
+            Log::error('Failed to cancel membership subscription', [
                 'subscription_id' => $subscription->id,
                 'error' => $e->getMessage()
             ]);
@@ -415,7 +416,7 @@ class PurchasesController extends Controller
             return back()->with('success', 'Bill subscription cancelled successfully.');
             
         } catch (\Exception $e) {
-            \Log::error('Failed to cancel bill subscription', [
+            Log::error('Failed to cancel bill subscription', [
                 'subscription_id' => $subscription->id,
                 'error' => $e->getMessage()
             ]);

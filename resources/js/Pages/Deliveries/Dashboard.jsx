@@ -164,21 +164,35 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                        {delivery.deliverable_url && delivery.status.toLowerCase() === 'delivered' ? (
-                                                            <a
-                                                                href={delivery.deliverable_url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
-                                                            >
-                                                                <FiDownload className="w-4 h-4 mr-1" />
-                                                                Download
-                                                            </a>
-                                                        ) : (
-                                                            <span className="text-gray-400">
-                                                                {delivery.status.toLowerCase() === 'pending' ? 'Processing...' : 'N/A'}
-                                                            </span>
-                                                        )}
+                                                        <div className="flex flex-col gap-2">
+                                                            {delivery.deliverable_url && delivery.status.toLowerCase() === 'delivered' && (
+                                                                <a
+                                                                    href={delivery.deliverable_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
+                                                                >
+                                                                    <FiDownload className="w-4 h-4 mr-1" />
+                                                                    Download
+                                                                </a>
+                                                            )}
+                                                            {delivery.certificate_url && (
+                                                                <a
+                                                                    href={delivery.certificate_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-green-600 hover:text-green-900 inline-flex items-center"
+                                                                >
+                                                                    <FiCheckCircle className="w-4 h-4 mr-1" />
+                                                                    Certificate
+                                                                </a>
+                                                            )}
+                                                            {(!delivery.deliverable_url && !delivery.certificate_url) && (
+                                                                <span className="text-gray-400">
+                                                                    {delivery.status.toLowerCase() === 'pending' ? 'Processing...' : 'N/A'}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

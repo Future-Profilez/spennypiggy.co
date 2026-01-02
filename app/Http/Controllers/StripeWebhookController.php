@@ -9,6 +9,7 @@ use App\Mail\PaymentSuccessMail;
 use App\Models\MonthlyCharge;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
 use App\Services\StripeControl;
@@ -17,6 +18,8 @@ use App\Models\BillPayment;
 use App\Models\Deliverable;
 use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
+use App\Models\Task;
+use App\Models\TaskPurchase;
 use App\Models\WishItemSubscription;
 use App\StripeControl as AppStripeControl;
 // use App\StripeControl as AppStripeControl;
@@ -25,6 +28,8 @@ use Stripe\Customer;
 use Stripe\StripeClient;
 use Stripe\Stripe;
 use Stripe\Webhook;
+use App\Mail\TaskPurchasedMail;
+use Illuminate\Support\Facades\Mail;
 
 class StripeWebhookController extends Controller
 {
@@ -58,18 +63,18 @@ class StripeWebhookController extends Controller
                     break;
 
                 default:
-            \Log::warning('Unhandled event type', ['type' => $event->type]);
+            Log::warning('Unhandled event type', ['type' => $event->type]);
                     break;
             }
 
             return response()->json(['status' => 'success']);
         } catch (\UnexpectedValueException $e) {
             // Invalid payload
-            \Log::error('Invalid Payload', ['message' => $e->getMessage()]);
+            Log::error('Invalid Payload', ['message' => $e->getMessage()]);
             return response()->json(['error' => 'Invalid payload'], 400);
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
             // Invalid signature
-            \Log::error('Invalid Signature', [
+            Log::error('Invalid Signature', [
                 'message' => $e->getMessage(),
                 'sig_header' => $sigHeader,
                 'payload' => $payload,
@@ -115,7 +120,7 @@ class StripeWebhookController extends Controller
                 $user->email
             );
         } else {
-            \Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
+            Log::error('User not found for verification session requiring input', ['session_id' => $session->id]);
         }
     }
 
@@ -177,7 +182,7 @@ class StripeWebhookController extends Controller
                 $client = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $client->identity->verificationSessions->redact($session->id, []);
             } catch (\Throwable $e) {
-                \Log::warning('Stripe Identity redaction failed', [
+                Log::warning('Stripe Identity redaction failed', [
                     'user_id' => $user->id,
                     'session_id' => $session->id ?? null,
                     'error' => $e->getMessage(),
@@ -198,7 +203,7 @@ class StripeWebhookController extends Controller
                 );
             }
         } else {
-            \Log::error('User not found for verified verification session', ['session_id' => $session->id]);
+            Log::error('User not found for verified verification session', ['session_id' => $session->id]);
         }
     }
 
@@ -297,7 +302,7 @@ class StripeWebhookController extends Controller
         }
 
         if (!$event || !isset($event->type)) {
-            \Log::warning('Stripe webhook: invalid payload');
+            Log::warning('Stripe webhook: invalid payload');
             return response()->json(['error' => 'Invalid payload'], 400);
         }
 
@@ -308,20 +313,30 @@ class StripeWebhookController extends Controller
 
         switch ($type) {
             case 'checkout.session.completed':
-                \Log::info("Handling Checkout Session Completed");
+                Log::info("Handling Checkout Session Completed");
                 $this->handleCheckoutSessionCompleted($data, $metadata);
                 $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
 
             case 'invoice.paid':
-                \Log::info("Handling Invoice Paid");
+                Log::info("Handling Invoice Paid");
                 $this->handleInvoicePaid($data, $metadata);
                 break;
 
             case 'invoice.payment_succeeded':
-                \Log::info("Handling Invoice Payment Succeeded");
+                Log::info("Handling Invoice Payment Succeeded");
                 $this->handleInvoicePaymentSucceeded($data, $metadata);
                 $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                break;
+
+            case 'charge.dispute.created':
+                Log::info("Handling Charge Dispute Created");
+                $this->handleChargeDisputeCreated($data);
+                break;
+
+            case 'charge.dispute.closed':
+                Log::info("Handling Charge Dispute Closed");
+                $this->handleChargeDisputeClosed($data);
                 break;
 
             case 'customer.subscription.updated':
@@ -329,29 +344,29 @@ class StripeWebhookController extends Controller
 
                 switch ($productType) {
                     case 'bill':
-                        \Log::info("Handling Bill Subscription Update");
+                        Log::info("Handling Bill Subscription Update");
                         $this->handleBillSubscriptionUpdate($data, $metadata);
                         break;
 
                     case 'membership':
-                        \Log::info("Handling Membership Subscription Update");
+                        Log::info("Handling Membership Subscription Update");
                         $this->handleMembershipSubscriptionUpdate($data, $metadata);
                         break;
 
                     case 'wish':
-                        \Log::info("Handling Wish Subscription Update");
+                        Log::info("Handling Wish Subscription Update");
                         $this->handleWishSubscriptionUpdate($data, $metadata);
                         break;
 
                     default:
-                        \Log::warning("Unknown product type in metadata: " . json_encode($metadata));
+                        Log::warning("Unknown product type in metadata: " . json_encode($metadata));
                         break;
                 }
                 break;
 
             case 'customer.subscription.deleted':
                 $this->customerSubscriptionDeleted($data);
-                \Log::info("Subscription canceled: " . $data->id);
+                Log::info("Subscription canceled: " . $data->id);
                 break;
 
             // case 'customer.subscription.trial_will_end':
@@ -378,7 +393,7 @@ class StripeWebhookController extends Controller
             //     break;
             // $this->customerSubscriptionTrialWillEnd($data);
             default:
-                \Log::info("Unhandled event type: " . $type);
+                Log::info("Unhandled event type: " . $type);
         }
         return response()->json(['status' => 'success']);
     }
@@ -397,6 +412,11 @@ class StripeWebhookController extends Controller
             // Check if this is a wish item purchase
             if (isset($metadata->deliverable_type) && $metadata->deliverable_type === 'media_bundle') {
                 $this->processWishItemDeliverable($session, $metadata);
+            }
+
+            // Check if this is a task purchase
+            if (isset($metadata->type) && $metadata->type === 'task_purchase') {
+                $this->processTaskPurchase($session, $metadata);
             }
 
             return response()->json(['status' => 'success']);
@@ -506,6 +526,172 @@ class StripeWebhookController extends Controller
         }
     }
 
+    /**
+     * Process task purchase creation
+     */
+    private function processTaskPurchase($session, $metadata)
+    {
+        Log::info("Processing task purchase", ['session_id' => $session->id]);
+
+        $taskId = $metadata->task_id ?? null;
+        $buyerId = $metadata->buyer_id ?? null;
+        $creatorId = $metadata->creator_id ?? null;
+        
+        if (!$taskId || !$buyerId) {
+            Log::error("Missing task_id or buyer_id in metadata for task purchase");
+            return;
+        }
+
+        // Idempotency check
+        if (TaskPurchase::where('stripe_session_id', $session->id)->exists()) {
+            Log::info("Task purchase already exists for session", ['session_id' => $session->id]);
+            return;
+        }
+
+        $task = Task::find($taskId);
+        if (!$task) {
+             Log::error("Task not found for purchase", ['task_id' => $taskId]);
+             return;
+        }
+
+        // Calculate amount from session amount_total (in cents/smallest unit)
+        $amount = ($session->amount_total ?? 0) / 100;
+
+        // Create TaskPurchase
+        $purchase = TaskPurchase::create([
+            'task_id' => $taskId,
+            'supporter_id' => $buyerId,
+            'creator_id' => $creatorId ?? $task->creator_id,
+            'stripe_session_id' => $session->id,
+            'payment_intent_id' => $session->payment_intent,
+            'amount' => $amount,
+            'status' => 'pending', // Initial status
+            'admin_fee' => $metadata->admin_fee ?? 0,
+            'platform_fee' => $metadata->platform_fee ?? 0,
+            'vat_amount' => $metadata->vat_amount ?? 0,
+            'transfer_amount' => $metadata->transfer_amount ?? 0,
+            'dispute_status' => 'none',
+        ]);
+
+        // SLA logic
+        $slaHours = (int) ($metadata->sla_hours ?? 0);
+        if ($slaHours > 0) {
+             $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
+             $purchase->save();
+        }
+
+        // Create Deliverable
+        $deliverable = Deliverable::create([
+            'uuid' => (string) Str::uuid(),
+            'product_id' => (string) $taskId,
+            'item_id' => $taskId, 
+            'order_id' => $purchase->id,
+            'creator_id' => $creatorId ?? $task->creator_id,
+            'gifter_id' => $buyerId,
+            'payment_intent_id' => $session->payment_intent,
+            'session_id' => $session->id,
+            'deliverable_type' => 'digital_task',
+            'product_type' => 'task',
+            'transaction_amount' => $amount,
+            'status' => 'pending',
+            'sla_hours' => $slaHours,
+            'due_at' => $slaHours > 0 ? Carbon::now()->addHours($slaHours) : null,
+            'refund_eligible' => $slaHours > 0, 
+            'payment_status' => 'paid',
+            'payment_currency' => strtoupper($session->currency ?? 'GBP'),
+            'customer_email' => $session->customer_details->email ?? null,
+            'customer_name' => $session->customer_details->name ?? null,
+            'metadata' => json_encode($metadata),
+        ]);
+        
+        // Dispatch job to process the deliverable (certificate generation)
+        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+        
+        // Handle Instant Task
+        if (($metadata->task_type ?? '') === 'instant') {
+            $purchase->status = 'completed';
+            $purchase->completed_at = Carbon::now();
+            $purchase->save();
+            
+            $deliverable->status = 'delivered';
+            $deliverable->delivered_at = Carbon::now();
+            $deliverable->save();
+            
+            Log::info("Instant task purchase completed", ['purchase_id' => $purchase->id]);
+        } else {
+            Log::info("Timed task purchase created", ['purchase_id' => $purchase->id]);
+        }
+
+        try {
+            $creator = User::find($creatorId ?? $task->creator_id);
+            $supporter = $buyerId ? User::find($buyerId) : null;
+            
+            if ($creator) {
+                Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                
+                Helpers::sendNotification(
+                    "New Task Order! 💰", 
+                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title, 
+                    $creator->email
+                );
+                Log::info("Task purchase email sent", ['creator_email' => $creator->email]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to send task purchase email/notification", ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Handle Charge Dispute Created
+     */
+    private function handleChargeDisputeCreated($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        
+        if (!$paymentIntentId) {
+             return;
+        }
+
+        $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+        if ($purchase) {
+            $purchase->dispute_status = 'open';
+            $purchase->save();
+            Log::info("Dispute opened for TaskPurchase", ['id' => $purchase->id]);
+        }
+    }
+
+    /**
+     * Handle Charge Dispute Closed
+     */
+    private function handleChargeDisputeClosed($dispute)
+    {
+        $paymentIntentId = $dispute->payment_intent ?? null;
+        
+        if (!$paymentIntentId) {
+             return;
+        }
+
+        $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+        if ($purchase) {
+            $status = $dispute->status; // won, lost, warning_closed
+            
+            // Map Stripe status to our enum ['none', 'open', 'won', 'lost']
+            if ($status === 'won') {
+                $purchase->dispute_status = 'won';
+            } elseif ($status === 'lost') {
+                $purchase->dispute_status = 'lost';
+            } else {
+                // Keep open or set to none if it was just a warning
+                if (str_contains($status, 'warning')) {
+                     $purchase->dispute_status = 'none';
+                }
+            }
+            
+            $purchase->save();
+            Log::info("Dispute closed for TaskPurchase", ['id' => $purchase->id, 'status' => $status]);
+        }
+    }
+
     public function handleBillSubscriptionUpdate($data, $metadata)
     {
         $subscriptionId = $data->id;
@@ -571,7 +757,7 @@ class StripeWebhookController extends Controller
             $currencySymbol = $currency ? $currency->symbol : '£';
 
             \App\Jobs\BillContentDeliveryMail::dispatch($newSubs, $currencySymbol);
-            \Log::info('StripeWebhookController: Content delivery email dispatched for bill renewal', [
+            Log::info('StripeWebhookController: Content delivery email dispatched for bill renewal', [
                 'bill_payment_id' => $newSubs->id,
                 'bill_id' => $newSubs->bills_id,
                 'has_content_file' => !empty($newSubs->bill->content_file)

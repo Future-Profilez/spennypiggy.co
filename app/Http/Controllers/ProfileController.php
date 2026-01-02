@@ -18,7 +18,6 @@ use Uploadcare\AuthUrl\AuthUrlConfig;
 use Uploadcare\AuthUrl\Token\AkamaiToken;
 use PragmaRX\Google2FALaravel\Google2FA;
 use Uploadcare\Configuration;
-use Image;
 use PragmaRX\Recovery\Recovery;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
@@ -48,6 +47,9 @@ use App\Models\PostCommentReplies;
 use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopShippingInfo;
+use App\Models\WishCategory;
+use App\StripeControl;
+use Intervention\Image\Facades\Image;
 use App\Models\ShopVarients;
 use App\Models\ShopPayment;
 use App\Models\UserCart;
@@ -57,7 +59,6 @@ use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
 use App\Models\Deliverable;
 use App\Models\UserBackupCode;
-use App\StripeControl;
 
 class ProfileController extends Controller
 {
@@ -901,18 +902,21 @@ class ProfileController extends Controller
 
         // 2) Bill deliverables (Deliverable)
         $deliverables = Deliverable::where('gifter_id', $user->id)
-            ->whereNotNull('deliverable_url')
-            ->whereIn('product_type', ['bill', 'wish'])
-            ->with(['wishItem', 'bill', 'creator'])
+            ->where(function ($query) {
+                $query->whereNotNull('deliverable_url')
+                      ->orWhereNotNull('certificate_url');
+            })
+            ->whereIn('product_type', ['bill', 'wish', 'task'])
+            ->with(['wishItem', 'bill', 'creator', 'task'])
             ->orderBy('created_at', 'DESC')
             ->get();
 
         foreach ($deliverables as $d) {
-            $url = $d->deliverable_url ?: ($d->bill?->content_file_url ?? $d->wishItem?->content_file_url);
+            $url = $d->deliverable_url ?: ($d->certificate_url ?: ($d->bill?->content_file_url ?? $d->wishItem?->content_file_url));
             if (!$url) { continue; }
             $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
             $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
-            $title = $d->wishItem?->wishname ?? $d->bill?->name ?? 'Content';
+            $title = $d->wishItem?->wishname ?? $d->bill?->name ?? $d->task?->title ?? 'Content';
             $items[] = [
                 'url' => $url,
                 'type' => $type,

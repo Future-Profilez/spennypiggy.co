@@ -43,6 +43,7 @@ class DeliveriesController extends Controller
                 'created_at' => $deliverable->created_at->format('M d, Y H:i'),
                 'delivered_at' => $deliverable->delivered_at?->format('M d, Y H:i'),
                 'deliverable_url' => $deliverable->deliverable_url,
+                'certificate_url' => $deliverable->certificate_url, // Added certificate URL
                 'is_creator' => $deliverable->creator_id === $user->id,
                 'creator_name' => $deliverable->creator?->name,
                 'gifter_name' => $deliverable->gifter?->name,

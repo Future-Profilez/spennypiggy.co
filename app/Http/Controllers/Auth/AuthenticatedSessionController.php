@@ -382,10 +382,15 @@ class AuthenticatedSessionController extends Controller
             'posts' => [],
             'memberships' => [],
             'bills' => [],
-            'shops' => []
+            'shops' => [],
+            'tasks' => []
         ];
 
         switch ($page) {
+            case 'tasks':
+                $data['tasks'] = $this->profileService->getOptimizedTasks($userId, Auth::id() === $userId);
+                break;
+
             case 'wishes':
                 $categoryId = request()->query('category');
                 $data['items'] = $this->profileService->getUserWishItems($userId, $categoryId);

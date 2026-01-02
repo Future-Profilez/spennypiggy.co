@@ -60,7 +60,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                 </div>
             );
             
-            if ((index + 1) % 12 === 0 && index !== results.length - 1) {
+            if (['creator', 'wish'].includes(mode) && (index + 1) % 12 === 0 && index !== results.length - 1) {
                 items.push(
                     <div key={`spotlight-${index}`} className="col-span-full my-8">
                         <SpotlightSection index={(index + 1) / 12} />

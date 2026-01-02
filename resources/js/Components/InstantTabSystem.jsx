@@ -32,6 +32,7 @@ function InstantTabSystem({
     const tabs = [
         { id: 'about', label: 'About', icon: '👤' },
         { id: 'wishes', label: 'Wishes', icon: '💝' },
+        { id: 'tasks', label: 'Tasks', icon: '📋' },
         { id: 'memberships', label: 'Memberships', icon: '⭐' },
         { id: 'bills', label: 'Bills', icon: '💳' },
         { id: 'shop', label: 'Shop', icon: '🛍️' },

@@ -17,6 +17,7 @@ class Deliverable extends Model
         'uuid',
         'product_id',
         'item_id', // NEW: Database wish item ID
+        'order_id', // Linked to task_purchases
         'price_id',
         'creator_id',
         'gifter_id',
@@ -29,6 +30,9 @@ class Deliverable extends Model
         'certificate_url',
         'metadata',
         'status',
+        'sla_hours',
+        'due_at',
+        'refund_eligible',
         'is_deliverable', // NEW: Flag for admin interface
         'delivered_at',
         'customer_email',
@@ -99,6 +103,14 @@ class Deliverable extends Model
     {
         return $this->belongsTo(Bills::class, 'item_id');
     }
+
+    /**
+     * Get the task this deliverable is for
+     */
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'item_id');
+    }
     
     /**
      * Get the item based on product_type
@@ -114,6 +126,8 @@ class Deliverable extends Model
                 return $this->bill;
             case 'membership':
                 return $this->membership;
+            case 'task':
+                return $this->task;
             case 'shop_item':
                 return $this->belongsTo(Shop::class, 'item_id')->first();
             default:
