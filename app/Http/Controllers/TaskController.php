@@ -367,6 +367,24 @@ class TaskController extends Controller
             if (!$purchase) {
                 $purchase = $this->createTaskPurchaseSync($session, $task);
             }
+
+            // Self-healing: If purchase exists but is pending for an instant task, fix it.
+            // This handles cases where synchronous creation failed to set status correctly due to metadata issues.
+            if ($purchase && $purchase->status === 'pending' && $task->type === 'instant') {
+                 $purchase->status = 'completed';
+                 $purchase->completed_at = Carbon::now();
+                 $purchase->save();
+                 
+                 // Also fix deliverable
+                 $deliverable = Deliverable::where('order_id', $purchase->id)->first();
+                 if ($deliverable) {
+                     $deliverable->status = 'delivered';
+                     $deliverable->delivered_at = Carbon::now();
+                     $deliverable->save();
+                 }
+                 
+                 Log::info('Self-healed pending instant task status', ['purchase_id' => $purchase->id]);
+            }
         } else {
             return redirect()->route('task.show', $uuid)->with('error', 'Payment not completed.');
         }
@@ -446,7 +464,8 @@ class TaskController extends Controller
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
         
         // Handle Instant Task
-        if (($metadata->task_type ?? '') === 'instant') {
+        // Use $task->type as reliable source instead of metadata
+        if ($task->type === 'instant') {
             $purchase->status = 'completed';
             $purchase->completed_at = Carbon::now();
             $purchase->save();
