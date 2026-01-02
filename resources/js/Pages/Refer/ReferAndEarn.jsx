@@ -222,6 +222,36 @@ export default function ReferAndEarn({
                             </div>
 
                             <button
+                                disabled={!canRedeem}
+                                className={`btn-pink px-6 py-3 text-sm font-semibold min-w-[240px]
+                                    ${
+                                        !canRedeem
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : ""
+                                    }
+                                `}
+                                onClick={() => {
+                                    router.post(route("referral.redeem"));
+                                }}
+                            >
+                                Redeem £50
+                            </button>
+
+                            {!canRedeem && (
+                                <p className="text-xs text-muted text-right max-w-xs">
+                                    You can redeem once a referred creator
+                                    reaches £1,000 lifetime GMV.
+                                </p>
+                            )}
+
+                            {canRedeem && (
+                                <p className="text-xs text-muted text-right max-w-xs">
+                                    Your request will be reviewed and paid to
+                                    your Stripe account.
+                                </p>
+                            )}
+
+                            {/* <button
                                 disabled={
                                     !stats.available_for_payout ||
                                     stats.available_for_payout <= 0
@@ -242,7 +272,7 @@ export default function ReferAndEarn({
                                 }}
                             >
                                 Redeem Earnings
-                            </button>
+                            </button> */}
 
                             <p className="text-xs text-muted text-right max-w-xs">
                                 After approval, funds are paid to your connected

@@ -417,9 +417,10 @@ Route::middleware('auth')->group(function () {
             });
 
             Route::get('/refer-and-earn', [ReferAndEarnController::class, 'index'])->name('refer-and-earn');
-            Route::post('/refer-and-earn/create-link',
-                [ReferAndEarnController::class, 'createReferralLink']
-            )->name('create-referral-link');
+            Route::post('/refer-and-earn/create-link', [ReferAndEarnController::class, 'createReferralLink'])->name('create-referral-link');
+            Route::post('/refer-and-earn/redeem', [ReferAndEarnController::class, 'requestRedeem'])->name('referral.redeem');
+
+
 
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
