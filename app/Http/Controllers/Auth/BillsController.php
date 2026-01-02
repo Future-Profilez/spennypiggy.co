@@ -100,7 +100,7 @@ class BillsController extends Controller
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-        
+
         $productPayload = [
             "name"  => $bill->name,
             "images" => [$bill->perma_link],
@@ -197,11 +197,11 @@ class BillsController extends Controller
 
             if ($old_price != $price || $old_periods != $request->period) {
                 Log::info("request->period: $request->period");
-                
+
                 // Get currency metadata to handle zero-decimal currencies properly
                 $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-                
+
                 $newPrice = $stripe->prices->create([
                     'unit_amount_decimal' => (string) round($totalAmount * $multiplier),
                     'currency' => $user->default_currency,
@@ -310,13 +310,13 @@ class BillsController extends Controller
 
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);
-        
+
         if (!$subscriptionCheck['eligible']) {
             DB::rollBack(); // Rollback the transaction before early return
-            
+
             // Send notification to creator about blocked payment
             $bill->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $bill->price));
-            
+
             // Log the blocked payment for subscription issues
             Log::warning('Bill payment blocked due to subscription issue', [
                 'creator_id' => $bill->user->id,
@@ -326,9 +326,10 @@ class BillsController extends Controller
                 'subscription_status' => $subscriptionCheck['status'],
                 'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
             ]);
-            
+
             // Return user-friendly error to fan
-            return redirect()->back()->with('error', 
+            return redirect()->back()->with(
+                'error',
                 'This creator is temporarily unavailable. Please try again later.'
             );
         }
@@ -339,7 +340,7 @@ class BillsController extends Controller
             'status' => 'bill_exempt',
             'message' => 'Bill payments bypass activity restriction'
         ];
-        
+
         // Optional: Log exemption for analytics
         Log::info('Bill payment allowed - activity check exempted for bills', [
             'creator_id' => $bill->user->id,
@@ -472,13 +473,13 @@ class BillsController extends Controller
                 }
 
                 $priceId = $existingPriceEntry->price_id ?? null;
-                
+
                 // Get currency metadata to handle zero-decimal currencies properly
                 $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 if (!$priceId) {
-                    
+
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
                         'currency' => $currency,
@@ -515,7 +516,7 @@ class BillsController extends Controller
                 if (isset($bill->user->vat_amount_percentage) && $bill->user->vat_amount_percentage > 0) {
                     $creatorVatAmount = round(($bill->price * $bill->user->vat_amount_percentage / 100) * $multiplier);
                 }
-                
+
                 // Use destination charges pattern like cart/tip payments - create line items that sum to total charge
                 $lineItems = [
                     [
@@ -534,7 +535,7 @@ class BillsController extends Controller
                         ]
                     ]
                 ];
-                
+
                 // Add creator VAT as separate line item if applicable
                 if ($creatorVatAmount > 0) {
                     $lineItems[] = [
@@ -553,7 +554,7 @@ class BillsController extends Controller
                         ],
                     ];
                 }
-                
+
                 // Add platform fee as separate line item
                 $lineItems[] = [
                     'quantity' => 1,
@@ -570,10 +571,10 @@ class BillsController extends Controller
                         ],
                     ],
                 ];
-                
+
                 // Transfer amount = bill amount + creator's VAT (what creator receives)
                 $transferAmount = round($bill->price * $multiplier) + $creatorVatAmount;
-                
+
                 // Total charge amount = bill amount + creator's VAT + platform fees
                 $totalChargeAmount = round($bill->price * $multiplier) + $creatorVatAmount + round($totalPaymentTaxAmount * $multiplier);
 
@@ -637,7 +638,8 @@ class BillsController extends Controller
      */
     public function handlePayment($uuid, $status)
     {
-        $bill_pay = BillPayment::whereUuid($uuid)->first();
+        $bill_pay = BillPayment::with('bill')->whereUuid($uuid)->first();
+
 
         if (!$bill_pay) {
             return to_route('home')->with("error", 'Insufficient data!');
@@ -648,6 +650,10 @@ class BillsController extends Controller
         }
 
         try {
+
+            // Update GMV for creator
+            Helpers::addGmv($bill_pay->bill->user_id, (float) $bill_pay->amount);
+
             // Since we're using destination charges, session is created on platform account (no connected account parameter)
             $session = StripeControl::getCheckoutSession($bill_pay->session_id);
             $bill_pay->status = $session->payment_status;
@@ -699,7 +705,7 @@ class BillsController extends Controller
                 // Dispatch mail jobs
                 BillPayMail::dispatch($bill_pay, $amountWithVat);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
-                
+
                 // Dispatch content delivery email if bill has content file
                 if (!empty($bill_pay->bill->content_file)) {
                     \App\Jobs\BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
@@ -729,6 +735,7 @@ class BillsController extends Controller
                 $userPayment->status = $session->payment_status;
                 $userPayment->save();
 
+
                 return to_route('thank-you', ['username' => $bill_pay->bill->user->username])->with('success', "Payment for subscription of bill is successful.");
             }
 
@@ -747,7 +754,7 @@ class BillsController extends Controller
     {
         try {
             $bill = $billPayment->bill;
-            
+
             // Get payment intent ID from Stripe session if available
             $paymentIntentId = null;
             if ($session && isset($session->id)) {
@@ -766,7 +773,7 @@ class BillsController extends Controller
                     ]);
                 }
             }
-            
+
             // Create deliverable entry for tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
@@ -816,7 +823,6 @@ class BillsController extends Controller
             ]);
 
             return $deliverable;
-
         } catch (\Exception $e) {
             Log::error('Failed to create bill deliverable', [
                 'error' => $e->getMessage(),

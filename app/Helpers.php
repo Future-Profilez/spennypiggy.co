@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\GifterCardVerification;
 use App\Models\User;
@@ -17,34 +18,86 @@ use Image;
 class Helpers
 {
     public static function checkBlockData($request)
-{
-    $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
-    $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
+    {
+        $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
+        $blockedEmojis = ['😈', '💩', '💬', '👅', '🍆', '🍌', '🌽', '🌶️', '🍑', '💎', '💦'];
 
-    // Filter out non-stringable values (like arrays or objects)
-    $stringValues = array_filter($request->all(), function ($value) {
-        return is_scalar($value) || (is_object($value) && method_exists($value, '__toString'));
-    });
+        // Filter out non-stringable values (like arrays or objects)
+        $stringValues = array_filter($request->all(), function ($value) {
+            return is_scalar($value) || (is_object($value) && method_exists($value, '__toString'));
+        });
 
-    // Combine all the valid inputs into one string
-    $inputText = implode(' ', $stringValues);
+        // Combine all the valid inputs into one string
+        $inputText = implode(' ', $stringValues);
 
-    foreach ($blockedWords as $word) {
-        if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
-            return true;
+        foreach ($blockedWords as $word) {
+            if (preg_match("/\b" . preg_quote($word) . "\b/i", $inputText)) {
+                return true;
+            }
         }
+
+        foreach ($blockedEmojis as $emoji) {
+            if (mb_strpos($inputText, $emoji) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    foreach ($blockedEmojis as $emoji) {
-        if (mb_strpos($inputText, $emoji) !== false) {
-            return true;
+    /**
+     * Add GMV to an existing creator referral
+     *
+     * @param int   $referredCreatorId  Creator who received payment
+     * @param float $amountGbp          GMV amount in GBP
+     */
+    public static function addGmv(int $referredCreatorId, float $amountGbp): void
+    {
+        try {
+            if ($amountGbp <= 0) {
+                return;
+            }
+
+            // Find referral row where this creator was referred
+            $referral = CreatorReferral::where(
+                'referred_creator_id',
+                $referredCreatorId
+            )->first();
+
+            // No referral → nothing to do
+            if (!$referral) {
+                return;
+            }
+
+            // Increment GMV
+            $referral->increment('lifetime_gmv', $amountGbp);
+
+            // Auto-qualify at £1000
+            if (
+                $referral->lifetime_gmv >= 1000 &&
+                $referral->status !== 'QUALIFIED'
+            ) {
+                $referral->update([
+                    'status' => 'QUALIFIED',
+                    'qualified_at' => now(),
+                ]);
+            }
+
+            Log::info('Creator referral GMV updated', [
+                'referrer_creator_id' => $referral->referrer_creator_id,
+                'referred_creator_id' => $referral->referred_creator_id,
+                'added_gmv' => $amountGbp,
+                'total_gmv' => $referral->lifetime_gmv,
+                'status' => $referral->status,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('CreatorReferralHelper failed', [
+                'referred_creator_id' => $referredCreatorId,
+                'amount_gbp' => $amountGbp,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
-
-    return false;
-}
-
-
 
 
     public static function priceFormat($currency1, $amount, $currency2)

@@ -11,7 +11,6 @@ use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
 use App\Mail\CommandFailed;
 use App\Models\ConnectedAccountCustomer;
-use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -32,7 +31,6 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
-use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
@@ -449,51 +447,6 @@ class CheckoutController extends Controller
             Log::error("Error in createCheckout: " . $th->getMessage());
             throw $th;
         }
-    }
-
-    public function handleCreatorReferralGMV(User $creator, float $gmvAmount): void
-    {
-        // Creator must have referral_code
-        if (empty($creator->referral_code)) {
-            return;
-        }
-
-        // Find referrer creator by referral_code
-        $referrer = User::where('referral_code', $creator->referral_code)
-            ->where('role', 1) // creator only
-            ->first();
-
-        if (!$referrer || $referrer->id === $creator->id) {
-            return;
-        }
-
-        DB::transaction(function () use ($referrer, $creator, $gmvAmount) {
-
-            $referral = CreatorReferral::firstOrCreate(
-                [
-                    'referrer_creator_id' => $referrer->id,
-                    'referred_creator_id' => $creator->id,
-                ],
-                [
-                    'lifetime_gmv' => 0,
-                    'status' => 'IN_PROGRESS',
-                ]
-            );
-
-            // Update GMV
-            $referral->increment('lifetime_gmv', $gmvAmount);
-
-            // Qualification check (£1000)
-            if (
-                $referral->status === 'IN_PROGRESS' &&
-                $referral->lifetime_gmv >= 1000
-            ) {
-                $referral->update([
-                    'status' => 'QUALIFIED',
-                    'qualified_at' => now(),
-                ]);
-            }
-        });
     }
 
     /**
@@ -1083,8 +1036,9 @@ class CheckoutController extends Controller
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
-            
             Log::info("Payment update result", ['updated_rows' => $updateResult]);
+
+            // Amount must be GBP (you already store subtotal in GBP)
 
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
 
@@ -1092,6 +1046,8 @@ class CheckoutController extends Controller
                 Log::error("StripePaymentDetail not found after update", ['session_id' => $sessionId]);
                 throw new \Exception("Payment record not found for session: " . $sessionId);
             }
+
+            Helpers::addGmv($stripeid->owner_id, (float) $stripeid->amount_subtotal);
 
             Log::info("Retrieved StripePaymentDetail", [
                 'id' => $stripeid->id,

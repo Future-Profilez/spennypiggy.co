@@ -114,16 +114,24 @@ export default function Register(props) {
     });
 
     const [promoInputValue, setPromoInputValue] = useState("");
+    const [role, setRole] = useState(null);
+
     useEffect(() => {
-        if (referralFromUrl) {
-            setPromoInputValue(referralFromUrl); // show in input
-            setData("promo", referralFromUrl); // send to backend
-            setCodeValid(true); // mark applied
+        if (role === 1 && referralFromUrl) {
+            setPromoInputValue(referralFromUrl);
+            setData("promo", referralFromUrl);
+            setCodeValid(true);
         }
-    }, [referralFromUrl]);
+
+        // Creator but no ref in URL → keep empty
+        if (role === 1 && !referralFromUrl) {
+            setPromoInputValue("");
+            setCodeValid(false);
+            setData("promo", "");
+        }
+    }, [role, referralFromUrl]);
 
     const [step, setStep] = useState(type && type === "creator" ? 1 : 0);
-    const [role, setRole] = useState(null);
     const handleBecomeCreator = async (e) => {
         setData("role", e);
         setRole(e);
@@ -247,12 +255,6 @@ export default function Register(props) {
             checkRef.current.focus();
             return false;
         }
-
-        // if (role == 0 && !gifterref.current.checked) {
-        //     errorAlert("Please accept all terms and conditions.");
-        //     gifterref.current.focus();
-        //     return false;
-        // }
         if (role == 0 && !addressCheck.current.checked) {
             errorAlert("Please accept all terms and conditions.");
             addressCheck.current.focus();
@@ -266,11 +268,6 @@ export default function Register(props) {
             }, []);
             return false;
         }
-        // if (role == 0 && !hasNotifiedRef.current.checked) {
-        //     errorAlert("Please check and accept the terms and conditions.");
-        //     hasNotifiedRef.current.focus();
-        //     return false;
-        // }
 
         post(route("register", { ...data, ...address }), {
             preserveScroll: true,
@@ -297,8 +294,13 @@ export default function Register(props) {
 
     const promoinput = useRef();
     const [codevalid, setCodeValid] = useState(false);
-    const checkPromo = (e) => {
-        const p = promoinput.current && promoinput.current.value;
+    const checkPromo = () => {
+        // Fan can apply promo manually
+        if (role !== 0) return;
+
+        const p = promoInputValue;
+        if (!p) return;
+
         axios
             .get(`/check-coupon-code/${p}`)
             .then((resp) => {
@@ -310,8 +312,7 @@ export default function Register(props) {
                     errorAlert(resp.data.msg);
                 }
             })
-            .catch((_err) => {
-                console.error("error", _err);
+            .catch(() => {
                 setCodeValid(false);
             });
     };
@@ -810,52 +811,67 @@ export default function Register(props) {
                                         <div className="promocode mb-4">
                                             <div className="flex items-center justify-between">
                                                 <label className="mb-2">
-                                                    Referral (optional){" "}
-                                                    {codevalid ? (
-                                                        <span className="text-success text-small">
-                                                            Code Applied.
-                                                        </span>
-                                                    ) : (
-                                                        ""
-                                                    )}
+                                                    Referral (optional)
+                                                    {role === 1 &&
+                                                        referralFromUrl &&
+                                                        codevalid && (
+                                                            <span className="text-success text-small ms-2">
+                                                                Code Applied
+                                                            </span>
+                                                        )}
+                                                    {role === 0 &&
+                                                        codevalid && (
+                                                            <span className="text-success text-small ms-2">
+                                                                Promo Code
+                                                                Applied
+                                                            </span>
+                                                        )}
                                                 </label>
                                             </div>
+
                                             <div className="flex items-center relative">
                                                 <input
-                                                    placeholder="Enter Referral Code..."
+                                                    placeholder={
+                                                        role === 1
+                                                            ? referralFromUrl
+                                                                ? "Referral code applied automatically"
+                                                                : "No referral code"
+                                                            : "Enter Promo Code..."
+                                                    }
                                                     className="form-control"
                                                     value={promoInputValue}
-                                                    disabled={!!referralFromUrl}
+                                                    readOnly={role === 1} // creator cannot type
                                                     onChange={(e) => {
-                                                        setPromoInputValue(
-                                                            e.target.value
-                                                        );
-                                                        setCodeValid(false);
-                                                        setData("promo", "");
+                                                        if (role === 0) {
+                                                            setPromoInputValue(
+                                                                e.target.value
+                                                            );
+                                                            setCodeValid(false);
+                                                            setData(
+                                                                "promo",
+                                                                ""
+                                                            );
+                                                        }
                                                     }}
                                                 />
 
-                                                {codevalid ? (
-                                                    <div
-                                                        onClick={removecode}
-                                                        className={`cursor-pointer ${
-                                                            codevalid
-                                                                ? "mintbg text-dark"
-                                                                : "pinkbg"
-                                                        } promocode-btn ms-2 text-center`}
-                                                    >
-                                                        Remove
-                                                    </div>
-                                                ) : (
-                                                    <div
-                                                        className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn ms-2 !py-2 text-center"
-                                                        onClick={checkPromo}
-                                                    >
-                                                        {codevalid
-                                                            ? "Applied"
-                                                            : "Apply"}
-                                                    </div>
-                                                )}
+                                                {/* BUTTON LOGIC */}
+                                                {role === 0 &&
+                                                    (codevalid ? (
+                                                        <div
+                                                            onClick={removecode}
+                                                            className="cursor-pointer mintbg text-dark promocode-btn ms-2 text-center"
+                                                        >
+                                                            Remove
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn !py-2 text-center"
+                                                            onClick={checkPromo}
+                                                        >
+                                                            Apply
+                                                        </div>
+                                                    ))}
                                             </div>
                                         </div>
 

@@ -901,6 +901,8 @@ class ShopsController extends Controller
                 return redirect()->back()->with('error', 'Invalid payment ID.');
             }
 
+            Helpers::addGmv($stripeid->shop->user_id, (float) $stripeid->amount);
+
             if ($stripeid->anonymous == 1) {
                 $username = "Anonymous user";
             } else {

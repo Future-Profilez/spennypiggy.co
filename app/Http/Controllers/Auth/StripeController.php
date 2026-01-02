@@ -2580,6 +2580,9 @@ class StripeController extends Controller
 
                 $tip_pay->save();
 
+                // Update GMV for creator
+                Helpers::addGmv($tip_pay->creator_id, (float) $tip_pay->amount);
+
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans
                 $CreatorName = ucfirst($tip_pay->creator->name) ?? 'A Creator';
@@ -2999,10 +3002,10 @@ class StripeController extends Controller
             if (!$user) {
                 return response()->json(['error' => 'User not found.'], 404);
             }
-            if($user->identity_admin_status == 2){
+            if ($user->identity_admin_status == 2) {
                 // $appUrl = config('app.url');
                 // if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
-                    $user->identity_admin_status = 0;
+                $user->identity_admin_status = 0;
                 // }
                 $user->save();
             }

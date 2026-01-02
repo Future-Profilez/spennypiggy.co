@@ -111,7 +111,7 @@ class MembershipController extends Controller
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-        
+
         $productPayload = [
             "name"  =>  'Membership_' . $mem->level . '_' . $user->username,
             "images" => [$mem->perma_link],
@@ -218,7 +218,7 @@ class MembershipController extends Controller
                     // Get currency metadata to handle zero-decimal currencies properly
                     $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
                     $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-                    
+
                     $pricePayload = [
                         'unit_amount_decimal' => (string) round($createpriceid * $multiplier),
                         'currency' => $user->default_currency,
@@ -360,26 +360,27 @@ class MembershipController extends Controller
         // return $subscriptionCheck;
         if (!$subscriptionCheck['eligible']) {
             $membership->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $membership->price));
-            
-            return redirect()->back()->with('error', 
+
+            return redirect()->back()->with(
+                'error',
                 'This creator is temporarily unavailable. Please try again later.'
             );
         }
 
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($membership->user);
-        
+
         if (!$activityCheck['eligible']) {
             $membership->user->notify(new PaymentBlockedNotification($activityCheck, $membership->price));
-            
-            return redirect()->back()->with('error', 
+
+            return redirect()->back()->with(
+                'error',
                 'This creator is temporarily unavailable. Please try again later.'
             );
         }
-        
+
         // Log successful activity check for analytics
         if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
-           
         }
 
         // if (!in_array($membership->user->subscription_status, [1, 2])) {
@@ -477,7 +478,7 @@ class MembershipController extends Controller
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 if (!$priceId) {
-                    
+
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
                         'currency' => $currency,
@@ -513,7 +514,7 @@ class MembershipController extends Controller
                 if (isset($membership->user->vat_amount_percentage) && $membership->user->vat_amount_percentage > 0) {
                     $creatorVatAmount = round(($membership->price * $membership->user->vat_amount_percentage / 100) * $multiplier);
                 }
-                
+
                 // Use destination charges pattern with inline product creation to avoid missing product issues
                 $lineItems = [
                     [
@@ -528,7 +529,7 @@ class MembershipController extends Controller
                         ]
                     ]
                 ];
-                
+
                 // Add recurring data for non-lifetime memberships
                 if ($membership->level !== 'lifetime') {
                     $lineItems[0]['price_data']['recurring'] = [
@@ -536,7 +537,7 @@ class MembershipController extends Controller
                         'interval_count' => 1,
                     ];
                 }
-                
+
                 // Add creator VAT as separate line item if applicable
                 if ($creatorVatAmount > 0) {
                     $vatLineItem = [
@@ -550,7 +551,7 @@ class MembershipController extends Controller
                             'tax_behavior' => 'exclusive',
                         ],
                     ];
-                    
+
                     // Add recurring data for VAT if not lifetime
                     if ($membership->level !== 'lifetime') {
                         $vatLineItem['price_data']['recurring'] = [
@@ -558,10 +559,10 @@ class MembershipController extends Controller
                             'interval_count' => 1,
                         ];
                     }
-                    
+
                     $lineItems[] = $vatLineItem;
                 }
-                
+
                 // Add platform fee as separate line item
                 $platformFeeLineItem = [
                     'quantity' => 1,
@@ -574,7 +575,7 @@ class MembershipController extends Controller
                         'tax_behavior' => 'exclusive',
                     ],
                 ];
-                
+
                 // Add recurring data for platform fee if not lifetime
                 if ($membership->level !== 'lifetime') {
                     $platformFeeLineItem['price_data']['recurring'] = [
@@ -582,15 +583,15 @@ class MembershipController extends Controller
                         'interval_count' => 1,
                     ];
                 }
-                
+
                 $lineItems[] = $platformFeeLineItem;
-                
+
                 // Transfer amount = membership price + creator's VAT (what creator receives)
                 $transferAmount = round($membership->price * $multiplier) + $creatorVatAmount;
-                
+
                 // Total charge amount = membership price + creator's VAT + platform fees
                 $totalChargeAmount = round($membership->price * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
-                
+
                 // Check if creator has card_payments capability to determine payment flow
                 $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
@@ -618,7 +619,7 @@ class MembershipController extends Controller
                             'has_card_payments' => (string) $hasCardPayments,
                         ]),
                     ];
-                    
+
                     // Only add on_behalf_of if creator has card_payments capability
                     if ($hasCardPayments) {
                         $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
@@ -634,9 +635,8 @@ class MembershipController extends Controller
                             'amount' => $transferAmount, // Transfer only what creator should receive
                         ];
                     }
-                    
+
                     $payload['payment_intent_data'] = $paymentIntentData;
-                    
                 } else {
                     $payload['mode'] = 'subscription';
                     $payload['subscription_data'] = [
@@ -657,7 +657,6 @@ class MembershipController extends Controller
                             'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
                         ],
                     ];
-                    
                 }
 
                 $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
@@ -713,6 +712,9 @@ class MembershipController extends Controller
                 $mem->upcoming_payment = $current;
                 $mem->save();
 
+                // Update GMV for creator
+                Helpers::addGmv($mem->membership->user_id, (float) $mem->amount);
+
                 if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
                 } else {
@@ -735,10 +737,10 @@ class MembershipController extends Controller
                     'recurring_for' => $mem->recurring_for,
                     'guest_email' => $mem->guest_email
                 ]);
-                
+
                 // ✅ FIXED: Create deliverable entry for membership payment (exactly like bills)
                 $this->createMembershipDeliverable($mem, $session);
-                
+
                 // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
                 // This should be sent regardless of CheckoutMailToUser success/failure
                 MembershipMailToUser::dispatch($mem, $amountWithcurrency);
@@ -968,7 +970,7 @@ class MembershipController extends Controller
                 $newSubs->created_at = $subs->created_at;
                 $newSubs->updated_at = Carbon::now();
                 $newSubs->save();
-                
+
                 // ✅ NEW: Create deliverable for membership renewal
                 try {
                     \Log::info('MembershipController: Creating deliverable for membership renewal', [
@@ -976,10 +978,10 @@ class MembershipController extends Controller
                         'membership_id' => $newSubs->membership_id,
                         'stripe_subscription_id' => $newSubs->stripe_id
                     ]);
-                    
+
                     // Create deliverable entry for renewal (same as initial purchase)
                     $renewalDeliverable = $this->createMembershipRenewalDeliverable($newSubs);
-                    
+
                     if ($renewalDeliverable) {
                         \Log::info('MembershipController: Renewal deliverable created', [
                             'deliverable_id' => $renewalDeliverable->id,
@@ -1015,7 +1017,7 @@ class MembershipController extends Controller
     }
     
     // REMOVED: Old createStripePaymentForMembership method - now using direct deliverable creation like bills
-    
+
     /**
      * Create deliverable entry for membership payment (exactly like bills)
      */
@@ -1023,7 +1025,7 @@ class MembershipController extends Controller
     {
         try {
             $membership = $membershipPayment->membership;
-            
+
             // Get payment intent ID from Stripe session if available
             $paymentIntentId = null;
             if ($session && isset($session->id)) {
@@ -1042,7 +1044,7 @@ class MembershipController extends Controller
                     ]);
                 }
             }
-            
+
             // Create deliverable entry for tracking (exactly like bills)
             $deliverable = \App\Models\Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
@@ -1085,7 +1087,7 @@ class MembershipController extends Controller
 
             // Dispatch ProcessWishItemDeliverable job for certificate generation
             \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-            
+
             // Update Stripe payment intent metadata (same as bills)
             if ($paymentIntentId) {
                 try {
@@ -1111,7 +1113,6 @@ class MembershipController extends Controller
             ]);
 
             return $deliverable;
-
         } catch (\Exception $e) {
             Log::error('Failed to create membership deliverable', [
                 'error' => $e->getMessage(),
@@ -1121,7 +1122,7 @@ class MembershipController extends Controller
             return null;
         }
     }
-    
+
     /**
      * Create deliverable entry for membership renewal (similar to initial purchase)
      */
@@ -1129,17 +1130,17 @@ class MembershipController extends Controller
     {
         try {
             $membership = $membershipPayment->membership;
-            
+
             if (!$membership) {
                 \Log::error('MembershipController: No membership found for renewal deliverable', [
                     'membership_payment_id' => $membershipPayment->id
                 ]);
                 return null;
             }
-            
+
             // For renewals, we don't have a session but we have the subscription info
             $paymentIntentId = null; // Renewals typically don't have payment intent, just subscription invoice
-            
+
             // Create deliverable entry for renewed membership access
             $deliverable = \App\Models\Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
@@ -1197,7 +1198,6 @@ class MembershipController extends Controller
             ]);
 
             return $deliverable;
-
         } catch (\Exception $e) {
             Log::error('Failed to create membership renewal deliverable', [
                 'error' => $e->getMessage(),
