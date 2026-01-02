@@ -103,6 +103,14 @@ class Deliverable extends Model
     {
         return $this->belongsTo(Bills::class, 'item_id');
     }
+
+    /**
+     * Get the task this deliverable is for
+     */
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'item_id');
+    }
     
     /**
      * Get the item based on product_type
@@ -118,6 +126,8 @@ class Deliverable extends Model
                 return $this->bill;
             case 'membership':
                 return $this->membership;
+            case 'task':
+                return $this->task;
             case 'shop_item':
                 return $this->belongsTo(Shop::class, 'item_id')->first();
             default:

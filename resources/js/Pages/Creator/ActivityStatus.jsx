@@ -293,6 +293,10 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                                 <span className="text-gray-600">🧾 Bills</span>
                                 <span className="font-medium">{contentBreakdown.bills}</span>
                             </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-600">📋 Tasks</span>
+                                <span className="font-medium">{contentBreakdown.tasks}</span>
+                            </div>
                             <hr className='!my-4' />
                             <div className="flex justify-between items-center font-semibold">
                                 <span>Total Active Content</span>

@@ -30,12 +30,16 @@ class TaskPurchase extends Model
         'vat_amount',
         'transfer_amount',
         'dispute_status',
+        'rejection_count',
+        'refund_status',
+        'refunded_at',
     ];
 
     protected $casts = [
         'sla_deadline' => 'datetime',
         'reviewed_at' => 'datetime',
         'completed_at' => 'datetime',
+        'refunded_at' => 'datetime',
         'proof_content' => 'array', // Cast JSON proof to array
     ];
 

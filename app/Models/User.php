@@ -548,6 +548,11 @@ public function getFollowingCountAttribute()
         return $this->hasMany(Bills::class, 'user_id');
     }
 
+    public function tasks()
+    {
+        return $this->hasMany(Task::class, 'creator_id');
+    }
+
     // ───────────────────────
     // Performance Optimizations
     // ───────────────────────

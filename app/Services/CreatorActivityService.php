@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\{User, Post, WishItem, Membership, Shop, Bills, BlockedPayment};
+use App\Models\{User, Post, WishItem, Membership, Shop, Bills, BlockedPayment, Task};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -131,7 +131,12 @@ class CreatorActivityService
             ->where('created_at', '>=', $since)
             ->count();
             
-        return $posts + $wishes + $memberships + $shops + $bills;
+        $tasks = Task::where('creator_id', $creator->id)
+            ->where('is_approved', 1)
+            ->where('created_at', '>=', $since)
+            ->count();
+
+        return $posts + $wishes + $memberships + $shops + $bills + $tasks;
     }
 
     /**
@@ -168,6 +173,11 @@ class CreatorActivityService
                 
                 'bills' => Bills::where('user_id', $creator->id)
                     ->where('approved', 1)
+                    ->where('created_at', '>=', $since)
+                    ->count(),
+
+                'tasks' => Task::where('creator_id', $creator->id)
+                    ->where('is_approved', 1)
                     ->where('created_at', '>=', $since)
                     ->count(),
             ];
@@ -226,6 +236,16 @@ class CreatorActivityService
                 'title' => 'Add Bill Item',
                 'description' => 'Create a bill item your supporters can help pay monthly',
                 'action_url' => '/dashboard?page=bills',
+                'estimated_time' => '5 minutes'
+            ];
+        }
+
+        if (isset($breakdown['tasks']) && $breakdown['tasks'] === 0) {
+            $suggestions[] = [
+                'type' => 'tasks',
+                'title' => 'Create Task',
+                'description' => 'Offer tasks or services to your supporters',
+                'action_url' => '/task/create',
                 'estimated_time' => '5 minutes'
             ];
         }

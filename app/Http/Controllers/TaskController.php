@@ -17,10 +17,14 @@ use App\Mail\TaskPurchasedMail;
 use App\Mail\TaskProofSubmittedMail;
 use App\Mail\TaskProofAcceptedMail;
 use App\Mail\TaskProofRejectedMail;
+use App\Mail\TaskDisputeEscalatedMail;
 use Illuminate\Support\Facades\Mail;
 use App\Helpers;
 use App\StripeControl;
 use App\Models\Currency;
+use Carbon\Carbon;
+use App\Jobs\ProcessWishItemDeliverable;
+use Illuminate\Support\Facades\Log;
 
 class TaskController extends Controller
 {
@@ -98,6 +102,7 @@ class TaskController extends Controller
         $task->creator_id = Auth::id();
         $task->title = $request->title;
         $task->description = $request->description;
+        $task->is_approved = false; // Default unapproved
         $task->price = $request->price;
         $task->currency = Auth::user()->default_currency ?? 'USD';
         $task->category = $request->category;
@@ -126,6 +131,11 @@ class TaskController extends Controller
     {
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
         
+        // Visibility Check: Only Creator can see unapproved tasks
+        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
+             abort(404);
+        }
+
         $purchase = null;
         if (Auth::check()) {
             if (Auth::id() !== $task->creator_id) {
@@ -186,6 +196,12 @@ class TaskController extends Controller
     public function purchase(Request $request, $uuid)
     {
         $task = Task::where('uuid', $uuid)->firstOrFail();
+        
+        // Prevent purchasing unapproved tasks
+        if (!$task->is_approved && Auth::id() !== $task->creator_id) {
+            abort(404);
+        }
+
         $user = Auth::user();
 
         if (!$user) {
@@ -271,20 +287,35 @@ class TaskController extends Controller
         $connectedAccountId = $creator->account_id;
         $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
         
+        // Comprehensive Metadata for Stripe Compliance & Webhook Handling
+        $complianceMetadata = [
+            // Core Identity
+            'creator_id' => $creator->id,
+            'buyer_id' => $user->id,
+            'supporter_id' => $user->id, // Kept for legacy compatibility
+            
+            // Task Details
+            'purpose' => 'paid_task',
+            'type' => 'task_purchase', // Trigger for Webhook
+            'task_id' => $task->id,
+            'task_uuid' => $task->uuid,
+            'task_type' => $task->type, // instant | timed
+            'delivery_mode' => $task->type,
+            'deliverable_type' => 'digital_task',
+            'value_summary' => "Digital task service: " . $task->title,
+            'caps_version' => 'v1',
+            'sla_hours' => $task->sla_hours ?? 0,
+            
+            // Financial Breakdown (Crucial for Disputes/Accounting)
+            'admin_fee' => $convertedAdminFee,
+            'platform_fee' => $totalPlatformFee,
+            'vat_amount' => $creatorVatAmount,
+            'transfer_amount' => ($transferAmount / $multiplier),
+        ];
+
         $paymentIntentData = [
             'description' => "Spenny Piggy - Task purchase: " . $task->title,
-            'metadata' => [
-                'creator_id' => $creator->id,
-                'buyer_id' => $user->id, // Mapped to supporter_id in DB
-                'purpose' => 'paid_task',
-                'task_id' => $task->id,
-                'task_uuid' => $task->uuid,
-                'task_type' => $task->type, // instant | timed
-                'deliverable_type' => 'digital_task', // Generic for now, could be refined based on category
-                'value_summary' => "Digital task service: " . $task->title,
-                'caps_version' => 'v1',
-                'sla_hours' => $task->sla_hours ?? 0,
-            ],
+            'metadata' => $complianceMetadata,
         ];
 
         if ($connectedAccountId) {
@@ -311,17 +342,7 @@ class TaskController extends Controller
             'payment_intent_data' => $paymentIntentData,
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('task.show', $task->uuid),
-            'metadata' => [
-                'type' => 'task_purchase',
-                'task_id' => $task->id,
-                'creator_id' => $task->creator_id,
-                'supporter_id' => $user->id,
-                'delivery_mode' => $task->type,
-                'admin_fee' => $convertedAdminFee,
-                'platform_fee' => $totalPlatformFee,
-                'vat_amount' => $creatorVatAmount,
-                'transfer_amount' => ($transferAmount / $multiplier),
-            ],
+            'metadata' => $complianceMetadata,
             'customer_email' => $user->email,
         ]);
 
@@ -336,52 +357,15 @@ class TaskController extends Controller
         Stripe::setApiKey(config('services.stripe.secret'));
         $session = Session::retrieve($sessionId);
         
+        $purchase = null;
+
         if ($session->payment_status === 'paid') {
-            $existing = TaskPurchase::where('stripe_session_id', $session->id)->first();
+            // Try to find existing purchase (webhook might have created it)
+            $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
             
-            if (!$existing) {
-                $purchase = new TaskPurchase();
-                $purchase->uuid = Str::uuid();
-                $purchase->task_id = $task->id;
-                $purchase->supporter_id = Auth::id(); // Assuming logged in
-                $purchase->creator_id = $task->creator_id;
-                $purchase->stripe_session_id = $session->id;
-                $purchase->payment_intent_id = $session->payment_intent;
-                $purchase->amount = $session->amount_total / 100;
-                
-                // Save fee details from metadata
-                $purchase->admin_fee = $session->metadata->admin_fee ?? 0;
-                $purchase->platform_fee = $session->metadata->platform_fee ?? 0;
-                $purchase->vat_amount = $session->metadata->vat_amount ?? 0;
-                $purchase->transfer_amount = $session->metadata->transfer_amount ?? 0;
-                
-                if ($task->type === 'instant') {
-                    $purchase->status = 'delivered';
-                    $purchase->completed_at = now();
-                } else {
-                    $purchase->status = 'assigned';
-                    $purchase->sla_deadline = now()->addHours($task->sla_hours);
-                }
-                
-                $purchase->save();
-                
-                try {
-                    $creator = $task->creator;
-                    $supporter = Auth::user();
-                    if ($creator) {
-                        Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
-                        
-                        Helpers::sendNotification(
-                            "New Task Order! 💰", 
-                            ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title, 
-                            $creator->email
-                        );
-                    }
-                } catch (\Exception $e) {
-                    // Log error or silently fail so purchase flow isn't interrupted
-                }
-            } else {
-                $purchase = $existing;
+            // If webhook hasn't processed it yet, create it here synchronously
+            if (!$purchase) {
+                $purchase = $this->createTaskPurchaseSync($session, $task);
             }
         } else {
             return redirect()->route('task.show', $uuid)->with('error', 'Payment not completed.');
@@ -392,6 +376,104 @@ class TaskController extends Controller
             'purchase' => $purchase,
             'currencySymbol' => \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$'
         ]);
+    }
+
+    /**
+     * Synchronously create task purchase if webhook is delayed
+     */
+    private function createTaskPurchaseSync($session, $task)
+    {
+        // Double check to avoid race condition
+        $existing = TaskPurchase::where('stripe_session_id', $session->id)->first();
+        if ($existing) return $existing;
+
+        $metadata = $session->metadata;
+        $taskId = $metadata->task_id ?? $task->id;
+        $buyerId = $metadata->buyer_id ?? null;
+        $creatorId = $metadata->creator_id ?? $task->creator_id;
+        
+        // Calculate amount from session amount_total (in cents/smallest unit)
+        $amount = ($session->amount_total ?? 0) / 100;
+
+        // Create TaskPurchase
+        $purchase = TaskPurchase::create([
+            'task_id' => $taskId,
+            'supporter_id' => $buyerId,
+            'creator_id' => $creatorId,
+            'stripe_session_id' => $session->id,
+            'payment_intent_id' => $session->payment_intent,
+            'amount' => $amount,
+            'status' => 'pending', // Initial status
+            'admin_fee' => $metadata->admin_fee ?? 0,
+            'platform_fee' => $metadata->platform_fee ?? 0,
+            'vat_amount' => $metadata->vat_amount ?? 0,
+            'transfer_amount' => $metadata->transfer_amount ?? 0,
+            'dispute_status' => 'none',
+        ]);
+
+        // SLA logic
+        $slaHours = (int) ($metadata->sla_hours ?? 0);
+        if ($slaHours > 0) {
+             $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
+             $purchase->save();
+        }
+
+        // Create Deliverable
+        $deliverable = Deliverable::create([
+            'uuid' => (string) Str::uuid(),
+            'product_id' => (string) $taskId,
+            'item_id' => $taskId, 
+            'order_id' => $purchase->id,
+            'creator_id' => $creatorId,
+            'gifter_id' => $buyerId,
+            'payment_intent_id' => $session->payment_intent,
+            'session_id' => $session->id,
+            'deliverable_type' => 'digital_task',
+            'product_type' => 'task',
+            'transaction_amount' => $amount,
+            'status' => 'pending',
+            'sla_hours' => $slaHours,
+            'due_at' => $slaHours > 0 ? Carbon::now()->addHours($slaHours) : null,
+            'refund_eligible' => $slaHours > 0, 
+            'payment_status' => 'paid',
+            'payment_currency' => strtoupper($session->currency ?? 'GBP'),
+            'customer_email' => $session->customer_details->email ?? null,
+            'customer_name' => $session->customer_details->name ?? null,
+            'metadata' => json_encode($metadata),
+        ]);
+        
+        // Dispatch job to process the deliverable (certificate generation)
+        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+        
+        // Handle Instant Task
+        if (($metadata->task_type ?? '') === 'instant') {
+            $purchase->status = 'completed';
+            $purchase->completed_at = Carbon::now();
+            $purchase->save();
+            
+            $deliverable->status = 'delivered';
+            $deliverable->delivered_at = Carbon::now();
+            $deliverable->save();
+        }
+
+        try {
+            $creator = User::find($creatorId);
+            $supporter = $buyerId ? User::find($buyerId) : null;
+            
+            if ($creator) {
+                Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
+                
+                Helpers::sendNotification(
+                    "New Task Order! 💰", 
+                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title, 
+                    $creator->email
+                );
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to send task purchase email/notification in sync handler", ['error' => $e->getMessage()]);
+        }
+        
+        return $purchase;
     }
 
     public function uploadProof(Request $request, $uuid)
@@ -460,47 +542,95 @@ class TaskController extends Controller
             'reason' => 'required_if:action,reject|nullable|string'
         ]);
         
+        $creator = $purchase->creator;
+        $task = $purchase->task;
+        $supporter = Auth::user();
+
         if ($request->action === 'accept') {
             $purchase->status = 'completed_accepted';
             $purchase->completed_at = now();
-        } else {
-            if ($purchase->status === 'pending_review') {
-                 $purchase->status = 'rejected_once';
-                 $purchase->rejection_reason = $request->reason;
-            } else {
-                 $purchase->status = 'escalated';
-                 $purchase->rejection_reason = $request->reason;
+            $purchase->reviewed_at = now();
+            $purchase->save();
+
+            // Update Deliverable Status
+            try {
+                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
+                    $deliverable->status = 'delivered';
+                    $deliverable->delivered_at = now();
+                    // If task has content URL, ensure it's set in deliverable_url?
+                    // Usually deliverable_url for tasks might be the proof file or task content.
+                    // If task type is instant, it's already set. 
+                    // For timed task, maybe we set it to proof file URL?
+                    if (isset($purchase->proof_content['file'])) {
+                        $deliverable->deliverable_url = $purchase->proof_content['file'];
+                    }
+                    $deliverable->save();
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to update deliverable status (proof accepted): " . $e->getMessage());
             }
-        }
-        
-        $purchase->reviewed_at = now();
-        $purchase->save();
-        
-        try {
-            $creator = $purchase->creator;
-            $task = $purchase->task;
-            $supporter = Auth::user();
-            
-            if ($creator) {
-                if ($request->action === 'accept') {
+
+            try {
+                if ($creator) {
                     Mail::to($creator->email)->send(new TaskProofAcceptedMail($purchase, $task, $supporter));
                     Helpers::sendNotification(
                         "Proof Accepted! ✅", 
                         $supporter->name . " accepted your proof for task: " . $task->title, 
                         $creator->email
                     );
-                } else {
-                    Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
-                    Helpers::sendNotification(
-                        "Proof Rejected ⚠️", 
-                        $supporter->name . " rejected your proof for task: " . $task->title, 
-                        $creator->email
-                    );
                 }
+            } catch (\Exception $e) {}
+        } else {
+            // Increment rejection count
+            $purchase->increment('rejection_count');
+            $purchase->reviewed_at = now();
+            
+            // If rejected 2 or more times, escalate to Admin
+            if ($purchase->rejection_count >= 2) {
+                 $purchase->status = 'escalated';
+                 $purchase->dispute_status = 'open';
+                 $purchase->rejection_reason = $request->reason;
+                 $purchase->save();
+
+                 // Notify Creator
+                 try {
+                    Mail::to($creator->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $creator, 'creator'));
+                    Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $creator->email);
+                 } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to notify creator about escalation: " . $e->getMessage());
+                 }
+
+                 // Notify Supporter
+                 try {
+                    Mail::to($supporter->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $supporter, 'supporter'));
+                    Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $supporter->email);
+                 } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to notify supporter about escalation: " . $e->getMessage());
+                 }
+                 
+                 // Notify Admin (via email)
+                 try {
+                    // Assuming admin email is configured or hardcoded for support
+                    // Mail::to('support@spennypiggy.co')->send(...);
+                 } catch (\Exception $e) {}
+
+            } else {
+                 $purchase->status = 'rejected_once';
+                 $purchase->rejection_reason = $request->reason;
+                 $purchase->save();
+
+                 // Notify Creator about rejection
+                 try {
+                    Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
+                    Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review.", $creator->email);
+                 } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to notify creator about rejection: " . $e->getMessage());
+                 }
             }
-        } catch (\Exception $e) {}
+        }
         
-        return back()->with('success', 'Review submitted.');
+        return back()->with('success', 'Review submitted successfully.');
     }
 
     public function order($uuid)

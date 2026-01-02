@@ -10,6 +10,7 @@ use App\Models\WishItem;
 use App\Models\Membership;
 use App\Models\Shop;
 use App\Models\Bills;
+use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -114,13 +115,19 @@ class CreatorActivityController extends Controller
             ->where('created_at', '>=', $sinceDate)
             ->count();
 
+        $tasks = Task::where('creator_id', $user->id)
+            ->where('is_approved', 1)
+            ->where('created_at', '>=', $sinceDate)
+            ->count();
+
         return [
             'posts' => $posts,
             'wishes' => $wishes,
             'memberships' => $memberships,
             'shops' => $shops,
             'bills' => $bills,
-            'total' => $posts + $wishes + $memberships + $shops + $bills,
+            'tasks' => $tasks,
+            'total' => $posts + $wishes + $memberships + $shops + $bills + $tasks,
             'period' => '28 days'
         ];
     }
@@ -172,6 +179,11 @@ class CreatorActivityController extends Controller
                 ->whereBetween('created_at', [$dayStart, $dayEnd])
                 ->count();
 
+            $dayContent += Task::where('creator_id', $user->id)
+                ->where('is_approved', 1)
+                ->whereBetween('created_at', [$dayStart, $dayEnd])
+                ->count();
+
             $timeline[] = [
                 'date' => $date->format('Y-m-d'),
                 'content_count' => $dayContent,
@@ -205,7 +217,8 @@ class CreatorActivityController extends Controller
                         ['label' => 'Create Post', 'url' => route('posts.create')],
                         ['label' => 'Add Wish Item', 'url' => route('wish-items.create')],
                         ['label' => 'Create Membership', 'url' => route('memberships.create')],
-                        ['label' => 'Add Shop Item', 'url' => route('shop.create')]
+                        ['label' => 'Add Shop Item', 'url' => route('shop.create')],
+                        ['label' => 'Create Task', 'url' => route('task.create')]
                     ]
                 ];
             }

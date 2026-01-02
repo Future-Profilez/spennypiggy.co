@@ -27,7 +27,13 @@ class Task extends Model
         'sla_hours',
         'stripe_product_id',
         'stripe_price_id',
+        'is_approved',
     ];
+
+    public function scopeApproved($query)
+    {
+        return $query->where('is_approved', true);
+    }
 
     protected static function boot()
     {

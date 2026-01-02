@@ -69,6 +69,14 @@ class ProcessWishItemDeliverable implements ShouldQueue
                 }
                 $this->processBillDeliverable($item);
                 return;
+            } elseif ($this->deliverable->product_type === 'task') {
+                // Handle task deliverable
+                $item = \App\Models\Task::find($this->deliverable->item_id);
+                if (!$item) {
+                    throw new \Exception("Task not found for deliverable {$this->deliverable->id}");
+                }
+                $this->processTaskDeliverable($item);
+                return;
             } else {
                 // Handle wish item deliverable (existing logic)
                 $wishItem = \App\Models\WishItem::find($this->deliverable->item_id);
@@ -145,6 +153,51 @@ class ProcessWishItemDeliverable implements ShouldQueue
 
             throw $e;
         }
+    }
+
+    /**
+     * Process task deliverable
+     */
+    private function processTaskDeliverable($item): void
+    {
+        // Generate and upload certificate to Uploadcare if requested
+        $certificateUrl = null;
+        $metadata = json_decode($this->deliverable->metadata, true) ?? [];
+        
+        if (($metadata['certificate'] ?? 'true') === 'true') {
+            $certificateService = app(CertificateService::class);
+            $certificateUrl = $certificateService->generateAndUploadCertificate($this->deliverable, $item);
+        }
+
+        // Update deliverable
+        // For tasks, we don't necessarily have a "bundle" yet unless it's instant.
+        // If it's instant, the StripeWebhookController already handled status = completed.
+        // We just update the certificate.
+        
+        $updateData = [
+            'certificate_url' => $certificateUrl,
+            'metadata' => json_encode(array_merge($metadata, [
+                'certificate_generated' => !empty($certificateUrl)
+            ]))
+        ];
+
+        // Only set status to delivered if it's not already set (StripeWebhook might set it for Instant)
+        // Or if we consider the "Deliverable" (the receipt) as delivered.
+        // However, ProfileController looks for whereNotNull('deliverable_url'). 
+        // We need to ensure deliverable_url is set if we want it to show up, 
+        // OR modify ProfileController to look for certificate_url too.
+        // If deliverable_url is null, let's set it to certificate_url as a fallback so it shows up?
+        // But deliverable_url usually implies the CONTENT.
+        // For timed tasks, there is no content yet.
+        // Let's rely on ProfileController modification to check certificate_url.
+        
+        $this->deliverable->update($updateData);
+        
+        // Update Stripe metadata
+        $this->updateStripeMetadata($certificateUrl, [
+            'certificate_generated' => !empty($certificateUrl) ? 'true' : 'false',
+            'content_type' => 'task_service'
+        ]);
     }
 
     /**
