@@ -10,6 +10,7 @@ export default function ReferAndEarn({
     referral = {},
     stats = {},
     referrals = [],
+    canRedeem = false, // ✅ FIX 1
 }) {
     const [copied, setCopied] = useState(false);
     const [referralCode, setReferralCode] = useState(referral?.code || null);
@@ -198,20 +199,18 @@ export default function ReferAndEarn({
                         />
                     </div>
 
-                    {/* ================= REDEEM REFERRAL EARNINGS ================= */}
-                    <div className="pink-round p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* ================= REDEEM ================= */}
+                    <div className="pink-round p-6 mb-8 flex flex-col md:flex-row md:justify-between gap-4">
                         <div>
                             <h3 className="text-lg font-GillSans uppercase mb-1">
                                 Redeem Referral Earnings
                             </h3>
-                            <p className="text-sm text-muted max-w-xl">
-                                Redeem your referral earnings once they’re
-                                available. All redemption requests are reviewed
-                                by our team before payout.
+                            <p className="text-sm text-muted">
+                                Redemption requests are reviewed before payout.
                             </p>
                         </div>
 
-                        <div className="flex flex-col items-start md:items-end gap-2">
+                        <div className="flex flex-col items-end gap-2">
                             <div className="text-sm">
                                 <span className="text-muted">
                                     Available balance:
@@ -222,16 +221,23 @@ export default function ReferAndEarn({
                             </div>
 
                             <button
-                                disabled={!canRedeem}
+                                disabled={!canRedeem || loading}
                                 className={`btn-pink px-6 py-3 text-sm font-semibold min-w-[240px]
                                     ${
-                                        !canRedeem
+                                        !canRedeem || loading
                                             ? "bg-gray-400 cursor-not-allowed"
                                             : ""
                                     }
                                 `}
                                 onClick={() => {
-                                    router.post(route("referral.redeem"));
+                                    setLoading(true);
+                                    router.post(
+                                        route("referral.redeem"),
+                                        {},
+                                        {
+                                            onFinish: () => setLoading(false),
+                                        }
+                                    );
                                 }}
                             >
                                 Redeem £50
@@ -250,34 +256,6 @@ export default function ReferAndEarn({
                                     your Stripe account.
                                 </p>
                             )}
-
-                            {/* <button
-                                disabled={
-                                    !stats.available_for_payout ||
-                                    stats.available_for_payout <= 0
-                                }
-                                className={`btn-pink px-6 py-3 text-sm font-semibold min-w-[240px]
-                                    ${
-                                        !stats.available_for_payout ||
-                                        stats.available_for_payout <= 0
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : ""
-                                    }
-                                `}
-                                onClick={() => {
-                                    // UI placeholder
-                                    alert(
-                                        "Your redemption request has been submitted. We’ll review it and notify you once approved."
-                                    );
-                                }}
-                            >
-                                Redeem Earnings
-                            </button> */}
-
-                            <p className="text-xs text-muted text-right max-w-xs">
-                                After approval, funds are paid to your connected
-                                Stripe account.
-                            </p>
                         </div>
                     </div>
 
