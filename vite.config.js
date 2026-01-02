@@ -70,8 +70,6 @@ export default defineConfig({
             port: 5173
         } 
     },
-    
-    // Resolve optimizations
     resolve: {
         alias: {
             '@': '/resources/js',
