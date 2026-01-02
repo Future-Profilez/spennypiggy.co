@@ -111,6 +111,14 @@ class Deliverable extends Model
     {
         return $this->belongsTo(Task::class, 'item_id');
     }
+
+    /**
+     * Get the purchase/order this deliverable is for
+     */
+    public function purchase(): BelongsTo
+    {
+        return $this->belongsTo(TaskPurchase::class, 'order_id');
+    }
     
     /**
      * Get the item based on product_type

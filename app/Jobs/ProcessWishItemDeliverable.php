@@ -181,6 +181,11 @@ class ProcessWishItemDeliverable implements ShouldQueue
             ]))
         ];
 
+        // If task is instant and has content, set deliverable_url so it appears in purchases
+        if ($item->type === 'instant' && !empty($item->deliverable_content)) {
+            $updateData['deliverable_url'] = $item->deliverable_content;
+        }
+
         // Only set status to delivered if it's not already set (StripeWebhook might set it for Instant)
         // Or if we consider the "Deliverable" (the receipt) as delivered.
         // However, ProfileController looks for whereNotNull('deliverable_url'). 

@@ -677,7 +677,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/stripe/identity-verification"
                                                 >
-                                                    {auth?.user?.identity_admin_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
+                                                    {auth?.user?.identity_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
                                                 </Link>
                                             )}
 

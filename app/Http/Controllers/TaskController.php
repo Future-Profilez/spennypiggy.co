@@ -461,7 +461,7 @@ class TaskController extends Controller
         ]);
         
         // Dispatch job to process the deliverable (certificate generation)
-        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+        \App\Jobs\ProcessWishItemDeliverable::dispatchSync($deliverable);
         
         // Handle Instant Task
         // Use $task->type as reliable source instead of metadata
@@ -630,9 +630,11 @@ class TaskController extends Controller
                  
                  // Notify Admin (via email)
                  try {
-                    // Assuming admin email is configured or hardcoded for support
-                    // Mail::to('support@spennypiggy.co')->send(...);
-                 } catch (\Exception $e) {}
+                    // Send to admin support email
+                    Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                 } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to notify admin about escalation: " . $e->getMessage());
+                 }
 
             } else {
                  $purchase->status = 'rejected_once';

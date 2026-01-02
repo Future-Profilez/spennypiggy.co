@@ -26,15 +26,15 @@ class PurchasesController extends Controller
         
         // Get deliverables for the authenticated user (as gifter)
         $sentDeliverables = Deliverable::where('gifter_id', $user->id)
-            ->with(['creator', 'wishItem', 'bill', 'membership', 'task'])
-            ->select(['id', 'uuid', 'creator_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
+            ->with(['creator', 'wishItem', 'bill', 'membership', 'task', 'purchase'])
+            ->select(['id', 'uuid', 'creator_id', 'item_id', 'order_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
             
         // Get deliverables received by the user (as creator)
         $receivedDeliverables = Deliverable::where('creator_id', $user->id)
-            ->with(['gifter', 'wishItem', 'bill', 'membership', 'task'])
-            ->select(['id', 'uuid', 'gifter_id', 'item_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
+            ->with(['gifter', 'wishItem', 'bill', 'membership', 'task', 'purchase'])
+            ->select(['id', 'uuid', 'gifter_id', 'item_id', 'order_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();
 
