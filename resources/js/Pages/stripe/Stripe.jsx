@@ -38,10 +38,10 @@ export default function Stripe(props) {
             errorAlert("Complete admin profile approval before connecting Stripe.");
             return false;
         }
-        if (!adminIdentityApproved) {
-            errorAlert("Your identity is awaiting admin approval. Stripe connection is disabled until approved.");
-            return false;
-        }
+        // if (!adminIdentityApproved) {
+        //     errorAlert("Your identity is awaiting admin approval. Stripe connection is disabled until approved.");
+        //     return false;
+        // }
         setConnecting(true);
         if (checkRef.current.checked) {
             window.location.href = route("stripe.connect", {
@@ -80,12 +80,12 @@ export default function Stripe(props) {
                             <p className="text-sm">Complete your basic profile and submit for admin approval to unlock payment setup.</p>
                         </div>
                     )}
-                    {finalStepsUnlocked && !adminIdentityApproved && (
+                    {/* {finalStepsUnlocked && !adminIdentityApproved && (
                         <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg text-blue-800">
                             <p className="font-semibold">Identity Under Admin Review</p>
                             <p className="text-sm">Your identity documents are verified by Stripe and awaiting admin approval. Stripe connection will be available once approved.</p>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Main Content Card */}
                     <div className="whbg overflow-hidden">
@@ -182,7 +182,7 @@ export default function Stripe(props) {
                                     space="4" 
                                     size="md"
                                     action={close} 
-                                    classes={` ${country == null || country == '' ? 'disabled' : ''} ${(!finalStepsUnlocked || !adminIdentityApproved) ? 'disabled' : ''} btn-pink sm  hover:shadow-voilet transition-all duration-300 transform hover:scale-105`}
+                                    classes={` ${country == null || country == '' ? 'disabled' : ''} ${(!finalStepsUnlocked) ? 'disabled' : ''} btn-pink sm  hover:shadow-voilet transition-all duration-300 transform hover:scale-105`}
                                     text="Review Terms & Connect Stripe"
                                 >
                                     <div className="">
@@ -240,7 +240,7 @@ export default function Stripe(props) {
                                             <button 
                                                 className="button p transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" 
                                                 onClick={checkTerms}
-                                                disabled={connecting || !finalStepsUnlocked || !adminIdentityApproved} >
+                                                disabled={connecting || !finalStepsUnlocked} >
                                                 {connecting ? (
                                                     <span className="flex items-center justify-center">
                                                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

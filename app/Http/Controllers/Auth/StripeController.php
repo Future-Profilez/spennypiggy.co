@@ -408,9 +408,9 @@ class StripeController extends Controller
         if (($user->identity_status ?? 0) != 1) {
             return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
         }
-        if (($user->identity_admin_status ?? 0) != 1) {
-            return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
-        }
+        // if (($user->identity_admin_status ?? 0) != 1) {
+        //     return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
+        // }
 
 
         if (empty($user->account_id)) {

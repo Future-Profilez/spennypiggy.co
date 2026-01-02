@@ -198,6 +198,59 @@ export default function ReferAndEarn({
                         />
                     </div>
 
+                    {/* ================= REDEEM REFERRAL EARNINGS ================= */}
+                    <div className="pink-round p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h3 className="text-lg font-GillSans uppercase mb-1">
+                                Redeem Referral Earnings
+                            </h3>
+                            <p className="text-sm text-muted max-w-xl">
+                                Redeem your referral earnings once they’re
+                                available. All redemption requests are reviewed
+                                by our team before payout.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col items-start md:items-end gap-2">
+                            <div className="text-sm">
+                                <span className="text-muted">
+                                    Available balance:
+                                </span>{" "}
+                                <strong>
+                                    £{stats.available_for_payout || 0}
+                                </strong>
+                            </div>
+
+                            <button
+                                disabled={
+                                    !stats.available_for_payout ||
+                                    stats.available_for_payout <= 0
+                                }
+                                className={`btn-pink px-6 py-3 text-sm font-semibold min-w-[240px]
+                                    ${
+                                        !stats.available_for_payout ||
+                                        stats.available_for_payout <= 0
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : ""
+                                    }
+                                `}
+                                onClick={() => {
+                                    // UI placeholder
+                                    alert(
+                                        "Your redemption request has been submitted. We’ll review it and notify you once approved."
+                                    );
+                                }}
+                            >
+                                Redeem Earnings
+                            </button>
+
+                            <p className="text-xs text-muted text-right max-w-xs">
+                                After approval, funds are paid to your connected
+                                Stripe account.
+                            </p>
+                        </div>
+                    </div>
+
                     {/* ================= REFERRAL TABLE ================= */}
                     <div className="pink-round p-6">
                         <h2 className="text-xl font-GillSans uppercase mb-4">
