@@ -72,7 +72,6 @@ class User extends Authenticatable
     ];
 
     protected $appends = [
-<<<<<<< HEAD
         'avatar_url',
         'cover_url',
         'twitter_username',
@@ -84,12 +83,10 @@ class User extends Authenticatable
         'grace_period_started_at',
         'grace_period_ends_at',
         'is_in_grace_period',
-        'grace_period_days_remaining'
-=======
+        'grace_period_days_remaining',
         'social_url','avatar_url', 'cover_url', 'twitter_username', 
         'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
         'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
->>>>>>> c915d93ee1f26aa589ab43acaad551125790a276
     ];
     protected $with = ['social_links'];
 
