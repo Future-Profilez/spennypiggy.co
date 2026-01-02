@@ -1072,6 +1072,10 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
 
+
+                // Update GMV for creator
+                Helpers::addGmv($payment_data->wish->user_id, (float) $payment_data->amount);
+
                 Log::info("About to access payment->currency", [
                     'payment_data_id' => $payment_data->id,
                     'stripe_payment_detail_id' => $payment_data->stripe_payment_detail_id

@@ -390,89 +390,23 @@ export default function Header({ classMagicword }) {
                                                             </span>
                                                         </Link>
                                                     </li> */}
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={`/earnings`}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <GiTwoCoins
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                                Earnings
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                    <li>
-                                                        <Link
-                                                            onClick={toggleClass}
-                                                            href={`/membership-dashboard`}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                        >
-                                                            <span className="inline-flex justify-center items-center ml-4">
-                                                                <FaHouseChimneyUser
-                                                                    color="#fff"
-                                                                    size={"1.2rem"}
-                                                                />
-                                                            </span>
-                                                            <span
-                                                                className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                            >
-                                                                Membership Dashboard
-                                                            </span>
-                                                        </Link>
-                                                    </li>
-                                                </>
-                                            ) : (
-                                                ""
-                                            )}
-                                            {auth?.user?.username ?
-                                            <>
-                                                <li>
-                                                    <Link
-                                                        onClick={toggleClass}
-                                                        href={`/purchases`}
-                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                                    >
-                                                        <span className="inline-flex justify-center items-center ml-4">
-                                                            <SiBuymeacoffee
-                                                                color="#fff"
-                                                                size={"1.2rem"}
-                                                            />
-                                                        </span>
-                                                        <span
-                                                            className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                        >
-                                                            All Purchases
-                                                        </span>
-                                                    </Link>
-                                                </li>
-                                                <li>
-
-                                                    <Link
-                                                        onClick={toggleClass}
-                                                        href={`/task/dashboard`}
-                                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6" >
-                                                        <span className="inline-flex justify-center items-center ml-4">
-                                                            <BiTask
-                                                                color="#fff"
-                                                                size={"1.2rem"}
-                                                            />
-                                                        </span>
-                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white" >
-                                                            Tasks
-                                                        </span>
-                                                    </Link>
-                                                </li>
-                                            </>
-                                             : ''}
-
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/earnings`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <GiTwoCoins
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Earnings
+                                                    </span>
+                                                </Link>
+                                            </li>
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
@@ -485,37 +419,55 @@ export default function Header({ classMagicword }) {
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                    >
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Membership Dashboard
                                                     </span>
                                                 </Link>
                                             </li>
-                                        
-                                    
+                                        </>
+                                    ) : (
+                                        ""
+                                    )}
                                     {auth?.user?.username ? (
-                                        <li>
-                                            <Link
-                                                onClick={toggleClass}
-                                                href={`/purchases`}
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                            >
-                                                <span className="inline-flex justify-center items-center ml-4">
-                                                    <SiBuymeacoffee
-                                                        color="#fff"
-                                                        size={"1.2rem"}
-                                                    />
-                                                </span>
-                                                <span
-                                                    className="ml-2 text-[17px]
-                                tracking-wide truncate text-white"
+                                        <>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/purchases`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                 >
-                                                    All Purchases
-                                                </span>
-                                            </Link>
-                                        </li>
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SiBuymeacoffee
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span
+                                                        className="ml-2 text-[17px]
+                                    tracking-wide truncate text-white"
+                                                    >
+                                                        All Purchases
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/task/dashboard`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <BiTask
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Tasks
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                        </>
                                     ) : (
                                         ""
                                     )}
