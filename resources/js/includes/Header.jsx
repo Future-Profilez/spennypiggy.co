@@ -419,10 +419,7 @@ export default function Header({ classMagicword }) {
                                                                     size={"1.2rem"}
                                                                 />
                                                             </span>
-                                                            <span
-                                                                className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                            >
+                                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                                 Membership Dashboard
                                                             </span>
                                                         </Link>
@@ -445,10 +442,7 @@ export default function Header({ classMagicword }) {
                                                                 size={"1.2rem"}
                                                             />
                                                         </span>
-                                                        <span
-                                                            className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                        >
+                                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                             All Purchases
                                                         </span>
                                                     </Link>
@@ -493,7 +487,6 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                        
                                     
                                     {auth?.user?.username ? (
                                         <li>
