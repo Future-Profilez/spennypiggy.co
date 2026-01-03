@@ -24,7 +24,11 @@
   }
 }
 
-
+.excited-gradient {
+                    background: linear-gradient(120deg, #FF0080, #7928CA, #FF0080);
+                    background-size: 200% 200%;
+                    animation: gradientMove 6s ease infinite;
+                }
 
 
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}

@@ -119,12 +119,16 @@ export default function Hero({auth}) {
                   </h2> */}
                   <h2 className=" headingSm shadow-none uppercase text-light font-gulfs stroke-none text-5xl md:text-6xl  xl:text-7xl max-w-3xl mx-auto text-center">
                     The everything {" "}
-                    <div className='text-5xl md:text-7xl xl:text-8xl text-[#F94F96]'>wishlist</div>
+                    <div className='text-5xl md:text-7xl xl:text-8xl text-[#F94F96]  '>
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500 animate-pulse">
+                                wishlist
+                            </span>
+                            </div>
                   </h2>
-                  <h3 className="text-center text-xl uppercase text-yellow font-gulfs mt-2 sm:mt-3 mb-2 sm:mb-3">
+                  <h3 className="text-center text-xl uppercase text-yellow font-anton tracking-wide mt-2 sm:mt-3 mb-2 sm:mb-3">
                       Built for Creators
                   </h3>
-                  <h3 className="text-center text-2xl uppercase text-white font-anton mb-3 max-w-[600px]">
+                  <h3 className="text-center text-2xl uppercase text-white font-antons mb-3 max-w-[600px]">
                   Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
                   </h3>
                   <div className=" pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
