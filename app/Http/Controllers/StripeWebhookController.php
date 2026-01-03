@@ -318,6 +318,16 @@ class StripeWebhookController extends Controller
                 $this->handleSupportPaymentDeliverableReady($data, $metadata);
                 break;
 
+            case 'checkout.session.async_payment_succeeded':
+                Log::info("Handling Checkout Session Async Payment Succeeded");
+                $this->handleAsyncPaymentSucceeded($data);
+                break;
+
+            case 'checkout.session.async_payment_failed':
+                Log::info("Handling Checkout Session Async Payment Failed");
+                $this->handleAsyncPaymentFailed($data);
+                break;
+
             case 'invoice.paid':
                 Log::info("Handling Invoice Paid");
                 $this->handleInvoicePaid($data, $metadata);
@@ -556,6 +566,10 @@ class StripeWebhookController extends Controller
 
         // Calculate amount from session amount_total (in cents/smallest unit)
         $amount = ($session->amount_total ?? 0) / 100;
+        
+        // Determine initial status based on payment_status
+        // 'paid' -> 'paid', 'unpaid'/'no_payment_required' -> 'pending'
+        $initialStatus = ($session->payment_status === 'paid') ? 'paid' : 'pending';
 
         // Create TaskPurchase
         $purchase = TaskPurchase::create([
@@ -565,7 +579,8 @@ class StripeWebhookController extends Controller
             'stripe_session_id' => $session->id,
             'payment_intent_id' => $session->payment_intent,
             'amount' => $amount,
-            'status' => 'pending', // Initial status
+            'status' => $initialStatus,
+            'gifter_message' => $metadata->gifter_message ?? null,
             'admin_fee' => $metadata->admin_fee ?? 0,
             'platform_fee' => $metadata->platform_fee ?? 0,
             'vat_amount' => $metadata->vat_amount ?? 0,
@@ -1487,6 +1502,54 @@ class StripeWebhookController extends Controller
                 'bill_id' => $billPayment->bill->id ?? 'unknown'
             ]);
             return null;
+        }
+    }
+
+    /**
+     * Handle Async Payment Succeeded
+     */
+    private function handleAsyncPaymentSucceeded($session)
+    {
+        Log::info("Processing async payment succeeded", ['session_id' => $session->id]);
+        
+        $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
+        if ($purchase) {
+            // Only update if currently pending or unpaid
+            if (in_array($purchase->status, ['pending', 'unpaid'])) {
+                $purchase->status = 'paid';
+                $purchase->save();
+                Log::info("Updated TaskPurchase status to paid", ['id' => $purchase->id]);
+            }
+        }
+        
+        // Also update Deliverable
+        $deliverable = \App\Models\Deliverable::where('session_id', $session->id)->first();
+        if ($deliverable && $deliverable->payment_status !== 'paid') {
+            $deliverable->payment_status = 'paid';
+            $deliverable->save();
+        }
+    }
+
+    /**
+     * Handle Async Payment Failed
+     */
+    private function handleAsyncPaymentFailed($session)
+    {
+        Log::info("Processing async payment failed", ['session_id' => $session->id]);
+        
+        $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
+        if ($purchase) {
+            $purchase->status = 'failed';
+            $purchase->save();
+            Log::info("Updated TaskPurchase status to failed", ['id' => $purchase->id]);
+        }
+        
+        // Also update Deliverable
+        $deliverable = \App\Models\Deliverable::where('session_id', $session->id)->first();
+        if ($deliverable) {
+            $deliverable->payment_status = 'failed';
+            $deliverable->status = 'failed';
+            $deliverable->save();
         }
     }
 

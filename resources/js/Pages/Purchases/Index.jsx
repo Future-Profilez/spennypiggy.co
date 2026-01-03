@@ -116,7 +116,12 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             // For task items
             itemName = deliverable.task.title;
             itemImage = deliverable.task.media_url;
-            itemprice = deliverable.transaction_amount || metadata.amount;
+            // For creators (received), show the task price (excluding fees). For gifters (sent), show transaction amount (total paid).
+            if (type === 'received' && deliverable.task.price) {
+                itemprice = deliverable.task.price;
+            } else {
+                itemprice = deliverable.transaction_amount || metadata.amount;
+            }
         } else if (metadata.bill_name) {
             // Fallback to metadata bill_name if relationship not loaded
             itemName = metadata.bill_name;

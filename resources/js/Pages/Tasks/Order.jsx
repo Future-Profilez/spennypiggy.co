@@ -116,7 +116,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                         <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             ASSIGNED: <span className="text-blue-600">{new Date(purchase.created_at).toLocaleDateString()}</span>
                         </span>
-                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated'].includes(purchase.status) && task.sla_hours && (
+                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated'].includes(purchase.status) && task.sla_hours && (
                             <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 REMAINING: <Countdown createdAt={purchase.created_at} hours={task.sla_hours} />
                             </span>
@@ -126,6 +126,18 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                         </span> : ''}
                     </div>
                         
+                    {/* Gifter Message Display */}
+                    {purchase.gifter_message && (
+                        <div className="bg-white border-2 border-black rounded-[20px] p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-8 mb-8">
+                            <h3 className="font-black text-gray-900 mb-2 uppercase tracking-wide text-sm">
+                                {isCreator ? "Message from Supporter" : "Your Message"}
+                            </h3>
+                            <p className="text-gray-800 text-lg font-medium italic">
+                                "{purchase.gifter_message}"
+                            </p>
+                        </div>
+                    )}
+
                     {task.type === 'timed' && (
                         <div>
                             <h2 className="text-2xl font-black capitalize font-bold font-poppins pb-3 mt-12">Fulfillment Status</h2>
@@ -133,7 +145,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             {/* CREATOR ACTIONS */}
                             {isCreator && (
                                 <div>
-                                    {['assigned', 'rejected_once'].includes(purchase.status) ? (
+                                    {['paid', 'assigned', 'rejected_once', 'initiated'].includes(purchase.status) ? (
                                         <div className="bg-blue-50 p-6 rounded-[22px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             <h3 className="font-black text-xl uppercase text-blue-900 mb-4">
                                                 {purchase.status === 'rejected_once' ? 'Proof Rejected - Please Re-upload' : 'Action Required: Upload Proof'}

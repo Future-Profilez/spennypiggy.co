@@ -33,6 +33,7 @@ class TaskPurchase extends Model
         'rejection_count',
         'refund_status',
         'refunded_at',
+        'gifter_message',
     ];
 
     protected $casts = [

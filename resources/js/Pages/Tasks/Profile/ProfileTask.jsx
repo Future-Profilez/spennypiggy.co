@@ -55,6 +55,9 @@ export default function ProfileTask({ task, IsloggedIn }) {
                     </button> : ''}
                 </div>
             </div>
+            {IsloggedIn && task.is_approved !== 1  ?
+                <p className="!pt-3 block text-red-500 font-bold">Unapproved : {task.is_approved_reason || 'Item is currently under review. Please check again after 30 minutes.'}</p> 
+            : ''}
         </li>
     );
 }
