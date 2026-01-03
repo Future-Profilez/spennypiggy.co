@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReferAndEarnController extends Controller
 {
@@ -78,6 +80,9 @@ class ReferAndEarnController extends Controller
 
         $referralLink = url('/register?ref=' . $user->referral_code);
 
+        // =========================
+        // Referral List
+        // =========================
         $referrals = CreatorReferral::with('referred:id,name,username,created_at')
             ->where('referrer_creator_id', $user->id)
             ->orderByDesc('created_at')
@@ -93,30 +98,36 @@ class ReferAndEarnController extends Controller
                 ];
             });
 
+        // =========================
+        // Stats
+        // =========================
         $totalReferrals = CreatorReferral::where('referrer_creator_id', $user->id)->count();
 
-        $qualifiedReferrals = CreatorReferral::where('referrer_creator_id', $user->id)
+        $qualifiedReferralsCount = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereIn('status', ['QUALIFIED', 'PAYOUT_REQUESTED', 'PAID'])
             ->count();
 
+        // Total actually PAID to creator
         $totalEarned = CreatorReferralPayout::where('creator_id', $user->id)
             ->whereNotNull('paid_at')
             ->sum('amount');
 
-        $availableForPayout = CreatorReferralPayout::where('creator_id', $user->id)
-            ->where('approval_status', 'APPROVED')
-            ->whereNull('paid_at')
-            ->sum('amount');
+        // =========================
+        // ✅ AVAILABLE FOR PAYOUT (CORRECT)
+        // =========================
+        $availableReferralCount = CreatorReferral::where('referrer_creator_id', $user->id)
+            ->where('status', 'QUALIFIED')
+            ->whereNotNull('qualified_at')
+            ->count();
 
+        $availableForPayout = $availableReferralCount * 50;
+
+        // Prevent multiple active payout requests
         $hasPendingPayout = CreatorReferralPayout::where('creator_id', $user->id)
             ->whereIn('status', ['PENDING', 'APPROVED'])
             ->exists();
 
-        $canRedeem = CreatorReferral::where('referrer_creator_id', $user->id)
-            ->where('status', 'QUALIFIED')
-            ->whereNotNull('qualified_at')
-            ->where('lifetime_gmv', '>=', 1000)
-            ->exists() && !$hasPendingPayout;
+        $canRedeem = $availableForPayout > 0 && !$hasPendingPayout;
 
         return Inertia::render('Refer/ReferAndEarn', [
             'auth' => ['user' => $user],
@@ -126,7 +137,7 @@ class ReferAndEarnController extends Controller
             ],
             'stats' => [
                 'total_referrals' => $totalReferrals,
-                'qualified_referrals' => $qualifiedReferrals,
+                'qualified_referrals' => $qualifiedReferralsCount,
                 'total_earned' => (float) $totalEarned,
                 'available_for_payout' => (float) $availableForPayout,
             ],
@@ -134,6 +145,8 @@ class ReferAndEarnController extends Controller
             'canRedeem' => $canRedeem,
         ]);
     }
+
+
 
 
     public function createReferralLink(Request $request)
@@ -174,44 +187,66 @@ class ReferAndEarnController extends Controller
     {
         $creator = auth()->user();
 
-        // Get eligible referral
-        $referral = \App\Models\CreatorReferral::where('referrer_creator_id', $creator->id)
-            ->where('status', 'QUALIFIED')
-            ->whereNotNull('qualified_at')
-            ->where('lifetime_gmv', '>=', 1000)
-            ->first();
+        try {
+            DB::beginTransaction();
 
-        if (!$referral) {
-            return back()->with('error', 'You are not eligible to redeem yet.');
+            // 1️⃣ Get all qualified referrals
+            $qualifiedReferrals = CreatorReferral::where('referrer_creator_id', $creator->id)
+                ->where('status', 'QUALIFIED')
+                ->whereNotNull('qualified_at')
+                ->lockForUpdate()
+                ->get();
+
+            if ($qualifiedReferrals->isEmpty()) {
+                DB::rollBack();
+                return back()->with('error', 'No qualified referrals available for payout.');
+            }
+
+            // 2️⃣ Prevent multiple pending payouts
+            $hasPending = CreatorReferralPayout::where('creator_id', $creator->id)
+                ->whereIn('status', ['PENDING', 'APPROVED'])
+                ->exists();
+
+            if ($hasPending) {
+                DB::rollBack();
+                return back()->with('error', 'You already have a payout under review.');
+            }
+
+            // 3️⃣ Calculate payout amount
+            $amount = $qualifiedReferrals->count() * 50;
+
+            // 4️⃣ Create payout request (NO creator_referral_id)
+            $payout = CreatorReferralPayout::create([
+                'creator_id'  => $creator->id,
+                'amount'      => $amount,
+                'status'      => 'PENDING',
+                'requested_at' => now(),
+            ]);
+
+            // 5️⃣ Lock all referrals into payout state
+            CreatorReferral::whereIn('id', $qualifiedReferrals->pluck('id'))
+                ->update([
+                    'status' => 'PAYOUT_REQUESTED',
+                ]);
+
+            DB::commit();
+
+            return back()->with(
+                'success',
+                'Your referral payout request has been sent for admin review.'
+            );
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Referral payout request failed', [
+                'creator_id' => $creator->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with(
+                'error',
+                'Something went wrong while requesting payout. Please try again.'
+            );
         }
-
-        // Prevent duplicate payout requests
-        $alreadyRequested = \App\Models\CreatorReferralPayout::where(
-            'creator_referral_id',
-            $referral->id
-        )->whereIn('status', ['PENDING', 'APPROVED', 'PAID'])->exists();
-
-        if ($alreadyRequested) {
-            return back()->with('error', 'Payout already requested.');
-        }
-
-        // Create payout request
-        \App\Models\CreatorReferralPayout::create([
-            'creator_referral_id' => $referral->id,
-            'creator_id' => $creator->id,
-            'amount' => 50,
-            'status' => 'PENDING',
-            'requested_at' => now(),
-        ]);
-
-        // Update referral status
-        $referral->update([
-            'status' => 'PAYOUT_REQUESTED',
-        ]);
-
-        return back()->with(
-            'success',
-            'Your referral payout request has been sent for admin review.'
-        );
     }
 }

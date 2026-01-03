@@ -1,4 +1,4 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import { FaCopy, FaShareAlt } from "react-icons/fa";
 import { useState } from "react";
 import axios from "axios";
@@ -12,6 +12,7 @@ export default function ReferAndEarn({
     referrals = [],
     canRedeem = false, // ✅ FIX 1
 }) {
+    console.log("ReferAndEarn props:", { auth, referral, stats, referrals, canRedeem }); // ✅ FIX 2
     const [copied, setCopied] = useState(false);
     const [referralCode, setReferralCode] = useState(referral?.code || null);
     const [referralLink, setReferralLink] = useState(referral?.link || null);
@@ -36,6 +37,11 @@ export default function ReferAndEarn({
         } finally {
             setLoading(false);
         }
+    };
+
+    const formatMoney = (value) => {
+        const num = Number(value || 0);
+        return num.toFixed(2);
     };
 
     // const shareLink = async () => {
@@ -216,19 +222,15 @@ export default function ReferAndEarn({
                                     Available balance:
                                 </span>{" "}
                                 <strong>
-                                    £{stats.available_for_payout || 0}
+                                    £{formatMoney(stats.available_for_payout)}
                                 </strong>
                             </div>
 
                             <button
                                 disabled={!canRedeem || loading}
                                 className={`btn-pink px-6 py-3 text-sm font-semibold min-w-[240px]
-                                    ${
-                                        !canRedeem || loading
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : ""
-                                    }
-                                `}
+                ${!canRedeem || loading ? "bg-gray-400 cursor-not-allowed" : ""}
+            `}
                                 onClick={() => {
                                     setLoading(true);
                                     router.post(
@@ -240,13 +242,14 @@ export default function ReferAndEarn({
                                     );
                                 }}
                             >
-                                Redeem £50
+                                Redeem £
+                                {formatMoney(stats.available_for_payout)}
                             </button>
 
                             {!canRedeem && (
                                 <p className="text-xs text-muted text-right max-w-xs">
-                                    You can redeem once a referred creator
-                                    reaches £1,000 lifetime GMV.
+                                    You can redeem once you have at least £50
+                                    available.
                                 </p>
                             )}
 

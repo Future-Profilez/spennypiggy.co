@@ -68,7 +68,6 @@ class StripeControl
         }
     }
 
-
     /**
      * Create a Customer
      *

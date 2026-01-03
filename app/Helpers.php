@@ -51,28 +51,41 @@ class Helpers
      * @param int   $referredCreatorId  Creator who received payment
      * @param float $amountGbp          GMV amount in GBP
      */
-    public static function addGmv(int $referredCreatorId, float $amountGbp): void
+    public static function addGmv(int $referredCreatorId, float $amount, string $fromCurrency = 'gbp'): void
     {
         try {
+            if ($amount <= 0) {
+                return;
+            }
+
+            // 🔁 Convert amount to GBP (ALWAYS)
+            $amountGbp = Helpers::priceFormat($fromCurrency, $amount, 'gbp');
+
+            // Ensure numeric + safety
+            $amountGbp = (float) round($amountGbp, 2);
+
             if ($amountGbp <= 0) {
                 return;
             }
 
-            // Find referral row where this creator was referred
+            // 🔍 Find active referral under threshold
             $referral = CreatorReferral::where(
                 'referred_creator_id',
                 $referredCreatorId
-            )->first();
+            )
+                ->where('status', 'IN_PROGRESS')
+                ->where('lifetime_gmv', '<', 1000)
+                ->first();
 
             // No referral → nothing to do
             if (!$referral) {
                 return;
             }
 
-            // Increment GMV
+            // 💰 Increment GMV (GBP only)
             $referral->increment('lifetime_gmv', $amountGbp);
 
-            // Auto-qualify at £1000
+            // 🎯 Auto-qualify at £1000
             if (
                 $referral->lifetime_gmv >= 1000 &&
                 $referral->status !== 'QUALIFIED'
@@ -83,21 +96,25 @@ class Helpers
                 ]);
             }
 
-            Log::info('Creator referral GMV updated', [
+            Log::info('Creator referral GMV updated (GBP)', [
                 'referrer_creator_id' => $referral->referrer_creator_id,
-                'referred_creator_id' => $referral->referred_creator_id,
-                'added_gmv' => $amountGbp,
-                'total_gmv' => $referral->lifetime_gmv,
-                'status' => $referral->status,
+                'referred_creator_id' => $referredCreatorId,
+                'original_amount'     => $amount,
+                'original_currency'   => $fromCurrency,
+                'added_gmv_gbp'       => $amountGbp,
+                'total_gmv_gbp'       => $referral->lifetime_gmv,
+                'status'              => $referral->status,
             ]);
         } catch (\Throwable $e) {
-            Log::error('CreatorReferralHelper failed', [
+            Log::error('CreatorReferralHelper::addGmv failed', [
                 'referred_creator_id' => $referredCreatorId,
-                'amount_gbp' => $amountGbp,
-                'error' => $e->getMessage(),
+                'amount'              => $amount,
+                'currency'            => $fromCurrency,
+                'error'               => $e->getMessage(),
             ]);
         }
     }
+
 
 
     public static function priceFormat($currency1, $amount, $currency2)

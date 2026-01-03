@@ -1040,14 +1040,7 @@ class CheckoutController extends Controller
                 throw new \Exception("Payment record not found for session: " . $sessionId);
             }
 
-            $ConvertedToGBpAmount = Helpers::priceFormat($dd->owner->default_currency, $stripeid->amount_subtotal, 'gbp');
-            Log::info("Converted amount to GBP", [
-                'original_currency' => $dd->owner->default_currency,
-                'original_amount' => $stripeid->amount_subtotal,
-                'converted_amount_gbp' => $ConvertedToGBpAmount
-            ]);
-            Helpers::addGmv($stripeid->owner_id, (float) $ConvertedToGBpAmount);
-
+            
             Log::info("Retrieved StripePaymentDetail", [
                 'id' => $stripeid->id,
                 'session_id' => $stripeid->session_id,
@@ -1071,9 +1064,9 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
 
-
+                
                 // Update GMV for creator
-                Helpers::addGmv($payment_data->wish->user_id, (float) $payment_data->amount);
+                Helpers::addGmv($stripeid->owner_id, (float) $stripeid->amount_subtotal, $dd->owner->default_currency);
 
                 Log::info("About to access payment->currency", [
                     'payment_data_id' => $payment_data->id,

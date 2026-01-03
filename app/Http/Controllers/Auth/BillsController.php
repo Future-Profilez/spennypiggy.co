@@ -652,7 +652,7 @@ class BillsController extends Controller
         try {
 
             // Update GMV for creator
-            Helpers::addGmv($bill_pay->bill->user_id, (float) $bill_pay->amount);
+            Helpers::addGmv($bill_pay->bill->user_id, (float) $bill_pay->amount, $bill_pay->bill->user->default_currency);
 
             // Since we're using destination charges, session is created on platform account (no connected account parameter)
             $session = StripeControl::getCheckoutSession($bill_pay->session_id);
