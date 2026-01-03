@@ -695,6 +695,35 @@ class StripeWebhookController extends Controller
                 $purchase->dispute_status = 'won';
             } elseif ($status === 'lost') {
                 $purchase->dispute_status = 'lost';
+                
+                // If lost, it means the customer got a refund.
+                $purchase->status = 'refunded';
+                $purchase->refunded_at = now();
+                
+                // Update Deliverable Status
+                try {
+                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    if ($deliverable) {
+                        $deliverable->status = 'refunded';
+                        $deliverable->save();
+                        Log::info("Updated deliverable status to refunded for lost dispute", ['deliverable_id' => $deliverable->id]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to update deliverable status on dispute lost: " . $e->getMessage());
+                }
+
+                 // Notify Creator (Loser)
+                 try {
+                    $creator = $purchase->creator;
+                    if ($creator) {
+                        Helpers::sendNotification(
+                            "Dispute Lost ⚠️", 
+                            "The dispute for '{$purchase->task->title}' was decided in favor of the customer. Funds have been returned.", 
+                            $creator->email
+                        );
+                    }
+                } catch (\Exception $e) {}
+
             } else {
                 // Keep open or set to none if it was just a warning
                 if (str_contains($status, 'warning')) {

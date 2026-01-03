@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Task;
 use App\Helpers;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\TaskRefunded;
 use Stripe\Stripe;
 use Stripe\Refund;
 use Carbon\Carbon;
@@ -108,7 +110,19 @@ class ProcessSlaRefunds extends Command
             $purchase->dispute_status = 'won'; // Effectively the supporter "won" by default? Or just leave as is.
             $purchase->save();
 
-            // 3. Notify Users
+            // 3. Update Deliverable Status
+            try {
+                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
+                    $deliverable->status = 'refunded';
+                    $deliverable->save();
+                    $this->info("Updated deliverable status for purchase UUID: {$purchase->uuid}");
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to update deliverable status for SLA refund {$purchase->uuid}: " . $e->getMessage());
+            }
+
+            // 4. Notify Users
             $this->notifyUsers($purchase);
 
             Log::info("Successfully refunded purchase {$purchase->uuid}");
@@ -133,10 +147,14 @@ class ProcessSlaRefunds extends Command
                     "The task '{$task->title}' was automatically refunded because the deadline passed.", 
                     $supporter->email
                 );
-                // Ideally send an email too if Helpers::sendNotification is only push.
-                // But Helpers seems to be MagicBell which handles email notifications too depending on config.
+                
+                Mail::to($supporter->email)->send(new TaskRefunded([
+                    'title' => $task->title,
+                    'amount' => $purchase->amount,
+                    'message' => "The task was automatically refunded because the deadline passed."
+                ]));
             } catch (\Exception $e) {
-                Log::error("Failed to notify supporter for refund {$purchase->uuid}");
+                Log::error("Failed to notify supporter for refund {$purchase->uuid}: " . $e->getMessage());
             }
         }
 

@@ -39,7 +39,7 @@ class TaskController extends Controller
             ->get();
 
         $completed_orders = TaskPurchase::where('creator_id', Auth::id())
-            ->whereIn('status', ['delivered', 'completed_accepted'])
+            ->whereIn('status', ['delivered', 'completed_accepted', 'completed'])
             ->with(['task', 'supporter'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -204,7 +204,7 @@ class TaskController extends Controller
                 // Get all purchases for history
                 $purchaseHistory = TaskPurchase::where('task_id', $task->id)
                     ->where('supporter_id', Auth::id())
-                    ->whereIn('status', ['paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded', 'initiated'])
+                    ->whereIn('status', ['paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded', 'initiated', 'completed'])
                     ->orderBy('created_at', 'desc')
                     ->get();
                 
@@ -224,7 +224,7 @@ class TaskController extends Controller
             'purchase' => $purchase,
             'purchaseHistory' => $purchaseHistory,
             'isCreator' => Auth::id() === $task->creator_id,
-            'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['delivered', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
+            'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['paid', 'delivered', 'completed', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
             'currencySymbol' => $currencySymbol
         ]);
     }
@@ -246,12 +246,31 @@ class TaskController extends Controller
             return Storage::download($task->deliverable_content);
         }
 
-        $hasPurchased = TaskPurchase::where('task_id', $task->id)
+        $purchase = TaskPurchase::where('task_id', $task->id)
             ->where('supporter_id', $userId)
-            ->whereIn('status', ['paid', 'delivered', 'completed_accepted'])
-            ->exists();
+            ->whereIn('status', ['paid', 'delivered', 'completed', 'completed_accepted', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'sla_missed'])
+            ->latest()
+            ->first();
             
-        if (!$hasPurchased) {
+        if (!$purchase) {
+            // Debug logging for troubleshooting
+            \Illuminate\Support\Facades\Log::info("Download failed - No valid purchase found", [
+                'task_id' => $task->id,
+                'user_id' => $userId,
+                'uuid' => $uuid
+            ]);
+
+            // Check for any purchase to provide better error message
+            $anyPurchase = TaskPurchase::where('task_id', $task->id)
+                ->where('supporter_id', $userId)
+                ->first();
+                
+            if ($anyPurchase) {
+                 \Illuminate\Support\Facades\Log::info("Download failed - Invalid status", [
+                    'status' => $anyPurchase->status
+                 ]);
+                 abort(403, 'Purchase status not allowed: ' . $anyPurchase->status);
+            }
             abort(403, 'Purchase required');
         }
         

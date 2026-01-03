@@ -50,9 +50,12 @@ export default function ProfileTask({ task, IsloggedIn }) {
                     <p className="text-2xl font-black text-pink-500 font-anton">
                         {formatMultiPrice(task.price, task.currency || 'USD')}
                     </p>
-                    {!IsloggedIn ? <button onClick={handlePurchaseClick} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
+                    {/* {!IsloggedIn ? <button onClick={handlePurchaseClick} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
                         {processing ? 'Purchasing...' : <> {task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝'} </> }
-                    </button> : ''}
+                    </button> : ''} */}
+                    {!IsloggedIn ? <Link href={`/task/${task.uuid}`} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
+                         <> {task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝'} </> 
+                    </Link> : ''}
                 </div>
             </div>
             {IsloggedIn && task.is_approved !== 1  ?

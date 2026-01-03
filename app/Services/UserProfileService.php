@@ -85,7 +85,8 @@ class UserProfileService
         $query = \App\Models\Task::where('creator_id', $userId);
         
         if (!$isOwner) {
-            $query->where('status', 'active');
+            $query->where('status', 'active')
+                  ->where('is_approved', 1);
         }
 
         return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', ])
