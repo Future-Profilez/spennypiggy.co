@@ -50,7 +50,7 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                 }
             `}</style>
 
-            <div className=" founder-gradient mt-16 py-6 pt-12 md:pt-24 md:py-24 pinkbg px-4 relative">
+            <div className=" founder-gradient py-6 pt-12 md:pt-24 md:py-24 pinkbg px-4 relative">
                 <div className="fading absolute top-10 left-10 opacity-20">
                     <FaCrown className="text-white text-6xl founder-icon" />
                 </div>

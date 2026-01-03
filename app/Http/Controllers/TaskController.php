@@ -33,13 +33,13 @@ class TaskController extends Controller
         $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
         
         $orders = TaskPurchase::where('creator_id', Auth::id())
-            ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated'])
+            ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'])
             ->with(['task', 'supporter'])
             ->orderBy('created_at', 'asc')
             ->get();
 
         $completed_orders = TaskPurchase::where('creator_id', Auth::id())
-            ->whereIn('status', ['delivered', 'completed_accepted'])
+            ->whereIn('status', ['delivered', 'completed_accepted', 'completed'])
             ->with(['task', 'supporter'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -127,6 +127,66 @@ class TaskController extends Controller
         return redirect()->route('task.dashboard')->with('success', 'Task created successfully.');
     }
 
+    public function edit($uuid)
+    {
+        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+        $userCurrency = Auth::user()->default_currency ?? 'USD';
+        $currencySymbol = \App\Models\Currency::where('ISO', $userCurrency)->value('symbol') ?? '$';
+
+        return Inertia::render('Tasks/Edit', [
+            'task' => $task,
+            'currency' => $userCurrency,
+            'currencySymbol' => $currencySymbol
+        ]);
+    }
+
+    public function update(Request $request, $uuid)
+    {
+        $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:1',
+            'category' => 'nullable|string',
+            'type' => 'required|in:instant,timed',
+            'deliverable_file' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($request, $task) {
+                    if ($request->type === 'instant' && !$value && !$request->deliverable_note && !$task->deliverable_content) {
+                        $fail('Either a deliverable file or a note is required for instant delivery.');
+                    }
+                },
+            ],
+            'deliverable_note' => 'nullable|string',
+            'media_file' => 'nullable',
+            'sla_hours' => 'required_if:type,timed|integer|min:1|max:168',
+        ]);
+
+        $task->title = $request->title;
+        $task->description = $request->description;
+        $task->price = $request->price;
+        $task->category = $request->category;
+        $task->type = $request->type;
+        $task->sla_hours = $request->type === 'timed' ? $request->sla_hours : null;
+        
+        if ($request->media_file) {
+            $task->media_url = $request->media_file['url'] ?? null;
+        }
+
+        if ($request->type === 'instant') {
+            if ($request->deliverable_file) {
+                $task->deliverable_content = $request->deliverable_file['url'] ?? null;
+                $task->deliverable_content_type = $request->deliverable_file['mimeType'] ?? null;
+            }
+            $task->deliverable_note = $request->deliverable_note;
+        }
+
+        $task->save();
+
+        return redirect()->route('task.dashboard')->with('success', 'Task updated successfully.');
+    }
+
     public function show($uuid)
     {
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
@@ -137,12 +197,19 @@ class TaskController extends Controller
         }
 
         $purchase = null;
+        $purchaseHistory = [];
+
         if (Auth::check()) {
             if (Auth::id() !== $task->creator_id) {
-                $purchase = TaskPurchase::where('task_id', $task->id)
+                // Get all purchases for history
+                $purchaseHistory = TaskPurchase::where('task_id', $task->id)
                     ->where('supporter_id', Auth::id())
-                    ->whereIn('status', ['paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded'])
-                    ->first();
+                    ->whereIn('status', ['paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded', 'initiated', 'completed'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+                
+                // Get the latest one as the "active" purchase context if needed, or just use history
+                $purchase = $purchaseHistory->first();
             }
         }
 
@@ -155,8 +222,9 @@ class TaskController extends Controller
         return Inertia::render('Tasks/Show', [
             'task' => $task,
             'purchase' => $purchase,
+            'purchaseHistory' => $purchaseHistory,
             'isCreator' => Auth::id() === $task->creator_id,
-            'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['delivered', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
+            'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['paid', 'delivered', 'completed', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
             'currencySymbol' => $currencySymbol
         ]);
     }
@@ -178,12 +246,31 @@ class TaskController extends Controller
             return Storage::download($task->deliverable_content);
         }
 
-        $hasPurchased = TaskPurchase::where('task_id', $task->id)
+        $purchase = TaskPurchase::where('task_id', $task->id)
             ->where('supporter_id', $userId)
-            ->whereIn('status', ['paid', 'delivered', 'completed_accepted'])
-            ->exists();
+            ->whereIn('status', ['paid', 'delivered', 'completed', 'completed_accepted', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'sla_missed'])
+            ->latest()
+            ->first();
             
-        if (!$hasPurchased) {
+        if (!$purchase) {
+            // Debug logging for troubleshooting
+            \Illuminate\Support\Facades\Log::info("Download failed - No valid purchase found", [
+                'task_id' => $task->id,
+                'user_id' => $userId,
+                'uuid' => $uuid
+            ]);
+
+            // Check for any purchase to provide better error message
+            $anyPurchase = TaskPurchase::where('task_id', $task->id)
+                ->where('supporter_id', $userId)
+                ->first();
+                
+            if ($anyPurchase) {
+                 \Illuminate\Support\Facades\Log::info("Download failed - Invalid status", [
+                    'status' => $anyPurchase->status
+                 ]);
+                 abort(403, 'Purchase status not allowed: ' . $anyPurchase->status);
+            }
             abort(403, 'Purchase required');
         }
         
@@ -293,6 +380,7 @@ class TaskController extends Controller
             'creator_id' => $creator->id,
             'buyer_id' => $user->id,
             'supporter_id' => $user->id, // Kept for legacy compatibility
+            'gifter_message' => $request->gifter_message,
             
             // Task Details
             'purpose' => 'paid_task',
@@ -358,8 +446,12 @@ class TaskController extends Controller
         $session = Session::retrieve($sessionId);
         
         $purchase = null;
-
-        if ($session->payment_status === 'paid') {
+        
+        // Allow if paid OR if on localhost (bypass payment check for testing)
+        $isPaid = $session->payment_status === 'paid';
+        $isLocal = \Illuminate\Support\Facades\App::environment('local');
+        
+        if ($isPaid || $isLocal) {
             // Try to find existing purchase (webhook might have created it)
             $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
             
@@ -368,9 +460,9 @@ class TaskController extends Controller
                 $purchase = $this->createTaskPurchaseSync($session, $task);
             }
 
-            // Self-healing: If purchase exists but is pending for an instant task, fix it.
+            // Self-healing: If purchase exists but is pending/paid for an instant task, fix it.
             // This handles cases where synchronous creation failed to set status correctly due to metadata issues.
-            if ($purchase && $purchase->status === 'pending' && $task->type === 'instant') {
+            if ($purchase && in_array($purchase->status, ['pending', 'paid']) && $task->type === 'instant') {
                  $purchase->status = 'completed';
                  $purchase->completed_at = Carbon::now();
                  $purchase->save();
@@ -383,7 +475,7 @@ class TaskController extends Controller
                      $deliverable->save();
                  }
                  
-                 Log::info('Self-healed pending instant task status', ['purchase_id' => $purchase->id]);
+                 Log::info('Self-healed instant task status', ['purchase_id' => $purchase->id]);
             }
         } else {
             return redirect()->route('task.show', $uuid)->with('error', 'Payment not completed.');
@@ -421,7 +513,8 @@ class TaskController extends Controller
             'stripe_session_id' => $session->id,
             'payment_intent_id' => $session->payment_intent,
             'amount' => $amount,
-            'status' => 'pending', // Initial status
+            'status' => 'paid', // Always paid in sync handler (and especially for local dev)
+            'gifter_message' => $metadata->gifter_message ?? null,
             'admin_fee' => $metadata->admin_fee ?? 0,
             'platform_fee' => $metadata->platform_fee ?? 0,
             'vat_amount' => $metadata->vat_amount ?? 0,
@@ -461,7 +554,7 @@ class TaskController extends Controller
         ]);
         
         // Dispatch job to process the deliverable (certificate generation)
-        \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+        \App\Jobs\ProcessWishItemDeliverable::dispatchSync($deliverable);
         
         // Handle Instant Task
         // Use $task->type as reliable source instead of metadata
@@ -602,7 +695,7 @@ class TaskController extends Controller
             } catch (\Exception $e) {}
         } else {
             // Increment rejection count
-            $purchase->increment('rejection_count');
+            $purchase->rejection_count += 1;
             $purchase->reviewed_at = now();
             
             // If rejected 2 or more times, escalate to Admin
@@ -630,9 +723,11 @@ class TaskController extends Controller
                  
                  // Notify Admin (via email)
                  try {
-                    // Assuming admin email is configured or hardcoded for support
-                    // Mail::to('support@spennypiggy.co')->send(...);
-                 } catch (\Exception $e) {}
+                    // Send to admin support email
+                    Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                 } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to notify admin about escalation: " . $e->getMessage());
+                 }
 
             } else {
                  $purchase->status = 'rejected_once';

@@ -3,11 +3,14 @@ import { Head, useForm, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import PriceFormat from "@/includes/PriceFormat";
 
-export default function Show({ auth, task, purchase, isCreator, deliverableUrl, currencySymbol }) {
-    const { post, processing } = useForm();
+export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol }) {
+    const { data, setData, post, processing } = useForm({
+        gifter_message: ''
+    });
     const { formatMultiPrice } = PriceFormat();
 
-    const handlePurchase = () => {
+    const handlePurchase = (e) => {
+        e.preventDefault();
         post(route('task.purchase', task.uuid));
     };
 
@@ -21,17 +24,32 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                         &larr; Back to Dashboard
                     </Link>
 
-                    <div className="bg-white border-2 !border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-[22px] overflow-hidden">
+                    <div className="">
                         
-                        {/* Retro Header */}
-                        <div className='px-4 p-3 bg-pink-100 flex !border-b-2 !border-black items-center justify-between'>
-                            <h3 className="font-bold text-xl uppercase font-anton  tracking-wide">Task Details</h3>
-                            <div className="flex items-center gap-2">
-                                <span className='border-2 border-black bg-red-500 w-4 h-4 rounded-full block'></span>
-                                <span className='border-2 border-black bg-yellow-400 w-4 h-4 rounded-full block'></span>
-                                <span className='border-2 border-black bg-green-400 w-4 h-4 rounded-full block'></span>
+                        {!task.is_approved && isCreator && (
+                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-xl">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <h3 className="text-sm leading-5 font-bold text-yellow-800 uppercase tracking-wide">
+                                            In Review
+                                        </h3>
+                                        <div className="mt-2 text-sm leading-5 text-yellow-700">
+                                            <p>
+                                                This item is currently in the reviewing process. It will be live within 30min to 1 hr.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div> 
+                        )}
+
+                        {/* Retro Header */}
+                        
 
                         {/* Media Cover */}
                         {/* {task.media_url && (
@@ -40,7 +58,7 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                             </div>
                         )} */} 
 
-                        <div className="p-8">
+                        <div className="py-8">
                             <div className='flex justify-between items-start'>
                                 <div>
                                     <h1 className="text-2xl font-black font-fre uppercase font-light  text-gray-900  ">
@@ -102,48 +120,91 @@ export default function Show({ auth, task, purchase, isCreator, deliverableUrl, 
                                     </div>
                                 ) : (
                                     <div>
-                                        {purchase ? (
-                                            <div className="text-center">
-                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[20px] border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)]">
+                                        {/* Instant Delivery Section - Only if access granted */}
+                                        {task.type === 'instant' && deliverableUrl && (
+                                            <div className="mb-8">
+                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[20px] border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
                                                     ✓ Purchased Successfully
                                                 </div>
-                                                
-                                                {task.type === 'instant' ? (
-                                                    <div className="space-y-4">
-                                                        {task.deliverable_note && (
-                                                            <div className="bg-white border-2 border-black rounded-xl p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                                                <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
-                                                                <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
-                                                            </div>
-                                                        )}
-                                                        {deliverableUrl && (
-                                                            <a 
-                                                                href={deliverableUrl} 
-                                                                className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[20px] hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                            >
-                                                                Download Content 📥
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                ) : (
+                                                <div className="space-y-4">
+                                                    {task.deliverable_note && (
+                                                        <div className="bg-white border-2 border-black rounded-xl p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                                            <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
+                                                            <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
+                                                        </div>
+                                                    )}
                                                     <a 
-                                                        href={route('task.order', purchase && purchase.uuid || task.uuid)} 
-                                                        className="block w-full text-center bg-green-600 text-white px-4 py-3 rounded-[20px] hover:bg-green-700 font-black uppercase tracking-widest text-[14px] border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all" >
-                                                        View Order Status & Proof
+                                                        href={deliverableUrl} 
+                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[20px] hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        Download Content 📥
                                                     </a>
-                                                )}
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <button
-                                                onClick={handlePurchase}
-                                                disabled={processing}
-                                                className="button b pinkbg !py-[16px] !text-white w-full"
-                                            >
-                                                {processing ? 'Processing...' : (task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝')}
-                                            </button>
                                         )}
+
+                                        {/* Purchase History List */}
+                                        {purchaseHistory && purchaseHistory.length > 0 && (
+                                            <div className="mb-8">
+                                                 <h3 className="text-lg font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
+                                                 <div className="space-y-3">
+                                                     {purchaseHistory.map((historyItem) => (
+                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+                                                             <div className="flex justify-between items-start">
+                                                                 <div>
+                                                                     <p className="font-bold text-xs uppercase text-gray-500 mb-1">
+                                                                         {new Date(historyItem.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                     </p>
+                                                                     <span className={`uppercase inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border ${
+                                                                         historyItem.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                                                                     }`}>
+                                                                         {historyItem.status}
+                                                                     </span>
+                                                                 </div>
+                                                                 <a href={route('task.order', historyItem.uuid)} className="text-xs font-black text-pink-600 hover:text-pink-700 uppercase tracking-wide border-b-2 border-pink-200 hover:border-pink-600 transition-colors">
+                                                                     View Order &rarr;
+                                                                 </a>
+                                                             </div>
+                                                             {historyItem.gifter_message && (
+                                                                 <div className="bg-gray-50 p-3 rounded-lg text-sm italic text-gray-600 border border-gray-100">
+                                                                     "{historyItem.gifter_message}"
+                                                                 </div>
+                                                             )}
+                                                         </div>
+                                                     ))}
+                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Purchase Form */}
+                                        <div className="mt-6">
+                                             <form onSubmit={handlePurchase}>
+                                                 <div className="mb-4">
+                                                     <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                                         Message to Creator (Optional)
+                                                     </label>
+                                                     <textarea
+                                                         id="gifter_message"
+                                                         value={data.gifter_message}
+                                                         onChange={e => setData('gifter_message', e.target.value)}
+                                                         className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
+                                                         placeholder="Add a personal note with your purchase..."
+                                                     />
+                                                 </div>
+
+                                                 <button
+                                                     type="submit"
+                                                     disabled={processing}
+                                                     className="button b pinkbg !py-[16px] !text-white w-full"
+                                                 >
+                                                     {processing ? 'Processing...' : (
+                                                         purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝')
+                                                     )}
+                                                 </button>
+                                             </form>
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -21,11 +21,11 @@ export default function ProfileTask({ task, IsloggedIn }) {
         <li className="px-6 py-4 hover:bg-gray-100 transition-colors border-b-2 border-gray-100 last:border-0">
             <div className="flex hover:!text-pink-500 flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex-1 text-left">
-                    <h3 className="text-xl font-anton tracking-wide">
+                    <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
                         <Link href={url} className=" line-clamp-1">
                             {task.title}
                         </Link>
-                    </h3>
+                    </h3> 
                     <p className="text-sm text-gray-600 my-1 line-clamp-2">
                         {task.description}
                     </p>
@@ -50,11 +50,17 @@ export default function ProfileTask({ task, IsloggedIn }) {
                     <p className="text-2xl font-black text-pink-500 font-anton">
                         {formatMultiPrice(task.price, task.currency || 'USD')}
                     </p>
-                    {!IsloggedIn ? <button onClick={handlePurchaseClick} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
+                    {/* {!IsloggedIn ? <button onClick={handlePurchaseClick} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
                         {processing ? 'Purchasing...' : <> {task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝'} </> }
-                    </button> : ''}
+                    </button> : ''} */}
+                    {!IsloggedIn ? <Link href={`/task/${task.uuid}`} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
+                         <> {task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝'} </> 
+                    </Link> : ''}
                 </div>
             </div>
+            {task.is_approved  !== 1 ?
+                <p className="!pt-3 block text-red-500 font-bold">Unapproved : {task.is_approved_reason || 'Item is currently under review. Please check again after 30 minutes.'}</p> 
+            : ''}
         </li>
     );
 }

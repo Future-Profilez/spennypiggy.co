@@ -723,6 +723,8 @@ Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(fu
     Route::get('/order/{uuid}', [\App\Http\Controllers\TaskController::class, 'order'])->name('order');
     Route::post('/purchase/{uuid}/upload', [\App\Http\Controllers\TaskController::class, 'uploadProof'])->name('upload-proof');
     Route::post('/purchase/{uuid}/review', [\App\Http\Controllers\TaskController::class, 'reviewProof'])->name('review-proof');
+    Route::get('/{uuid}/edit', [\App\Http\Controllers\TaskController::class, 'edit'])->name('edit');
+    Route::post('/{uuid}/update', [\App\Http\Controllers\TaskController::class, 'update'])->name('update');
 });
 Route::get('/task/{uuid}', [\App\Http\Controllers\TaskController::class, 'show'])->name('task.show');
 

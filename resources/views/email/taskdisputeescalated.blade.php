@@ -6,6 +6,8 @@
     
     if ($role == 'creator') {
         $message = "The proof for task '{$task->title}' has been rejected multiple times. The dispute has been escalated to the administrator for review. Please wait for further instructions.";
+    } elseif ($role == 'admin') {
+        $message = "A dispute has been escalated for task '{$task->title}'. The proof has been rejected multiple times. Please review the dispute in the admin panel.";
     } else {
         $message = "You have rejected the proof for task '{$task->title}' multiple times. The dispute has been escalated to the administrator for review. Please wait for further instructions.";
     }

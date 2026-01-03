@@ -25,6 +25,7 @@ import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";
 import PaymentSlider from "./home/PaymentSlider";
 import FounderProgramAnnouncement from "./home/FounderProgramAnnouncement";
+import PaidTasksAnnouncement from "./home/PaidTasksAnnouncement";
 import TrendingCreators from './home/TrendingCreators';
 import NewVerified from './home/NewVerified';
 import TopEarners from './home/TopEarners';
@@ -59,6 +60,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <Guest auth={auth.user} user={auth.user}>
         <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
         <Hero auth={auth} />
+        <PaidTasksAnnouncement />
         <FounderProgramAnnouncement founderBonus={founderBonus} />
         <LiveBarSection />
 

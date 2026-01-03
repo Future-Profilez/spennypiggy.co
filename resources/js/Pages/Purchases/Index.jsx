@@ -76,6 +76,8 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                 return 'bg-yellow-100 text-yellow-800';
             case 'failed':
                 return 'bg-red-100 text-red-800';
+            case 'refunded':
+                return 'bg-orange-100 text-orange-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -85,7 +87,10 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         const metadata = typeof deliverable.metadata === 'string' ? JSON.parse(deliverable.metadata || '{}') : (deliverable.metadata || {});
         const type = deliverable.type;
         const person = type === 'sent' ? deliverable.creator : deliverable.gifter;
-        const statusClass = getStatusClass(deliverable.status);
+        
+        // Determine display status (check purchase status first for refunds)
+        const displayStatus = deliverable.purchase?.status === 'refunded' ? 'refunded' : deliverable.status;
+        const statusClass = getStatusClass(displayStatus);
         
         // Get item based on product_type
         let itemName = "Gift Item";
@@ -107,6 +112,16 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             itemName = `${deliverable.membership.level} Membership`;
             itemImage = deliverable.membership.perma_link;
             itemprice = deliverable.membership.price || deliverable.transaction_amount || metadata.amount;
+        } else if (deliverable.product_type === 'task' && deliverable.task) {
+            // For task items
+            itemName = deliverable.task.title;
+            itemImage = deliverable.task.media_url;
+            // For creators (received), show the task price (excluding fees). For gifters (sent), show transaction amount (total paid).
+            if (type === 'received' && deliverable.task.price) {
+                itemprice = deliverable.task.price;
+            } else {
+                itemprice = deliverable.transaction_amount || metadata.amount;
+            }
         } else if (metadata.bill_name) {
             // Fallback to metadata bill_name if relationship not loaded
             itemName = metadata.bill_name;
@@ -120,7 +135,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             <div key={deliverable.id} className={`bg-white rounded-3xl
              shadow-md overflow-hidden hover:shadow-lg transition-shadow 
              duration-200 mb-2 md:mb-4 border border-2  ${type === 'sent' ? "!border-pink-400" : "border-mint"} `}>
-                <div className=" flex ">
+                <div className="flex">
                     {/* Left side - Image */}
                     <div className={`hidden sm:flex relative w-full h-auto max-w-[130px] ${type === 'sent' ? "bg-pink-50" : "bg-green-50"}  flex items-center justify-center p-4`}>
                         <span className='absolute top-2 left-[40px]'>
@@ -171,10 +186,12 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                 0, 
                                                 (deliverable.wish_item?.currency || deliverable.payment_currency || metadata.currency || auth.user.default_currency || global_currency)
                                             )}</p>
-                                            <span className={`capitalize px-3 py-1 text-xs font-medium rounded-full ${getStatusClass(deliverable.status)}`}>
-                                                {deliverable.product_type === 'membership' ? 
-                                                    (deliverable.status === 'delivered' ? 'Content Delivered' : 'Content Processing') :
-                                                    `Content ${deliverable.status || 'Processing'}`
+                                            <span className={`capitalize px-3 py-1 text-xs font-medium rounded-full ${statusClass}`}>
+                                                {displayStatus === 'refunded' ? 'Refunded' : 
+                                                    (deliverable.product_type === 'membership' ? 
+                                                        (displayStatus === 'delivered' ? 'Content Delivered' : 'Content Processing') :
+                                                        `Content ${displayStatus || 'Processing'}`
+                                                    )
                                                 }
                                             </span>
                                         </div>
@@ -230,6 +247,13 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 
                                                             className="ms-2 text-[15px] text-pink" >🎉 Get Members Only Post Access</Link>
+                                                        </li>
+                                                    : ''}
+
+                                                    {deliverable?.product_type == 'task' ?
+                                                        <li className='flex items-center flex-wrap'>
+                                                            <Link href={deliverable?.purchase?.uuid ? route('task.order', deliverable.purchase.uuid) : `/tasks/${deliverable?.task?.uuid}`} 
+                                                            className="ms-2 text-[15px] text-pink" >🎉 View Task Details</Link>
                                                         </li>
                                                     : ''}
 

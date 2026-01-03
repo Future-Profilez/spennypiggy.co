@@ -22,21 +22,29 @@ class DeliveriesController extends Controller
                 $query->where('creator_id', $user->id)
                       ->orWhere('gifter_id', $user->id);
             })
-            ->with(['creator', 'gifter'])
+            ->with(['creator', 'gifter', 'task'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
         // Transform the data for the frontend
         $deliverables->getCollection()->transform(function ($deliverable) use ($user) {
             $metadata = $deliverable->metadata ?? [];
+            $isCreator = $deliverable->creator_id === $user->id;
             
+            // Determine amount to display
+            $amount = $metadata['amount'] ?? 0;
+            if ($isCreator && $deliverable->product_type === 'task' && $deliverable->task) {
+                // Show task price without fees for creator
+                $amount = $deliverable->task->price * 100; // Convert to cents for consistency
+            }
+
             return [
                 'id' => $deliverable->id,
                 'uuid' => $deliverable->uuid,
                 'payment_id' => $deliverable->session_id ?? $deliverable->payment_intent_id,
-                'amount' => $metadata['amount'] ?? 0,
+                'amount' => $amount,
                 'currency' => strtoupper($metadata['currency'] ?? 'GBP'),
-                'formatted_amount' => $this->formatAmount($metadata['amount'] ?? 0, $metadata['currency'] ?? 'gbp'),
+                'formatted_amount' => $this->formatAmount($amount, $metadata['currency'] ?? 'gbp'),
                 'deliverable_type' => $deliverable->deliverable_type_display,
                 'status' => ucfirst($deliverable->status),
                 'status_class' => $this->getStatusClass($deliverable->status),

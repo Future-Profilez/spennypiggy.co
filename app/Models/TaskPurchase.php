@@ -33,6 +33,8 @@ class TaskPurchase extends Model
         'rejection_count',
         'refund_status',
         'refunded_at',
+        'gifter_message',
+        'last_reminder_at',
     ];
 
     protected $casts = [
@@ -40,6 +42,7 @@ class TaskPurchase extends Model
         'reviewed_at' => 'datetime',
         'completed_at' => 'datetime',
         'refunded_at' => 'datetime',
+        'last_reminder_at' => 'datetime',
         'proof_content' => 'array', // Cast JSON proof to array
     ];
 

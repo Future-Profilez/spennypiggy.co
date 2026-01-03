@@ -75,9 +75,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                 <li key={order.id} className="p-6 hover:bg-red-50 transition-colors">
                                                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                                         <div>
-                                                            <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
-                                                                Order #{order.uuid.substring(0, 8)} - {order.task.title}
-                                                            </h3>
+                                                            <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">Order #{order.uuid.substring(0, 8)} - {order.task.title}</h3>
                                                             <p className="text-sm text-gray-600 mt-1">
                                                                 Supporter: <span className="font-semibold">{order.supporter?.name || 'Guest'}</span> | 
                                                                 Ordered: {new Date(order.created_at).toLocaleDateString()}
@@ -133,7 +131,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                     <p className="text-sm text-gray-600 mt-1">
                                                         Creator: <span className="font-semibold">{purchase.task.creator?.name || 'Unknown'}</span> | 
                                                         Purchased: {new Date(purchase.created_at).toLocaleDateString()}
-                                                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated'].includes(purchase.status) && purchase.task.sla_hours && (
+                                                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated'].includes(purchase.status) && purchase.task.sla_hours && (
                                                             <> | Remaining: <Countdown createdAt={purchase.created_at} hours={purchase.task.sla_hours} /></>
                                                         )}
                                                     </p>
@@ -161,7 +159,6 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                             </div>
                         )} 
 
-                        {/* Task Definitions - Only for Creators (role === 1) */}
                         {auth.user.role === 1 && (
                             <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-xl">
                                 <div className='py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between'>
@@ -179,43 +176,58 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                 {tasks.length === 0 ? (
                                     <div className="p-12 text-center">
                                         <p className="text-gray-500 mb-4 font-medium">No tasks created yet.</p>
-                                        <Link href={route('task.create')} className="btn-pink shadow-mint inline-block px-6 py-3 text-white font-bold rounded-lg border-2 border-black uppercase">
+                                        <Link href={route('task.create')} className="button p">
                                             Create Your First Task
                                         </Link>
                                     </div>
                                 ) : (
                                     <ul className="divide-y divide-gray-200">
-                                        {tasks.map(task => (
+                                        {tasks.map(task => ( 
                                             <li key={task.id} className="p-6 hover:bg-gray-50 transition-colors">
-                                                <Link href={route('task.show', task.uuid)} className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                                    <div  className="flex-1">
-                                                        <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
-                                                            <Link  href={route('task.show', task.uuid)} className="hover:text-pink-500">
-                                                                {task.title}
-                                                            </Link>
-                                                        </h3>
-                                                        <p className="text-sm text-gray-600 mt-1 line-clamp-1">{task.description}</p>
-                                                        <p className="text-xs text-gray-500 font-bold uppercase mt-1">Created: {new Date(task.created_at).toLocaleDateString()}</p>
-                                                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                            <span className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                                                task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                                            }`}>{task.status}
-                                                            </span>
-                                                            <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
-                                                                {task.type} Delivery
-                                                            </span>
-                                                            {task?.sla_hours ? <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
-                                                                {task.sla_hours} Hours
-                                                            </span>: ''}
-                                                            <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
-                                                                {task.category || 'Paid Task'}
-                                                            </span>
+                                                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                                    <Link href={route('task.show', task.uuid)} className="flex-1 flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+                                                        <div  className="flex-1">
+                                                            <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
+                                                                <span className="hover:text-pink-500">
+                                                                    {task.title}
+                                                                </span>
+                                                            </h3>
+                                                            
+                                                            <p className="text-sm text-gray-600 mt-1 line-clamp-1">{task.description}</p>
+                                                            <p className="text-xs text-gray-500 font-bold uppercase mt-1">Created: {new Date(task.created_at).toLocaleDateString()}</p>
+                                                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                <span className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                                                    task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                                                }`}>{task.status}
+                                                                </span>
+                                                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
+                                                                    {task.type} Delivery
+                                                                </span>
+                                                                {task?.sla_hours ? <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
+                                                                    {task.sla_hours} Hours
+                                                                </span>: ''}
+                                                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
+                                                                    {task.category || 'Paid Task'}
+                                                                </span>
+                                                            </div>
                                                         </div>
+                                                        <div className="text-right min-w-[100px]">
+                                                            <p className="text-2xl font-black text-pink-500 font-anton font-bold">{formatMultiPrice(task.price, task.currency || 'USD')}</p>
+                                                        </div>
+                                                    </Link>
+
+                                                    <div className="flex-shrink-0 ml-4">
+                                                        <Link 
+                                                            href={route('task.edit', task.uuid)} 
+                                                            className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-lg font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                                                        >
+                                                            Edit
+                                                        </Link>
                                                     </div>
-                                                    <div className="text-right min-w-[100px]">
-                                                        <p className="text-2xl font-black text-pink-500 font-anton">{formatMultiPrice(task.price, task.currency || 'USD')}</p>
-                                                    </div>
-                                                </Link>
+                                                </div>
+                                                {task.is_approved !== 1 ?
+                                                    <p className="!pt-3 block text-red-500 font-bold">Unapproved : {task.is_approved_reason || 'Item is currently under review. Please check again after 30 minutes.'}</p> 
+                                                : ''}  
                                             </li>
                                         ))}
                                     </ul>
@@ -242,7 +254,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                         <li key={order.id} className="p-6 hover:bg-green-50 transition-colors">
                                             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
+                                                    <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
                                                         Order #{order.uuid.substring(0, 8)} - {order.task.title}
                                                     </h3>
                                                     <p className="text-sm text-gray-600 mt-1">
@@ -258,8 +270,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                 <div className="text-right">
                                                     <Link 
                                                         href={route('task.order', order.uuid)} 
-                                                        className="button b text-sm"
-                                                    >
+                                                        className="button b text-sm" >
                                                         View Details
                                                     </Link>
                                                 </div>
