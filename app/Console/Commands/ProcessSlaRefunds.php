@@ -10,76 +10,167 @@ use App\Helpers;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TaskRefunded;
+use App\Mail\TaskGracePeriodStartedMail;
+use App\Mail\TaskGracePeriodReminderMail;
+use App\Mail\TaskRunningLateMail;
 use Stripe\Stripe;
 use Stripe\Refund;
 use Carbon\Carbon;
 
 class ProcessSlaRefunds extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'app:process-sla-refunds';
+    protected $description = 'Check for timed tasks that have exceeded their SLA deadline and process grace period or refunds';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Check for timed tasks that have exceeded their SLA deadline and process refunds';
+    const GRACE_PERIOD_HOURS = 48;
+    const REMINDER_INTERVAL_HOURS = 12;
+    const FINAL_WARNING_HOURS = 4;
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
-        $this->info('Starting SLA refund check...');
-        Log::info('Starting SLA refund check...');
+        $this->info('Starting SLA check...');
+        Log::info('Starting SLA check...');
 
-        // Find purchases that meet the criteria:
-        // 1. SLA deadline has passed
-        // 2. Status is in a "pending work" state (pending, paid, assigned, rejected_once)
-        // 3. No proof has been uploaded (or re-uploaded after rejection if we were strict, but here we check current proof content)
-        //    Actually, if status is 'rejected_once', proof_content IS set.
-        //    If they were rejected, they are supposed to upload again. 
-        //    If they don't upload again by the ORIGINAL deadline, they might be late.
-        //    However, usually rejection resets the clock or adds time? 
-        //    If the original SLA is strict, then even after rejection, if SLA passes, it should refund?
-        //    Let's assume STRICT SLA. If now > sla_deadline and status is NOT completed/delivered/pending_review, then refund.
-        //    Note: 'pending_review' means they submitted something.
-        
-        $expiredPurchases = TaskPurchase::whereNotNull('sla_deadline')
+        $this->processGracePeriodEntry();
+        $this->processGracePeriodReminders();
+        $this->processGracePeriodExpirations();
+
+        $this->info('SLA check completed.');
+        Log::info('SLA check completed.');
+    }
+
+    private function processGracePeriodEntry()
+    {
+        // Find purchases that passed SLA deadline but are not yet in grace period (running_late)
+        $latePurchases = TaskPurchase::whereNotNull('sla_deadline')
             ->where('sla_deadline', '<', Carbon::now())
             ->whereIn('status', ['pending', 'paid', 'assigned', 'rejected_once'])
-            ->where('refund_status', '!=', 'refunded')
-            ->where(function ($query) {
-                // Ensure we don't refund if they currently have a proof under review (though status 'pending_review' covers this)
-                // If status is 'rejected_once', they have proof content but it was rejected.
-                // So if they haven't uploaded a NEW proof (which would set status to pending_review), they are liable for refund.
-                $query->where('status', '!=', 'pending_review');
+            ->where(function ($q) {
+                $q->where('refund_status', '!=', 'refunded')->orWhereNull('refund_status');
             })
-             // Double check not already completed
-            ->whereNotIn('status', ['completed', 'completed_accepted', 'delivered', 'refunded', 'escalated', 'disputed']) 
+            ->where('status', '!=', 'running_late')
+            ->where('status', '!=', 'pending_review')
+            ->whereNotIn('status', ['completed', 'completed_accepted', 'delivered', 'refunded', 'escalated', 'disputed'])
             ->get();
 
-        $count = $expiredPurchases->count();
-        $this->info("Found {$count} expired purchases.");
-        Log::info("Found {$count} expired purchases to refund.");
+        foreach ($latePurchases as $purchase) {
+            $this->info("Entering grace period for purchase UUID: {$purchase->uuid}");
+            
+            $purchase->status = 'running_late';
+            $purchase->last_reminder_at = Carbon::now();
+            $purchase->save();
 
-        if ($count === 0) {
-            return;
+            // Notify Creator
+            if ($purchase->creator) {
+                try {
+                    Helpers::sendNotification(
+                        "Grace Period Started ⏳", 
+                        "Your task '{$purchase->task->title}' has passed the deadline. You have 48 hours to complete it.", 
+                        $purchase->creator->email
+                    );
+                    Mail::to($purchase->creator->email)->send(new TaskGracePeriodStartedMail([
+                        'title' => $purchase->task->title
+                    ]));
+                } catch (\Exception $e) {
+                    Log::error("Failed to notify creator about grace period: " . $e->getMessage());
+                }
+            }
+
+            // Notify Supporter
+            if ($purchase->supporter) {
+                try {
+                    Helpers::sendNotification(
+                        "Task Running Late 🐢", 
+                        "The task '{$purchase->task->title}' is running late. A grace period has started.", 
+                        $purchase->supporter->email
+                    );
+                    Mail::to($purchase->supporter->email)->send(new TaskRunningLateMail([
+                        'title' => $purchase->task->title
+                    ]));
+                } catch (\Exception $e) {
+                    Log::error("Failed to notify supporter about late task: " . $e->getMessage());
+                }
+            }
         }
+    }
 
-        Stripe::setApiKey(config('services.stripe.secret'));
+    private function processGracePeriodReminders()
+    {
+        $gracePurchases = TaskPurchase::where('status', 'running_late')
+            ->whereNotNull('sla_deadline')
+            ->where(function ($q) {
+                $q->where('refund_status', '!=', 'refunded')->orWhereNull('refund_status');
+            })
+            ->get();
 
-        foreach ($expiredPurchases as $purchase) {
-            $this->processRefund($purchase);
+        foreach ($gracePurchases as $purchase) {
+            $graceEnd = Carbon::parse($purchase->sla_deadline)->addHours(self::GRACE_PERIOD_HOURS);
+            $now = Carbon::now();
+
+            if ($now->greaterThanOrEqualTo($graceEnd)) {
+                continue; // Will be handled by expiration logic
+            }
+
+            $hoursLeft = $now->diffInHours($graceEnd);
+            $lastReminder = $purchase->last_reminder_at ? Carbon::parse($purchase->last_reminder_at) : Carbon::parse($purchase->sla_deadline);
+
+            // Check 12-hour reminder
+            if ($now->diffInHours($lastReminder) >= self::REMINDER_INTERVAL_HOURS && $hoursLeft > self::FINAL_WARNING_HOURS) {
+                $this->sendReminder($purchase, $hoursLeft);
+            }
+            // Check Final Warning (4 hours left)
+            elseif ($hoursLeft <= self::FINAL_WARNING_HOURS && $now->diffInHours($lastReminder) > 2) {
+                 // Ensure we don't spam final warning if we just sent it (debounce > 2 hours)
+                 $this->sendReminder($purchase, $hoursLeft, true);
+            }
         }
+    }
 
-        $this->info('SLA refund check completed.');
-        Log::info('SLA refund check completed.');
+    private function sendReminder($purchase, $hoursLeft, $isFinal = false)
+    {
+        $this->info("Sending reminder for purchase UUID: {$purchase->uuid} ({$hoursLeft}h left)");
+        
+        $purchase->last_reminder_at = Carbon::now();
+        $purchase->save();
+
+        if ($purchase->creator) {
+            try {
+                $title = $isFinal ? "Final Warning: Task Expiring Soon 🚨" : "Grace Period Reminder ⏰";
+                $message = "You have approximately {$hoursLeft} hours remaining to complete '{$purchase->task->title}'.";
+                
+                Helpers::sendNotification($title, $message, $purchase->creator->email);
+                
+                Mail::to($purchase->creator->email)->send(new TaskGracePeriodReminderMail([
+                    'title' => $purchase->task->title,
+                    'hours_left' => $hoursLeft
+                ]));
+            } catch (\Exception $e) {
+                Log::error("Failed to send reminder: " . $e->getMessage());
+            }
+        }
+    }
+
+    private function processGracePeriodExpirations()
+    {
+        // Find purchases that exceeded SLA + Grace Period
+        $expiredPurchases = TaskPurchase::whereNotNull('sla_deadline')
+            ->where('status', 'running_late')
+            ->where(function ($q) {
+                $q->where('refund_status', '!=', 'refunded')->orWhereNull('refund_status');
+            })
+            ->get()
+            ->filter(function ($purchase) {
+                $graceEnd = Carbon::parse($purchase->sla_deadline)->addHours(self::GRACE_PERIOD_HOURS);
+                return Carbon::now()->greaterThan($graceEnd);
+            });
+
+        if ($expiredPurchases->count() > 0) {
+            Stripe::setApiKey(config('services.stripe.secret'));
+            
+            foreach ($expiredPurchases as $purchase) {
+                $this->processRefund($purchase);
+            }
+        }
     }
 
     private function processRefund(TaskPurchase $purchase)
@@ -95,9 +186,9 @@ class ProcessSlaRefunds extends Command
             // 1. Create Refund in Stripe
             $refund = Refund::create([
                 'payment_intent' => $purchase->payment_intent_id,
-                'reason' => 'requested_by_customer', // Or 'expired_uncaptured_charge' if uncaptured, but these are likely captured. 'requested_by_customer' is safe or just omit reason.
+                'reason' => 'requested_by_customer',
                 'metadata' => [
-                    'reason' => 'sla_expired',
+                    'reason' => 'sla_expired_grace_period',
                     'task_purchase_uuid' => $purchase->uuid,
                     'task_id' => $purchase->task_id
                 ]
@@ -107,7 +198,7 @@ class ProcessSlaRefunds extends Command
             $purchase->refund_status = 'refunded';
             $purchase->refunded_at = Carbon::now();
             $purchase->status = 'refunded';
-            $purchase->dispute_status = 'won'; // Effectively the supporter "won" by default? Or just leave as is.
+            $purchase->dispute_status = 'won'; // Supporter won
             $purchase->save();
 
             // 3. Update Deliverable Status
@@ -123,7 +214,7 @@ class ProcessSlaRefunds extends Command
             }
 
             // 4. Notify Users
-            $this->notifyUsers($purchase);
+            $this->notifyRefundUsers($purchase);
 
             Log::info("Successfully refunded purchase {$purchase->uuid}");
 
@@ -133,7 +224,7 @@ class ProcessSlaRefunds extends Command
         }
     }
 
-    private function notifyUsers(TaskPurchase $purchase)
+    private function notifyRefundUsers(TaskPurchase $purchase)
     {
         $task = $purchase->task;
         $supporter = $purchase->supporter;
@@ -144,14 +235,14 @@ class ProcessSlaRefunds extends Command
             try {
                 Helpers::sendNotification(
                     "Task Refunded 💸", 
-                    "The task '{$task->title}' was automatically refunded because the deadline passed.", 
+                    "The task '{$task->title}' was automatically refunded after grace period expired.", 
                     $supporter->email
                 );
                 
                 Mail::to($supporter->email)->send(new TaskRefunded([
                     'title' => $task->title,
                     'amount' => $purchase->amount,
-                    'message' => "The task was automatically refunded because the deadline passed."
+                    'message' => "The task was automatically refunded because the grace period deadline passed."
                 ]));
             } catch (\Exception $e) {
                 Log::error("Failed to notify supporter for refund {$purchase->uuid}: " . $e->getMessage());
@@ -163,7 +254,7 @@ class ProcessSlaRefunds extends Command
             try {
                 Helpers::sendNotification(
                     "Task Expired ⏳", 
-                    "The task '{$task->title}' expired and was refunded to the supporter.", 
+                    "The task '{$task->title}' expired after grace period and was refunded.", 
                     $creator->email
                 );
             } catch (\Exception $e) {

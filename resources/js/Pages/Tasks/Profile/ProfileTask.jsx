@@ -21,11 +21,11 @@ export default function ProfileTask({ task, IsloggedIn }) {
         <li className="px-6 py-4 hover:bg-gray-100 transition-colors border-b-2 border-gray-100 last:border-0">
             <div className="flex hover:!text-pink-500 flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex-1 text-left">
-                    <h3 className="text-xl font-anton tracking-wide">
+                    <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
                         <Link href={url} className=" line-clamp-1">
                             {task.title}
                         </Link>
-                    </h3>
+                    </h3> 
                     <p className="text-sm text-gray-600 my-1 line-clamp-2">
                         {task.description}
                     </p>
@@ -58,7 +58,7 @@ export default function ProfileTask({ task, IsloggedIn }) {
                     </Link> : ''}
                 </div>
             </div>
-            {IsloggedIn && task.is_approved !== 1  ?
+            {task.is_approved  !== 1 ?
                 <p className="!pt-3 block text-red-500 font-bold">Unapproved : {task.is_approved_reason || 'Item is currently under review. Please check again after 30 minutes.'}</p> 
             : ''}
         </li>

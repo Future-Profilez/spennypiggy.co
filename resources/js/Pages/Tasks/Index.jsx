@@ -75,9 +75,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                 <li key={order.id} className="p-6 hover:bg-red-50 transition-colors">
                                                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                                         <div>
-                                                            <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
-                                                                Order #{order.uuid.substring(0, 8)} - {order.task.title}
-                                                            </h3>
+                                                            <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">Order #{order.uuid.substring(0, 8)} - {order.task.title}</h3>
                                                             <p className="text-sm text-gray-600 mt-1">
                                                                 Supporter: <span className="font-semibold">{order.supporter?.name || 'Guest'}</span> | 
                                                                 Ordered: {new Date(order.created_at).toLocaleDateString()}
@@ -229,7 +227,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                 </div>
                                                 {task.is_approved !== 1 ?
                                                     <p className="!pt-3 block text-red-500 font-bold">Unapproved : {task.is_approved_reason || 'Item is currently under review. Please check again after 30 minutes.'}</p> 
-                                                : ''}
+                                                : ''}  
                                             </li>
                                         ))}
                                     </ul>
@@ -256,7 +254,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                         <li key={order.id} className="p-6 hover:bg-green-50 transition-colors">
                                             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
+                                                    <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
                                                         Order #{order.uuid.substring(0, 8)} - {order.task.title}
                                                     </h3>
                                                     <p className="text-sm text-gray-600 mt-1">

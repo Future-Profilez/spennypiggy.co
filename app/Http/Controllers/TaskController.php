@@ -33,7 +33,7 @@ class TaskController extends Controller
         $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
         
         $orders = TaskPurchase::where('creator_id', Auth::id())
-            ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated'])
+            ->whereIn('status', ['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'])
             ->with(['task', 'supporter'])
             ->orderBy('created_at', 'asc')
             ->get();
@@ -695,7 +695,7 @@ class TaskController extends Controller
             } catch (\Exception $e) {}
         } else {
             // Increment rejection count
-            $purchase->increment('rejection_count');
+            $purchase->rejection_count += 1;
             $purchase->reviewed_at = now();
             
             // If rejected 2 or more times, escalate to Admin

@@ -62,7 +62,6 @@ class UserProfileService
     public function getAllProfileData(int $userId, ?int $categoryId = null): array
     {
         $isOwner = Auth::check() && Auth::id() === $userId;
-        
         // Execute all queries in parallel for maximum speed
         $data = [];
         
@@ -73,7 +72,6 @@ class UserProfileService
         $data['shops'] = $this->getOptimizedShopItems($userId, $isOwner);
         $data['posts'] = $this->getOptimizedPosts($userId, $isOwner, 5);
         $data['tasks'] = $this->getOptimizedTasks($userId, $isOwner);
-        
         return $data;
     }
 
@@ -83,13 +81,10 @@ class UserProfileService
     public function getOptimizedTasks(int $userId, bool $isOwner): array
     {
         $query = \App\Models\Task::where('creator_id', $userId);
-        
         if (!$isOwner) {
-            $query->where('status', 'active')
-                  ->where('is_approved', 1);
+            $query->where('status', 'active')->where('is_approved', 1);
         }
-
-        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', ])
+        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved'])
             ->latest()
             ->get()
             ->toArray();

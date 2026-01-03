@@ -141,7 +141,6 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                     {task.type === 'timed' && (
                         <div>
                             <h2 className="text-2xl font-black capitalize font-bold font-poppins pb-3 mt-12">Fulfillment Status</h2>
-                            
                             {/* CREATOR ACTIONS */}
                             {isCreator && (
                                 <div>
@@ -198,6 +197,14 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                         <div className="text-gray-600 font-medium text-lg text-center py-8">
                                             {purchase.status === 'pending_review' && "Waiting for supporter review."}
                                             {purchase.status === 'completed_accepted' && "Order completed successfully!"}
+                                            {purchase.status === 'escalated' && (
+                                                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mx-auto max-w-full">
+                                                    <h4 className="text-red-800 font-bold uppercase mb-2">Order Escalated</h4>
+                                                    <p className="text-red-700 text-sm">
+                                                        This order has been escalated to the admin for review. You will be notified once a decision is made.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -264,6 +271,26 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                             </div>
                                                         </form>
                                                     )}
+                                                </div>
+                                            )}
+
+                                            {purchase.status === 'escalated' && (
+                                                <div className="mt-6 pt-6 border-t-2 border-dashed border-red-200">
+                                                    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-4">
+                                                        <h4 className="text-red-800 font-bold uppercase mb-2">Order Escalated</h4>
+                                                        <p className="text-red-700 text-sm mb-2">
+                                                            This order has been escalated to the admin for review. 
+                                                            However, you can still choose to accept the proof below if you are satisfied. This will resolve the dispute and release funds to the creator.
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <button 
+                                                        onClick={handleAccept}
+                                                        className="w-full bg-green-500 text-white px-4 py-3 rounded-[15px] font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                                                        disabled={reviewProcessing}
+                                                    >
+                                                        Accept & Resolve Dispute
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
