@@ -641,6 +641,10 @@ Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
 })->name("promotion-terms");
 
+Route::get('/paid-tasks-terms', function () {
+    return Inertia::render('PaidTasksTerms');
+})->name("paid-tasks-terms");
+
 Route::get('/files/{filename}', function (string $filename) {
     $fullPath = asset($filename);
     return Storage::response($fullPath);

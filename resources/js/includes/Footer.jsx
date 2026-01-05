@@ -80,6 +80,7 @@ export default function Footer(props) {
                                 <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=a1f91da2-10e4-49e8-88b6-fc716b2645ba" target="blank" > Return Policy </a> </li>
                                 <li> <a href="https://ucarecdn.com/6b25399f-e259-4c19-bbdf-70308c5814ef/SPTERMSFINALVMAY2025.pdf" target="blank" > Terms & Conditions </a> </li>
                                 <li> <a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=9a437e57-fcc7-439f-a7e7-96b493a8c50f" target="blank" > Acceptable Use Policy </a> </li>
+                                <li> <Link href={route("paid-tasks-terms")}> Paid Tasks Terms </Link> </li>
                             </ul>
                         </div>
 
