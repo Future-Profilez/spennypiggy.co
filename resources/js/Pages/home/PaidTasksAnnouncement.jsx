@@ -39,7 +39,7 @@ export default function PaidTasksAnnouncement() {
                 }
             `}</style>
 
-            <div className="bg-black py-20 px-4 relative">
+            <div className="bg-black py-24 px-4 relative">
                 {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
@@ -60,8 +60,8 @@ export default function PaidTasksAnnouncement() {
                         <h2 className="fading text-4xl md:text-5xl lg:text-6xl font-gulfs text-white mb-6 leading-none tracking-tight drop-shadow-2xl">
                             TURN YOUR SKILLS <br/>
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500 animate-pulse">
-                                INTO CASH! 💸
-                            </span>
+                                INTO CASH!
+                            </span> 💸
                         </h2>
                         
                         <p className="fading text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto font-medium leading-relaxed">
