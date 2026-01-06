@@ -84,9 +84,19 @@ class User extends Authenticatable
         'grace_period_ends_at',
         'is_in_grace_period',
         'grace_period_days_remaining',
-        'social_url','avatar_url', 'cover_url', 'twitter_username', 
-        'monthly_charge_enabled', 'is_creator_address_found','followers_count','following_count',
-        'subscription_status', 'grace_period_started_at', 'grace_period_ends_at', 'is_in_grace_period', 'grace_period_days_remaining'
+        'social_url',
+        'avatar_url',
+        'cover_url',
+        'twitter_username',
+        'monthly_charge_enabled',
+        'is_creator_address_found',
+        'followers_count',
+        'following_count',
+        'subscription_status',
+        'grace_period_started_at',
+        'grace_period_ends_at',
+        'is_in_grace_period',
+        'grace_period_days_remaining'
     ];
     protected $with = ['social_links'];
 
@@ -727,18 +737,24 @@ class User extends Authenticatable
     // Referrals this user has made (as referrer)
     public function referralsMade()
     {
-        return $this->hasMany(CreatorReferral::class,'referrer_creator_id');
+        return $this->hasMany(CreatorReferral::class, 'referrer_creator_id');
     }
 
     // Referral record if this user was referred by someone
     public function referralReceived()
     {
-        return $this->hasOne(CreatorReferral::class,'referred_creator_id');
+        return $this->hasOne(CreatorReferral::class, 'referred_creator_id');
     }
 
     // Referral payouts earned by this user
     public function referralPayouts()
     {
-        return $this->hasMany(CreatorReferralPayout::class,'creator_id');
+        return $this->hasMany(CreatorReferralPayout::class, 'creator_id');
+    }
+
+    // Referral code owned by creator
+    public function referralCode()
+    {
+        return $this->hasOne(ReferralCode::class, 'creator_id');
     }
 }

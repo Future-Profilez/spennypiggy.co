@@ -9,24 +9,25 @@ class CreatorReferral extends Model
 {
     use HasFactory;
 
+    protected $table = 'creator_referrals';
+
     protected $fillable = [
         'referrer_creator_id',
         'referred_creator_id',
+        'referral_code_id',
         'lifetime_gmv',
         'status',
         'qualified_at',
     ];
 
     protected $casts = [
-        'lifetime_gmv' => 'decimal:2',
         'qualified_at' => 'datetime',
+        'lifetime_gmv' => 'decimal:2',
     ];
 
-    /* =========================
-     | Relationships
-     ========================= */
+    /* ================= RELATIONSHIPS ================= */
 
-    // Creator who shared the referral
+    // Creator who owns the referral
     public function referrer()
     {
         return $this->belongsTo(User::class, 'referrer_creator_id');
@@ -44,11 +45,25 @@ class CreatorReferral extends Model
         return $this->hasOne(CreatorReferralPayout::class);
     }
 
-    /* =========================
-     | Helpers
-     ========================= */
+    // Referral code used
+    public function referralCode()
+    {
+        return $this->belongsTo(ReferralCode::class, 'referral_code_id');
+    }
 
-    public function isQualified(): bool
+    /* ================= SCOPES (OPTIONAL BUT USEFUL) ================= */
+
+    public function scopeQualified($query)
+    {
+        return $query->where('status', 'QUALIFIED');
+    }
+
+    public function scopePayable($query)
+    {
+        return $query->where('status', 'PAYOUT_REQUESTED');
+    }
+
+        public function isQualified(): bool
     {
         return $this->status === 'QUALIFIED';
     }

@@ -12,10 +12,20 @@ export default function ReferAndEarn({
     referrals = [],
     canRedeem = false, // ✅ FIX 1
 }) {
-    console.log("ReferAndEarn props:", { auth, referral, stats, referrals, canRedeem }); // ✅ FIX 2
+    console.log("ReferAndEarn props:", {
+        auth,
+        referral,
+        stats,
+        referrals,
+        canRedeem,
+    }); // ✅ FIX 2
+
     const [copied, setCopied] = useState(false);
     const [referralCode, setReferralCode] = useState(referral?.code || null);
     const [referralLink, setReferralLink] = useState(referral?.link || null);
+
+    // ✅ REAL condition
+    const hasReferral = Boolean(referralCode);
 
     const [loading, setLoading] = useState(false);
     const copyLink = () => {
@@ -23,6 +33,48 @@ export default function ReferAndEarn({
         navigator.clipboard.writeText(referralLink);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const getCooldownText = (timestamp) => {
+        if (!timestamp) return null;
+
+        const diff = timestamp * 1000 - Date.now();
+        if (diff <= 0) return null;
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const mins = Math.floor((diff / (1000 * 60)) % 60);
+
+        return `${hours}h ${mins}m remaining`;
+    };
+
+    const ProgressBar = ({ value }) => {
+        const percent = Math.min((Number(value || 0) / 1000) * 100, 100);
+
+        return (
+            <div className="w-full">
+                {/* Bar background */}
+                <div className="w-full h-3 bg-gray-200 rounded-full border border-black overflow-hidden">
+                    <div
+                        className={`h-full transition-all duration-500 ${
+                            percent >= 100 ? "bg-green-500" : "bg-pink-500"
+                        }`}
+                        style={{ width: `${percent}%` }}
+                    />
+                </div>
+
+                {/* Percentage text */}
+                <div className="text-[11px] text-muted mt-1 text-center">
+                    {Math.floor(percent)}% completed
+                </div>
+
+                {/* Qualified label (only when 100%) */}
+                {/* {percent >= 100 && (
+                    <div className="text-[11px] text-green-700 font-semibold mt-1 text-center">
+                        🎉 Qualified
+                    </div>
+                )} */}
+            </div>
+        );
     };
 
     const createReferralLink = async () => {
@@ -44,27 +96,6 @@ export default function ReferAndEarn({
         return num.toFixed(2);
     };
 
-    // const shareLink = async () => {
-    //     if (!referralLink) return;
-
-    //     if (navigator && navigator?.share) {
-    //         try {
-    //             await navigator.share({
-    //                 title: "Join me on Spenny Piggy",
-    //                 text: "Sign up using my referral link and start earning on Spenny Piggy!",
-    //                 url: referralLink,
-    //             });
-    //         } catch (err) {
-    //             // user cancelled – no action needed
-    //         }
-    //     } else {
-    //         // fallback: copy link if share not supported
-    //         navigator.clipboard.writeText(referralLink);
-    //         setCopied(true);
-    //         setTimeout(() => setCopied(false), 2000);
-    //     }
-    // };
-
     return (
         <Authenticated auth={auth?.user} user={auth?.user}>
             <Head title="Refer & Earn" />
@@ -72,6 +103,7 @@ export default function ReferAndEarn({
             <div className="blackbg pt-6 pb-10">
                 <div className="containerbox">
                     {/* ================= HEADER ================= */}
+                    {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
                     <div className="mb-6 border-3 border-black shadow-pink rounded-[40px] overflow-hidden">
                         {/* Mac style bar */}
                         <div className="p-4 pinkbg flex items-center border-b-[3px] border-black">
@@ -91,82 +123,102 @@ export default function ReferAndEarn({
                             </Link>
                         </div>
 
-                        {/* Header content */}
+                        {/* Content */}
                         <div className="whbg p-6">
-                            <p className="text-muted max-w-3xl">
+                            {/* Intro text */}
+                            <p className="text-muted max-w-3xl mb-6">
                                 Invite creators to Spenny Piggy and earn{" "}
                                 <strong>£50</strong> for every creator who
                                 reaches <strong>£1,000 lifetime GMV</strong>.
                             </p>
-                        </div>
-                    </div>
 
-                    {/* ================= REFERRAL LINK ================= */}
-                    <div className="pink-round p-6 mb-6">
-                        <h2 className="text-xl font-GillSans uppercase mb-3">
-                            Your Referral Link
-                        </h2>
+                            {/* Referral Link Box */}
+                            <div className="border-2 border-black rounded-2xl p-5">
+                                <h2 className="text-lg font-GillSans uppercase mb-3">
+                                    Your Referral Link
+                                </h2>
 
-                        <div className="flex flex-col gap-4">
-                            {/* Referral Link Display */}
-                            {referralLink && (
-                                <div className="bg-white border-2 border-black rounded-xl px-4 py-3 text-sm truncate">
-                                    {referralLink}
-                                </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap gap-3">
-                                {/* Generate Button */}
-                                <button
-                                    onClick={createReferralLink}
-                                    disabled={loading || referralCode}
-                                    className={`btn-pink px-6 py-3 text-sm font-semibold 
-                                        min-w-[260px] text-center justify-center
+                                {/* INPUT + CTA */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={hasReferral ? referralLink : ""}
+                                        placeholder="Click Generate to create your referral link"
+                                        className={`w-full px-4 py-4 pr-[220px] rounded-xl border-2 border-black text-sm
                                         ${
-                                            referralCode
-                                                ? "bg-gray-500 cursor-not-allowed"
-                                                : ""
+                                            hasReferral
+                                                ? "bg-white text-black"
+                                                : "bg-gray-100 text-gray-500"
                                         }
                                     `}
-                                >
-                                    {loading
-                                        ? "Generating..."
-                                        : referralCode
-                                        ? "Referral Code Generated"
-                                        : "Generate Referral Code"}
-                                </button>
+                                    />
 
-                                {/* Copy Button (only if link exists) */}
-                                {referralLink && (
-                                    <>
-                                        <button
-                                            onClick={copyLink}
-                                            className="btn-outline px-6 py-3 text-sm font-semibold
+                                    {/* CTA AREA */}
+                                    <div className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center gap-2">
+                                        {/* GENERATE */}
+                                        {!hasReferral && (
+                                            <button
+                                                onClick={createReferralLink}
+                                                disabled={loading}
+                                                className="
+                                                bg-pink-600 hover:bg-pink-700
+                                                text-white font-bold
+                                                px-6 py-3
+                                                rounded-full
+                                                text-sm
+                                                shadow-md
+                                                transition
+                                                whitespace-nowrap
+                                            "
+                                            >
+                                                {loading
+                                                    ? "Generating…"
+                                                    : "Generate Code"}
+                                            </button>
+                                        )}
+
+                                        {/* COPY + SHARE */}
+                                        {hasReferral && (
+                                            <>
+                                                <button
+                                                    onClick={copyLink}
+                                                    className="
                                                     flex items-center gap-2
-                                                    w-[120px] justify-center"
-                                        >
-                                            <FaCopy />
-                                            {copied ? "Copied" : "Copy"}
-                                        </button>
+                                                    px-4 py-2
+                                                    bg-white border-2 border-black
+                                                    rounded-full text-sm font-semibold
+                                                    hover:bg-gray-100
+                                                "
+                                                >
+                                                    <FaCopy />
+                                                    {copied ? "Copied" : "Copy"}
+                                                </button>
 
-                                        <ShareProfile
-                                            username={auth && auth.name}
-                                            classes="btn-outline pr-6 py-3 text-sm font-semibold flex items-center gap-2"
-                                            custom={referralLink} // ✅ referral URL pass
-                                        >
-                                            <FaShareAlt />
-                                            Share
-                                        </ShareProfile>
-                                    </>
-                                )}
+                                                <ShareProfile
+                                                    username={auth?.name}
+                                                    custom={referralLink}
+                                                    classes="
+                                                    flex items-center gap-2
+                                                    px-4 py-2
+                                                    bg-white border-2 border-black
+                                                    rounded-full text-sm font-semibold
+                                                    hover:bg-gray-100
+                                                "
+                                                >
+                                                    <FaShareAlt />
+                                                    Share
+                                                </ShareProfile>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-muted mt-3">
+                                    Share this link with creators. You’ll earn
+                                    £50 once they reach £1,000 lifetime GMV.
+                                </p>
                             </div>
-
-                            {/* Helper Text */}
-                            <p className="text-xs text-muted">
-                                Share this link with creators. You’ll earn £50
-                                once they reach £1,000 lifetime GMV.
-                            </p>
                         </div>
                     </div>
 
@@ -193,15 +245,12 @@ export default function ReferAndEarn({
                         />
                         <Stat
                             label="Qualified"
-                            value={stats.qualified_referrals || 0}
+                            value={stats.qualified_referrals}
                         />
-                        <Stat
-                            label="Earned (£)"
-                            value={stats.total_earned || 0}
-                        />
+                        <Stat label="Earned (£)" value={stats.total_earned} />
                         <Stat
                             label="Available (£)"
-                            value={stats.available_for_payout || 0}
+                            value={stats.available_for_payout}
                         />
                     </div>
 
@@ -228,9 +277,14 @@ export default function ReferAndEarn({
 
                             <button
                                 disabled={!canRedeem || loading}
-                                className={`btn-pink px-6 py-3 text-sm font-semibold min-w-[240px]
-                ${!canRedeem || loading ? "bg-gray-400 cursor-not-allowed" : ""}
-            `}
+                                className={`btn-pink px-6 py-3 min-w-[240px]
+                                    text-[15px] font-extrabold tracking-wide uppercase
+                                    ${
+                                        !canRedeem || loading
+                                            ? "bg-gray-400 cursor-not-allowed text-gray-700"
+                                            : "text-white"
+                                    }
+                                `}
                                 onClick={() => {
                                     setLoading(true);
                                     router.post(
@@ -284,7 +338,6 @@ export default function ReferAndEarn({
                                             <th className="text-center">
                                                 Joined
                                             </th>
-                                            <th className="text-center">GMV</th>
                                             <th className="text-center">
                                                 Status
                                             </th>
@@ -302,19 +355,38 @@ export default function ReferAndEarn({
                                                         @{r.username}
                                                     </div>
                                                 </td>
+
                                                 <td className="text-center">
                                                     {r.joined_at}
                                                 </td>
-                                                <td className="text-center">
-                                                    £{r.lifetime_gmv}
-                                                </td>
+
                                                 <td className="text-center">
                                                     <StatusBadge
                                                         status={r.status}
                                                     />
                                                 </td>
-                                                <td className="text-center">
-                                                    £{r.lifetime_gmv} / £1000
+
+                                                <td className="text-center min-w-[220px] px-3">
+                                                    <ProgressBar
+                                                        value={r.lifetime_gmv}
+                                                    />
+
+                                                    {/* 🔴 Rejection Reason (if any) */}
+                                                    {r.rejection_reason ? (
+                                                        <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+                                                            <strong>
+                                                                Rejected:
+                                                            </strong>{" "}
+                                                            {r.rejection_reason}
+                                                        </div>
+                                                    ) : (
+                                                        r.lifetime_gmv >=
+                                                            1000 && (
+                                                            <div className="text-[11px] text-green-700 font-semibold mt-1 text-center">
+                                                                🎉 Qualified
+                                                            </div>
+                                                        )
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}

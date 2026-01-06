@@ -20,6 +20,7 @@ class CreatorReferralPayout extends Model
         'rejection_reason',
         'stripe_payout_id',
         'paid_at',
+        'status',
     ];
 
     protected $casts = [
