@@ -18,18 +18,20 @@ import { trackSearchClick } from "@/includes/Analytics";
 import { Link, usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
+
   const {ziggy} = usePage().props; 
   const { format, formatMultiPrice } = PriceFormat();
-
-  
   const { imagesize, currency, itm, itemid, auth, IsloggedIn, fetchingcats, categories, setuped, classes, showall, key, trackClick } = props;
   const { attributes, listeners, isDragging, index, over, setNodeRef, transform, transition } = useSortable({ id: itm && itm.id });
+  
   const style = {
     transform: CSS.Translate.toString(transform)
   };
+
   const stylenone = {
     transform: '',
   };
+  
   console.log("itm",itm);
 
   const [itemUID, setItemUID] = useState(itemid);

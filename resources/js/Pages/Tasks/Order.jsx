@@ -4,13 +4,16 @@ import Guest from '@/Layouts/GuestLayout';
 import GlobalUploader from "@/uploadcare/Uploader";
 import PriceFormat from "@/includes/PriceFormat";
 
-const Countdown = ({ createdAt, hours }) => {
-    if (!hours) return null;
+const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
+    // Determine target date: either passed directly or calculated
+    const finalTargetDate = targetDate 
+        ? new Date(targetDate) 
+        : (createdAt && hours ? new Date(new Date(createdAt).getTime() + hours * 60 * 60 * 1000) : null);
 
-    const targetDate = new Date(new Date(createdAt).getTime() + hours * 60 * 60 * 1000);
+    if (!finalTargetDate) return null;
 
     const calculateTimeLeft = () => {
-        const difference = +targetDate - +new Date();
+        const difference = +finalTargetDate - +new Date();
         
         if (difference <= 0) {
             return null;
@@ -28,11 +31,15 @@ const Countdown = ({ createdAt, hours }) => {
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setTimeLeft(calculateTimeLeft());
+            const left = calculateTimeLeft();
+            setTimeLeft(left);
+            if (!left && onExpire) {
+                onExpire();
+            }
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [createdAt, hours]);
+    }, [finalTargetDate]);
 
     if (!timeLeft) {
         return <span className="text-red-600">Overdue</span>;
@@ -46,8 +53,35 @@ const Countdown = ({ createdAt, hours }) => {
     );
 };
 
-export default function Order({ auth, purchase, task, isCreator, isSupporter, currencySymbol }) {
+export default function Order({ auth, purchase, task, isCreator, isSupporter, currencySymbol, gracePeriodHours = 1 }) {
     const { formatMultiPrice } = PriceFormat();
+    
+    // Grace Period Logic
+    const GRACE_PERIOD_HOURS = gracePeriodHours;
+    const slaDeadline = purchase.sla_deadline 
+        ? new Date(purchase.sla_deadline) 
+        : (purchase.created_at && task.sla_hours ? new Date(new Date(purchase.created_at).getTime() + task.sla_hours * 3600000) : null);
+    
+    const [isGraceActive, setIsGraceActive] = useState(false);
+    
+    useEffect(() => {
+        if (slaDeadline) {
+            const checkGrace = () => {
+                const now = new Date();
+                const isOverdue = now > slaDeadline;
+                const graceEnd = new Date(slaDeadline.getTime() + GRACE_PERIOD_HOURS * 3600000);
+                const isWithinGrace = isOverdue && now < graceEnd;
+                const isRunningLate = purchase.status === 'running_late';
+                
+                setIsGraceActive(isRunningLate || isWithinGrace);
+            };
+            
+            checkGrace();
+            const timer = setInterval(checkGrace, 10000); // Check every 10s
+            return () => clearInterval(timer);
+        }
+    }, [purchase.status, slaDeadline]);
+
     const { data: uploadData, setData: setUploadData, post: postUpload, processing: uploadProcessing, errors: uploadErrors } = useForm({
         proof_file: null,
         notes: '',
@@ -85,13 +119,15 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
             assigned: 'bg-blue-100 text-blue-800',
             pending_review: 'bg-yellow-100 text-yellow-800',
             rejected_once: 'bg-red-100 text-red-800',
+            running_late: 'bg-orange-100 text-orange-800',
             escalated: 'bg-red-200 text-red-900',
             completed_accepted: 'bg-green-100 text-green-800',
             delivered: 'bg-green-100 text-green-800',
+            paid_out: 'bg-green-100 text-green-800',
         };
         return (
             <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${colors[status] || 'bg-gray-100'}`}>
-                {status.replace('_', ' ')}
+                {status === 'running_late' ? 'GRACE PERIOD' : status.replace('_', ' ')}
             </span>
         );
     };
@@ -99,29 +135,42 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title={`Order #${purchase.id}`} />
-            <div className="py-12 bg-white mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-12 bg-white mx-auto min-h-screen px-4 sm:px-6 lg:px-8">
                 <div className='container max-w-[700px]'>
                     <div className='flex items-center justify-between'>
-                        <h1 className="text-3xl font-black uppercase font-fre tracking-[1px] font-light text-gray-900">Order #{purchase.uuid.substring(0, 8)}</h1>
+                        <h1 className="text-3xl font-black uppercase font-anton tracking-wide tracking-[1px] font-light text-gray-900">
+                            Order #{purchase.uuid.substring(0, 8)}
+                        </h1>
                         <StatusBadge status={purchase.status} />
                     </div>
                     <p className="text-gray-600 mt-2 text-xl">Task: <Link href={route('task.show', task.uuid)} className="text-pink-600 hover:underline font-bold">{task.title}</Link></p>
                     <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-700">
-                        <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             TYPE: <span className="uppercase text-pink-600">{task.type}</span>
                         </span>
-                        <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             PRICE: <span className="text-green-600">{formatMultiPrice(purchase.amount, task.currency || 'USD')}</span>
                         </span>
-                        <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             ASSIGNED: <span className="text-blue-600">{new Date(purchase.created_at).toLocaleDateString()}</span>
                         </span>
-                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated'].includes(purchase.status) && task.sla_hours && (
-                            <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                REMAINING: <Countdown createdAt={purchase.created_at} hours={task.sla_hours} />
+                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'].includes(purchase.status) && task.sla_hours && (
+                            <span className={`px-[10px] py-[8px] border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isGraceActive ? 'bg-orange-100 border-orange-500' : 'bg-gray-100'}`}>
+                                {isGraceActive ? 'GRACE PERIOD: ' : 'REMAINING: '}
+                                {isGraceActive ? (
+                                    <Countdown 
+                                        targetDate={new Date(slaDeadline.getTime() + GRACE_PERIOD_HOURS * 3600000)} 
+                                    />
+                                ) : (
+                                    <Countdown 
+                                        createdAt={purchase.created_at} 
+                                        hours={task.sla_hours} 
+                                        targetDate={slaDeadline}
+                                    />
+                                )}
                             </span>
                         )}
-                       {task?.sla_hours ? <span className="px-3 py-1 bg-gray-100 border-2 border-black rounded-[10px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                       {task?.sla_hours ? <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             SLA Deadline : <span className="text-green-600">{task?.sla_hours} hours</span>
                         </span> : ''}
                     </div>
@@ -138,17 +187,55 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                         </div>
                     )}
 
+                    <div className="items-center gap-4 mt-8 mb-8">
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
+                        <div className='flex'>
+                            <Link href={route('user.show', purchase.creator.username)} className="flex items-center gap-4 group">
+                                <img 
+                                    src={purchase.creator.avatar_url || purchase.creator.avatar} 
+                                    alt={purchase.creator.name} 
+                                    className="w-14 h-14 rounded-full border-2 border-black object-cover"
+                                />
+                                <div>
+                                    <h4 className="text-lg font-black font-anton tracking-wide leading-none group-hover:text-pink-500 transition-colors">
+                                        {purchase.creator.name}
+                                    </h4>
+                                    <p className="text-sm text-gray-600 font-medium">@{purchase.creator.username}</p>
+                                    <p className="text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
+                                        On {new Date(task.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                </div>
+                            </Link>
+                        </div>
+                    </div>
+
                     {task.type === 'timed' && (
                         <div>
                             <h2 className="text-2xl font-black capitalize font-bold font-poppins pb-3 mt-12">Fulfillment Status</h2>
                             {/* CREATOR ACTIONS */}
+
+                            {purchase.status === 'refunded' ? 
+                            <div>
+                                <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been automatically refunded because it was not accepted by the supporter or fulfilled within the defined SLA period.</p>
+                            </div>
+                            : null} 
+
                             {isCreator && (
                                 <div>
-                                    {['paid', 'assigned', 'rejected_once', 'initiated'].includes(purchase.status) ? (
+                                    {['paid', 'assigned', 'rejected_once', 'initiated', 'running_late'].includes(purchase.status) ? (
                                         <div className="bg-blue-50 p-6 rounded-[22px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             <h3 className="font-black text-xl uppercase text-blue-900 mb-4">
-                                                {purchase.status === 'rejected_once' ? 'Proof Rejected - Please Re-upload' : 'Action Required: Upload Proof'}
+                                                {purchase.status === 'rejected_once' ? 'Proof Rejected - Please Re-upload' : (purchase.status === 'running_late' ? 'Grace Period Active - Upload Proof' : 'Action Required: Upload Proof')}
                                             </h3>
+                                            
+                                            {purchase.status === 'running_late' && purchase.sla_deadline && (
+                                                <div className="bg-yellow-100 border-2 border-yellow-300 rounded-[18px] p-4 mb-6">
+                                                    <p className="font-bold text-yellow-900 uppercase text-sm">Grace Period Ends In:</p>
+                                                    <p className="text-yellow-800 font-black text-lg mt-1">
+                                                        <Countdown createdAt={purchase.sla_deadline} hours={1} />
+                                                    </p>
+                                                </div>
+                                            )}
                                             
                                             {purchase.status === 'rejected_once' && (
                                                 <div className="bg-red-50 p-3 rounded-[20px] border-2 border-red-200 mb-6 text-red-800">
@@ -194,17 +281,38 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                             </form>
                                         </div>
                                     ) : (
-                                        <div className="text-gray-600 font-medium text-lg text-center py-8">
-                                            {purchase.status === 'pending_review' && "Waiting for supporter review."}
-                                            {purchase.status === 'completed_accepted' && "Order completed successfully!"}
-                                            {purchase.status === 'escalated' && (
-                                                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mx-auto max-w-full">
-                                                    <h4 className="text-red-800 font-bold uppercase mb-2">Order Escalated</h4>
-                                                    <p className="text-red-700 text-sm">
-                                                        This order has been escalated to the admin for review. You will be notified once a decision is made.
-                                                    </p>
+                                        <div>
+                                            {purchase.proof_content ? (
+                                                <div className="border-2 border-black p-6 rounded-[22px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
+                                                    <h3 className="font-black uppercase text-lg mb-4">Your Uploaded Proof</h3>
+                                                        <a 
+                                                            href={purchase.proof_content.is_external ? purchase.proof_content.file : `/storage/${purchase.proof_content.file}`} 
+                                                            target="_blank" 
+                                                            className="text-pink-600 underline font-bold text-lg hover:text-pink-800"
+                                                        >
+                                                            View Proof File {purchase.proof_content.name ? `(${purchase.proof_content.name})` : ''}
+                                                        </a>
+                                                        {purchase.proof_content.notes && (
+                                                            <div className="mt-4 p-3 bg-white border border-gray-300 rounded-lg">
+                                                                <p className="text-sm text-gray-500 uppercase font-bold text-xs mb-1">Notes you added:</p>
+                                                                <p className="text-gray-800">{purchase.proof_content.notes}</p>
+                                                            </div>
+                                                        )}
+                                                        <p className="mt-2 text-xs text-gray-400 font-mono">Uploaded: {new Date(purchase.proof_content.uploaded_at).toLocaleString()}</p>
                                                 </div>
-                                            )}
+                                            ) : null}
+                                            <div className="text-gray-600 font-medium text-lg text-center py-8">
+                                                {purchase.status === 'pending_review' && "Waiting for supporter review."}
+                                                {purchase.status === 'completed_accepted' && "Order completed successfully!"}
+                                                {purchase.status === 'escalated' && (
+                                                    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mx-auto max-w-full">
+                                                        <h4 className="text-red-800 font-bold uppercase mb-2">Order Escalated</h4>
+                                                        <p className="text-red-700 text-sm">
+                                                            This order has been escalated to the admin for review. You will be notified once a decision is made.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -213,7 +321,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             {/* SUPPORTER ACTIONS */}
                             {isSupporter && (
                                 <div>
-                                    {['pending_review', 'completed_accepted', 'rejected_once', 'escalated'].includes(purchase.status) && purchase.proof_content ? (
+                                    {['pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'paid_out'].includes(purchase.status) && purchase.proof_content ? (
                                         <div className="border-2 border-black p-6 rounded-[22px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
                                             <h3 className="font-black uppercase text-lg mb-4">Uploaded Proof</h3>
                                                 <a 

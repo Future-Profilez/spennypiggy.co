@@ -26,7 +26,7 @@
             </tr>
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                    Your task has passed its original deadline. You have entered a <strong>48-hour grace period</strong>.<br><br>
+                    Your task has passed its original deadline. You have entered a <strong>1-hour grace period</strong>.<br><br>
                     Please submit your work immediately. If not completed within the grace period, the order will be cancelled and refunded automatically.
                 </td>
             </tr>

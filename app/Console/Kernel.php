@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
+     */
     protected function schedule(Schedule $schedule)
     {
         // Sync subscription status from Stripe every hour
@@ -29,6 +30,12 @@ class Kernel extends ConsoleKernel
         // Process SLA Refunds
         $schedule->command('app:process-sla-refunds')
                  ->hourly()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+
+        // Process Task Auto Confirmations
+        $schedule->command('app:process-task-auto-confirmations')
+                 ->everyFiveMinutes()
                  ->withoutOverlapping()
                  ->runInBackground();
 
@@ -63,6 +70,11 @@ class Kernel extends ConsoleKernel
                  ->monthlyOn(7, '10:00')
                  ->withoutOverlapping(30)
                  ->runInBackground();
+                 
+        // Test Scheduler Timestamp
+        $schedule->call(function () {
+            \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), 600);
+        })->everyMinute();
     }
 
     /**

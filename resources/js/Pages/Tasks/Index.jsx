@@ -49,6 +49,25 @@ const Countdown = ({ createdAt, hours }) => {
 export default function Index({ auth, tasks, orders, completed_orders, purchased_tasks }) {
     const { formatMultiPrice } = PriceFormat();
 
+    const getStatusColor = (status) => {
+        const colors = {
+            paid: 'bg-blue-100 text-blue-800 border-blue-200',
+            assigned: 'bg-blue-100 text-blue-800 border-blue-200',
+            pending_review: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            rejected_once: 'bg-red-100 text-red-800 border-red-200',
+            escalated: 'bg-red-200 text-red-900 border-red-300',
+            completed_accepted: 'bg-green-100 text-green-800 border-green-200',
+            delivered: 'bg-green-100 text-green-800 border-green-200',
+            paid_out: 'bg-green-100 text-green-800 border-green-200',
+            completed: 'bg-green-100 text-green-800 border-green-200',
+            running_late: 'bg-orange-100 text-orange-800 border-orange-200',
+            refunded: 'bg-gray-200 text-gray-800 border-gray-300',
+            disputed: 'bg-red-200 text-red-900 border-red-300',
+            expired: 'bg-gray-200 text-gray-800 border-gray-300',
+        };
+        return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    };
+
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="My Tasks" />
@@ -107,7 +126,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                             </div> }
                     
                         {/* Purchased Tasks */}
-                        {purchased_tasks && purchased_tasks.length > 0 && (
+                        {purchased_tasks && purchased_tasks.length > 0 ? 
                             <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[23px] overflow-hidden">
                                 <div className='p-4 bg-blue-100 flex !border-b-2 !border-black items-center justify-between'>
                                     <h3 className="font-bold text-xl uppercase tracking-tight">Tasks I've Purchased</h3>
@@ -136,11 +155,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                         )}
                                                     </p>
                                                     <div className="mt-2">
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
-                                                            purchase.status === 'delivered' || purchase.status === 'completed_accepted' 
-                                                                ? 'bg-green-100 text-green-800 border-green-200' 
-                                                                : 'bg-blue-100 text-blue-800 border-blue-200'
-                                                        }`}>
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStatusColor(purchase.status)}`}>
                                                             {purchase.status.replace('_', ' ')}
                                                         </span>
                                                     </div>
@@ -157,7 +172,10 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                     ))}
                                 </ul>
                             </div>
-                        )} 
+                            : <>
+                                {auth && auth.user.role !== 1&& <Nocontent mode="clean" classes={'bg-white'} text='Nothing to see' /> }
+                            </> 
+                        } 
 
                         {auth.user.role === 1 && (
                             <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-xl">
@@ -262,7 +280,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                         Ordered: {new Date(order.created_at).toLocaleDateString()}
                                                     </p>
                                                     <div className="mt-2">
-                                                        <span className="px-3 py-1 rounded-full text-xs font-bold uppercase border !border-green-300 bg-green-100 text-green-800">
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStatusColor(order.status)}`}>
                                                             {order.status.replace('_', ' ')}
                                                         </span>
                                                     </div>

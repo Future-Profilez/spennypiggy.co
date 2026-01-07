@@ -620,3 +620,14 @@ Route::get('/debug-intercom', [\App\Http\Controllers\IntercomDebugController::cl
 
 
 // Moved /task/* routes to routes/auth.php to respect username catch-all ordering
+
+// Test Scheduler Route
+Route::get('/test/scheduler/is/running', function () {
+    $lastRun = \Illuminate\Support\Facades\Cache::get('scheduler_last_run');
+    return response()->json([
+        'status' => $lastRun ? 'active' : 'inactive',
+        'last_run' => $lastRun,
+        'server_time' => now()->toDateTimeString(),
+        'diff_seconds' => $lastRun ? now()->diffInSeconds(\Carbon\Carbon::parse($lastRun)) : null
+    ]);
+});

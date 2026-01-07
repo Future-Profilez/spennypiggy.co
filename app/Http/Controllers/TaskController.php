@@ -13,6 +13,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use Stripe\StripeClient;
 use App\Mail\TaskPurchasedMail;
 use App\Mail\TaskProofSubmittedMail;
 use App\Mail\TaskProofAcceptedMail;
@@ -39,7 +40,7 @@ class TaskController extends Controller
             ->get();
 
         $completed_orders = TaskPurchase::where('creator_id', Auth::id())
-            ->whereIn('status', ['delivered', 'completed_accepted', 'completed'])
+            ->whereIn('status', ['delivered', 'completed_accepted', 'completed', 'paid_out', 'refunded'])
             ->with(['task', 'supporter'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -81,7 +82,24 @@ class TaskController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'price' => 'required|numeric|min:1',
+            'price' => [
+                'required',
+                'numeric',
+                'min:1',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->type === 'timed') {
+                        $currency = Auth::user()->default_currency ?? 'USD';
+                        $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
+                        
+                        if ($priceGBP < 5) {
+                            $fail('Paid Tasks must be at least £5 GBP equivalent.');
+                        }
+                        if ($priceGBP > 500) {
+                            $fail('Paid Tasks cannot exceed £500 GBP equivalent.');
+                        }
+                    }
+                },
+            ],
             'category' => 'nullable|string',
             'type' => 'required|in:instant,timed',
             'deliverable_file' => [
@@ -147,7 +165,30 @@ class TaskController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'price' => 'required|numeric|min:1',
+            'price' => [
+                'required',
+                'numeric',
+                'min:1',
+                function ($attribute, $value, $fail) use ($request, $task) {
+                    // Use task's existing currency if not updating type, but usually currency is fixed per task or user default?
+                    // Task model has currency field. We should use that or User's default if it's being updated.
+                    // The update method doesn't seem to update currency field in the code I read earlier (lines 166-185), 
+                    // it only updates title, description, price, etc.
+                    // So we use $task->currency.
+                    
+                    if ($request->type === 'timed') {
+                        $currency = $task->currency ?? 'USD';
+                        $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
+                        
+                        if ($priceGBP < 5) {
+                            $fail('Paid Tasks must be at least £5 GBP equivalent.');
+                        }
+                        if ($priceGBP > 500) {
+                            $fail('Paid Tasks cannot exceed £500 GBP equivalent.');
+                        }
+                    }
+                },
+            ],
             'category' => 'nullable|string',
             'type' => 'required|in:instant,timed',
             'deliverable_file' => [
@@ -204,7 +245,7 @@ class TaskController extends Controller
                 // Get all purchases for history
                 $purchaseHistory = TaskPurchase::where('task_id', $task->id)
                     ->where('supporter_id', Auth::id())
-                    ->whereIn('status', ['paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded', 'initiated', 'completed'])
+                    ->whereIn('status', ['paid', 'delivered', 'assigned', 'pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'sla_missed', 'refunded', 'initiated', 'completed', 'paid_out'])
                     ->orderBy('created_at', 'desc')
                     ->get();
                 
@@ -248,7 +289,7 @@ class TaskController extends Controller
 
         $purchase = TaskPurchase::where('task_id', $task->id)
             ->where('supporter_id', $userId)
-            ->whereIn('status', ['paid', 'delivered', 'completed', 'completed_accepted', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'sla_missed'])
+            ->whereIn('status', ['paid', 'delivered', 'completed', 'completed_accepted', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'sla_missed', 'paid_out'])
             ->latest()
             ->first();
             
@@ -308,6 +349,17 @@ class TaskController extends Controller
         $vatPercent = $creator->vat_amount_percentage ?? 0;
 
         $price = $task->price;
+        
+        // Enforce Paid Task limits in GBP (min £5, max £500)
+        if ($task->type !== 'instant') {
+            $priceGBP = Helpers::priceFormat(strtoupper($currency), $price, 'GBP');
+            if ($priceGBP < 5) {
+                return back()->with('error', 'Paid Task price must be at least £5.');
+            }
+            if ($priceGBP > 500) {
+                return back()->with('error', 'Paid Task price cannot exceed £500.');
+            }
+        }
         
         // 1. Creator VAT
         $creatorVatAmount = round($price * ($vatPercent / 100), 2);
@@ -399,6 +451,7 @@ class TaskController extends Controller
             'platform_fee' => $totalPlatformFee,
             'vat_amount' => $creatorVatAmount,
             'transfer_amount' => ($transferAmount / $multiplier),
+            'payment_type' => $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK',
         ];
 
         $paymentIntentData = [
@@ -407,19 +460,33 @@ class TaskController extends Controller
         ];
 
         if ($connectedAccountId) {
-            if ($hasCardPayments) {
-                $paymentIntentData['on_behalf_of'] = $connectedAccountId;
-                $paymentIntentData['transfer_data'] = [
-                    'destination' => $connectedAccountId,
-                    'amount' => $transferAmount,
-                ];
+            $paymentType = $complianceMetadata['payment_type'] ?? 'STANDARD';
+
+            // Only apply automatic transfers if NOT a PAID_TASK
+            if ($paymentType !== 'PAID_TASK') {
+                if ($hasCardPayments) {
+                    $paymentIntentData['on_behalf_of'] = $connectedAccountId;
+                    $paymentIntentData['transfer_data'] = [
+                        'destination' => $connectedAccountId,
+                        'amount' => $transferAmount,
+                    ];
+                } else {
+                     // Fallback if no card payments capability (rare for verified creators)
+                     // We still try to transfer
+                     $paymentIntentData['transfer_data'] = [
+                        'destination' => $connectedAccountId,
+                        'amount' => $transferAmount,
+                    ];
+                }
             } else {
-                 // Fallback if no card payments capability (rare for verified creators)
-                 // We still try to transfer
-                 $paymentIntentData['transfer_data'] = [
-                    'destination' => $connectedAccountId,
-                    'amount' => $transferAmount,
-                ];
+                // PAID_TASK: Funds are held on platform.
+                // Do NOT set transfer_data or on_behalf_of (unless we want on_behalf_of for statement descriptor only, 
+                // but usually that implies settlement to connected account).
+                // Spec says: "Funds settle in platform balance".
+                Log::info('Paid Task Purchase: Funds held on platform for delayed payout.', [
+                    'task_id' => $task->id,
+                    'creator_id' => $creator->id
+                ]);
             }
         }
 
@@ -440,7 +507,7 @@ class TaskController extends Controller
     public function success(Request $request, $uuid)
     {
         $sessionId = $request->query('session_id');
-        $task = Task::where('uuid', $uuid)->firstOrFail();
+        $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
         
         Stripe::setApiKey(config('services.stripe.secret'));
         $session = Session::retrieve($sessionId);
@@ -514,6 +581,7 @@ class TaskController extends Controller
             'payment_intent_id' => $session->payment_intent,
             'amount' => $amount,
             'status' => 'paid', // Always paid in sync handler (and especially for local dev)
+            'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'gifter_message' => $metadata->gifter_message ?? null,
             'admin_fee' => $metadata->admin_fee ?? 0,
             'platform_fee' => $metadata->platform_fee ?? 0,
@@ -547,6 +615,7 @@ class TaskController extends Controller
             'due_at' => $slaHours > 0 ? Carbon::now()->addHours($slaHours) : null,
             'refund_eligible' => $slaHours > 0, 
             'payment_status' => 'paid',
+            'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'payment_currency' => strtoupper($session->currency ?? 'GBP'),
             'customer_email' => $session->customer_details->email ?? null,
             'customer_name' => $session->customer_details->name ?? null,
@@ -563,6 +632,21 @@ class TaskController extends Controller
             $purchase->completed_at = Carbon::now();
             $purchase->save();
             
+            // Update Metadata
+            try {
+                if ($purchase->payment_intent_id) {
+                    $client = new StripeClient(config('services.stripe.secret'));
+                    $client->paymentIntents->update($purchase->payment_intent_id, [
+                        'metadata' => [
+                            'status' => 'completed',
+                            'task_type' => 'instant'
+                        ]
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to update metadata on instant task completion: " . $e->getMessage());
+            }
+
             $deliverable->status = 'delivered';
             $deliverable->delivered_at = Carbon::now();
             $deliverable->save();
@@ -622,6 +706,21 @@ class TaskController extends Controller
         $purchase->status = 'pending_review';
         $purchase->save();
         
+        // Update Metadata
+        try {
+            if ($purchase->payment_intent_id) {
+                $client = new StripeClient(config('services.stripe.secret'));
+                $client->paymentIntents->update($purchase->payment_intent_id, [
+                    'metadata' => [
+                        'status' => 'pending_review',
+                        'proof_uploaded_at' => now()->toIso8601String()
+                    ]
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to update metadata on proof upload: " . $e->getMessage());
+        }
+
         try {
             $supporter = $purchase->supporter;
             $task = $purchase->task;
@@ -659,10 +758,42 @@ class TaskController extends Controller
         $supporter = Auth::user();
 
         if ($request->action === 'accept') {
+            // Check if it was a dispute (escalated)
+            $wasDispute = $purchase->status === 'escalated';
+
             $purchase->status = 'completed_accepted';
             $purchase->completed_at = now();
             $purchase->reviewed_at = now();
+            
+            if ($wasDispute) {
+                $purchase->dispute_status = 'resolved';
+            }
+
             $purchase->save();
+
+            // Update Metadata
+            try {
+                if ($purchase->payment_intent_id) {
+                    $client = new StripeClient(config('services.stripe.secret'));
+                    
+                    $metadata = [
+                        'status' => 'completed_accepted',
+                        'proof_status' => 'accepted',
+                        'accepted_by' => 'supporter'
+                    ];
+
+                    if ($wasDispute) {
+                        $metadata['dispute_resolution'] = 'supporter_accepted';
+                        $metadata['dispute_status'] = 'resolved';
+                    }
+
+                    $client->paymentIntents->update($purchase->payment_intent_id, [
+                        'metadata' => $metadata
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to update metadata on proof acceptance: " . $e->getMessage());
+            }
 
             // Update Deliverable Status
             try {
@@ -693,6 +824,59 @@ class TaskController extends Controller
                     );
                 }
             } catch (\Exception $e) {}
+
+            // Delayed transfer for PAID_TASK
+            if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK' && $creator && !empty($creator->account_id)) {
+                try {
+                    $client = new StripeClient(config('services.stripe.secret'));
+                    $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
+                    $chargeId = $pi->latest_charge ?? null;
+
+                    // Get currency from Task or Deliverable
+                    $currency = $task->currency;
+                    if (empty($currency)) {
+                        $deliverableForCurrency = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                        $currency = $deliverableForCurrency ? $deliverableForCurrency->payment_currency : 'gbp';
+                    }
+                    // Default to GBP if still empty
+                    $currency = $currency ?: 'gbp';
+
+                    $digits = \App\Models\Currency::where('ISO', strtoupper($currency))->value('ISOdigits');
+                    $multiplier = ($digits == 0) ? 1 : 100;
+                    $amount = (int) round(($purchase->transfer_amount ?? 0) * $multiplier);
+
+                    if ($amount > 0) {
+                        $transfer = \App\StripeControl::createTransfer([
+                            'amount' => $amount,
+                            'currency' => strtolower($currency),
+                            'destination' => $creator->account_id,
+                            'source_transaction' => $chargeId,
+                        ]);
+
+                        $purchase->status = 'paid_out';
+                        $purchase->save();
+
+                        \Illuminate\Support\Facades\Log::info('Paid Task transfer created', [
+                            'purchase_id' => $purchase->id,
+                            'transfer_id' => $transfer->id ?? null,
+                            'was_escalated' => $wasDispute ?? false,
+                            'amount' => $amount,
+                            'currency' => $currency
+                        ]);
+                    } else {
+                        \Illuminate\Support\Facades\Log::warning('Paid Task transfer skipped: Amount is 0', [
+                            'purchase_id' => $purchase->id,
+                            'transfer_amount' => $purchase->transfer_amount,
+                            'was_escalated' => $wasDispute ?? false
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Failed to create transfer on proof acceptance', [
+                        'error' => $e->getMessage(),
+                        'purchase_id' => $purchase->id
+                    ]);
+                }
+            }
         } else {
             // Increment rejection count
             $purchase->rejection_count += 1;
@@ -704,6 +888,22 @@ class TaskController extends Controller
                  $purchase->dispute_status = 'open';
                  $purchase->rejection_reason = $request->reason;
                  $purchase->save();
+
+                 // Update Metadata
+                 try {
+                     if ($purchase->payment_intent_id) {
+                         $client = new StripeClient(config('services.stripe.secret'));
+                         $client->paymentIntents->update($purchase->payment_intent_id, [
+                             'metadata' => [
+                                 'status' => 'escalated',
+                                 'dispute_status' => 'open',
+                                 'escalation_reason' => $request->reason
+                             ]
+                         ]);
+                     }
+                 } catch (\Exception $e) {
+                     \Illuminate\Support\Facades\Log::error("Failed to update metadata on escalation: " . $e->getMessage());
+                 }
 
                  // Notify Creator
                  try {
@@ -734,6 +934,21 @@ class TaskController extends Controller
                  $purchase->rejection_reason = $request->reason;
                  $purchase->save();
 
+                 // Update Metadata
+                 try {
+                     if ($purchase->payment_intent_id) {
+                         $client = new StripeClient(config('services.stripe.secret'));
+                         $client->paymentIntents->update($purchase->payment_intent_id, [
+                             'metadata' => [
+                                 'status' => 'rejected_once',
+                                 'rejection_reason' => $request->reason
+                             ]
+                         ]);
+                     }
+                 } catch (\Exception $e) {
+                     \Illuminate\Support\Facades\Log::error("Failed to update metadata on rejection: " . $e->getMessage());
+                 }
+
                  // Notify Creator about rejection
                  try {
                     Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
@@ -749,7 +964,10 @@ class TaskController extends Controller
 
     public function order($uuid)
     {
-        $purchase = TaskPurchase::where('uuid', $uuid)->with(['task', 'supporter', 'creator'])->firstOrFail();
+        $purchase = TaskPurchase::where('uuid', $uuid)->with(['task', 'supporter', 'creator'])->first();
+        if (!$purchase) {
+            abort(404);
+        }
         
         if (Auth::id() !== $purchase->supporter_id && Auth::id() !== $purchase->creator_id) {
             abort(403);
@@ -762,7 +980,8 @@ class TaskController extends Controller
             'task' => $purchase->task,
             'isCreator' => Auth::id() === $purchase->creator_id,
             'isSupporter' => Auth::id() === $purchase->supporter_id,
-            'currencySymbol' => $currencySymbol
+            'currencySymbol' => $currencySymbol,
+            'gracePeriodHours' => config('tasks.grace_period_hours', 1),
         ]);
     }
 }

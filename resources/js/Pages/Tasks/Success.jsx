@@ -77,6 +77,12 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                                 <span className="font-black text-xl text-green-600">{formatMultiPrice(purchase.amount, task.currency || 'USD')}</span>
                             </div>
                             <div className="flex justify-between items-center">
+                                <span className="text-gray-600 font-bold uppercase text-sm">Creator</span>
+                                <span className="font-black capitalize text-xl text-green-600"> <Link href={route('user.show', { username: task.creator.username })} className="text-sm font-bold text-blue-600 hover:underline">
+                                    {task.creator.name}'s Profile
+                                </Link></span>
+                            </div>
+                            <div className="flex justify-between items-center">
                                 <span className="text-gray-600 font-bold uppercase text-sm">Status</span>
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-green-100 text-green-800 uppercase border border-black shadow-sm">
                                     {purchase.status.replace('_', ' ')}
@@ -84,6 +90,19 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                             </div>
                         </div>
                     </div>
+
+                    {/* <div className="bg-gray-50 border-2 border-black rounded-[22px]  mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                        <h3 className="p-6 text-normal font-bold !pb-4 font-black text-black uppercase tracking-wider border-b-2 border-gray-200 pb-2">Creator</h3>
+                        <div className="p-6 flex items-center gap-4">
+                            <img src={task.creator.avatar_url || task.creator.avatar} alt={task.creator.name} className="w-16 h-16 rounded-full border-2 border-black shadow-sm object-cover" />
+                            <div>
+                                <h4 className="font-bold text-lg text-gray-900">{task.creator.name}</h4>
+                                <Link href={route('user.show', { username: task.creator.username })} className="text-sm font-bold text-blue-600 hover:underline">
+                                    View Profile
+                                </Link>
+                            </div>
+                        </div>
+                    </div> */}
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link 
