@@ -466,6 +466,7 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/leaderboard', 'priority' => '0.8', 'changefreq' => 'daily'],
             ['url' => '/how-it-works', 'priority' => '0.7', 'changefreq' => 'weekly'],
             ['url' => '/terms-and-conditions', 'priority' => '0.5', 'changefreq' => 'monthly'],
+            ['url' => '/paid-tasks-terms', 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['url' => '/register', 'priority' => '0.6', 'changefreq' => 'weekly'],
             ['url' => '/login', 'priority' => '0.6', 'changefreq' => 'weekly'],
         ];
