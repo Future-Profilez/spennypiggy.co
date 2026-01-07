@@ -37,8 +37,6 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($creator_id, $user_id_or_device = null)
     {
-
-
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         Log::info('Gifter card verification status', ['status' => $checkGifterStatus]);
         if ($checkGifterStatus == true) {
@@ -108,8 +106,6 @@ class CheckoutController extends Controller
                 // Send notification to creator about blocked payment
                 $owner->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
 
-
-
                 // Return user-friendly error to fan
                 return redirect()->back()->with(
                     'error',
@@ -123,8 +119,6 @@ class CheckoutController extends Controller
             if (!$activityCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $owner->notify(new PaymentBlockedNotification($activityCheck, $preliminaryTotal));
-
-
 
                 // Return user-friendly error to fan
                 return redirect()->back()->with(
@@ -140,7 +134,6 @@ class CheckoutController extends Controller
                     'content_count' => $activityCheck['content_count'] ?? 0
                 ]);
             }
-
 
             // Get currency metadata to handle zero-decimal currencies properly
             $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -971,7 +964,7 @@ class CheckoutController extends Controller
                 ]);
 
                 if ($existingPayment->payment_status === 'paid') {
-                    Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
+                    // Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
                     return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
                 }
             } else {
@@ -1030,13 +1023,13 @@ class CheckoutController extends Controller
             }
 
             $sessionId = session('session_id');
-            Log::info("Updating payment status", ['session_id' => $sessionId]);
+            // Log::info("Updating payment status", ['session_id' => $sessionId]);
 
             $updateResult = StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
-            Log::info("Payment update result", ['updated_rows' => $updateResult]);
+            // Log::info("Payment update result", ['updated_rows' => $updateResult]);
 
             // Amount must be GBP (you already store subtotal in GBP)
 
@@ -1047,8 +1040,7 @@ class CheckoutController extends Controller
                 throw new \Exception("Payment record not found for session: " . $sessionId);
             }
 
-            Helpers::addGmv($stripeid->owner_id, (float) $stripeid->amount_subtotal);
-
+            
             Log::info("Retrieved StripePaymentDetail", [
                 'id' => $stripeid->id,
                 'session_id' => $stripeid->session_id,
@@ -1072,9 +1064,9 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
 
-
+                
                 // Update GMV for creator
-                Helpers::addGmv($payment_data->wish->user_id, (float) $payment_data->amount);
+                Helpers::addGmv($stripeid->owner_id, (float) $stripeid->amount_subtotal, $dd->owner->default_currency);
 
                 Log::info("About to access payment->currency", [
                     'payment_data_id' => $payment_data->id,

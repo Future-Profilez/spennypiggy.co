@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
 use App\Models\GifterCardVerification;
@@ -51,53 +52,87 @@ class Helpers
      * @param int   $referredCreatorId  Creator who received payment
      * @param float $amountGbp          GMV amount in GBP
      */
-    public static function addGmv(int $referredCreatorId, float $amountGbp): void
+    public static function addGmv(int $referredCreatorId, float $amount, string $fromCurrency = 'gbp'): void
     {
         try {
+            if ($amount <= 0) {
+                return;
+            }
+
+            // Convert to GBP
+            $amountGbp = Helpers::priceFormat($fromCurrency, $amount, 'gbp');
+            $amountGbp = (float) round($amountGbp, 2);
+
             if ($amountGbp <= 0) {
                 return;
             }
 
-            // Find referral row where this creator was referred
-            $referral = CreatorReferral::where(
-                'referred_creator_id',
-                $referredCreatorId
-            )->first();
+            // Always fetch referral
+            $referral = CreatorReferral::with('referrer', 'referred')
+                ->where('referred_creator_id', $referredCreatorId)
+                ->whereIn('status', ['IN_PROGRESS', 'QUALIFIED'])
+                ->first();
 
-            // No referral → nothing to do
             if (!$referral) {
                 return;
             }
 
-            // Increment GMV
-            $referral->increment('lifetime_gmv', $amountGbp);
-
-            // Auto-qualify at £1000
-            if (
-                $referral->lifetime_gmv >= 1000 &&
-                $referral->status !== 'QUALIFIED'
-            ) {
-                $referral->update([
-                    'status' => 'QUALIFIED',
-                    'qualified_at' => now(),
-                ]);
+            // Already qualified → do nothing
+            if ($referral->status === 'QUALIFIED') {
+                return;
             }
 
-            Log::info('Creator referral GMV updated', [
+            // Remaining amount to reach 1000
+            $remaining = 1000 - $referral->lifetime_gmv;
+
+            if ($remaining <= 0) {
+                return;
+            }
+
+            // Cap the increment
+            $increment = min($amountGbp, $remaining);
+
+            // Add only allowed amount
+            $referral->increment('lifetime_gmv', $increment);
+
+            // Final qualification check
+            if ($referral->lifetime_gmv >= 1000) {
+                $referral->update([
+                    'status'       => 'QUALIFIED',
+                    'qualified_at' => now(),
+                ]);
+
+                // 📧 Existing email job
+                SendReferralQualifiedEmailJob::dispatch($referral);
+
+                $referredCreatorName = $referral->referred->name;
+
+                // 🔔 PWA Notification (NEW)
+                $title = '🎉 Referral Goal Achieved!';
+                $content = "Your referred creator($referredCreatorName) has reached £1,000 GMV. £50 has been unlocked in your wallet.";
+                $email = $referral->referrer->email;
+
+                Helpers::sendNotification($title, $content, $email);
+            }
+
+            Log::info('Creator referral GMV updated (capped)', [
                 'referrer_creator_id' => $referral->referrer_creator_id,
-                'referred_creator_id' => $referral->referred_creator_id,
-                'added_gmv' => $amountGbp,
-                'total_gmv' => $referral->lifetime_gmv,
-                'status' => $referral->status,
+                'referred_creator_id' => $referredCreatorId,
+                'added_gmv_gbp'       => $increment,
+                'total_gmv_gbp'       => $referral->lifetime_gmv,
+                'status'              => $referral->status,
             ]);
         } catch (\Throwable $e) {
-            Log::error('CreatorReferralHelper failed', [
+            Log::error('CreatorReferralHelper::addGmv failed', [
                 'referred_creator_id' => $referredCreatorId,
-                'amount_gbp' => $amountGbp,
-                'error' => $e->getMessage(),
+                'amount'              => $amount,
+                'currency'            => $fromCurrency,
+                'error'               => $e->getMessage(),
             ]);
         }
     }
+
+
 
 
     public static function priceFormat($currency1, $amount, $currency2)

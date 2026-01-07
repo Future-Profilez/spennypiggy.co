@@ -64,6 +64,7 @@ use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
+use Stripe\Account;
 
 class StripeController extends Controller
 {
@@ -746,15 +747,111 @@ class StripeController extends Controller
      * @param Request $request
      * @return Response
      */
-    public function loginToStripe(Request $request)
+    // public function loginToStripe(Request $request)
+    // {
+    //     try {
+    //         $stripe = StripeControl::getLoginLink(Auth::user()->account_id);
+    //         return Inertia::location($stripe->url);
+    //     } catch (Exception $e) {
+    //         return back()->with("error", $e->getMessage());
+    //     }
+    // }
+
+
+    public function loginToStripe(Request $request, $country = null)
     {
         try {
-            $stripe = StripeControl::getLoginLink(Auth::user()->account_id);
-            return Inertia::location($stripe->url);
+            $user = Auth::user();
+
+            Stripe::setApiKey(config('services.stripe.secret'));
+
+            // ✅ 1. Create account if not exists
+            if (empty($user->account_id)) {
+
+                $country = strtoupper($country);
+
+                try {
+                    // 1️⃣ Decide service agreement
+                    $serviceAgreementType = self::getServiceAgreementType($country);
+
+                    Log::info('Creating Stripe account', [
+                        'user_id' => $user->id,
+                        'country' => $country,
+                        'service_agreement' => $serviceAgreementType,
+                    ]);
+
+                    // 2️⃣ Capabilities (Stripe rules)
+                    $capabilities = [];
+
+                    if ($serviceAgreementType === 'recipient') {
+                        // Recipient accounts = transfers only
+                        $capabilities['transfers'] = ['requested' => true];
+                    } else {
+                        // card_payments ALWAYS requires transfers
+                        $capabilities = [
+                            'card_payments' => ['requested' => true],
+                            'transfers'     => ['requested' => true],
+                        ];
+                    }
+
+                    // 3️⃣ Business type (Stripe restriction safe)
+                    $businessType = ($country === 'AE') ? 'company' : 'individual';
+
+                    // 4️⃣ Payload
+                    $payload = [
+                        'type'    => 'express',
+                        'country' => $country,
+                        'email'   => $user->email,
+
+                        'capabilities' => $capabilities,
+
+                        'tos_acceptance' => [
+                            'service_agreement' => $serviceAgreementType,
+                        ],
+
+                        'business_type' => $businessType,
+
+                        'business_profile' => [
+                            'url' => "https://spennypiggy.co/{$user->username}",
+                            'mcc' => '7278',
+                        ],
+                    ];
+
+                    // 5️⃣ Default currency (ONLY if valid)
+                    if (!empty($currency)) {
+                        $payload['default_currency'] = strtolower($currency);
+                    }
+
+                    // 6️⃣ Create Stripe account
+                    $account = StripeControl::createAccount($payload);
+
+                    // 7️⃣ Persist safely
+                    $user->update([
+                        'account_id' => $account->id,
+                        'country'    => $country,
+                    ]);
+                } catch (\Throwable $e) {
+
+                    Log::error('Stripe account creation failed', [
+                        'user_id' => $user->id,
+                        'error'   => $e->getMessage(),
+                    ]);
+
+                    return redirect(route('stripe.index'))
+                        ->with('error', 'Stripe account creation failed. Please try again.');
+                }
+            }
+
+
+            // ✅ 2. Create login link
+            $loginLink = StripeControl::getLoginLink($user->account_id);
+
+            return Inertia::location($loginLink->url);
         } catch (Exception $e) {
-            return back()->with("error", $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
+
 
     /* create checkout */
     public function createCheckout($owner_id)
@@ -2581,7 +2678,8 @@ class StripeController extends Controller
                 $tip_pay->save();
 
                 // Update GMV for creator
-                Helpers::addGmv($tip_pay->creator_id, (float) $tip_pay->amount);
+                Helpers::addGmv($tip_pay->creator_id, (float) $tip_pay->amount, $tip_pay->creator->default_currency);
+
 
                 /**************************TIP**JAR**PWA**START****************************************************/
                 // below is TIP JAR pwa for fans

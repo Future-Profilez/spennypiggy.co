@@ -25,6 +25,7 @@ use App\Models\GifterAddress;
 use App\Models\GifterCardVerification;
 use App\Models\PromoCode;
 use App\Models\Referal;
+use App\Models\ReferralCode;
 use App\Models\UserVerificationStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
@@ -162,7 +163,17 @@ class RegisteredUserController extends Controller
         /* =========================✅ CREATOR REFERRAL LOGIC========================== */
         if ($request->filled('promo') && $request->role == 1) {
 
-            $referrer = User::where('referral_code', $request->promo)
+            // 🔎 Find active referral code
+            $referralCode = ReferralCode::where('code', $request->promo)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$referralCode) {
+                return back()->with('error', 'Invalid referral code.');
+            }
+
+            // 👤 Get referrer (creator who owns the code)
+            $referrer = User::where('id', $referralCode->creator_id)
                 ->where('role', 1)
                 ->first();
 
@@ -170,29 +181,31 @@ class RegisteredUserController extends Controller
                 return back()->with('error', 'Invalid referral code.');
             }
 
+            // ❌ Prevent self-referral
             if ($referrer->id === $user->id) {
                 return back()->with('error', 'You cannot use your own referral code.');
             }
 
-            $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)->exists();
+            // ❌ Prevent duplicate referral entry
+            $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)
+                ->exists();
 
             if (!$alreadyExists) {
                 CreatorReferral::create([
                     'referrer_creator_id' => $referrer->id,
                     'referred_creator_id' => $user->id,
+                    'referral_code_id'    => $referralCode->id, // ✅ NEW
                     'lifetime_gmv'        => 0,
                     'status'              => 'IN_PROGRESS',
                 ]);
             }
         }
-
         /* =========================SEND WELCOME EMAIL========================== */
         WelcomeUser::dispatch($user);
 
         /* =========================REDIRECT========================== */
         if ($user->email_verified_at) {
-            return redirect(route('user.show', $user->username))
-                ->with('success', 'Registration successful.');
+            return redirect(route('user.show', $user->username))->with('success', 'Registration successful.');
         }
 
         return redirect(route('verification.notice'));

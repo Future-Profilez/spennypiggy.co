@@ -113,20 +113,21 @@ export default function Register(props) {
         creator_category: "",
     });
 
+    const [codevalid, setCodeValid] = useState(false);
     const [promoInputValue, setPromoInputValue] = useState("");
     const [role, setRole] = useState(null);
+
+    const hasReferralFromUrl = role === 1 && !!referralFromUrl;
 
     useEffect(() => {
         if (role === 1 && referralFromUrl) {
             setPromoInputValue(referralFromUrl);
             setData("promo", referralFromUrl);
-            setCodeValid(true);
+            // ❌ do NOT touch codevalid here
         }
 
-        // Creator but no ref in URL → keep empty
         if (role === 1 && !referralFromUrl) {
             setPromoInputValue("");
-            setCodeValid(false);
             setData("promo", "");
         }
     }, [role, referralFromUrl]);
@@ -293,7 +294,6 @@ export default function Register(props) {
     };
 
     const promoinput = useRef();
-    const [codevalid, setCodeValid] = useState(false);
     const checkPromo = () => {
         // Fan can apply promo manually
         if (role !== 0) return;
@@ -809,38 +809,29 @@ export default function Register(props) {
                                         )}
 
                                         <div className="promocode mb-4">
-                                            <div className="flex items-center justify-between">
-                                                <label className="mb-2">
-                                                    Referral (optional)
-                                                    {role === 1 &&
-                                                        referralFromUrl &&
-                                                        codevalid && (
-                                                            <span className="text-success text-small ms-2">
-                                                                Code Applied
-                                                            </span>
-                                                        )}
-                                                    {role === 0 &&
-                                                        codevalid && (
-                                                            <span className="text-success text-small ms-2">
-                                                                Promo Code
-                                                                Applied
-                                                            </span>
-                                                        )}
-                                                </label>
-                                            </div>
+                                            <label className="mb-2 block">
+                                                Referral (optional)
+                                            </label>
 
-                                            <div className="flex items-center relative">
+                                            <div className="relative">
                                                 <input
+                                                    value={promoInputValue}
                                                     placeholder={
-                                                        role === 1
-                                                            ? referralFromUrl
-                                                                ? "Referral code applied automatically"
-                                                                : "No referral code"
+                                                        hasReferralFromUrl
+                                                            ? "Referral code applied automatically"
+                                                            : role === 1
+                                                            ? "No referral code"
                                                             : "Enter Promo Code..."
                                                     }
-                                                    className="form-control"
-                                                    value={promoInputValue}
-                                                    readOnly={role === 1} // creator cannot type
+                                                    disabled={
+                                                        hasReferralFromUrl
+                                                    }
+                                                    readOnly={role === 1}
+                                                    className={`form-control ${
+                                                        hasReferralFromUrl
+                                                            ? "bg-gray-200 cursor-not-allowed"
+                                                            : ""
+                                                    }`}
                                                     onChange={(e) => {
                                                         if (role === 0) {
                                                             setPromoInputValue(
@@ -855,8 +846,9 @@ export default function Register(props) {
                                                     }}
                                                 />
 
-                                                {/* BUTTON LOGIC */}
+                                                {/* FAN ONLY BUTTON */}
                                                 {role === 0 &&
+                                                    !hasReferralFromUrl &&
                                                     (codevalid ? (
                                                         <div
                                                             onClick={removecode}
@@ -866,13 +858,29 @@ export default function Register(props) {
                                                         </div>
                                                     ) : (
                                                         <div
-                                                            className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn !py-2 text-center"
                                                             onClick={checkPromo}
+                                                            className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn !py-2 text-center"
                                                         >
                                                             Apply
                                                         </div>
                                                     ))}
                                             </div>
+
+                                            {/* ✅ MESSAGE BELOW INPUT */}
+                                            {hasReferralFromUrl && (
+                                                <p className="mt-2 text-sm text-green-600">
+                                                    ✅ Referral code applied
+                                                    from your invitation link.
+                                                </p>
+                                            )}
+
+                                            {/* Manual promo success (fan only) */}
+                                            {role === 0 && codevalid && (
+                                                <p className="mt-2 text-sm text-green-600">
+                                                    ✅ Promo code applied
+                                                    successfully.
+                                                </p>
+                                            )}
                                         </div>
 
                                         <div className="termselect">

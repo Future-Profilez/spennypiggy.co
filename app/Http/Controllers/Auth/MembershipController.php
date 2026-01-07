@@ -713,7 +713,7 @@ class MembershipController extends Controller
                 $mem->save();
 
                 // Update GMV for creator
-                Helpers::addGmv($mem->membership->user_id, (float) $mem->amount);
+                Helpers::addGmv($mem->membership->user_id, (float) $mem->amount, $mem->membership->user->default_currency);
 
                 if ($mem->recurring_for == 'onetime' && $mem->recurring_type == 'monthly') {
                     SubscriptionCancelAtEnd::dispatch($mem);
