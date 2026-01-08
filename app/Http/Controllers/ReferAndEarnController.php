@@ -8,11 +8,40 @@ use Illuminate\Support\Str;
 use App\Models\CreatorReferral;
 use App\Models\CreatorReferralPayout;
 use App\Models\ReferralCode;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ReferAndEarnController extends Controller
 {
+    public function checkCreatorReferral($code)
+    {
+        if (!$code) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Referral code is required.'
+            ]);
+        }
+
+        // Validate referral code only (pre-signup)
+        $referral = ReferralCode::where('code', $code)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$referral) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Invalid or inactive referral code.'
+            ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Referral code applied successfully.'
+        ]);
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();

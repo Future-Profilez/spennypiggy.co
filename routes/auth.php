@@ -62,6 +62,8 @@ use Symfony\Component\HttpKernel\Profiler\Profile;
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
+    Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral']);
+
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 

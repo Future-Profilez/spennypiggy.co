@@ -152,6 +152,7 @@ export default function Register(props) {
         postal_code: "",
         street_address: "",
     });
+
     const getCountry = (e) => {
         const c = JSON.parse(e);
         setAddressData({
@@ -322,12 +323,36 @@ export default function Register(props) {
         promoinput.current.value = "";
         setData("promo", "");
     };
+
+    const checkCreatorReferral = () => {
+        if (role !== 1) return;
+
+        const p = promoInputValue;
+        if (!p) return;
+
+        axios
+            .get(`/check-referral-code/${p}`)
+            .then((resp) => {
+                if (resp.data.status) {
+                    setCodeValid(true);
+                    setData("promo", p);
+                } else {
+                    setCodeValid(false);
+                    errorAlert(resp.data.msg);
+                }
+            })
+            .catch(() => {
+                setCodeValid(false);
+            });
+    };
+
     const inputFieldRef = useRef(null);
     const letterRef = useRef(null);
     const capitalRef = useRef(null);
     const numberRef = useRef(null);
     const specialRef = useRef(null);
     const lengthRef = useRef(null);
+
     const handlePassHints = (e) => {
         const value = e.target.value;
         setmypass(value);
@@ -819,36 +844,39 @@ export default function Register(props) {
                                                     placeholder={
                                                         hasReferralFromUrl
                                                             ? "Referral code applied automatically"
-                                                            : role === 1
-                                                            ? "No referral code"
-                                                            : "Enter Promo Code..."
+                                                            : "Enter referral code (optional)"
                                                     }
-                                                    disabled={
+                                                    disabled={false}
+                                                    readOnly={
                                                         hasReferralFromUrl
                                                     }
-                                                    readOnly={role === 1}
                                                     className={`form-control ${
                                                         hasReferralFromUrl
                                                             ? "bg-gray-200 cursor-not-allowed"
                                                             : ""
                                                     }`}
                                                     onChange={(e) => {
-                                                        if (role === 0) {
-                                                            setPromoInputValue(
-                                                                e.target.value
-                                                            );
-                                                            setCodeValid(false);
-                                                            setData(
-                                                                "promo",
-                                                                ""
-                                                            );
-                                                        }
+                                                        setPromoInputValue(
+                                                            e.target.value
+                                                        );
+                                                        setCodeValid(false);
+                                                        setData("promo", "");
                                                     }}
                                                 />
 
+                                                {/* Creator manual referral success */}
+                                                {role === 1 &&
+                                                    codevalid &&
+                                                    !hasReferralFromUrl && (
+                                                        <p className="mt-2 text-sm text-green-600">
+                                                            ✅ Referral code
+                                                            applied
+                                                            successfully.
+                                                        </p>
+                                                    )}
+
                                                 {/* FAN ONLY BUTTON */}
-                                                {role === 0 &&
-                                                    !hasReferralFromUrl &&
+                                                {!hasReferralFromUrl &&
                                                     (codevalid ? (
                                                         <div
                                                             onClick={removecode}
@@ -858,7 +886,11 @@ export default function Register(props) {
                                                         </div>
                                                     ) : (
                                                         <div
-                                                            onClick={checkPromo}
+                                                            onClick={
+                                                                role === 1
+                                                                    ? checkCreatorReferral
+                                                                    : checkPromo
+                                                            }
                                                             className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn !py-2 text-center"
                                                         >
                                                             Apply
