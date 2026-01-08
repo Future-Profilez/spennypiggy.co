@@ -30,6 +30,7 @@ use Stripe\Stripe;
 use Stripe\Webhook;
 use App\Mail\TaskPurchasedMail;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\TaskRefunded;
 
 class StripeWebhookController extends Controller
 {
@@ -349,6 +350,16 @@ class StripeWebhookController extends Controller
                 $this->handleChargeDisputeClosed($data);
                 break;
 
+            case 'charge.refunded':
+                Log::info("Handling Charge Refunded");
+                $this->handleChargeRefunded($data);
+                break;
+
+            case 'payment_intent.payment_failed':
+                Log::info("Handling Payment Intent Failed");
+                $this->handlePaymentIntentFailed($data);
+                break;
+
             case 'customer.subscription.updated':
                 $productType = $metadata->type ?? null;
 
@@ -580,6 +591,7 @@ class StripeWebhookController extends Controller
             'payment_intent_id' => $session->payment_intent,
             'amount' => $amount,
             'status' => $initialStatus,
+            'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'gifter_message' => $metadata->gifter_message ?? null,
             'admin_fee' => $metadata->admin_fee ?? 0,
             'platform_fee' => $metadata->platform_fee ?? 0,
@@ -613,6 +625,7 @@ class StripeWebhookController extends Controller
             'due_at' => $slaHours > 0 ? Carbon::now()->addHours($slaHours) : null,
             'refund_eligible' => $slaHours > 0, 
             'payment_status' => 'paid',
+            'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'payment_currency' => strtoupper($session->currency ?? 'GBP'),
             'customer_email' => $session->customer_details->email ?? null,
             'customer_name' => $session->customer_details->name ?? null,
@@ -1657,6 +1670,87 @@ class StripeWebhookController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             // Don't throw - this is a safety-net, shouldn't break main webhook processing
+        }
+    }
+
+    /**
+     * Handle Charge Refunded
+     */
+     private function handleChargeRefunded($charge)
+     {
+         $paymentIntentId = $charge->payment_intent ?? null;
+         
+         if (!$paymentIntentId) {
+              return;
+         }
+
+         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+         if ($purchase) {
+             $purchase->status = 'refunded';
+             $purchase->refunded_at = now();
+             $purchase->save();
+             
+             Log::info("TaskPurchase refunded via webhook", ['id' => $purchase->id]);
+
+             // Update Deliverable
+             try {
+                 $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                 if ($deliverable) {
+                     $deliverable->status = 'refunded';
+                     $deliverable->save();
+                 }
+             } catch (\Exception $e) {}
+
+             // Notify Supporter and Creator via email and push
+             try {
+                 $task = $purchase->task;
+                 $supporter = $purchase->supporter;
+                 $creator = $purchase->creator;
+
+                 if ($supporter) {
+                     Helpers::sendNotification(
+                         "Task Refunded 💸",
+                         "The task '{$task->title}' has been refunded.",
+                         $supporter->email
+                     );
+                    Mail::to($supporter->email)->send(new TaskRefunded([
+                        'title' => $task->title,
+                        'amount' => $purchase->amount,
+                        'currency' => $task->currency,
+                        'message' => "The task was refunded."
+                    ]));
+                }
+
+                if ($creator) {
+                    Helpers::sendNotification(
+                        "Task Refunded 💸",
+                        "The task '{$task->title}' has been refunded to the supporter.",
+                        $creator->email
+                    );
+                    Mail::to($creator->email)->send(new TaskRefunded([
+                        'title' => $task->title,
+                        'amount' => $purchase->amount,
+                        'currency' => $task->currency,
+                        'message' => "The task was refunded to the supporter."
+                    ]));
+                }
+             } catch (\Exception $e) {
+                 Log::error("Failed to send refund notifications (webhook): " . $e->getMessage());
+             }
+         }
+     }
+
+    /**
+     * Handle Payment Intent Failed
+     */
+    private function handlePaymentIntentFailed($paymentIntent)
+    {
+        $paymentIntentId = $paymentIntent->id;
+        $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+        
+        if ($purchase) {
+             Log::info("Payment Intent Failed for TaskPurchase", ['id' => $purchase->id]);
+             // Optional: Update status if needed, but 'failed' isn't in enum yet.
         }
     }
 }

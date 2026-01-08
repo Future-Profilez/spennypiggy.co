@@ -27,7 +27,7 @@
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     The task is running a bit late. We have given the creator a grace period to complete it.<br><br>
-                    If not completed within the grace period (48 hours), you will be automatically refunded.
+                    If not completed within the grace period (1 hour), you will be automatically refunded.
                 </td>
             </tr>
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>

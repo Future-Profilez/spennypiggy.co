@@ -27,7 +27,7 @@
             <tr>
                 <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
                     {{ $data['message'] }}<br><br>
-                    Amount: <strong>{{ $data['amount'] }}</strong>
+                    Amount: <strong>{{ $formattedAmount }}</strong>
                 </td>
             </tr>
             <tr style="line-height: 10px; height: 10px;"><td></td></tr>

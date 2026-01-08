@@ -45,61 +45,34 @@ class SetupGracePeriodTest extends Command
         $this->info("Using Task: {$task->title}");
 
         // 1. Case: Entering Grace Period
-        // Deadline passed 1 hour ago, status is 'paid'
-        // SLA is 24h. So created_at should be 25h ago.
+        // Deadline passed 30 mins ago, status is 'paid'
+        // SLA is 24h. So created_at should be 24.5h ago.
         $this->createPurchase(
             $task, 
             $user, 
             'paid', 
-            Carbon::now()->subHours(25), 
+            Carbon::now()->subHours(24)->subMinutes(30), 
             null, 
             'Case 1: Should enter Grace Period (become running_late)'
         );
 
-        // 2. Case: Reminder (12h interval)
-        // Status 'running_late', Deadline passed 20 hours ago
-        // Created_at = 20 + 24 = 44h ago.
-        // Last reminder = at deadline (20h ago).
-        // Current time is 20h past deadline. 12h interval passed. Should remind.
-        $deadline2 = Carbon::now()->subHours(20);
+        // 2. Case: Expired (Refund)
+        // Deadline passed 90 mins ago (> 1h grace period)
+        $deadline2 = Carbon::now()->subHours(1)->subMinutes(30);
         $this->createPurchase(
             $task, 
             $user, 
             'running_late', 
             $deadline2->copy()->subHours(24), 
-            $deadline2, // Last reminder was at deadline (entry time)
-            'Case 2: Should send 12h Reminder (20h > 12h)'
+            $deadline2, 
+            'Case 2: Should Expire and Attempt Refund (Deadline passed 90 mins ago)'
         );
 
-        // 3. Case: Final Warning (4h left)
-        // Grace is 48h. We want 3h left (45h passed).
-        // Deadline passed 45 hours ago.
-        // Last reminder 10h ago.
-        $deadline3 = Carbon::now()->subHours(45);
-        $this->createPurchase(
-            $task, 
-            $user, 
-            'running_late', 
-            $deadline3->copy()->subHours(24), 
-            $deadline3->copy()->subHours(10), // Last reminder 10h ago
-            'Case 3: Should send Final Warning (45h passed, 3h left)'
-        );
-
-        // 4. Case: Expiration (Refund)
-        // Deadline passed 50 hours ago (> 48h)
-        $deadline4 = Carbon::now()->subHours(50);
-        $this->createPurchase(
-            $task, 
-            $user, 
-            'running_late', 
-            $deadline4->copy()->subHours(24), 
-            $deadline4, 
-            'Case 4: Should Expire and Attempt Refund'
-        );
+        // Removed Reminder cases as they are not applicable for 1-hour grace period (interval is 12h)
 
         $this->info("\nTest data created successfully!");
         $this->info("Run 'php artisan app:process-sla-refunds' to see the effects.");
-        $this->info("Note: Case 4 (Refund) will show an error in logs if Stripe keys/IDs are fake, which is expected in local dev.");
+        $this->info("Note: Case 2 (Refund) will show an error in logs if Stripe keys/IDs are fake, which is expected in local dev.");
     }
 
     private function createPurchase($task, $user, $status, $createdAt, $lastReminderAt, $description)

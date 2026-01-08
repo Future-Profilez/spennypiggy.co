@@ -25,9 +25,9 @@ export default function PaidTasksTerms(props) {
 
                         <h2 className="text-lg md:text-2xl font-semibold mb-3">Payment & Payouts</h2>
                         <ul className="list-disc pl-6 space-y-2 mb-6">
-                            <li>Supporter payments are authorised and secured at the time a Paid Task is submitted.</li>
-                            <li>Funds are held securely by the platform until the task is either completed or expires.</li>
-                            <li>Creators are not paid until delivery is confirmed or the task period ends in accordance with platform rules.</li>
+                            <li>Supporter payments are authorised and secured via Stripe at the time a Paid Task is submitted.</li>
+                            <li>Funds are routed to the creator upon successful task completion or in accordance with the specific payment flow (e.g., 'Paid Task' vs 'Standard').</li>
+                            <li>Creators receive payouts after delivery is confirmed or the task period concludes, subject to platform policies.</li>
                         </ul>
 
                         <div className="my-6 h-px w-full bg-gray-200" />

@@ -38,6 +38,7 @@ class Deliverable extends Model
         'customer_email',
         'customer_name',
         'payment_status',
+        'payment_type',
         'payment_currency',
         'anonymous',
         'message',
@@ -159,7 +160,8 @@ class Deliverable extends Model
     const STATUSES = [
         'pending',
         'delivered',
-        'failed'
+        'failed',
+        'refunded'
     ];
 
     /**

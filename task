@@ -1,3 +1,7 @@
+php artisan app:process-task-auto-confirmations
+
+php artisan app:process-sla-refunds
+
 Meta missing in memberships and bills
 Thankku page
 

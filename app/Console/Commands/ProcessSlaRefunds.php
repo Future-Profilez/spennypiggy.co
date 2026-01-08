@@ -22,9 +22,20 @@ class ProcessSlaRefunds extends Command
     protected $signature = 'app:process-sla-refunds';
     protected $description = 'Check for timed tasks that have exceeded their SLA deadline and process grace period or refunds';
 
-    const GRACE_PERIOD_HOURS = 48;
-    const REMINDER_INTERVAL_HOURS = 12;
     const FINAL_WARNING_HOURS = 4;
+
+    private function getGracePeriodHours()
+    {
+        return config('tasks.grace_period_hours', 1);
+    }
+
+    private function getReminderIntervalHours()
+    {
+        $frequency = config('tasks.reminder_frequency_daily', 2);
+        // Avoid division by zero
+        if ($frequency <= 0) $frequency = 2;
+        return 24 / $frequency;
+    }
 
     public function handle()
     {
@@ -63,9 +74,10 @@ class ProcessSlaRefunds extends Command
             // Notify Creator
             if ($purchase->creator) {
                 try {
+                    $graceHours = $this->getGracePeriodHours();
                     Helpers::sendNotification(
                         "Grace Period Started ⏳", 
-                        "Your task '{$purchase->task->title}' has passed the deadline. You have 48 hours to complete it.", 
+                        "Your task '{$purchase->task->title}' has passed the deadline. You have " . $graceHours . " hour" . ($graceHours == 1 ? "" : "s") . " to complete it.", 
                         $purchase->creator->email
                     );
                     Mail::to($purchase->creator->email)->send(new TaskGracePeriodStartedMail([
@@ -104,7 +116,7 @@ class ProcessSlaRefunds extends Command
             ->get();
 
         foreach ($gracePurchases as $purchase) {
-            $graceEnd = Carbon::parse($purchase->sla_deadline)->addHours(self::GRACE_PERIOD_HOURS);
+            $graceEnd = Carbon::parse($purchase->sla_deadline)->addHours($this->getGracePeriodHours());
             $now = Carbon::now();
 
             if ($now->greaterThanOrEqualTo($graceEnd)) {
@@ -114,8 +126,9 @@ class ProcessSlaRefunds extends Command
             $hoursLeft = $now->diffInHours($graceEnd);
             $lastReminder = $purchase->last_reminder_at ? Carbon::parse($purchase->last_reminder_at) : Carbon::parse($purchase->sla_deadline);
 
-            // Check 12-hour reminder
-            if ($now->diffInHours($lastReminder) >= self::REMINDER_INTERVAL_HOURS && $hoursLeft > self::FINAL_WARNING_HOURS) {
+            // Check configurable reminder
+            $reminderInterval = $this->getReminderIntervalHours();
+            if ($now->diffInHours($lastReminder) >= $reminderInterval && $hoursLeft > self::FINAL_WARNING_HOURS) {
                 $this->sendReminder($purchase, $hoursLeft);
             }
             // Check Final Warning (4 hours left)
@@ -160,7 +173,7 @@ class ProcessSlaRefunds extends Command
             })
             ->get()
             ->filter(function ($purchase) {
-                $graceEnd = Carbon::parse($purchase->sla_deadline)->addHours(self::GRACE_PERIOD_HOURS);
+                $graceEnd = Carbon::parse($purchase->sla_deadline)->addHours($this->getGracePeriodHours());
                 return Carbon::now()->greaterThan($graceEnd);
             });
 
@@ -242,6 +255,7 @@ class ProcessSlaRefunds extends Command
                 Mail::to($supporter->email)->send(new TaskRefunded([
                     'title' => $task->title,
                     'amount' => $purchase->amount,
+                    'currency' => $task->currency,
                     'message' => "The task was automatically refunded because the grace period deadline passed."
                 ]));
             } catch (\Exception $e) {
@@ -257,6 +271,13 @@ class ProcessSlaRefunds extends Command
                     "The task '{$task->title}' expired after grace period and was refunded.", 
                     $creator->email
                 );
+                
+                Mail::to($creator->email)->send(new TaskRefunded([
+                    'title' => $task->title,
+                    'amount' => $purchase->amount,
+                    'currency' => $task->currency,
+                    'message' => "The task was automatically refunded after the grace period expired."
+                ]));
             } catch (\Exception $e) {
                 Log::error("Failed to notify creator for refund {$purchase->uuid}");
             }

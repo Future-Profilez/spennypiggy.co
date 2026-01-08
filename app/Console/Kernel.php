@@ -13,13 +13,32 @@ class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
+     */
     protected function schedule(Schedule $schedule)
     {
+        // Test Scheduler Timestamp - Moved to TOP to ensure it always runs
+        $schedule->call(function () {
+            try {
+                \Illuminate\Support\Facades\Log::info('Scheduler heartbeat: executing at ' . now()->toDateTimeString() . ' using driver: ' . config('cache.default'));
+                
+                // Write to default cache
+                \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), 600);
+                
+                // Explicitly write to dynamodb store if available
+                if (config('cache.stores.dynamodb')) {
+                    \Illuminate\Support\Facades\Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', now()->toDateTimeString(), 600);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Scheduler heartbeat failed to write cache', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        })->everyMinute();
+
         // Sync subscription status from Stripe every hour
         $schedule->command('subscription:sync')
                  ->hourly()
-                 ->withoutOverlapping()
-                 ->runInBackground();
+                 ->withoutOverlapping();
                  
         //
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
@@ -29,8 +48,12 @@ class Kernel extends ConsoleKernel
         // Process SLA Refunds
         $schedule->command('app:process-sla-refunds')
                  ->hourly()
-                 ->withoutOverlapping()
-                 ->runInBackground();
+                 ->withoutOverlapping();
+
+        // Process Task Auto Confirmations
+        $schedule->command('app:process-task-auto-confirmations')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping();
 
         $schedule->command("app:auto-suspend-account")->daily()->withoutOverlapping(4);
         
@@ -49,20 +72,17 @@ class Kernel extends ConsoleKernel
         // Daily job to calculate first 30-day earnings for new creators
         $schedule->job(new CalculateFirstThirtyDayEarnings)
                  ->daily()
-                 ->withoutOverlapping(10)
-                 ->runInBackground();
+                 ->withoutOverlapping(10);
 
         // Monthly job to check founder qualifications (6th of each month)
         $schedule->job(new CheckFounderQualifications)
                  ->monthlyOn(6, '09:00')
-                 ->withoutOverlapping(30)
-                 ->runInBackground();
+                 ->withoutOverlapping(30);
 
         // Monthly job to process founder payouts (7th of each month)
         $schedule->job(new ProcessFounderPayouts)
                  ->monthlyOn(7, '10:00')
-                 ->withoutOverlapping(30)
-                 ->runInBackground();
+                 ->withoutOverlapping(30);
     }
 
     /**

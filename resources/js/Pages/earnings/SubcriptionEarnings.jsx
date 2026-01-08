@@ -46,7 +46,7 @@ export default function SubcriptionEarnings() {
       {lists && lists.length ? lists.map((item, index) => <>
           <WishItem key={index} item={item} />
         </>
-        ) : <Nocontent  classes={'bg-white'} text='Nothing to see' /> }
+        ) : <Nocontent mode="clean" classes={'bg-white'} text='Nothing to see' /> }
       </div>
     </section>
   );

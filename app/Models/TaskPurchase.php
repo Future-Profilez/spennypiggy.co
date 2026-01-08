@@ -11,6 +11,23 @@ class TaskPurchase extends Model
 {
     use HasFactory, SoftDeletes;
 
+    // Status constants for clarity and consistency
+    const TASK_STATUSES = [
+        'initiated',
+        'paid', 
+        'delivered', 
+        'assigned', 
+        'pending_review', 
+        'completed_accepted', 
+        'paid_out',
+        'expired',
+        'rejected_once', 
+        'escalated', 
+        'sla_missed', 
+        'refunded',
+        'completed' // Added for instant tasks
+    ];
+
     protected $fillable = [
         'uuid',
         'task_id',
@@ -20,6 +37,7 @@ class TaskPurchase extends Model
         'payment_intent_id',
         'amount',
         'status',
+        'payment_type',
         'proof_content',
         'rejection_reason',
         'sla_deadline',
