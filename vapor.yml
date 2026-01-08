@@ -4,8 +4,9 @@ environments:
   development:
     memory: 2048
     queue-memory: 1024
-    scheduler: sub-minute
+    scheduler: true
     cli-timeout: 120
+    cli-concurrency: 10
     # cli-concurrency: 2  (ensure at least 2 if using sub-minute)
     cli-memory: 512
     timeout: 120
@@ -33,21 +34,21 @@ environments:
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan subscription:sync --all"
-      - "php artisan app:process-task-auto-confirmations"
-      - "php artisan app:process-sla-refunds"
+      # - "php artisan app:process-task-auto-confirmations"
+      # - "php artisan app:process-sla-refunds"
       # - "php artisan sitemap:generate --force"
   production:
     memory: 1024
     queue-memory: 512
     cli-memory: 512
-    scheduler: sub-minute
+    scheduler: true
     cli-timeout: 120
     # Ensure at least 2 when using sub-minute scheduling
-    cli-concurrency: 2
+    cli-concurrency: 10
     warm: 5
     gateway-version: 2
     timeout: 60
-    cache: spenny-piggy-redis-caches
+    # cache: spenny-piggy-redis-caches
     runtime: "php-8.2:al2"
     domain: spennypiggy.co
     database: spennypiggy-db

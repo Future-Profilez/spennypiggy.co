@@ -22,12 +22,19 @@ class ProcessSlaRefunds extends Command
     protected $signature = 'app:process-sla-refunds';
     protected $description = 'Check for timed tasks that have exceeded their SLA deadline and process grace period or refunds';
 
-    const REMINDER_INTERVAL_HOURS = 12;
     const FINAL_WARNING_HOURS = 4;
 
     private function getGracePeriodHours()
     {
         return config('tasks.grace_period_hours', 1);
+    }
+
+    private function getReminderIntervalHours()
+    {
+        $frequency = config('tasks.reminder_frequency_daily', 2);
+        // Avoid division by zero
+        if ($frequency <= 0) $frequency = 2;
+        return 24 / $frequency;
     }
 
     public function handle()
@@ -119,8 +126,9 @@ class ProcessSlaRefunds extends Command
             $hoursLeft = $now->diffInHours($graceEnd);
             $lastReminder = $purchase->last_reminder_at ? Carbon::parse($purchase->last_reminder_at) : Carbon::parse($purchase->sla_deadline);
 
-            // Check 12-hour reminder
-            if ($now->diffInHours($lastReminder) >= self::REMINDER_INTERVAL_HOURS && $hoursLeft > self::FINAL_WARNING_HOURS) {
+            // Check configurable reminder
+            $reminderInterval = $this->getReminderIntervalHours();
+            if ($now->diffInHours($lastReminder) >= $reminderInterval && $hoursLeft > self::FINAL_WARNING_HOURS) {
                 $this->sendReminder($purchase, $hoursLeft);
             }
             // Check Final Warning (4 hours left)

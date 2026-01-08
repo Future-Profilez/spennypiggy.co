@@ -554,7 +554,8 @@ class TaskController extends Controller
         return Inertia::render('Tasks/Success', [
             'task' => $task,
             'purchase' => $purchase,
-            'currencySymbol' => \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$'
+            'currencySymbol' => \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$',
+            'gracePeriodHours' => config('tasks.grace_period_hours', 1),
         ]);
     }
 

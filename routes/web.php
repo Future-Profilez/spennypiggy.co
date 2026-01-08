@@ -178,6 +178,30 @@ Route::get('/giftstore', function () {
     return Inertia::render('rye/GiftStore');
 })->name('giftStore');
 
+Route::get('/creators', function () {
+    return Inertia::render('creators/Index');
+})->name('creators');
+
+Route::get('/creators/stripe-safe', function () {
+    return Inertia::render('creators/StripeSafe');
+})->name('creators.stripe-safe');
+
+Route::get('/creators/keep-100', function () {
+    return Inertia::render('creators/Keep100');
+})->name('creators.keep-100');
+
+Route::get('/creators/features', function () {
+    return Inertia::render('creators/Features');
+})->name('creators.features');
+
+Route::get('/creators/disputes', function () {
+    return Inertia::render('creators/Disputes');
+})->name('creators.disputes');
+
+Route::get('/creators/founder-bonus', function () {
+    return Inertia::render('creators/FounderBonus');
+})->name('creators.founder-bonus');
+
 
 // Route::post('test-stripe', function (Request $request) {
 //     $request = json_encode($request->all());
@@ -469,6 +493,12 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/paid-tasks-terms', 'priority' => '0.5', 'changefreq' => 'monthly'],
             ['url' => '/register', 'priority' => '0.6', 'changefreq' => 'weekly'],
             ['url' => '/login', 'priority' => '0.6', 'changefreq' => 'weekly'],
+            ['url' => '/creators', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/stripe-safe', 'priority' => '0.6', 'changefreq' => 'monthly'],
+            ['url' => '/creators/keep-100', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/features', 'priority' => '0.7', 'changefreq' => 'weekly'],
+            ['url' => '/creators/disputes', 'priority' => '0.6', 'changefreq' => 'monthly'],
+            ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
         ];
         
         $content = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -624,10 +654,25 @@ Route::get('/debug-intercom', [\App\Http\Controllers\IntercomDebugController::cl
 // Test Scheduler Route
 Route::get('/test/scheduler/is/running', function () {
     $lastRun = \Illuminate\Support\Facades\Cache::get('scheduler_last_run');
+    $lastRunDynamo = null;
+    try {
+        if (config('cache.stores.dynamodb')) {
+            $lastRunDynamo = \Illuminate\Support\Facades\Cache::store('dynamodb')->get('scheduler_last_run_dynamodb');
+        }
+    } catch (\Exception $e) {
+        // Ignore if dynamodb store is not configured or fails
+    }
+
+    // Determine effective last run
+    $effectiveLastRun = $lastRun ?: $lastRunDynamo;
+
     return response()->json([
-        'status' => $lastRun ? 'active' : 'inactive',
+        'status' => $effectiveLastRun ? 'active' : 'inactive',
         'last_run' => $lastRun,
+        'last_run_dynamodb' => $lastRunDynamo,
         'server_time' => now()->toDateTimeString(),
-        'diff_seconds' => $lastRun ? now()->diffInSeconds(\Carbon\Carbon::parse($lastRun)) : null
+        'diff_seconds' => $effectiveLastRun ? now()->diffInSeconds(\Carbon\Carbon::parse($effectiveLastRun)) : null,
+        'cache_driver' => config('cache.default'),
+        'cache_store' => config('cache.stores.' . config('cache.default') . '.driver'),
     ]);
 });
