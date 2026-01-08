@@ -772,7 +772,6 @@ Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'revi
 Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 
 
-
 // ADD IN ADMIN PANEL
 Route::get('/stripe/manual-payout', [TestController::class, 'manualPayout'])->name('stripe-payout');
 Route::get('/delete-connected-account/{accountId}', [StripeController::class, 'deleteConnectedAccount']);
