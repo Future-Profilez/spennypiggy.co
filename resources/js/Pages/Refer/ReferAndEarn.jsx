@@ -78,9 +78,6 @@ export default function ReferAndEarn({
     };
 
     const createReferralLink = async () => {
-        alert(
-            "Referral link generation is currently disabled for maintenance."
-        );
         setLoading(true);
         try {
             const res = await axios.post("/refer-and-earn/create-link");

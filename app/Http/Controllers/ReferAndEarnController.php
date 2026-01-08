@@ -78,11 +78,9 @@ class ReferAndEarnController extends Controller
      ===================================================== */
         $totalEarned = $qualifiedCount * 50;
 
-        /* =====================================================
-     | Payout State
-     ===================================================== */
+        /* =====================================================| Payout State===================================================== */
         $hasActivePayout = CreatorReferralPayout::where('creator_id', $user->id)
-            ->whereIn('status', ['PENDING', 'APPROVED', 'PAID'])
+            ->whereIn('status', ['PENDING'])
             ->exists();
 
         /* =====================================================
@@ -92,9 +90,8 @@ class ReferAndEarnController extends Controller
 
         $canRedeem = $availableForPayout >= 50 && !$hasActivePayout;
 
-        /* =====================================================
-     | Response
-     ===================================================== */
+        /* =====================================================| Response===================================================== */
+        // dd($referrals, $qualifiedCount, $totalEarned, $hasActivePayout, $availableForPayout, $canRedeem);
         return Inertia::render('Refer/ReferAndEarn', [
             'auth' => [
                 'user' => $user,

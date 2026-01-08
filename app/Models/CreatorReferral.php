@@ -63,7 +63,7 @@ class CreatorReferral extends Model
         return $query->where('status', 'PAYOUT_REQUESTED');
     }
 
-        public function isQualified(): bool
+    public function isQualified(): bool
     {
         return $this->status === 'QUALIFIED';
     }
