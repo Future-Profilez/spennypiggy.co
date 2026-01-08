@@ -58,50 +58,39 @@ class ReferAndEarnController extends Controller
             ->where('is_active', 1)
             ->value('code');
 
-        $referralLink = $referralCode
-            ? url('/register?ref=' . $referralCode)
-            : null;
+        $referralLink = $referralCode ? url('/register?ref=' . $referralCode) : null;
 
         /* =====================================================| All Referrals===================================================== */
         $referralQuery = CreatorReferral::with(['referred:id,name,username,created_at'])->where('referrer_creator_id', $user->id);
 
         $totalReferrals = $referralQuery->count();
 
-        $referrals = $referralQuery
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(function ($ref) use ($user) {
+        $referrals = $referralQuery->orderByDesc('created_at')->get()->map(function ($ref) use ($user) {
+            // Get latest rejected payout (if any)
+            $rejectedPayout = CreatorReferralPayout::where('creator_id', $user->id)
+                ->where('status', 'REJECTED')
+                ->latest()
+                ->first();
 
-                // Get latest rejected payout (if any)
-                $rejectedPayout = CreatorReferralPayout::where('creator_id', $user->id)
-                    ->where('status', 'REJECTED')
-                    ->latest()
-                    ->first();
-
-                return [
-                    'id'               => $ref->id,
-                    'name'             => $ref->referred->name ?? '-',
-                    'username'         => $ref->referred->username ?? '-',
-                    'joined_at'        => optional($ref->referred->created_at)->format('d M Y'),
-                    'lifetime_gmv'     => (float) $ref->lifetime_gmv,
-                    'status'           => $ref->status,
-                    'rejection_reason' => $rejectedPayout?->rejection_reason,
-                ];
-            });
+            return [
+                'id'               => $ref->id,
+                'name'             => $ref->referred->name ?? '-',
+                'username'         => $ref->referred->username ?? '-',
+                'joined_at'        => optional($ref->referred->created_at)->format('d M Y'),
+                'lifetime_gmv'     => (float) $ref->lifetime_gmv,
+                'status'           => $ref->status,
+                'rejection_reason' => $rejectedPayout?->rejection_reason,
+            ];
+        });
 
 
-        /* =====================================================
-     | Qualified Referrals (LIFETIME)
-     ===================================================== */
+        /* =====================================================| Qualified Referrals (LIFETIME)===================================================== */
         $qualifiedCount = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereNotNull('qualified_at')
             ->where('lifetime_gmv', '>=', 1000)
-            ->where('status', 'QUALIFIED')
             ->count();
 
-        /* =====================================================
-     | Earnings (LIFETIME)
-     ===================================================== */
+        /* =====================================================| Earnings (LIFETIME)===================================================== */
         $totalEarned = $qualifiedCount * 50;
 
         /* =====================================================| Payout State===================================================== */
@@ -109,10 +98,16 @@ class ReferAndEarnController extends Controller
             ->whereIn('status', ['PENDING'])
             ->exists();
 
-        /* =====================================================
-     | Available Balance
-     ===================================================== */
-        $availableForPayout = $hasActivePayout ? 0 : $totalEarned;
+        /* =====================================================| Available Balance===================================================== */
+        $availableForPayouts = CreatorReferral::where('referrer_creator_id', $user->id)
+            ->whereNotNull('qualified_at')
+            ->where('lifetime_gmv', '>=', 1000)
+            ->where('status', 'QUALIFIED')
+            ->count();
+
+        $totalEarn = $availableForPayouts * 50;
+
+        $availableForPayout = $availableForPayouts ? $totalEarn : 0;
 
         $canRedeem = $availableForPayout >= 50 && !$hasActivePayout;
 
