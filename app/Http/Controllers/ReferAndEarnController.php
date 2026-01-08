@@ -62,12 +62,8 @@ class ReferAndEarnController extends Controller
             ? url('/register?ref=' . $referralCode)
             : null;
 
-        /* =====================================================
-     | All Referrals
-     ===================================================== */
-        $referralQuery = CreatorReferral::with([
-            'referred:id,name,username,created_at'
-        ])->where('referrer_creator_id', $user->id);
+        /* =====================================================| All Referrals===================================================== */
+        $referralQuery = CreatorReferral::with(['referred:id,name,username,created_at'])->where('referrer_creator_id', $user->id);
 
         $totalReferrals = $referralQuery->count();
 
@@ -100,6 +96,7 @@ class ReferAndEarnController extends Controller
         $qualifiedCount = CreatorReferral::where('referrer_creator_id', $user->id)
             ->whereNotNull('qualified_at')
             ->where('lifetime_gmv', '>=', 1000)
+            ->where('status', 'QUALIFIED')
             ->count();
 
         /* =====================================================

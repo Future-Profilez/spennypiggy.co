@@ -130,7 +130,7 @@ export default function ReferAndEarn({
                             </p>
 
                             {/* Referral Link Box */}
-                            <div className="border-2 border-black rounded-2xl p-5">
+                            <div className="border-2 border-black rounded-2xl p-4 md:p-5">
                                 <h2 className="text-lg font-GillSans uppercase mb-3">
                                     Your Referral Link
                                 </h2>
@@ -142,7 +142,7 @@ export default function ReferAndEarn({
                                         readOnly
                                         value={hasReferral ? referralLink : ""}
                                         placeholder="Click Generate to create your referral link"
-                                        className={`w-full px-4 py-4 pr-[220px] rounded-xl border-2 border-black text-sm
+                                        className={`w-full px-4 py-3 md:py-4 pr-[220px] rounded-xl border-2 border-black text-sm
                                         ${
                                             hasReferral
                                                 ? "bg-white text-black"
@@ -152,7 +152,7 @@ export default function ReferAndEarn({
                                     />
 
                                     {/* CTA AREA */}
-                                    <div className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center gap-2">
+                                    <div className="md:absolute top-1/2 right-2 md:-translate-y-1/2 !mt-2 md:!mt-0 flex items-center gap-2">
                                         {/* GENERATE */}
                                         {!hasReferral && (
                                             <button
@@ -161,7 +161,7 @@ export default function ReferAndEarn({
                                                 className="
                                                 bg-pink-600 hover:bg-pink-700
                                                 text-white font-bold
-                                                px-6 py-3
+                                                px-4 md:px-6 py-2.5 md:py-3
                                                 rounded-full
                                                 text-sm
                                                 shadow-md
