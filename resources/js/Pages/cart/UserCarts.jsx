@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CartItem from "./CartItem";
 import { Link, router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
 import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
-import { useEffect } from "react";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
 import Turnstile from "@/Components/Turnstile";
 
@@ -24,12 +23,12 @@ export default function UserCarts(props) {
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
-    const onVerify = (token) => {
+    const onVerify = useCallback((token) => {
         setCaptchaToken(token || "");
-        // handleSubmit(token);
-    };
-    const handleSubmit = (token) => {
-        if(!captchaToken) {
+    }, []);
+
+    const handleSubmit = () => {
+        if (!captchaToken) {
             toast.error("Please complete the CAPTCHA verification.");
             return;
         }
@@ -43,7 +42,7 @@ export default function UserCarts(props) {
             from: name || '',
             email: email || '',
             anonymous: keepAnonmyous ? 1 : 0,
-            cf_turnstile_response: token || captchaToken || "",
+            cf_turnstile_response: captchaToken || "",
         };
         
         // Use Inertia navigation instead of window.location.href to properly handle flash messages
@@ -220,7 +219,7 @@ export default function UserCarts(props) {
                         </div>
 
                         <div className="addMessage">
-                            <form  >
+                            <form onSubmit={(e) => e.preventDefault()}>
                                 <ul className="row">
                                     <li className="fading">
                                         <label>Add Message </label>
@@ -397,20 +396,16 @@ export default function UserCarts(props) {
                                         </div>
                                     </li>
                                 </ul>
-                                <Turnstile
-                                    ref={turnstileRef}
-                                    size="normal"
-                                    theme="light"
-                                    onVerify={onVerify}
-                                />
-                                {/* {turnstileSiteKey ? (
-                                    <Turnstile
-                                        ref={turnstileRef}
-                                        size="normal"
-                                        theme="light"
-                                        onVerify={onVerify}
-                                    />
-                                ) : null} */}
+                                {turnstileSiteKey ? (
+                                    <div className="flex justify-center my-3">
+                                        <Turnstile
+                                            ref={turnstileRef}
+                                            size="normal"
+                                            theme="light"
+                                            onVerify={onVerify}
+                                        />
+                                    </div>
+                                ) : null}
                                 <div className=" mt-4 sm:flex gap-3 items-center justify-between">
                                     <button
                                         type="button"
@@ -420,6 +415,8 @@ export default function UserCarts(props) {
                                         {loading ? "Wait.." : "Clear"}{" "}
                                     </button>
                                     <button
+                                        type="button"
+                                        disabled={!isChecked || checking}
                                         onClick={handleSubmit}
                                         className={`${
                                             isChecked ? "" : "disabled"
