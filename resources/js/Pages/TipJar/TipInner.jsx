@@ -207,7 +207,7 @@ export default function TipInner({classes, idd}) {
               <div className="flex justify-center my-3">
                 <Turnstile
                   ref={turnstileRef}
-                  size="normal"
+                  size="invisible"
                   theme="light"
                   onVerify={onVerify}
                 />
@@ -217,7 +217,7 @@ export default function TipInner({classes, idd}) {
                rounded-[30px] btn-pink md justify-content-center btn-shadow !font-normal
               ease-in-out duration-150 flex button text-center w-100
                 mx-auto  ${checkRef.current && checkRef.current.checked ? '' :'disabled'} font-gulfs`}
-               > {loading ? "Processing" : 'Support Me'} </button>
+               > {loading ? "Processing..." : 'Support Me'} </button>
 
 
 
