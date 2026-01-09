@@ -240,7 +240,6 @@ export default function Dashboard(props) {
 
     // Flash messages now handled centrally by FlashMessenger in layout
 
-
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
         const dismissedAt = localStorage.getItem("stripeAlertDismissedAt");
@@ -317,17 +316,7 @@ export default function Dashboard(props) {
                                             <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
                                                 {wishOptions ? (
                                                     <div>
-                                                        <Wishlist
-                                                            text="Cash Gift"
-                                                            currency={
-                                                                global_currency
-                                                            }
-                                                            setuped={
-                                                                AuthUserStripeConnected ==
-                                                                1
-                                                                    ? true
-                                                                    : false
-                                                            }
+                                                        <Wishlist text="Cash Gift" currency={ global_currency} setuped={AuthUserStripeConnected == 1 ? true : false }
                                                         />
                                                         <div className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
                                                             <div className=" flex items-center">
@@ -1022,37 +1011,18 @@ export default function Dashboard(props) {
                                                                             (
                                                                                 gift
                                                                             ) => {
-                                                                                const details =
-                                                                                    JSON.parse(
-                                                                                        gift.details
-                                                                                    ); // Parse the details JSON
+                                                                                const details = JSON.parse(gift.details); // Parse the details JSON
                                                                                 return (
                                                                                     <>
-                                                                                        {(IsloggedIn ||
-                                                                                            gift?.deleted_at ===
-                                                                                                null) && (
+                                                                                        {(IsloggedIn || gift?.deleted_at === null) && (
                                                                                             <GiftListing
-                                                                                                key={
-                                                                                                    gift.id
-                                                                                                }
-                                                                                                gift={
-                                                                                                    gift
-                                                                                                }
-                                                                                                details={
-                                                                                                    details
-                                                                                                }
-                                                                                                user={
-                                                                                                    user
-                                                                                                }
-                                                                                                IsloggedIn={
-                                                                                                    IsloggedIn
-                                                                                                }
-                                                                                                fetch_gifts={
-                                                                                                    fetch_gifts
-                                                                                                }
-                                                                                                auth={
-                                                                                                    auth
-                                                                                                }
+                                                                                                key={gift.id}
+                                                                                                gift={gift}
+                                                                                                details={details}
+                                                                                                user={user}
+                                                                                                IsloggedIn={IsloggedIn}
+                                                                                                fetch_gifts={fetch_gifts}
+                                                                                                auth={auth}
                                                                                             />
                                                                                         )}
                                                                                     </>
