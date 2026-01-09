@@ -1,52 +1,30 @@
 
-import { useRef, useState } from "react";
-import { useForm, Link, usePage, router } from "@inertiajs/react";
+import { useCallback, useRef, useState } from "react";
+import { useForm, usePage, router } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
 import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Icons';
 import { useEffect } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 import toast from 'react-hot-toast';
+import Turnstile from "@/Components/Turnstile";
 
 export default function TipInner({classes, idd}) {
 
-  const {rates, global_currency, auth, user } = usePage().props;
+  const { rates, global_currency, auth, user, turnstileSiteKey } = usePage().props;
   const checkRef = useRef();
+  const turnstileRef = useRef(null);
   const { formatMultiPrice } = PriceFormat();
-  const { usdtogbp } = PriceFormat();
 
   const [defaultAmount, setdefaultAmount] = useState(25);
   const [amount, setAmount] = useState(defaultAmount);
-  const [tipQuantity, setTipQuantity] = useState(1);
-  const [coinsQuantity, setCoinsQuanitity] = useState(1)
-  const { successAlert, errorAlert, errorsHandling } = useAlerts();
-
-  const incresevalue = () =>{
-      const c = parseInt(tipQuantity+1);
-      setAmount(defaultAmount*c);
-      setTipQuantity(c);
-  }
-
-  const decresevalue = () =>{
-    if(tipQuantity > 1){
-      const c = parseInt(tipQuantity-1);
-      setAmount(defaultAmount*c);
-      setTipQuantity(c);
-    }
-  }
+  const { errorAlert } = useAlerts();
+  const [verified, setVerified] = useState(false);
 
   const [selectegTag, setselectegTag] = useState(25);
-  const [custom, setCustom] = useState(false);
-  const selectCustom = ()=> {
-     setCustom(true);
-     setselectegTag("custom")
-  }
   const customAmountTag = (e) => {
     setAmount(e);
     setdefaultAmount(e);
-    setTipQuantity(1);
-    setCoinsQuanitity();
-    setCustom(false);
     setselectegTag(e);
   }
   const customAmount = (e) => {
@@ -56,22 +34,20 @@ export default function TipInner({classes, idd}) {
     }
     setAmount(e.target.value);
     setdefaultAmount(e.target.value);
-    setTipQuantity(1);
-    setCoinsQuanitity();
-    setCustom(false);
   }
 
-  const { data, setData, post, processing, errors, reset } = useForm({
+  const { data, setData } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
     message: 'Just a small token of appreciation 💖',
     anonymous: 0,
-    amount: amount
+    amount: amount,
+    cf_turnstile_response: "",
   });
 
   useEffect(()=>{
     setData("amount", amount);
-  },[amount]);
+  },[amount, setData]);
 
   const [loading, setLoading] = useState(false);
   const usdToGbp = (amount, currency) => {
@@ -81,10 +57,23 @@ export default function TipInner({classes, idd}) {
         return gbpamount
   }
 
+  const onVerify = useCallback((token) => {
+    setData("cf_turnstile_response", token || "");
+    setVerified(!!token);
+  }, [setData]);
+
   const send = (e) => {
     e.preventDefault();
     if(data.email === "" || data.name === "" ){
         errorAlert("Please enter all the required details.");
+        return false;
+    }
+    if (!checkRef.current?.checked) {
+        errorAlert("Please accept the terms to continue.");
+        return false;
+    }
+    if (turnstileSiteKey && !verified) {
+        toast.error("Please verify the captcha");
         return false;
     }
     if(auth && !auth.user && usdToGbp(data.amount) > 50){
@@ -102,7 +91,16 @@ export default function TipInner({classes, idd}) {
       }
       setLoading(false);
     }).catch((err) => {
-      console.log("err", err)
+      const responseErrors = err?.response?.data?.errors;
+      const firstError =
+          responseErrors &&
+          Object.values(responseErrors).flat().filter(Boolean)[0];
+      errorAlert(firstError || err?.response?.data?.message || "Something went wrong.");
+      setVerified(false);
+      setData("cf_turnstile_response", "");
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
       setLoading(false);
     });
   }
@@ -205,6 +203,16 @@ export default function TipInner({classes, idd}) {
                 </label>
                 <p className="text-muted text-small mt-1 mb-3" >Your personal email and name will be private.</p>
             </div>
+            {turnstileSiteKey ? (
+              <div className="flex justify-center my-3">
+                <Turnstile
+                  ref={turnstileRef}
+                  size="normal"
+                  theme="light"
+                  onVerify={onVerify}
+                />
+              </div>
+            ) : null}
             <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
                rounded-[30px] btn-pink md justify-content-center btn-shadow !font-normal
               ease-in-out duration-150 flex button text-center w-100

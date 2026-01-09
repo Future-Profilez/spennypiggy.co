@@ -601,13 +601,15 @@ export default function Dashboard(props) {
 
                                                                         <DashboardStripeMigrationWarning migrationStatus={migration_status} />
 
+                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
+                                                                            <EnableCardCapabilities  />
+                                                                        : ''}
+
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements.requirements.length > 0 && AuthUserStripeConnected ?
                                                                             <ActionRequired requirements={stripe_requirements.requirements} />
                                                                         : ''}
 
-                                                                        {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && AuthUserStripeConnected ?
-                                                                            <EnableCardCapabilities  />
-                                                                        : ''}
+                                                                        
 
                                                                         {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status == 0  ?
                                                                             <SiteSubscription charges={auth?.user?.monthly_charge_enabled} user={auth?.user} />
@@ -764,87 +766,87 @@ export default function Dashboard(props) {
                                                                     }
                                                                 >
                                                                     <div className="wishes-items pb-6 ">
-                                                                    {wish_categories &&
-                                                                    wish_categories.length ? (
-                                                                        <>
-                                                                            <div className="new-wish-cats flex mb-2">
-                                                                                <Link
-                                                                                    preserveScroll
-                                                                                    href={route(
-                                                                                        "user.show",
-                                                                                        {
-                                                                                            username:
-                                                                                                user.username,
-                                                                                            page: "wishes",
-                                                                                        }
-                                                                                    )}
-                                                                                    className={`${
-                                                                                        selectedCategory ==
-                                                                                        ""
-                                                                                            ? "active"
-                                                                                            : ""
-                                                                                    } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
-                                                                                >
-                                                                                    All
-                                                                                </Link>
-                                                                                {wish_categories.map(
-                                                                                    (
-                                                                                        c,
-                                                                                        i
-                                                                                    ) => {
-                                                                                        return (
-                                                                                            <>
-                                                                                                <Link
-                                                                                                    preserveScroll
-                                                                                                    href={route(
-                                                                                                        "user.show",
-                                                                                                        {
-                                                                                                            username:
-                                                                                                                user.username,
-                                                                                                            page: "wishes",
-                                                                                                            category:
-                                                                                                                c.id,
-                                                                                                        }
-                                                                                                    )}
-                                                                                                    className={`${
-                                                                                                        selectedCategory ==
-                                                                                                        c.id
-                                                                                                            ? "active"
-                                                                                                            : ""
-                                                                                                    } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
-                                                                                                    key={`cats-${i}`}
-                                                                                                >
-                                                                                                    {
-                                                                                                        c.category
-                                                                                                    }
-                                                                                                </Link>
-                                                                                            </>
-                                                                                        );
-                                                                                    }
-                                                                                )}
-                                                                                {IsloggedIn ? (
-                                                                                    <EditCategories
-                                                                                        username={
-                                                                                            (auth &&
-                                                                                                auth
-                                                                                                    ?.user
-                                                                                                    ?.username) ||
-                                                                                            null
-                                                                                        }
-                                                                                    />
-                                                                                ) : (
-                                                                                    ""
-                                                                                )}
-                                                                            </div>
-                                                                        </>
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
 
                                                                     {loading || (isInitialLoad && (!wishitems || wishitems.length === 0)) ? (
                                                                         <LoadingScreen />
                                                                     ) : wishitems && wishitems.length > 0 ? (
                                                                         <>
+                                                                            {wish_categories &&
+                                                                            wish_categories.length ? (
+                                                                                <>
+                                                                                    <div className="new-wish-cats flex mb-2">
+                                                                                        <Link
+                                                                                            preserveScroll
+                                                                                            href={route(
+                                                                                                "user.show",
+                                                                                                {
+                                                                                                    username:
+                                                                                                        user.username,
+                                                                                                    page: "wishes",
+                                                                                                }
+                                                                                            )}
+                                                                                            className={`${
+                                                                                                selectedCategory ==
+                                                                                                ""
+                                                                                                    ? "active"
+                                                                                                    : ""
+                                                                                            } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                        >
+                                                                                            All
+                                                                                        </Link>
+                                                                                        {wish_categories.map(
+                                                                                            (
+                                                                                                c,
+                                                                                                i
+                                                                                            ) => {
+                                                                                                return (
+                                                                                                    <>
+                                                                                                        <Link
+                                                                                                            preserveScroll
+                                                                                                            href={route(
+                                                                                                                "user.show",
+                                                                                                                {
+                                                                                                                    username:
+                                                                                                                        user.username,
+                                                                                                                    page: "wishes",
+                                                                                                                    category:
+                                                                                                                        c.id,
+                                                                                                                }
+                                                                                                            )}
+                                                                                                            className={`${
+                                                                                                                selectedCategory ==
+                                                                                                                c.id
+                                                                                                                    ? "active"
+                                                                                                                    : ""
+                                                                                                            } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                                            key={`cats-${i}`}
+                                                                                                        >
+                                                                                                            {
+                                                                                                                c.category
+                                                                                                            }
+                                                                                                        </Link>
+                                                                                                    </>
+                                                                                                );
+                                                                                            }
+                                                                                        )}
+                                                                                        {IsloggedIn ? (
+                                                                                            <EditCategories
+                                                                                                username={
+                                                                                                    (auth &&
+                                                                                                        auth
+                                                                                                            ?.user
+                                                                                                            ?.username) ||
+                                                                                                    null
+                                                                                                }
+                                                                                            />
+                                                                                        ) : (
+                                                                                            ""
+                                                                                        )}
+                                                                                    </div>
+                                                                                </>
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
                                                                             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                 <DndContext
                                                                                     sensors={

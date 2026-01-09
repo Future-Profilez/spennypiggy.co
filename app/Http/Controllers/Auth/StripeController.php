@@ -2520,6 +2520,8 @@ class StripeController extends Controller
                 'message' => 'sometimes|nullable|string|max:800'
             ]);
 
+            $this->ensureTurnstileVerified($request);
+
 
             $amount = $request->amount;
             $ConvertedAmount = Helpers::priceFormat($creator->default_currency, $amount, 'gbp');

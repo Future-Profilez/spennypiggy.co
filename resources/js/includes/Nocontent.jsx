@@ -22,9 +22,7 @@ export default function Nocontent({
   const hSize = headingClasses[size] || headingClasses.md;
   const imgSrc = illustrationSrc || noresultimg;
 
-  const cardClasses = mode === "card" 
-    ? "relative bg-white border-[3px] border-black rounded-[30px] shadow-[8px_8px_0_0_#F94F97] p-8 md:p-12 transition-transform hover:-translate-y-1 hover:shadow-[10px_10px_0_0_#F94F97] retro-bg-pattern animate-fade-in-up"
-    : "relative p-4 animate-fade-in-up";
+  const cardClasses = ''
 
   return (
     <div className={`w-full flex justify-center ${mode === "card" ? "p-4" : ""} ${classes}`}>
@@ -39,7 +37,7 @@ export default function Nocontent({
                 </div>
             )}
             
-            <h2 className={`font-anton !text-xl tracking-[3px] uppercase ${mode === "card" ? "text-pink retro-text-glow" : "text-black"} ${hSize} mb-3 leading-tight`}>
+            <h2 className={`font-anton !text-xl tracking-[3px] uppercase ${mode === "card" ? "text-pink retro-text-glows" : "text-black"} ${hSize} mb-3 leading-tight`}>
                 {text} !!
             </h2>
             

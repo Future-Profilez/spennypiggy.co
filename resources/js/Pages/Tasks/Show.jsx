@@ -1,17 +1,43 @@
-import React from 'react';
-import { Head, useForm, Link } from '@inertiajs/react';
+import React, { useCallback, useRef } from 'react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import PriceFormat from "@/includes/PriceFormat";
+import Turnstile from "@/Components/Turnstile";
+import toast from "react-hot-toast";
 
 export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol }) {
+    const { turnstileSiteKey } = usePage().props;
+    const turnstileRef = useRef(null);
     const { data, setData, post, processing } = useForm({
-        gifter_message: ''
+        gifter_message: '',
+        agree: false,
+        cf_turnstile_response: '',
     });
     const { formatMultiPrice } = PriceFormat();
 
-    const handlePurchase = (e) => {
-        e.preventDefault();
-        post(route('task.purchase', task.uuid));
+    const onVerify = useCallback((token) => {
+        setData("cf_turnstile_response", token || "");
+    }, [setData]);
+
+    const handlePurchase = () => {
+        if (!data.agree) {
+            toast.error("Please accept the Paid Tasks terms");
+            return;
+        }
+        if (turnstileSiteKey && !data.cf_turnstile_response) {
+            toast.error("Please verify the captcha");
+            return;
+        }
+
+        post(route('task.purchase', task.uuid), {
+            preserveScroll: true,
+            onError: () => {
+                setData("cf_turnstile_response", "");
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
+            },
+        });
     };
 
     return (
@@ -180,7 +206,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
 
                                         {/* Purchase Form */}
                                         <div className="mt-6">
-                                             <form onSubmit={handlePurchase}>
+                                             <form onSubmit={(e) => e.preventDefault()}>
                                                  <div className="mb-4">
                                                      <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                                                          Message to Creator (Optional)
@@ -194,10 +220,58 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                      />
                                                  </div>
 
+
+                                                 {turnstileSiteKey ? (
+                                                     <div className="mb-4 flex justify-start">
+                                                         <Turnstile
+                                                             ref={turnstileRef}
+                                                             size="normal"
+                                                             theme="light"
+                                                             onVerify={onVerify}
+                                                         />
+                                                     </div>
+                                                 ) : null}
+                                                 <div className="mb-4">
+                                                     <label htmlFor="task-terms" className="flex items-start gap-2 text-normal text-gray-700">
+                                                         <input
+                                                             id="task-terms"
+                                                             type="checkbox"
+                                                             className="mt-1"
+                                                             checked={!!data.agree}
+                                                             onChange={(e) => setData("agree", e.target.checked)}
+                                                         />
+                                                         <span>
+                                                             I agree to the{" "}
+                                                             <Link
+                                                                 href={route("paid-tasks-terms")}
+                                                                 target="_blank"
+                                                                 className="text-pink-600 underline font-bold">
+                                                                 Paid Tasks Terms
+                                                             </Link>
+                                                         </span>
+                                                     </label>
+                                                     <div className="mt-2 text-sm text-gray-600">
+                                                         <ul className="list-disc pl-5 space-y-1">
+                                                             <li>Payments are processed securely via Stripe.</li>
+                                                             <li>Refunds are eligibility-based (e.g., non-delivery), not satisfaction-based.</li>
+                                                             <li>Creators may accept or decline requests at their discretion.</li>
+                                                             <li>Delivered work is treated as completed under the agreed format.</li>
+                                                             <li>Spenny Piggy facilitates payments and workflow, not the task itself.</li>
+                                                         </ul>
+                                                     </div>
+                                                 </div>
+
                                                  <button
-                                                     type="submit"
-                                                     disabled={processing}
-                                                     className="button b pinkbg !py-[16px] !text-white w-full"
+                                                     type="button"
+                                                     onClick={handlePurchase}
+                                                     disabled={
+                                                         processing ||
+                                                         !data.agree ||
+                                                         (turnstileSiteKey && !data.cf_turnstile_response)
+                                                     }
+                                                     className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
+                                                         !data.agree ||
+                                                         (turnstileSiteKey && !data.cf_turnstile_response)) ?'disabled':'enabled'}`}
                                                  >
                                                      {processing ? 'Processing...' : (
                                                          purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝')
