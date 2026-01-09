@@ -48,14 +48,19 @@ export default function HappyCreators() {
     ];
 
     return (
-        <>
-            <div id="reviews" className="happycreator pt-12 pb-4 lg:pb-12 ">
-                <div className="containerbox">
-                    <h2 className="fading headingSm shadow-none text-light mb-6 font-gulfs stroke-none text-center max-width-1000 mx-auto block">
-                        Happy Creators
-                    </h2>
+        <section id="reviews" className="bg-black relative overflow-hidden pt-24 pb-24">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
+            </div>
 
-                    <div className="creatorslider">
+            <div className="containerbox relative z-10">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-gulfs text-white text-center mb-12 uppercase leading-tight">
+                    Happy <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Creators</span>
+                </h2>
+
+                <div className="creatorslider">
                         <Swiper
                             spaceBetween={20}
                             pagination={{ clickable: true }}
@@ -86,13 +91,11 @@ export default function HappyCreators() {
                         </Swiper>
                     </div>
                 </div>
-                <div  className="containerbox relative lg:!mb-[-160px]">
-                    <div className="hidden lg:block relative bottom-[60px]
-                    left-0 ">
+                <div  className="containerbox relative lg:!mb-[-160px] z-20">
+                    <div className="hidden lg:block relative bottom-[60px] left-0 pointer-events-none">
                         <img src={faq} className="" alt="Decorative" />
                     </div>
                 </div>
-            </div>
-        </>
+        </section>
     );
 }

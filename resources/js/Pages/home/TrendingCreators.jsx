@@ -6,7 +6,7 @@ export default function TrendingCreators({ creators }) {
 
   return (
     <section className="containerbox !my-30 !pb-[100px]">
-      <h2 className="fading headingSm font-gulfs text-center mb-2">Trending Creators</h2>
+      <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase">Trending Creators</h2>
       <p className="fading text-center text-gray-300 mb-6">Most search-result clicks in the last 24h</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3">
         {creators.map((c) => (
@@ -19,7 +19,7 @@ export default function TrendingCreators({ creators }) {
               profile_status_lock={c.profile_status_lock}
               // link={c.username}
             />
-            <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+            <div className="mt-3 flex items-center justify-between text-sm text-gray-300 group-hover:text-white transition-colors">
               <span>24h clicks: {c.clicks_24h}</span>
               <span>7d: {c.clicks_7d}</span>
             </div>

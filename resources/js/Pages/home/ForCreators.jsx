@@ -3,23 +3,35 @@ import { LazyLoadImage } from 'react-lazy-load-image-component'
 
 export default function ForCreators() {
   return (
-    <div className='forcreators pt-3 pt-md-5 bg-white' >
-       <div className='container' >
+    <div className='bg-gray-900 py-16 md:py-24 relative overflow-hidden' >
+       
+       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-900 rounded-full mix-blend-screen filter blur-[120px] opacity-20"></div>
+        </div>
 
-       <div className='mt-2 mt-sm-5  pt-5' >
-            <h2 className='headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6 '  data-aos="zoom-in" >Publish your best Work</h2>
-            <p className='max-width-900 text-muted m-auto text-center text-[20px]'  data-aos="zoom-in" >Spenny Piggy makes it super easy to receive financial support, offer bespoke memberships & publish free and exclusive content!</p>
+       <div className='containerbox relative z-10' >
 
-          <div className='publish-image max-width-700 m-auto d-table py-5' data-aos="zoom-in-up" >
-            <LazyLoadImage
-                alt={"image"} className="img-fluid"
+       <div className='mt-2 mt-sm-5  pt-5 text-center' >
+            <h2 className='text-4xl md:text-5xl lg:text-6xl font-gulfs text-white mb-6 uppercase leading-tight'  data-aos="zoom-in" >
+                Publish your <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">best Work</span>
+            </h2>
+            <p className='max-w-4xl mx-auto text-gray-300 text-xl md:text-2xl font-medium leading-relaxed mb-12'  data-aos="zoom-in" >
+                Spenny Piggy makes it super easy to receive financial support, offer bespoke memberships & publish free and exclusive content!
+            </p>
 
-                effect="blur"
+          <div className='publish-image max-w-5xl mx-auto relative group' data-aos="zoom-in-up" >
+             <div className="absolute inset-0 bg-gradient-to-b from-pink-500 to-purple-600 rounded-3xl transform scale-105 opacity-50 blur-2xl group-hover:opacity-70 transition-opacity duration-500"></div>
+            <div className="relative rounded-3xl overflow-hidden border-4 border-gray-800 shadow-2xl bg-gray-800">
+                <LazyLoadImage
+                    alt={"image"} className="img-fluid w-full h-auto"
 
-                src={publish}
-                width={799}
-                height={522}
-              />
+                    effect="blur"
+
+                    src={publish}
+                    width={799}
+                    height={522}
+                />
+            </div>
           </div>
 
        </div>

@@ -75,67 +75,73 @@ const supportData = [
 export default function Membership() {
   return (
     <>
-    {/* <style>{`
-    .commingsooon {
-      position:absolute;
-      top:47%;
-      left:0
-    }
-    `}</style>
-      <div className='forcreators overflow-hidden py-3 py-md-5 px-3 px-md-0 bg-white' >
-       <div className='container py-4' >
-        <h2 className='headingSm shadow-none text-dark stroke-none mb-3 text-center mb-6' >Premium Membership</h2>
-        <p className='max-width-900 text-muted m-auto text-center text-[20px]' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Unlock premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
+      <section className='bg-black py-16 md:py-24 relative overflow-hidden'>
+         {/* Decorative Background Elements */}
+         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-900 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse"></div>
+        </div>
+
+       <div className='container relative z-10 px-4 mx-auto' >
+        <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-tight">
+            Premium <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Membership</span>
+        </h2>
+        <p className='max-w-4xl text-gray-300 m-auto text-center text-lg md:text-xl font-poppins leading-relaxed mb-12' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Unlock premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
       </div>
 
-        <div className='position-relative p-0 p-md-4' >
-        <LiveBar reps={20} color={`yellowbg`} classes={'commingsooon'} text={"  Coming Soon      "} />
+        <div className='relative p-0 md:p-4 z-10' >
+         <div className="absolute top-1/2 left-0 w-full transform -translate-y-1/2 z-20">
+            <LiveBar reps={20} color={`yellowbg`} classes={''} text={"  Coming Soon      "} />
+         </div>
 
-              <div data-aos="zoom-in-up" className='membership-image py-2 m-auto d-table flex justify-content-center max-width-900 mt-3 ' >
-                <LazyLoadImage
-                  alt={"image"}
-
-                  effect="blur"
-                  className=""
-                  src={PREMIUMMEMBERSHIP}
-                  width={982}
-                  height={600}
-                />
+              <div data-aos="zoom-in-up" className='membership-image py-2 mx-auto flex justify-center max-w-4xl mt-3 relative z-10' >
+                <div className="rounded-[30px] overflow-hidden border-4 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.3)]">
+                    <LazyLoadImage
+                    alt={"image"}
+                    effect="blur"
+                    className="w-full h-auto"
+                    src={PREMIUMMEMBERSHIP}
+                    />
+                </div>
               </div>
-              <strong className='font-[23px] text-center my-2 m-auto d-table' >*Supporters just pay payment processing. No service fees.</strong>
         </div>
-
-    </div> */}
-    <section  id='features' className=" bg-black text-white py-16 px-4 text-center">
-    <div className=" ">
-      <div className="fading flex justify-center mb-6">
-        <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain" />
+      </section>
+    <section id='features' className="bg-black relative overflow-hidden py-24 px-4 text-center">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+          <div className="absolute top-10 left-10 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
       </div>
 
-      <h2 className="fading headingSm shadow-none text-light font-gulfs stroke-none text-3xl md:text-4xl uppercase mb-6 max-w-3xl mx-auto text-center">
-        Supporting Creators! Empowering Gifters! Made for Everyone!
-      </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-8 max-w-7xl mx-auto">
-        {supportData.map((item, index) => (
-          <div key={index} className="fading flex flex-col membershipitems items-center text-center mb-3 ">
-          <div className={`relative w-full max-w-[250px] min-h-[150px] ${item.bg} rounded-2xl flex items-center justify-center`}>
-          <div className="absolute bg-white/20 rounded-full" />
-            <div className="relative z-10 text-white">
-              {item.icon}
+      <div className="containerbox relative z-10">
+        <div className="flex justify-center mb-6" data-aos="fade-down">
+          <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" />
+        </div>
+
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-gulfs text-white text-center mb-12 uppercase leading-tight max-w-4xl mx-auto">
+          Supporting Creators! Empowering Gifters! <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Made for Everyone!</span>
+        </h2>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          {supportData.map((item, index) => (
+            <div key={index} className="group flex flex-col items-center text-center mb-3 hover:-translate-y-2 transition-transform duration-300">
+            <div className={`relative w-full max-w-[250px] min-h-[150px] ${item.bg} rounded-3xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300 overflow-hidden`}>
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 text-white transform group-hover:scale-110 transition-transform duration-300">
+                {item.icon}
+              </div>
             </div>
+
+            <h3 className="mt-4 leading-tight md:leading-[1.35rem] text-lg md:text-xl uppercase font-gulfs text-white group-hover:text-pink-400 transition-colors">
+              {item.title}
+            </h3>
+
+            <p className="mt-2 text-sm text-gray-300 leading-tight sm:leading-normal max-w-[17rem] font-poppins">
+              {item.description}
+            </p>
           </div>
-
-          <h3 className=" mt-3 leading-tight md:leading-[1.35rem] text-lg md:text-xl uppercase font-gulfs">
-            {item.title}
-          </h3>
-
-          <p className=" mt-1 md:mt-1.5 text-sm text-white leading-tight sm:leading-normal max-w-[17rem] font-poppins">
-            {item.description}
-          </p>
+          ))}
         </div>
-        ))}
       </div>
-    </div>
     </section>
     </>
   )
