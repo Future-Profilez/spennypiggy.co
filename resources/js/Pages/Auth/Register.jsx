@@ -116,7 +116,7 @@ export default function Register(props) {
 
     const [codevalid, setCodeValid] = useState(false);
     const [promoInputValue, setPromoInputValue] = useState("");
-    const [role, setRole] = useState(null);
+    const [role, setRole] = useState(type && type === "creator" ? 1 : 0);
 
     const hasReferralFromUrl = role === 1 && !!referralFromUrl;
 
@@ -159,6 +159,7 @@ export default function Register(props) {
             country: c.label,
             country_code: c.code,
         });
+        validateRegistration({ country: c.label });
     };
 
     const handleAddressInput = (e) => {
@@ -168,24 +169,388 @@ export default function Register(props) {
         });
     };
 
-    const [validMsg, setValidMsg] = useState("");
-    const [usernameValid, setUsernameValid] = useState(null);
-    const checkUsername = (e) => {
-        axios
-            .get(`/check-username/${e.target.value}`)
-            .then((resp) => {
-                if (resp.data.status == false) {
-                    setUsernameValid(0);
-                    setValidMsg(resp.data.msg);
-                } else {
-                    setUsernameValid(1);
-                    setValidMsg(resp.data.msg);
+    const [liveErrors, setLiveErrors] = useState({});
+    const [showFieldErrors, setShowFieldErrors] = useState(false);
+    const [fieldValidity, setFieldValidity] = useState({});
+    const validationTimersRef = useRef({});
+
+    const validateRegistration = useCallback(
+        async (payload, { toastOnError = false } = {}) => {
+            const fields = Object.keys(payload || {});
+            if (fields.length === 0) return;
+
+            try {
+                await axios.post(route("register.validate"), payload);
+                setLiveErrors((prev) => {
+                    const next = { ...prev };
+                    fields.forEach((field) => {
+                        delete next[field];
+                    });
+                    return next;
+                });
+                setFieldValidity((prev) => {
+                    const next = { ...prev };
+                    fields.forEach((field) => {
+                        next[field] = true;
+                    });
+                    return next;
+                });
+            } catch (err) {
+                const responseErrors = err?.response?.data?.errors || {};
+                setLiveErrors((prev) => {
+                    const next = { ...prev };
+                    fields.forEach((field) => {
+                        const msg = responseErrors?.[field]?.[0];
+                        if (msg) {
+                            next[field] = msg;
+                        } else {
+                            delete next[field];
+                        }
+                    });
+                    return next;
+                });
+                setFieldValidity((prev) => {
+                    const next = { ...prev };
+                    fields.forEach((field) => {
+                        const msg = responseErrors?.[field]?.[0];
+                        next[field] = msg ? false : true;
+                    });
+                    return next;
+                });
+
+                if (toastOnError) {
+                    const firstMsg =
+                        Object.values(responseErrors).flat().filter(Boolean)[0];
+                    if (firstMsg) {
+                        errorAlert(firstMsg);
+                    }
                 }
-            })
-            .catch((_err) => {
-                console.error("error", _err);
-            });
+            }
+        },
+        [errorAlert]
+    );
+
+    const getFieldError = useCallback(
+        (field) => {
+            if (!showFieldErrors) return "";
+
+            const liveMsg = liveErrors?.[field];
+            if (liveMsg) return liveMsg;
+
+            const serverMsg = errors?.[field];
+            if (Array.isArray(serverMsg)) return serverMsg[0] || "";
+            return serverMsg || "";
+        },
+        [errors, liveErrors, showFieldErrors]
+    );
+
+    const getFieldValue = useCallback(
+        (field) => {
+            const addressFields = new Set([
+                "country",
+                "street_address",
+                "state",
+                "city",
+                "postal_code",
+            ]);
+            if (addressFields.has(field)) {
+                return address?.[field] || "";
+            }
+            return data?.[field] || "";
+        },
+        [address, data]
+    );
+
+    const getFieldStatus = useCallback(
+        (field) => {
+            const hasLiveError = !!liveErrors?.[field];
+            const hasServerError = showFieldErrors && !!errors?.[field];
+            const validity = fieldValidity?.[field];
+
+            if (hasLiveError || hasServerError || validity === false) {
+                return "error";
+            }
+            if (validity === true) {
+                return "success";
+            }
+            if (field === "name" && !!data?.name?.trim()) {
+                return "success";
+            }
+            return "idle";
+        },
+        [data?.name, errors, fieldValidity, liveErrors, showFieldErrors]
+    );
+
+    const getFieldClassName = useCallback(
+        (field, baseClassName = "mt-1 block w-full") => {
+            const status = getFieldStatus(field);
+            const value = getFieldValue(field);
+            const padded = `${baseClassName} pr-10`;
+
+            if (status === "idle") return baseClassName;
+            if (!String(value || "").trim()) return baseClassName;
+            return padded;
+        },
+        [getFieldStatus, getFieldValue]
+    );
+
+    const FieldStatusIcon = ({ status }) => {
+        if (status === "success") {
+            return (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5 text-green-600"
+                >
+                    <path d="M20 6 9 17l-5-5" />
+                </svg>
+            );
+        }
+        if (status === "error") {
+            return (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5 text-red-600"
+                >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 8v5" />
+                    <path d="M12 16h.01" />
+                </svg>
+            );
+        }
+        return null;
     };
+
+    const renderFieldStatusIcon = useCallback(
+        (field) => {
+            const status = getFieldStatus(field);
+            if (status === "idle") return null;
+
+            const value = getFieldValue(field);
+            if (!String(value || "").trim()) return null;
+
+            return (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <FieldStatusIcon status={status} />
+                </div>
+            );
+        },
+        [getFieldStatus, getFieldValue]
+    );
+
+    useEffect(() => {
+        if (validationTimersRef.current.username) {
+            clearTimeout(validationTimersRef.current.username);
+        }
+        if (!data.username) {
+            setLiveErrors((prev) => {
+                const next = { ...prev };
+                delete next.username;
+                return next;
+            });
+            setFieldValidity((prev) => {
+                const next = { ...prev };
+                delete next.username;
+                return next;
+            });
+            return;
+        }
+        setFieldValidity((prev) => {
+            const next = { ...prev };
+            delete next.username;
+            return next;
+        });
+        validationTimersRef.current.username = setTimeout(() => {
+            validateRegistration({ username: data.username });
+        }, 500);
+        return () => {
+            if (validationTimersRef.current.username) {
+                clearTimeout(validationTimersRef.current.username);
+            }
+        };
+    }, [data.username, validateRegistration]);
+
+    useEffect(() => {
+        if (validationTimersRef.current.email) {
+            clearTimeout(validationTimersRef.current.email);
+        }
+        if (!data.email || !data.email.includes("@")) {
+            setLiveErrors((prev) => {
+                const next = { ...prev };
+                delete next.email;
+                return next;
+            });
+            setFieldValidity((prev) => {
+                const next = { ...prev };
+                delete next.email;
+                return next;
+            });
+            return;
+        }
+        setFieldValidity((prev) => {
+            const next = { ...prev };
+            delete next.email;
+            return next;
+        });
+        validationTimersRef.current.email = setTimeout(() => {
+            validateRegistration({ email: data.email });
+        }, 600);
+        return () => {
+            if (validationTimersRef.current.email) {
+                clearTimeout(validationTimersRef.current.email);
+            }
+        };
+    }, [data.email, validateRegistration]);
+
+    useEffect(() => {
+        setFieldValidity((prev) => {
+            const next = { ...prev };
+            delete next.password;
+            return next;
+        });
+    }, [data.password]);
+
+    useEffect(() => {
+        if (!data.password_confirmation) {
+            setLiveErrors((prev) => {
+                const next = { ...prev };
+                delete next.password_confirmation;
+                return next;
+            });
+            setFieldValidity((prev) => {
+                const next = { ...prev };
+                delete next.password_confirmation;
+                return next;
+            });
+            return;
+        }
+
+        if (data.password && data.password_confirmation !== data.password) {
+            setLiveErrors((prev) => ({
+                ...prev,
+                password_confirmation: "Passwords do not match.",
+            }));
+            setFieldValidity((prev) => ({
+                ...prev,
+                password_confirmation: false,
+            }));
+            return;
+        }
+
+        setLiveErrors((prev) => {
+            const next = { ...prev };
+            delete next.password_confirmation;
+            return next;
+        });
+        setFieldValidity((prev) => ({
+            ...prev,
+            password_confirmation: true,
+        }));
+    }, [data.password, data.password_confirmation]);
+
+    useEffect(() => {
+        if (Number(data.role) !== 0) {
+            setLiveErrors((prev) => {
+                const next = { ...prev };
+                delete next.country;
+                delete next.street_address;
+                delete next.state;
+                delete next.city;
+                delete next.postal_code;
+                return next;
+            });
+            setFieldValidity((prev) => {
+                const next = { ...prev };
+                delete next.country;
+                delete next.street_address;
+                delete next.state;
+                delete next.city;
+                delete next.postal_code;
+                return next;
+            });
+            return;
+        }
+
+        if (validationTimersRef.current.address) {
+            clearTimeout(validationTimersRef.current.address);
+        }
+
+        const payload = {};
+        const fieldsToClear = [];
+
+        const addressFields = [
+            "country",
+            "street_address",
+            "state",
+            "city",
+            "postal_code",
+        ];
+
+        addressFields.forEach((field) => {
+            const val = address?.[field];
+            if (val) {
+                payload[field] = val;
+            } else {
+                fieldsToClear.push(field);
+            }
+        });
+
+        if (Object.keys(payload).length > 0) {
+            setFieldValidity((prev) => {
+                const next = { ...prev };
+                Object.keys(payload).forEach((field) => {
+                    delete next[field];
+                });
+                return next;
+            });
+        }
+
+        if (fieldsToClear.length > 0) {
+            setLiveErrors((prev) => {
+                const next = { ...prev };
+                fieldsToClear.forEach((field) => delete next[field]);
+                return next;
+            });
+            setFieldValidity((prev) => {
+                const next = { ...prev };
+                fieldsToClear.forEach((field) => delete next[field]);
+                return next;
+            });
+        }
+
+        if (Object.keys(payload).length === 0) {
+            return;
+        }
+
+        validationTimersRef.current.address = setTimeout(() => {
+            validateRegistration(payload);
+        }, 600);
+
+        return () => {
+            if (validationTimersRef.current.address) {
+                clearTimeout(validationTimersRef.current.address);
+            }
+        };
+    }, [
+        data.role,
+        address.country,
+        address.street_address,
+        address.state,
+        address.city,
+        address.postal_code,
+        validateRegistration,
+    ]);
 
     const [verified, setVerified] = useState(false);
     const onVerify = (token) => {
@@ -309,10 +674,36 @@ export default function Register(props) {
 
     const submit = (e) => {
         e && e.preventDefault();
+        setShowFieldErrors(true);
         if (turnstileSiteKey && !verified) {
             errorAlert("Please verify you are not a robot.");
             return false;
         }
+
+        const ignoredLiveErrorFields =
+            Number(data.role) === 1
+                ? [
+                      "country",
+                      "street_address",
+                      "state",
+                      "city",
+                      "postal_code",
+                  ]
+                : [];
+
+        const liveErrorMessages = Object.entries(liveErrors || {})
+            .filter(
+                ([field, msg]) =>
+                    !!msg && !ignoredLiveErrorFields.includes(field)
+            )
+            .map(([, msg]) => msg)
+            .filter(Boolean);
+
+        if (liveErrorMessages.length > 0) {
+            [...new Set(liveErrorMessages)].forEach((msg) => errorAlert(msg));
+            return false;
+        }
+
         if (role !== 1 && address.country === "") {
             errorAlert("Country is required.");
             return false;
@@ -339,6 +730,7 @@ export default function Register(props) {
 
         post(route("register", { ...data, ...address }), {
             preserveScroll: true,
+            preserveState: true,
             onSuccess: (resp) => {
                 if (resp.props.flash?.success) {
                     successAlert(
@@ -422,6 +814,7 @@ export default function Register(props) {
     const handlePassHints = (e) => {
         const value = e.target.value;
         setmypass(value);
+        setData("password", value);
 
         if (letterRef.current)
             letterRef.current.className = value.match(lowerLetter)
@@ -452,14 +845,15 @@ export default function Register(props) {
         <GuestLayout>
             {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
-            <div className="loginPage  blackbg pb-4 pb-md-5">
+            <div className="loginPage  bg-white pb-4 pb-md-5">
                 <div className="containerbox   md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center">
-                    <div className="shadow-layout inputs max-w-[570px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden">
-                        <div className="p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center ">
+                    {/* <div className="shadow-layout inputs !max-w-[800px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden"> */}
+                    <div className=" inputs !max-w-[800px] w-full   mx-auto  ! bg-white  overflow-hidden">
+                        {/* <div className="p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center ">
                             <span className=" border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
                             <span className=" border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
                             <span className=" border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block"></span>
-                        </div>
+                        </div> */}
 
                         <h1 className="text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2">
                             Create Wishlist
@@ -476,39 +870,38 @@ export default function Register(props) {
                         </p>
                         {step === 0 && (
                             <div
-                                className={`${
-                                    step === 0 ? "" : "d-none"
-                                }    px-3 py-3 pb-5`}
-                            >
-                                <div className="p-2 w-full max-w-[400px] m-auto">
-                                    <div
-                                        onClick={() => handleBecomeCreator(1)}
-                                        className={`${
-                                            role == 1 ? "active" : ""
-                                        }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
-                                    >
-                                        <h2 className="text-[22px] font-GillSans text-uppercase">
-                                            I'm a Creator
-                                        </h2>
-                                        <p className="text-muted text-[16px] mt-1 mb-0">
-                                            I'd like to create a wishlist
-                                        </p>
+                                className={`${step === 0 ? "" : "d-none"}   px-3 py-3 pb-5`}>
+                                <div className=" flex gap-4 justify-center">
+                                    <div className="w-full max-w-[400px] ">
+                                        <div
+                                            onClick={() => handleBecomeCreator(1)}
+                                            className={`${
+                                                role == 1 ? "active" : ""
+                                            }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
+                                        >
+                                            <h2 className="text-[22px] font-GillSans text-uppercase">
+                                                I'm a Creator
+                                            </h2>
+                                            <p className="text-muted text-[16px] mt-1 mb-0">
+                                                I'd like to create a wishlist
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="p-2 w-full max-w-[400px] m-auto">
-                                    <div
-                                        onClick={() => handleBecomeCreator(0)}
-                                        className={`${
-                                            role == 0 ? "active" : ""
-                                        }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
-                                    >
-                                        <h2 className="text-[22px] font-GillSans text-uppercase">
-                                            I'm a Fan
-                                        </h2>
-                                        <p className="text-muted text-[16px] mt-1 mb-0">
-                                            I'm here to follow and support
-                                            creators
-                                        </p>
+                                    <div className="w-full max-w-[400px]">
+                                        <div
+                                            onClick={() => handleBecomeCreator(0)}
+                                            className={`${
+                                                role == 0 ? "active" : ""
+                                            }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
+                                        >
+                                            <h2 className="text-[22px] font-GillSans text-uppercase">
+                                                I'm a Fan
+                                            </h2>
+                                            <p className="text-muted text-[16px] mt-1 mb-0">
+                                                I'm here to follow and support
+                                                creators
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                                 <p className="text-muted text-base text-center max-w-[450px] m-auto mt-4">
@@ -529,20 +922,23 @@ export default function Register(props) {
                                     <h2 className="font-gulfs uppercase text-center text-xl md:text-2xl mb-2">
                                         Heads up, Babe! 🚨
                                     </h2>
-                                    <p className="text-center text-[17px] text-muted ">
+                                    <p className="text-center text-[17px] max-w-[600px] m-auto text-muted ">
                                         Your social media link is how we verify
                                         you’re real — no bots, no fakes, no
                                         funny business. Make sure it’s an active
                                         profile with clear posts, or your
                                         application might be rejected.
                                     </p>
-                                    <button
-                                        onClick={handleNext}
-                                        className="btn-pink !font-normal md m-auto mt-3 w-full"
-                                    >
-                                        {" "}
-                                        Got it – I’ll link my socials
-                                    </button>
+                                    <div className="flex justify-center">
+
+                                        <button
+                                            onClick={handleNext}
+                                            className="btn-pink !font-normal max-w-[400px] md m-auto mt-3 w-full"
+                                        >
+                                            {" "}
+                                            Got it – I’ll link my socials
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -602,156 +998,217 @@ export default function Register(props) {
 
                         {step === 3 && (
                             <div className={`${step === 3 ? "" : "d-none"}`}>
-                                <form onSubmit={submit} className="p-4">
-                                    <div className="login-step1 loginform">
-                                        <div className="row">
-                                            <div className="col-md-6 mb-4 formfield">
-                                                <label>Display Name</label>
-                                                <input
-                                                    id="name"
-                                                    name="name"
-                                                    value={data.name}
-                                                    className="mt-1 block w-full"
-                                                    autoComplete="name"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "name",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    required
-                                                />
-                                                <InputError>
-                                                    {errors?.name || ""}
-                                                </InputError>
-                                            </div>
-                                            <div className="col-md-6 mb-4 formfield">
-                                                <label>Username</label>
-                                                <input
-                                                    id="username"
-                                                    name="username"
-                                                    onBlur={checkUsername}
-                                                    value={data.username}
-                                                    className="mt-1 block w-full"
-                                                    autoComplete="username"
-                                                    isFocused={true}
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "username",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    required
-                                                />
-                                                {/* {data.username && usernameValid == 1 ? <p className='text-success text-small username-text'>Username is available.</p> : ''} */}
-                                                {data.username &&
-                                                usernameValid == 0 ? (
-                                                    <p className="text-danger text-small username-text">
-                                                        {validMsg}
-                                                    </p>
-                                                ) : (
-                                                    ""
-                                                )}
-                                            </div>
-                                            <div className="col-md-6 mb-4 formfield">
-                                                <label>Gender</label>
-                                                <select
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "gender",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                >
-                                                    <option disabled>
-                                                        Choose Gender
-                                                    </option>
-                                                    <option value={"he"}>
-                                                        He
-                                                    </option>
-                                                    <option value={"she"}>
-                                                        She
-                                                    </option>
-                                                    <option value={"they"}>
-                                                        They
-                                                    </option>
-                                                </select>
-                                                <InputError>
-                                                    {errors?.gender || ""}
-                                                </InputError>
-                                            </div>
-                                            <div className="col-md-6 mb-4 formfield">
-                                                <label>Email</label>
-                                                <input
-                                                    id="email"
-                                                    type="email"
-                                                    name="email"
-                                                    value={data.email}
-                                                    className="mt-1 block w-full"
-                                                    autoComplete="username"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "email",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    required
-                                                />
-                                                <InputError>
-                                                    {errors?.email || ""}
-                                                </InputError>
-                                            </div>
-                                            <div className="col-md-6 mb-4 formfield">
-                                                <label>Password</label>
-                                                <input
-                                                    id="password"
-                                                    type="password"
-                                                    name="password"
-                                                    value={mypass}
-                                                    ref={inputFieldRef}
-                                                    className="mt-1 block w-full"
-                                                    autoComplete="off"
-                                                    onKeyUp={(e) =>
-                                                        setData(
-                                                            "password",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    onChange={handlePassHints}
-                                                    required
-                                                />
-                                                <InputError>
-                                                    {errors?.password || ""}
-                                                </InputError>
-                                            </div>
-                                            <div className="col-md-6 formfield">
-                                                <div>
-                                                    <label>
-                                                        Confirm Password
-                                                    </label>
-                                                    <input
-                                                        id="password_confirmation"
-                                                        type="password"
-                                                        name="password_confirmation"
-                                                        value={
-                                                            data.password_confirmation
-                                                        }
-                                                        className="mt-1 block w-full"
-                                                        autoComplete="off"
+                                <form onSubmit={submit} className="px-2 md:px-4">
+                                    <div className="login-step1 loginform !max-w-[100%] !w-full">
+                                        <div className="">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 md:gap-4">
+                                                <div className=" mb-4 formfield">
+                                                    <label>Display Name</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            id="name"
+                                                            name="name"
+                                                            value={data.name}
+                                                            className={getFieldClassName(
+                                                                "name"
+                                                            )}
+                                                            autoComplete="name"
+                                                            onChange={(e) =>
+                                                                setData(
+                                                                    "name",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            required
+                                                        />
+                                                        {renderFieldStatusIcon(
+                                                            "name"
+                                                        )}
+                                                    </div>
+                                                    <InputError>
+                                                        {getFieldError("name")}
+                                                    </InputError>
+                                                </div>
+                                                <div className=" mb-4 formfield">
+                                                    <label>Username</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            id="username"
+                                                            name="username"
+                                                            value={data.username}
+                                                            className={getFieldClassName(
+                                                                "username"
+                                                            )}
+                                                            autoComplete="username"
+                                                            isFocused={true}
+                                                            onChange={(e) =>
+                                                                setData(
+                                                                    "username",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            onBlur={() =>
+                                                                validateRegistration(
+                                                                    {
+                                                                        username: data.username,
+                                                                    }
+                                                                )
+                                                            }
+                                                            required
+                                                        />
+                                                        {renderFieldStatusIcon(
+                                                            "username"
+                                                        )}
+                                                    </div>
+                                                    <InputError>
+                                                        {getFieldError("username")}
+                                                    </InputError>
+                                                </div>
+                                                <div className=" mb-4 formfield">
+                                                    <label>Gender</label>
+                                                    <select
                                                         onChange={(e) =>
                                                             setData(
-                                                                "password_confirmation",
+                                                                "gender",
                                                                 e.target.value
+                                                            )
+                                                        }
+                                                    >
+                                                        <option disabled>
+                                                            Choose Gender
+                                                        </option>
+                                                        <option value={"he"}>
+                                                            He
+                                                        </option>
+                                                        <option value={"she"}>
+                                                            She
+                                                        </option>
+                                                        <option value={"they"}>
+                                                            They
+                                                        </option>
+                                                    </select>
+                                                    <InputError>
+                                                        {getFieldError("gender")}
+                                                    </InputError>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className=" mb-4 formfield">
+                                                <label>Email</label>
+                                                <div className="relative">
+                                                    <input
+                                                        id="email"
+                                                        type="email"
+                                                        name="email"
+                                                        value={data.email}
+                                                        className={getFieldClassName(
+                                                            "email"
+                                                        )}
+                                                        autoComplete="username"
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "email",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        onBlur={() =>
+                                                            validateRegistration(
+                                                                { email: data.email }
                                                             )
                                                         }
                                                         required
                                                     />
+                                                    {renderFieldStatusIcon(
+                                                        "email"
+                                                    )}
+                                                </div>
+                                                <InputError>
+                                                    {getFieldError("email")}
+                                                </InputError>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
+                                                <div className=" mb-4 formfield">
+                                                    <label>Password</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            id="password"
+                                                            type="password"
+                                                            name="password"
+                                                            value={mypass}
+                                                            ref={inputFieldRef}
+                                                            className={getFieldClassName(
+                                                                "password"
+                                                            )}
+                                                            autoComplete="off"
+                                                            onChange={handlePassHints}
+                                                            onBlur={() =>
+                                                                validateRegistration(
+                                                                    {
+                                                                        password: data.password,
+                                                                        password_confirmation:
+                                                                            data.password_confirmation,
+                                                                    }
+                                                                )
+                                                            }
+                                                            required
+                                                        />
+                                                        {renderFieldStatusIcon(
+                                                            "password"
+                                                        )}
+                                                    </div>
                                                     <InputError>
-                                                        {errors?.password_confirmation ||
-                                                            ""}
+                                                        {getFieldError("password")}
                                                     </InputError>
                                                 </div>
+                                                <div className=" formfield">
+                                                    <div>
+                                                        <label>
+                                                            Confirm Password
+                                                        </label>
+                                                        <div className="relative">
+                                                            <input
+                                                                id="password_confirmation"
+                                                                type="password"
+                                                                name="password_confirmation"
+                                                                value={
+                                                                    data.password_confirmation
+                                                                }
+                                                                className={getFieldClassName(
+                                                                    "password_confirmation"
+                                                                )}
+                                                                autoComplete="off"
+                                                                onChange={(e) =>
+                                                                    setData(
+                                                                        "password_confirmation",
+                                                                        e.target.value
+                                                                    )
+                                                                }
+                                                                onBlur={() =>
+                                                                    validateRegistration(
+                                                                        {
+                                                                            password: data.password,
+                                                                            password_confirmation:
+                                                                                data.password_confirmation,
+                                                                        }
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                            {renderFieldStatusIcon(
+                                                                "password_confirmation"
+                                                            )}
+                                                        </div>
+                                                        <InputError>
+                                                            {getFieldError(
+                                                                "password_confirmation"
+                                                            )}
+                                                        </InputError>
+                                                    </div>
+                                                </div>
                                             </div>
+
+
                                             <div
                                                 className={`mb-3  ${
                                                     mypass
@@ -833,65 +1290,165 @@ export default function Register(props) {
                                                         <label>
                                                             street_address
                                                         </label>
-                                                        <input
-                                                            id="street_address"
-                                                            name="street_address"
-                                                            className="mt-1 block w-full"
-                                                            autoComplete="street_address"
-                                                            onChange={
-                                                                handleAddressInput
-                                                            }
-                                                            required
-                                                        />
+                                                        <div className="relative">
+                                                            <input
+                                                                id="street_address"
+                                                                name="street_address"
+                                                                value={
+                                                                    address.street_address
+                                                                }
+                                                                className={getFieldClassName(
+                                                                    "street_address"
+                                                                )}
+                                                                autoComplete="street_address"
+                                                                onChange={
+                                                                    handleAddressInput
+                                                                }
+                                                                onBlur={() =>
+                                                                    validateRegistration(
+                                                                        {
+                                                                            street_address:
+                                                                                address.street_address,
+                                                                        }
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                            {renderFieldStatusIcon(
+                                                                "street_address"
+                                                            )}
+                                                        </div>
+                                                        <InputError>
+                                                            {getFieldError(
+                                                                "street_address"
+                                                            )}
+                                                        </InputError>
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>
                                                             Choose Country
                                                         </label>
-                                                        <Countries
-                                                            send={getCountry}
-                                                        />
+                                                        <div className="relative">
+                                                            <Countries
+                                                                send={getCountry}
+                                                                selectClassName={getFieldClassName(
+                                                                    "country",
+                                                                    "w-full"
+                                                                )}
+                                                            />
+                                                            {renderFieldStatusIcon(
+                                                                "country"
+                                                            )}
+                                                        </div>
+                                                        <InputError>
+                                                            {getFieldError(
+                                                                "country"
+                                                            )}
+                                                        </InputError>
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>State</label>
-                                                        <input
-                                                            id="state"
-                                                            name="state"
-                                                            className="mt-1 block w-full"
-                                                            autoComplete="state"
-                                                            onChange={
-                                                                handleAddressInput
-                                                            }
-                                                            required
-                                                        />
+                                                        <div className="relative">
+                                                            <input
+                                                                id="state"
+                                                                name="state"
+                                                                value={address.state}
+                                                                className={getFieldClassName(
+                                                                    "state"
+                                                                )}
+                                                                autoComplete="state"
+                                                                onChange={
+                                                                    handleAddressInput
+                                                                }
+                                                                onBlur={() =>
+                                                                    validateRegistration(
+                                                                        {
+                                                                            state: address.state,
+                                                                        }
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                            {renderFieldStatusIcon(
+                                                                "state"
+                                                            )}
+                                                        </div>
+                                                        <InputError>
+                                                            {getFieldError(
+                                                                "state"
+                                                            )}
+                                                        </InputError>
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>City</label>
-                                                        <input
-                                                            id="city"
-                                                            name="city"
-                                                            className="mt-1 block w-full"
-                                                            autoComplete="city"
-                                                            onChange={
-                                                                handleAddressInput
-                                                            }
-                                                            required
-                                                        />
+                                                        <div className="relative">
+                                                            <input
+                                                                id="city"
+                                                                name="city"
+                                                                value={address.city}
+                                                                className={getFieldClassName(
+                                                                    "city"
+                                                                )}
+                                                                autoComplete="city"
+                                                                onChange={
+                                                                    handleAddressInput
+                                                                }
+                                                                onBlur={() =>
+                                                                    validateRegistration(
+                                                                        {
+                                                                            city: address.city,
+                                                                        }
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                            {renderFieldStatusIcon(
+                                                                "city"
+                                                            )}
+                                                        </div>
+                                                        <InputError>
+                                                            {getFieldError(
+                                                                "city"
+                                                            )}
+                                                        </InputError>
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>
                                                             Postal Code
                                                         </label>
-                                                        <input
-                                                            id="postal_code"
-                                                            name="postal_code"
-                                                            onChange={
-                                                                handleAddressInput
-                                                            }
-                                                            className="mt-1 block w-full"
-                                                            autoComplete="postal_code"
-                                                            required
-                                                        />
+                                                        <div className="relative">
+                                                            <input
+                                                                id="postal_code"
+                                                                name="postal_code"
+                                                                value={
+                                                                    address.postal_code
+                                                                }
+                                                                onChange={
+                                                                    handleAddressInput
+                                                                }
+                                                                className={getFieldClassName(
+                                                                    "postal_code"
+                                                                )}
+                                                                autoComplete="postal_code"
+                                                                onBlur={() =>
+                                                                    validateRegistration(
+                                                                        {
+                                                                            postal_code:
+                                                                                address.postal_code,
+                                                                        }
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                            {renderFieldStatusIcon(
+                                                                "postal_code"
+                                                            )}
+                                                        </div>
+                                                        <InputError>
+                                                            {getFieldError(
+                                                                "postal_code"
+                                                            )}
+                                                        </InputError>
                                                     </div>
                                                 </div>
                                             </>
@@ -899,7 +1456,7 @@ export default function Register(props) {
                                             <></>
                                         )}
 
-                                        <div className="promocode mb-4">
+                                        <div className="promocode mb-4 mt-4">
                                             <label className="mb-2 block">
                                                 Referral (optional)
                                             </label>

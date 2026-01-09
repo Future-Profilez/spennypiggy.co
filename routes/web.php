@@ -89,13 +89,18 @@ Route::get('/debug-subscription/{userId}', function ($userId) {
 
 // Debug route to test cart API
 Route::get('/debug-cart-api', function () {
-    $controller = new App\Http\Controllers\Auth\WishitemController();
+    $controller = app(App\Http\Controllers\Auth\WishitemController::class);
     $response = $controller->authenticatedCartItems();
     
+    $authUser = Auth::user();
     return response()->json([
         'timestamp' => now(),
         'auth_id' => Auth::id(),
-        'auth_user' => Auth::user() ? Auth::user()->only(['id', 'name', 'email']) : null,
+        'auth_user' => $authUser instanceof App\Models\User ? [
+            'id' => $authUser->id,
+            'name' => $authUser->name,
+            'email' => $authUser->email,
+        ] : null,
         'cart_api_response' => json_decode($response->getContent(), true),
         'db_cart_count' => App\Models\UserCart::count()
     ]);
@@ -228,6 +233,7 @@ Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
 
 Route::post("/username-availablity", [RegisteredUserController::class, "checkUsername"])->name("check.username");
+Route::post('/register/validate', [RegisteredUserController::class, 'validateRegistration'])->name('register.validate');
 
 // Define global Dashboard route (required by multiple controllers and components)
 Route::get('/dashboard', function () {
@@ -607,10 +613,16 @@ require __DIR__.'/auth.php';
 // Quick middleware test
 Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])
     ->get('/debug-middleware-test', function() {
+        $user = auth()->user();
         return response()->json([
             'success' => true,
             'message' => 'Middleware passed successfully',
-            'user' => auth()->user()->only(['id', 'email', 'role', 'subscription_status']),
+            'user' => $user instanceof \App\Models\User ? [
+                'id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role,
+                'subscription_status' => $user->subscription_status,
+            ] : null,
         ]);
     });
 require __DIR__.'/test-date.php';

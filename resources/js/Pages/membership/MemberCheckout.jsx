@@ -77,6 +77,7 @@ export default function SubCheckout(props) {
             }
         );
     };
+    
 
     const onVerify = useCallback((token) => {
         setData("cf_turnstile_response", token || "");

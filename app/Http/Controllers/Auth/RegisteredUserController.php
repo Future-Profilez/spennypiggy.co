@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -65,6 +66,38 @@ class RegisteredUserController extends Controller
         return Inertia::render('Auth/Register');
     }
 
+    public function validateRegistration(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'username' => ['sometimes', 'required', 'string', 'lowercase', 'min:5', 'max:20', 'unique:users,username'],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
+            'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
+            'country' => ['sometimes', 'required', 'string'],
+            'street_address' => ['sometimes', 'required', 'string', 'min:20'],
+            'city' => ['sometimes', 'required', 'string'],
+            'state' => ['sometimes', 'required', 'string'],
+            'postal_code' => ['sometimes', 'required', 'integer', 'digits_between:4,8'],
+        ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $email = (string) $request->input('email', '');
+            if ($email !== '' && str_contains($email, '@')) {
+                $domain = explode('@', $email)[1] ?? '';
+                $allowedDomains = AllowedDomain::pluck('name')->toArray();
+                if (!in_array($domain, $allowedDomains)) {
+                    $validator->errors()->add('email', 'Invalid Email Id.');
+                }
+            }
+        });
+
+        $validator->validate();
+
+        return response()->json([
+            'valid' => true,
+        ]);
+    }
 
     public function store(Request $request): RedirectResponse
     {
@@ -118,7 +151,9 @@ class RegisteredUserController extends Controller
                 ->exists();
 
             if ($ipExists) {
-                return back()->with('error', 'You can not create multiple accounts with the same IP address.');
+                throw ValidationException::withMessages([
+                    'email' => 'You can not create multiple accounts with the same IP address.',
+                ]);
             }
         }
 
@@ -127,12 +162,40 @@ class RegisteredUserController extends Controller
         $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
         if (!in_array($domain, $allowedDomains)) {
-            return back()->with('error', 'Invalid Email Id.');
+            throw ValidationException::withMessages([
+                'email' => 'Invalid Email Id.',
+            ]);
         }
 
         /* =========================BLOCKED CONTENT CHECK========================== */
         if (Helpers::checkBlockData($request) == 1) {
-            return back()->with('error', 'Some words or emojis are not allowed.');
+            throw ValidationException::withMessages([
+                'name' => 'Some words or emojis are not allowed.',
+            ]);
+        }
+
+        $referralCode = null;
+        $referrer = null;
+        if ($request->filled('promo') && $request->role == 1) {
+            $referralCode = ReferralCode::where('code', $request->promo)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$referralCode) {
+                throw ValidationException::withMessages([
+                    'promo' => 'Invalid referral code.',
+                ]);
+            }
+
+            $referrer = User::where('id', $referralCode->creator_id)
+                ->where('role', 1)
+                ->first();
+
+            if (!$referrer) {
+                throw ValidationException::withMessages([
+                    'promo' => 'Invalid referral code.',
+                ]);
+            }
         }
 
         /* =========================CREATE USER========================== */
@@ -187,31 +250,7 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================✅ CREATOR REFERRAL LOGIC========================== */
-        if ($request->filled('promo') && $request->role == 1) {
-
-            // 🔎 Find active referral code
-            $referralCode = ReferralCode::where('code', $request->promo)
-                ->where('is_active', 1)
-                ->first();
-
-            if (!$referralCode) {
-                return back()->with('error', 'Invalid referral code.');
-            }
-
-            // 👤 Get referrer (creator who owns the code)
-            $referrer = User::where('id', $referralCode->creator_id)
-                ->where('role', 1)
-                ->first();
-
-            if (!$referrer) {
-                return back()->with('error', 'Invalid referral code.');
-            }
-
-            // ❌ Prevent self-referral
-            if ($referrer->id === $user->id) {
-                return back()->with('error', 'You cannot use your own referral code.');
-            }
-
+        if ($referralCode && $referrer && $request->role == 1) {
             // ❌ Prevent duplicate referral entry
             $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)
                 ->exists();
@@ -294,6 +333,12 @@ class RegisteredUserController extends Controller
     {
         $currency = strtoupper($request->cookie("currency", "GBP"));
         $user = Auth::user();
+        if (!($user instanceof User)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
         // Ensure Stripe customer
