@@ -5,12 +5,12 @@ import { useEffect } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import { Link, usePage } from "@inertiajs/react";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Turnstile from "@/Components/Turnstile";
 import AllCountries from '../../includes/AllCountries';
 
 export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
-    const { hcaptchakey } = usePage().props;
-    const hcaptchaRef = useRef(null);
+    const { turnstileSiteKey } = usePage().props;
+    const turnstileRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [totalPrice, setTotalPrice] = useState(0);
@@ -193,32 +193,40 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
         fetchCartItem();
     };
 
-    const executeCaptcha = async (e) => {
-        e.preventDefault();
+    // const executeCaptcha = async (e) => {
+    //     e.preventDefault();
         
-        // If no hCaptcha key is configured, skip captcha
-        if (!hcaptchakey || hcaptchakey === '') {
-            handleSubmit();
-            return;
-        }
+    //     if (!turnstileSiteKey) {
+    //         handleSubmit();
+    //         return;
+    //     }
         
-        hcaptchaRef.current.execute();
-        setChecking(true);
+    //     if (turnstileRef.current) {
+    //         turnstileRef.current.execute();
+    //     }
+    //     setChecking(true);
+    // };
+
+    const [captchaToken, setCaptchaToken] = useState("");
+    const onVerify = (token) => {
+        setCaptchaToken(token || "");
+        // handleSubmit(token);
     };
 
-    const onVerify = (token) => {
-        handleSubmit();
-    };
 
     const handleSubmit = async () => {
-        // return;
         try {
+            if (!captchaToken) {
+                errorAlert("Please verify the captcha");
+                return false;
+            }
             const response = await axios.post(
                 route("handle.rye.product.payment"),
                 {
                     cart_id: data?.cart?.id,
                     creator_id: cartsItems?.creator?.id,
                     is_anonymous: isAnonymous,
+                    cf_turnstile_response: captchaToken || "",
                 }
             );
             if (response?.data?.status === true) {
@@ -232,10 +240,16 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
             } else {
                 errorAlert(response?.data?.message);
                 setChecking(false);
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
             }
         } catch (error) {
             errorAlert(error?.response?.data?.message);
             setChecking(false);
+            if (turnstileRef.current) {
+                turnstileRef.current.reset();
+            }
         }
     };
 
@@ -293,6 +307,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                             <div className="quty flex items-center me-4 ">
                                                 {/* Decrement Button */}
                                                 <button
+                                                    type="button"
                                                     disabled={c?.quantity === 1}
                                                     onClick={() =>
                                                         updateQuantity(
@@ -320,6 +335,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
                                                 {/* Increment button */}
                                                 <button
+                                                    type="button"
                                                     onClick={() =>
                                                         updateQuantity(
                                                             c.product.id,
@@ -353,6 +369,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                                 } */}
                                             </div>
                                             <button
+                                                type="button"
                                                 className="del"
                                                 onClick={() =>
                                                     removeItem(c.product.id)
@@ -440,7 +457,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                     </div>
 
                     <div className="addMessage">
-                        <form onSubmit={executeCaptcha}>
+                        {/* <form onSubmit={(e) => e.preventDefault()}> */}
                             <ul className="row">
                                 {/* <li>
                                     <label>Add Message </label>
@@ -688,35 +705,33 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     </div>
                                 </li>
                             </ul>
+
+                            {turnstileSiteKey ? (
+                                <Turnstile
+                                    ref={turnstileRef}
+                                    size="normal"
+                                    theme="light"
+                                    onVerify={onVerify}
+                                />
+                            ) : null}
+
                             <div className="mt-4 flex items-center justify-between">
                                 <button
                                     type="button"
                                     onClick={() => clearcart()}
                                     className={`btn-pink md mt-3 px-4 text-center`}
                                 >
-                                    {" "}
                                     {loading ? "Wait.." : "Clear"}{" "}
                                 </button>
                                 <button
-                                    type="submit"
-                                    className={`${
-                                        isChecked ? "" : "disabled"
-                                    } btn-pink md mt-3 text-center`}
-                                >
+                                    type="button"
+                                    disabled={!isChecked || checking}
+                                    onClick={handleSubmit}
+                                    className={`${isChecked ? "" : "disabled"} btn-pink md mt-3 text-center`} >
                                     {checking ? "Wait.." : "Checkout"}{" "}
                                 </button>
                             </div>
-                            {hcaptchakey && hcaptchakey !== '' && (
-                                <HCaptcha
-                                    ref={hcaptchaRef}
-                                    sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                    data-theme="light"
-                                    size="invisible"
-                                    onVerify={onVerify}
-                                    required
-                                />
-                            )}
-                        </form>
+                            
                     </div>
                 </div>
             </div>

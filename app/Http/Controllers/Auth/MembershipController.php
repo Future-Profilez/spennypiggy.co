@@ -428,6 +428,9 @@ class MembershipController extends Controller
             if (!Auth::check() && $convertedAmount > 50) {
                 return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
             }
+
+            $this->ensureTurnstileVerified($request);
+
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
@@ -1053,12 +1056,12 @@ class MembershipController extends Controller
                     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                     $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
                     $paymentIntentId = $retrievedSession->payment_intent ?? null;
-                    \Log::info('MembershipController: Retrieved payment intent from session', [
+                    \Illuminate\Support\Facades\Log::info('MembershipController: Retrieved payment intent from session', [
                         'session_id' => $session->id,
                         'payment_intent_id' => $paymentIntentId
                     ]);
                 } catch (\Exception $e) {
-                    \Log::warning('MembershipController: Failed to retrieve payment intent from session', [
+                    \Illuminate\Support\Facades\Log::warning('MembershipController: Failed to retrieve payment intent from session', [
                         'session_id' => $session->id ?? 'unknown',
                         'error' => $e->getMessage()
                     ]);
@@ -1117,7 +1120,7 @@ class MembershipController extends Controller
                         'immediate_delivery' => 'true'
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('MembershipController: Failed to update Stripe metadata', [
+                    \Illuminate\Support\Facades\Log::error('MembershipController: Failed to update Stripe metadata', [
                         'deliverable_id' => $deliverable->id,
                         'payment_intent_id' => $paymentIntentId,
                         'error' => $e->getMessage()
@@ -1152,7 +1155,7 @@ class MembershipController extends Controller
             $membership = $membershipPayment->membership;
 
             if (!$membership) {
-                \Log::error('MembershipController: No membership found for renewal deliverable', [
+                \Illuminate\Support\Facades\Log::error('MembershipController: No membership found for renewal deliverable', [
                     'membership_payment_id' => $membershipPayment->id
                 ]);
                 return null;

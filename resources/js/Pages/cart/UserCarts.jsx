@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import CartItem from "./CartItem";
 import { Link, router, usePage } from "@inertiajs/react";
 import PriceFormat from "@/includes/PriceFormat";
@@ -6,12 +6,11 @@ import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { useEffect } from "react";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Turnstile from "@/Components/Turnstile";
 
 export default function UserCarts(props) {
-    const hcaptchaRef = useRef(null);
-    const { hcaptchakey } = usePage().props;
-    // Memoize deviceid to prevent re-computation on every render
+    const turnstileRef = useRef(null);
+    const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart } = props;
     const { format, formatMultiPrice } = PriceFormat();
@@ -24,7 +23,16 @@ export default function UserCarts(props) {
     const [email, setEmail] = useState((auth && auth.user && auth.user.email) || "");
 
     const [checking, setChecking] = useState(false);
-    const handleSubmit = (e) => {
+    const [captchaToken, setCaptchaToken] = useState("");
+    const onVerify = (token) => {
+        setCaptchaToken(token || "");
+        // handleSubmit(token);
+    };
+    const handleSubmit = (token) => {
+        if(!captchaToken) {
+            toast.error("Please complete the CAPTCHA verification.");
+            return;
+        }
         setChecking(true);
         const checkoutUrl = auth && auth.user && auth.user.id 
             ? `/create-checkout-session/${datas?.user?.id}/${datas?.user?.id || "notid"}`
@@ -34,7 +42,8 @@ export default function UserCarts(props) {
             message: message || '',
             from: name || '',
             email: email || '',
-            anonymous: keepAnonmyous ? 1 : 0
+            anonymous: keepAnonmyous ? 1 : 0,
+            cf_turnstile_response: token || captchaToken || "",
         };
         
         // Use Inertia navigation instead of window.location.href to properly handle flash messages
@@ -44,28 +53,29 @@ export default function UserCarts(props) {
             onError: (errors) => {
                 console.error('Checkout error:', errors);
                 setChecking(false);
+                if (turnstileRef.current) {
+                    turnstileRef.current.reset();
+                }
             },
             onFinish: () => {
                 setChecking(false);
             }
         });
     };
-     const onVerify = (token) => {
-        handleSubmit();
-    };
-
-    const executeCaptcha = (e) => {
-        e.preventDefault();
+    
+    // const executeCaptcha = (e) => {
+    //     e.preventDefault();
         
-        // If no hCaptcha key is configured, skip captcha
-        if (!hcaptchakey || hcaptchakey === '') {
-            handleSubmit();
-            return;
-        }
+    //     if (!turnstileSiteKey) {
+    //         handleSubmit();
+    //         return;
+    //     }
         
-        hcaptchaRef.current.execute();
-        setChecking(true);
-    };
+    //     if (turnstileRef.current) {
+    //         turnstileRef.current.execute();
+    //     }
+    //     setChecking(true);
+    // };
 
     const [loading, setLoading] = useState(false);
     const [cartCleared, setCartCleared] = useState(false);
@@ -210,7 +220,7 @@ export default function UserCarts(props) {
                         </div>
 
                         <div className="addMessage">
-                            <form onSubmit={executeCaptcha}>
+                            <form  >
                                 <ul className="row">
                                     <li className="fading">
                                         <label>Add Message </label>
@@ -387,6 +397,20 @@ export default function UserCarts(props) {
                                         </div>
                                     </li>
                                 </ul>
+                                <Turnstile
+                                    ref={turnstileRef}
+                                    size="normal"
+                                    theme="light"
+                                    onVerify={onVerify}
+                                />
+                                {/* {turnstileSiteKey ? (
+                                    <Turnstile
+                                        ref={turnstileRef}
+                                        size="normal"
+                                        theme="light"
+                                        onVerify={onVerify}
+                                    />
+                                ) : null} */}
                                 <div className=" mt-4 sm:flex gap-3 items-center justify-between">
                                     <button
                                         type="button"
@@ -396,7 +420,7 @@ export default function UserCarts(props) {
                                         {loading ? "Wait.." : "Clear"}{" "}
                                     </button>
                                     <button
-                                        type="submit"
+                                        onClick={handleSubmit}
                                         className={`${
                                             isChecked ? "" : "disabled"
                                         } main-button p w-full`}
@@ -404,16 +428,7 @@ export default function UserCarts(props) {
                                         {checking ? "Wait.." : "Checkout"}{" "}
                                     </button>
                                 </div>
-                                {hcaptchakey && hcaptchakey !== '' && (
-                                    <HCaptcha
-                                        ref={hcaptchaRef}
-                                        sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                        data-theme="light"
-                                        size="invisible"
-                                        onVerify={onVerify}
-                                        required
-                                    />
-                                )}
+                                
                             </form>
                         </div>
                     </div>

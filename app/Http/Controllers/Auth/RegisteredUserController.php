@@ -13,7 +13,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
@@ -75,6 +77,26 @@ class RegisteredUserController extends Controller
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
         ]);
+
+        $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
+        if (!empty($turnstileSecret)) {
+            $request->validate([
+                'cf_turnstile_response' => ['required', 'string'],
+            ]);
+
+            $verifyResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                'secret' => $turnstileSecret,
+                'response' => $request->input('cf_turnstile_response'),
+                'remoteip' => $request->ip(),
+            ]);
+
+            $verifyBody = $verifyResponse->json();
+            if (!($verifyBody['success'] ?? false)) {
+                throw ValidationException::withMessages([
+                    'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
+                ]);
+            }
+        }
 
         /* =========================FAN ADDRESS VALIDATION========================== */
         if ($request->role == 0) {

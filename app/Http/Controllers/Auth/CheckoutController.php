@@ -53,6 +53,8 @@ class CheckoutController extends Controller
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
+        $this->ensureTurnstileVerified(request());
+
         $user = Auth::user();
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {

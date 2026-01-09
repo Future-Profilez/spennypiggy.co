@@ -570,6 +570,8 @@ class ShopsController extends Controller
             ]);
         }
 
+        $this->ensureTurnstileVerified($request);
+
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {
             if (!empty(request()->query('message'))) {

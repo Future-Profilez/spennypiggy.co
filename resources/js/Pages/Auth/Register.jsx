@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/Components/InputError";
 import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import LoaderButton from "@/Components/LoaderButton";
-import { useRef } from "react";
 import axios from "axios";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { handleIpRedirection } from "../../includes/useIpRedirection";
 import Countries from "../../includes/Countries";
 import Popup from "@/Components/Popup";
@@ -50,7 +48,9 @@ export default function Register(props) {
             </>
         );
     };
-    const captchaRef = useRef(null);
+    const turnstileContainerRef = useRef(null);
+    const [turnstileContainerEl, setTurnstileContainerEl] = useState(null);
+    const turnstileWidgetIdRef = useRef(null);
     const checkRef = useRef();
     const gifterref = useRef();
     const addressCheck = useRef();
@@ -94,7 +94,7 @@ export default function Register(props) {
         { label: "Writer", value: "Writer" },
     ];
 
-    const { ziggy } = usePage().props;
+    const { ziggy, turnstileSiteKey } = usePage().props;
     const { url } = usePage(); // Access the current URL
 
     // Extract query parameters from the URL
@@ -111,6 +111,7 @@ export default function Register(props) {
         promo: "",
         role: type && type === "creator" ? 1 : 0,
         creator_category: "",
+        cf_turnstile_response: "",
     });
 
     const [codevalid, setCodeValid] = useState(false);
@@ -123,9 +124,7 @@ export default function Register(props) {
         if (role === 1 && referralFromUrl) {
             setPromoInputValue(referralFromUrl);
             setData("promo", referralFromUrl);
-            // ❌ do NOT touch codevalid here
         }
-
         if (role === 1 && !referralFromUrl) {
             setPromoInputValue("");
             setData("promo", "");
@@ -190,17 +189,84 @@ export default function Register(props) {
 
     const [verified, setVerified] = useState(false);
     const onVerify = (token) => {
-        if (token) {
-            setVerified(true);
-        } else {
-            setVerified(false);
+        setData("cf_turnstile_response", token || "");
+        setVerified(!!token);
+    };
+
+    const bindTurnstileContainerRef = useCallback((el) => {
+        turnstileContainerRef.current = el;
+        setTurnstileContainerEl(el);
+    }, []);
+
+    const resetCaptcha = () => {
+        setVerified(false);
+        setData("cf_turnstile_response", "");
+        if (turnstileWidgetIdRef.current !== null && window.turnstile) {
+            window.turnstile.reset(turnstileWidgetIdRef.current);
         }
     };
 
-    const resetCaptcha = () => {
-        captchaRef.current && captchaRef.current.resetCaptcha();
-        setVerified(false);
-    };
+    useEffect(() => {
+        if (!turnstileSiteKey || !turnstileContainerEl) {
+            return;
+        }
+
+        const renderWidget = () => {
+            if (!window.turnstile || !turnstileContainerEl) {
+                return;
+            }
+
+            if (turnstileWidgetIdRef.current !== null) {
+                window.turnstile.remove(turnstileWidgetIdRef.current);
+                turnstileWidgetIdRef.current = null;
+            }
+
+            turnstileContainerEl.innerHTML = "";
+            turnstileWidgetIdRef.current = window.turnstile.render(
+                turnstileContainerEl,
+                {
+                    sitekey: turnstileSiteKey,
+                    theme: "light",
+                    size: "flexible",
+                    callback: (token) => onVerify(token),
+                    "expired-callback": () => onVerify(""),
+                    "error-callback": () => onVerify(""),
+                }
+            );
+        };
+
+        if (window.turnstile) {
+            renderWidget();
+            return;
+        }
+
+        const existingScript = document.querySelector(
+            'script[data-turnstile-script="true"]'
+        );
+        if (existingScript) {
+            existingScript.addEventListener("load", renderWidget);
+            setTimeout(renderWidget, 0);
+            return () => {
+                existingScript.removeEventListener("load", renderWidget);
+            };
+        }
+
+        const script = document.createElement("script");
+        script.src =
+            "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.defer = true;
+        script.dataset.turnstileScript = "true";
+        script.onload = renderWidget;
+        document.head.appendChild(script);
+
+        return () => {
+            if (turnstileWidgetIdRef.current !== null && window.turnstile) {
+                window.turnstile.remove(turnstileWidgetIdRef.current);
+                turnstileWidgetIdRef.current = null;
+            }
+        };
+    }, [turnstileSiteKey, turnstileContainerEl]);
 
     const [profileTags, setProfileTags] = useState([]);
     const handleProfileTags = (e) => {
@@ -243,7 +309,7 @@ export default function Register(props) {
 
     const submit = (e) => {
         e && e.preventDefault();
-        if (!verified) {
+        if (turnstileSiteKey && !verified) {
             errorAlert("Please verify you are not a robot.");
             return false;
         }
@@ -996,18 +1062,13 @@ export default function Register(props) {
                                             )}
                                         </div>
 
-                                        <div className="m-auto hcaptcha-wrap d-table mb-2 mt-4  mt-md-3">
-                                            <HCaptcha
-                                                ref={captchaRef}
-                                                sitekey={
-                                                    props.hcaptchakey ||
-                                                    "10000000-ffff-ffff-ffff-000000000001"
-                                                }
-                                                data-theme="light"
-                                                data-size="compact"
-                                                onVerify={onVerify}
-                                            />
-                                        </div>
+                                        {turnstileSiteKey ? (
+                                            <div className="m-auto turnstile-wrap d-table mb-2 mt-4  mt-md-3">
+                                                <div
+                                                    ref={bindTurnstileContainerRef}
+                                                />
+                                            </div>
+                                        ) : null}
 
                                         <div className="wishlistbtn text-center flex justify-center mt-2">
                                             <Popup

@@ -5,13 +5,13 @@ import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Turnstile from "@/Components/Turnstile";
 
 export default function BillCheckout(props) {
-    const hcaptchaRef = useRef(null);
+    const turnstileRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
     const { bill, vat_amount } = props;
-    const { user, auth, hcaptchakey } = usePage().props;
+    const { user, auth, turnstileSiteKey } = usePage().props;
 
     const [name, setName] = useState(
         (auth && auth.user && auth.user.name) || ""
@@ -26,6 +26,7 @@ export default function BillCheckout(props) {
         message: "",
         agree: false,
         anonymous: 0,
+        cf_turnstile_response: "",
     });
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -39,6 +40,7 @@ export default function BillCheckout(props) {
     }
 
     const [checking, setChecking] = useState(false);
+    const [verified, setVerified] = useState(false);
     const handleSubmit = (e) => {
         post(
             route(`bill.checkout`, {
@@ -61,29 +63,38 @@ export default function BillCheckout(props) {
                 onError: (errorBag) => {
                     errorAlert(errorBag);
                     console.error("Checkout failed", errorBag);
+                    setVerified(false);
+                    setData("cf_turnstile_response", "");
+                    if (turnstileRef.current) {
+                        turnstileRef.current.reset();
+                    }
                     // show error toasts, alerts, or update error state
                 },
                 onFinish: () => {
                     console.log("Request finished (success or error)");
                     // cleanup, stop loader, etc.
+                    setChecking(false);
                 },
             }
         );
     };
     const onVerify = (token) => {
+        setData("cf_turnstile_response", token || "");
+        setVerified(!!token);
         handleSubmit();
     };
 
     const executeCaptcha = (e) => {
         e.preventDefault();
         
-        // If no hCaptcha key is configured, skip captcha
-        if (!hcaptchakey || hcaptchakey === '') {
+        if (!turnstileSiteKey) {
             handleSubmit();
             return;
         }
         
-        hcaptchaRef.current.execute();
+        if (turnstileRef.current && !verified) {
+            turnstileRef.current.execute();
+        }
         setChecking(true);
     };
 
@@ -449,16 +460,14 @@ export default function BillCheckout(props) {
                                                 ? "Processing..."
                                                 : "Pay Now"}
                                         </button>
-                                        {hcaptchakey && hcaptchakey !== '' && (
-                                            <HCaptcha
-                                                ref={hcaptchaRef}
-                                                sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                                data-theme="light"
+                                        {turnstileSiteKey ? (
+                                            <Turnstile
+                                                ref={turnstileRef}
                                                 size="invisible"
+                                                theme="light"
                                                 onVerify={onVerify}
-                                                required
                                             />
-                                        )}
+                                        ) : null}
                                     </div>
                                 </form>
                             </div>

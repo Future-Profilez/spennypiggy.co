@@ -5,13 +5,13 @@ import Membership from "./Membership";
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Turnstile from "@/Components/Turnstile";
 import Social from "../Auth/Social";
 import axios from "axios";
 
 export default function SubCheckout(props) {
-    const hcaptchaRef = useRef(null);
-    const { hcaptchakey } = usePage().props;
+    const turnstileRef = useRef(null);
+    const { turnstileSiteKey } = usePage().props;
     const { user, auth, membership, vat_amount, isSocilAdded } = props;
     const { formatMultiPrice } = PriceFormat();
     const [username, setUserName] = useState(
@@ -30,6 +30,7 @@ export default function SubCheckout(props) {
         message: "",
         agree: false,
         anonymous: 0,
+        cf_turnstile_response: "",
     });
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -43,6 +44,7 @@ export default function SubCheckout(props) {
     }
 
     const [checking, setChecking] = useState(false);
+    const [verified, setVerified] = useState(false);
     const handleSubmit = (e) => {
         e && e.preventDefault();
         post(
@@ -53,24 +55,38 @@ export default function SubCheckout(props) {
             }),
             {
                 preserveScroll: true,
+                onFinish: () => {
+                    setChecking(false);
+                },
+                onError: () => {
+                    setChecking(false);
+                    setVerified(false);
+                    setData("cf_turnstile_response", "");
+                    if (turnstileRef.current) {
+                        turnstileRef.current.reset();
+                    }
+                },
             }
         );
     };
 
     const onVerify = (token) => {
+        setData("cf_turnstile_response", token || "");
+        setVerified(!!token);
         handleSubmit();
     };
 
     const executeCaptcha = (e) => {
         e.preventDefault();
         
-        // If no hCaptcha key is configured, skip captcha
-        if (!hcaptchakey || hcaptchakey === '') {
+        if (!turnstileSiteKey) {
             handleSubmit();
             return;
         }
         
-        hcaptchaRef.current.execute();
+        if (turnstileRef.current && !verified) {
+            turnstileRef.current.execute();
+        }
         setChecking(true);
     };
 
@@ -429,16 +445,14 @@ export default function SubCheckout(props) {
                                                 ? "Processing..."
                                                 : "Join Now"}
                                         </button>
-                                        {hcaptchakey && hcaptchakey !== '' && (
-                                            <HCaptcha
-                                                ref={hcaptchaRef}
-                                                sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                                data-theme="light"
+                                        {turnstileSiteKey ? (
+                                            <Turnstile
+                                                ref={turnstileRef}
                                                 size="invisible"
+                                                theme="light"
                                                 onVerify={onVerify}
-                                                required
                                             />
-                                        )}
+                                        ) : null}
                                     </div>
                                 </form>
                             </div>

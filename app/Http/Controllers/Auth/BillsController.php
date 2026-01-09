@@ -401,6 +401,9 @@ class BillsController extends Controller
             if (!Auth::check() && $ConvertedAmount > 50) {
                 return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
             }
+
+            $this->ensureTurnstileVerified($request);
+
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
@@ -721,7 +724,7 @@ class BillsController extends Controller
                 // Dispatch content delivery email if bill has content file
                 if (!empty($bill_pay->bill->content_file)) {
                     \App\Jobs\BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
-                    \Log::info('BillsController: Content delivery email dispatched for bill payment', [
+                    Log::info('BillsController: Content delivery email dispatched for bill payment', [
                         'bill_payment_id' => $bill_pay->id,
                         'bill_id' => $bill_pay->bill->id,
                         'has_content_file' => !empty($bill_pay->bill->content_file)
@@ -774,12 +777,12 @@ class BillsController extends Controller
                     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
                     $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
                     $paymentIntentId = $retrievedSession->payment_intent ?? null;
-                    \Log::info('BillsController: Retrieved payment intent from session', [
+                    Log::info('BillsController: Retrieved payment intent from session', [
                         'session_id' => $session->id,
                         'payment_intent_id' => $paymentIntentId
                     ]);
                 } catch (\Exception $e) {
-                    \Log::warning('BillsController: Failed to retrieve payment intent from session', [
+                    Log::warning('BillsController: Failed to retrieve payment intent from session', [
                         'session_id' => $session->id ?? 'unknown',
                         'error' => $e->getMessage()
                     ]);

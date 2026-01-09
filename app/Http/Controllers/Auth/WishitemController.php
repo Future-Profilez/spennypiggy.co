@@ -1375,6 +1375,8 @@ class WishitemController extends Controller
      */
     public function handleRyeProductPayment(Request $request)
     {
+        $this->ensureTurnstileVerified($request);
+
         $user = Auth::user(); // or $requestingUser if handling guests
 
         if (empty($user->stripe_id)) {
@@ -2487,7 +2489,6 @@ class WishitemController extends Controller
         }
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
-            'hcaptchakey' => env('HCAPTCHA', null),
         ]);
     }
 
@@ -2577,7 +2578,6 @@ class WishitemController extends Controller
         return response()->json([
             "success" => true,
             "carts" => $cart,
-            'hcaptchakey' => env('HCAPTCHA', null)
         ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
           ->header('Pragma', 'no-cache')
           ->header('Expires', '0');
@@ -2778,7 +2778,6 @@ class WishitemController extends Controller
         return response()->json([
             "success" => true,
             "carts" => $cart,
-            'hcaptchakey' => env('HCAPTCHA', null)
         ]);
     }
 
