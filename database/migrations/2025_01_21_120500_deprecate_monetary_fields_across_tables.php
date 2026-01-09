@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -15,6 +16,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         // Add deprecation comments to wish_items table
         if (Schema::hasColumn('wish_items', 'price')) {
             DB::statement('ALTER TABLE wish_items MODIFY COLUMN price DOUBLE(10,2) DEFAULT 0.00 COMMENT "DEPRECATED: Use supporter_count and social metrics instead"');

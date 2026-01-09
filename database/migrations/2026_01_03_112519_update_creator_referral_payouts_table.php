@@ -8,18 +8,19 @@ return new class extends Migration {
 
     public function up(): void
     {
-        Schema::table('creator_referral_payouts', function (Blueprint $table) {
-
-            // Rename stripe_payout_id → stripe_transfer_id
-            if (Schema::hasColumn('creator_referral_payouts', 'stripe_payout_id')) {
+        // Rename stripe_payout_id → stripe_transfer_id
+        if (Schema::hasColumn('creator_referral_payouts', 'stripe_payout_id')) {
+            Schema::table('creator_referral_payouts', function (Blueprint $table) {
                 $table->renameColumn('stripe_payout_id', 'stripe_transfer_id');
-            }
+            });
+        }
 
-            // Drop approval_status
-            if (Schema::hasColumn('creator_referral_payouts', 'approval_status')) {
+        // Drop approval_status
+        if (Schema::hasColumn('creator_referral_payouts', 'approval_status')) {
+            Schema::table('creator_referral_payouts', function (Blueprint $table) {
                 $table->dropColumn('approval_status');
-            }
-        });
+            });
+        }
     }
 
     public function down(): void

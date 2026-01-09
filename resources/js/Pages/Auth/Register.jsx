@@ -55,6 +55,7 @@ export default function Register(props) {
     const gifterref = useRef();
     const addressCheck = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
+    const errorAlertRef = useRef(errorAlert);
     const lowerLetter = /[a-z]/g;
     const capitalLetter = /[A-Z]/g;
     const numberLetter = /[0-9]/g;
@@ -73,6 +74,10 @@ export default function Register(props) {
     const length =
         typeof window !== "undefined" && document.getElementById("length");
     const [mypass, setmypass] = useState();
+
+    useEffect(() => {
+        errorAlertRef.current = errorAlert;
+    }, [errorAlert]);
 
     const creatortypes = [
         { label: "Artist", value: "Artist" },
@@ -159,6 +164,7 @@ export default function Register(props) {
             country: c.label,
             country_code: c.code,
         });
+        markFieldTouched("country");
         validateRegistration({ country: c.label });
     };
 
@@ -171,6 +177,7 @@ export default function Register(props) {
 
     const [liveErrors, setLiveErrors] = useState({});
     const [showFieldErrors, setShowFieldErrors] = useState(false);
+    const [touchedFields, setTouchedFields] = useState({});
     const [fieldValidity, setFieldValidity] = useState({});
     const validationTimersRef = useRef({});
 
@@ -196,6 +203,7 @@ export default function Register(props) {
                     return next;
                 });
             } catch (err) {
+                console.error("Validation error:", err);
                 const responseErrors = err?.response?.data?.errors || {};
                 setLiveErrors((prev) => {
                     const next = { ...prev };
@@ -213,7 +221,12 @@ export default function Register(props) {
                     const next = { ...prev };
                     fields.forEach((field) => {
                         const msg = responseErrors?.[field]?.[0];
-                        next[field] = msg ? false : true;
+                        if (err?.response?.status === 422) {
+                            next[field] = msg ? false : true;
+                        } else {
+                            // If not a validation error (e.g. 500 or network), mark as invalid
+                            next[field] = false;
+                        }
                     });
                     return next;
                 });
@@ -222,27 +235,52 @@ export default function Register(props) {
                     const firstMsg =
                         Object.values(responseErrors).flat().filter(Boolean)[0];
                     if (firstMsg) {
-                        errorAlert(firstMsg);
+                        errorAlertRef.current?.(firstMsg);
                     }
                 }
             }
         },
-        [errorAlert]
+        []
     );
 
     const getFieldError = useCallback(
         (field) => {
-            if (!showFieldErrors) return "";
-
+            const alwaysShowLiveErrorFields = new Set(["username", "email"]);
             const liveMsg = liveErrors?.[field];
+            if (alwaysShowLiveErrorFields.has(field) && liveMsg) {
+                return liveMsg;
+            }
+
+            if (field === "password_confirmation") {
+                const isTouched = !!touchedFields?.[field];
+                const canShow = showFieldErrors || isTouched;
+                if (!canShow) return "";
+
+                if (
+                    data?.password_confirmation &&
+                    data?.password &&
+                    data.password_confirmation !== data.password
+                ) {
+                    return "Passwords do not match.";
+                }
+            }
+
+            const isTouched = !!touchedFields?.[field];
+            const canShow = showFieldErrors || isTouched;
+            if (!canShow) return "";
+
             if (liveMsg) return liveMsg;
 
             const serverMsg = errors?.[field];
             if (Array.isArray(serverMsg)) return serverMsg[0] || "";
             return serverMsg || "";
         },
-        [errors, liveErrors, showFieldErrors]
+        [errors, liveErrors, showFieldErrors, touchedFields]
     );
+
+    const markFieldTouched = useCallback((field) => {
+        setTouchedFields((prev) => ({ ...prev, [field]: true }));
+    }, []);
 
     const getFieldValue = useCallback(
         (field) => {
@@ -263,6 +301,17 @@ export default function Register(props) {
 
     const getFieldStatus = useCallback(
         (field) => {
+            if (field === "password_confirmation") {
+                if (!data?.password_confirmation) return "idle";
+                if (data?.password && data.password_confirmation !== data.password) {
+                    return "error";
+                }
+                if (data?.password && data.password_confirmation === data.password) {
+                    return "success";
+                }
+                return "idle";
+            }
+
             const hasLiveError = !!liveErrors?.[field];
             const hasServerError = showFieldErrors && !!errors?.[field];
             const validity = fieldValidity?.[field];
@@ -341,7 +390,7 @@ export default function Register(props) {
             if (!String(value || "").trim()) return null;
 
             return (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="absolute bg-white p-2 right-2 rounded-xl top-1/2 -translate-y-1/2">
                     <FieldStatusIcon status={status} />
                 </div>
             );
@@ -366,12 +415,40 @@ export default function Register(props) {
             });
             return;
         }
+
+        // Clear existing errors/validity while typing (debounce behavior)
+        setLiveErrors((prev) => {
+            const next = { ...prev };
+            delete next.username;
+            return next;
+        });
         setFieldValidity((prev) => {
             const next = { ...prev };
             delete next.username;
             return next;
         });
+
         validationTimersRef.current.username = setTimeout(() => {
+            // Local validation based on backend rules
+            let localError = null;
+            if (data.username.length < 5) {
+                localError = "The username must be at least 5 characters.";
+            } else if (data.username.length > 20) {
+                localError = "The username must not be greater than 20 characters.";
+            } else if (/[A-Z]/.test(data.username)) {
+                localError = "The username must be lowercase.";
+            } else if (/\s/.test(data.username)) {
+                localError = "The username must not contain spaces.";
+            } else if (/[^a-z0-9]/.test(data.username)) {
+                localError = "The username must only contain letters and numbers.";
+            }
+
+            if (localError) {
+                setLiveErrors((prev) => ({ ...prev, username: localError }));
+                setFieldValidity((prev) => ({ ...prev, username: false }));
+                return;
+            }
+
             validateRegistration({ username: data.username });
         }, 500);
         return () => {
@@ -385,7 +462,7 @@ export default function Register(props) {
         if (validationTimersRef.current.email) {
             clearTimeout(validationTimersRef.current.email);
         }
-        if (!data.email || !data.email.includes("@")) {
+        if (!data.email) {
             setLiveErrors((prev) => {
                 const next = { ...prev };
                 delete next.email;
@@ -398,11 +475,7 @@ export default function Register(props) {
             });
             return;
         }
-        setFieldValidity((prev) => {
-            const next = { ...prev };
-            delete next.email;
-            return next;
-        });
+
         validationTimersRef.current.email = setTimeout(() => {
             validateRegistration({ email: data.email });
         }, 600);
@@ -420,44 +493,6 @@ export default function Register(props) {
             return next;
         });
     }, [data.password]);
-
-    useEffect(() => {
-        if (!data.password_confirmation) {
-            setLiveErrors((prev) => {
-                const next = { ...prev };
-                delete next.password_confirmation;
-                return next;
-            });
-            setFieldValidity((prev) => {
-                const next = { ...prev };
-                delete next.password_confirmation;
-                return next;
-            });
-            return;
-        }
-
-        if (data.password && data.password_confirmation !== data.password) {
-            setLiveErrors((prev) => ({
-                ...prev,
-                password_confirmation: "Passwords do not match.",
-            }));
-            setFieldValidity((prev) => ({
-                ...prev,
-                password_confirmation: false,
-            }));
-            return;
-        }
-
-        setLiveErrors((prev) => {
-            const next = { ...prev };
-            delete next.password_confirmation;
-            return next;
-        });
-        setFieldValidity((prev) => ({
-            ...prev,
-            password_confirmation: true,
-        }));
-    }, [data.password, data.password_confirmation]);
 
     useEffect(() => {
         if (Number(data.role) !== 0) {
@@ -551,6 +586,8 @@ export default function Register(props) {
         address.postal_code,
         validateRegistration,
     ]);
+
+
 
     const [verified, setVerified] = useState(false);
     const onVerify = (token) => {
@@ -845,7 +882,7 @@ export default function Register(props) {
         <GuestLayout>
             {/* <IpRedirection />/ */}
             <Head title="Create Wishlist" />
-            <div className="loginPage  bg-white pb-4 pb-md-5">
+            <div className="loginPage  bg-white min-h-screen pb-4 pb-md-5">
                 <div className="containerbox   md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center">
                     {/* <div className="shadow-layout inputs !max-w-[800px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden"> */}
                     <div className=" inputs !max-w-[800px] w-full   mx-auto  ! bg-white  overflow-hidden">
@@ -858,7 +895,7 @@ export default function Register(props) {
                         <h1 className="text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2">
                             Create Wishlist
                         </h1>
-                        <h2 className="text-[30px] font-GillSans text-uppercase pt-8 text-center px-2">
+                        <h2 className="text-[30px] font-GillSans text-uppercase md:pt-8 text-center px-2">
                             Create Account
                         </h2>
                         <p className="text-center text-[18px] text-dark mb-4 ">
@@ -871,13 +908,13 @@ export default function Register(props) {
                         {step === 0 && (
                             <div
                                 className={`${step === 0 ? "" : "d-none"}   px-3 py-3 pb-5`}>
-                                <div className=" flex gap-4 justify-center">
-                                    <div className="w-full max-w-[400px] ">
+                                <div className=" md:flex gap-4 justify-center m-auto">
+                                    <div className="w-full max-w-[400px] m-auto ">
                                         <div
                                             onClick={() => handleBecomeCreator(1)}
                                             className={`${
                                                 role == 1 ? "active" : ""
-                                            }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
+                                            }  h-full mb-3 cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
                                         >
                                             <h2 className="text-[22px] font-GillSans text-uppercase">
                                                 I'm a Creator
@@ -887,12 +924,12 @@ export default function Register(props) {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="w-full max-w-[400px]">
+                                    <div className="w-full max-w-[400px] m-auto">
                                         <div
                                             onClick={() => handleBecomeCreator(0)}
                                             className={`${
                                                 role == 0 ? "active" : ""
-                                            }  cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
+                                            }  h-full mb-3 cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
                                         >
                                             <h2 className="text-[22px] font-GillSans text-uppercase">
                                                 I'm a Fan
@@ -979,26 +1016,26 @@ export default function Register(props) {
                                             </div>
                                         ))}
                                     </div>
-
-                                    <button
-                                        onClick={handleNext}
-                                        className={`${
-                                            profileTags &&
-                                            profileTags.length < 1
-                                                ? "disabled"
-                                                : ""
-                                        } btn-pink md m-auto mt-3 w-full`}
-                                    >
-                                        {" "}
-                                        Next
-                                    </button>
+                                    <div className="flex justify-center">
+                                        <button
+                                            onClick={handleNext}
+                                            className={`${
+                                                profileTags &&
+                                                profileTags.length < 1
+                                                    ? "disabled"
+                                                    : ""
+                                            } btn-pink md m-auto mt-3 w-full  max-w-[400px]`}
+                                        > 
+                                            Next
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {step === 3 && (
-                            <div className={`${step === 3 ? "" : "d-none"}`}>
-                                <form onSubmit={submit} className="px-2 md:px-4">
+                            <div className={`${step === 3 ? "" : "d-none"} py-3 `}>
+                                <form onSubmit={submit} className="px-2 md:px-4 ">
                                     <div className="login-step1 loginform !max-w-[100%] !w-full">
                                         <div className="">
                                             <div className="grid grid-cols-1 md:grid-cols-3 md:gap-4">
@@ -1025,9 +1062,11 @@ export default function Register(props) {
                                                             "name"
                                                         )}
                                                     </div>
-                                                    <InputError>
-                                                        {getFieldError("name")}
-                                                    </InputError>
+                                                    {getFieldError("name") ? (
+                                                        <p className="text-red-500 mt-3 text-sm">{getFieldError("name")}</p>
+                                                    ):''}
+
+                                                    <InputError message={getFieldError("name")} />
                                                 </div>
                                                 <div className=" mb-4 formfield">
                                                     <label>Username</label>
@@ -1047,85 +1086,109 @@ export default function Register(props) {
                                                                     e.target.value
                                                                 )
                                                             }
-                                                            onBlur={() =>
+                                                            onBlur={() => {
+                                                                markFieldTouched(
+                                                                    "username"
+                                                                );
+                                                                // Re-run local validation on blur to prevent clearing errors if invalid
+                                                                let localError = null;
+                                                                if (data.username.length < 5) {
+                                                                    localError = "The username must be at least 5 characters.";
+                                                                } else if (data.username.length > 20) {
+                                                                    localError = "The username must not be greater than 20 characters.";
+                                                                } else if (/[A-Z]/.test(data.username)) {
+                                                                    localError = "The username must be lowercase.";
+                                                                } else if (/\s/.test(data.username)) {
+                                                                    localError = "The username must not contain spaces.";
+                                                                } else if (/[^a-z0-9]/.test(data.username)) {
+                                                                    localError = "The username must only contain letters and numbers.";
+                                                                }
+                                                    
+                                                                if (localError) {
+                                                                    setLiveErrors((prev) => ({ ...prev, username: localError }));
+                                                                    setFieldValidity((prev) => ({ ...prev, username: false }));
+                                                                    return;
+                                                                }
+
                                                                 validateRegistration(
                                                                     {
                                                                         username: data.username,
                                                                     }
-                                                                )
-                                                            }
+                                                                );
+                                                            }}
                                                             required
                                                         />
                                                         {renderFieldStatusIcon(
-                                                            "username"
-                                                        )}
-                                                    </div>
-                                                    <InputError>
-                                                        {getFieldError("username")}
-                                                    </InputError>
-                                                </div>
-                                                <div className=" mb-4 formfield">
-                                                    <label>Gender</label>
-                                                    <select
-                                                        onChange={(e) =>
-                                                            setData(
-                                                                "gender",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    >
-                                                        <option disabled>
-                                                            Choose Gender
-                                                        </option>
-                                                        <option value={"he"}>
-                                                            He
-                                                        </option>
-                                                        <option value={"she"}>
-                                                            She
-                                                        </option>
-                                                        <option value={"they"}>
-                                                            They
-                                                        </option>
-                                                    </select>
-                                                    <InputError>
-                                                        {getFieldError("gender")}
-                                                    </InputError>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className=" mb-4 formfield">
-                                                <label>Email</label>
-                                                <div className="relative">
-                                                    <input
-                                                        id="email"
-                                                        type="email"
-                                                        name="email"
-                                                        value={data.email}
-                                                        className={getFieldClassName(
-                                                            "email"
-                                                        )}
-                                                        autoComplete="username"
-                                                        onChange={(e) =>
-                                                            setData(
-                                                                "email",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        onBlur={() =>
-                                                            validateRegistration(
-                                                                { email: data.email }
-                                                            )
-                                                        }
-                                                        required
-                                                    />
-                                                    {renderFieldStatusIcon(
-                                                        "email"
+                                                        "username"
                                                     )}
                                                 </div>
-                                                <InputError>
-                                                    {getFieldError("email")}
-                                                </InputError>
+                                                {getFieldError("username") ? (
+                                                        <p className="text-red-500 mt-3 text-sm">{getFieldError("username")}</p>
+                                                ):''}
                                             </div>
+                                            <div className=" mb-4 formfield">
+                                                <label>Gender</label>
+                                                <select
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "gender",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                >
+                                                    <option disabled>
+                                                        Choose Gender
+                                                    </option>
+                                                    <option value={"he"}>
+                                                        He
+                                                    </option>
+                                                    <option value={"she"}>
+                                                        She
+                                                    </option>
+                                                    <option value={"they"}>
+                                                        They
+                                                    </option>
+                                                </select>
+                                                <InputError message={getFieldError("gender")} />
+                                            </div>
+                                        </div>
+                                        
+                                        <div className=" mb-4 formfield">
+                                            <label>Email</label>
+                                            <div className="relative">
+                                                <input
+                                                    id="email"
+                                                    type="email"
+                                                    name="email"
+                                                    value={data.email}
+                                                    className={getFieldClassName(
+                                                        "email"
+                                                    )}
+                                                    autoComplete="username"
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "email",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    onBlur={() => {
+                                                        markFieldTouched(
+                                                            "email"
+                                                        );
+                                                        validateRegistration(
+                                                            { email: data.email }
+                                                        );
+                                                    }}
+                                                    required
+                                                />
+                                                {renderFieldStatusIcon(
+                                                    "email"
+                                                )}
+                                            </div>
+                                             {getFieldError("email") ? (
+                                                    <p className="text-red-500 mt-3 text-sm">{getFieldError("email")}</p>
+                                            ):''}
+                                        </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
                                                 <div className=" mb-4 formfield">
@@ -1142,24 +1205,27 @@ export default function Register(props) {
                                                             )}
                                                             autoComplete="off"
                                                             onChange={handlePassHints}
-                                                            onBlur={() =>
+                                                            onBlur={() => {
+                                                                markFieldTouched(
+                                                                    "password"
+                                                                );
                                                                 validateRegistration(
                                                                     {
                                                                         password: data.password,
                                                                         password_confirmation:
                                                                             data.password_confirmation,
                                                                     }
-                                                                )
-                                                            }
+                                                                );
+                                                            }}
                                                             required
                                                         />
                                                         {renderFieldStatusIcon(
                                                             "password"
                                                         )}
                                                     </div>
-                                                    <InputError>
-                                                        {getFieldError("password")}
-                                                    </InputError>
+                                                    {getFieldError("password") ? (
+                                                            <p className="text-red-500 mt-3 text-sm">{getFieldError("password")}</p>
+                                                    ):''}
                                                 </div>
                                                 <div className=" formfield">
                                                     <div>
@@ -1184,26 +1250,27 @@ export default function Register(props) {
                                                                         e.target.value
                                                                     )
                                                                 }
-                                                                onBlur={() =>
+                                                                onBlur={() => {
+                                                                    markFieldTouched(
+                                                                        "password_confirmation"
+                                                                    );
                                                                     validateRegistration(
                                                                         {
                                                                             password: data.password,
                                                                             password_confirmation:
                                                                                 data.password_confirmation,
                                                                         }
-                                                                    )
-                                                                }
+                                                                    );
+                                                                }}
                                                                 required
                                                             />
                                                             {renderFieldStatusIcon(
                                                                 "password_confirmation"
                                                             )}
                                                         </div>
-                                                        <InputError>
-                                                            {getFieldError(
-                                                                "password_confirmation"
-                                                            )}
-                                                        </InputError>
+                                                        {getFieldError("password_confirmation") ? (
+                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("password_confirmation")}</p>
+                                                        ):''}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1216,7 +1283,7 @@ export default function Register(props) {
                                                         : "d-none"
                                                 }`}
                                             >
-                                                <div className="pass greybox border-0 p-3">
+                                                <div className="pass greybox mt-3 border-0 p-3">
                                                     <div id="msgText">
                                                         <h3 className="mt-2">
                                                             Password must
@@ -1305,12 +1372,15 @@ export default function Register(props) {
                                                                     handleAddressInput
                                                                 }
                                                                 onBlur={() =>
+                                                                    (markFieldTouched(
+                                                                        "street_address"
+                                                                    ),
                                                                     validateRegistration(
                                                                         {
                                                                             street_address:
                                                                                 address.street_address,
                                                                         }
-                                                                    )
+                                                                    ))
                                                                 }
                                                                 required
                                                             />
@@ -1318,11 +1388,10 @@ export default function Register(props) {
                                                                 "street_address"
                                                             )}
                                                         </div>
-                                                        <InputError>
-                                                            {getFieldError(
-                                                                "street_address"
-                                                            )}
-                                                        </InputError>
+                                                      
+                                                        {getFieldError("street_address") ? (
+                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("street_address")}</p>
+                                                        ):''}
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>
@@ -1340,11 +1409,9 @@ export default function Register(props) {
                                                                 "country"
                                                             )}
                                                         </div>
-                                                        <InputError>
-                                                            {getFieldError(
-                                                                "country"
-                                                            )}
-                                                        </InputError>
+                                                        {getFieldError("country") ? (
+                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("country")}</p>
+                                                        ):''}
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>State</label>
@@ -1361,11 +1428,14 @@ export default function Register(props) {
                                                                     handleAddressInput
                                                                 }
                                                                 onBlur={() =>
+                                                                    (markFieldTouched(
+                                                                        "state"
+                                                                    ),
                                                                     validateRegistration(
                                                                         {
                                                                             state: address.state,
                                                                         }
-                                                                    )
+                                                                    ))
                                                                 }
                                                                 required
                                                             />
@@ -1373,11 +1443,9 @@ export default function Register(props) {
                                                                 "state"
                                                             )}
                                                         </div>
-                                                        <InputError>
-                                                            {getFieldError(
-                                                                "state"
-                                                            )}
-                                                        </InputError>
+                                                        {getFieldError("state") ? (
+                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("state")}</p>
+                                                        ):''}
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>City</label>
@@ -1394,11 +1462,14 @@ export default function Register(props) {
                                                                     handleAddressInput
                                                                 }
                                                                 onBlur={() =>
+                                                                    (markFieldTouched(
+                                                                        "city"
+                                                                    ),
                                                                     validateRegistration(
                                                                         {
                                                                             city: address.city,
                                                                         }
-                                                                    )
+                                                                    ))
                                                                 }
                                                                 required
                                                             />
@@ -1406,11 +1477,9 @@ export default function Register(props) {
                                                                 "city"
                                                             )}
                                                         </div>
-                                                        <InputError>
-                                                            {getFieldError(
-                                                                "city"
-                                                            )}
-                                                        </InputError>
+                                                        {getFieldError("city") ? (
+                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("city")}</p>
+                                                        ):''}
                                                     </div>
                                                     <div className="col-md-6 mb-4 formfield">
                                                         <label>
@@ -1431,12 +1500,15 @@ export default function Register(props) {
                                                                 )}
                                                                 autoComplete="postal_code"
                                                                 onBlur={() =>
+                                                                    (markFieldTouched(
+                                                                        "postal_code"
+                                                                    ),
                                                                     validateRegistration(
                                                                         {
                                                                             postal_code:
                                                                                 address.postal_code,
                                                                         }
-                                                                    )
+                                                                    ))
                                                                 }
                                                                 required
                                                             />
@@ -1444,11 +1516,9 @@ export default function Register(props) {
                                                                 "postal_code"
                                                             )}
                                                         </div>
-                                                        <InputError>
-                                                            {getFieldError(
-                                                                "postal_code"
-                                                            )}
-                                                        </InputError>
+                                                        {getFieldError("postal_code") ? (
+                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("postal_code")}</p>
+                                                        ):''}
                                                     </div>
                                                 </div>
                                             </>
@@ -1627,7 +1697,7 @@ export default function Register(props) {
                                             </div>
                                         ) : null}
 
-                                        <div className="wishlistbtn text-center flex justify-center mt-2">
+                                        <div className="wishlistbtn !pb-3 text-center flex justify-center mt-2">
                                             <Popup
                                                 action={hasPop}
                                                 modalclassName=" full stripe-terms shadow-pink ps-0"

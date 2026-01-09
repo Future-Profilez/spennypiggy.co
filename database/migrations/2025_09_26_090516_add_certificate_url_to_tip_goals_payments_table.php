@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tip_goals_payments', function (Blueprint $table) {
-            $table->string('certificate_url')->nullable()->after('twitter_response');
+            $table->string('certificate_url')->nullable();
         });
     }
 

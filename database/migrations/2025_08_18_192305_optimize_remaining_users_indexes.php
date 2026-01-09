@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         // Check which indexes already exist
         $existingIndexes = collect(DB::select('SHOW INDEX FROM users'))
             ->pluck('Key_name')
@@ -26,10 +30,10 @@ return new class extends Migration
             if (!in_array('idx_suspended_deleted', $existingIndexes)) {
                 $table->index(['suspended_account', 'deleted_at'], 'idx_suspended_deleted');
             }
-            if (!in_array('idx_created_role', $existingIndexes)) {
+            if (!in_array('idx_created_role', $existingIndexes) && Schema::hasColumn('users', 'role')) {
                 $table->index(['created_at', 'role'], 'idx_created_role');
             }
-            if (!in_array('idx_updated_role', $existingIndexes)) {
+            if (!in_array('idx_updated_role', $existingIndexes) && Schema::hasColumn('users', 'role')) {
                 $table->index(['updated_at', 'role'], 'idx_updated_role');
             }
             
@@ -52,7 +56,7 @@ return new class extends Migration
         });
         
         // Handle TEXT column index separately
-        if (!in_array('idx_creator_category', $existingIndexes)) {
+        if (!in_array('idx_creator_category', $existingIndexes) && Schema::hasColumn('users', 'creator_category')) {
             // For TEXT columns, specify key length (using first 255 characters)
             DB::statement('ALTER TABLE `users` ADD INDEX `idx_creator_category` (`creator_category`(255))');
         }

@@ -6,6 +6,7 @@ use App\Traits\CacheableModel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ use App\Models\MonthlyCharge;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, SoftDeletes, CacheableModel;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, CacheableModel;
 
     protected $dates = ['deleted_at'];
 

@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::table('wish_items', function (Blueprint $table) {
             $table->index('user_id', 'wish_items_user_id_index');
-            $table->fullText('wishname');
+            if (config('database.default') !== 'sqlite') {
+                $table->fullText('wishname');
+            }
         });
     }
 
