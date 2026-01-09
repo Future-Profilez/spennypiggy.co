@@ -325,16 +325,19 @@ class AuthenticatedSessionController extends Controller
     private function getCategoriesWithItems($user)
     {
         $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+        $cacheKey = "wish_categories_{$user->id}_" . ($isPublicView ? 'public' : 'private');
 
-        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
-            $q->where('user_id', $user->id);
-            if ($isPublicView) {
-                $q->where('is_approved', 1);
-            }
-        })->pluck('user_category_id')->unique()->filter();
+        return Cache::remember($cacheKey, 300, function () use ($user, $isPublicView) {
+            $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+                $q->where('user_id', $user->id);
+                if ($isPublicView) {
+                    $q->where('is_approved', 1);
+                }
+            })->pluck('user_category_id')->unique()->filter();
 
-        // Return the filtered categories as a collection
-        return $user->user_categories()->whereIn('id', $categoryIds)->get();
+            // Return the filtered categories as a collection
+            return $user->user_categories()->whereIn('id', $categoryIds)->get();
+        });
     }
 
     /**

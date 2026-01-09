@@ -31,9 +31,17 @@ use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\UserProfileService;
 
 class CheckoutController extends Controller
 {
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
+    {
+        $this->userProfileService = $userProfileService;
+    }
+
     /* create checkout */
     public function createCheckout($creator_id, $user_id_or_device = null)
     {
@@ -965,6 +973,9 @@ class CheckoutController extends Controller
 
                 if ($existingPayment->payment_status === 'paid') {
                     // Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
+                    if ($existingPayment->owner) {
+                        $this->userProfileService->clearUserCaches($existingPayment->owner->username, $existingPayment->owner->id);
+                    }
                     return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
                 }
             } else {
@@ -1198,6 +1209,11 @@ class CheckoutController extends Controller
                 Log::warning("Currency not found for checkout email: " . strtoupper($actualCurrency));
                 CheckoutMailToUser::dispatch($stripeid, '£'); // Default fallback
                 Log::info("CheckoutMailToUser job dispatched with default symbol");
+            }
+
+            // Clear user cache for the creator
+            if ($stripeid->owner) {
+                 $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
             }
 
             Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);

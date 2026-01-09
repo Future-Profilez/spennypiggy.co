@@ -59,7 +59,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                         )} */} 
 
                         <div className="py-8">
-                            <div className='flex justify-between items-start'>
+                            <div className='md:flex justify-between items-start'>
                                 <div>
                                     <h1 className="text-2xl font-black font-fre uppercase font-light  text-gray-900  ">
                                         {task.title}

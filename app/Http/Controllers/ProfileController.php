@@ -59,6 +59,7 @@ use App\Models\TipGoal;
 use App\Models\TipGoalsPayment;
 use App\Models\Deliverable;
 use App\Models\UserBackupCode;
+use App\Services\UserProfileService;
 
 class ProfileController extends Controller
 {
@@ -66,13 +67,15 @@ class ProfileController extends Controller
     protected $uploadcareApi;
 
     protected $google2FA;
+    protected $userProfileService;
 
-    public function __construct(Google2FA $google2FA)
+    public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
     {
         $authUrlConfig = new AuthUrlConfig('ucarecdn.com', new AkamaiToken(env('UPLOADCARE_SECRET_KEY'), 300));
         $config = Configuration::create(env('UPLOADCARE_PUBLIC_KEY'), env('UPLOADCARE_SECRET_KEY'))->setAuthUrlConfig($authUrlConfig);
         $this->uploadcareApi = new Api($config);
         $this->google2FA = $google2FA;
+        $this->userProfileService = $userProfileService;
     }
 
     /**
@@ -241,6 +244,7 @@ class ProfileController extends Controller
                     $user->refresh();
                 }
             }
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
         }
     }
@@ -462,9 +466,11 @@ class ProfileController extends Controller
 
         $user->save();
 
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
+
         return response()->json([
             'status' => true,
-            'msg' => "Notifications for email are $status."
+            'message' => "Notifications for email are $status."
         ]);
     }
 
@@ -572,6 +578,9 @@ class ProfileController extends Controller
 
         SendIntroMailAdmin::dispatch($intro);
 
+        $user = Auth::user();
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
+
         return response()->json([
             'status' => true,
             'msg' => 'Your intro video has been saved.'
@@ -610,6 +619,9 @@ class ProfileController extends Controller
         }
         
         $intro->delete();
+
+        $user = Auth::user();
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
 
         return response()->json([
             'status' => true,
@@ -1306,6 +1318,7 @@ class ProfileController extends Controller
             $user->show_piggy_bank = 0;
         }
         $user->save();
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
         return response()->json([
             'status' => true,
             'message' => 'Piggy Bank Settings Updated.'

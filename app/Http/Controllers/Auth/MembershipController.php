@@ -14,6 +14,7 @@ use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
 use App\Services\CreatorActivityService;
+use App\Services\UserProfileService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
@@ -46,9 +47,12 @@ use Stripe\Webhook;
 
 class MembershipController extends Controller
 {
-    public function __construct()
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
     {
-        $stripe = Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        $this->userProfileService = $userProfileService;
+        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
     }
 
     public function membershipLevelSave(Request $request)
@@ -142,6 +146,9 @@ class MembershipController extends Controller
             $mem->product_id = $product->id;
             $mem->price_id = $product->default_price;
             $mem->save();
+
+            // Clear user caches
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
             $mem->delete();
 
@@ -266,6 +273,9 @@ class MembershipController extends Controller
                 Logs::where('edited_membership_id', $mem->id)
                     ->where('status', 'pending')
                     ->update(['status' => 'updated']);
+
+                // Clear user caches
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
             } catch (\Exception $e) {
                 Log::info("Stripe Error: " . $e->getMessage());
                 return redirect()->back()->with("error", "Stripe Error: " . $e->getMessage());
@@ -310,6 +320,10 @@ class MembershipController extends Controller
         }
 
         $mem->delete();
+
+        // Clear user caches
+        $user = $mem->user;
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
 
         return response()->json([
             'status' => true,
@@ -730,7 +744,7 @@ class MembershipController extends Controller
 
                 $amountWithcurrency = $symbol->symbol . $mem->amount;
 
-                \Log::info('MembershipController: Starting membership email handling', [
+                Log::info('MembershipController: Starting membership email handling', [
                     'membership_payment_id' => $mem->id,
                     'membership_id' => $mem->membership->id,
                     'membership_level' => $mem->membership->level,
@@ -744,7 +758,7 @@ class MembershipController extends Controller
                 // ✅ ALWAYS send MembershipMailToUser - this is the confirmation email to the gifter
                 // This should be sent regardless of CheckoutMailToUser success/failure
                 MembershipMailToUser::dispatch($mem, $amountWithcurrency);
-                \Log::info('MembershipController: MembershipMailToUser dispatched for gifter confirmation', [
+                Log::info('MembershipController: MembershipMailToUser dispatched for gifter confirmation', [
                     'membership_payment_id' => $mem->id,
                     'gifter_email' => $mem->guest_email,
                     'amount_with_currency' => $amountWithcurrency,
@@ -794,6 +808,12 @@ class MembershipController extends Controller
                 //     SubscribeAutoTweet::dispatch($mem);
                 //     MembershipAutoTweet::dispatch($mem);
                 // }
+
+                // Clear user caches
+                $this->userProfileService->clearUserCaches($mem->membership->user->username, $mem->membership->user->id);
+                if ($mem->user) {
+                    $this->userProfileService->clearUserCaches($mem->user->username, $mem->user->id);
+                }
 
                 return to_route('thank-you', ['username' => $mem->membership->user->username])->with('success', "Payment for subscription of membership is success.");
             }
@@ -973,7 +993,7 @@ class MembershipController extends Controller
 
                 // ✅ NEW: Create deliverable for membership renewal
                 try {
-                    \Log::info('MembershipController: Creating deliverable for membership renewal', [
+                    Log::info('MembershipController: Creating deliverable for membership renewal', [
                         'new_membership_payment_id' => $newSubs->id,
                         'membership_id' => $newSubs->membership_id,
                         'stripe_subscription_id' => $newSubs->stripe_id
@@ -983,13 +1003,13 @@ class MembershipController extends Controller
                     $renewalDeliverable = $this->createMembershipRenewalDeliverable($newSubs);
 
                     if ($renewalDeliverable) {
-                        \Log::info('MembershipController: Renewal deliverable created', [
+                        Log::info('MembershipController: Renewal deliverable created', [
                             'deliverable_id' => $renewalDeliverable->id,
                             'membership_payment_id' => $newSubs->id
                         ]);
                     }
-                } catch (\Exception $e) {
-                    \Log::error('MembershipController: Failed to create renewal deliverable', [
+                } catch (Exception $e) {
+                    Log::error('MembershipController: Failed to create renewal deliverable', [
                         'membership_payment_id' => $newSubs->id,
                         'error' => $e->getMessage()
                     ]);

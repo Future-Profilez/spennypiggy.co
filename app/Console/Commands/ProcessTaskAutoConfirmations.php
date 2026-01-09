@@ -142,9 +142,11 @@ class ProcessTaskAutoConfirmations extends Command
                         'currency' => strtolower($task->currency ?? 'gbp'),
                         'destination' => $purchase->creator->account_id,
                         'source_transaction' => $chargeId,
+                        'transfer_group' => "paid_task_{$task->id}",
                     ]);
 
                     $purchase->status = 'paid_out';
+                    $purchase->transfer_id = $transfer->id;
                     $purchase->save();
 
                     Log::info('Paid Task auto-transfer created', [

@@ -31,9 +31,17 @@ use Stripe\Webhook;
 use App\Mail\TaskPurchasedMail;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TaskRefunded;
+use App\Services\UserProfileService;
 
 class StripeWebhookController extends Controller
 {
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
+    {
+        $this->userProfileService = $userProfileService;
+    }
+
     /**
      * Handle Stripe Identity Verification Webhook
      *
@@ -517,6 +525,14 @@ class StripeWebhookController extends Controller
         // Dispatch job to process the deliverable (media bundle creation, etc.)
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
 
+        // Clear user cache for the creator
+        if ($metadata->creator_id) {
+             $creator = \App\Models\User::find($metadata->creator_id);
+             if ($creator) {
+                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+             }
+        }
+
         // Send thank you email to the purchaser
         if (isset($metadata->user_id)) {
             $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
@@ -578,6 +594,20 @@ class StripeWebhookController extends Controller
         // Calculate amount from session amount_total (in cents/smallest unit)
         $amount = ($session->amount_total ?? 0) / 100;
         
+        // Try to get charge_id from payment intent if available
+        $chargeId = null;
+        if (!empty($session->payment_intent)) {
+            try {
+                $client = new StripeClient(config('services.stripe.secret'));
+                // Check if payment_intent is already an object (expanded) or string
+                $piId = is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent->id;
+                $pi = $client->paymentIntents->retrieve($piId, ['expand' => ['latest_charge']]);
+                $chargeId = $pi->latest_charge->id ?? ($pi->latest_charge ?? null);
+            } catch (\Exception $e) {
+                Log::warning('Failed to retrieve charge_id for task purchase (webhook)', ['pi' => $session->payment_intent]);
+            }
+        }
+        
         // Determine initial status based on payment_status
         // 'paid' -> 'paid', 'unpaid'/'no_payment_required' -> 'pending'
         $initialStatus = ($session->payment_status === 'paid') ? 'paid' : 'pending';
@@ -588,7 +618,8 @@ class StripeWebhookController extends Controller
             'supporter_id' => $buyerId,
             'creator_id' => $creatorId ?? $task->creator_id,
             'stripe_session_id' => $session->id,
-            'payment_intent_id' => $session->payment_intent,
+            'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
+            'charge_id' => $chargeId,
             'amount' => $amount,
             'status' => $initialStatus,
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
@@ -655,6 +686,7 @@ class StripeWebhookController extends Controller
             $supporter = $buyerId ? User::find($buyerId) : null;
             
             if ($creator) {
+                $this->userProfileService->clearUserCaches($creator->username, $creator->id);
                 Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
                 
                 Helpers::sendNotification(
@@ -802,6 +834,14 @@ class StripeWebhookController extends Controller
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
 
+        // Clear user cache
+        if ($metadata->creator_id) {
+             $creator = \App\Models\User::find($metadata->creator_id);
+             if ($creator) {
+                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+             }
+        }
+
         // Create deliverable entry for bill subscription renewal (like wish subscriptions)
         $this->createBillRenewalDeliverable($newSubs);
 
@@ -881,6 +921,14 @@ class StripeWebhookController extends Controller
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
 
+        // Clear user cache
+        if ($metadata->creator_id) {
+             $creator = \App\Models\User::find($metadata->creator_id);
+             if ($creator) {
+                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+             }
+        }
+
         SendRenewMail::dispatch($array, 'renew', 'membership');
 
         Log::info("Membership subscription updated: {$subscriptionId}, Status: {$status}");
@@ -943,6 +991,14 @@ class StripeWebhookController extends Controller
             $wishSubscription->stripe_status = $stripeSubscription->status;
             $wishSubscription->updated_at = Carbon::now();
             $wishSubscription->save();
+
+            // Clear cache
+            if ($wishSubscription->wish_item) {
+                 $creator = \App\Models\User::find($wishSubscription->wish_item->user_id);
+                 if ($creator) {
+                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                 }
+            }
 
             Log::info('Wish subscription updated with new period', [
                 'subscription_id' => $wishSubscription->id,
@@ -1130,6 +1186,14 @@ class StripeWebhookController extends Controller
                 // Dispatch ProcessWishItemDeliverable job for content processing
                 \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
 
+                // Clear user cache
+                if ($wishSubscription->wish_item) {
+                     $creator = \App\Models\User::find($wishSubscription->wish_item->user_id);
+                     if ($creator) {
+                         $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                     }
+                }
+
                 Log::info('Wish subscription content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,
                     'subscription_id' => $wishSubscription->stripe_id,
@@ -1230,6 +1294,14 @@ class StripeWebhookController extends Controller
         $newSubs->created_at = $wish_subscription->created_at;
         $newSubs->updated_at = Carbon::now();
         $newSubs->save();
+
+        // Clear user cache
+        if ($wish_subscription->wish_item) {
+             $creator = \App\Models\User::find($wish_subscription->wish_item->user_id);
+             if ($creator) {
+                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+             }
+        }
 
         SendRenewMail::dispatch($array, 'renew', 'main');
     }
@@ -1584,6 +1656,14 @@ class StripeWebhookController extends Controller
             $purchase->status = 'failed';
             $purchase->save();
             Log::info("Updated TaskPurchase status to failed", ['id' => $purchase->id]);
+
+            // Clear caches
+            if ($purchase->creator) {
+                $this->userProfileService->clearUserCaches($purchase->creator->username, $purchase->creator->id);
+            }
+            if ($purchase->supporter) {
+                $this->userProfileService->clearUserCaches($purchase->supporter->username, $purchase->supporter->id);
+            }
         }
         
         // Also update Deliverable
@@ -1686,11 +1766,21 @@ class StripeWebhookController extends Controller
 
          $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
          if ($purchase) {
-             $purchase->status = 'refunded';
-             $purchase->refunded_at = now();
-             $purchase->save();
-             
-             Log::info("TaskPurchase refunded via webhook", ['id' => $purchase->id]);
+            $purchase->status = 'refunded';
+            $purchase->refunded_at = now();
+            
+            // Try to get refund ID from charge
+            if (isset($charge->refunds->data) && !empty($charge->refunds->data)) {
+                // Assuming the latest refund is the one relevant to this event
+                $latestRefund = $charge->refunds->data[0] ?? null; 
+                if ($latestRefund) {
+                    $purchase->refund_id = $latestRefund->id;
+                }
+            }
+            
+            $purchase->save();
+            
+            Log::info("TaskPurchase refunded via webhook", ['id' => $purchase->id]);
 
              // Update Deliverable
              try {
@@ -1706,6 +1796,14 @@ class StripeWebhookController extends Controller
                  $task = $purchase->task;
                  $supporter = $purchase->supporter;
                  $creator = $purchase->creator;
+
+                 // Clear caches
+                 if ($creator) {
+                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                 }
+                 if ($supporter) {
+                     $this->userProfileService->clearUserCaches($supporter->username, $supporter->id);
+                 }
 
                  if ($supporter) {
                      Helpers::sendNotification(

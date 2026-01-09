@@ -34,6 +34,7 @@ use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\Rules\ValidSubscriptionPeriod;
 use App\Services\CacheService;
+use App\Services\UserProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,10 +70,13 @@ use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
 
 class WishitemController extends Controller
 {
-    // public function __construct()
-    // {
-    //     $this->middleware('auth');
-    // }
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
+    {
+        $this->userProfileService = $userProfileService;
+        // $this->middleware('auth');
+    }
 
     public function saveWishItem(Request $request): RedirectResponse
     {
@@ -190,6 +194,9 @@ class WishitemController extends Controller
                 $wish->price_id = $stripeProduct->default_price;
                 $wish->save();
             }
+
+            // Clear user caches
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             return redirect(route("user.show", ["username" => Auth::user()->username]))->with('success', "Wish Item has been added.");
         }
@@ -340,6 +347,9 @@ class WishitemController extends Controller
             }
         }
 
+        // Clear user caches
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
+
         if (in_array($request->subscription, [0, 1])) {
             $productPayload = [
                 "name"  =>  $wish->wishname . "(Custom Content Purchase)",
@@ -486,6 +496,10 @@ class WishitemController extends Controller
                     $wish_cat->save();
                 }
             }
+
+            // Clear user caches
+            $user = User::find(Auth::id());
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
             $unit_amount_decimal = round($createpriceid * 100); // Stripe expects integer cents
@@ -659,6 +673,10 @@ class WishitemController extends Controller
             
             // Delete the wish item from database
             $wishitem->delete();
+
+            // Clear user caches
+            $user = User::find(Auth::id());
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
             
             Log::info('Wish item deleted successfully', [
                 'wish_id' => $wishitem->id,
@@ -716,6 +734,10 @@ class WishitemController extends Controller
             "user_id" => Auth::id(),
             'category' => $request->category ?? null,
         ]);
+
+        // Clear user caches
+        $user = User::find(Auth::id());
+        $this->userProfileService->clearUserCaches($user->username, $user->id);
 
         return response()->json([
             'status' => true,

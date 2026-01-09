@@ -16,9 +16,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
+use App\Services\UserProfileService;
 
 class SocialLinksController extends Controller
 {
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
+    {
+        $this->userProfileService = $userProfileService;
+    }
+
     public function saveSocialLinks(Request $request)
     {
         $redirectUrl = $request->redirect_url;
@@ -115,6 +123,9 @@ class SocialLinksController extends Controller
                 'bio'    => false,
                 'social' => true,
             ]));
+
+            $user = Auth::user();
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             return response([
                 'status'       => 200,

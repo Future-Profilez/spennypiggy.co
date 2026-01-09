@@ -21,6 +21,7 @@ use App\Models\UserPayment;
 use App\StripeControl;
 use Carbon\Carbon;
 use App\Services\CreatorActivityService;
+use App\Services\UserProfileService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
@@ -120,6 +121,9 @@ class BillsController extends Controller
             $bill->product_id = $product->id;
             $bill->price_id = $product->default_price;
             $bill->save();
+
+            // Clear user caches
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
             $bill->delete();
 
@@ -240,6 +244,9 @@ class BillsController extends Controller
             Logs::where('edited_bill_id', $bill->id)
                 ->where('status', 'pending')
                 ->update(['status' => 'updated']);
+
+            // Clear user caches
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
         } catch (Exception $e) {
             Log::error("Stripe Error during bill edit: " . $e->getMessage());
 
@@ -272,6 +279,11 @@ class BillsController extends Controller
             }
 
             $bill->delete();
+            
+            // Clear user caches
+            $user = $bill->user;
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
             return response()->json([
                 'status' => true,
                 'msg' => "Bill removed successfully."

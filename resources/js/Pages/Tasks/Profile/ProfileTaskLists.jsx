@@ -9,7 +9,7 @@ export default function ProfileTaskLists({ tasks, IsloggedIn }) {
                 <div className='p-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between'>
                     <h3 className="font-bold text-xl text-white">{IsloggedIn ? "My Task Definitions" : "Available Tasks"}</h3>
                     {IsloggedIn ? (
-                        <Link href={route('task.create')} className="button b">
+                        <Link href={route('task.create')} className="button b hidden lg:visible">
                             + New Task
                         </Link>
                     ) : (

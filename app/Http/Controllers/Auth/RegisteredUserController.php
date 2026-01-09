@@ -27,6 +27,7 @@ use App\Models\PromoCode;
 use App\Models\Referal;
 use App\Models\ReferralCode;
 use App\Models\UserVerificationStatus;
+use App\Services\UserProfileService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -36,10 +37,12 @@ use PragmaRX\Google2FALaravel\Google2FA;
 class RegisteredUserController extends Controller
 {
     protected $google2FA;
+    protected $userProfileService;
 
-    public function __construct(Google2FA $google2FA)
+    public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
     {
         $this->google2FA = $google2FA;
+        $this->userProfileService = $userProfileService;
     }
     /**
      * Display the registration view.
@@ -137,6 +140,7 @@ class RegisteredUserController extends Controller
                 ['follower_id' => $user->id, 'followed_id' => $spenny->id],
                 []
             );
+            $this->userProfileService->clearUserCaches($spenny->username, $spenny->id);
         }
 
         /* =========================VERIFICATION / ADDRESS========================== */

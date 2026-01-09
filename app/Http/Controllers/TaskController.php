@@ -26,6 +26,7 @@ use App\Models\Currency;
 use Carbon\Carbon;
 use App\Jobs\ProcessWishItemDeliverable;
 use Illuminate\Support\Facades\Log;
+use App\Services\UserProfileService;
 
 class TaskController extends Controller
 {
@@ -142,6 +143,10 @@ class TaskController extends Controller
 
         $task->save();
 
+        // Clear user caches
+        $user = Auth::user();
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
         return redirect()->route('task.dashboard')->with('success', 'Task created successfully.');
     }
 
@@ -224,6 +229,10 @@ class TaskController extends Controller
         }
 
         $task->save();
+
+        // Clear user caches
+        $user = Auth::user();
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
 
         return redirect()->route('task.dashboard')->with('success', 'Task updated successfully.');
     }
@@ -457,6 +466,7 @@ class TaskController extends Controller
         $paymentIntentData = [
             'description' => "Spenny Piggy - Task purchase: " . $task->title,
             'metadata' => $complianceMetadata,
+            'transfer_group' => "paid_task_{$task->id}",
         ];
 
         if ($connectedAccountId) {
@@ -576,13 +586,28 @@ class TaskController extends Controller
         // Calculate amount from session amount_total (in cents/smallest unit)
         $amount = ($session->amount_total ?? 0) / 100;
 
+        // Try to get charge_id from payment intent if available
+        $chargeId = null;
+        if (!empty($session->payment_intent)) {
+            try {
+                $client = new StripeClient(config('services.stripe.secret'));
+                // Check if payment_intent is already an object (expanded) or string
+                $piId = is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent->id;
+                $pi = $client->paymentIntents->retrieve($piId, ['expand' => ['latest_charge']]);
+                $chargeId = $pi->latest_charge->id ?? ($pi->latest_charge ?? null);
+            } catch (\Exception $e) {
+                Log::warning('Failed to retrieve charge_id for task purchase', ['pi' => $session->payment_intent]);
+            }
+        }
+
         // Create TaskPurchase
         $purchase = TaskPurchase::create([
             'task_id' => $taskId,
             'supporter_id' => $buyerId,
             'creator_id' => $creatorId,
             'stripe_session_id' => $session->id,
-            'payment_intent_id' => $session->payment_intent,
+            'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
+            'charge_id' => $chargeId,
             'amount' => $amount,
             'status' => 'paid', // Always paid in sync handler (and especially for local dev)
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
@@ -856,9 +881,11 @@ class TaskController extends Controller
                             'currency' => strtolower($currency),
                             'destination' => $creator->account_id,
                             'source_transaction' => $chargeId,
+                            'transfer_group' => "paid_task_{$task->id}",
                         ]);
 
                         $purchase->status = 'paid_out';
+                        $purchase->transfer_id = $transfer->id;
                         $purchase->save();
 
                         \Illuminate\Support\Facades\Log::info('Paid Task transfer created', [

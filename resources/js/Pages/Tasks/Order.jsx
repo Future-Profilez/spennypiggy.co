@@ -137,8 +137,8 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
             <Head title={`Order #${purchase.id}`} />
             <div className="py-12 bg-white mx-auto min-h-screen px-4 sm:px-6 lg:px-8">
                 <div className='container max-w-[700px]'>
-                    <div className='flex items-center justify-between'>
-                        <h1 className="text-3xl font-black uppercase font-anton tracking-wide tracking-[1px] font-light text-gray-900">
+                    <div className='md:flex items-center justify-between'>
+                        <h1 className="text-3xl mb-3 md:mb-0 font-black uppercase font-anton tracking-wide tracking-[1px] font-light text-gray-900">
                             Order #{purchase.uuid.substring(0, 8)}
                         </h1>
                         <StatusBadge status={purchase.status} />
@@ -186,6 +186,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             </p>
                         </div>
                     )}
+                    
 
                     <div className="items-center gap-4 mt-8 mb-8">
                         <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>

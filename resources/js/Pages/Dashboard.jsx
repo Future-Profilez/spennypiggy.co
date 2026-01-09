@@ -93,7 +93,7 @@ export default function Dashboard(props) {
     } = props;
 
     const [wishitems, setWishitems] = useState(items || []);
-    const [tab, setTab] = useState(0);
+    // const [tab, setTab] = useState(0);
 
     // Memoized wishitems to prevent unnecessary re-renders
     const memoizedWishItems = useMemo(() => {
@@ -146,11 +146,13 @@ export default function Dashboard(props) {
     };
 
     useEffect(() => {
-        const controller = new AbortController();
-        const { signal } = controller;
-        fetch_gifts(signal);
-        return () => controller.abort();
-    }, [tab]);
+        if (page === 'gifts') {
+            const controller = new AbortController();
+            const { signal } = controller;
+            fetch_gifts(signal);
+            return () => controller.abort();
+        }
+    }, [page]);
 
     // Fetch creator activity status
     const fetchActivityStatus = async () => {

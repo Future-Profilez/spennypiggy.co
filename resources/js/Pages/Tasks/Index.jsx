@@ -93,7 +93,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                             {orders && orders.map(order => (
                                                 <li key={order.id} className="p-6 hover:bg-red-50 transition-colors">
                                                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                                        <div>
+                                                        <div className='w-full md:w-auto'>
                                                             <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">Order #{order.uuid.substring(0, 8)} - {order.task.title}</h3>
                                                             <p className="text-sm text-gray-600 mt-1">
                                                                 Supporter: <span className="font-semibold">{order.supporter?.name || 'Guest'}</span> | 
@@ -111,7 +111,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                                         <div className="text-right">
                                                             <Link 
                                                                 href={route('task.order', order.uuid)} 
-                                                                className="button p !text-sm sm" >
+                                                                className="button p block !text-sm sm" >
                                                                 Manage Order
                                                             </Link>
                                                         </div>
@@ -141,7 +141,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                     {purchased_tasks.map(purchase => (
                                         <li key={purchase.id} className="p-6 hover:bg-blue-50 transition-colors">
                                             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                                <div>
+                                                <div className='w-full md:w-auto'>
                                                     <h3 className="text-xl font-bold text-gray-900 font-anton tracking-wide">
                                                         <Link href={route('task.order', purchase.uuid)} className="hover:underline">
                                                             {purchase.task.title}
@@ -204,7 +204,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                             <li key={task.id} className="p-6 hover:bg-gray-50 transition-colors">
                                                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                                     <Link href={route('task.show', task.uuid)} className="flex-1 flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-                                                        <div  className="flex-1">
+                                                        <div  className="flex-1 w-full md:w-auto">
                                                             <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
                                                                 <span className="hover:text-pink-500">
                                                                     {task.title}
@@ -271,7 +271,7 @@ export default function Index({ auth, tasks, orders, completed_orders, purchased
                                     {completed_orders.map(order => (
                                         <li key={order.id} className="p-6 hover:bg-green-50 transition-colors">
                                             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                                                <div>
+                                                <div className='w-full md:w-auto'>
                                                     <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
                                                         Order #{order.uuid.substring(0, 8)} - {order.task.title}
                                                     </h3>

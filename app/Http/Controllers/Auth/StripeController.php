@@ -41,18 +41,19 @@ use App\Models\UserPayment;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\StripeControl;
+use Stripe\StripeClient;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use League\ISO3166\ISO3166;
 use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
-use Stripe\StripeClient;
 use Stripe\Webhook;
 use Stripe\Identity;
 use Stripe\Identity\VerificationSession;
@@ -65,11 +66,15 @@ use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
 use Stripe\Account;
+use App\Services\UserProfileService;
 
 class StripeController extends Controller
 {
-    public function __construct()
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
     {
+        $this->userProfileService = $userProfileService;
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
     }
 
@@ -261,6 +266,9 @@ class StripeController extends Controller
                     'error' => $e->getMessage()
                 ]);
             }
+
+            // Clear user cache to reflect new account status
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
 
             return [
                 'success' => true,
@@ -456,6 +464,7 @@ class StripeController extends Controller
                 $user->account_id = $account->id;
                 $user->country = $country;
                 $user->save();
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
             } catch (Exception $e) {
                 return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
             }
@@ -466,6 +475,7 @@ class StripeController extends Controller
             if ($account->charges_enabled) {
                 $user->stripe_details_submitted = 1;
                 $user->save();
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
                 return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
             }
             $link = StripeControl::createAccountLink([
@@ -572,6 +582,7 @@ class StripeController extends Controller
             // Persist the new ID only after creation succeeds
             $user->account_id = $newAccount->id;
             $user->save();
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             // ── 3. Generate onboarding link ──────────────────────────────
             try {
@@ -723,6 +734,7 @@ class StripeController extends Controller
             // Bust cached Stripe capability and migration status so the dashboard updates immediately
             Cache::forget("stripe_capabilities_{$user->account_id}");
             Cache::forget("migration_status_{$user->id}");
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             // Log updated capability status for diagnosis
             Log::info('Stripe connectReturn status', [
@@ -830,6 +842,7 @@ class StripeController extends Controller
                         'account_id' => $account->id,
                         'country'    => $country,
                     ]);
+                    $this->userProfileService->clearUserCaches($user->username, $user->id);
                 } catch (\Throwable $e) {
 
                     Log::error('Stripe account creation failed', [
@@ -894,7 +907,7 @@ class StripeController extends Controller
                 $taxNew += $adminFee;
             }
 
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => route('checkout.success', [$owner_id]),
@@ -938,6 +951,8 @@ class StripeController extends Controller
             ]);
 
             $stripePaymentDetail->refresh();
+
+            $this->userProfileService->clearUserCaches(Auth::user()->username, Auth::user()->id);
 
             return Inertia::location($sessionCreate->url);
         } catch (Exception $e) {
@@ -1021,8 +1036,10 @@ class StripeController extends Controller
             // NOTE: Disabled to prevent duplicate emails - CheckoutController handles this with proper currency
 
             if (!empty($getdata[0]->owner->username)) {
+                $this->userProfileService->clearUserCaches($getdata[0]->owner->username, $getdata[0]->owner->id);
                 return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
             } else {
+                $this->userProfileService->clearUserCaches(Auth::user()->username, Auth::user()->id);
                 return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
             }
         } catch (\Throwable $th) {
@@ -1192,6 +1209,7 @@ class StripeController extends Controller
             }
 
 
+            $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable $th) {
             //throw $th;
@@ -1320,14 +1338,14 @@ class StripeController extends Controller
                         $existingSub->canceled_at = Carbon::now();
                         $existingSub->save();
 
-                        \Log::info('StripeController: Canceled existing subscription for new subscription', [
+                        Log::info('StripeController: Canceled existing subscription for new subscription', [
                             'old_subscription_id' => $existingSub->id,
                             'old_stripe_id' => $existingSub->stripe_id,
                             'user_id' => $user->id,
                             'wish_item_id' => $wish->id
                         ]);
                     } catch (\Exception $e) {
-                        \Log::warning('StripeController: Failed to cancel existing subscription', [
+                        Log::warning('StripeController: Failed to cancel existing subscription', [
                             'old_subscription_id' => $existingSub->id,
                             'old_stripe_id' => $existingSub->stripe_id,
                             'error' => $e->getMessage()
@@ -1691,7 +1709,7 @@ class StripeController extends Controller
                 $creator_name = $sub->wish_item->user->name;
                 $mailToSend = $sub->guest_email;
 
-                \Log::info('StripeController: Starting subscription email handling', [
+                Log::info('StripeController: Starting subscription email handling', [
                     'subscription_id' => $sub->id,
                     'wish_item_id' => $sub->wish_item->id,
                     'recurring_for' => $sub->recurring_for,
@@ -1706,7 +1724,7 @@ class StripeController extends Controller
                     // Create actual StripePaymentDetail record that works with CheckoutMailToUser
                     $stripePayment = $this->createStripePaymentForSubscription($sub, $session);
 
-                    \Log::info('StripeController: Created StripePaymentDetail for subscription', [
+                    Log::info('StripeController: Created StripePaymentDetail for subscription', [
                         'subscription_id' => $sub->id,
                         'stripe_payment_id' => $stripePayment->id,
                         'session_id' => $stripePayment->session_id,
@@ -1715,20 +1733,20 @@ class StripeController extends Controller
                     ]);
 
                     // Get currency symbol for email
-                    $currency = \App\Models\Currency::where('iso', strtoupper($sub->currency))->first();
+                    $currency = Currency::where('iso', strtoupper($sub->currency))->first();
                     $currencySymbol = $currency ? $currency->symbol : '£';
 
                     // Dispatch CheckoutMailToUser with real StripePaymentDetail - this will create deliverables and send email with content
-                    \App\Jobs\CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
+                    CheckoutMailToUser::dispatch($stripePayment, $currencySymbol);
 
-                    \Log::info('StripeController: CheckoutMailToUser dispatched for subscription deliverables', [
+                    Log::info('StripeController: CheckoutMailToUser dispatched for subscription deliverables', [
                         'subscription_id' => $sub->id,
                         'stripe_payment_id' => $stripePayment->id,
                         'currency_symbol' => $currencySymbol,
                         'email_address' => $sub->guest_email
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('StripeController: Failed to dispatch CheckoutMailToUser for subscription', [
+                    Log::error('StripeController: Failed to dispatch CheckoutMailToUser for subscription', [
                         'subscription_id' => $sub->id,
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
@@ -1738,7 +1756,7 @@ class StripeController extends Controller
                 // ✅ ALWAYS send WishSubscriptionMailToUser - this is the confirmation email to the gifter
                 // This should be sent regardless of CheckoutMailToUser success/failure
                 WishSubscriptionMailToUser::dispatch($sub, $mailToSend, $amountTotal, $creator_name);
-                \Log::info('StripeController: WishSubscriptionMailToUser dispatched for gifter confirmation', [
+                Log::info('StripeController: WishSubscriptionMailToUser dispatched for gifter confirmation', [
                     'subscription_id' => $sub->id,
                     'gifter_email' => $mailToSend,
                     'amount_total' => $amountTotal,
@@ -1784,7 +1802,7 @@ class StripeController extends Controller
                         // Use current_period_end for upcoming_payment instead of manual calculation
                         $sub->upcoming_payment = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
 
-                        \Log::info('StripeController: Populated subscription with Stripe data', [
+                        Log::info('StripeController: Populated subscription with Stripe data', [
                             'subscription_id' => $sub->id,
                             'stripe_id' => $sub->stripe_id,
                             'stripe_status' => $sub->stripe_status,
@@ -1795,7 +1813,7 @@ class StripeController extends Controller
                         ]);
                     } else {
                         // Fallback for one-time payments or sessions without subscriptions
-                        \Log::warning('StripeController: No subscription ID in session, using fallback calculation', [
+                        Log::warning('StripeController: No subscription ID in session, using fallback calculation', [
                             'subscription_id' => $sub->id,
                             'session_id' => $session->id,
                             'payment_status' => $session->payment_status
@@ -1815,7 +1833,7 @@ class StripeController extends Controller
                         $sub->stripe_status = 'active'; // Default for one-time payments
                     }
                 } catch (\Exception $e) {
-                    \Log::error('StripeController: Failed to retrieve Stripe subscription details', [
+                    Log::error('StripeController: Failed to retrieve Stripe subscription details', [
                         'subscription_id' => $sub->id,
                         'stripe_id' => $session->subscription,
                         'error' => $e->getMessage(),
@@ -1878,6 +1896,7 @@ class StripeController extends Controller
                 } else {
                     $message = 'Subscription Payment Successfully Paid.';
                 }
+                $this->userProfileService->clearUserCaches($sub->wish_item->user->username, $sub->wish_item->user->id);
                 return to_route('thank-you', ['username' => $sub->wish_item->user->username])->with('success', $message);
             }
 
@@ -1903,8 +1922,8 @@ class StripeController extends Controller
         try {
             // Create a proper StripePaymentDetail record that works with CheckoutMailToUser system
             // Use wish item price only (no fees) to match what user expects to pay for the content
-            $stripePayment = \App\Models\StripePaymentDetail::create([
-                'uuid' => \Str::uuid(),
+            $stripePayment = StripePaymentDetail::create([
+                'uuid' => Str::uuid(),
                 'session_id' => $subscription->session_id,
                 'user_id' => $subscription->user_id,
                 'owner_id' => $subscription->wish_item->user_id,
@@ -1926,8 +1945,8 @@ class StripeController extends Controller
             ]);
 
             // Create the corresponding stripe payment items for the subscription
-            $stripePaymentItem = \App\Models\StripePaymentItems::create([
-                'uuid' => \Str::uuid(),
+            $stripePaymentItem = StripePaymentItems::create([
+                'uuid' => Str::uuid(),
                 'stripe_payment_detail_id' => $stripePayment->id,
                 'wish_item_id' => $subscription->wish_item->id,
                 'amount' => $subscription->wish_item->price, // Use wish item price directly
@@ -1936,7 +1955,7 @@ class StripeController extends Controller
                 'anonymous' => $subscription->anonymous ?? false
             ]);
 
-            \Log::info('StripeController: Created StripePaymentDetail and Item for subscription', [
+            Log::info('StripeController: Created StripePaymentDetail and Item for subscription', [
                 'subscription_id' => $subscription->id,
                 'stripe_payment_id' => $stripePayment->id,
                 'stripe_payment_item_id' => $stripePaymentItem->id,
@@ -1945,7 +1964,7 @@ class StripeController extends Controller
 
             return $stripePayment;
         } catch (\Exception $e) {
-            \Log::error('StripeController: Failed to create StripePaymentDetail for subscription', [
+            Log::error('StripeController: Failed to create StripePaymentDetail for subscription', [
                 'subscription_id' => $subscription->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -2009,11 +2028,25 @@ class StripeController extends Controller
                 if ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                     $subs->payment_status = 'cancelled';
                     $subs->save();
+                    
+                    if ($subs->user) {
+                        $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
+                    }
+                    if ($subs->owner) {
+                        $this->userProfileService->clearUserCaches($subs->owner->username, $subs->owner->id);
+                    }
 
                     SendRenewMail::dispatch($array, 'cancelled', 'main');
                 } elseif ($event->type == "invoice.payment_failed" && !empty($subs)) {
                     $subs->payment_status = 'failed';
                     $subs->save();
+
+                    if ($subs->user) {
+                        $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
+                    }
+                    if ($subs->owner) {
+                        $this->userProfileService->clearUserCaches($subs->owner->username, $subs->owner->id);
+                    }
 
                     SendRenewMail::dispatch($array, 'failed', 'main');
                 } elseif ($event->type == "charge.updated" && !empty($subs)) {
@@ -2032,6 +2065,13 @@ class StripeController extends Controller
                     ];
 
                     SendRenewMail::dispatch($array, $subs->payment_status, 'main');
+
+                    if ($subs->user) {
+                        $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
+                    }
+                    if ($subs->owner) {
+                        $this->userProfileService->clearUserCaches($subs->owner->username, $subs->owner->id);
+                    }
                 }
 
                 if (!empty($subs)) {
@@ -2040,6 +2080,14 @@ class StripeController extends Controller
                     $stripe->invoice_type = $event->type;
                     $stripe->data = $event;
                     $stripe->save();
+
+                    // Clear cache for the user (gifter) and owner (creator)
+                    if ($subs->user) {
+                        $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
+                    }
+                    if ($subs->owner) {
+                        $this->userProfileService->clearUserCaches($subs->owner->username, $subs->owner->id);
+                    }
                 }
             }
 
@@ -2214,6 +2262,14 @@ class StripeController extends Controller
             $wishSubscription->updated_at = Carbon::now();
             $wishSubscription->save();
 
+            // Clear cache for both users
+            if ($wishSubscription->user) {
+                $this->userProfileService->clearUserCaches($wishSubscription->user->username, $wishSubscription->user->id);
+            }
+            if ($wishSubscription->wish_item && $wishSubscription->wish_item->user) {
+                $this->userProfileService->clearUserCaches($wishSubscription->wish_item->user->username, $wishSubscription->wish_item->user->id);
+            }
+
             Log::info('Subscription updated with new renewal period', [
                 'subscription_id' => $wishSubscription->id,
                 'stripe_id' => $subscriptionId,
@@ -2263,6 +2319,14 @@ class StripeController extends Controller
                     'subscription_id' => $subscriptionId,
                     'wish_item_id' => $wishSubscription->wish_item->id
                 ]);
+            }
+
+            // Clear cache for the creator and gifter
+            if ($wishSubscription->wish_item && $wishSubscription->wish_item->user) {
+                $this->userProfileService->clearUserCaches($wishSubscription->wish_item->user->username, $wishSubscription->wish_item->user->id);
+            }
+            if ($wishSubscription->user) {
+                $this->userProfileService->clearUserCaches($wishSubscription->user->username, $wishSubscription->user->id);
             }
         } catch (\Exception $e) {
             Log::error('Failed to process subscription renewal', [
@@ -2319,6 +2383,10 @@ class StripeController extends Controller
         $subs->save();
 
         StripeControl::cancelSubscription($subs->stripe_id);
+        $this->userProfileService->clearUserCaches($subs->wish_item->user->username, $subs->wish_item->user->id);
+        if ($subs->user) {
+            $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
+        }
         return to_route('user.show', ['username' => $subs->wish_item->user->username])->with('success', "Subscription is cancelled for wish {$subs->wish_item->wishname}.");
     }
 
@@ -2729,6 +2797,11 @@ class StripeController extends Controller
                 $message = $username . " just granted some coins to your piggy bank";
                 NotificationSave::dispatch($message, $tip_pay->creator, $tip_pay->user, 'Piggy Bank');
 
+                $this->userProfileService->clearUserCaches($tip_pay->creator->username, $tip_pay->creator->id);
+                if ($tip_pay->user) {
+                    $this->userProfileService->clearUserCaches($tip_pay->user->username, $tip_pay->user->id);
+                }
+
                 return to_route('user.show', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
             }
 
@@ -2786,6 +2859,9 @@ class StripeController extends Controller
             $customer_id = $customer->id;
             $user->stripe_id = $customer_id;
             $user->save();
+            
+            // Clear cache since user data changed
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
         }
 
         $sub = MonthlyCharge::create([
@@ -2888,6 +2964,8 @@ class StripeController extends Controller
                 $currency = strtolower($request->cookie("currency", "GBP"));
                 $convertedAmount = strtoupper(Helpers::priceFormat('gbp', $sub->amount, $currency));
                 SendPaymentSuccessEmail::dispatch($sub->user, $convertedAmount, $currency, $sub->upcoming_payment);
+
+                $this->userProfileService->clearUserCaches($sub->user->username, $sub->user->id);
 
                 return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
             }
