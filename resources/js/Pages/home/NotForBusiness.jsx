@@ -33,7 +33,7 @@ export default function NotForBusiness() {
                 <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
             </div>
 
-            <div className="containerbox relative z-10">
+            <div className="containerbox relative  ">
                 <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
                     How It <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Works</span>
                 </h2>
@@ -43,10 +43,10 @@ export default function NotForBusiness() {
                     <div className="hidden md:block absolute top-[100px] left-[16%] right-[16%] h-1 bg-gradient-to-r from-pink-500/20 via-yellow-500/20 to-pink-500/20 z-0"></div>
 
                     {data.map((item, index) => (
-                        <div key={index} className="flex flex-col items-center text-center relative z-10 group">
+                        <div key={index} className="mb-6 flex flex-col items-center text-center relative group">
                             {/* Step Number Badge */}
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center shadow-lg border-4 border-black text-white font-gulfs text-xl">
+                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-1 transition-transform duration-300 group-hover:-translate-y-2">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] border-4 border-black text-white font-gulfs text-xl">
                                     {index + 1}
                                 </div>
                             </div>
@@ -54,7 +54,7 @@ export default function NotForBusiness() {
                             {/* Image Container */}
                             <div className="w-full mb-8 relative">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px] transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
-                                <div className="bg-gray-900 rounded-[30px] p-6 border border-gray-800 shadow-2xl relative overflow-hidden group-hover:border-pink-500/50 transition-colors duration-300">
+                                <div className="bg-black rounded-[30px]  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:shadow-[8px_8px_0px_0px_#EC4899] group-hover:border-pink-500 relative overflow-hidden transition-all duration-300">
                                      <LazyLoadImage
                                         alt={item.title}
                                         effect="blur"
@@ -64,10 +64,10 @@ export default function NotForBusiness() {
                                 </div>
                             </div>
 
-                            <h3 className="text-2xl lg:text-3xl font-gulfs text-white mb-4 uppercase leading-tight px-4">
+                            <h3 className="text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-pink-500 transition-colors">
                                 {item.title}
                             </h3>
-                            <p className="text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line">
+                            <p className="text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line group-hover:text-gray-300 transition-colors">
                                 {item.description}
                             </p>
                         </div>

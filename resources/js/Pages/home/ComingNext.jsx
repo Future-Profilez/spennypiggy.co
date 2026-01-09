@@ -8,16 +8,16 @@ export default function ComingNext() {
    <div className="bg-black py-16 md:py-24 relative overflow-hidden">
        {/* Decorative Background Elements */}
        <div className="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-            <div className="absolute bottom-10 left-10 w-48 h-48 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+            <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape"></div>
+            <div className="absolute bottom-10 left-10 w-48 h-48 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
         </div>
 
       <div className="containerbox relative z-10" >
          <div className="flex flex-col lg:flex-row items-center gap-12" >
             <div className='w-full lg:w-1/2' >
-               <div className='nextimage-wrap relative group' >
+               <div className='nextimage-wrap relative group wiggle' >
                   <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-3xl transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
-                  <div className="relative rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl">
+                  <div className="relative rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-colors duration-300">
                     <LazyLoadImage
                     alt={"image"}  effect="blur"
                     className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500"

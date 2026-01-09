@@ -45,10 +45,10 @@ export default function WhyLove() {
             <section className="bg-black py-24 relative overflow-hidden">
                  {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-pink-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-10 animate-pulse"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-pink-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-10 floating-shape"></div>
                 </div>
 
-                <div className="container relative z-10 px-4 mx-auto">
+                <div className="container relative  px-4 mx-auto">
                     <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none">
                         Add Gifts From <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Any Brand</span>
                     </h2>

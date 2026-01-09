@@ -55,8 +55,8 @@ export default function HappyCreators() {
                 <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
             </div>
 
-            <div className="containerbox relative z-10">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-gulfs text-white text-center mb-12 uppercase leading-tight">
+            <div className="containerbox relative">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
                     Happy <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Creators</span>
                 </h2>
 

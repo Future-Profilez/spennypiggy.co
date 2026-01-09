@@ -8,10 +8,10 @@ export default function LiveBarSection() {
     <section className='bg-black pb-24 relative overflow-hidden'>
        {/* Decorative Background Elements */}
        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 floating-shape"></div>
         </div>
 
-      <div className="relative z-10">
+      <div className="relative ">
         <img
         className='w-full h-auto'
         src={HeroWishlistImage}
@@ -21,10 +21,10 @@ export default function LiveBarSection() {
       </div>
      
 
-    <div className='w-100 livebarsections-hidden relative z-10'>
+    <div className='w-100 livebarsections-hidden relative'>
       <div className=' livebarsections pt-0 pt-md-5 mt-12 '>
         <div className='container px-4 w-100' >
-          <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-12 uppercase leading-none' >
+          <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-4 uppercase leading-none' >
             What is <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Spenny Piggy</span> ? 🐷
           </h2>
 

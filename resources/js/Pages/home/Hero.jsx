@@ -60,16 +60,6 @@ export default function Hero({auth}) {
   }, []);
 
   return <>
-            <style jsx>{`
-                .floating-shape {
-                    animation: float 6s ease-in-out infinite;
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0) rotate(0deg); }
-                    50% { transform: translateY(-20px) rotate(10deg); }
-                }
-            `}</style>
-
       <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
         <Scrollspy items={sections} currentClassName="active" offset={-50}>
           <li>
@@ -110,7 +100,7 @@ export default function Hero({auth}) {
         fetchPriority="high"
       />
       
-      <div id="home" className="bg-black relative min-h-screen flex items-center justify-center overflow-hidden py-24">
+      <div id="home" className="bg-black relative  min-h-[80vh] lg:min-h-screen flex items-center justify-center overflow-hidden py-2 md:py-24">
         {/* Decorative Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-10 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape"></div>
@@ -120,7 +110,7 @@ export default function Hero({auth}) {
 
         <div className="containerbox relative   w-full">
           <div className="welcome" data-aos="zoom-out" >
-              <div className="welcomeLeft m-auto pt-[50px] xl:pt-[80px] d-table w-full text-center">
+              <div className="welcomeLeft m-auto   d-table w-full text-center">
                   
                   <h2 className="headingSm shadow-none uppercase text-light font-gulfs stroke-none text-2xl md:text-5xl xl:text-6xl max-w-4xl mx-auto text-center leading-tight">
                     The everything {" "}
@@ -145,23 +135,22 @@ export default function Hero({auth}) {
                     {auth?.user?.username
                       ?
                       <Link href={`/${auth && auth?.user && auth?.user?.username || ''}`} 
-                        className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-4 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
+                        className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
                         <span className="relative z-10">My Wishlist</span>
                         <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                         <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        <span className="absolute -top-3 -right-3 bg-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full animate-pulse">It's Free 🎉</span>
                       </Link>
                       :  <Link href="/register"
-                      className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-4 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden">
+                      className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden">
                           <span className="relative z-10">Create your page</span>
                           <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                           <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          <span className="absolute -top-3 -right-3 bg-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full animate-pulse">It's Free 🎉</span>
                          </Link>
                     }
+                    <span className="absolute -top-3 -right-3 bg-pink-500 text-white text-[10px] font-bold px-2 py-1 rounded-full animate-pulse">It's Free 🎉</span>
                    
                   </div>
-                  <div className="mt-12 md:mt-16 flex justify-center">
+                  <div className=" flex justify-center">
                     <TrustBox />
                 </div>
 

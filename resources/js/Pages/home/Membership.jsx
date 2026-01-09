@@ -78,22 +78,22 @@ export default function Membership() {
       <section className='bg-black py-16 md:py-24 relative overflow-hidden'>
          {/* Decorative Background Elements */}
          <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-900 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-900 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape"></div>
         </div>
 
-       <div className='container relative z-10 px-4 mx-auto' >
+       <div className='container relative  px-4 mx-auto' >
         <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-tight">
             Premium <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Membership</span>
         </h2>
         <p className='max-w-4xl text-gray-300 m-auto text-center text-lg md:text-xl font-poppins leading-relaxed mb-12' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Unlock premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
       </div>
 
-        <div className='relative p-0 md:p-4 z-10' >
-         <div className="absolute top-1/2 left-0 w-full transform -translate-y-1/2 z-20">
+        <div className='relative p-0 md:p-4  ' >
+         <div className="absolute top-1/2 left-0 w-full transform -translate-y-1/2 z-1">
             <LiveBar reps={20} color={`yellowbg`} classes={''} text={"  Coming Soon      "} />
          </div>
 
-              <div data-aos="zoom-in-up" className='membership-image py-2 mx-auto flex justify-center max-w-4xl mt-3 relative z-10' >
+              <div data-aos="zoom-in-up" className='membership-image py-2 mx-auto flex justify-center max-w-4xl mt-3 relative ' >
                 <div className="rounded-[30px] overflow-hidden border-4 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.3)]">
                     <LazyLoadImage
                     alt={"image"}
@@ -112,12 +112,12 @@ export default function Membership() {
           <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
       </div>
 
-      <div className="containerbox relative z-10">
+      <div className="containerbox relative  ">
         <div className="flex justify-center mb-6" data-aos="fade-down">
           <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" />
         </div>
 
-        <h2 className="text-4xl md:text-5xl lg:text-6xl font-gulfs text-white text-center mb-12 uppercase leading-tight max-w-4xl mx-auto">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-12 uppercase leading-tight max-w-4xl mx-auto">
           Supporting Creators! Empowering Gifters! <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Made for Everyone!</span>
         </h2>
         

@@ -25,10 +25,10 @@ export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text,
     {/* Decorative Background Elements if bg is black/default */}
     {!mainbg && (
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className={`absolute ${reverse ? 'bottom-0 left-0' : 'top-0 right-0'} w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10`}></div>
+            <div className={`absolute ${reverse ? 'bottom-0 left-0' : 'top-0 right-0'} w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 floating-shape`}></div>
         </div>
     )}
-    <div  className={` box-s ${eclasses} ${reverse ? "justify-content-start" : "justify-content-end"} pb-0 w-50 relative z-10`}>
+    <div  className={` box-s ${eclasses} ${reverse ? "justify-content-start" : "justify-content-end"} pb-0 w-50 relative`}>
       <div className="image-container">
         <LazyLoadImage
           alt="image" className='max-h-[600px]'
@@ -37,9 +37,9 @@ export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text,
         />
       </div>
     </div>
-    <div className={`fading box-e ${reverse ? "justify-content-end" : "justify-content-start"} w-50 p-4 ${textbg}`}>
+    <div className={` box-e ${reverse ? "justify-content-end" : "justify-content-start"} w-50 p-4 ${textbg}`}>
       <div className='max-width-500'>
-        <h3 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-3 uppercase leading-tight" >
+        <h3 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-3 uppercase leading-tight" >
           {heading}
         </h3>
       </div>

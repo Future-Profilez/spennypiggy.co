@@ -10,12 +10,12 @@ export default function TopEarners({ creators, periodLabel }) {
     <section className="bg-black relative overflow-hidden py-24">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/4 right-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-          <div className="absolute bottom-10 left-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+          <div className="absolute top-1/4 right-0 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape"></div>
+          <div className="absolute bottom-10 left-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
       </div>
 
-      <div className="containerbox relative z-10">
-        <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-tight">
+      <div className="containerbox relative">
+        <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
           Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Earners</span>{periodLabel ? ` — ${periodLabel}` : ''}
         </h2>
         {periodLabel === 'Week' ? (
@@ -29,7 +29,7 @@ export default function TopEarners({ creators, periodLabel }) {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {creators.map((c, idx) => (
-            <Link key={c.id} href={`/${c.username}`} className="group relative bg-gray-900 rounded-3xl p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899]">
+            <Link key={c.id} href={`/${c.username}`} className="group relative bg-gray-900 rounded-3xl p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
             {c.is_number_one ? (
               <div className="absolute top-[-13px] left-[-13px] bg-[#F94F96] text-white text-xs font-bold px-2 py-1 rounded-full">#1 {periodLabel ? ` — ${periodLabel}` : ''}</div>
             ) : null}
