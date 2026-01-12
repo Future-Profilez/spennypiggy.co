@@ -34,6 +34,7 @@ use App\Services\CreatorActivityService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
+use App\Services\UserProfileService;
 
 use function Termwind\render;
 
@@ -230,6 +231,9 @@ class ShopsController extends Controller
             $shop->price_id = $product->default_price;
             $shop->save();
 
+            // Clear user caches
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
             return response()->json([
                 'status' => true,
                 'msg' => "Shop Item has been added, your upload will be approved shortly."
@@ -393,6 +397,9 @@ class ShopsController extends Controller
                     $logs->save();
                 }
 
+                // Clear user caches
+                app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
                 return response()->json([
                     'status' => true,
                     'msg' => "Shop Item has been updated, your upload will be approved shortly."
@@ -430,6 +437,10 @@ class ShopsController extends Controller
         ShopPayment::where('shop_id', $shop->id)->get();
 
         $shop->delete();
+
+        // Clear user caches
+        $user = $shop->user;
+        app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
 
         return response()->json([
             'status' => true,
@@ -558,6 +569,8 @@ class ShopsController extends Controller
                 'message' => "⚠️ Please complete your card verification payment and wait for admin approval before making further payments."
             ]);
         }
+
+        $this->ensureTurnstileVerified($request);
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         try {

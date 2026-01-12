@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('monthly_charges')) {
+            return;
+        }
+
         Schema::table('monthly_charges', function (Blueprint $table) {
             $table->timestamp('current_end_trial_date')->nullable()->after('tax');
             $table->timestamp('current_start_trial_date')->nullable()->after('tax');

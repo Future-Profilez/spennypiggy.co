@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('wish_items', 'content_file_size')) {
+            return;
+        }
+
         Schema::table('wish_items', function (Blueprint $table) {
             $table->bigInteger('content_file_size')->nullable()->after('content_file_name')->comment('File size in bytes of the uploaded content');
         });

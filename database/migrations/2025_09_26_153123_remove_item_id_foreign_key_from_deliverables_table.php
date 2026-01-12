@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         Schema::table('deliverables', function (Blueprint $table) {
             // Remove the restrictive foreign key constraint
             $table->dropForeign(['item_id']);

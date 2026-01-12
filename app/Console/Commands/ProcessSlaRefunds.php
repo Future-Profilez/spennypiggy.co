@@ -212,6 +212,7 @@ class ProcessSlaRefunds extends Command
             $purchase->refunded_at = Carbon::now();
             $purchase->status = 'refunded';
             $purchase->dispute_status = 'won'; // Supporter won
+            $purchase->refund_id = $refund->id;
             $purchase->save();
 
             // 3. Update Deliverable Status

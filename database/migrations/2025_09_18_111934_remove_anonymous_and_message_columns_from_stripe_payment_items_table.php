@@ -11,14 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('stripe_payment_items', function (Blueprint $table) {
-            if (Schema::hasColumn('stripe_payment_items', 'anonymous')) {
+        if (Schema::hasColumn('stripe_payment_items', 'anonymous')) {
+            Schema::table('stripe_payment_items', function (Blueprint $table) {
                 $table->dropColumn('anonymous');
-            }
-            if (Schema::hasColumn('stripe_payment_items', 'message')) {
+            });
+        }
+        
+        if (Schema::hasColumn('stripe_payment_items', 'message')) {
+            Schema::table('stripe_payment_items', function (Blueprint $table) {
                 $table->dropColumn('message');
-            }
-        });
+            });
+        }
     }
 
     /**

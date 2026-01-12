@@ -13,7 +13,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Ramsey\Uuid\Uuid;
@@ -27,6 +30,7 @@ use App\Models\PromoCode;
 use App\Models\Referal;
 use App\Models\ReferralCode;
 use App\Models\UserVerificationStatus;
+use App\Services\UserProfileService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -36,10 +40,12 @@ use PragmaRX\Google2FALaravel\Google2FA;
 class RegisteredUserController extends Controller
 {
     protected $google2FA;
+    protected $userProfileService;
 
-    public function __construct(Google2FA $google2FA)
+    public function __construct(Google2FA $google2FA, UserProfileService $userProfileService)
     {
         $this->google2FA = $google2FA;
+        $this->userProfileService = $userProfileService;
     }
     /**
      * Display the registration view.
@@ -60,6 +66,37 @@ class RegisteredUserController extends Controller
         return Inertia::render('Auth/Register');
     }
 
+    public function validateRegistration(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'min:5', 'max:20', 'unique:users,username'],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
+            'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
+            'country' => ['sometimes', 'required', 'string'],
+            'street_address' => ['sometimes', 'required', 'string', 'min:20'],
+            'city' => ['sometimes', 'required', 'string'],
+            'state' => ['sometimes', 'required', 'string'],
+            'postal_code' => ['sometimes', 'required', 'integer', 'digits_between:4,8'],
+        ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $email = (string) $request->input('email', '');
+            if ($email !== '' && str_contains($email, '@')) {
+                $domain = strtolower(trim(explode('@', $email)[1] ?? ''));
+                if ($domain !== '' && !AllowedDomain::where('name', $domain)->exists()) {
+                    $validator->errors()->add('email', 'Invalid Email Id.');
+                }
+            }
+        });
+
+        $validator->validate();
+
+        return response()->json([
+            'valid' => true,
+        ]);
+    }
 
     public function store(Request $request): RedirectResponse
     {
@@ -68,10 +105,30 @@ class RegisteredUserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => ['required', 'string', 'lowercase', 'max:20', 'unique:users,username'],
+            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'min:5', 'max:20', 'unique:users,username'],
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
         ]);
+
+        $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
+        if (!empty($turnstileSecret)) {
+            $request->validate([
+                'cf_turnstile_response' => ['required', 'string'],
+            ]);
+
+            $verifyResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                'secret' => $turnstileSecret,
+                'response' => $request->input('cf_turnstile_response'),
+                'remoteip' => $request->ip(),
+            ]);
+
+            $verifyBody = $verifyResponse->json();
+            if (!($verifyBody['success'] ?? false)) {
+                throw ValidationException::withMessages([
+                    'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
+                ]);
+            }
+        }
 
         /* =========================FAN ADDRESS VALIDATION========================== */
         if ($request->role == 0) {
@@ -93,7 +150,9 @@ class RegisteredUserController extends Controller
                 ->exists();
 
             if ($ipExists) {
-                return back()->with('error', 'You can not create multiple accounts with the same IP address.');
+                throw ValidationException::withMessages([
+                    'email' => 'You can not create multiple accounts with the same IP address.',
+                ]);
             }
         }
 
@@ -102,12 +161,40 @@ class RegisteredUserController extends Controller
         $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
         if (!in_array($domain, $allowedDomains)) {
-            return back()->with('error', 'Invalid Email Id.');
+            throw ValidationException::withMessages([
+                'email' => 'Invalid Email Id.',
+            ]);
         }
 
         /* =========================BLOCKED CONTENT CHECK========================== */
         if (Helpers::checkBlockData($request) == 1) {
-            return back()->with('error', 'Some words or emojis are not allowed.');
+            throw ValidationException::withMessages([
+                'name' => 'Some words or emojis are not allowed.',
+            ]);
+        }
+
+        $referralCode = null;
+        $referrer = null;
+        if ($request->filled('promo') && $request->role == 1) {
+            $referralCode = ReferralCode::where('code', $request->promo)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$referralCode) {
+                throw ValidationException::withMessages([
+                    'promo' => 'Invalid referral code.',
+                ]);
+            }
+
+            $referrer = User::where('id', $referralCode->creator_id)
+                ->where('role', 1)
+                ->first();
+
+            if (!$referrer) {
+                throw ValidationException::withMessages([
+                    'promo' => 'Invalid referral code.',
+                ]);
+            }
         }
 
         /* =========================CREATE USER========================== */
@@ -137,6 +224,7 @@ class RegisteredUserController extends Controller
                 ['follower_id' => $user->id, 'followed_id' => $spenny->id],
                 []
             );
+            $this->userProfileService->clearUserCaches($spenny->username, $spenny->id);
         }
 
         /* =========================VERIFICATION / ADDRESS========================== */
@@ -161,31 +249,7 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================✅ CREATOR REFERRAL LOGIC========================== */
-        if ($request->filled('promo') && $request->role == 1) {
-
-            // 🔎 Find active referral code
-            $referralCode = ReferralCode::where('code', $request->promo)
-                ->where('is_active', 1)
-                ->first();
-
-            if (!$referralCode) {
-                return back()->with('error', 'Invalid referral code.');
-            }
-
-            // 👤 Get referrer (creator who owns the code)
-            $referrer = User::where('id', $referralCode->creator_id)
-                ->where('role', 1)
-                ->first();
-
-            if (!$referrer) {
-                return back()->with('error', 'Invalid referral code.');
-            }
-
-            // ❌ Prevent self-referral
-            if ($referrer->id === $user->id) {
-                return back()->with('error', 'You cannot use your own referral code.');
-            }
-
+        if ($referralCode && $referrer && $request->role == 1) {
             // ❌ Prevent duplicate referral entry
             $alreadyExists = CreatorReferral::where('referred_creator_id', $user->id)
                 ->exists();
@@ -268,6 +332,12 @@ class RegisteredUserController extends Controller
     {
         $currency = strtoupper($request->cookie("currency", "GBP"));
         $user = Auth::user();
+        if (!($user instanceof User)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 
         // Ensure Stripe customer

@@ -802,7 +802,7 @@ button.cartLink svg{width:34px;height:34px;}
 .pass.greybox{padding:0 !important;background:0 0;}
 .wishlistimg img{height:160px !important;}
 .welcomeRt{padding:10px 0;}
-.hcaptcha-wrap{transform:scale(0.85);}
+.turnstile-wrap{transform:scale(0.85);}
 ul.socialmedia a{font-size:15px;}
 ul.socialmedia a svg{width:20px;height:20px;}
 ul.socialmedia a img{width:25px;height:25px;}

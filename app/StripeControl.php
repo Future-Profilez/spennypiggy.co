@@ -96,23 +96,30 @@ class StripeControl
             throw new Exception("Stripe API Error: " . $e->getMessage());
         }
     }
-    // {
-    //     self::setClient();
-    //     try {
-    //         return self::$client->customers->create($payload);
-    //     } catch (RateLimitException $e) {
-    //         throw new Exception("Stripe RateLimit: " . $e->getMessage());
-    //     } catch (InvalidRequestException $e) {
-    //         throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-    //     } catch (ApiConnectionException $e) {
-    //         throw new Exception("Stripe API Connection: " . $e->getMessage());
-    //     } catch (ApiErrorException $e) {
-    //         throw new Exception("Stripe API Error: " . $e->getMessage());
-    //     }
-    // }
 
+    /**
+     * Delete an Account
+     *
+     * @param string $account_id Stripe Account Id
+     * @return mixed
+     */
+    public static function deleteAccount($account_id)
+    {
+        self::setClient();
+        try {
+            return self::$client->accounts->delete($account_id, []);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
 
-        public static function getClient()
+    public static function getClient()
         {
             self::setClient();
             return self::$client;

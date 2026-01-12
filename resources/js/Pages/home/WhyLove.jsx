@@ -26,84 +26,6 @@ import huel from "../../../assets/new/huel.png";
 
 
 export default function WhyLove() {
-   //  const features = [
-   //      {
-   //          icon: image2,
-   //          title: "Posts",
-   //          heading:
-   //              "Share your creative journey with blog posts, videos and audio clips.",
-   //      },
-   //      {
-   //          icon: image3,
-   //          title: "rewards",
-   //          heading:
-   //              "Let Supporters unlock exclusive posts, member-only products and more.",
-   //      },
-   //      {
-   //          icon: image4,
-   //          title: "⁠Commissions & Service",
-   //          heading:
-   //              "Let Supporters buy unique work or pay for direct access to you.",
-   //      },
-   //      {
-   //          icon: image5,
-   //          title: "Membership tiers",
-   //          heading:
-   //              "Let fans support you monthly with Spenny Piggy Memberships.",
-   //      },
-   //      {
-   //          icon: image6,
-   //          title: "Supporter-only content ",
-   //          heading:
-   //              "Make exclusive content available to supporters or members.",
-   //      },
-   //      {
-   //          icon: image7,
-   //          title: "The Leaderboard",
-   //          heading:
-   //              "Showcase your supporters contributions directly on your page and site wide.",
-   //      },
-   //      {
-   //          icon: image8,
-   //          title: "Profile Intro Video  ",
-   //          heading:
-   //              "Showcase a profile introduction video, making your page as unique as you are!",
-   //      },
-   //      {
-   //          icon: image9,
-   //          title: "Monthly Bills",
-   //          heading:
-   //              "Make exclusive content available to supporters or members.",
-   //      },
-   //      {
-   //          hide: true,
-   //          icon: cc,
-   //          title: "Plus much more In the works! 🤩.",
-   //          heading: "",
-   //      },
-   //  ];
-
-   //  const premium = [
-   //      {
-   //          icon: image11,
-   //          title: "Link Share Payments",
-   //          heading:
-   //              "Upload some content, set your price, share the link and get paid! Easy as that!",
-   //      },
-   //      {
-   //          icon: image12,
-   //          title: "Profile Customization",
-   //          heading:
-   //              "Looking to make your page as unique as you are? Then change some colours, the background or some other aspects to truly stand out. ",
-   //      },
-   //      {
-   //          icon: image13,
-   //          title: "Notify Alerts ",
-   //          heading:
-   //              "Increase your earnings with each new wish you upload! Now all your previous gifters will receive an e-mail letting them know to check out your page again.",
-   //      },
-   //  ];
-
     const brandLogos = [
       { name: "Amazon", src: amazon },
       { name: "Nike", src: nike },
@@ -120,114 +42,39 @@ export default function WhyLove() {
 
     return (
         <>
-            {/* Old Code */}
-            {/* <div id="features" className="whylove bluebg">
-                <div className="containerbox">
-                    <h2 className="headingSm shadow-none text-white stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table">
-                        Features that you need
-                    </h2>
-                    <div className="whylovebox">
-                        {features &&
-                            features.map((item, i) => {
-                                return (
-                                    <div
-                                        data-aos="flip-down"
-                                        className={` ${
-                                            item.hide ? "d-lg-none" : ""
-                                        }  ${
-                                            item.hide ? "w-100" : ""
-                                        }  loveboxes px-4 mt-4  mb-4`}
-                                    >
-                                        <div className="featureicon">
-                                            <LazyLoadImage
-                                                alt={"image"}
-                                                height={70}
+            <section className="bg-black py-24 relative overflow-hidden">
+                 {/* Decorative Background Elements */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-pink-600/40 rounded-full mix-blend-screen filter blur-[100px] animate-float"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-purple-600/40 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/30 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
+                </div>
 
-                                                effect="blur"
-                                                src={item.icon}
-                                                width={70}
-                                            />
-                                        </div>
-                                        <h3 className="headingSm mt-2 mb-1 text-shadow-none text-white">
-                                            {item.title}
-                                        </h3>
-                                        <p className="text-white">
-                                            {item.heading}
-                                        </p>
-                                    </div>
-                                );
-                            })}
+                <div className="container relative px-4 mx-auto">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none drop-shadow-lg">
+                        Add Gifts From <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 drop-shadow-none">Any Brand</span>
+                    </h2>
+                    <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-12 text-center">
+                        With Spenny Piggy, you can seamlessly add gifts from any
+                        brand to your Wishlist, offering your supporters a diverse
+                        range of options to choose from. All you need is a link! You
+                        can add items from our Gift Store showcasing our partner
+                        brands, or any other online store on Shopify or Amazon.
+                    </p>
+
+                    <div className="flex flex-wrap justify-center gap-3 md:gap-8 max-w-[1000px] m-auto">
+                      {brandLogos.map((brand, index) => (
+                         <div key={index} className="group relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-all duration-300 hover:-translate-y-2 border border-gray-800 hover:border-pink-500 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                           <img
+                             src={brand.src}
+                             alt={brand.name}
+                             className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110"
+                           />
+                       </div>
+                      ))}
                     </div>
                 </div>
-            </div>
-            <div className="whylove yellowbg border-black border-bottom-0 border-end-0 border-start-0">
-                <div className="containerbox">
-                    <h2 className="headingSm shadow-none text-dark stroke-none mb-4 text-center mb-6 max-width-1000 m-auto d-table">
-                        Premium Only Features{" "}
-                    </h2>
-                    <div className="whylovebox pre d-block d-lg-flex">
-                        {premium &&
-                            premium.map((item, i) => {
-                                return (
-                                    <div
-                                        className={`loveboxes px-4 mt-4  mb-4`}
-                                        data-aos="flip-down"
-                                    >
-                                        <div className="featureicon">
-                                            <LazyLoadImage
-                                                alt={"image"}
-                                                height={70}
-
-                                                effect="blur"
-                                                src={item.icon}
-                                                width={70}
-                                            />
-                                        </div>
-                                        <h3 className="headingSm mt-2 mb-1 text-shadow-none text-dark">
-                                            {item.title}
-                                        </h3>
-                                        <p className="text-dark">
-                                            {item.heading}
-                                        </p>
-                                    </div>
-                                );
-                            })}
-                    </div>
-                </div>
-            </div> */}
-            <section className="bg-black py-16 px-4 text-center">
-            <div className="container">
-                <h2 className="fading headingSm shadow-none text-light font-gulfs stroke-none text-center w-full max-w-2xl mx-auto block mb-4">
-                    Add Gifts From Any Brand
-                </h2>
-                <p className="fading text-[#F94F96] text-sm md:text-base max-w-3xl mx-auto font-poppins leading-snug mb-12">
-                    With Spenny Piggy, you can seamlessly add gifts from any
-                    brand to your Wishlist, offering your supporters a diverse
-                    range of options to choose from. All you need is a link! You
-                    can add items from our Gift Store showcasing our partner
-                    brands, or any other online store on Shopify or Amazon.
-                </p>
-
-                <div  className="flex flex-wrap justify-center gap-3">
-                  {brandLogos.map((brand, index) => (
-                     <div key={index} className="fading shadow-pink rounded-full h-28 sm:h-36 w-28 sm:w-36 overflow-hidden  p-4 bg-white">
-                       <img
-                         src={brand.src}
-                         alt={brand.name}
-                         className="w-full h-full object-contain"
-                       />
-                       {/* <LazyLoadImage
-                            src={brand.src}
-                            alt={brand.name}
-                            className="max-h-32 md:max-h-36 min-h-28 object-contain"
-
-                            effect="blur"
-                            width={190}
-                        /> */}
-                   </div>
-                  ))}
-                </div>
-            </div>
             </section>
         </>
     );

@@ -19,15 +19,17 @@ return new class extends Migration {
         });
 
         // Clean & final status flow
-        DB::statement("
-            ALTER TABLE creator_referrals
-            MODIFY status ENUM(
-                'IN_PROGRESS',
-                'QUALIFIED',
-                'PAYOUT_REQUESTED',
-                'PAID'
-            ) NOT NULL DEFAULT 'IN_PROGRESS'
-        ");
+        if (config('database.default') !== 'sqlite') {
+            DB::statement("
+                ALTER TABLE creator_referrals
+                MODIFY status ENUM(
+                    'IN_PROGRESS',
+                    'QUALIFIED',
+                    'PAYOUT_REQUESTED',
+                    'PAID'
+                ) NOT NULL DEFAULT 'IN_PROGRESS'
+            ");
+        }
     }
 
     public function down(): void

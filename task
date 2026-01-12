@@ -5,6 +5,12 @@ php artisan app:process-sla-refunds
 Meta missing in memberships and bills
 Thankku page
 
+As per stripe complience policy every tasks payments should have metadata like content delivery status, payment status, gifter name and gifter profile url name etc, and creator name and creator profile url and task id payment date SLA timeline of the order current sttaus of order and purpose of this payment.
+
+Like if the payment is refunded by admin or refunded automatically by stripe or payment failed then the metadata should be updated accordingly. Also if timed task purchased then in metadata intinial status of task should pending after order is accepted by creator and status of task should be updated accordingly.
+
+
+
  1. auto tweets not working
  2. one time subscriptions are now showing in wish or subscriptions
  3. Wish tracker me payments message are not showing

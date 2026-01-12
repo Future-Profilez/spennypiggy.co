@@ -11,29 +11,53 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         // Add index to memberships.approved
         Schema::table('memberships', function (Blueprint $table) {
-            $table->index('approved');
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('memberships');
+            if (!array_key_exists('memberships_approved_index', $indexes)) {
+                 $table->index('approved');
+            }
         });
 
         // Add index to bills.approved
         Schema::table('bills', function (Blueprint $table) {
-            $table->index('approved');
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('bills');
+            if (!array_key_exists('bills_approved_index', $indexes)) {
+                $table->index('approved');
+            }
         });
 
         // Add index to shops.approved
         Schema::table('shops', function (Blueprint $table) {
-            $table->index('approved');
+             $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('shops');
+            if (!array_key_exists('shops_approved_index', $indexes)) {
+                $table->index('approved');
+            }
         });
 
         // Add index to user_intros.approved
         Schema::table('user_intros', function (Blueprint $table) {
-            $table->index('approved');
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('user_intros');
+            if (!array_key_exists('user_intros_approved_index', $indexes)) {
+                $table->index('approved');
+            }
         });
 
         // Add index to posts.approved
         Schema::table('posts', function (Blueprint $table) {
-            $table->index('approved');
+             $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('posts');
+            if (!array_key_exists('posts_approved_index', $indexes)) {
+                $table->index('approved');
+            }
         });
     }
 

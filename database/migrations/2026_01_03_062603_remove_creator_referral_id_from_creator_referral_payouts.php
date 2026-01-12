@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         Schema::table('creator_referral_payouts', function (Blueprint $table) {
             // 1️⃣ Drop foreign key constraint FIRST
             $table->dropForeign(['creator_referral_id']);

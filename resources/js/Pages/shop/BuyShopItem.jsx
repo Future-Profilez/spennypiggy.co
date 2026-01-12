@@ -9,7 +9,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useEffect } from "react";
 import { useRef } from "react";
 import AllContries from "../../includes/AllCountries";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Turnstile from "@/Components/Turnstile";
 
 export default function BuyShopItem({
     vat_percent,
@@ -24,8 +24,8 @@ export default function BuyShopItem({
     shippingPrice,
 }) {
     const { formatMultiPrice } = PriceFormat();
-    const { global_currency, auth, hcaptchakey, shop } = usePage().props;
-    const hcaptchaRef = useRef(null);
+    const { global_currency, auth, turnstileSiteKey, shop } = usePage().props;
+    const turnstileRef = useRef(null);
     const [close, setClose] = useState();
 
     useEffect(() => {
@@ -84,33 +84,39 @@ export default function BuyShopItem({
     const [loading, setLoading] = useState(false);
 
     const [checking, setChecking] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState("");
 
     const onVerify = (token) => {
-        buyItem();
+        setCaptchaToken(token || "");
+        buyItem(token);
     };
 
     const executeCaptcha = (e) => {
         e.preventDefault();
         
-        // If no hCaptcha key is configured, skip captcha
-        if (!hcaptchakey || hcaptchakey === '') {
+        if (!turnstileSiteKey) {
             buyItem();
             return;
         }
         
-        hcaptchaRef.current.execute();
+        if (turnstileRef.current) {
+            turnstileRef.current.execute();
+        }
         setChecking(true);
     };
 
-    const buyItem = () => {
+    const buyItem = (token) => {
         if (email === "" || name === "") {
             errorAlert("Please enter your name and email");
             return false;
         }
+        const captchaQuery = (token || captchaToken)
+            ? `&cf_turnstile_response=${encodeURIComponent(token || captchaToken)}`
+            : "";
         if (shop.type === "physical") {
             axios
                 .post(
-                    `/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}`,
+                    `/shop/buy/${s.uuid}/${selectedVarient}?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}&country=${country}${captchaQuery}`,
                     {
                         shipping_info: JSON.stringify(shipping_info),
                     }
@@ -136,7 +142,7 @@ export default function BuyShopItem({
             setLoading(true);
             axios
                 .get(
-                    `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}`
+                    `/shop/buy/${s.uuid}/no_varient?from=${name}&email=${email}&quantity=${quantity}&amount=${fairPrice}${captchaQuery}`
                 )
                 .then((res) => {
                     if (res.data.status == false) {
@@ -493,16 +499,14 @@ export default function BuyShopItem({
                                 ""
                             )}
 
-                            {hcaptchakey && hcaptchakey !== '' && (
-                                <HCaptcha
-                                    ref={hcaptchaRef}
-                                    sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                    data-theme="light"
+                            {turnstileSiteKey ? (
+                                <Turnstile
+                                    ref={turnstileRef}
                                     size="invisible"
+                                    theme="light"
                                     onVerify={onVerify}
-                                    required
                                 />
-                            )}
+                            ) : null}
 
                             <button
                                 disabled={checking}

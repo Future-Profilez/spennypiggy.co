@@ -198,8 +198,6 @@
             }
         </script>
 
-    {{-- hCaptcha Script --}}
-    <script nonce="{{ $cspNonce ?? '' }}" src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <script nonce="{{ $cspNonce ?? '' }}" async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
     
     {{-- @laravelPWA --}}
@@ -220,7 +218,7 @@
     @inertiaHead
 </head>
 
-<body className="font-sans antialiased">
+<body class="font-sans antialiased">
     <!-- Initial loading screen for PWA -->
     <div id="initial-loading-screen" style="
         position: fixed;

@@ -25,25 +25,60 @@ export default function FAQ() {
 
   return (
     <>
-    <style>{`
-    .faq-section .accordion-button{font-family:var(--body-font);text-transform:uppercase;font-size:20px;color:#ffff;}
-    .faq-section .accordion-header button{background:#000000 !important;}
-    .faq-section .accordion-collapse{background:#000000 !important;}
-    .faq-section .accordion-item{border: 2px solid #05EFB8 !important;}
-    .faq-section .accordion-button:focus{box-shadow:none !important;}
+    <style jsx>{`
+    .faq-custom .accordion-button {
+        background-color: transparent !important;
+        color: white !important;
+        font-family: 'Gulfs Display', sans-serif !important;
+        font-size: 1.25rem;
+        text-transform: uppercase;
+        box-shadow: none !important;
+        padding: 1.5rem;
+    }
+    .faq-custom .accordion-button:not(.collapsed) {
+        color: #FACC15 !important; /* Yellow-400 */
+    }
+    .faq-custom .accordion-button::after {
+        filter: invert(1);
+    }
+    .faq-custom .accordion-button:not(.collapsed)::after {
+        filter: invert(1) sepia(1) saturate(5) hue-rotate(0deg); /* Yellow-ish */
+    }
+    .faq-custom .accordion-item {
+        background-color: #111827; /* gray-900 */
+        border: 4px solid #EC4899; /* pink-500 */
+        border-radius: 1.5rem !important;
+        margin-bottom: 1.5rem;
+        box-shadow: 4px 4px 0px 0px #EC4899;
+        overflow: hidden;
+    }
+    .faq-custom .accordion-body {
+        color: #D1D5DB; /* gray-300 */
+        font-size: 1.125rem;
+        line-height: 1.625;
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
   `}</style>
-    <div id={`faq`} className='faq-section pt-10 pb-5' >
-      <div className='container' >
-          <h2 className='fading headingSm shadow-none font-gulfs stroke-none text-center mb-4 lg:!mb-8 pb-2' >Frequently Asked questions</h2>
-          <div className='max-width-1100 m-auto d-table' >
-              <div className='faqaccordian' >
+    <div id={`faq`} className='bg-black pt-24 pb-24 relative overflow-hidden' >
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+          <div className="absolute top-1/2 right-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float-delayed"></div>
+      </div>
+
+      <div className='containerbox relative  ' >
+          <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
+            Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Questions</span>
+          </h2>
+          <div className='max-w-4xl mx-auto' >
+              <div className='faq-custom' >
                   <Accordion defaultActiveKey={0}>
                     {faqs && faqs.map((f, i)=>{
-                      return <Accordion.Item eventKey={i}   className='mb-4 fading' >
+                      return <Accordion.Item eventKey={i} key={i} className='fading' >
                           <Accordion.Header onClick={(e) => setOpen(i)}>
                               {f.title}
                           </Accordion.Header>
-                          <Accordion.Body className='text-white'>
+                          <Accordion.Body>
                           {f.description}
                           </Accordion.Body>
                       </Accordion.Item>
@@ -56,4 +91,3 @@ export default function FAQ() {
     </>
   );
 };
-

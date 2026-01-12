@@ -1,5 +1,5 @@
 
-export default function Countries({send}) {
+export default function Countries({ send, selectClassName = "" }) {
   const data = [
     {
         "code": "AT",
@@ -510,7 +510,7 @@ export default function Countries({send}) {
   const updated = data.sort((a, b) => a.label.localeCompare(b.label));
   return <>
     <div className="custom-country-select" >
-      <select onChange={(e)=>send(e.target.value )} >
+      <select className={selectClassName} onChange={(e)=>send(e.target.value )} >
         <option value={null} disabled selected >Choose Your Country</option>
         {updated && updated.map((c, i)=>{ 
           return <>

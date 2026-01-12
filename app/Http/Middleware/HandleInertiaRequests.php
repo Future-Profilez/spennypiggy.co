@@ -86,7 +86,7 @@ class HandleInertiaRequests extends Middleware
             'rates'     =>  Currency::rates(),
             'currencies' => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO'),
             'global_currency'   =>  Cookie::get('currency'),
-            'hcaptchakey'   =>  env('HCAPTCHA'),
+            'turnstileSiteKey' => config('services.turnstile.site_key') ?: env('TRUNSTILE_SITE_KEY') ?: env('TURNSTILE_SITE_KEY'),
             'intercom' => app(IntercomService::class)->buildSettings($user)
         ];
     }

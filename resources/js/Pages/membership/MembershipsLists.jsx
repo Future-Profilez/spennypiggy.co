@@ -25,10 +25,13 @@ function MembershipsLists(props) {
 
     return (
         <div className='min-height'>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-5'>
-                {memoizedMemberships}
-            </div>
-            {hasNoMemberships && <Nocontent text="Nothing to see" />}
+            {hasNoMemberships ? 
+                <Nocontent text="Nothing to see" /> 
+                :
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-5'>
+                    {memoizedMemberships}
+                </div>
+            }
         </div>
     );
 }

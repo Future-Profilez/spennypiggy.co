@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('bill_payments')) {
+            return;
+        }
+
         Schema::table('bill_payments', function (Blueprint $table) {
             $table->timestamp('current_period_start')->nullable()->after('upcoming_payment')->comment('Current subscription period start');
             $table->timestamp('current_period_end')->nullable()->after('current_period_start')->comment('Current subscription period end');

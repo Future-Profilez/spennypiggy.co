@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use App\Services\UserProfileService;
 
 class PostsController extends Controller
 {
@@ -59,6 +60,10 @@ class PostsController extends Controller
 
             // Clear activity cache to ensure real-time updates
             app(\App\Services\CreatorActivityService::class)->clearActivityCache(Auth::user());
+
+            // Clear user caches
+            $user = Auth::user();
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
 
             return response()->json([
                 'status' => true,
@@ -116,6 +121,10 @@ class PostsController extends Controller
                     $logs->save();
                 }
 
+                // Clear user caches
+                $user = Auth::user();
+                app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
                 return response()->json([
                     'status' => true,
                     'msg' => "Post edited successfully."
@@ -167,6 +176,10 @@ class PostsController extends Controller
             PostLike::where('post_id', $post->id)->delete();
 
             $post->delete();
+
+            // Clear user caches
+            $user = Auth::user();
+            app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
 
             return response()->json([
                 'status' => true,

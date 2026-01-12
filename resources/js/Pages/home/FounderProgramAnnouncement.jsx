@@ -16,152 +16,57 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
 
     return (
         <>
-            <style jsx>{`
-                .founder-gradient {
-                    background: linear-gradient(135deg, #8C52FF 0%, #F94F96 50%,rgba(255, 242, 0, 0.9) 100%);
-                    // background: linear-gradient(135deg,rgb(246, 234, 10) 0%, #F94F96 50%, #8C52FF 100%);
-                }
-                .founder-card {
-                    backdrop-filter: blur(10px);
-                    background: rgba(255, 255, 255, 0.95);
-                    border: 2px solid rgba(140, 82, 255, 0.3);
-                }
-                .founder-icon {
-                    animation: bounce 2s infinite;
-                }
-                @keyframes bounce {
-                    0%, 20%, 50%, 80%, 100% {
-                        transform: translateY(0);
-                    }
-                    40% {
-                        transform: translateY(-10px);
-                    }
-                    60% {
-                        transform: translateY(-5px);
-                    }
-                }
-                .founder-button {
-                    background: linear-gradient(45deg, #8C52FF, #F94F96);
-                    transition: all 0.3s ease;
-                }
-                .founder-button:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 25px rgba(140, 82, 255, 0.3);
-                }
-            `}</style>
-
-            <div className=" founder-gradient py-6 pt-12 md:pt-24 md:py-24 pinkbg px-4 relative">
-                <div className="fading absolute top-10 left-10 opacity-20">
-                    <FaCrown className="text-white text-6xl founder-icon" />
-                </div>
-                <div className="fading absolute bottom-10 right-10 opacity-20">
-                    <FaTrophy className="text-white text-5xl founder-icon" style={{animationDelay: '0.5s'}} />
-                </div>
-                <div className="fading absolute top-1/2 left-1/4 opacity-10">
-                    <FaGift className="text-white text-4xl founder-icon" style={{animationDelay: '1s'}} />
+            <section className="bg-black py-16 md:py-24 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                    <div className="absolute top-10 right-10 w-96 h-96 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
+                    <div className="absolute bottom-10 left-10 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
                 </div>
 
-                <div className="max-w-6xl mx-auto">
-                    <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-                        <div className="flex-1 text-center lg:text-left" >
-                            <div className="mb-6 ">
-                                <div className="fading inline-flex items-center bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
-                                    <FaCrown className="text-yellow-300 mr-2" />
-                                    <span className=" text-white font-medium text-sm uppercase tracking-wider">
+                <div className="max-w-6xl mx-auto px-4 relative ">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+                        <div className="flex-1 text-center lg:text-left">
+                            <div className="mb-8">
+                                <div className="inline-flex items-center bg-gray-900/80 backdrop-blur-sm rounded-full px-6 py-2 mb-6 border border-yellow-400/30 shadow-[0_0_15px_rgba(250,204,21,0.2)] wiggle">
+                                    <FaCrown className="text-yellow-400 mr-2 text-xl" />
+                                    <span className="text-white font-gulfs uppercase tracking-wider text-sm md:text-base">
                                         New Program Launch
-                                    </span>
-                                </div>
-                                <h2 className="fading  text-4xl lg:text-5xl xl:text-6xl font-gulfs text-white mb-4 leading-tight uppercase">
-                                    Join the <span className="text-yellow-300">Founder</span> Program!
-                                </h2>
-                                <p className="fading text-xl text-white/90 mb-6 max-w-2xl">
-                                    Earn {config.currencySymbol}{config.minMonthlyEarnings} in your first 30 days from joining and automatically qualify for a {config.bonusPercentage}% bonus up to {config.currencySymbol}{config.maxBonusPerMonth}! 
-                                    Join our exclusive founder program with special recognition and benefits. Only {config.maxFounderSeats} creators can join! Existing founders are excluded from future selections.
+                                </span>
+                            </div>
+                            <h2 className="m-auto text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 leading-none uppercase">
+                                Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">Founder</span> Program!
+                            </h2>
+                            <p className="m-auto pt-6 text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl leading-relaxed font-poppins">
+                                    Earn <span className="text-yellow-400 font-bold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days from joining and automatically qualify for a <span className="text-pink-500 font-bold">{config.bonusPercentage}% bonus</span> up to {config.currencySymbol}{config.maxBonusPerMonth}! 
+                                    <br/><br/>
+                                    Join our exclusive founder program with special recognition and benefits. Only <span className="text-green-400 font-bold">{config.maxFounderSeats}</span> creators can join!
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                                <div className="flex justify-center md:justify-start items-center text-white">
-                                    <div className="w-8 h-8 min-w-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
-                                        <FaTrophy className="text-purple-800 text-sm" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="bg-black p-3 rounded-[25px] border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
+                                    <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center shrink-0">
+                                        <FaTrophy className="text-purple-900 text-xl" />
                                     </div>
-                                    <span className="text-start">{config.bonusPercentage}% bonus on monthly earnings</span>
+                                    <span className="text-white font-medium text-lg">{config.bonusPercentage}% bonus on monthly earnings</span>
                                 </div>
-                                <div className=" fading flex justify-center md:justify-start items-center text-white">
-                                    <div className="w-8 h-8 min-w-8 bg-pink-400 rounded-full flex items-center justify-center mr-3">
-                                        <FaCrown className="text-white text-sm" />
+                                <div className="bg-black p-3 rounded-[25px] border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
+                                    <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center shrink-0">
+                                        <FaCrown className="text-white text-xl" />
                                     </div>
-                                    <span className="text-start">Founder badge & recognition</span>
+                                    <span className="text-white font-medium text-lg">Founder badge & recognition</span>
                                 </div>
-                                <div className=" fading flex justify-center md:justify-start items-center text-white">
-                                    <div className="w-8 h-8 min-w-8 bg-green-400 rounded-full flex items-center justify-center mr-3">
-                                        <FaGift className="text-green-800 text-sm" />
+                                <div className="bg-black p-3 rounded-[25px] border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 md:col-span-2 wiggle">
+                                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                                        <FaGift className="text-green-900 text-xl" />
                                     </div>
-                                    <span className="text-start">Automatic qualification at {config.currencySymbol}{config.minMonthlyEarnings} in first 30 days</span>
-                                </div>
-                                <div className=" fading flex justify-center md:justify-start items-center text-white">
-                                    <div className="w-8 h-8 min-w-8 bg-blue-400 rounded-full flex items-center justify-center mr-3">
-                                        <FaArrowRight className="text-blue-800 text-sm" />
-                                    </div>
-                                    <span className="text-start">Priority support & feedback</span>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center lg:jsustify-start">
-                                <Link 
-                                    href="/founder/bonus"
-                                    className="button b !px-4 !py-3 flex items-center justify-center"
-                                >
-                                    Explore the Program
-                                </Link>
-                                
-                                {/* <Link 
-                                    href="/founder/bonus"
-                                    className="button b !px-4 !py-3 flex items-center justify-center"
-                                    >
-                                    Learn More
-                                    <FaArrowRight className="ml-2" />
-                                </Link> */}
-                            </div>
-                        </div>
-
-                        <div className="flex-1 max-w-md" >
-                            <div className="founder-card rounded-3xl p-4 md:p-8 text-center shadow-2xl">
-                                <div className="mb-6">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 founder-icon">
-                                        <FaCrown className="text-white text-3xl" />
-                                    </div>
-                                    {/* <h3 className="text-2xl font-bold text-gray-800 mb-2">Founding Member</h3> */}
-                                </div>
-                                
-                                <div className="space-y-3 text-left ">
-                                    <div className="text-center">
-                                        <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                            Join Our Exclusive Founder Program
-                                        </h2> 
-                                    </div>
-                                    <div className=" fading flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600 ">Monthly Bonus</span>
-                                        <span className="font-bold text-green-600">Up to {config.currencySymbol}{config.maxBonusPerMonth}</span>
-                                    </div>
-                                    <div className=" fading flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600 ">Badge Status</span>
-                                        <span className="font-bold text-yellow-500 flex items-center"><FaCrown className="text-yellow-500 text-xl me-2" /> Founder</span>
-                                    </div>
-                                    <div className=" fading flex justify-between items-center py-2 border-b border-gray-200">
-                                        <span className="text-gray-600 ">Early Access</span>
-                                        <span className="font-bold text-blue-600">✓ Included</span>
-                                    </div>
-                                    <div className=" fading flex justify-between items-center py-2">
-                                        <span className="text-gray-600 ">Support Priority</span>
-                                        <span className="font-bold text-orange-600">High</span>
-                                    </div>
+                                    <span className="text-white font-medium text-lg">Automatic qualification at {config.currencySymbol}{config.minMonthlyEarnings} in first 30 days</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </>
     );
 }

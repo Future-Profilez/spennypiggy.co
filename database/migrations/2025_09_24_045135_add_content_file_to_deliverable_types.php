@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+
         // Add 'content_file' to the deliverable_type enum
         DB::statement("ALTER TABLE deliverables MODIFY COLUMN deliverable_type ENUM('digital_file','pdf_receipt','badge','cert','access','post','media_bundle','email','content_file') NOT NULL");
     }

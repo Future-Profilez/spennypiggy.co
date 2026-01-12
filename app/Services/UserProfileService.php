@@ -24,13 +24,31 @@ class UserProfileService
      
     private function getCacheTtl(): int
     {
-        return (int) env('CACHE_TTL', 0);
+        return (int) env('CACHE_TTL', 300);
     }
 
     private function getLongCacheTtl(): int
     {
-        return (int) env('LONG_CACHE_TTL', 0);
+        return (int) env('LONG_CACHE_TTL', 3600);
     }
+
+    /**
+     * Get the current cache version for a user.
+     * This allows us to invalidate all caches for a user instantly by incrementing the version.
+     */
+    private function getUserCacheVersion(int $userId): int
+    {
+        return (int) Cache::get("user_cache_version_{$userId}", 1);
+    }
+
+    /**
+     * Increment the cache version for a user, effectively invalidating all their caches.
+     */
+    private function incrementUserCacheVersion(int $userId): void
+    {
+        Cache::increment("user_cache_version_{$userId}");
+    }
+
     /**
      * Get user with optimized relationships
      */
@@ -80,14 +98,19 @@ class UserProfileService
      */
     public function getOptimizedTasks(int $userId, bool $isOwner): array
     {
-        $query = \App\Models\Task::where('creator_id', $userId);
-        if (!$isOwner) {
-            $query->where('status', 'active')->where('is_approved', 1);
-        }
-        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved'])
-            ->latest()
-            ->get()
-            ->toArray();
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "user_tasks_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+        
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
+            $query = \App\Models\Task::where('creator_id', $userId);
+            if (!$isOwner) {
+                $query->where('status', 'active')->where('is_approved', 1);
+            }
+            return $query->select(['id', 'uuid', 'title', 'description', 'price', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved'])
+                ->latest()
+                ->get()
+                ->toArray();
+        });
     }
     
     /**
@@ -189,28 +212,51 @@ class UserProfileService
      */
     public function getUserWishItems(int $userId, ?int $categoryId = null, int $perPage = 20): array
     {
-            // $cacheKey = "user_wishes_{$userId}_{$categoryId}_{$perPage}";
-            $query = WishItem::where('user_id', $userId)
-            ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
-                $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
-            });
-
-            // Apply approval filter for non-owners
-            if (!Auth::check() || Auth::id() !== $userId) {
-                $query->where('is_approved', 1);
-            }
+            $isOwner = Auth::check() && Auth::id() === $userId;
+            $version = $this->getUserCacheVersion($userId);
+            $cacheKey = "user_wishes_{$userId}_{$categoryId}_{$perPage}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
             
-            return $query->orderBy('sort')
-                ->orderBy('created_at', 'desc')
-                ->limit($perPage)
-                ->get()
-                ->toArray();
+            return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $categoryId, $perPage, $isOwner) {
+                $query = WishItem::where('user_id', $userId)
+                ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
+                    $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
+                });
+
+                // Apply approval filter for non-owners
+                if (!$isOwner) {
+                    $query->where('is_approved', 1);
+                }
+                
+                return $query->orderBy('sort')
+                    ->orderBy('created_at', 'desc')
+                    ->limit($perPage)
+                    ->get()
+                    ->toArray();
+            });
     }
 
     /**
      * Get user's posts with optimized queries and subscription access logic
      */
     public function getUserPosts(int $userId, string $module = 'all', int $perPage = 10, int $page = 1)
+    {
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        $isGuest = !Auth::check();
+
+        // Cache first page for Owner and Guest to improve performance
+        if ($page === 1 && $module === 'all' && ($isOwner || $isGuest)) {
+            $version = $this->getUserCacheVersion($userId);
+            $cacheKey = "user_posts_{$userId}_all_1_{$perPage}_" . ($isOwner ? 'owner' : 'guest') . "_v{$version}";
+            
+            return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $module, $perPage, $page) {
+                return $this->executePostsQuery($userId, $module, $perPage, $page);
+            });
+        }
+
+        return $this->executePostsQuery($userId, $module, $perPage, $page);
+    }
+
+    private function executePostsQuery($userId, $module, $perPage, $page)
     {
         // Don't cache paginated results to ensure fresh data
         $query = Post::where('user_id', $userId);
@@ -323,9 +369,11 @@ class UserProfileService
      */
     public function getUserMemberships(int $userId): array
     {
-        $cacheKey = "user_memberships_{$userId}";
+        $version = $this->getUserCacheVersion($userId);
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        $cacheKey = "user_memberships_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
 
-        // return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
             $query = Membership::where('user_id', $userId);
 
             if (!Auth::check() || Auth::id() !== $userId) {
@@ -333,7 +381,7 @@ class UserProfileService
             }
 
             return $query->latest()->get()->toArray();
-        // });
+        });
     }
 
     /**
@@ -341,9 +389,11 @@ class UserProfileService
      */
     public function getUserBills(int $userId): array
     {
-        $cacheKey = "user_bills_{$userId}";
+        $version = $this->getUserCacheVersion($userId);
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        $cacheKey = "user_bills_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
 
-        // return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
             $query = Bills::where('user_id', $userId);
 
             if (!Auth::check() || Auth::id() !== $userId) {
@@ -351,7 +401,7 @@ class UserProfileService
             }
 
             return $query->latest()->get()->toArray();
-        // });
+        });
     }
 
     /**
@@ -359,17 +409,19 @@ class UserProfileService
      */
     public function getUserShopItems(int $userId): array
     {
-        $cacheKey = "user_shop_{$userId}";
+        $isOwner = Auth::check() && Auth::id() === $userId;
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "user_shop_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
 
-        // return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
             $query = Shop::where('user_id', $userId)
             ->with(['shop_varients:id,shop_id,name,price']);
 
-            if (!Auth::check() || Auth::id() !== $userId) {
+            if (!$isOwner) {
                 $query->where('approved', 1);
             }
             return $query->latest()->get()->toArray();
-        // });
+        });
     }
 
     /**
@@ -379,7 +431,7 @@ class UserProfileService
     {
         $cacheKey = "supporters_count_{$userId}";
         
-        // return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
+        return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
             // Use raw SQL for better performance
             $query = "
                 SELECT COUNT(DISTINCT supporter) as count FROM (
@@ -400,7 +452,7 @@ class UserProfileService
             
             $result = DB::select($query, [$userId, $userId, $userId]);
             return $result[0]->count ?? 0;
-        // });
+        });
     }
 
     /**
@@ -410,7 +462,7 @@ class UserProfileService
     {
         $cacheKey = "user_earnings_{$userId}";
         
-        // NO CACHE - REAL TIME DATA
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
             $goalPayment = TipGoalsPayment::where('creator_id', $userId)
                 ->where('status', 'paid')
                 ->sum('amount');
@@ -451,6 +503,7 @@ class UserProfileService
                 'wish_payments' => $wishPayment,
                 'subscription_payments' => $subPayment
             ];
+        });
     }
 
     /**
@@ -475,27 +528,25 @@ class UserProfileService
      */
     public function clearUserCaches(string $username, int $userId): void
     {
+        // Increment version to invalidate all versioned caches
+        $this->incrementUserCacheVersion($userId);
+
+        // Clear specific non-versioned keys if any
         $keys = [
             "user_profile_{$username}",
-            "user_wishes_{$userId}_*",
-            "user_posts_{$userId}_*",
-            "user_memberships_{$userId}",
-            "user_bills_{$userId}",
-            "user_shop_{$userId}",
             "supporters_count_{$userId}",
             "user_earnings_{$userId}",
             "notifications_{$userId}"
         ];
 
         foreach ($keys as $key) {
-            if (str_contains($key, '*')) {
-                // For wildcard keys, we'd need a more sophisticated cache clearing mechanism
-                // For now, we'll use cache tags if available or manual clearing
-                Cache::forget(str_replace('_*', '_', $key));
-            } else {
-                Cache::forget($key);
-            }
+            Cache::forget($key);
         }
+        
+        // Clear AuthenticatedSessionController specific caches
+        Cache::forget("wish_categories_{$userId}_public");
+        Cache::forget("wish_categories_{$userId}_private");
+        Cache::forget("migration_status_{$userId}");
     }
 
     /**

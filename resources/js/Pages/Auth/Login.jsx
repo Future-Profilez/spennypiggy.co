@@ -154,86 +154,115 @@ export default function Login({ status, canResetPassword }) {
     return (
         <GuestLayout>
             <Head title="Log in" />
-            {status && (
-                <div className="mb-4 font-medium text-sm text-green-600">{status}</div>
-            )}
-            <div className="loginPage blackbg px-3 py-5">
-                <h2 className="headingLg mb-3 text-center ">Welcome Back !</h2>
-                <p className="text-center text-white text-large mb-5 font-CeraGRBold">
-                    Don't have an account?{" "}
-                    <Link href={route("register")} className=" mb-6 text-pink">
-                        Signup
-                    </Link>
-                </p>
-                <div className="shadow-layout inputs max-w-[600px] pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden">
-                    <div className='p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
-                        <span className=' border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block'></span>
+            
+            <div className="min-h-[90vh] bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                {/* Decorative Background Elements */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
+                </div>
+
+                {status && (
+                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-lg border border-green-500/30 backdrop-blur-sm relative z-20">
+                        {status}
                     </div>
-                    <form className='!p-4 sm:!p-6 md:!p-10' onSubmit={checkTFA} >
-                        <div className='login-step1 loginform'>
-                            <p className='text-center font-CeraGRBold text-red-600 text-lg mb-4'>{redirectmessage}</p>
-                            <ul>
-                                <li className="formfield fading mb-6">
-                                    <label>Enter Email</label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        name="email"
-                                        value={data.email}
-                                        className="mt-1 block w-full"
-                                        autoComplete="username"
-                                        autoFocus={true}
-                                        onChange={(e) =>
-                                            setData("email", e.target.value)
-                                        }
-                                    />
-                                    <div className='p-2'>
-                                        <InputError message={errors.email} className="mt-2" />
+                )}
+
+                <div className="relative  w-full ">
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl md:text-6xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                            Welcome <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Back!</span>
+                        </h2>
+                        <p className="text-gray-400 text-lg font-medium">
+                            Don't have an account?{" "}
+                            <Link href={route("register")} className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4">
+                                Signup
+                            </Link>
+                        </p>
+                    </div>
+
+                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-1 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="h-8 bg-black/20 border-b border-white/5 flex items-center px-4 space-x-2 rounded-t-[20px]">
+                            <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                        </div>
+
+                        <div className="p-6 sm:p-8 bg-black/20 rounded-b-[20px]">
+                            <form onSubmit={checkTFA} className="space-y-6">
+                                {redirectmessage && (
+                                    <p className='text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-lg border border-red-500/20 animate-pulse'>
+                                        {redirectmessage}
+                                    </p>
+                                )}
+                                
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide" htmlFor="email">
+                                        Email Address
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            name="email"
+                                            value={data.email}
+                                            className="relative w-full bg-gray-900 border border-gray-700 text-white text-lg rounded-xl focus:ring-0 focus:border-transparent block p-3 placeholder-gray-500 transition-all duration-300"
+                                            autoComplete="username"
+                                            autoFocus={true}
+                                            placeholder="you@example.com"
+                                            onChange={(e) => setData("email", e.target.value)}
+                                        />
                                     </div>
-                                </li>
-                                <li className="formfield fading mb-6">
-                                    <label>Password</label>
-                                    <input
-                                        id="password"
-                                        type="password"
-                                        name="password"
-                                        value={data.password}
-                                        className="mt-1 block w-full"
-                                        autoComplete="current-password"
-                                        onChange={(e) =>
-                                            setData("password", e.target.value)
-                                        }
-                                    />
-                                    <div className='p-2'>
-                                        <InputError message={errors.password} className="mt-2" />
+                                    <InputError message={errors.email} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide" htmlFor="password">
+                                        Password
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            name="password"
+                                            value={data.password}
+                                            className="relative w-full bg-gray-900 border border-gray-700 text-white text-lg rounded-xl focus:ring-0 focus:border-transparent block p-3 placeholder-gray-600 transition-all duration-300"
+                                            autoComplete="current-password"
+                                            placeholder="••••••••"
+                                            onChange={(e) => setData("password", e.target.value)}
+                                        />
+
                                     </div>
+                                    <InputError message={errors.password} className="mt-2" />
 
                                     {canResetPassword && (
-                                        <div className=" mt-2 m-auto d-table ">
+                                        <div className="flex justify-end mt-2">
                                             <Link
                                                 href={route("password.request")}
-                                                className="text-sm text-gray-600 hover:text-gray-900"
+                                                className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
                                             >
                                                 Forgot your password?
                                             </Link>
                                         </div>
                                     )}
-                                </li>
-                            </ul>
+                                </div>
 
-                            <div className="  text-center flex justify-center ">
-                                {/* <button type='submit' className='main-button b size-lg !px-12'>Login Now</button> */}
-                                <LoaderButton
-                                    disabled={loading}
-                                    className="b size-lg !px-12 py-[10px] text-lg"
-                                    spinnerClassName="fill-red-600" >
-                                    {loading ? "Loggin In..." : "Log in"}
-                                </LoaderButton>
-                            </div>
+                                <div className="">
+                                    <LoaderButton
+                                        disabled={loading}
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6 !text-black w-full"
+                                        spinnerClassName="fill-white" 
+                                    >
+                                        {loading ? "Logging In..." : "Log In"}
+                                    </LoaderButton>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
             <EnterOTP action={open} user={data} />

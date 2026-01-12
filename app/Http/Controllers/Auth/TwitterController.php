@@ -17,9 +17,16 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Noweh\TwitterApi\Client;
 use Ramsey\Uuid\Uuid;
+use App\Services\UserProfileService;
 
 class TwitterController extends Controller
 {
+    protected $userProfileService;
+
+    public function __construct(UserProfileService $userProfileService)
+    {
+        $this->userProfileService = $userProfileService;
+    }
 
     /**
      * Initialize Auth Process
@@ -66,6 +73,7 @@ class TwitterController extends Controller
                         'expires_at'    => Carbon::now()->addSeconds($resp['data']['expires_in'])
                     ]);
                     FetchSelfTwitterData::dispatch($token);
+                    $this->userProfileService->clearUserCaches($user->username, $user->id);
                     return to_route('user.show', ['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
                 }
                 return to_route('user.show', ['username' => $user->username])->with('error', 'Failed to connect. ' . $resp['data']['error_description']);
@@ -97,6 +105,7 @@ class TwitterController extends Controller
                     'expires_at'    => Carbon::now()->addSeconds(7200)
                 ]);
                 FecthXDataOAuth1::dispatch($token);
+                $this->userProfileService->clearUserCaches($user->username, $user->id);
                 return to_route('user.show', ['username' => $user->username])->with('success', 'X.com successfully setup for Auto-tweets.');
             }
             // return response()->json($resp);

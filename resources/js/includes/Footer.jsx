@@ -2,6 +2,7 @@ import { Head, Link } from "@inertiajs/react";
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import spennypiggy from "../../assets/img/logo.png";
+import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
 
 export default function Footer(props) {
     const { auth } = props;
@@ -71,7 +72,39 @@ export default function Footer(props) {
             </Head>
             <footer className="bg-[#924DFF] text-white pt-10 pb-3 px-6">
                 <div className="max-w-5xl mx-auto">
-                    <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
+                        <div>
+                            <div className="pb-4">
+                                <Link href="/" className="block">
+                                    <LazyLoadImage
+                                        alt={"image"}
+                                        height={70}
+                                        effect="blur"
+                                        src={spennypiggy}
+                                        width={220}
+                                        className="cursor-pointer"
+                                    />
+                                </Link>
+                            </div>
+                            <img
+                                alt={"image"}
+                                height={70}
+                                effect="blur"
+                                src={risk}
+                                width={220}
+                                className="cursor-pointer max-w-[200px] "
+                            />
+                        </div>
+                         <div>
+                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4">
+                                HELP
+                            </h3>
+                            <ul className="space-y-2 font-poppins cursor-pointer">
+                                <li> <a target="_blank" href="https://spennypiggy.co" className="livechat intercom-dud02y e11rlguj1" > Live Chat</a> </li>
+                                <li> <a target="_blank" href="https://intercom.help/spenny-piggy" > FAQ's </a> </li>
+                                <li> <Link href={route("promotion-terms")}> Promotion Terms </Link> </li>
+                            </ul>
+                        </div>
                         <div>
                             <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4"> LEGAL </h3>
                             <ul className="space-y-2 font-poppins cursor-pointer">
@@ -95,56 +128,22 @@ export default function Footer(props) {
                                 <li> <a href="#" className="termly-display-preferences" > Consent Preferences </a> </li>
                             </ul>
                         </div>
-
-                        <div>
-                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4">
-                                HELP
-                            </h3>
-                            <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li> <a target="_blank" href="https://spennypiggy.co" className="livechat intercom-dud02y e11rlguj1" > Live Chat</a> </li>
-                                <li> <a target="_blank" href="https://intercom.help/spenny-piggy" > FAQ's </a> </li>
-                                <li> <Link href={route("promotion-terms")}> Promotion Terms </Link> </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="font-gulfs text-light text-lg md:text-3xl md:mb-4">
-                                CONTACT
-                            </h3>
-                            <ul className="space-y-2 font-poppins cursor-pointer">
-                                <li> <a href="tel:02033552057"> 020 3355 2057</a> </li>
-                                <li>
-                                <a href="mailto:support@spennypiggy.co">
-                                support@spennypiggy.co
-                                </a></li>
-                                <li>55 Colmore Row, B3 2AA</li>
-                            </ul>
-                        </div>
                     </div>
 
-                    <div className="flex flex-col items-center mt-4 sm:mt-2 space-y-4 ">
-                        <Link href="/">
-                            <LazyLoadImage
-                                alt={"image"}
-                                height={70}
-
-                                effect="blur"
-                                src={spennypiggy}
-                                width={220}
-                                className="cursor-pointer"
-                            />
-                        </Link>
-                        <p className="text-sm font-poppins">
-                            Copyright © {date && date.getFullYear()} Spenny Piggy
-                        </p>
-                    </div>
-
-                    <p className="border-t border-white text-center text-xs mt-4 pt-4 px-4 md:px-20 text-white/80 font-poppins">
+                    <ul className="space-y-2 mt-8 md:flex justify-center gap-4 items-center font-poppins cursor-pointer">
+                        <li className="mt-0" ><a className="!m-0 block" href="tel:02033552057"> 020 3355 2057</a> </li>
+                        <li className="mt-0" ><a className="!m-0 block" href="mailto:support@spennypiggy.co">support@spennypiggy.co</a></li>
+                        <li className="mt-0" ><a className="!m-0 block"  >55 Colmore Row, B3 2AA</a></li>
+                    </ul>
+                    <p className="border-t !border-gray-400 text-center text-xs mt-4 pt-4 px-4 md:px-20 text-white/80 font-poppins">
                         All trademarks, logos and brand names are the property
                         of their respective owners. All company, product and
                         service names used in this website are for
                         identification purposes only. Use of these names,
                         trademarks and brands does not imply endorsement.
+                    </p>
+                    <p className="border-t !border-gray-400 text-center text-xs mt-4 pt-4 px-4 md:px-20 text-white/80 font-poppins">
+                            Copyright © {date && date.getFullYear()} Spenny Piggy
                     </p>
                 </div>
             </footer>

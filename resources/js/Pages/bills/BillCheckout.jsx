@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Head, Link, useForm, usePage } from "@inertiajs/react";
 import { Toaster } from "react-hot-toast";
 import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import Turnstile from "@/Components/Turnstile";
 
 export default function BillCheckout(props) {
-    const hcaptchaRef = useRef(null);
+    const turnstileRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
     const { bill, vat_amount } = props;
-    const { user, auth, hcaptchakey } = usePage().props;
+    const { user, auth, turnstileSiteKey } = usePage().props;
 
     const [name, setName] = useState(
         (auth && auth.user && auth.user.name) || ""
@@ -26,6 +26,7 @@ export default function BillCheckout(props) {
         message: "",
         agree: false,
         anonymous: 0,
+        cf_turnstile_response: "",
     });
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -39,7 +40,22 @@ export default function BillCheckout(props) {
     }
 
     const [checking, setChecking] = useState(false);
-    const handleSubmit = (e) => {
+    const [captchaToken, setCaptchaToken] = useState("");
+
+    const onVerify = useCallback((token) => {
+        setCaptchaToken(token || "");
+    }, []);
+
+    useEffect(() => {
+        setData("cf_turnstile_response", captchaToken || "");
+    }, [captchaToken, setData]);
+
+    const handleSubmit = () => {
+        if (turnstileSiteKey && !captchaToken) {
+            errorAlert("Please verify the captcha");
+            return;
+        }
+        setChecking(true);
         post(
             route(`bill.checkout`, {
                 uuid: bill.uuid,
@@ -61,30 +77,19 @@ export default function BillCheckout(props) {
                 onError: (errorBag) => {
                     errorAlert(errorBag);
                     console.error("Checkout failed", errorBag);
+                    setCaptchaToken("");
+                    if (turnstileRef.current) {
+                        turnstileRef.current.reset();
+                    }
                     // show error toasts, alerts, or update error state
                 },
                 onFinish: () => {
                     console.log("Request finished (success or error)");
                     // cleanup, stop loader, etc.
+                    setChecking(false);
                 },
             }
         );
-    };
-    const onVerify = (token) => {
-        handleSubmit();
-    };
-
-    const executeCaptcha = (e) => {
-        e.preventDefault();
-        
-        // If no hCaptcha key is configured, skip captcha
-        if (!hcaptchakey || hcaptchakey === '') {
-            handleSubmit();
-            return;
-        }
-        
-        hcaptchaRef.current.execute();
-        setChecking(true);
     };
 
     return (
@@ -210,7 +215,7 @@ export default function BillCheckout(props) {
                             </div>
 
                             <div className="addMessage mt-2">
-                                <form onSubmit={executeCaptcha}>
+                                <form onSubmit={(e) => e.preventDefault()}>
                                     <ul className="row">
                                         <li>
                                             <label>Add Message </label>
@@ -429,9 +434,19 @@ export default function BillCheckout(props) {
                                             </div>
                                         </li>
                                     </ul>
+                                    {turnstileSiteKey ? (
+                                        <div className="mt-4 flex items-center justify-content-center">
+                                            <Turnstile
+                                                ref={turnstileRef}
+                                                size="normal"
+                                                theme="light"
+                                                onVerify={onVerify}
+                                            />
+                                        </div>
+                                    ) : null}
                                     <div className="mt-4 flex items-center justify-content-center">
                                         <button
-                                            type="submit"
+                                            type="button"
                                             className={`${
                                                 !data.agree ||
                                                 processing ||
@@ -444,21 +459,12 @@ export default function BillCheckout(props) {
                                                 processing ||
                                                 checking
                                             }
+                                            onClick={handleSubmit}
                                         >
                                             {processing || checking
                                                 ? "Processing..."
                                                 : "Pay Now"}
                                         </button>
-                                        {hcaptchakey && hcaptchakey !== '' && (
-                                            <HCaptcha
-                                                ref={hcaptchaRef}
-                                                sitekey={hcaptchakey || '10000000-ffff-ffff-ffff-000000000001'}
-                                                data-theme="light"
-                                                size="invisible"
-                                                onVerify={onVerify}
-                                                required
-                                            />
-                                        )}
                                     </div>
                                 </form>
                             </div>
