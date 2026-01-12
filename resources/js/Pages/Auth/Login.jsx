@@ -182,9 +182,9 @@ export default function Login({ status, canResetPassword }) {
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border border-white/10 rounded-[40px] p-1 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[40px]  shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="!bg-black border-b border-white/5 flex items-center p-4 space-x-2 rounded-t-[20px]">
+                        <div className="!bg-[#121212]/20 border-b border-pink-500/30 flex items-center p-4 space-x-2 rounded-t-[20px]">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
@@ -254,7 +254,7 @@ export default function Login({ status, canResetPassword }) {
                                 <div className="">
                                     <LoaderButton
                                         disabled={loading}
-                                        className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6 !text-black w-full"
+                                        className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
                                         spinnerClassName="fill-white" 
                                     >
                                         {loading ? "Logging In..." : "Log In"}

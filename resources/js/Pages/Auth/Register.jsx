@@ -859,9 +859,9 @@ export default function Register(props) {
             <Head title="Create Account" />
             <div className="min-h-[92vh]  bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
+                    <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[70px] md:blur-[120px] animate-float"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-pink-600/30 rounded-full mix-blend-screen filter blur-[70px] md:blur-[120px] animate-float-delayed"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
                 </div>
 
                 <div className="relative z-1 w-full max-w-4xl">
@@ -1260,11 +1260,11 @@ export default function Register(props) {
                                                 ref={checkRef}
                                                 id="termaccept"
                                                 name="termaccept"
-                                                className="mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
                                                 onChange={(e) => setData("termaccept", e.target.value)}
                                                 required
                                             />
-                                            <span className="text-sm text-gray-400">
+                                            <span className="text-normal text-gray-400">
                                                 By signing up you agree to our <a href={route("terms-and-conditions")} target="_blank" className="text-pink-400 hover:text-pink-300 underline">Terms & Conditions</a> and <a href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" target="_blank" className="text-pink-400 hover:text-pink-300 underline">Privacy Policy</a>, and confirm that you are at least 18 years old.
                                             </span>
                                         </label>
@@ -1276,10 +1276,10 @@ export default function Register(props) {
                                                     ref={addressCheck}
                                                     id="addressCheck"
                                                     name="addressCheck"
-                                                    className="mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                    className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
                                                     required
                                                 />
-                                                <span className="text-sm text-gray-400">
+                                                <span className="text-normal text-gray-400">
                                                     The above address and name matches on the bank card I will later use for purchases. My account will be suspended if I use any other details.
                                                 </span>
                                             </label>
@@ -1302,7 +1302,7 @@ export default function Register(props) {
                                             text={`Create Account`}
                                         >
                                             <div className="text-white">
-                                                <h2 className="text-2xl font-gulfs text-white mb-4 uppercase">Important notice !</h2>
+                                                <h2 className="text-2xl font-gulfs text-black mb-4 uppercase">Important notice !</h2>
                                                 <p className="text-gray-500 mb-4">
                                                     You must not use any other individual’s information. Only a single account can be used with the information you confirm to us.
                                                 </p>
@@ -1320,7 +1320,7 @@ export default function Register(props) {
                                                             name="hasNotified" 
                                                             value="hasNotified" 
                                                             required 
-                                                            className="mt-1 rounded bg-white/10 border-white/10 text-pink-500 focus:ring-pink-500" 
+                                                            className="mt-1 h-5 w-5 rounded bg-white/90 border-black/30 text-pink-500 focus:ring-pink-500" 
                                                         />
                                                         <span className="text-sm text-gray-500">
                                                             I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.
@@ -1330,7 +1330,7 @@ export default function Register(props) {
                                                 <LoaderButton
                                                     onClick={accepted}
                                                     disabled={processing}
-                                                    className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-lg py-3 rounded-[30px] shadow-lg shadow-pink-500/30 border border-white/10"
+                                                    className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]   "
                                                     spinnerClassName="fill-white" >
                                                     {processing ? "Processing" : "Accept Terms"}
                                                 </LoaderButton>
@@ -1339,7 +1339,7 @@ export default function Register(props) {
 
                                         <LoaderButton
                                             disabled={processing}
-                                            className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-xl py-4 rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10"
+                                            className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
                                             spinnerClassName="fill-white" >
                                             {processing ? "Processing" : "Create Account"}
                                         </LoaderButton>
