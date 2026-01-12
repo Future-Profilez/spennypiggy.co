@@ -62,8 +62,6 @@ use Symfony\Component\HttpKernel\Profiler\Profile;
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
-    Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral']);
-
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
@@ -94,6 +92,7 @@ Route::middleware('guest')->group(function () {
     Route::get('update-2fa-key', [ProfileController::class, 'update2FaKey']);
 });
 
+Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral']);
 Route::post('stripe/identity/verify', [StripeController::class, 'createVerificationSession'])->name('stripe.identity.verify');
 Route::get('discover/wishes/{order}/{type}/{price}', [WishitemController::class, 'discover_all_wishes'])->name('discover_wish');
 Route::get('discover/creators/{order}/{gender}', [WishitemController::class, 'discover_all_creators'])->name('discover_creators');

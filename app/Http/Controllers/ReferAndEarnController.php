@@ -17,29 +17,37 @@ class ReferAndEarnController extends Controller
 {
     public function checkCreatorReferral($code)
     {
-        if (!$code) {
+        try {
+            if (!$code) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'Referral code is required.'
+                ]);
+            }
+
+            // Validate referral code only (pre-signup)
+            $referral = ReferralCode::where('code', $code)
+                ->where('is_active', 1)
+                ->first();
+
+            if (!$referral) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'Invalid or inactive referral code.'
+                ]);
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Referral code applied successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error checking referral code: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
-                'msg' => 'Referral code is required.'
-            ]);
+                'msg' => 'An error occurred while checking the referral code.'
+            ], 500);
         }
-
-        // Validate referral code only (pre-signup)
-        $referral = ReferralCode::where('code', $code)
-            ->where('is_active', 1)
-            ->first();
-
-        if (!$referral) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'Invalid or inactive referral code.'
-            ]);
-        }
-
-        return response()->json([
-            'status' => true,
-            'msg' => 'Referral code applied successfully.'
-        ]);
     }
 
     public function index(Request $request)
