@@ -119,10 +119,12 @@ class SocialLinksController extends Controller
                 ]
             );
 
-            dispatch(new SendBioSocialUpdateEmail(Auth::user(), [
-                'bio'    => false,
-                'social' => true,
-            ]));
+            if (Auth::user()->profile_status_lock == 2) {
+                dispatch(new SendBioSocialUpdateEmail(Auth::user(), [
+                    'bio'    => false,
+                    'social' => true,
+                ]));
+            }
 
             $user = Auth::user();
             $this->userProfileService->clearUserCaches($user->username, $user->id);
