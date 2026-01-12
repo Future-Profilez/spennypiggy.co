@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use App\Jobs\ProcessWishItemDeliverable;
 use Illuminate\Support\Facades\Log;
 use App\Services\UserProfileService;
+use App\Services\StripeMetadataService;
 
 class TaskController extends Controller
 {
@@ -665,8 +666,13 @@ class TaskController extends Controller
         // Dispatch job to process the deliverable (certificate generation)
         \App\Jobs\ProcessWishItemDeliverable::dispatchSync($deliverable);
 
-        // Handle Instant Task
-        // Use $task->type as reliable source instead of metadata
+        // Initial Metadata Sync (ensure payment_status is 'paid' on Stripe)
+        try {
+            app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to sync initial metadata in createTaskPurchaseSync: " . $e->getMessage());
+        }
+ 
         if ($task->type === 'instant') {
             $purchase->status = 'completed';
             $purchase->completed_at = Carbon::now();
@@ -674,13 +680,10 @@ class TaskController extends Controller
             
             // Update Metadata
             try {
-                if ($purchase->payment_intent_id) {
-                    $client = new StripeClient(config('services.stripe.secret'));
-                    $client->paymentIntents->update($purchase->payment_intent_id, [
-                        'metadata' => [
-                            'status' => 'completed',
-                            'task_type' => 'instant'
-                        ]
+                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
+                    app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                        'task_type' => 'instant'
                     ]);
                 }
             } catch (\Exception $e) {
@@ -748,13 +751,10 @@ class TaskController extends Controller
         
         // Update Metadata
         try {
-            if ($purchase->payment_intent_id) {
-                $client = new StripeClient(config('services.stripe.secret'));
-                $client->paymentIntents->update($purchase->payment_intent_id, [
-                    'metadata' => [
-                        'status' => 'pending_review',
-                        'proof_uploaded_at' => now()->toIso8601String()
-                    ]
+            $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+            if ($deliverable) {
+                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                    'proof_uploaded_at' => now()->toIso8601String()
                 ]);
             }
         } catch (\Exception $e) {
@@ -814,11 +814,9 @@ class TaskController extends Controller
 
             // Update Metadata
             try {
-                if ($purchase->payment_intent_id) {
-                    $client = new StripeClient(config('services.stripe.secret'));
-                    
+                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
                     $metadata = [
-                        'status' => 'completed_accepted',
                         'proof_status' => 'accepted',
                         'accepted_by' => 'supporter'
                     ];
@@ -827,10 +825,8 @@ class TaskController extends Controller
                         $metadata['dispute_resolution'] = 'supporter_accepted';
                         $metadata['dispute_status'] = 'resolved';
                     }
-
-                    $client->paymentIntents->update($purchase->payment_intent_id, [
-                        'metadata' => $metadata
-                    ]);
+                    
+                    app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, $metadata);
                 }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to update metadata on proof acceptance: " . $e->getMessage());
@@ -934,14 +930,11 @@ class TaskController extends Controller
 
                  // Update Metadata
                  try {
-                     if ($purchase->payment_intent_id) {
-                         $client = new StripeClient(config('services.stripe.secret'));
-                         $client->paymentIntents->update($purchase->payment_intent_id, [
-                             'metadata' => [
-                                 'status' => 'escalated',
-                                 'dispute_status' => 'open',
-                                 'escalation_reason' => $request->reason
-                             ]
+                     $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                     if ($deliverable) {
+                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                             'dispute_status' => 'open',
+                             'escalation_reason' => $request->reason
                          ]);
                      }
                  } catch (\Exception $e) {
@@ -978,13 +971,11 @@ class TaskController extends Controller
 
                  // Update Metadata
                  try {
-                     if ($purchase->payment_intent_id) {
-                         $client = new StripeClient(config('services.stripe.secret'));
-                         $client->paymentIntents->update($purchase->payment_intent_id, [
-                             'metadata' => [
-                                 'status' => 'rejected_once',
-                                 'rejection_reason' => $request->reason
-                             ]
+                     $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                     if ($deliverable) {
+                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                             'status' => 'rejected_once',
+                             'rejection_reason' => $request->reason
                          ]);
                      }
                  } catch (\Exception $e) {

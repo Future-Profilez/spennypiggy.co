@@ -32,6 +32,7 @@ use App\Mail\TaskPurchasedMail;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TaskRefunded;
 use App\Services\UserProfileService;
+use App\Services\StripeMetadataService;
 
 class StripeWebhookController extends Controller
 {
@@ -666,6 +667,13 @@ class StripeWebhookController extends Controller
         // Dispatch job to process the deliverable (certificate generation)
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
         
+        // Initial Metadata Sync (ensure payment_status is 'paid' on Stripe)
+        try {
+            app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
+        } catch (\Exception $e) {
+            Log::error("Failed to sync initial metadata in processTaskPurchase: " . $e->getMessage());
+        }
+
         // Handle Instant Task
         if (($metadata->task_type ?? '') === 'instant') {
             $purchase->status = 'completed';
@@ -675,6 +683,17 @@ class StripeWebhookController extends Controller
             $deliverable->status = 'delivered';
             $deliverable->delivered_at = Carbon::now();
             $deliverable->save();
+
+            // Update Metadata for Instant Completion
+            try {
+                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                    'content_delivery_status' => 'delivered',
+                    'current_status_of_order' => 'completed',
+                    'task_type' => 'instant'
+                ]);
+            } catch (\Exception $e) {
+                Log::error("Failed to update metadata on instant task completion (webhook): " . $e->getMessage());
+            }
             
             Log::info("Instant task purchase completed", ['purchase_id' => $purchase->id]);
         } else {
@@ -751,6 +770,14 @@ class StripeWebhookController extends Controller
                     if ($deliverable) {
                         $deliverable->status = 'refunded';
                         $deliverable->save();
+                        
+                        // Update Stripe Metadata using Service
+                        app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                            'status' => 'refunded',
+                            'dispute_result' => 'lost',
+                            'refund_reason' => 'dispute_lost'
+                        ]);
+                        
                         Log::info("Updated deliverable status to refunded for lost dispute", ['deliverable_id' => $deliverable->id]);
                     }
                 } catch (\Exception $e) {

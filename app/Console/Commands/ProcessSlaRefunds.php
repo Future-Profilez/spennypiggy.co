@@ -14,6 +14,7 @@ use App\Mail\TaskGracePeriodStartedMail;
 use App\Mail\TaskGracePeriodReminderMail;
 use App\Mail\TaskRunningLateMail;
 use Stripe\Stripe;
+use App\Services\StripeMetadataService;
 use Stripe\Refund;
 use Carbon\Carbon;
 
@@ -215,16 +216,23 @@ class ProcessSlaRefunds extends Command
             $purchase->refund_id = $refund->id;
             $purchase->save();
 
-            // 3. Update Deliverable Status
+            // 3. Update Deliverable Status and Metadata
             try {
                 $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
                 if ($deliverable) {
                     $deliverable->status = 'refunded';
                     $deliverable->save();
-                    $this->info("Updated deliverable status for purchase UUID: {$purchase->uuid}");
+
+                    app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                        'status' => 'refunded',
+                        'refunded_by' => 'system_sla_expired',
+                        'refund_reason' => 'sla_expired_grace_period'
+                    ]);
+
+                    $this->info("Updated deliverable status and metadata for purchase UUID: {$purchase->uuid}");
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to update deliverable status for SLA refund {$purchase->uuid}: " . $e->getMessage());
+                Log::error("Failed to update deliverable status/metadata for SLA refund {$purchase->uuid}: " . $e->getMessage());
             }
 
             // 4. Notify Users

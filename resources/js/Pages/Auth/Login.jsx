@@ -241,8 +241,8 @@ export default function Login({ status, canResetPassword }) {
                                     <InputError message={errors.password} className="mt-2" />
 
                                     {canResetPassword && (
-                                        <div className="flex justify-end mt-2">
-                                            <Link
+                                        <div className="flex justify-end mt-2 relative z-1">
+                                            <Link method='get'
                                                 href={route("password.request")}
                                                 className="!cursor-pointer text-sm text-gray-400 hover:text-white transition-colors duration-200"
                                             >
@@ -256,8 +256,7 @@ export default function Login({ status, canResetPassword }) {
                                     <LoaderButton
                                         disabled={loading}
                                         className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
-                                        spinnerClassName="fill-white" 
-                                    >
+                                        spinnerClassName="fill-white"  >
                                         {loading ? "Logging In..." : "Log In"}
                                     </LoaderButton>
                                 </div>

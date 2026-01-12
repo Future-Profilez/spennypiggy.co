@@ -132,9 +132,12 @@ class StripeMetadataService
         
         // Build NEW FLATTENED metadata format
         $newFormatMetadata = $this->buildNewFlattenedMetadata($deliverable);
+
+        // Build Product Specific Metadata (Task details, etc.)
+        $productSpecificMetadata = $this->buildProductSpecificMetadata($deliverable);
         
-        // Merge with additional metadata
-        $allAdditionalMetadata = array_merge($newFormatMetadata, $additionalMetadata);
+        // Merge all metadata: New Format + Product Specific + Additional
+        $allAdditionalMetadata = array_merge($newFormatMetadata, $productSpecificMetadata, $additionalMetadata);
         
         // Add special logging for support payments with certificates
         if ($isSupportPaymentWithCert) {
@@ -179,8 +182,16 @@ class StripeMetadataService
     {
         return match($deliverableStatus) {
             'delivered' => 'completed',
+            'completed_accepted' => 'completed',
+            'completed' => 'completed',
             'pending' => 'pending',
+            'assigned' => 'pending',
+            'pending_review' => 'pending',
+            'rejected_once' => 'pending',
+            'escalated' => 'pending',
             'failed' => 'failed',
+            'refunded' => 'cancelled',
+            'cancelled' => 'cancelled',
             default => 'pending'
         };
     }
@@ -226,6 +237,28 @@ class StripeMetadataService
             case 'shop_item':
                 // Add shop item specific metadata if needed
                 $metadata['shop_item_id'] = $deliverable->item_id;
+                break;
+
+            case 'task':
+            case 'task_purchase':
+                if ($deliverable->task) {
+                    $task = $deliverable->task;
+                    $metadata['task_id'] = $task->id;
+                    $metadata['task_uuid'] = $task->uuid;
+                    $metadata['task_type'] = $task->type;
+                    $metadata['purpose'] = 'paid_task';
+                    $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant';
+                    $metadata['payment_date'] = $deliverable->created_at ? $deliverable->created_at->toIso8601String() : now()->toIso8601String();
+                    
+                    // Order status - Prefer granular purchase status if available
+                    if ($deliverable->purchase) {
+                        $metadata['current_status_of_order'] = $deliverable->purchase->status;
+                    } else {
+                        $metadata['current_status_of_order'] = $deliverable->status;
+                    }
+                    
+                    $metadata['payment_status'] = $deliverable->payment_status ?? 'pending';
+                }
                 break;
                 
             case 'support_payment':
@@ -347,32 +380,73 @@ class StripeMetadataService
         $metadata['buyer_name'] = $deliverable->customer_name ?? 'Anonymous';
         $metadata['buyer_email'] = $deliverable->customer_email ?? 'anonymous@spennypiggy.co';
         $metadata['buyer_username'] = 'guest'; // Default for now
+        $metadata['gifter_profile_url'] = 'N/A';
         
         // CREATOR INFO
         $metadata['creator_id'] = (string) ($deliverable->creator_id ?? 'unknown');
         $metadata['creator_name'] = 'Creator'; // Default
         $metadata['creator_username'] = 'creator'; // Default
+        $metadata['creator_profile_url'] = 'N/A';
         
         // Try to get actual creator details based on product type
         switch ($deliverable->product_type) {
             case 'wish':
                 if ($deliverable->wishItem && $deliverable->wishItem->user) {
-                    $metadata['creator_name'] = $deliverable->wishItem->user->name ?? 'Creator';
-                    $metadata['creator_username'] = $deliverable->wishItem->user->username ?? 'creator';
+                    $user = $deliverable->wishItem->user;
+                    $metadata['creator_name'] = $user->name ?? 'Creator';
+                    $metadata['creator_username'] = $user->username ?? 'creator';
+                    $metadata['creator_profile_url'] = route('user.show', $user->username);
                 }
                 break;
                 
             case 'bill':
                 if ($deliverable->bill && $deliverable->bill->user) {
-                    $metadata['creator_name'] = $deliverable->bill->user->name ?? 'Creator';
-                    $metadata['creator_username'] = $deliverable->bill->user->username ?? 'creator';
+                    $user = $deliverable->bill->user;
+                    $metadata['creator_name'] = $user->name ?? 'Creator';
+                    $metadata['creator_username'] = $user->username ?? 'creator';
+                    $metadata['creator_profile_url'] = route('user.show', $user->username);
                 }
                 break;
                 
             case 'membership':
                 if ($deliverable->membership && $deliverable->membership->user) {
-                    $metadata['creator_name'] = $deliverable->membership->user->name ?? 'Creator';
-                    $metadata['creator_username'] = $deliverable->membership->user->username ?? 'creator';
+                    $user = $deliverable->membership->user;
+                    $metadata['creator_name'] = $user->name ?? 'Creator';
+                    $metadata['creator_username'] = $user->username ?? 'creator';
+                    $metadata['creator_profile_url'] = route('user.show', $user->username);
+                }
+                break;
+
+            case 'task':
+            case 'task_purchase':
+                // Get Creator
+                $creator = null;
+                if ($deliverable->creator) {
+                    $creator = $deliverable->creator;
+                } elseif ($deliverable->task && $deliverable->task->creator) {
+                    $creator = $deliverable->task->creator;
+                } elseif ($deliverable->creator_id) {
+                    $creator = \App\Models\User::find($deliverable->creator_id);
+                }
+
+                if ($creator) {
+                    $metadata['creator_name'] = $creator->name;
+                    $metadata['creator_username'] = $creator->username;
+                    $metadata['creator_profile_url'] = route('user.show', $creator->username);
+                }
+
+                // Get Gifter/Buyer
+                $gifter = null;
+                if ($deliverable->gifter) {
+                    $gifter = $deliverable->gifter;
+                } elseif ($deliverable->gifter_id) {
+                    $gifter = \App\Models\User::find($deliverable->gifter_id);
+                }
+
+                if ($gifter) {
+                    $metadata['buyer_username'] = $gifter->username;
+                    $metadata['gifter_name'] = $gifter->name; // Explicit request for gifter_name
+                    $metadata['gifter_profile_url'] = route('user.show', $gifter->username);
                 }
                 break;
         }
