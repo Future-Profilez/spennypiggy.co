@@ -25,8 +25,8 @@ class ReferAndEarnController extends Controller
                 ]);
             }
 
-            // Validate referral code only (pre-signup)
-            $referral = ReferralCode::where('code', $code)
+            $referral = ReferralCode::with('creator:id,name')
+                ->where('code', $code)
                 ->where('is_active', 1)
                 ->first();
 
@@ -37,18 +37,26 @@ class ReferAndEarnController extends Controller
                 ]);
             }
 
+            $creatorName = $referral->creator?->name ?? 'Creator';
+
             return response()->json([
                 'status' => true,
-                'msg' => 'Referral code applied successfully.'
+                'msg' => "🎉 {$creatorName}'s referral code has been applied successfully.",
+                'creator' => [
+                    'id'   => $referral->creator?->id,
+                    'name' => $creatorName,
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error checking referral code: ' . $e->getMessage());
+
             return response()->json([
                 'status' => false,
-                'msg' => 'An error occurred while checking the referral code.'
+                'msg' => 'Something went wrong while validating the referral code.'
             ], 500);
         }
     }
+
 
     public function index(Request $request)
     {
