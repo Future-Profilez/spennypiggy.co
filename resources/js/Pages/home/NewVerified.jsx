@@ -8,8 +8,8 @@ export default function NewVerified({ creators }) {
     <section className="bg-black relative overflow-hidden py-24">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/4 left-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape"></div>
-          <div className="absolute bottom-10 right-10 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
+          <div className="absolute top-1/4 left-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
+          <div className="absolute bottom-10 right-10 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
       </div>
 
       <div className="containerbox relative ">

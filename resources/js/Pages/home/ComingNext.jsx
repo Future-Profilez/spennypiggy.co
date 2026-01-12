@@ -8,8 +8,8 @@ export default function ComingNext() {
    <div className="bg-black py-16 md:py-24 relative overflow-hidden">
        {/* Decorative Background Elements */}
        <div className="absolute top-0 right-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape"></div>
-            <div className="absolute bottom-10 left-10 w-48 h-48 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
+            <div className="absolute top-1/4 right-0 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
+            <div className="absolute bottom-10 left-10 w-48 h-48 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
         </div>
 
       <div className="containerbox relative z-10" >

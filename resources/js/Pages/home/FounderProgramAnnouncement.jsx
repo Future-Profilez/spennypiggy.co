@@ -18,8 +18,8 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
         <>
             <section className="bg-black py-16 md:py-24 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-10 right-10 w-96 h-96 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape"></div>
-                    <div className="absolute bottom-10 left-10 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute top-10 right-10 w-96 h-96 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
+                    <div className="absolute bottom-10 left-10 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
                 </div>
 
@@ -44,19 +44,19 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                <div className="bg-black p-4 rounded-2xl border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
+                                <div className="bg-black p-3 rounded-[25px] border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
                                     <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center shrink-0">
                                         <FaTrophy className="text-purple-900 text-xl" />
                                     </div>
                                     <span className="text-white font-medium text-lg">{config.bonusPercentage}% bonus on monthly earnings</span>
                                 </div>
-                                <div className="bg-black p-4 rounded-2xl border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
+                                <div className="bg-black p-3 rounded-[25px] border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
                                     <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center shrink-0">
                                         <FaCrown className="text-white text-xl" />
                                     </div>
                                     <span className="text-white font-medium text-lg">Founder badge & recognition</span>
                                 </div>
-                                <div className="bg-black p-4 rounded-2xl border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 md:col-span-2 wiggle">
+                                <div className="bg-black p-3 rounded-[25px] border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 md:col-span-2 wiggle">
                                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shrink-0">
                                         <FaGift className="text-green-900 text-xl" />
                                     </div>

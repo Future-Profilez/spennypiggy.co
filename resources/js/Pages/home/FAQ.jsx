@@ -62,12 +62,12 @@ export default function FAQ() {
     <div id={`faq`} className='bg-black pt-24 pb-24 relative overflow-hidden' >
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20"></div>
+          <div className="absolute top-1/2 right-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-yellow-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float-delayed"></div>
       </div>
 
-      <div className='containerbox relative z-10' >
-          <h2 className='text-4xl md:text-5xl lg:text-6xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
+      <div className='containerbox relative  ' >
+          <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
             Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Questions</span>
           </h2>
           <div className='max-w-4xl mx-auto' >

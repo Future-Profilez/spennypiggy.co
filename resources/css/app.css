@@ -110,6 +110,12 @@ body{position:relative;font-family:var(--para-font)}
 .floating-shape {
     animation: float 6s ease-in-out infinite;
 }
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+.animate-float-delayed {
+    animation: float 6s ease-in-out 3s infinite;
+}
 /* end */
 @media (max-width:575px){.shadow-mint{box-shadow:7px 7px 0 0 var(--mint)}
 .shadow-black{box-shadow:7px 7px 0 0 rgba(0,0,0,1)}

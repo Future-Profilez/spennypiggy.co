@@ -110,7 +110,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <FunPart classes={`border-top-0`}
         img={fun1} reverse={true}
         mainbg={`bg-[#EFEA7B]`} eclasses={``}
-        textbg={`bg-[#EFEA7B]`}
+        textbg={`bg-[#EFEA7B]`} textcolor='text-black'
         heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
         />
 
@@ -124,7 +124,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <FunPart classes={`border-top-0`}
         img={fun3} reverse={true}
         mainbg={`bg-[#EFEA7B]`} eclasses={``}
-        textbg={`bg-[#EFEA7B]`}
+        textbg={`bg-[#EFEA7B]`} textcolor='text-black'
         heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
         />
 

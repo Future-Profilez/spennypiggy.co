@@ -51,11 +51,11 @@ export default function HappyCreators() {
         <section id="reviews" className="bg-black relative overflow-hidden pt-24 pb-24">
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
+                <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+                <div className="absolute bottom-1/4 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
             </div>
 
-            <div className="containerbox relative">
+            <div className="containerbox relative ">
                 <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
                     Happy <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Creators</span>
                 </h2>
@@ -72,17 +72,17 @@ export default function HappyCreators() {
                                     <SwiperSlide key={`swiper-item-${i}`}>
                                         <div
                                            
-                                          className="fading min-h-[245px] rounded-[37.02px] bg-white p-[25px] shadow-[6px_6px_0_0_#F94F96]"
+                                          className="fading min-h-[245px] rounded-[37.02px] bg-gray-900 border border-gray-800 p-[25px] shadow-[6px_6px_0_0_#F94F96] hover:translate-y-[-5px] transition-transform duration-300"
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">
-                                                    <strong className="text-center text-lg not-italic font-normal leading-[120%] font-gulfs">
+                                                    <strong className="text-center text-lg not-italic font-normal leading-[120%] font-gulfs text-white">
                                                         @{m.name}
                                                     </strong>
                                                 </div>
                                             </div>
-                                            <p className="font-poppins">{m.message}</p>
-                                            <div className="text-base not-italic font-normal leading-[140%] mt-[30px] font-gulfs">
+                                            <p className="font-poppins text-gray-300">{m.message}</p>
+                                            <div className="text-base not-italic font-normal leading-[140%] mt-[30px] font-gulfs text-gray-400">
                                                 {m.date}
                                             </div>
                                         </div>
@@ -91,7 +91,7 @@ export default function HappyCreators() {
                         </Swiper>
                     </div>
                 </div>
-                <div  className="containerbox relative lg:!mb-[-160px] z-20">
+                <div  className="containerbox relative lg:!mb-[-140px] z-1">
                     <div className="hidden lg:block relative bottom-[60px] left-0 pointer-events-none">
                         <img src={faq} className="" alt="Decorative" />
                     </div>

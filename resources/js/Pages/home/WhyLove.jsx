@@ -45,14 +45,16 @@ export default function WhyLove() {
             <section className="bg-black py-24 relative overflow-hidden">
                  {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-pink-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-10 floating-shape"></div>
+                    <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-pink-600/40 rounded-full mix-blend-screen filter blur-[100px] animate-float"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-purple-600/40 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/30 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
                 </div>
 
-                <div className="container relative  px-4 mx-auto">
-                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none">
-                        Add Gifts From <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Any Brand</span>
+                <div className="container relative px-4 mx-auto">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none drop-shadow-lg">
+                        Add Gifts From <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 drop-shadow-none">Any Brand</span>
                     </h2>
-                    <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-16 text-center">
+                    <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-12 text-center">
                         With Spenny Piggy, you can seamlessly add gifts from any
                         brand to your Wishlist, offering your supporters a diverse
                         range of options to choose from. All you need is a link! You
@@ -60,13 +62,14 @@ export default function WhyLove() {
                         brands, or any other online store on Shopify or Amazon.
                     </p>
 
-                    <div className="flex flex-wrap justify-center gap-6">
+                    <div className="flex flex-wrap justify-center gap-3 md:gap-8 max-w-[1000px] m-auto">
                       {brandLogos.map((brand, index) => (
-                         <div key={index} className="group relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white p-4 flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] border-4 border-transparent hover:border-pink-500">
+                         <div key={index} className="group relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white backdrop-blur-sm p-6 flex items-center justify-center transition-all duration-300 hover:-translate-y-2 border border-gray-800 hover:border-pink-500 shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(236,72,153,0.3)]">
+                           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                            <img
                              src={brand.src}
                              alt={brand.name}
-                             className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
+                             className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300 transform group-hover:scale-110"
                            />
                        </div>
                       ))}

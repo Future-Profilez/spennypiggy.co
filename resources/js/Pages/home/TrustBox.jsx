@@ -17,7 +17,7 @@ const TrustBox = () => {
             data-businessunit-id="6577b210459a86f997ab6735"
             data-style-height="40px"
             data-style-width="250px"
-            data-theme="light"
+            data-theme="dark"
             data-scroll-to-list="true"
             data-allow-robots="true"
             data-stars="4,5"

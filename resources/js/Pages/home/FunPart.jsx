@@ -1,7 +1,7 @@
 import seek from "../../../assets/img/seeksearch.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text, img, classes, reverse}) {
+export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, eclasses, text, img, classes, reverse}) {
     return (
         <>
   <style jsx>{`
@@ -39,7 +39,7 @@ export default function FunPart({imgbg, mainbg, textbg, heading, eclasses, text,
     </div>
     <div className={` box-e ${reverse ? "justify-content-end" : "justify-content-start"} w-50 p-4 ${textbg}`}>
       <div className='max-width-500'>
-        <h3 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-3 uppercase leading-tight" >
+        <h3 className={`fading text-2xl md:text-4xl lg:text-5xl font-gulfs ${textcolor || 'text-white'} mb-3 uppercase leading-tight`} >
           {heading}
         </h3>
       </div>

@@ -29,8 +29,8 @@ export default function NotForBusiness() {
         <section className="bg-black py-16 md:py-24 relative overflow-hidden">
              {/* Decorative Background Elements */}
              <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                <div className="absolute top-1/4 left-0 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse"></div>
-                <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
+                <div className="absolute top-1/4 left-0 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
+                <div className="absolute bottom-1/4 right-0 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float-delayed" style={{animationDelay: '1s'}}></div>
             </div>
 
             <div className="containerbox relative  ">
@@ -39,9 +39,7 @@ export default function NotForBusiness() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
-                    {/* Connecting Line (Desktop) */}
-                    <div className="hidden md:block absolute top-[100px] left-[16%] right-[16%] h-1 bg-gradient-to-r from-pink-500/20 via-yellow-500/20 to-pink-500/20 z-0"></div>
-
+                    <div className="hidden md:block absolute top-[100px] left-[16%] right-[16%] h-1 bg-gradient-to-r from-pink-500 via-yellow-500  to-pink-500  z-0"></div>
                     {data.map((item, index) => (
                         <div key={index} className="mb-6 flex flex-col items-center text-center relative group">
                             {/* Step Number Badge */}
@@ -51,15 +49,14 @@ export default function NotForBusiness() {
                                 </div>
                             </div>
 
-                            {/* Image Container */}
-                            <div className="w-full mb-8 relative">
+                            <div className="w-full mb-8 relative max-w-[300px]">
                                 <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px] transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
-                                <div className="bg-black rounded-[30px]  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:shadow-[8px_8px_0px_0px_#EC4899] group-hover:border-pink-500 relative overflow-hidden transition-all duration-300">
+                                <div className="bg-black rounded-[30px] transition-all duration-300  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]   relative overflow-hidden transition-all duration-300">
                                      <LazyLoadImage
                                         alt={item.title}
                                         effect="blur"
                                         src={item.image}
-                                        className="w-full h-48 lg:h-56 object-contain transform group-hover:scale-110 transition-transform duration-500"
+                                        className="w-full h-48 lg:h-56 object-contain transform group-hover:scale-110 transition-transform duration-500 transition-all duration-600 "
                                     />
                                 </div>
                             </div>
