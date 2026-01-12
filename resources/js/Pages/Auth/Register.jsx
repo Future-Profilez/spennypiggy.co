@@ -891,11 +891,11 @@ export default function Register(props) {
 
                 <div className="relative z-1 w-full max-w-4xl">
                     <div className="text-center mb-10">
-                        <h2 className="px-4 text-4xl md:text-6xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        <h2 className="px-4 text-4xl md:text-5xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Account</span>
                         </h2>
-                        <p className="text-gray-400 text-lg font-medium">
-                            Already registered?{" "}
+                        <p className="text-gray-400 space-x-1 text-lg font-medium">
+                            Already registered ? 
                             <Link href={route("login")} className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4">
                                 Log In
                             </Link>
@@ -903,33 +903,26 @@ export default function Register(props) {
                     </div>
 
                     <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-3xl p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-                        <div className=" absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         
-                        {/* Browser Window Controls Decoration */}
-                        <div className="hidden md:visible h-8 bg-black/20 border-b border-white/5 flex items-center px-4 space-x-2 rounded-t-[20px]">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="hidden md:flex md:bg-black/20 md:border-b border-white/5 flex items-center !p-5 space-x-2 rounded-t-[20px]">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                         </div>
 
-                        <div className="p-2 sm:p-8 md:bg-black/20 rounded-b-[20px]">
+                        <div className="p-2 md:!p-8 md:bg-black/20 rounded-b-[20px]">
                             {step === 0 && (
                             <div className="animate-fade-in-up px-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div 
-                                        onClick={() => handleBecomeCreator(1)}
-                                        className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${role == 1 ? 'border-pink-500 bg-pink-500/10' : 'border-white/10 bg-white/5 hover:border-pink-500/50 hover:bg-white/10'}`}
-                                    >
+                                    <div onClick={() => handleBecomeCreator(1)} className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${role == 1 ? 'border-pink-500 bg-pink-500/10' : 'border-white/10 bg-white/5 hover:border-pink-500/50 hover:bg-white/10'}`} >
                                         <div className="text-center">
                                             <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-pink-500 transition-colors uppercase">I'm a Creator</h3>
                                             <p className="text-gray-400 text-sm">I'd like to create a wishlist</p>
                                         </div>
                                     </div>
 
-                                    <div 
-                                        onClick={() => handleBecomeCreator(0)}
-                                        className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${role == 0 ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-blue-500/50 hover:bg-white/10'}`}
-                                    >
+                                    <div onClick={() => handleBecomeCreator(0)} className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${role == 0 ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-blue-500/50 hover:bg-white/10'}`} >
                                         <div className="text-center">
                                             <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-blue-500 transition-colors uppercase">I'm a Fan</h3>
                                             <p className="text-gray-400 text-sm">I'm here to follow and support creators</p>
@@ -948,10 +941,7 @@ export default function Register(props) {
                                 <p className="text-gray-300 text-lg mb-8 max-w-xl mx-auto leading-relaxed">
                                     Your social media link is how we verify you’re real — no bots, no fakes, no funny business. Make sure it’s an active profile with clear posts, or your application might be rejected.
                                 </p>
-                                <button
-                                    onClick={handleNext}
-                                    className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-3 px-6 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit"
-                                >
+                                <button onClick={handleNext} className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-3 px-6 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit" >
                                     Got it – I’ll link my socials
                                 </button>
                             </div>
@@ -986,11 +976,7 @@ export default function Register(props) {
                                     })}
                                 </div>
                                 <div className="flex justify-center">
-                                    <button
-                                        onClick={handleNext}
-                                        disabled={profileTags && profileTags.length < 1}
-                                        className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
+                                    <button onClick={handleNext} disabled={profileTags && profileTags.length < 1} className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit disabled:opacity-50 disabled:cursor-not-allowed`} >
                                         Next
                                     </button>
                                 </div>
@@ -1001,7 +987,7 @@ export default function Register(props) {
                             <div className="animate-fade-in-up">
                                 <form onSubmit={submit} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="md:col-span-2">
+                                        <div className="md:col-span-1">
                                             <label className="block text-sm font-medium text-gray-300 mb-1">Display Name</label>
                                             <div className="relative">
                                                 <input
@@ -1072,7 +1058,7 @@ export default function Register(props) {
                                             <InputError message={getFieldError("gender")} className="mt-2" />
                                         </div>
 
-                                        <div className="md:col-span-2">
+                                        <div className="md:col-span-1">
                                             <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
                                             <div className="relative">
                                                 <input
@@ -1149,11 +1135,11 @@ export default function Register(props) {
                                     <div className={`${mypass ? "block" : "hidden"} bg-white/5 rounded-xl p-4 border border-white/10`}>
                                         <h3 className="text-white font-medium mb-2">Password must contain:</h3>
                                         <div className="space-y-1">
-                                            <p ref={letterRef} id="letter" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Lowercase letter</p>
-                                            <p ref={capitalRef} id="capital" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Uppercase letter</p>
-                                            <p ref={numberRef} id="number" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Number</p>
-                                            <p ref={specialRef} id="special" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Special character</p>
-                                            <p ref={lengthRef} id="length" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Minimum 8 characters</p>
+                                            <p ref={letterRef} id="letter" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Lowercase letter</p>
+                                            <p ref={capitalRef} id="capital" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Uppercase letter</p>
+                                            <p ref={numberRef} id="number" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Number</p>
+                                            <p ref={specialRef} id="special" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Special character</p>
+                                            <p ref={lengthRef} id="length" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Minimum 8 characters</p>
                                         </div>
                                     </div>
 

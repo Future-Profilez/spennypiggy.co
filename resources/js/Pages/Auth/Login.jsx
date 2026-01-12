@@ -171,7 +171,7 @@ export default function Login({ status, canResetPassword }) {
 
                 <div className="relative  w-full ">
                     <div className="text-center mb-10">
-                        <h2 className="text-4xl md:text-6xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Back!</span>
                         </h2>
                         <p className="text-gray-400 text-lg font-medium">
@@ -182,9 +182,9 @@ export default function Login({ status, canResetPassword }) {
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-1 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border border-white/10 rounded-[40px] p-1 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="h-8 bg-black/20 border-b border-white/5 flex items-center px-4 space-x-2 rounded-t-[20px]">
+                        <div className="!bg-black border-b border-white/5 flex items-center p-4 space-x-2 rounded-t-[20px]">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
@@ -209,7 +209,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className="relative w-full bg-gray-900 border border-gray-700 text-white text-lg rounded-xl focus:ring-0 focus:border-transparent block p-3 placeholder-gray-500 transition-all duration-300"
+                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[14px] px-3 placeholder-gray-500 transition-all duration-300"
                                             autoComplete="username"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -230,7 +230,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className="relative w-full bg-gray-900 border border-gray-700 text-white text-lg rounded-xl focus:ring-0 focus:border-transparent block p-3 placeholder-gray-600 transition-all duration-300"
+                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[14px] px-3 placeholder-gray-500 transition-all duration-300"
                                             autoComplete="current-password"
                                             placeholder="••••••••"
                                             onChange={(e) => setData("password", e.target.value)}
@@ -254,7 +254,7 @@ export default function Login({ status, canResetPassword }) {
                                 <div className="">
                                     <LoaderButton
                                         disabled={loading}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6 !text-black w-full"
+                                        className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6 !text-black w-full"
                                         spinnerClassName="fill-white" 
                                     >
                                         {loading ? "Logging In..." : "Log In"}
