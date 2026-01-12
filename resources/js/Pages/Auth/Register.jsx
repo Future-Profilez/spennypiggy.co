@@ -57,24 +57,20 @@ export default function Register(props) {
     const addressCheck = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const errorAlertRef = useRef(errorAlert);
-    const lowerLetter = /[a-z]/g;
-    const capitalLetter = /[A-Z]/g;
-    const numberLetter = /[0-9]/g;
-    const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/g;
+    const lowerLetter = /[a-z]/;
+    const capitalLetter = /[A-Z]/;
+    const numberLetter = /[0-9]/;
+    const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/;
 
-    const inputField =
-        typeof window !== "undefined" && document.getElementById("password");
-    const letter =
-        typeof window !== "undefined" && document.getElementById("letter");
-    const capital =
-        typeof window !== "undefined" && document.getElementById("capital");
-    const number =
-        typeof window !== "undefined" && document.getElementById("number");
-    const special =
-        typeof window !== "undefined" && document.getElementById("special");
-    const length =
-        typeof window !== "undefined" && document.getElementById("length");
-    const [mypass, setmypass] = useState();
+    const [passwordCriteria, setPasswordCriteria] = useState({
+        lower: false,
+        upper: false,
+        number: false,
+        special: false,
+        length: false,
+    });
+
+    const [mypass, setmypass] = useState("");
 
     useEffect(() => {
         errorAlertRef.current = errorAlert;
@@ -843,40 +839,19 @@ export default function Register(props) {
     };
 
     const inputFieldRef = useRef(null);
-    const letterRef = useRef(null);
-    const capitalRef = useRef(null);
-    const numberRef = useRef(null);
-    const specialRef = useRef(null);
-    const lengthRef = useRef(null);
 
     const handlePassHints = (e) => {
         const value = e.target.value;
         setmypass(value);
         setData("password", value);
 
-        if (letterRef.current)
-            letterRef.current.className = value.match(lowerLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (capitalRef.current)
-            capitalRef.current.className = value.match(capitalLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (numberRef.current)
-            numberRef.current.className = value.match(numberLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (specialRef.current)
-            specialRef.current.className = value.match(specialLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (lengthRef.current)
-            lengthRef.current.className =
-                value.length > 7 ? "valid" : "text-grey";
+        setPasswordCriteria({
+            lower: !!value.match(lowerLetter),
+            upper: !!value.match(capitalLetter),
+            number: !!value.match(numberLetter),
+            special: !!value.match(specialLetter),
+            length: value.length > 7,
+        });
     };
 
     return (
@@ -1135,11 +1110,11 @@ export default function Register(props) {
                                     <div className={`${mypass ? "block" : "hidden"} bg-white/5 rounded-xl p-4 border border-white/10`}>
                                         <h3 className="text-white font-medium mb-2">Password must contain:</h3>
                                         <div className="space-y-1">
-                                            <p ref={letterRef} id="letter" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Lowercase letter</p>
-                                            <p ref={capitalRef} id="capital" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Uppercase letter</p>
-                                            <p ref={numberRef} id="number" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Number</p>
-                                            <p ref={specialRef} id="special" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Special character</p>
-                                            <p ref={lengthRef} id="length" className="text-gray-300 flex items-center gap-2 text-sm"><CheckCircleIcon /> Minimum 8 characters</p>
+                                            <p className={`${passwordCriteria.lower ? "text-green-500" : "text-gray-300"} flex items-center gap-2 text-sm`}><CheckCircleIcon /> Lowercase letter</p>
+                                            <p className={`${passwordCriteria.upper ? "text-green-500" : "text-gray-300"} flex items-center gap-2 text-sm`}><CheckCircleIcon /> Uppercase letter</p>
+                                            <p className={`${passwordCriteria.number ? "text-green-500" : "text-gray-300"} flex items-center gap-2 text-sm`}><CheckCircleIcon /> Number</p>
+                                            <p className={`${passwordCriteria.special ? "text-green-500" : "text-gray-300"} flex items-center gap-2 text-sm`}><CheckCircleIcon /> Special character</p>
+                                            <p className={`${passwordCriteria.length ? "text-green-500" : "text-gray-300"} flex items-center gap-2 text-sm`}><CheckCircleIcon /> Minimum 8 characters</p>
                                         </div>
                                     </div>
 
@@ -1327,7 +1302,7 @@ export default function Register(props) {
                                             text={`Create Account`}
                                         >
                                             <div className="text-white">
-                                                <h2 className="text-2xl font-gulfs text-black mb-4 uppercase">Important notice !</h2>
+                                                <h2 className="text-2xl font-gulfs text-white mb-4 uppercase">Important notice !</h2>
                                                 <p className="text-gray-500 mb-4">
                                                     You must not use any other individual’s information. Only a single account can be used with the information you confirm to us.
                                                 </p>
@@ -1345,7 +1320,7 @@ export default function Register(props) {
                                                             name="hasNotified" 
                                                             value="hasNotified" 
                                                             required 
-                                                            className="mt-1 rounded bg-white/10 border-black text-pink-500 focus:ring-pink-500" 
+                                                            className="mt-1 rounded bg-white/10 border-white/10 text-pink-500 focus:ring-pink-500" 
                                                         />
                                                         <span className="text-sm text-gray-500">
                                                             I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.
@@ -1364,7 +1339,7 @@ export default function Register(props) {
 
                                         <LoaderButton
                                             disabled={processing}
-                                            className="relative flex flex-row items-center  focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 !py-3 !px-6 !text-black w-full"
+                                            className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-xl py-4 rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10"
                                             spinnerClassName="fill-white" >
                                             {processing ? "Processing" : "Create Account"}
                                         </LoaderButton>
