@@ -57,27 +57,20 @@ export default function Register(props) {
     const addressCheck = useRef();
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const errorAlertRef = useRef(errorAlert);
-    const lowerLetter = /[a-z]/g;
-    const capitalLetter = /[A-Z]/g;
-    const numberLetter = /[0-9]/g;
-    const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/g;
-    const [referralMessage, setReferralMessage] = useState("");
-    const [referralType, setReferralType] = useState(""); // success | error
-    
+    const lowerLetter = /[a-z]/;
+    const capitalLetter = /[A-Z]/;
+    const numberLetter = /[0-9]/;
+    const specialLetter = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/]/;
 
-    const inputField =
-        typeof window !== "undefined" && document.getElementById("password");
-    const letter =
-        typeof window !== "undefined" && document.getElementById("letter");
-    const capital =
-        typeof window !== "undefined" && document.getElementById("capital");
-    const number =
-        typeof window !== "undefined" && document.getElementById("number");
-    const special =
-        typeof window !== "undefined" && document.getElementById("special");
-    const length =
-        typeof window !== "undefined" && document.getElementById("length");
-    const [mypass, setmypass] = useState();
+    const [passwordCriteria, setPasswordCriteria] = useState({
+        lower: false,
+        upper: false,
+        number: false,
+        special: false,
+        length: false,
+    });
+
+    const [mypass, setmypass] = useState("");
 
     useEffect(() => {
         errorAlertRef.current = errorAlert;
@@ -123,6 +116,8 @@ export default function Register(props) {
         cf_turnstile_response: "",
     });
 
+    const [referralMessage, setReferralMessage] = useState("");
+    const [referralType, setReferralType] = useState(""); // success | error
     const [codevalid, setCodeValid] = useState(false);
     const [promoInputValue, setPromoInputValue] = useState("");
     const [role, setRole] = useState(type && type === "creator" ? 1 : 0);
@@ -184,6 +179,7 @@ export default function Register(props) {
     const [touchedFields, setTouchedFields] = useState({});
     const [fieldValidity, setFieldValidity] = useState({});
     const validationTimersRef = useRef({});
+    const [showPassword, setShowPassword] = useState(false);
 
     const validateRegistration = useCallback(
         async (payload, { toastOnError = false } = {}) => {
@@ -397,6 +393,11 @@ export default function Register(props) {
 
     const renderFieldStatusIcon = useCallback(
         (field) => {
+            // ❌ Disable icon for password fields
+            // if (field === "password") {
+            //     return null;
+            // }
+
             const status = getFieldStatus(field);
             if (status === "idle") return null;
 
@@ -509,6 +510,12 @@ export default function Register(props) {
             return next;
         });
     }, [data.password]);
+
+    useEffect(() => {
+        setReferralMessage("");
+        setReferralType("");
+        setCodeValid(false);
+    }, [role]);
 
     useEffect(() => {
         if (Number(data.role) !== 0) {
@@ -822,12 +829,13 @@ export default function Register(props) {
     };
 
     const removecode = () => {
+        setCodeValid(false);
+        setPromoInputValue(""); // ✅ clear input state
+        setData("promo", "");
+
         // ✅ clear referral UI
         setReferralMessage("");
         setReferralType("");
-        setCodeValid(false);
-        setData("promo", "");
-
     };
 
     const checkCreatorReferral = () => {
@@ -839,7 +847,6 @@ export default function Register(props) {
         axios
             .get(`/check-referral-code/${p}`)
             .then((resp) => {
-                console.log("resp", resp);
                 if (resp.data.status) {
                     setCodeValid(true);
                     setData("promo", p);
@@ -862,40 +869,19 @@ export default function Register(props) {
     };
 
     const inputFieldRef = useRef(null);
-    const letterRef = useRef(null);
-    const capitalRef = useRef(null);
-    const numberRef = useRef(null);
-    const specialRef = useRef(null);
-    const lengthRef = useRef(null);
 
     const handlePassHints = (e) => {
         const value = e.target.value;
         setmypass(value);
         setData("password", value);
 
-        if (letterRef.current)
-            letterRef.current.className = value.match(lowerLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (capitalRef.current)
-            capitalRef.current.className = value.match(capitalLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (numberRef.current)
-            numberRef.current.className = value.match(numberLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (specialRef.current)
-            specialRef.current.className = value.match(specialLetter)
-                ? "valid"
-                : "text-grey";
-
-        if (lengthRef.current)
-            lengthRef.current.className =
-                value.length > 7 ? "valid" : "text-grey";
+        setPasswordCriteria({
+            lower: !!value.match(lowerLetter),
+            upper: !!value.match(capitalLetter),
+            number: !!value.match(numberLetter),
+            special: !!value.match(specialLetter),
+            length: value.length > 7,
+        });
     };
 
     return (
@@ -903,21 +889,21 @@ export default function Register(props) {
             <Head title="Create Account" />
             <div className="min-h-[92vh]  bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
+                    <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[70px] md:blur-[120px] animate-float"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-pink-600/30 rounded-full mix-blend-screen filter blur-[70px] md:blur-[120px] animate-float-delayed"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
                 </div>
 
                 <div className="relative z-1 w-full max-w-4xl">
                     <div className="text-center mb-10">
-                        <h2 className="px-4 text-4xl md:text-6xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        <h2 className="px-4 text-4xl md:text-5xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Create{" "}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
                                 Account
                             </span>
                         </h2>
-                        <p className="text-gray-400 text-lg font-medium">
-                            Already registered?{" "}
+                        <p className="text-gray-400 space-x-1 text-lg font-medium">
+                            Already registered ?
                             <Link
                                 href={route("login")}
                                 className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
@@ -928,16 +914,14 @@ export default function Register(props) {
                     </div>
 
                     <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-3xl p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-                        <div className=" absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                        {/* Browser Window Controls Decoration */}
-                        <div className="hidden md:visible h-8 bg-black/20 border-b border-white/5 flex items-center px-4 space-x-2 rounded-t-[20px]">
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="hidden md:flex md:bg-black/20 md:border-b border-white/5 flex items-center !p-5 space-x-2 rounded-t-[20px]">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                         </div>
 
-                        <div className="p-2 sm:p-8 md:bg-black/20 rounded-b-[20px]">
+                        <div className="p-2 md:!p-8 md:bg-black/20 rounded-b-[20px]">
                             {step === 0 && (
                                 <div className="animate-fade-in-up px-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1074,7 +1058,7 @@ export default function Register(props) {
                                         className="space-y-6"
                                     >
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="md:col-span-2">
+                                            <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
                                                     Display Name
                                                 </label>
@@ -1248,7 +1232,7 @@ export default function Register(props) {
                                                 />
                                             </div>
 
-                                            <div className="md:col-span-2">
+                                            <div className="md:col-span-1">
                                                 <label className="block text-sm font-medium text-gray-300 mb-1">
                                                     Email
                                                 </label>
@@ -1299,7 +1283,11 @@ export default function Register(props) {
                                                 <div className="relative">
                                                     <input
                                                         id="password"
-                                                        type="password"
+                                                        type={
+                                                            showPassword
+                                                                ? "text"
+                                                                : "password"
+                                                        }
                                                         name="password"
                                                         value={mypass}
                                                         ref={inputFieldRef}
@@ -1325,10 +1313,25 @@ export default function Register(props) {
                                                         }}
                                                         required
                                                     />
+
                                                     {renderFieldStatusIcon(
                                                         "password"
                                                     )}
                                                 </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setShowPassword(
+                                                            (prev) => !prev
+                                                        )
+                                                    }
+                                                    className="mt-2 text-sm font-medium text-pink-400 hover:text-pink-300 underline underline-offset-4"
+                                                >
+                                                    {showPassword
+                                                        ? "Hide Passwords"
+                                                        : "Show Passwords"}
+                                                </button>
+                                                
                                                 <InputError
                                                     message={getFieldError(
                                                         "password"
@@ -1344,7 +1347,11 @@ export default function Register(props) {
                                                 <div className="relative">
                                                     <input
                                                         id="password_confirmation"
-                                                        type="password"
+                                                        type={
+                                                            showPassword
+                                                                ? "text"
+                                                                : "password"
+                                                        }
                                                         name="password_confirmation"
                                                         value={
                                                             data.password_confirmation
@@ -1397,40 +1404,50 @@ export default function Register(props) {
                                             </h3>
                                             <div className="space-y-1">
                                                 <p
-                                                    ref={letterRef}
-                                                    id="letter"
-                                                    className="text-gray-400 flex items-center gap-2 text-sm"
+                                                    className={`${
+                                                        passwordCriteria.lower
+                                                            ? "text-green-500"
+                                                            : "text-gray-300"
+                                                    } flex items-center gap-2 text-sm`}
                                                 >
                                                     <CheckCircleIcon />{" "}
                                                     Lowercase letter
                                                 </p>
                                                 <p
-                                                    ref={capitalRef}
-                                                    id="capital"
-                                                    className="text-gray-400 flex items-center gap-2 text-sm"
+                                                    className={`${
+                                                        passwordCriteria.upper
+                                                            ? "text-green-500"
+                                                            : "text-gray-300"
+                                                    } flex items-center gap-2 text-sm`}
                                                 >
                                                     <CheckCircleIcon />{" "}
                                                     Uppercase letter
                                                 </p>
                                                 <p
-                                                    ref={numberRef}
-                                                    id="number"
-                                                    className="text-gray-400 flex items-center gap-2 text-sm"
+                                                    className={`${
+                                                        passwordCriteria.number
+                                                            ? "text-green-500"
+                                                            : "text-gray-300"
+                                                    } flex items-center gap-2 text-sm`}
                                                 >
                                                     <CheckCircleIcon /> Number
                                                 </p>
                                                 <p
-                                                    ref={specialRef}
-                                                    id="special"
-                                                    className="text-gray-400 flex items-center gap-2 text-sm"
+                                                    className={`${
+                                                        passwordCriteria.special
+                                                            ? "text-green-500"
+                                                            : "text-gray-300"
+                                                    } flex items-center gap-2 text-sm`}
                                                 >
                                                     <CheckCircleIcon /> Special
                                                     character
                                                 </p>
                                                 <p
-                                                    ref={lengthRef}
-                                                    id="length"
-                                                    className="text-gray-400 flex items-center gap-2 text-sm"
+                                                    className={`${
+                                                        passwordCriteria.length
+                                                            ? "text-green-500"
+                                                            : "text-gray-300"
+                                                    } flex items-center gap-2 text-sm`}
                                                 >
                                                     <CheckCircleIcon /> Minimum
                                                     8 characters
@@ -1671,7 +1688,7 @@ export default function Register(props) {
                                                         setCodeValid(false);
                                                         setData("promo", "");
 
-                                                        // ✅ clear old message when typing new code
+                                                        // ✅ clear old referral message
                                                         setReferralMessage("");
                                                         setReferralType("");
                                                     }}
@@ -1720,7 +1737,7 @@ export default function Register(props) {
                                                     ref={checkRef}
                                                     id="termaccept"
                                                     name="termaccept"
-                                                    className="mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                    className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
                                                     onChange={(e) =>
                                                         setData(
                                                             "termaccept",
@@ -1729,7 +1746,7 @@ export default function Register(props) {
                                                     }
                                                     required
                                                 />
-                                                <span className="text-sm text-gray-400">
+                                                <span className="text-normal text-gray-400">
                                                     By signing up you agree to
                                                     our{" "}
                                                     <a
@@ -1761,10 +1778,10 @@ export default function Register(props) {
                                                         ref={addressCheck}
                                                         id="addressCheck"
                                                         name="addressCheck"
-                                                        className="mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                        className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
                                                         required
                                                     />
-                                                    <span className="text-sm text-gray-400">
+                                                    <span className="text-normal text-gray-400">
                                                         The above address and
                                                         name matches on the bank
                                                         card I will later use
@@ -1835,7 +1852,7 @@ export default function Register(props) {
                                                                 name="hasNotified"
                                                                 value="hasNotified"
                                                                 required
-                                                                className="mt-1 rounded bg-white/10 border-black text-pink-500 focus:ring-pink-500"
+                                                                className="mt-1 h-5 w-5 rounded bg-white/90 border-black/30 text-pink-500 focus:ring-pink-500"
                                                             />
                                                             <span className="text-sm text-gray-500">
                                                                 I confirm that
@@ -1862,7 +1879,7 @@ export default function Register(props) {
                                                     <LoaderButton
                                                         onClick={accepted}
                                                         disabled={processing}
-                                                        className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-lg py-3 rounded-[30px] shadow-lg shadow-pink-500/30 border border-white/10"
+                                                        className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]   "
                                                         spinnerClassName="fill-white"
                                                     >
                                                         {processing
@@ -1874,7 +1891,7 @@ export default function Register(props) {
 
                                             <LoaderButton
                                                 disabled={processing}
-                                                className="relative flex flex-row items-center  focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 !py-3 !px-6 !text-black w-full"
+                                                className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
                                                 spinnerClassName="fill-white"
                                             >
                                                 {processing
