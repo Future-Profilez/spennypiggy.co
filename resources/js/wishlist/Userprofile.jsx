@@ -27,6 +27,7 @@ export default function Userprofile({ IsloggedIn }) {
                             className="rounded-full !border-3 !border-[var(--mint)]
                         !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px]
                         md:!h-[150px] md:!w-[150px] md:min-w-[150px] md:!min-h-[150px] md:!max-w-[150px] md:!max-h-[150px]" />
+                        {IsloggedIn && auth && auth?.user.avatar_url && auth?.user?.avatar_approved == 0 ? (
                             <div className="absolute approvetag top-3 mx-auto">
                                 <button className="tooltipbtn">
                                     <svg
@@ -52,33 +53,32 @@ export default function Userprofile({ IsloggedIn }) {
                         )}
                     </div>
                     <div className="ps-3">
-                    <div className="ps-3">
                         <h1 className="font-GillSans flex items-center  justify-center lg:justify-start text-center lg:text-left">
+                            {user?.name}
                             {user?.role == 1 && user?.profile_status_lock == 2 && <>
                                     {user?.is_founder ? 
                                         <div className="mb-1">
                                             <FounderBadge classes="w-6 h-6 ms-2" icon={true}   />
-                                            <FounderBadge classes="w-6 h-6 ms-2" icon={true}   />
+                                        </div>
                                         :
                                         <RiVerifiedBadgeFill
                                             size="1.5rem"
                                             className="ms-2 mt-[-2px] text-pink"
-                                            className="ms-2 mt-[-2px] text-pink"
+                                        />
                                     }
                                 </>
                             || ''}
                         </h1>
 
                         <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
-                        <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
+                            <ShareProfile
                                 username={user?.name}
-                                classes="flex text-gray-300 mr-4 items-center" >
                                 classes="flex text-gray-300 mr-4 items-center" >
                                 @{user?.username}
                                 <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-0"/>
+                            </ShareProfile>
                         </div>
                     </div>
-                    
                     
                 </div>
 
