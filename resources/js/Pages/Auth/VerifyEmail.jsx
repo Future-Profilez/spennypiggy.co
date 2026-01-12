@@ -100,7 +100,7 @@ export default function VerifyEmail({auth}) {
                         </defs>
                     </svg>
                 </div>
-                <h3 className="headingSm shadow-yellow mb-3 text-center" >Confirm your email</h3>
+                <h3 className="headingSm !text-3xl md:!text-5xl tracking-wider mb-3 text-center" >Verification Email Sent !!</h3>
                 <h5 className="text-xl  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify your email.</h5> 
                 <div className="flex justify-center mt-6 mb-2">
                     <button  onClick={()=>{setSent(true);sendMail()}} className="text-pink m-auto">{loading ? 'Sending..' : 

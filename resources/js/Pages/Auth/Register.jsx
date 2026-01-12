@@ -17,11 +17,12 @@ export default function Register(props) {
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5 inline-block"
                 >
                     <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
                     <g
                         id="SVGRepo_tracerCarrier"
-                        stroke-linecap="round"
+                        strokeLinecap="round"
                         strokeLinejoin="round"
                     ></g>
                     <g id="SVGRepo_iconCarrier">
@@ -29,18 +30,18 @@ export default function Register(props) {
                         <path
                             opacity="0.1"
                             d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                            fill="#000000"
+                            fill="currentColor"
                         ></path>{" "}
                         <path
                             d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
-                            stroke="#000000"
+                            stroke="currentColor"
                             strokeWidth="2"
                         ></path>{" "}
                         <path
                             d="M9 12L10.6828 13.6828V13.6828C10.858 13.858 11.142 13.858 11.3172 13.6828V13.6828L15 10"
-                            stroke="#000000"
+                            stroke="currentColor"
                             strokeWidth="2"
-                            stroke-linecap="round"
+                            strokeLinecap="round"
                             strokeLinejoin="round"
                         ></path>{" "}
                     </g>
@@ -331,7 +332,7 @@ export default function Register(props) {
     );
 
     const getFieldClassName = useCallback(
-        (field, baseClassName = "mt-1 block w-full") => {
+        (field, baseClassName = "mt-1 block w-full bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-xl p-3") => {
             const status = getFieldStatus(field);
             const value = getFieldValue(field);
             const padded = `${baseClassName} pr-10`;
@@ -880,919 +881,507 @@ export default function Register(props) {
 
     return (
         <GuestLayout>
-            {/* <IpRedirection />/ */}
-            <Head title="Create Wishlist" />
-            <div className="loginPage  bg-white min-h-screen pb-4 pb-md-5">
-                <div className="containerbox   md:flex !pb-4 md:!pb-12  !pt-12 items-center justify-content-center">
-                    {/* <div className="shadow-layout inputs !max-w-[800px] w-full pink-shadow-layout mx-auto  !border-3 border-black  bg-white shadow-pink overflow-hidden"> */}
-                    <div className=" inputs !max-w-[800px] w-full   mx-auto  ! bg-white  overflow-hidden">
-                        {/* <div className="p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center ">
-                            <span className=" border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
-                            <span className=" border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
-                            <span className=" border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block"></span>
-                        </div> */}
+            <Head title="Create Account" />
+            <div className="min-h-[92vh]  bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
+                </div>
 
-                        <h1 className="text-[30px] font-GillSans text-uppercase d-none pt-8 text-center px-2">
-                            Create Wishlist
-                        </h1>
-                        <h2 className="text-[30px] font-GillSans text-uppercase md:pt-8 text-center px-2">
-                            Create Account
+                <div className="relative z-1 w-full max-w-4xl">
+                    <div className="text-center mb-10">
+                        <h2 className="px-4 text-4xl md:text-6xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                            Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Account</span>
                         </h2>
-                        <p className="text-center text-[18px] text-dark mb-4 ">
+                        <p className="text-gray-400 text-lg font-medium">
                             Already registered?{" "}
-                            <Link className={"text-pink"} href={route("login")}>
-                                {" "}
+                            <Link href={route("login")} className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4">
                                 Log In
                             </Link>
                         </p>
-                        {step === 0 && (
-                            <div
-                                className={`${step === 0 ? "" : "d-none"}   px-3 py-3 pb-5`}>
-                                <div className=" md:flex gap-4 justify-center m-auto">
-                                    <div className="w-full max-w-[400px] m-auto ">
-                                        <div
-                                            onClick={() => handleBecomeCreator(1)}
-                                            className={`${
-                                                role == 1 ? "active" : ""
-                                            }  h-full mb-3 cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
-                                        >
-                                            <h2 className="text-[22px] font-GillSans text-uppercase">
-                                                I'm a Creator
-                                            </h2>
-                                            <p className="text-muted text-[16px] mt-1 mb-0">
-                                                I'd like to create a wishlist
-                                            </p>
+                    </div>
+
+                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-3xl p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                        <div className=" absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        
+                        {/* Browser Window Controls Decoration */}
+                        <div className="hidden md:visible h-8 bg-black/20 border-b border-white/5 flex items-center px-4 space-x-2 rounded-t-[20px]">
+                            <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                        </div>
+
+                        <div className="p-2 sm:p-8 md:bg-black/20 rounded-b-[20px]">
+                            {step === 0 && (
+                            <div className="animate-fade-in-up px-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div 
+                                        onClick={() => handleBecomeCreator(1)}
+                                        className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${role == 1 ? 'border-pink-500 bg-pink-500/10' : 'border-white/10 bg-white/5 hover:border-pink-500/50 hover:bg-white/10'}`}
+                                    >
+                                        <div className="text-center">
+                                            <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-pink-500 transition-colors uppercase">I'm a Creator</h3>
+                                            <p className="text-gray-400 text-sm">I'd like to create a wishlist</p>
                                         </div>
                                     </div>
-                                    <div className="w-full max-w-[400px] m-auto">
-                                        <div
-                                            onClick={() => handleBecomeCreator(0)}
-                                            className={`${
-                                                role == 0 ? "active" : ""
-                                            }  h-full mb-3 cursor-pointer create-select border p-4 border-gray-300 rounded-4 text-center`}
-                                        >
-                                            <h2 className="text-[22px] font-GillSans text-uppercase">
-                                                I'm a Fan
-                                            </h2>
-                                            <p className="text-muted text-[16px] mt-1 mb-0">
-                                                I'm here to follow and support
-                                                creators
-                                            </p>
+
+                                    <div 
+                                        onClick={() => handleBecomeCreator(0)}
+                                        className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${role == 0 ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-blue-500/50 hover:bg-white/10'}`}
+                                    >
+                                        <div className="text-center">
+                                            <h3 className="text-2xl font-gulfs text-white mb-2 group-hover:text-blue-500 transition-colors uppercase">I'm a Fan</h3>
+                                            <p className="text-gray-400 text-sm">I'm here to follow and support creators</p>
                                         </div>
                                     </div>
                                 </div>
-                                <p className="text-muted text-base text-center max-w-[450px] m-auto mt-4">
-                                    You can support other creators with either
-                                    of the account types and can change your
-                                    account type anytime.
+                                <p className="text-gray-500 text-center text-sm mt-6 max-w-md mx-auto">
+                                    You can support other creators with either of the account types and can change your account type anytime.
                                 </p>
                             </div>
                         )}
 
                         {step === 1 && (
-                            <div
-                                className={`${
-                                    step === 1 ? "" : "d-none"
-                                }    px-3`}
-                            >
-                                <div className="px-0 px-md-4 px-lg-5 pb-4">
-                                    <h2 className="font-gulfs uppercase text-center text-xl md:text-2xl mb-2">
-                                        Heads up, Babe! 🚨
-                                    </h2>
-                                    <p className="text-center text-[17px] max-w-[600px] m-auto text-muted ">
-                                        Your social media link is how we verify
-                                        you’re real — no bots, no fakes, no
-                                        funny business. Make sure it’s an active
-                                        profile with clear posts, or your
-                                        application might be rejected.
-                                    </p>
-                                    <div className="flex justify-center">
-
-                                        <button
-                                            onClick={handleNext}
-                                            className="btn-pink !font-normal max-w-[400px] md m-auto mt-3 w-full"
-                                        >
-                                            {" "}
-                                            Got it – I’ll link my socials
-                                        </button>
-                                    </div>
-                                </div>
+                            <div className="animate-fade-in-up text-center px-4">
+                                <h3 className="text-2xl font-gulfs text-white mb-4 uppercase">Heads up, Babe! 🚨</h3>
+                                <p className="text-gray-300 text-lg mb-8 max-w-xl mx-auto leading-relaxed">
+                                    Your social media link is how we verify you’re real — no bots, no fakes, no funny business. Make sure it’s an active profile with clear posts, or your application might be rejected.
+                                </p>
+                                <button
+                                    onClick={handleNext}
+                                    className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-3 px-6 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit"
+                                >
+                                    Got it – I’ll link my socials
+                                </button>
                             </div>
                         )}
 
                         {step === 2 && (
-                            <div
-                                className={`${
-                                    step === 2 ? "" : "d-none"
-                                }    px-3`}
-                            >
-                                <div className="px-0 px-md-4 px-lg-5 pb-4">
-                                    <p className="text-center text-[17px] text-muted ">
-                                        Choose from the following categories.
-                                        This helps people find your profile. You
-                                        can change these at any time.
-                                    </p>
-
-                                    <div className="flex creator-tags justify-content-center flex-wrap mt-4">
-                                        {creatortypes.map((s, index) => (
-                                            <div
-                                                key={s.value}
-                                                className="flex items-center"
-                                            >
+                            <div className="animate-fade-in-up px-4">
+                                <p className="text-center text-gray-300 mb-6">
+                                    Choose from the following categories. This helps people find your profile. You can change these at any time.
+                                </p>
+                                <div className="flex flex-wrap justify-center gap-2 md:gap-3  mb-8">
+                                    {creatortypes.map((s, index) => {
+                                        const isSelected = profileTags.includes(s.value);
+                                        return (
+                                            <div key={s.value} className="relative">
                                                 <input
-                                                    id={`tyeps-${index}`}
-                                                    name={s.value}
+                                                    id={`types-${index}`}
                                                     type="checkbox"
                                                     value={s.value}
-                                                    className="mr-2  text-indigo-500  hidden"
+                                                    className="hidden"
                                                     onChange={handleProfileTags}
+                                                    checked={isSelected}
                                                 />
                                                 <label
-                                                    htmlFor={`tyeps-${index}`}
-                                                    className="me-1 mb-1 bg-gray-200 px-4 py-[10px] rounded-[40px] text-[15px] text-gray-600 cursor-pointer"
+                                                    htmlFor={`types-${index}`}
+                                                    className={`block px-6 py-2 rounded-full text-sm font-medium cursor-pointer transition-all duration-300 border ${isSelected ? 'bg-pink-600 border-pink-500 text-white shadow-lg shadow-pink-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'}`}
                                                 >
                                                     {s.label}
                                                 </label>
                                             </div>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-center">
-                                        <button
-                                            onClick={handleNext}
-                                            className={`${
-                                                profileTags &&
-                                                profileTags.length < 1
-                                                    ? "disabled"
-                                                    : ""
-                                            } btn-pink md m-auto mt-3 w-full  max-w-[400px]`}
-                                        > 
-                                            Next
-                                        </button>
-                                    </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex justify-center">
+                                    <button
+                                        onClick={handleNext}
+                                        disabled={profileTags && profileTags.length < 1}
+                                        className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        Next
+                                    </button>
                                 </div>
                             </div>
                         )}
 
                         {step === 3 && (
-                            <div className={`${step === 3 ? "" : "d-none"} py-3 `}>
-                                <form onSubmit={submit} className="px-2 md:px-4 ">
-                                    <div className="login-step1 loginform !max-w-[100%] !w-full">
-                                        <div className="">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 md:gap-4">
-                                                <div className=" mb-4 formfield">
-                                                    <label>Display Name</label>
-                                                    <div className="relative">
-                                                        <input
-                                                            id="name"
-                                                            name="name"
-                                                            value={data.name}
-                                                            className={getFieldClassName(
-                                                                "name"
-                                                            )}
-                                                            autoComplete="name"
-                                                            onChange={(e) =>
-                                                                setData(
-                                                                    "name",
-                                                                    e.target.value
-                                                                )
-                                                            }
-                                                            required
-                                                        />
-                                                        {renderFieldStatusIcon(
-                                                            "name"
-                                                        )}
-                                                    </div>
-                                                    {getFieldError("name") ? (
-                                                        <p className="text-red-500 mt-3 text-sm">{getFieldError("name")}</p>
-                                                    ):''}
-
-                                                    <InputError message={getFieldError("name")} />
-                                                </div>
-                                                <div className=" mb-4 formfield">
-                                                    <label>Username</label>
-                                                    <div className="relative">
-                                                        <input
-                                                            id="username"
-                                                            name="username"
-                                                            value={data.username}
-                                                            className={getFieldClassName(
-                                                                "username"
-                                                            )}
-                                                            autoComplete="username"
-                                                            isFocused={true}
-                                                            onChange={(e) =>
-                                                                setData(
-                                                                    "username",
-                                                                    e.target.value
-                                                                )
-                                                            }
-                                                            onBlur={() => {
-                                                                markFieldTouched(
-                                                                    "username"
-                                                                );
-                                                                // Re-run local validation on blur to prevent clearing errors if invalid
-                                                                let localError = null;
-                                                                if (data.username.length < 5) {
-                                                                    localError = "The username must be at least 5 characters.";
-                                                                } else if (data.username.length > 20) {
-                                                                    localError = "The username must not be greater than 20 characters.";
-                                                                } else if (/[A-Z]/.test(data.username)) {
-                                                                    localError = "The username must be lowercase.";
-                                                                } else if (/\s/.test(data.username)) {
-                                                                    localError = "The username must not contain spaces.";
-                                                                } else if (/[^a-z0-9]/.test(data.username)) {
-                                                                    localError = "The username must only contain letters and numbers.";
-                                                                }
-                                                    
-                                                                if (localError) {
-                                                                    setLiveErrors((prev) => ({ ...prev, username: localError }));
-                                                                    setFieldValidity((prev) => ({ ...prev, username: false }));
-                                                                    return;
-                                                                }
-
-                                                                validateRegistration(
-                                                                    {
-                                                                        username: data.username,
-                                                                    }
-                                                                );
-                                                            }}
-                                                            required
-                                                        />
-                                                        {renderFieldStatusIcon(
-                                                        "username"
-                                                    )}
-                                                </div>
-                                                {getFieldError("username") ? (
-                                                        <p className="text-red-500 mt-3 text-sm">{getFieldError("username")}</p>
-                                                ):''}
+                            <div className="animate-fade-in-up">
+                                <form onSubmit={submit} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-300 mb-1">Display Name</label>
+                                            <div className="relative">
+                                                <input
+                                                    id="name"
+                                                    name="name"
+                                                    value={data.name}
+                                                    className={getFieldClassName("name")}
+                                                    autoComplete="name"
+                                                    onChange={(e) => setData("name", e.target.value)}
+                                                    required
+                                                />
+                                                {renderFieldStatusIcon("name")}
                                             </div>
-                                            <div className=" mb-4 formfield">
-                                                <label>Gender</label>
-                                                <select
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "gender",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                >
-                                                    <option disabled>
-                                                        Choose Gender
-                                                    </option>
-                                                    <option value={"he"}>
-                                                        He
-                                                    </option>
-                                                    <option value={"she"}>
-                                                        She
-                                                    </option>
-                                                    <option value={"they"}>
-                                                        They
-                                                    </option>
-                                                </select>
-                                                <InputError message={getFieldError("gender")} />
-                                            </div>
+                                            <InputError message={getFieldError("name")} className="mt-2" />
                                         </div>
                                         
-                                        <div className=" mb-4 formfield">
-                                            <label>Email</label>
+                                        <div className="md:col-span-1">
+                                            <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                                            <div className="relative">
+                                                <input
+                                                    id="username"
+                                                    name="username"
+                                                    value={data.username}
+                                                    className={getFieldClassName("username")}
+                                                    autoComplete="username"
+                                                    onChange={(e) => setData("username", e.target.value)}
+                                                    onBlur={() => {
+                                                        markFieldTouched("username");
+                                                        let localError = null;
+                                                        if (data.username.length < 5) {
+                                                            localError = "The username must be at least 5 characters.";
+                                                        } else if (data.username.length > 20) {
+                                                            localError = "The username must not be greater than 20 characters.";
+                                                        } else if (/[A-Z]/.test(data.username)) {
+                                                            localError = "The username must be lowercase.";
+                                                        } else if (/\s/.test(data.username)) {
+                                                            localError = "The username must not contain spaces.";
+                                                        } else if (/[^a-z0-9]/.test(data.username)) {
+                                                            localError = "The username must only contain letters and numbers.";
+                                                        }
+                                            
+                                                        if (localError) {
+                                                            setLiveErrors((prev) => ({ ...prev, username: localError }));
+                                                            setFieldValidity((prev) => ({ ...prev, username: false }));
+                                                            return;
+                                                        }
+                                                        validateRegistration({ username: data.username });
+                                                    }}
+                                                    required
+                                                />
+                                                {renderFieldStatusIcon("username")}
+                                            </div>
+                                            <InputError message={getFieldError("username")} className="mt-2" />
+                                        </div>
+
+                                        <div className="md:col-span-1">
+                                            <label className="block text-sm font-medium text-gray-300 mb-1">Gender</label>
+                                            <select
+                                                onChange={(e) => setData("gender", e.target.value)}
+                                                className="mt-1 block w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-xl p-3"
+                                                value={data.gender}
+                                            >
+                                                <option value="" disabled>Choose Gender</option>
+                                                <option value="he" className="text-black">He</option>
+                                                <option value="she" className="text-black">She</option>
+                                                <option value="they" className="text-black">They</option>
+                                            </select>
+                                            <InputError message={getFieldError("gender")} className="mt-2" />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
                                             <div className="relative">
                                                 <input
                                                     id="email"
                                                     type="email"
                                                     name="email"
                                                     value={data.email}
-                                                    className={getFieldClassName(
-                                                        "email"
-                                                    )}
+                                                    className={getFieldClassName("email")}
                                                     autoComplete="username"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "email",
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                    onChange={(e) => setData("email", e.target.value)}
                                                     onBlur={() => {
-                                                        markFieldTouched(
-                                                            "email"
-                                                        );
-                                                        validateRegistration(
-                                                            { email: data.email }
-                                                        );
+                                                        markFieldTouched("email");
+                                                        validateRegistration({ email: data.email });
                                                     }}
                                                     required
                                                 />
-                                                {renderFieldStatusIcon(
-                                                    "email"
-                                                )}
+                                                {renderFieldStatusIcon("email")}
                                             </div>
-                                             {getFieldError("email") ? (
-                                                    <p className="text-red-500 mt-3 text-sm">{getFieldError("email")}</p>
-                                            ):''}
+                                            <InputError message={getFieldError("email")} className="mt-2" />
                                         </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
-                                                <div className=" mb-4 formfield">
-                                                    <label>Password</label>
+                                        <div className="md:col-span-1">
+                                            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                                            <div className="relative">
+                                                <input
+                                                    id="password"
+                                                    type="password"
+                                                    name="password"
+                                                    value={mypass}
+                                                    ref={inputFieldRef}
+                                                    className={getFieldClassName("password")}
+                                                    autoComplete="off"
+                                                    onChange={handlePassHints}
+                                                    onBlur={() => {
+                                                        markFieldTouched("password");
+                                                        validateRegistration({
+                                                            password: data.password,
+                                                            password_confirmation: data.password_confirmation,
+                                                        });
+                                                    }}
+                                                    required
+                                                />
+                                                {renderFieldStatusIcon("password")}
+                                            </div>
+                                            <InputError message={getFieldError("password")} className="mt-2" />
+                                        </div>
+
+                                        <div className="md:col-span-1">
+                                            <label className="block text-sm font-medium text-gray-300 mb-1">Confirm Password</label>
+                                            <div className="relative">
+                                                <input
+                                                    id="password_confirmation"
+                                                    type="password"
+                                                    name="password_confirmation"
+                                                    value={data.password_confirmation}
+                                                    className={getFieldClassName("password_confirmation")}
+                                                    autoComplete="off"
+                                                    onChange={(e) => setData("password_confirmation", e.target.value)}
+                                                    onBlur={() => {
+                                                        markFieldTouched("password_confirmation");
+                                                        validateRegistration({
+                                                            password: data.password,
+                                                            password_confirmation: data.password_confirmation,
+                                                        });
+                                                    }}
+                                                    required
+                                                />
+                                                {renderFieldStatusIcon("password_confirmation")}
+                                            </div>
+                                            <InputError message={getFieldError("password_confirmation")} className="mt-2" />
+                                        </div>
+                                    </div>
+
+                                    <div className={`${mypass ? "block" : "hidden"} bg-white/5 rounded-xl p-4 border border-white/10`}>
+                                        <h3 className="text-white font-medium mb-2">Password must contain:</h3>
+                                        <div className="space-y-1">
+                                            <p ref={letterRef} id="letter" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Lowercase letter</p>
+                                            <p ref={capitalRef} id="capital" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Uppercase letter</p>
+                                            <p ref={numberRef} id="number" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Number</p>
+                                            <p ref={specialRef} id="special" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Special character</p>
+                                            <p ref={lengthRef} id="length" className="text-gray-400 flex items-center gap-2 text-sm"><CheckCircleIcon /> Minimum 8 characters</p>
+                                        </div>
+                                    </div>
+
+                                    {role == 0 && role !== 1 && (
+                                        <div className="pt-4 border-t border-white/10">
+                                            <h3 className="text-white font-medium mb-4 uppercase">Billing Address Information</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-300 mb-1">Street Address</label>
                                                     <div className="relative">
                                                         <input
-                                                            id="password"
-                                                            type="password"
-                                                            name="password"
-                                                            value={mypass}
-                                                            ref={inputFieldRef}
-                                                            className={getFieldClassName(
-                                                                "password"
-                                                            )}
-                                                            autoComplete="off"
-                                                            onChange={handlePassHints}
+                                                            id="street_address"
+                                                            name="street_address"
+                                                            value={address.street_address}
+                                                            className={getFieldClassName("street_address")}
+                                                            autoComplete="street_address"
+                                                            onChange={handleAddressInput}
                                                             onBlur={() => {
-                                                                markFieldTouched(
-                                                                    "password"
-                                                                );
-                                                                validateRegistration(
-                                                                    {
-                                                                        password: data.password,
-                                                                        password_confirmation:
-                                                                            data.password_confirmation,
-                                                                    }
-                                                                );
+                                                                markFieldTouched("street_address");
+                                                                validateRegistration({ street_address: address.street_address });
                                                             }}
                                                             required
                                                         />
-                                                        {renderFieldStatusIcon(
-                                                            "password"
-                                                        )}
+                                                        {renderFieldStatusIcon("street_address")}
                                                     </div>
-                                                    {getFieldError("password") ? (
-                                                            <p className="text-red-500 mt-3 text-sm">{getFieldError("password")}</p>
-                                                    ):''}
+                                                    <InputError message={getFieldError("street_address")} className="mt-2" />
                                                 </div>
-                                                <div className=" formfield">
-                                                    <div>
-                                                        <label>
-                                                            Confirm Password
-                                                        </label>
-                                                        <div className="relative">
-                                                            <input
-                                                                id="password_confirmation"
-                                                                type="password"
-                                                                name="password_confirmation"
-                                                                value={
-                                                                    data.password_confirmation
-                                                                }
-                                                                className={getFieldClassName(
-                                                                    "password_confirmation"
-                                                                )}
-                                                                autoComplete="off"
-                                                                onChange={(e) =>
-                                                                    setData(
-                                                                        "password_confirmation",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                onBlur={() => {
-                                                                    markFieldTouched(
-                                                                        "password_confirmation"
-                                                                    );
-                                                                    validateRegistration(
-                                                                        {
-                                                                            password: data.password,
-                                                                            password_confirmation:
-                                                                                data.password_confirmation,
-                                                                        }
-                                                                    );
-                                                                }}
-                                                                required
-                                                            />
-                                                            {renderFieldStatusIcon(
-                                                                "password_confirmation"
-                                                            )}
-                                                        </div>
-                                                        {getFieldError("password_confirmation") ? (
-                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("password_confirmation")}</p>
-                                                        ):''}
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-1">Country</label>
+                                                    <div className="relative">
+                                                        <Countries
+                                                            send={getCountry}
+                                                            selectClassName={getFieldClassName("country", "w-full bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-xl p-3")}
+                                                        />
+                                                        {renderFieldStatusIcon("country")}
                                                     </div>
+                                                    <InputError message={getFieldError("country")} className="mt-2" />
                                                 </div>
-                                            </div>
-
-
-                                            <div
-                                                className={`mb-3  ${
-                                                    mypass
-                                                        ? "d-block"
-                                                        : "d-none"
-                                                }`}
-                                            >
-                                                <div className="pass greybox mt-3 border-0 p-3">
-                                                    <div id="msgText">
-                                                        <h3 className="mt-2">
-                                                            Password must
-                                                            contain the
-                                                            following:
-                                                        </h3>
-                                                        <p
-                                                            ref={letterRef}
-                                                            id="letter"
-                                                            className="text-grey"
-                                                        >
-                                                            <CheckCircleIcon />{" "}
-                                                            &nbsp;A{" "}
-                                                            <b> lowercase</b>{" "}
-                                                            letter
-                                                        </p>
-                                                        <p
-                                                            ref={capitalRef}
-                                                            id="capital"
-                                                            className="text-grey"
-                                                        >
-                                                            <CheckCircleIcon />{" "}
-                                                            &nbsp;A{" "}
-                                                            <b>
-                                                                {" "}
-                                                                capital
-                                                                (uppercase)
-                                                            </b>{" "}
-                                                            letter
-                                                        </p>
-                                                        <p
-                                                            ref={numberRef}
-                                                            id="number"
-                                                            className="text-grey"
-                                                        >
-                                                            <CheckCircleIcon />{" "}
-                                                            &nbsp;A{" "}
-                                                            <b> number</b>
-                                                        </p>
-                                                        <p
-                                                            ref={specialRef}
-                                                            id="special"
-                                                            className="text-grey"
-                                                        >
-                                                            <CheckCircleIcon />{" "}
-                                                            &nbsp;Special
-                                                            characters
-                                                        </p>
-                                                        <p
-                                                            ref={lengthRef}
-                                                            id="length"
-                                                            className="text-grey mb-0"
-                                                        >
-                                                            <CheckCircleIcon />{" "}
-                                                            &nbsp;Password
-                                                            should minimum 8
-                                                            characters.
-                                                        </p>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-1">State</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            id="state"
+                                                            name="state"
+                                                            value={address.state}
+                                                            className={getFieldClassName("state")}
+                                                            autoComplete="state"
+                                                            onChange={handleAddressInput}
+                                                            onBlur={() => {
+                                                                markFieldTouched("state");
+                                                                validateRegistration({ state: address.state });
+                                                            }}
+                                                            required
+                                                        />
+                                                        {renderFieldStatusIcon("state")}
                                                     </div>
+                                                    <InputError message={getFieldError("state")} className="mt-2" />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-1">City</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            id="city"
+                                                            name="city"
+                                                            value={address.city}
+                                                            className={getFieldClassName("city")}
+                                                            autoComplete="city"
+                                                            onChange={handleAddressInput}
+                                                            onBlur={() => {
+                                                                markFieldTouched("city");
+                                                                validateRegistration({ city: address.city });
+                                                            }}
+                                                            required
+                                                        />
+                                                        {renderFieldStatusIcon("city")}
+                                                    </div>
+                                                    <InputError message={getFieldError("city")} className="mt-2" />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300 mb-1">Postal Code</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            id="postal_code"
+                                                            name="postal_code"
+                                                            value={address.postal_code}
+                                                            className={getFieldClassName("postal_code")}
+                                                            autoComplete="postal_code"
+                                                            onChange={handleAddressInput}
+                                                            onBlur={() => {
+                                                                markFieldTouched("postal_code");
+                                                                validateRegistration({ postal_code: address.postal_code });
+                                                            }}
+                                                            required
+                                                        />
+                                                        {renderFieldStatusIcon("postal_code")}
+                                                    </div>
+                                                    <InputError message={getFieldError("postal_code")} className="mt-2" />
                                                 </div>
                                             </div>
                                         </div>
+                                    )}
 
-                                        {role == 0 && role !== 1 ? (
-                                            <>
-                                                <p className="border-t mt-3 pt-4 text-grey uppercase text-normal mb-2">
-                                                    Billing address information
-                                                </p>
-                                                <div className="row">
-                                                    <div className="col-md-12 mb-4 formfield">
-                                                        <label>
-                                                            street_address
-                                                        </label>
-                                                        <div className="relative">
-                                                            <input
-                                                                id="street_address"
-                                                                name="street_address"
-                                                                value={
-                                                                    address.street_address
-                                                                }
-                                                                className={getFieldClassName(
-                                                                    "street_address"
-                                                                )}
-                                                                autoComplete="street_address"
-                                                                onChange={
-                                                                    handleAddressInput
-                                                                }
-                                                                onBlur={() =>
-                                                                    (markFieldTouched(
-                                                                        "street_address"
-                                                                    ),
-                                                                    validateRegistration(
-                                                                        {
-                                                                            street_address:
-                                                                                address.street_address,
-                                                                        }
-                                                                    ))
-                                                                }
-                                                                required
-                                                            />
-                                                            {renderFieldStatusIcon(
-                                                                "street_address"
-                                                            )}
-                                                        </div>
-                                                      
-                                                        {getFieldError("street_address") ? (
-                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("street_address")}</p>
-                                                        ):''}
-                                                    </div>
-                                                    <div className="col-md-6 mb-4 formfield">
-                                                        <label>
-                                                            Choose Country
-                                                        </label>
-                                                        <div className="relative">
-                                                            <Countries
-                                                                send={getCountry}
-                                                                selectClassName={getFieldClassName(
-                                                                    "country",
-                                                                    "w-full"
-                                                                )}
-                                                            />
-                                                            {renderFieldStatusIcon(
-                                                                "country"
-                                                            )}
-                                                        </div>
-                                                        {getFieldError("country") ? (
-                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("country")}</p>
-                                                        ):''}
-                                                    </div>
-                                                    <div className="col-md-6 mb-4 formfield">
-                                                        <label>State</label>
-                                                        <div className="relative">
-                                                            <input
-                                                                id="state"
-                                                                name="state"
-                                                                value={address.state}
-                                                                className={getFieldClassName(
-                                                                    "state"
-                                                                )}
-                                                                autoComplete="state"
-                                                                onChange={
-                                                                    handleAddressInput
-                                                                }
-                                                                onBlur={() =>
-                                                                    (markFieldTouched(
-                                                                        "state"
-                                                                    ),
-                                                                    validateRegistration(
-                                                                        {
-                                                                            state: address.state,
-                                                                        }
-                                                                    ))
-                                                                }
-                                                                required
-                                                            />
-                                                            {renderFieldStatusIcon(
-                                                                "state"
-                                                            )}
-                                                        </div>
-                                                        {getFieldError("state") ? (
-                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("state")}</p>
-                                                        ):''}
-                                                    </div>
-                                                    <div className="col-md-6 mb-4 formfield">
-                                                        <label>City</label>
-                                                        <div className="relative">
-                                                            <input
-                                                                id="city"
-                                                                name="city"
-                                                                value={address.city}
-                                                                className={getFieldClassName(
-                                                                    "city"
-                                                                )}
-                                                                autoComplete="city"
-                                                                onChange={
-                                                                    handleAddressInput
-                                                                }
-                                                                onBlur={() =>
-                                                                    (markFieldTouched(
-                                                                        "city"
-                                                                    ),
-                                                                    validateRegistration(
-                                                                        {
-                                                                            city: address.city,
-                                                                        }
-                                                                    ))
-                                                                }
-                                                                required
-                                                            />
-                                                            {renderFieldStatusIcon(
-                                                                "city"
-                                                            )}
-                                                        </div>
-                                                        {getFieldError("city") ? (
-                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("city")}</p>
-                                                        ):''}
-                                                    </div>
-                                                    <div className="col-md-6 mb-4 formfield">
-                                                        <label>
-                                                            Postal Code
-                                                        </label>
-                                                        <div className="relative">
-                                                            <input
-                                                                id="postal_code"
-                                                                name="postal_code"
-                                                                value={
-                                                                    address.postal_code
-                                                                }
-                                                                onChange={
-                                                                    handleAddressInput
-                                                                }
-                                                                className={getFieldClassName(
-                                                                    "postal_code"
-                                                                )}
-                                                                autoComplete="postal_code"
-                                                                onBlur={() =>
-                                                                    (markFieldTouched(
-                                                                        "postal_code"
-                                                                    ),
-                                                                    validateRegistration(
-                                                                        {
-                                                                            postal_code:
-                                                                                address.postal_code,
-                                                                        }
-                                                                    ))
-                                                                }
-                                                                required
-                                                            />
-                                                            {renderFieldStatusIcon(
-                                                                "postal_code"
-                                                            )}
-                                                        </div>
-                                                        {getFieldError("postal_code") ? (
-                                                                <p className="text-red-500 mt-3 text-sm">{getFieldError("postal_code")}</p>
-                                                        ):''}
-                                                    </div>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <></>
+                                    <div className="pt-4 border-t border-white/10">
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">Referral (Optional)</label>
+                                        <div className="relative flex gap-2">
+                                            <input
+                                                value={promoInputValue}
+                                                placeholder={hasReferralFromUrl ? "Referral code applied automatically" : "Enter referral code"}
+                                                disabled={false}
+                                                readOnly={hasReferralFromUrl}
+                                                className={`flex-1 bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:ring-2 focus:ring-pink-500 focus:border-transparent rounded-xl p-3 ${hasReferralFromUrl ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                onChange={(e) => {
+                                                    setPromoInputValue(e.target.value);
+                                                    setCodeValid(false);
+                                                    setData("promo", "");
+                                                }}
+                                            />
+                                            {!hasReferralFromUrl && (
+                                                codevalid ? (
+                                                    <button type="button" onClick={removecode} className="bg-red-500 hover:bg-red-600 text-white px-4 rounded-xl font-medium transition-colors">
+                                                        Remove
+                                                    </button>
+                                                ) : (
+                                                    <button type="button" onClick={role === 1 ? checkCreatorReferral : checkPromo} className="bg-pink-600 hover:bg-pink-500 text-white px-4 rounded-xl font-medium transition-colors">
+                                                        Apply
+                                                    </button>
+                                                )
+                                            )}
+                                        </div>
+                                        {(hasReferralFromUrl || (codevalid && role === 1 && !hasReferralFromUrl) || (role === 0 && codevalid)) && (
+                                            <p className="mt-2 text-sm text-green-400">✅ Code applied successfully.</p>
                                         )}
+                                    </div>
 
-                                        <div className="promocode mb-4 mt-4">
-                                            <label className="mb-2 block">
-                                                Referral (optional)
-                                            </label>
+                                    <div className="space-y-4">
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                ref={checkRef}
+                                                id="termaccept"
+                                                name="termaccept"
+                                                className="mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                onChange={(e) => setData("termaccept", e.target.value)}
+                                                required
+                                            />
+                                            <span className="text-sm text-gray-400">
+                                                By signing up you agree to our <a href={route("terms-and-conditions")} target="_blank" className="text-pink-400 hover:text-pink-300 underline">Terms & Conditions</a> and <a href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" target="_blank" className="text-pink-400 hover:text-pink-300 underline">Privacy Policy</a>, and confirm that you are at least 18 years old.
+                                            </span>
+                                        </label>
 
-                                            <div className="relative">
+                                        {role == 0 && (
+                                            <label className="flex items-start gap-3 cursor-pointer">
                                                 <input
-                                                    value={promoInputValue}
-                                                    placeholder={
-                                                        hasReferralFromUrl
-                                                            ? "Referral code applied automatically"
-                                                            : "Enter referral code (optional)"
-                                                    }
-                                                    disabled={false}
-                                                    readOnly={
-                                                        hasReferralFromUrl
-                                                    }
-                                                    className={`form-control ${
-                                                        hasReferralFromUrl
-                                                            ? "bg-gray-200 cursor-not-allowed"
-                                                            : ""
-                                                    }`}
-                                                    onChange={(e) => {
-                                                        setPromoInputValue(
-                                                            e.target.value
-                                                        );
-                                                        setCodeValid(false);
-                                                        setData("promo", "");
-                                                    }}
+                                                    type="checkbox"
+                                                    ref={addressCheck}
+                                                    id="addressCheck"
+                                                    name="addressCheck"
+                                                    className="mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
+                                                    required
                                                 />
-
-                                                {/* Creator manual referral success */}
-                                                {role === 1 &&
-                                                    codevalid &&
-                                                    !hasReferralFromUrl && (
-                                                        <p className="mt-2 text-sm text-green-600">
-                                                            ✅ Referral code
-                                                            applied
-                                                            successfully.
-                                                        </p>
-                                                    )}
-
-                                                {/* FAN ONLY BUTTON */}
-                                                {!hasReferralFromUrl &&
-                                                    (codevalid ? (
-                                                        <div
-                                                            onClick={removecode}
-                                                            className="cursor-pointer mintbg text-dark promocode-btn ms-2 text-center"
-                                                        >
-                                                            Remove
-                                                        </div>
-                                                    ) : (
-                                                        <div
-                                                            onClick={
-                                                                role === 1
-                                                                    ? checkCreatorReferral
-                                                                    : checkPromo
-                                                            }
-                                                            className="absolute top-2 right-2 cursor-pointer mintbg text-dark promocode-btn !py-2 text-center"
-                                                        >
-                                                            Apply
-                                                        </div>
-                                                    ))}
-                                            </div>
-
-                                            {/* ✅ MESSAGE BELOW INPUT */}
-                                            {hasReferralFromUrl && (
-                                                <p className="mt-2 text-sm text-green-600">
-                                                    ✅ Referral code applied
-                                                    from your invitation link.
-                                                </p>
-                                            )}
-
-                                            {/* Manual promo success (fan only) */}
-                                            {role === 0 && codevalid && (
-                                                <p className="mt-2 text-sm text-green-600">
-                                                    ✅ Promo code applied
-                                                    successfully.
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="termselect">
-                                            <label htmlFor="termaccept">
-                                                <p className="tersms-accept">
-                                                    <input
-                                                        type="checkbox"
-                                                        ref={checkRef}
-                                                        id="termaccept"
-                                                        name="termaccept"
-                                                        value="termaccept"
-                                                        required
-                                                        onChange={(e) =>
-                                                            setData(
-                                                                "termaccept",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    ></input>
-                                                    By signing up you agree to
-                                                    our{" "}
-                                                    <a
-                                                        className="text-voilet font-bold"
-                                                        target="_blank"
-                                                        href={route(
-                                                            "terms-and-conditions"
-                                                        )}
-                                                    >
-                                                        Terms & Conditions
-                                                    </a>{" "}
-                                                    and{" "}
-                                                    <a
-                                                        className="text-voilet font-bold"
-                                                        target="_blank"
-                                                        href={
-                                                            "https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                                        }
-                                                    >
-                                                        Privacy Policy,
-                                                    </a>{" "}
-                                                    and confirm that you are at
-                                                    least 18. years old. Pages
-                                                    that break our terms will be
-                                                    unpublished.
-                                                </p>
+                                                <span className="text-sm text-gray-400">
+                                                    The above address and name matches on the bank card I will later use for purchases. My account will be suspended if I use any other details.
+                                                </span>
                                             </label>
-                                            {role == 0 ? (
-                                                <>
-                                                    {/* <label htmlFor="gifterCheck">
-                                                    <p className='tersms-accept mt-3' >
-                                                        <input type="checkbox" ref={gifterref} id="gifterCheck" name="gifterCheck" value="gifterCheck"
-                                                        required ></input>
-                                                        The above matches the details on the bank card they will use. If it doesn’t their account will be suspended.
-                                                    </p>
-                                                </label> */}
-                                                    <label htmlFor="addressCheck">
-                                                        <p className="tersms-accept mt-3">
-                                                            <input
-                                                                type="checkbox"
-                                                                ref={
-                                                                    addressCheck
-                                                                }
-                                                                id="addressCheck"
-                                                                name="addressCheck"
-                                                                value="addressCheck"
-                                                                required
-                                                            ></input>
-                                                            The above address
-                                                            and name matches on
-                                                            the bank card I will
-                                                            later use for
-                                                            purchases. My
-                                                            account will be
-                                                            suspended if I use
-                                                            any other details.
-                                                        </p>
-                                                    </label>
-                                                </>
-                                            ) : (
-                                                ""
-                                            )}
+                                        )}
+                                    </div>
+
+                                    {turnstileSiteKey && (
+                                        <div className="flex justify-center my-4">
+                                            <div ref={bindTurnstileContainerRef} />
                                         </div>
+                                    )}
 
-                                        {turnstileSiteKey ? (
-                                            <div className="m-auto turnstile-wrap d-table mb-2 mt-4  mt-md-3">
-                                                <div
-                                                    ref={bindTurnstileContainerRef}
-                                                />
-                                            </div>
-                                        ) : null}
-
-                                        <div className="wishlistbtn !pb-3 text-center flex justify-center mt-2">
-                                            <Popup
-                                                action={hasPop}
-                                                modalclassName=" full stripe-terms shadow-pink ps-0"
-                                                space="4"
-                                                size="md"
-                                                classes={`hidden`}
-                                                text={`Create Account`}
-                                            >
-                                                <div className="addgoal">
-                                                    <h2 className="text-uppercase font-GillSans pb-4 font-large">
-                                                        Important notice !
-                                                    </h2>
-                                                    <p className="mb-2">
-                                                        {" "}
-                                                        You must not use any
-                                                        other individual’s
-                                                        information. Only a
-                                                        single account can be
-                                                        used with the
-                                                        information you confirm
-                                                        to us.{" "}
-                                                    </p>
-                                                    <ol className="d-block py-3">
-                                                        <li className="font-bold  text-[16px] mb-2 w-full">
-                                                            1. First and Last
-                                                            name{" "}
-                                                        </li>
-                                                        <li className="font-bold  text-[16px] mb-2 w-full">
-                                                            2. Address
-                                                            registered for the
-                                                            bank card that will
-                                                            be used during
-                                                            checkouts{" "}
-                                                        </li>
-                                                        <li className="font-bold  text-[16px] mb-2 w-full">
-                                                            3. The e-mail used
-                                                            during checkouts.{" "}
-                                                        </li>
-                                                    </ol>
-                                                    <div className="termselect mt-4 mb-4">
-                                                        <label htmlFor="hasNotified">
-                                                            <p className="text-[15px]">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    ref={
-                                                                        hasNotifiedRef
-                                                                    }
-                                                                    id="hasNotified"
-                                                                    name="hasNotified"
-                                                                    value="hasNotified"
-                                                                    required
-                                                                ></input>
-                                                                I confirm that
-                                                                the above
-                                                                details are
-                                                                correct and the
-                                                                only details I
-                                                                will use. If I
-                                                                use other
-                                                                information than
-                                                                the above. My
-                                                                account will be
-                                                                suspended. If I
-                                                                need to update
-                                                                any details, I
-                                                                will contact
-                                                                support via live
-                                                                chat who can
-                                                                update my
-                                                                account.
-                                                            </p>
-                                                        </label>
-                                                    </div>
-                                                    <LoaderButton
-                                                        onClick={accepted}
-                                                        disabled={processing}
-                                                        className="p w-full mb-4 mb-md-0"
-                                                        spinnerClassName="fill-red-600"
-                                                    >
-                                                        {processing
-                                                            ? "Processing"
-                                                            : " Accept Terms"}
-                                                    </LoaderButton>
+                                    <div className="">
+                                        <Popup
+                                            action={hasPop}
+                                            modalclassName="bg-gray-900 border border-white/10 shadow-2xl rounded-2xl p-6 max-w-lg w-full"
+                                            space="4"
+                                            size="md"
+                                            classes={`hidden`}
+                                            text={`Create Account`}
+                                        >
+                                            <div className="text-white">
+                                                <h2 className="text-2xl font-gulfs text-black mb-4 uppercase">Important notice !</h2>
+                                                <p className="text-gray-500 mb-4">
+                                                    You must not use any other individual’s information. Only a single account can be used with the information you confirm to us.
+                                                </p>
+                                                <ol className="list-decimal list-inside space-y-2 mb-4 text-gray-500">
+                                                    <li>First and Last name</li>
+                                                    <li>Address registered for the bank card that will be used during checkouts</li>
+                                                    <li>The e-mail used during checkouts.</li>
+                                                </ol>
+                                                <div className="mb-4">
+                                                     <label className="flex items-start gap-3 cursor-pointer">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            ref={hasNotifiedRef} 
+                                                            id="hasNotified" 
+                                                            name="hasNotified" 
+                                                            value="hasNotified" 
+                                                            required 
+                                                            className="mt-1 rounded bg-white/10 border-black text-pink-500 focus:ring-pink-500" 
+                                                        />
+                                                        <span className="text-sm text-gray-500">
+                                                            I confirm that the above details are correct and the only details I will use. If I use other information than the above. My account will be suspended. If I need to update any details, I will contact support via live chat who can update my account.
+                                                        </span>
+                                                     </label>
                                                 </div>
-                                            </Popup>
-                                            <LoaderButton
-                                                disabled={processing}
-                                                className="p w-full mb-4 mb-md-0"
-                                                spinnerClassName="fill-red-600"
-                                            >
-                                                {processing
-                                                    ? "Processing"
-                                                    : " Create Account"}
-                                            </LoaderButton>
-                                        </div>
+                                                <LoaderButton
+                                                    onClick={accepted}
+                                                    disabled={processing}
+                                                    className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-lg py-3 rounded-[30px] shadow-lg shadow-pink-500/30 border border-white/10"
+                                                    spinnerClassName="fill-white" >
+                                                    {processing ? "Processing" : "Accept Terms"}
+                                                </LoaderButton>
+                                            </div>
+                                        </Popup>
+
+                                        <LoaderButton
+                                            disabled={processing}
+                                            className="relative flex flex-row items-center  focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 !py-3 !px-6 !text-black w-full"
+                                            spinnerClassName="fill-white" >
+                                            {processing ? "Processing" : "Create Account"}
+                                        </LoaderButton>
                                     </div>
                                 </form>
                             </div>
@@ -1800,6 +1389,7 @@ export default function Register(props) {
                     </div>
                 </div>
             </div>
+        </div>
         </GuestLayout>
     );
 }
