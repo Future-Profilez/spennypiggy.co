@@ -116,7 +116,7 @@ export default function VerifyEmail({auth}) {
                         method="post"
                         href={route("logout")}
                         as="button" className="text-white" >
-                            Use Another Email Address
+                            Use Another Email Address ?
                     </Link>
                 </div>
             </div>

@@ -10,7 +10,6 @@ import { useState } from 'react';
 import DeviceID from '@/includes/DeviceID';
 
 export default function Login({ status, canResetPassword }) {
-
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get('redirect');
     const redirectmessage = urlParams.get('message');
@@ -153,8 +152,7 @@ export default function Login({ status, canResetPassword }) {
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
-            
+            <Head title="Log in" description="Log in to your account" />
             <div className="min-h-[90vh] bg-black relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
@@ -174,6 +172,9 @@ export default function Login({ status, canResetPassword }) {
                         <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Back!</span>
                         </h2>
+                        <h1 className="hidden">
+                            Login to your account.
+                        </h1>
                         <p className="text-gray-400 text-lg font-medium">
                             Don't have an account?{" "}
                             <Link href={route("register")} className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4">
@@ -209,7 +210,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[14px] px-3 placeholder-gray-500 transition-all duration-300"
+                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300"
                                             autoComplete="username"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -230,7 +231,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[14px] px-3 placeholder-gray-500 transition-all duration-300"
+                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300"
                                             autoComplete="current-password"
                                             placeholder="••••••••"
                                             onChange={(e) => setData("password", e.target.value)}
@@ -243,7 +244,7 @@ export default function Login({ status, canResetPassword }) {
                                         <div className="flex justify-end mt-2">
                                             <Link
                                                 href={route("password.request")}
-                                                className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
+                                                className="!cursor-pointer text-sm text-gray-400 hover:text-white transition-colors duration-200"
                                             >
                                                 Forgot your password?
                                             </Link>

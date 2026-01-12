@@ -439,7 +439,11 @@ class TaskController extends Controller
         $complianceMetadata = [
             // Core Identity
             'creator_id' => $creator->id,
+            'creator_name' => $creator->name,
+            'creator_profile_url' => route('user.show', $creator->username),
             'buyer_id' => $user->id,
+            'gifter_name' => $user->name,
+            'gifter_profile_url' => route('user.show', $user->username),
             'supporter_id' => $user->id, // Kept for legacy compatibility
             'gifter_message' => $request->gifter_message,
 
@@ -454,6 +458,13 @@ class TaskController extends Controller
             'value_summary' => "Digital task service: " . $task->title,
             'caps_version' => 'v1',
             'sla_hours' => $task->sla_hours ?? 0,
+            
+            // Compliance Fields
+            'content_delivery_status' => 'pending',
+            'payment_status' => 'pending', 
+            'payment_date' => now()->toIso8601String(),
+            'current_status_of_order' => 'pending',
+            'sla_timeline' => $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant',
 
             // Financial Breakdown (Crucial for Disputes/Accounting)
             'admin_fee' => $convertedAdminFee,
