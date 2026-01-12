@@ -6,6 +6,7 @@ import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
 import Turnstile from "@/Components/Turnstile";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
     const turnstileRef = useRef(null);
