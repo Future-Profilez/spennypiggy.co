@@ -21,7 +21,7 @@ export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, ecla
     }
   `}</style>
 
-  <div className={`${classes} flex ${reverse ? "col-reverse" : ''} ${mainbg ? mainbg : 'bg-black'} flex borderbox justify-between items-center relative overflow-hidden`}>
+  <div className={`${classes} flex ${reverse ? "col-reverse" : ''} ${mainbg ? mainbg : 'bg-black'} flex borderbox justify-between items-center relative`}>
     {/* Decorative Background Elements if bg is black/default */}
     {!mainbg && (
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">

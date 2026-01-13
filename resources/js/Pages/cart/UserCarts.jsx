@@ -417,10 +417,10 @@ export default function UserCarts(props) {
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={!isChecked || checking}
+                                        disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken)}
                                         onClick={handleSubmit}
                                         className={`${
-                                            isChecked ? "" : "disabled"
+                                            isChecked && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"
                                         } main-button p w-full`}
                                     >
                                         {checking ? "Wait.." : "Checkout"}{" "}

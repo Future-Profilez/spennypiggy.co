@@ -29,7 +29,7 @@ export default function ProfileTask({ task, IsloggedIn }) {
                         <p className="text-2xl font-black text-pink-500 font-anton">
                             {formatMultiPrice(task.price, task.currency || 'USD')}
                         </p>
-                        {IsloggedIn ? 
+                        {!IsloggedIn ? 
                         <div className=" my-2 lg:my-0">
                             <Link href={`/task/${task.uuid}`} className=" inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
                                 <> {task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝'} </> 

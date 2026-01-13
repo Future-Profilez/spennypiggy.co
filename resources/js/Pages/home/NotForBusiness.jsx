@@ -26,7 +26,7 @@ export default function NotForBusiness() {
     ];
 
     return (
-        <section className="bg-black py-16 md:py-24 relative overflow-hidden">
+        <section className="bg-black py-16 md:py-24 relative ">
              {/* Decorative Background Elements */}
              <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-0 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-float"></div>
@@ -34,7 +34,7 @@ export default function NotForBusiness() {
             </div>
 
             <div className="containerbox relative  ">
-                <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
+                <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
                     How It <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Works</span>
                 </h2>
 
@@ -61,10 +61,10 @@ export default function NotForBusiness() {
                                 </div>
                             </div>
 
-                            <h3 className="text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-pink-500 transition-colors">
+                            <h3 className="fading text-xl lg:text-2xl font-gulfs text-white mb-1 md:mb-4 uppercase leading-tight px-4 group-hover:text-pink-500 transition-colors">
                                 {item.title}
                             </h3>
-                            <p className="text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line group-hover:text-gray-300 transition-colors">
+                            <p className="fading text-gray-400 font-poppins text-sm lg:text-base leading-relaxed max-w-xs mx-auto whitespace-pre-line group-hover:text-gray-300 transition-colors">
                                 {item.description}
                             </p>
                         </div>

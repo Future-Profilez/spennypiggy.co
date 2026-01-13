@@ -912,7 +912,7 @@ export default function Register(props) {
                             Already registered ?
                             <Link
                                 href={route("login")}
-                                className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="ms-1 text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Log In
                             </Link>
@@ -995,8 +995,7 @@ export default function Register(props) {
                                     </p>
                                     <button
                                         onClick={handleNext}
-                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit"
-                                    >
+                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit" >
                                         Got it – I’ll link my socials
                                     </button>
                                 </div>
@@ -1016,16 +1015,9 @@ export default function Register(props) {
                                             return (
                                                 <div
                                                     key={s.value}
-                                                    className="relative"
-                                                >
-                                                    <input
-                                                        id={`types-${index}`}
-                                                        type="checkbox"
-                                                        value={s.value}
-                                                        className="hidden"
-                                                        onChange={
-                                                            handleProfileTags
-                                                        }
+                                                    className="relative" >
+                                                    <input id={`types-${index}`} type="checkbox" value={s.value} className="hidden"
+                                                        onChange={handleProfileTags }
                                                         checked={isSelected}
                                                     />
                                                     <label
@@ -1050,7 +1042,7 @@ export default function Register(props) {
                                                 profileTags &&
                                                 profileTags.length < 1
                                             }
-                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             Next
                                         </button>
