@@ -128,7 +128,8 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function updateProfile(Request $request) {
+    public function updateProfile(Request $request)
+    {
 
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
@@ -173,9 +174,10 @@ class ProfileController extends Controller
                     'social' => $request->social_handle !== $user->social_handle,
                 ];
 
-                if (($updatedFields['bio'] && !empty($request->bio)) || $updatedFields['social']) {
+                if ($user->profile_status_lock == 2 && ((!empty($updatedFields['bio']) && !empty($request->bio)) || !empty($updatedFields['social']))) {
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
+
                 $user->bio = $request->bio;
                 $user->profile_status_lock = 1;
                 $userProfileStatus->user_profile_status = 0;
@@ -448,14 +450,14 @@ class ProfileController extends Controller
     public function notificationSwitch()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
-        
+
         if (!$user) {
             return response()->json([
                 'status' => false,
                 'msg' => 'User not found.'
             ], 404);
         }
-        
+
         if ($user->notification_send == 0) {
             $user->notification_send = 1;
             $status = 'Enabled';
@@ -610,14 +612,14 @@ class ProfileController extends Controller
     public function removeIntro()
     {
         $intro = UserIntro::where('user_id', Auth::id())->first();
-        
+
         if (!$intro) {
             return response()->json([
                 'status' => false,
                 'msg' => 'No intro video found to remove.'
             ], 404);
         }
-        
+
         $intro->delete();
 
         $user = Auth::user();
@@ -827,8 +829,8 @@ class ProfileController extends Controller
         $user = User::where('username', $username)->where('is_uk', 0)->first();
 
         $billPayments = BillPayment::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            })
+            $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+        })
             ->with(['bill', 'bill.user'])
             ->orderBy('created_at', 'DESC')
             ->paginate(30);
@@ -877,8 +879,8 @@ class ProfileController extends Controller
         $user = User::where('username', $username)->where('is_uk', 0)->first();
         // 1) Wish purchases (StripePaymentItems) -> prefer content_file_url, then reward_url, else message_url
         $wishPurchases = \App\Models\StripePaymentItems::whereHas('payment', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
+            $q->where('user_id', $user->id);
+        })
             ->with(['wish', 'payment.owner'])
             ->orderBy('created_at', 'DESC')
             ->get();
@@ -887,7 +889,9 @@ class ProfileController extends Controller
         foreach ($wishPurchases as $wp) {
             $wish = $wp->wish;
             $url = $wish?->content_file_url ?? $wish?->reward_url ?? $wp->message_url;
-            if (!$url) { continue; }
+            if (!$url) {
+                continue;
+            }
             $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
             // Prefer explicit types from DB when available
             $type = $wish?->content_file_type ?: $wp->media_type;
@@ -896,7 +900,7 @@ class ProfileController extends Controller
                 if ($wish?->reward_url && $url === $wish->reward_url) {
                     $type = 'image';
                 } else {
-                    $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
+                    $type = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? 'image' : (in_array($ext, ['mp4', 'webm', 'mov']) ? 'video' : 'doc');
                 }
             }
             $items[] = [
@@ -916,7 +920,7 @@ class ProfileController extends Controller
         $deliverables = Deliverable::where('gifter_id', $user->id)
             ->where(function ($query) {
                 $query->whereNotNull('deliverable_url')
-                      ->orWhereNotNull('certificate_url');
+                    ->orWhereNotNull('certificate_url');
             })
             ->whereIn('product_type', ['bill', 'wish', 'task'])
             ->with(['wishItem', 'bill', 'creator', 'task'])
@@ -925,9 +929,11 @@ class ProfileController extends Controller
 
         foreach ($deliverables as $d) {
             $url = $d->deliverable_url ?: ($d->certificate_url ?: ($d->bill?->content_file_url ?? $d->wishItem?->content_file_url));
-            if (!$url) { continue; }
+            if (!$url) {
+                continue;
+            }
             $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
-            $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
+            $type = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? 'image' : (in_array($ext, ['mp4', 'webm', 'mov']) ? 'video' : 'doc');
             $title = $d->wishItem?->wishname ?? $d->bill?->name ?? $d->task?->title ?? 'Content';
             $items[] = [
                 'url' => $url,
@@ -944,8 +950,8 @@ class ProfileController extends Controller
 
         // 3) One-time subscriptions with reward (WishItemSubscription)
         $subs = \App\Models\WishItemSubscription::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            })
+            $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+        })
             ->with(['wish_item.user'])
             ->where('recurring_for', 'onetime')
             ->where('status', 'paid')
@@ -955,11 +961,13 @@ class ProfileController extends Controller
         foreach ($subs as $sub) {
             $wish = $sub->wish_item;
             $url = $wish?->content_file_url ?? $wish?->reward_url;
-            if (!$url) { continue; }
+            if (!$url) {
+                continue;
+            }
             $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
             $type = $wish?->content_file_type ?: ($wish?->reward_url ? 'image' : null);
             if (!$type) {
-                $type = in_array($ext, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($ext, ['mp4','webm','mov']) ? 'video' : 'doc');
+                $type = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? 'image' : (in_array($ext, ['mp4', 'webm', 'mov']) ? 'video' : 'doc');
             }
             $items[] = [
                 'url' => $url,
@@ -1046,21 +1054,21 @@ class ProfileController extends Controller
         // Get user IDs from active subscriptions for post access
         $subscription = WishItem::where('subscription', 1)->whereHas('wishItemsSubscription', function ($qu) use ($user) {
             $qu->where('status', 'paid')
-               ->where('stripe_status', 'active') // Only truly active Stripe subscriptions
-               ->where(function ($q) use ($user) {
-                   $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-               })
-               ->where(function ($que) {
-                   $que->where(function ($recurring) {
-                       // Active recurring subscriptions
-                       $recurring->where('recurring_for', 'continue')
-                                ->where('upcoming_payment', '>=', Carbon::now());
-                   })->orWhere(function ($onetime) {
-                       // One-time subscriptions get 30-day access
-                       $onetime->where('recurring_for', 'onetime')
-                              ->where('created_at', '>=', Carbon::now()->subDays(30));
-                   });
-               });
+                ->where('stripe_status', 'active') // Only truly active Stripe subscriptions
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
+                })
+                ->where(function ($que) {
+                    $que->where(function ($recurring) {
+                        // Active recurring subscriptions
+                        $recurring->where('recurring_for', 'continue')
+                            ->where('upcoming_payment', '>=', Carbon::now());
+                    })->orWhere(function ($onetime) {
+                        // One-time subscriptions get 30-day access
+                        $onetime->where('recurring_for', 'onetime')
+                            ->where('created_at', '>=', Carbon::now()->subDays(30));
+                    });
+                });
         })->pluck('user_id');
 
         $bills = Bills::whereHas('payments', function ($qu) use ($user) {
