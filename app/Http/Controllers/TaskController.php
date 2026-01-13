@@ -92,7 +92,7 @@ class TaskController extends Controller
                     if ($request->type === 'timed') {
                         $currency = Auth::user()->default_currency ?? 'USD';
                         $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
-                        
+
                         if ($priceGBP < 5) {
                             $fail('Paid Tasks must be at least £5 GBP equivalent.');
                         }
@@ -181,11 +181,11 @@ class TaskController extends Controller
                     // The update method doesn't seem to update currency field in the code I read earlier (lines 166-185), 
                     // it only updates title, description, price, etc.
                     // So we use $task->currency.
-                    
+
                     if ($request->type === 'timed') {
                         $currency = $task->currency ?? 'USD';
                         $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
-                        
+
                         if ($priceGBP < 5) {
                             $fail('Paid Tasks must be at least £5 GBP equivalent.');
                         }
@@ -219,6 +219,10 @@ class TaskController extends Controller
 
         if ($request->media_file) {
             $task->media_url = $request->media_file['url'] ?? null;
+        }
+
+        if ($task->is_approved == 2) {
+            $task->is_approved = 0;
         }
 
         if ($request->type === 'instant') {
@@ -359,7 +363,7 @@ class TaskController extends Controller
         $vatPercent = $creator->vat_amount_percentage ?? 0;
 
         $price = $task->price;
-        
+
         // Enforce Paid Task limits in GBP (min £5, max £500)
         if ($task->type !== 'instant') {
             $priceGBP = Helpers::priceFormat(strtoupper($currency), $price, 'GBP');
@@ -370,7 +374,7 @@ class TaskController extends Controller
                 return back()->with('error', 'Paid Task price cannot exceed £500.');
             }
         }
-        
+
         // 1. Creator VAT
         $creatorVatAmount = round($price * ($vatPercent / 100), 2);
 
@@ -459,10 +463,10 @@ class TaskController extends Controller
             'value_summary' => "Digital task service: " . $task->title,
             'caps_version' => 'v1',
             'sla_hours' => $task->sla_hours ?? 0,
-            
+
             // Compliance Fields
             'content_delivery_status' => 'pending',
-            'payment_status' => 'pending', 
+            'payment_status' => 'pending',
             'payment_date' => now()->toIso8601String(),
             'current_status_of_order' => 'pending',
             'sla_timeline' => $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant',
@@ -493,9 +497,9 @@ class TaskController extends Controller
                         'amount' => $transferAmount,
                     ];
                 } else {
-                     // Fallback if no card payments capability (rare for verified creators)
-                     // We still try to transfer
-                     $paymentIntentData['transfer_data'] = [
+                    // Fallback if no card payments capability (rare for verified creators)
+                    // We still try to transfer
+                    $paymentIntentData['transfer_data'] = [
                         'destination' => $connectedAccountId,
                         'amount' => $transferAmount,
                     ];
@@ -530,7 +534,7 @@ class TaskController extends Controller
     {
         $sessionId = $request->query('session_id');
         $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
-        
+
         Stripe::setApiKey(config('services.stripe.secret'));
         $session = Session::retrieve($sessionId);
 
@@ -672,12 +676,12 @@ class TaskController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Failed to sync initial metadata in createTaskPurchaseSync: " . $e->getMessage());
         }
- 
+
         if ($task->type === 'instant') {
             $purchase->status = 'completed';
             $purchase->completed_at = Carbon::now();
             $purchase->save();
-            
+
             // Update Metadata
             try {
                 $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
@@ -748,7 +752,7 @@ class TaskController extends Controller
 
         $purchase->status = 'pending_review';
         $purchase->save();
-        
+
         // Update Metadata
         try {
             $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
@@ -805,7 +809,7 @@ class TaskController extends Controller
             $purchase->status = 'completed_accepted';
             $purchase->completed_at = now();
             $purchase->reviewed_at = now();
-            
+
             if ($wasDispute) {
                 $purchase->dispute_status = 'resolved';
             }
@@ -825,7 +829,7 @@ class TaskController extends Controller
                         $metadata['dispute_resolution'] = 'supporter_accepted';
                         $metadata['dispute_status'] = 'resolved';
                     }
-                    
+
                     app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, $metadata);
                 }
             } catch (\Exception $e) {
@@ -860,7 +864,8 @@ class TaskController extends Controller
                         $creator->email
                     );
                 }
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
 
             // Delayed transfer for PAID_TASK
             if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK' && $creator && !empty($creator->account_id)) {
@@ -928,21 +933,21 @@ class TaskController extends Controller
                 $purchase->rejection_reason = $request->reason;
                 $purchase->save();
 
-                 // Update Metadata
-                 try {
-                     $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
-                     if ($deliverable) {
-                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
-                             'dispute_status' => 'open',
-                             'escalation_reason' => $request->reason
-                         ]);
-                     }
-                 } catch (\Exception $e) {
-                     \Illuminate\Support\Facades\Log::error("Failed to update metadata on escalation: " . $e->getMessage());
-                 }
+                // Update Metadata
+                try {
+                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    if ($deliverable) {
+                        app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                            'dispute_status' => 'open',
+                            'escalation_reason' => $request->reason
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to update metadata on escalation: " . $e->getMessage());
+                }
 
-                 // Notify Creator
-                 try {
+                // Notify Creator
+                try {
                     Mail::to($creator->email)->send(new TaskDisputeEscalatedMail($purchase, $task, $creator, 'creator'));
                     Helpers::sendNotification("Dispute Escalated ⚠️", "Task dispute escalated to admin for '{$task->title}'", $creator->email);
                 } catch (\Exception $e) {
@@ -969,21 +974,21 @@ class TaskController extends Controller
                 $purchase->rejection_reason = $request->reason;
                 $purchase->save();
 
-                 // Update Metadata
-                 try {
-                     $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
-                     if ($deliverable) {
-                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
-                             'status' => 'rejected_once',
-                             'rejection_reason' => $request->reason
-                         ]);
-                     }
-                 } catch (\Exception $e) {
-                     \Illuminate\Support\Facades\Log::error("Failed to update metadata on rejection: " . $e->getMessage());
-                 }
+                // Update Metadata
+                try {
+                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    if ($deliverable) {
+                        app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                            'status' => 'rejected_once',
+                            'rejection_reason' => $request->reason
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to update metadata on rejection: " . $e->getMessage());
+                }
 
-                 // Notify Creator about rejection
-                 try {
+                // Notify Creator about rejection
+                try {
                     Mail::to($creator->email)->send(new TaskProofRejectedMail($purchase, $task, $supporter));
                     Helpers::sendNotification("Proof Rejected ❌", "Proof rejected for '{$task->title}'. Please review.", $creator->email);
                 } catch (\Exception $e) {
@@ -1001,7 +1006,7 @@ class TaskController extends Controller
         if (!$purchase) {
             abort(404);
         }
-        
+
         if (Auth::id() !== $purchase->supporter_id && Auth::id() !== $purchase->creator_id) {
             abort(403);
         }
