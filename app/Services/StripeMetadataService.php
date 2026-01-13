@@ -120,12 +120,14 @@ class StripeMetadataService
             ]);
             return false;
         }
-        
+
         // Check if this is a support payment with certificate
         $isSupportPaymentWithCert = $this->isSupportPaymentWithCertificate($deliverable);
         
         // For support payments: include cert fields if certificate exists, otherwise exclude
-        $skipDeliveryFields = $deliverable->product_type === 'support_payment' && !$isSupportPaymentWithCert;
+        // For tasks: always skip delivery fields (certificate, delivery url, etc) to keep metadata clean
+        $skipDeliveryFields = ($deliverable->product_type === 'support_payment' && !$isSupportPaymentWithCert)
+                            || in_array($deliverable->product_type, ['task', 'task_purchase']);
         
         // Determine delivery status 
         $deliveryStatus = $skipDeliveryFields ? 'pending' : $this->mapDeliverableStatusToDeliveryStatus($deliverable->status);
@@ -312,6 +314,12 @@ class StripeMetadataService
         // BASIC PAYMENT INFO - same structure for all payment types
         $this->addBasicPaymentInfo($metadata, $deliverable);
         
+        // For tasks, we want to keep metadata clean and avoid adding content items/delivery status
+        // But we DO want the basic info (status, buyer/creator) added above
+        if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
+            return $metadata;
+        }
+        
         // CONTENT DELIVERY STATUS - REQUIRED
         $metadata['content_delivery_status'] = 'delivered'; // STATIC as requested
         
@@ -431,7 +439,6 @@ class StripeMetadataService
 
                 if ($creator) {
                     $metadata['creator_name'] = $creator->name;
-                    $metadata['creator_username'] = $creator->username;
                     $metadata['creator_profile_url'] = route('user.show', $creator->username);
                 }
 
@@ -444,10 +451,67 @@ class StripeMetadataService
                 }
 
                 if ($gifter) {
-                    $metadata['buyer_username'] = $gifter->username;
-                    $metadata['gifter_name'] = $gifter->name; // Explicit request for gifter_name
+                    $metadata['gifter_name'] = $gifter->name;
                     $metadata['gifter_profile_url'] = route('user.show', $gifter->username);
                 }
+                
+                // Get Purchase Details
+                $purchase = $deliverable->purchase; // Assumes relationship exists
+                if ($purchase) {
+                    $metadata['gifter_message'] = $purchase->gifter_message ?? '';
+                    $metadata['transfer_amount'] = (string) $purchase->transfer_amount;
+                    
+                    // Transfer Status Logic
+                    $metadata['transfer_status'] = 'pending';
+                    if ($purchase->status === 'paid_out') {
+                        $metadata['transfer_status'] = 'transferred';
+                    } elseif ($purchase->status === 'refunded') {
+                        $metadata['transfer_status'] = 'reversed';
+                    }
+
+                    // Payment Status Logic
+                    $metadata['payment_status'] = 'paid'; // Default
+                    if ($purchase->status === 'refunded') {
+                        $metadata['payment_status'] = 'refunded';
+                    } elseif ($purchase->status === 'failed') {
+                        $metadata['payment_status'] = 'failed';
+                    }
+
+                    // Current Order Status
+                    $metadata['current_status_of_order'] = $purchase->status;
+                } else {
+                    $metadata['current_status_of_order'] = $deliverable->status;
+                    $metadata['payment_status'] = $deliverable->payment_status ?? 'paid';
+                    $metadata['transfer_status'] = 'pending';
+                }
+
+                // Task Details
+                if ($deliverable->task) {
+                    $task = $deliverable->task;
+                    $metadata['purpose'] = 'paid_task';
+                    $metadata['type'] = 'task_purchase';
+                    $metadata['task_url'] = rtrim(config('app.url'), '/') . '/task/' . $task->uuid;
+                    $metadata['task_type'] = $task->type;
+                    $metadata['delivery_mode'] = $task->type === 'timed' ? 'Timed Delivery' : 'Instant';
+                    $metadata['value_summary'] = "Digital task service: " . $task->title;
+                    $metadata['sla_hours'] = (string) ($task->sla_hours ?? 0);
+                    $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant';
+                    $metadata['payment_type'] = $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK';
+                    
+                    // Evidence of Delivery (Strong Proof for Disputes)
+                    if (in_array($deliverable->status, ['delivered', 'completed', 'completed_accepted'])) {
+                        $metadata['delivery_proof'] = $deliverable->deliverable_url ?? 'Instant Access/Log';
+                        $metadata['delivery_date'] = $deliverable->updated_at ? $deliverable->updated_at->toIso8601String() : now()->toIso8601String();
+                    }
+                }
+
+                $metadata['payment_date'] = $deliverable->created_at ? $deliverable->created_at->toIso8601String() : now()->toIso8601String();
+                
+                // Unset generic fields we don't want for tasks (cleanup)
+                unset($metadata['creator_username']);
+                unset($metadata['buyer_username']);
+                unset($metadata['task_id']);
+                unset($metadata['task_uuid']);
                 break;
         }
     }

@@ -436,42 +436,37 @@ class TaskController extends Controller
         $connectedAccountId = $creator->account_id;
         $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
+        $appUrl = rtrim(config('app.url'), '/');
+
         // Comprehensive Metadata for Stripe Compliance & Webhook Handling
         $complianceMetadata = [
-            // Core Identity
-            'creator_id' => $creator->id,
             'creator_name' => $creator->name,
-            'creator_profile_url' => route('user.show', $creator->username),
-            'buyer_id' => $user->id,
+            'creator_profile_url' => $appUrl . '/' . $creator->username,
             'gifter_name' => $user->name,
-            'gifter_profile_url' => route('user.show', $user->username),
-            'supporter_id' => $user->id, // Kept for legacy compatibility
-            'gifter_message' => $request->gifter_message,
+            'gifter_profile_url' => $appUrl . '/' . $user->username,
+            'gifter_message' => $request->gifter_message ?? '',
+            
+            // System Fields (Required for Webhook Processing)
+            'task_id' => $task->id,
+            'buyer_id' => $user->id,
 
             // Task Details
             'purpose' => 'paid_task',
-            'type' => 'task_purchase', // Trigger for Webhook
-            'task_id' => $task->id,
-            'task_uuid' => $task->uuid,
-            'task_type' => $task->type, // instant | timed
-            'delivery_mode' => $task->type,
-            'deliverable_type' => 'digital_task',
+            'type' => 'task_purchase',
+            'task_url' => $appUrl . '/task/' . $task->uuid,
+            'task_type' => $task->type,
+            'delivery_mode' => $task->type === 'timed' ? 'Timed Delivery' : 'Instant',
             'value_summary' => "Digital task service: " . $task->title,
-            'caps_version' => 'v1',
-            'sla_hours' => $task->sla_hours ?? 0,
+            'sla_hours' => (string) ($task->sla_hours ?? 0),
             
             // Compliance Fields
-            'content_delivery_status' => 'pending',
-            'payment_status' => 'pending', 
+            'payment_status' => 'paid', // Default as requested
             'payment_date' => now()->toIso8601String(),
             'current_status_of_order' => 'pending',
             'sla_timeline' => $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant',
 
-            // Financial Breakdown (Crucial for Disputes/Accounting)
-            'admin_fee' => $convertedAdminFee,
-            'platform_fee' => $totalPlatformFee,
-            'vat_amount' => $creatorVatAmount,
-            'transfer_amount' => ($transferAmount / $multiplier),
+            'transfer_amount' => (string) ($transferAmount / $multiplier),
+            'transfer_status' => 'pending',
             'payment_type' => $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK',
         ];
 
@@ -518,8 +513,7 @@ class TaskController extends Controller
             'mode' => 'payment',
             'payment_intent_data' => $paymentIntentData,
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('task.show', $task->uuid),
-            'metadata' => $complianceMetadata,
+            'cancel_url' => $appUrl . '/task/' . $task->uuid,
             'customer_email' => $user->email,
         ]);
 
@@ -570,7 +564,7 @@ class TaskController extends Controller
                 Log::info('Self-healed instant task status', ['purchase_id' => $purchase->id]);
             }
         } else {
-            return redirect()->route('task.show', $uuid)->with('error', 'Payment not completed.');
+            return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
         return Inertia::render('Tasks/Success', [
@@ -591,6 +585,21 @@ class TaskController extends Controller
         if ($existing) return $existing;
 
         $metadata = $session->metadata;
+        
+        // If session metadata is empty (because we moved it to PaymentIntent), try to fetch from PI
+        if (empty($metadata->buyer_id) && !empty($session->payment_intent)) {
+            try {
+                $client = new StripeClient(config('services.stripe.secret'));
+                $piId = is_string($session->payment_intent) ? $session->payment_intent : $session->payment_intent->id;
+                $pi = $client->paymentIntents->retrieve($piId);
+                if ($pi && $pi->metadata) {
+                    $metadata = $pi->metadata;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to retrieve metadata from PI for task purchase', ['pi' => $session->payment_intent]);
+            }
+        }
+
         $taskId = $metadata->task_id ?? $task->id;
         $buyerId = $metadata->buyer_id ?? null;
         $creatorId = $metadata->creator_id ?? $task->creator_id;
@@ -869,23 +878,65 @@ class TaskController extends Controller
                     $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
                     $chargeId = $pi->latest_charge ?? null;
 
-                    // Get currency from Task or Deliverable
-                    $currency = $task->currency;
-                    if (empty($currency)) {
-                        $deliverableForCurrency = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
-                        $currency = $deliverableForCurrency ? $deliverableForCurrency->payment_currency : 'gbp';
+                    // Retrieve Charge with Balance Transaction to determine SETTLEMENT currency
+                    // This fixes "currency of source_transaction's balance transaction (usd) must be the same as the transfer currency (eur)" error
+                    $charge = null;
+                    $balanceTransaction = null;
+                    if ($chargeId) {
+                        try {
+                            $charge = $client->charges->retrieve($chargeId, ['expand' => ['balance_transaction']]);
+                            $balanceTransaction = $charge->balance_transaction;
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::warning('Failed to retrieve charge/balance transaction: ' . $e->getMessage());
+                        }
                     }
-                    // Default to GBP if still empty
-                    $currency = $currency ?: 'gbp';
 
-                    $digits = \App\Models\Currency::where('ISO', strtoupper($currency))->value('ISOdigits');
+                    // The transfer MUST use the settlement currency (e.g., USD) even if the charge was in EUR
+                    $settlementCurrency = ($balanceTransaction && isset($balanceTransaction->currency)) ? $balanceTransaction->currency : $pi->currency;
+                    
+                    // Determine the original currency (Source of Truth)
+                    $originalCurrency = $pi->currency;
+                    if (empty($originalCurrency)) {
+                        // Fallback logic
+                        $originalCurrency = $task->currency;
+                        if (empty($originalCurrency)) {
+                            $deliverableForCurrency = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                            $originalCurrency = $deliverableForCurrency ? $deliverableForCurrency->payment_currency : 'gbp';
+                        }
+                    }
+                    
+                    // Default to GBP if still empty
+                    $originalCurrency = $originalCurrency ?: 'gbp';
+
+                    $digits = \App\Models\Currency::where('ISO', strtoupper($originalCurrency))->value('ISOdigits');
                     $multiplier = ($digits == 0) ? 1 : 100;
-                    $amount = (int) round(($purchase->transfer_amount ?? 0) * $multiplier);
+                    $originalTransferAmountMinor = ($purchase->transfer_amount ?? 0) * $multiplier;
+
+                    // Calculate final transfer amount in settlement currency
+                    $amount = (int) round($originalTransferAmountMinor);
+                    
+                    if ($charge && $balanceTransaction && strtolower($originalCurrency) !== strtolower($settlementCurrency)) {
+                         if ($charge->amount > 0 && isset($balanceTransaction->amount)) {
+                             // Calculate exchange rate from the transaction itself
+                             $rate = $balanceTransaction->amount / $charge->amount;
+                             $amount = (int) round($originalTransferAmountMinor * $rate);
+                             
+                             \Illuminate\Support\Facades\Log::info('Currency conversion for Paid Task transfer', [
+                                 'original_currency' => $originalCurrency,
+                                 'settlement_currency' => $settlementCurrency,
+                                 'rate' => $rate,
+                                 'original_amount' => $originalTransferAmountMinor,
+                                 'converted_amount' => $amount,
+                                 'charge_amount' => $charge->amount,
+                                 'bt_amount' => $balanceTransaction->amount
+                             ]);
+                         }
+                    }
 
                     if ($amount > 0) {
                         $transfer = \App\StripeControl::createTransfer([
                             'amount' => $amount,
-                            'currency' => strtolower($currency),
+                            'currency' => strtolower($settlementCurrency),
                             'destination' => $creator->account_id,
                             'source_transaction' => $chargeId,
                             'transfer_group' => "paid_task_{$task->id}",
@@ -900,8 +951,22 @@ class TaskController extends Controller
                             'transfer_id' => $transfer->id ?? null,
                             'was_escalated' => $wasDispute ?? false,
                             'amount' => $amount,
-                            'currency' => $currency
+                            'currency' => $settlementCurrency
                         ]);
+
+                        // Update Metadata with new status (paid_out / transferred)
+                        try {
+                            $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                            if ($deliverable) {
+                                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                                    'transfer_status' => 'transferred',
+                                    'current_status_of_order' => 'paid_out',
+                                    'payment_status' => 'paid'
+                                ]);
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Failed to update metadata after transfer: " . $e->getMessage());
+                        }
                     } else {
                         \Illuminate\Support\Facades\Log::warning('Paid Task transfer skipped: Amount is 0', [
                             'purchase_id' => $purchase->id,

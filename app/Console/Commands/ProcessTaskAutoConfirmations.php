@@ -130,16 +130,17 @@ class ProcessTaskAutoConfirmations extends Command
                 $client = new StripeClient(config('services.stripe.secret'));
                 $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
                 $chargeId = $pi->latest_charge ?? null;
+                $currency = $pi->currency ?? $purchase->task->currency ?? 'gbp';
 
                 $task = $purchase->task;
-                $digits = \App\Models\Currency::where('ISO', strtoupper($task->currency))->value('ISOdigits');
+                $digits = \App\Models\Currency::where('ISO', strtoupper($currency))->value('ISOdigits');
                 $multiplier = ($digits == 0) ? 1 : 100;
                 $amount = (int) round(($purchase->transfer_amount ?? 0) * $multiplier);
 
                 if ($amount > 0) {
                     $transfer = \App\StripeControl::createTransfer([
                         'amount' => $amount,
-                        'currency' => strtolower($task->currency ?? 'gbp'),
+                        'currency' => strtolower($currency),
                         'destination' => $purchase->creator->account_id,
                         'source_transaction' => $chargeId,
                         'transfer_group' => "paid_task_{$task->id}",

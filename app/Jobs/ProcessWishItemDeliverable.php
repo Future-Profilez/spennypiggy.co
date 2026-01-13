@@ -198,11 +198,8 @@ class ProcessWishItemDeliverable implements ShouldQueue
         
         $this->deliverable->update($updateData);
         
-        // Update Stripe metadata
-        $this->updateStripeMetadata($certificateUrl, [
-            'certificate_generated' => !empty($certificateUrl) ? 'true' : 'false',
-            'content_type' => 'task_service'
-        ]);
+        // For tasks, we do NOT update Stripe metadata from the delivery process
+        // as per request to keep task payment metadata clean.
     }
 
     /**

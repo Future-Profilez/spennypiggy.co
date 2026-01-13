@@ -33,7 +33,7 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-      - "php artisan subscription:sync --all"
+      # - "php artisan subscription:sync --all"
       # - "php artisan app:process-task-auto-confirmations"
       # - "php artisan app:process-sla-refunds"
       # - "php artisan sitemap:generate --force"
@@ -75,7 +75,7 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-      - "php artisan subscription:sync --all"
+      # - "php artisan subscription:sync --all"
       # Optional: Generate sitemaps (comment out for faster deployments)
       # - "php artisan sitemap:generate --force"
 
