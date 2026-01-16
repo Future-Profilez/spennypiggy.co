@@ -59,7 +59,7 @@ class UserProfileService
             'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
             'avatar', 'avatar_approved', 'cover', 'suspended_account',
             'social_image', 'account_id', 'stripe_details_submitted',
-            'default_currency', 'country', 'creator_category', 'identity_status',
+            'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
             'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at'
         ])
         ->with([
