@@ -770,17 +770,8 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    {auth.user &&
-                                                                                    auth
-                                                                                        .user
-                                                                                        .role ==
-                                                                                        1 &&
-                                                                                    AuthUserStripeConnected ==
-                                                                                        1 ? (
-                                                                                        <PaymentDashboard
-                                                                                            classes="b w-full"
-                                                                                            text="Payment Dashboard"
-                                                                                        />
+                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                        <PaymentDashboard classes="b w-full" text="Payment Dashboard"/>
                                                                                     ) : (
                                                                                         <>
                                                                                             {/* {auth?.user?.identity_status == 1 ? 
