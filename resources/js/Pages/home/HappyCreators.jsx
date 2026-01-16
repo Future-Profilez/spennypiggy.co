@@ -48,7 +48,7 @@ export default function HappyCreators() {
     ];
 
     return (
-        <section id="reviews" className="bg-black relative overflow-hidden pt-24 pb-24">
+        <section id="reviews" className="bg-black relative   pt-24 pb-24">
             {/* Decorative Background Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-1/4 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
@@ -56,7 +56,7 @@ export default function HappyCreators() {
             </div>
 
             <div className="containerbox relative ">
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
+                <h2 className="fading text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
                     Happy <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Creators</span>
                 </h2>
 

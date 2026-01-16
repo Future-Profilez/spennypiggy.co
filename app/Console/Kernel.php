@@ -39,6 +39,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('subscription:sync')
                  ->hourly()
                  ->withoutOverlapping();
+
+        // Sync all subscriptions status from Stripe every 12 minutes
+        $schedule->command('subscription:sync --all')
+                 ->cron('*/12 * * * *')
+                 ->withoutOverlapping();
                  
         //
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co
@@ -50,6 +55,9 @@ class Kernel extends ConsoleKernel
                  ->hourly()
                  ->withoutOverlapping();
 
+   
+
+                 
         // Process Task Auto Confirmations
         $schedule->command('app:process-task-auto-confirmations')
                  ->everyFiveMinutes()
@@ -63,9 +71,16 @@ class Kernel extends ConsoleKernel
         
         if ($environmentConfig) {
             $scheduleMethod = $environmentConfig['schedule']; // e.g., 'everyThirtyMinutes' or 'daily'
-            $schedule->command('app:notifications-pending-approval')
+            
+            if (str_contains($scheduleMethod, ' ') || str_contains($scheduleMethod, '*')) {
+                $schedule->command('app:notifications-pending-approval')
+                     ->cron($scheduleMethod)
+                     ->withoutOverlapping(4);
+            } else {
+                $schedule->command('app:notifications-pending-approval')
                      ->{$scheduleMethod}()
                      ->withoutOverlapping(4);
+            }
         }
 
         // Founder Bonus System Jobs

@@ -8,6 +8,9 @@ import EnterOTP from './EnterOTP';
 import axios from 'axios';
 import { useState } from 'react';
 import DeviceID from '@/includes/DeviceID';
+import { HiOutlineMail } from "react-icons/hi";
+import { RiLockPasswordLine } from "react-icons/ri";
+
 
 export default function Login({ status, canResetPassword }) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -203,14 +206,15 @@ export default function Login({ status, canResetPassword }) {
                                     <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide" htmlFor="email">
                                         Email Address
                                     </label>
-                                    <div className="relative group">
+                                    <div className="relative group relative">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                        <input
+                                            <HiOutlineMail size='24' className='absolute top-[15px] left-3 z-1' />
+                                            <input
                                             id="email"
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300"
+                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300"
                                             autoComplete="username"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -224,14 +228,15 @@ export default function Login({ status, canResetPassword }) {
                                     <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide" htmlFor="password">
                                         Password
                                     </label>
-                                    <div className="relative group">
+                                    <div className="relative group relative">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <RiLockPasswordLine size='24' className='absolute top-[14px] left-3 z-1' />
                                         <input
                                             id="password"
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300"
+                                            className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]"
                                             autoComplete="current-password"
                                             placeholder="••••••••"
                                             onChange={(e) => setData("password", e.target.value)}

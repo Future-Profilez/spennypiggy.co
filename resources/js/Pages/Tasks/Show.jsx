@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import PriceFormat from "@/includes/PriceFormat";
@@ -15,8 +15,14 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     });
     const { formatMultiPrice } = PriceFormat();
 
+    const [verified, setVerified] = useState(false);
     const onVerify = useCallback((token) => {
-        setData("cf_turnstile_response", token || "");
+        if(token !== null && token !== "" && token !== undefined){
+            setData("cf_turnstile_response", token || "");
+            setVerified(true);
+        }else { 
+            setVerified(false);
+        }
     }, [setData]);
 
     const handlePurchase = () => {
@@ -24,7 +30,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             toast.error("Please accept the Paid Tasks terms");
             return;
         }
-        if (turnstileSiteKey && !data.cf_turnstile_response) {
+        if (!verified) {
             toast.error("Please verify the captcha");
             return;
         }
@@ -266,13 +272,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                      onClick={handlePurchase}
                                                      disabled={
                                                          processing ||
-                                                         !data.agree ||
-                                                         (turnstileSiteKey && !data.cf_turnstile_response)
+                                                         !data.agree || !verified
                                                      }
                                                      className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
-                                                         !data.agree ||
-                                                         (turnstileSiteKey && !data.cf_turnstile_response)) ?'disabled':'enabled'}`}
-                                                 >
+                                                         !data.agree || !verified) ?'disabled':'enabled'}`} >
                                                      {processing ? 'Processing...' : (
                                                          purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝')
                                                      )}

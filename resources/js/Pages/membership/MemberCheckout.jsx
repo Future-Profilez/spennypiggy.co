@@ -448,14 +448,16 @@ export default function SubCheckout(props) {
                                         className={`${
                                             !data.agree ||
                                             processing ||
-                                            checking
+                                            checking ||
+                                            (turnstileSiteKey && !verified)
                                                 ? "disabled"
                                                 : ""
                                         } btn-pink md !px-8 mt-3 text-center`}
                                         disabled={
                                             !data.agree ||
                                             processing ||
-                                            checking
+                                            checking ||
+                                            (turnstileSiteKey && !verified)
                                         }
                                     >
                                         {processing || checking

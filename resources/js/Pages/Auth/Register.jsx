@@ -52,9 +52,9 @@ export default function Register(props) {
     const turnstileContainerRef = useRef(null);
     const [turnstileContainerEl, setTurnstileContainerEl] = useState(null);
     const turnstileWidgetIdRef = useRef(null);
-    const checkRef = useRef();
-    const gifterref = useRef();
-    const addressCheck = useRef();
+    const checkRef = useRef(); 
+    const gifterref = useRef(); 
+    const addressCheck = useRef(); 
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const errorAlertRef = useRef(errorAlert);
     const lowerLetter = /[a-z]/;
@@ -96,10 +96,9 @@ export default function Register(props) {
         { label: "Writer", value: "Writer" },
     ];
 
-    const { ziggy, turnstileSiteKey } = usePage().props;
+    const { turnstileSiteKey } = usePage().props;
     const { url } = usePage(); // Access the current URL
 
-    // Extract query parameters from the URL
     const params = new URLSearchParams(url.split("?")[1]); // Extract the query string
     const referralFromUrl = params.get("ref");
     const type = params.get("type"); // Get the 'type' parameter
@@ -121,7 +120,6 @@ export default function Register(props) {
     const [codevalid, setCodeValid] = useState(false);
     const [promoInputValue, setPromoInputValue] = useState("");
     const [role, setRole] = useState(type && type === "creator" ? 1 : 0);
-
     const hasReferralFromUrl = role === 1 && !!referralFromUrl;
 
     useEffect(() => {
@@ -393,11 +391,6 @@ export default function Register(props) {
 
     const renderFieldStatusIcon = useCallback(
         (field) => {
-            // ❌ Disable icon for password fields
-            // if (field === "password") {
-            //     return null;
-            // }
-
             const status = getFieldStatus(field);
             if (status === "idle") return null;
 
@@ -612,8 +605,15 @@ export default function Register(props) {
 
     const [verified, setVerified] = useState(false);
     const onVerify = (token) => {
-        setData("cf_turnstile_response", token || "");
-        setVerified(!!token);
+        if(token !== null || token !== '' || token !== undefined) {
+            setData("cf_turnstile_response", token || "");
+            setVerified(!!token);
+            console.log("verified",verified)
+            console.warn("Turnstile token VERIFIED");
+        }else { 
+            console.log("verified",verified)
+            console.warn("No Turnstile token VERIFIED");
+        }
     };
 
     const bindTurnstileContainerRef = useCallback((el) => {
@@ -729,6 +729,8 @@ export default function Register(props) {
             submit();
         }
     };
+     
+
 
     const submit = (e) => {
         e && e.preventDefault();
@@ -766,9 +768,13 @@ export default function Register(props) {
             checkRef.current.focus();
             return false;
         }
-        if (role == 0 && !addressCheck.current.checked) {
+        if (!verified) {
+            errorAlert("Please verify you are not a robot.");
+            return false;
+        }
+        if (role == 0 && addressCheck && addressCheck?.current?.checked == false) {
             errorAlert("Please accept all terms and conditions.");
-            addressCheck.current.focus();
+            // addressCheck && addressCheck?.current && addressCheck?.current?.focus();
             return false;
         }
 
@@ -906,7 +912,7 @@ export default function Register(props) {
                             Already registered ?
                             <Link
                                 href={route("login")}
-                                className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="ms-1 text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Log In
                             </Link>
@@ -989,8 +995,7 @@ export default function Register(props) {
                                     </p>
                                     <button
                                         onClick={handleNext}
-                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-3 px-6 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit"
-                                    >
+                                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-[12px] px-8 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300   w-fit" >
                                         Got it – I’ll link my socials
                                     </button>
                                 </div>
@@ -1010,26 +1015,20 @@ export default function Register(props) {
                                             return (
                                                 <div
                                                     key={s.value}
-                                                    className="relative"
-                                                >
-                                                    <input
-                                                        id={`types-${index}`}
-                                                        type="checkbox"
-                                                        value={s.value}
-                                                        className="hidden"
-                                                        onChange={
-                                                            handleProfileTags
-                                                        }
+                                                    className="relative" >
+                                                    <input id={`types-${index}`} type="checkbox" value={s.value} className="hidden"
+                                                        onChange={handleProfileTags }
                                                         checked={isSelected}
                                                     />
                                                     <label
                                                         htmlFor={`types-${index}`}
-                                                        className={`block px-6 py-2 font-cera text-lg md:text-xl rounded-full text-normal font-medium cursor-pointer transition-all duration-300 border ${
-                                                            isSelected
-                                                                ? "bg-pink-600 !border-pink-500 text-white shadow-lg shadow-pink-500/30"
+                                                        className={`block px-6 py-2 font-cera text-lg md:text-lg rounded-full text-normal 
+                                                            font-medium cursor-pointer transition-all duration-300 border 
+                                                            ${isSelected 
+                                                                ?  "bg-pink-600 !border-pink-500 text-white shadow-lg shadow-pink-500/30" 
                                                                 : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20"
-                                                        }`}
-                                                    >
+                                                            }`}
+                                                         >
                                                         {s.label}
                                                     </label>
                                                 </div>
@@ -1043,7 +1042,7 @@ export default function Register(props) {
                                                 profileTags &&
                                                 profileTags.length < 1
                                             }
-                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300 border border-white/10 w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-anton uppercase tracking-widest text-normal py-2 px-12 rounded-[30px] shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transform hover:-translate-y-1 transition-all duration-300  w-fit disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             Next
                                         </button>
@@ -1318,6 +1317,16 @@ export default function Register(props) {
                                                         "password"
                                                     )}
                                                 </div>
+
+                                                <p className="w-full">
+                                                    <InputError
+                                                    message={getFieldError(
+                                                        "password"
+                                                    )}
+                                                    className="mt-2"
+                                                />
+                                                </p>
+
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -1332,12 +1341,7 @@ export default function Register(props) {
                                                         : "Show Passwords"}
                                                 </button>
                                                 
-                                                <InputError
-                                                    message={getFieldError(
-                                                        "password"
-                                                    )}
-                                                    className="mt-2"
-                                                />
+                                                
                                             </div>
 
                                             <div className="md:col-span-1">
@@ -1738,12 +1742,7 @@ export default function Register(props) {
                                                     id="termaccept"
                                                     name="termaccept"
                                                     className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "termaccept",
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                    onChange={(e) =>setData("termaccept",e?.target?.value)}
                                                     required
                                                 />
                                                 <span className="text-normal text-gray-400">
@@ -1771,15 +1770,16 @@ export default function Register(props) {
                                                 </span>
                                             </label>
 
-                                            {role == 0 && (
-                                                <label className="flex items-start gap-3 cursor-pointer">
+                                             
+                                               {role === 0 ? <label className={`flex items-start gap-3 cursor-pointer ${role === 0 ? '' : 'hidden'}`}>
                                                     <input
-                                                        type="checkbox"
-                                                        ref={addressCheck}
-                                                        id="addressCheck"
-                                                        name="addressCheck"
+                                                        type="checkbox" 
+                                                        ref={addressCheck}  
+                                                        id="addressCheck" 
+                                                        name="addressCheck" 
+                                                        onChange={(e) =>setData("addressCheck",e?.target?.value)} 
                                                         className="h-6 w-6 mt-1 rounded bg-white/10 border-white/20 text-pink-500 focus:ring-pink-500"
-                                                        required
+                                                        required 
                                                     />
                                                     <span className="text-normal text-gray-400">
                                                         The above address and
@@ -1790,8 +1790,8 @@ export default function Register(props) {
                                                         suspended if I use any
                                                         other details.
                                                     </span>
-                                                </label>
-                                            )}
+                                                </label> : ''}
+                                            
                                         </div>
 
                                         {turnstileSiteKey && (
@@ -1817,7 +1817,7 @@ export default function Register(props) {
                                                     <h2 className="text-2xl font-gulfs text-black mb-4 uppercase">
                                                         Important notice !
                                                     </h2>
-                                                    <p className="text-gray-500 mb-4">
+                                                    <p className="text-black text-lg mb-4">
                                                         You must not use any
                                                         other individual’s
                                                         information. Only a
@@ -1845,10 +1845,9 @@ export default function Register(props) {
                                                         <label className="flex items-start gap-3 cursor-pointer">
                                                             <input
                                                                 type="checkbox"
-                                                                ref={
-                                                                    hasNotifiedRef
-                                                                }
+                                                                ref={hasNotifiedRef}
                                                                 id="hasNotified"
+                                                                onChange={() => setData("hasNotified", 1)}
                                                                 name="hasNotified"
                                                                 value="hasNotified"
                                                                 required
@@ -1879,7 +1878,9 @@ export default function Register(props) {
                                                     <LoaderButton
                                                         onClick={accepted}
                                                         disabled={processing}
-                                                        className="w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]   "
+                                                        className={`
+                                                            ${hasNotifiedRef && !hasNotifiedRef?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
+                                                            w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]   `}
                                                         spinnerClassName="fill-white"
                                                     >
                                                         {processing
@@ -1889,11 +1890,16 @@ export default function Register(props) {
                                                 </div>
                                             </Popup>
 
+            
+
                                             <LoaderButton
                                                 disabled={processing}
-                                                className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
-                                                spinnerClassName="fill-white"
-                                            >
+                                                className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full 
+                                                    ${!verified ? 'opacity-50 cursor-not-allowed disabled' : ''}
+                                                    ${!checkRef?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
+                                                    ${role == 0 && !addressCheck?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
+                                                ]`}
+                                                spinnerClassName="fill-white" >
                                                 {processing
                                                     ? "Processing"
                                                     : "Create Account"}

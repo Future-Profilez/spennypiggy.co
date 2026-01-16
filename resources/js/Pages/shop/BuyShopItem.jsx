@@ -88,21 +88,11 @@ export default function BuyShopItem({
 
     const onVerify = (token) => {
         setCaptchaToken(token || "");
-        buyItem(token);
     };
 
     const executeCaptcha = (e) => {
         e.preventDefault();
-        
-        if (!turnstileSiteKey) {
-            buyItem();
-            return;
-        }
-        
-        if (turnstileRef.current) {
-            turnstileRef.current.execute();
-        }
-        setChecking(true);
+        buyItem();
     };
 
     const buyItem = (token) => {
@@ -502,17 +492,17 @@ export default function BuyShopItem({
                             {turnstileSiteKey ? (
                                 <Turnstile
                                     ref={turnstileRef}
-                                    size="invisible"
+                                    size="normal"
                                     theme="light"
                                     onVerify={onVerify}
                                 />
                             ) : null}
 
                             <button
-                                disabled={checking}
+                                disabled={checking || (turnstileSiteKey && !captchaToken)}
                                 onClick={executeCaptcha}
                                 className={`${
-                                    checking ? "opacity-[0.5]" : ""
+                                    checking || (turnstileSiteKey && !captchaToken) ? "opacity-[0.5] disabled" : ""
                                 }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
                             >
                                 {checking ? "Buying.." : "Pay"}

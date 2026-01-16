@@ -5,7 +5,7 @@ export default function NewVerified({ creators }) {
   if (!creators || creators.length === 0) return null;
 
   return (
-    <section className="bg-black relative overflow-hidden py-24">
+    <section className="bg-black relative  py-24">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
           <div className="absolute top-1/4 left-0 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape"></div>
@@ -13,13 +13,16 @@ export default function NewVerified({ creators }) {
       </div>
 
       <div className="containerbox relative ">
-        <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
+        <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
           New & <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-blue-500">Verified</span>
         </h2>
-        <p className="text-center text-gray-300 mb-12 text-lg">Joined within the last 30 days</p>
+        <p className="fading max-w-[500px] m-auto !mb-8 md:!mb-12 text-center text-gray-300 mb-12 text-lg">
+          Recently joined users from the past 30 days.
+Stay updated with our newest community members.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-6">
           {creators.map((c) => (
-            <Link key={c.id} href={`/${c.username}`} className="group relative bg-gray-900 rounded-3xl p-4 border-2 border-green-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#22c55e] hover:shadow-[6px_6px_0_0_#22c55e] text-white">
+            <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-3xl p-4 border-2 border-green-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#22c55e] hover:shadow-[6px_6px_0_0_#22c55e] text-white">
               <div className="absolute top-[-13px] right-[-13px] bg-red-500 text-white text-xs  px-2 py-1 rounded-full">New</div>
             <Avatar 
               name={c.name}

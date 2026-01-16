@@ -450,14 +450,16 @@ export default function BillCheckout(props) {
                                             className={`${
                                                 !data.agree ||
                                                 processing ||
-                                                checking
+                                                checking ||
+                                                (turnstileSiteKey && !captchaToken)
                                                     ? "disabled"
                                                     : ""
                                             } button p`}
                                             disabled={
                                                 !data.agree ||
                                                 processing ||
-                                                checking
+                                                checking ||
+                                                (turnstileSiteKey && !captchaToken)
                                             }
                                             onClick={handleSubmit}
                                         >

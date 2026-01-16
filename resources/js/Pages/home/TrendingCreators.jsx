@@ -5,7 +5,7 @@ export default function TrendingCreators({ creators }) {
   if (!creators || creators.length === 0) return null;
 
   return (
-    <section className="bg-black py-16 md:py-24 relative overflow-hidden">
+    <section className="bg-black py-16 md:py-24 relative ">
         {/* Decorative Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-1/4 left-0 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
@@ -16,10 +16,11 @@ export default function TrendingCreators({ creators }) {
           <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
             Trending <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Creators</span>
           </h2>
-          <p className="fading text-center text-gray-300 mb-12 text-lg">Most search-result clicks in the last 24h</p>
+          <p className="fading text-center text-gray-300 max-w-[500px] m-auto mb-8 md:!mb-12 text-lg">Top clicked search results from the past 24 hours.
+Shows what users are actively exploring right now.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {creators.map((c) => (
-              <Link key={c.id} href={`/${c.username}`} className="group relative bg-gray-900 rounded-3xl p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
+              <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-3xl p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
                 <Avatar 
                   name={c.name}
                   username={c.username}

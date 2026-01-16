@@ -207,16 +207,16 @@ export default function TipInner({classes, idd}) {
               <div className="flex justify-center my-3">
                 <Turnstile
                   ref={turnstileRef}
-                  size="invisible"
+                  size="normal"
                   theme="light"
                   onVerify={onVerify}
                 />
               </div>
             ) : null}
-            <button disabled={loading} onClick={send} className={`items-center px-4  shadow-black
+            <button disabled={loading || (turnstileSiteKey && !verified)} onClick={send} className={`items-center px-4  shadow-black
                rounded-[30px] btn-pink md justify-content-center btn-shadow !font-normal
               ease-in-out duration-150 flex button text-center w-100
-                mx-auto  ${checkRef.current && checkRef.current.checked ? '' :'disabled'} font-gulfs`}
+                mx-auto  ${(checkRef.current && checkRef.current.checked && !(turnstileSiteKey && !verified) && !loading) ? '' :'disabled'} font-gulfs`}
                > {loading ? "Processing..." : 'Support Me'} </button>
 
 

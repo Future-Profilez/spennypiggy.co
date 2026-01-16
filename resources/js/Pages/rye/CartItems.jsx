@@ -725,9 +725,9 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={!isChecked || checking}
+                                    disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken)}
                                     onClick={handleSubmit}
-                                    className={`${isChecked ? "" : "disabled"} btn-pink md mt-3 text-center`} >
+                                    className={`${isChecked && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"} btn-pink md mt-3 text-center`} >
                                     {checking ? "Wait.." : "Checkout"}{" "}
                                 </button>
                             </div>
