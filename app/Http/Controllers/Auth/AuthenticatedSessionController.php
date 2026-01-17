@@ -205,7 +205,6 @@ class AuthenticatedSessionController extends Controller
             return Inertia::render('Suspanded');
         }
 
-
         $pageData = $this->getPageSpecificData($user->id, $page);
 
         $this->setSeoMetaTags($user, $username);

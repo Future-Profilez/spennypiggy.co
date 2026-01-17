@@ -29,7 +29,7 @@ class Post extends Model
 
     protected $hidden = [
         'id',
-        'user_id',
+        // 'user_id',
     ];
 
     protected $casts = [

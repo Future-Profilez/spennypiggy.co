@@ -5,11 +5,11 @@
 <IfModule mod_http2.c>
     # Enable HTTP/2
     Protocols h2 h2c http/1.1
-    
+
     # HTTP/2 Push for critical resources
     <FilesMatch "\.(html|php)$">
-        Header add Link "</css/app.css>; rel=preload; as=style"
-        Header add Link "</js/app.js>; rel=preload; as=script"
+        Header add Link "</css /app.css>; rel=preload; as=style"
+        Header add Link "</js /app.js>; rel=preload; as=script"
     </FilesMatch>
 </IfModule>
 
@@ -22,16 +22,17 @@
     # Enable brotli compression
     BrotliCompressionLevel 6
     BrotliCompressionWindowSize 18
-    
+
     # Compress these file types
     <Location "/">
         SetOutputFilter BROTLI_COMPRESS
         SetEnvIfNoCase Request_URI \\
-            \.(?:gif|jpe?g|png|ico|webp|avif)$ no-brotli dont-vary
+        \.(?:gif|jpe?g|png|ico|webp|avif)$ no-brotli dont-vary
         SetEnvIfNoCase Request_URI \\
-            \.(?:exe|t?gz|zip|bz2|sit|rar|7z)$ no-brotli dont-vary  
+        \.(?:exe|t?gz|zip|bz2|sit|rar|7z)$ no-brotli dont-vary
     </Location>
-AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml application/rss+xml application/atom+xml image/svg+xml
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/javascript
+    application/json application/xml application/rss+xml application/atom+xml image/svg+xml
 </IfModule>
 
 # Gzip Compression (fallback)
@@ -61,7 +62,7 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
     AddOutputFilterByType DEFLATE text/plain
     AddOutputFilterByType DEFLATE text/xml
     AddOutputFilterByType DEFLATE application/json
-    
+
     # Remove browser bugs (only needed for really old browsers)
     BrowserMatch ^Mozilla/4 gzip-only-text/html
     BrowserMatch ^Mozilla/4\.0[678] no-gzip
@@ -76,13 +77,13 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresDefault "access plus 1 month"
-    
+
     # Far-future expires for static assets
     ExpiresByType text/css "access plus 1 year"
     ExpiresByType application/javascript "access plus 1 year"
     ExpiresByType application/x-javascript "access plus 1 year"
     ExpiresByType text/javascript "access plus 1 year"
-    
+
     # Images
     ExpiresByType image/jpg "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 year"
@@ -93,7 +94,7 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
     ExpiresByType image/svg+xml "access plus 1 year"
     ExpiresByType image/x-icon "access plus 1 year"
     ExpiresByType image/vnd.microsoft.icon "access plus 1 year"
-    
+
     # Fonts
     ExpiresByType font/woff "access plus 1 year"
     ExpiresByType font/woff2 "access plus 1 year"
@@ -103,14 +104,14 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
     ExpiresByType application/font-woff2 "access plus 1 year"
     ExpiresByType application/x-font-woff "access plus 1 year"
     ExpiresByType application/x-font-ttf "access plus 1 year"
-    
+
     # Videos
     ExpiresByType video/mp4 "access plus 1 year"
     ExpiresByType video/webm "access plus 1 year"
-    
+
     # HTML and dynamic content (with stale-while-revalidate)
     ExpiresByType text/html "access plus 1 hour"
-    
+
     # JSON API responses
     ExpiresByType application/json "access plus 1 hour"
 </IfModule>
@@ -122,31 +123,31 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
         Header set Cache-Control "public, max-age=31536000, immutable"
         Header set X-Content-Type-Options "nosniff"
     </FilesMatch>
-    
+
     # Images: far-future cache
     <FilesMatch "\.(jpg|jpeg|gif|png|webp|avif|svg|ico)$">
         Header set Cache-Control "public, max-age=31536000"
         Header set X-Content-Type-Options "nosniff"
     </FilesMatch>
-    
+
     # HTML files: stale-while-revalidate
     <FilesMatch "\.(html|htm|php)$">
         Header set Cache-Control "public, max-age=3600, stale-while-revalidate=86400"
         Header set X-Content-Type-Options "nosniff"
     </FilesMatch>
-    
+
     # JSON API: short cache with stale-while-revalidate
     <FilesMatch "\.json$">
         Header set Cache-Control "public, max-age=300, stale-while-revalidate=3600"
         Header set X-Content-Type-Options "nosniff"
     </FilesMatch>
-    
+
     # Security headers
     Header always set X-Frame-Options "DENY"
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
-    
+
     # ETAG handling
     Header unset ETag
     FileETag None
@@ -233,7 +234,7 @@ AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css tex
 </FilesMatch>
 
 # Prevent access to PHP files in uploads
-<Directory "*/uploads/*">
+<Directory "/uploads/">
     <FilesMatch "\.php$">
         Order allow,deny
         Deny from all

@@ -96,7 +96,6 @@ export default function Post({item}) {
                 <RemovePost classes={`px-[18px] py-2 text-start w-full`} uuid={item.uuid} text="Remove Post" />
             </DropdownButton> : ''}
         </div>
-
         {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-3 mb-2 border !border-yellow-500' >
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
