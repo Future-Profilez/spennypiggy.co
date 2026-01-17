@@ -197,9 +197,15 @@ class ProcessWishItemDeliverable implements ShouldQueue
         // Let's rely on ProfileController modification to check certificate_url.
         
         $this->deliverable->update($updateData);
-        
-        // For tasks, we do NOT update Stripe metadata from the delivery process
-        // as per request to keep task payment metadata clean.
+
+        try {
+            app(\App\Services\StripeMetadataService::class)->updateDeliverableMetadata($this->deliverable);
+        } catch (\Exception $e) {
+            Log::error("Failed to update Stripe metadata for task deliverable", [
+                'deliverable_id' => $this->deliverable->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

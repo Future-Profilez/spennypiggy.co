@@ -174,8 +174,7 @@ export default function Wishlistbox(props) {
 
                 <div
                     onClick={openAddtocart}
-                    className="wishlistdetial cursor-pointer relative bg-white"
-                >
+                    className="wishlistdetial cursor-pointer relative bg-white" >
                     <div>
                         <h4 className={`text-lg  !text-gray-800 text-center capitalize ${
                                 itm.subscription !== "0" ? "el1" : "el2"
