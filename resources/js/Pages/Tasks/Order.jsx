@@ -186,12 +186,12 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             </p>
                         </div>
                     )}
-                    
 
                     <div className="items-center gap-4 mt-8 mb-8">
                         <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
                         <div className='flex'>
-                            <Link href={route('user.show', purchase.creator.username)} className="flex items-center gap-4 group">
+                            <Link  href={`/${purchase.creator.username}/tasks`}
+                            className="flex items-center gap-4 group">
                                 <img 
                                     src={purchase.creator.avatar_url || purchase.creator.avatar} 
                                     alt={purchase.creator.name} 

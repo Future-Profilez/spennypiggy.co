@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
 use App\Helpers;
+use App\Services\StripeMetadataService;
 
 class ProcessTaskAutoConfirmations extends Command
 {
@@ -73,24 +74,17 @@ class ProcessTaskAutoConfirmations extends Command
                     $deliverable->status = 'delivered';
                     $deliverable->delivered_at = now();
                     $deliverable->save();
+
+                    try {
+                        app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                            'proof_status' => 'accepted',
+                            'accepted_by' => 'auto_system'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error("Failed to update metadata on auto-confirmation (charge): " . $e->getMessage());
+                    }
                 }
 
-                // Update Stripe Metadata
-                try {
-                    if ($purchase->payment_intent_id) {
-                        $client = new StripeClient(config('services.stripe.secret'));
-                        $client->paymentIntents->update($purchase->payment_intent_id, [
-                            'metadata' => [
-                                'status' => 'completed_accepted',
-                                'proof_status' => 'accepted',
-                                'accepted_by' => 'auto_system'
-                            ]
-                        ]);
-                    }
-                } catch (\Exception $e) {
-                    Log::error("Failed to update metadata on auto-confirmation: " . $e->getMessage());
-                }
-                
                 // Trigger Payout if PAID_TASK
                 $this->triggerPayout($purchase);
                 
@@ -138,12 +132,23 @@ class ProcessTaskAutoConfirmations extends Command
                 $amount = (int) round(($purchase->transfer_amount ?? 0) * $multiplier);
 
                 if ($amount > 0) {
+                    $transferMetadata = [
+                        'type' => 'task_payout',
+                        'task_id' => (string) $task->id,
+                        'task_uuid' => (string) $task->uuid,
+                        'purchase_id' => (string) $purchase->id,
+                        'creator_id' => (string) $purchase->creator_id,
+                        'supporter_id' => (string) $purchase->supporter_id,
+                        'payment_intent_id' => (string) $purchase->payment_intent_id,
+                    ];
+
                     $transfer = \App\StripeControl::createTransfer([
                         'amount' => $amount,
                         'currency' => strtolower($currency),
                         'destination' => $purchase->creator->account_id,
                         'source_transaction' => $chargeId,
                         'transfer_group' => "paid_task_{$task->id}",
+                        'metadata' => $transferMetadata,
                     ]);
 
                     $purchase->status = 'paid_out';

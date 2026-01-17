@@ -387,8 +387,9 @@ class TaskController extends Controller
         $totalPlatformFee = round($platformFeeBase + $convertedAdminFee, 2);
 
         // 4. Totals
-        $transferAmount = round(($price + $creatorVatAmount) * $multiplier); // What Creator receives
-        $totalChargeAmount = round(($price + $creatorVatAmount + $totalPlatformFee) * $multiplier); // What Supporter pays
+        $transferAmount = round(($price + $creatorVatAmount) * $multiplier);
+        $totalChargeAmount = round(($price + $creatorVatAmount + $totalPlatformFee) * $multiplier);
+        $transferAmountMajor = round($price + $creatorVatAmount, 2);
 
         Stripe::setApiKey(config('services.stripe.secret'));
 
@@ -442,46 +443,28 @@ class TaskController extends Controller
 
         $appUrl = rtrim(config('app.url'), '/');
 
-        // Comprehensive Metadata for Stripe Compliance & Webhook Handling
+        $paymentType = $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK';
         $complianceMetadata = [
-            'creator_name' => $creator->name,
-            'creator_profile_url' => $appUrl . '/' . $creator->username,
-            'gifter_name' => $user->name,
-            'gifter_profile_url' => $appUrl . '/' . $user->username,
-            'gifter_message' => $request->gifter_message ?? '',
-            
-            // System Fields (Required for Webhook Processing)
+            'type' => 'task_purchase',
             'task_id' => $task->id,
             'buyer_id' => $user->id,
-
-            // Task Details
-            'purpose' => 'paid_task',
-            'type' => 'task_purchase',
-            'task_url' => $appUrl . '/task/' . $task->uuid,
+            'creator_id' => $task->creator_id,
             'task_type' => $task->type,
-            'delivery_mode' => $task->type === 'timed' ? 'Timed Delivery' : 'Instant',
-            'value_summary' => "Digital task service: " . $task->title,
             'sla_hours' => (string) ($task->sla_hours ?? 0),
-            
-            // Compliance Fields
-            'payment_status' => 'paid', // Default as requested
-            'payment_date' => now()->toIso8601String(),
-            'current_status_of_order' => 'pending',
-            'sla_timeline' => $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant',
-
-            'transfer_amount' => (string) ($transferAmount / $multiplier),
-            'transfer_status' => 'pending',
-            'payment_type' => $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK',
+            'payment_type' => $paymentType,
+            'admin_fee' => $convertedAdminFee,
+            'platform_fee' => $totalPlatformFee,
+            'vat_amount' => $creatorVatAmount,
+            'transfer_amount' => $transferAmountMajor,
         ];
 
         $paymentIntentData = [
             'description' => "Spenny Piggy - Task purchase: " . $task->title,
-            'metadata' => $complianceMetadata,
             'transfer_group' => "paid_task_{$task->id}",
         ];
 
         if ($connectedAccountId) {
-            $paymentType = $complianceMetadata['payment_type'] ?? 'STANDARD';
+            $paymentType = $paymentType ?? 'STANDARD';
 
             // Only apply automatic transfers if NOT a PAID_TASK
             if ($paymentType !== 'PAID_TASK') {
@@ -510,7 +493,6 @@ class TaskController extends Controller
                 ]);
             }
         }
-
         $checkout_session = Session::create([
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
@@ -519,6 +501,7 @@ class TaskController extends Controller
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $appUrl . '/task/' . $task->uuid,
             'customer_email' => $user->email,
+            'metadata' => $complianceMetadata,
         ]);
 
         return Inertia::location($checkout_session->url);
@@ -939,12 +922,23 @@ class TaskController extends Controller
                     }
 
                     if ($amount > 0) {
+                        $transferMetadata = [
+                            'type' => 'task_payout',
+                            'task_id' => (string) $task->id,
+                            'task_uuid' => (string) $task->uuid,
+                            'purchase_id' => (string) $purchase->id,
+                            'creator_id' => (string) $purchase->creator_id,
+                            'supporter_id' => (string) $purchase->supporter_id,
+                            'payment_intent_id' => (string) $purchase->payment_intent_id,
+                        ];
+
                         $transfer = \App\StripeControl::createTransfer([
                             'amount' => $amount,
                             'currency' => strtolower($settlementCurrency),
                             'destination' => $creator->account_id,
                             'source_transaction' => $chargeId,
                             'transfer_group' => "paid_task_{$task->id}",
+                            'metadata' => $transferMetadata,
                         ]);
 
                         $purchase->status = 'paid_out';

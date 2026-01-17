@@ -90,20 +90,14 @@ export default function Wishlistbox(props) {
             <div className=" rounded-3xl shadow-pinks overflow-hidden   relative border-3 md:border-4 border-[#F94F97] w-full ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-2 mt-5 rounded-3 p-3 py-2 mb-2">
-                        {itm.edited_reason &&
-                        itm.edited_reason.trim() !== "" ? (
+                        {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
                             <>
-                                <p className="font-semibold text-sm mb-1">
-                                    Edit requested by admin reason:
-                                </p>
-                                <p className="text-sm opacity-90">
-                                    {itm.edited_reason}
-                                </p>
+                                <p className="font-semibold text-sm mb-1">Edit requested by admin reason : </p>
+                                <p className="text-sm opacity-90">{itm.edited_reason}</p>
                             </>
                         ) : (
                             <p>
-                                Wish item waiting for approval. Currently only
-                                you can see this wish.
+                                Wish item waiting for approval. Currently only you can see this wish.
                             </p>
                         )}
                     </div>
@@ -114,19 +108,13 @@ export default function Wishlistbox(props) {
                             className="movesvg"
                             ref={setNodeRef}
                             {...listeners}
-                            {...attributes}
-                        >
+                            {...attributes} >
                             <svg
                                 fill="#000000"
                                 viewBox="0 0 16 16"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
+                                xmlns="http://www.w3.org/2000/svg" >
                                 <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
-                                <g
-                                    id="SVGRepo_tracerCarrier"
-                                    stroke-linecap="round"
-                                    strokeLinejoin="round"
-                                ></g>
+                                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" strokeLinejoin="round" ></g>
                                 <g id="SVGRepo_iconCarrier">
                                     <path d="m15.46 7-3.2-2.19-.71 1 2.29 1.57H8.62V2.16l1.57 2.29 1-.71L9 .54a1.25 1.25 0 0 0-2 0l-2.22 3.2 1 .71 1.59-2.29v5.22H2.16l2.29-1.57-.71-1L.54 7a1.25 1.25 0 0 0 0 2l3.2 2.19.71-1-2.29-1.57h5.21v5.22l-1.56-2.29-1 .71L7 15.46a1.25 1.25 0 0 0 2.06 0l2.19-3.2-1-.71-1.63 2.29V8.62h5.22l-2.29 1.57.71 1L15.46 9a1.25 1.25 0 0 0 0-2z"></path>
                                 </g>
@@ -189,15 +177,12 @@ export default function Wishlistbox(props) {
                     className="wishlistdetial cursor-pointer relative bg-white"
                 >
                     <div>
-                        <h4
-                            className={`text-lg  !text-gray-800 text-center capitalize ${
+                        <h4 className={`text-lg  !text-gray-800 text-center capitalize ${
                                 itm.subscription !== "0" ? "el1" : "el2"
-                            }`}
-                        >
-                            {itm.wishname}
+                            }`} > {itm.wishname}
                         </h4>
                         <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
-                            {console.log("processingFee", itm?.currency)}
+                            {/* {console.log("processingFee", itm?.currency)} */}
                             {IsloggedIn ? (
                                 <>
                                     {formatMultiPrice(
@@ -207,10 +192,7 @@ export default function Wishlistbox(props) {
                                 </>
                             ) : (
                                 <>
-                                    {formatMultiPrice(
-                                        parseInt(itm.price),
-                                        itm?.currency || "GBP"
-                                    )}
+                                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'USD', 'adminfee')}
                                     {/* {formatMultiPrice(parseInt(itm.price) + parseInt(processingFee || 0), itm?.currency || "GBP", "adminfee")} */}
                                 </>
                             )}

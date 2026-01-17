@@ -72,6 +72,17 @@ class ProcessSlaRefunds extends Command
             $purchase->last_reminder_at = Carbon::now();
             $purchase->save();
 
+            try {
+                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
+                    app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                        'status' => 'running_late'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to update metadata on grace period entry: " . $e->getMessage());
+            }
+
             // Notify Creator
             if ($purchase->creator) {
                 try {

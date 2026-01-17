@@ -1668,6 +1668,11 @@ class StripeWebhookController extends Controller
         if ($deliverable && $deliverable->payment_status !== 'paid') {
             $deliverable->payment_status = 'paid';
             $deliverable->save();
+            try {
+                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
+            } catch (\Exception $e) {
+                Log::error("Failed to update metadata on async payment succeeded: " . $e->getMessage());
+            }
         }
     }
 
@@ -1699,6 +1704,11 @@ class StripeWebhookController extends Controller
             $deliverable->payment_status = 'failed';
             $deliverable->status = 'failed';
             $deliverable->save();
+            try {
+                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
+            } catch (\Exception $e) {
+                Log::error("Failed to update metadata on async payment failed: " . $e->getMessage());
+            }
         }
     }
 
@@ -1792,7 +1802,7 @@ class StripeWebhookController extends Controller
          }
 
          $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
-         if ($purchase) {
+        if ($purchase) {
             $purchase->status = 'refunded';
             $purchase->refunded_at = now();
             
@@ -1815,6 +1825,16 @@ class StripeWebhookController extends Controller
                  if ($deliverable) {
                      $deliverable->status = 'refunded';
                      $deliverable->save();
+
+                     try {
+                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                             'status' => 'refunded',
+                             'refunded_by' => 'stripe',
+                             'refund_reason' => 'charge_refunded'
+                         ]);
+                     } catch (\Exception $e) {
+                         Log::error("Failed to update metadata on charge refunded webhook: " . $e->getMessage());
+                     }
                  }
              } catch (\Exception $e) {}
 
