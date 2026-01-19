@@ -119,16 +119,16 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className="fading !text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
+                                <h2 className="!text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
                                         <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 inline-block text-pink" />
                                         : ''}
                                 </h2>
-                                <h2 className="fading !text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
+                                <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
                                     @{p && p.username} 
                                 </h2>
-                                <p className="fading toppercentage text-center font-gulfs">
+                                <p className="toppercentage text-center font-gulfs">
                                     {p && p.top}%{" "}
                                 </p>
                                 {/* Display engagement metrics if available */}
@@ -145,7 +145,7 @@ export default function Board(props) {
                                 : ''
                             }
                             {position === 2 ? 
-                                <div className={`fading rank-position p-1  `}>
+                                <div className={`fading rank-position p-1`}>
                                     <h2 className="font-gulfs  !text-[45px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
                                 </div>
                                 : ''

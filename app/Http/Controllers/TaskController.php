@@ -922,7 +922,7 @@ class TaskController extends Controller
                     }
 
                     if ($amount > 0) {
-                        $transferMetadata = [
+                        $baseTransferMetadata = [
                             'type' => 'task_payout',
                             'task_id' => (string) $task->id,
                             'task_uuid' => (string) $task->uuid,
@@ -931,6 +931,20 @@ class TaskController extends Controller
                             'supporter_id' => (string) $purchase->supporter_id,
                             'payment_intent_id' => (string) $purchase->payment_intent_id,
                         ];
+
+                        $piMetadata = [];
+                        foreach (($pi->metadata ?? []) as $k => $v) {
+                            $piMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
+                        }
+
+                        $chargeMetadata = [];
+                        if ($charge) {
+                            foreach (($charge->metadata ?? []) as $k => $v) {
+                                $chargeMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
+                            }
+                        }
+
+                        $transferMetadata = array_merge($baseTransferMetadata, $piMetadata, $chargeMetadata);
 
                         $transfer = \App\StripeControl::createTransfer([
                             'amount' => $amount,

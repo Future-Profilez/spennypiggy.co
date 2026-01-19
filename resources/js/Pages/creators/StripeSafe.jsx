@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
+import { Check, ArrowRight, AlertTriangle, ShieldCheck, Lock } from 'lucide-react';
 
 export default function StripeSafe() {
   return (
@@ -8,42 +9,125 @@ export default function StripeSafe() {
         <link rel="canonical" href="/creators/stripe-safe" />
       </Head>
       <Guest>
-        <div className="wishlistPage bg-white pt-8">
-          <div className="containerbox p-3">
-            <div className="max-w-4xl mx-auto md:py-8 text-gray-800">
-              <h1 className="text-xl md:text-3xl font-bold text-pink-600 mb-6">Built for Reliable Payouts — Not Sudden Shutdowns.</h1>
-              <p className="mb-6">For creators who care about long-term account safety.</p>
-              <div className='flex'>
-                <Link href="/register" className="button b !px-6 !py-3">Start Free Creator Trial</Link>
-              </div>
-              <div className="text-sm mt-3">3 days free • £4/month after • Cancel anytime</div>
+        <div className="bg-[#F9F9F9] min-h-screen font-sans text-gray-900 pb-20 relative overflow-hidden">
+          
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+              <div className="absolute top-0 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float"></div>
+              <div className="absolute top-20 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float-delayed" style={{animationDelay: '1s'}}></div>
+              <div className="absolute -bottom-10 left-1/3 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-pulse" style={{animationDelay: '2s'}}></div>
+          </div>
 
-              <div className="my-6 h-px w-full bg-gray-200" />
-
-              <h2 className="text-lg md:text-2xl font-semibold mb-3">Why Accounts Get Shut Down</h2>
-              <ul className="list-disc pl-6 space-y-2 mb-6">
-                <li>Accounts are closed when money arrives with no clear reason.</li>
-                <li>Unexplained transfers trigger reviews and freezes.</li>
-              </ul>
-
-              <div className="my-6 h-px w-full bg-gray-200" />
-
-              <h2 className="text-lg md:text-2xl font-semibold mb-3">How Spenny Piggy Prevents This</h2>
-              <ul className="list-disc pl-6 space-y-2 mb-6">
-                <li>Payments always linked to platform features</li>
-                <li>Clear usage and content rules</li>
-                <li>Monthly compliance reminders</li>
-                <li>Activity logs Stripe expects</li>
-              </ul>
-
-              <div className="my-6 h-px w-full bg-gray-200" />
-
-              <h2 className="text-lg md:text-2xl font-semibold mb-3">Disputes</h2>
-              <ul className="list-disc pl-6 space-y-2 mb-6">
-                <li>Disputes are handled by the platform.</li>
-                <li>Creators are never debited.</li>
-              </ul>
+          <div className="relative z-10">
+            {/* Hero Section */}
+            <div className="max-w-7xl mx-auto px-6 pt-12 pb-20 md:pt-24 md:pb-20 text-center">
+               <h1 className="text-4xl md:text-7xl font-gulfs uppercase leading-[0.9] tracking-tighter mb-6 text-black">
+                  Built for <br/>
+                  Reliable Payouts <br/>
+                  <span className="text-gray-400">Not Sudden Shutdowns.</span>
+               </h1>
+               <p className="text-xl md:text-2xl font-medium text-gray-600 max-w-2xl mx-auto mb-10">
+                  For creators who care about long-term account safety.
+               </p>
+               <div className="flex flex-col items-center justify-center gap-4">
+                  <Link href="/register" className="relative inline-flex items-center gap-4 bg-black text-white font-black text-lg py-3 px-8 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden">
+                    <span className="relative z-10">Start Free Creator Trial</span>
+                    <ArrowRight className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </Link>
+                  <div className="text-sm font-medium text-gray-500">
+                    3 days free • £4/month after • Cancel anytime
+                  </div>
+               </div>
             </div>
+
+            {/* Comparison Section */}
+            <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-0 overflow-hidden rounded-[3rem] shadow-2xl border border-gray-200">
+               
+               {/* Left: The Problem (Darker) */}
+               <div className="bg-black text-white p-10 md:p-16 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-800">
+                  <div className="mb-10">
+                     <div className="inline-flex items-center gap-2 bg-red-500/20 text-red-500 px-4 py-2 rounded-full font-bold uppercase text-sm mb-6">
+                        <AlertTriangle size={16} /> The Problem
+                     </div>
+                     <h2 className="text-3xl md:text-5xl font-gulfs uppercase mb-6 leading-tight">
+                        Why Accounts <br/> Get <span className="text-red-500">Shut Down</span>
+                     </h2>
+                  </div>
+                  
+                  <ul className="space-y-8">
+                     <li className="flex gap-4">
+                        <div className="bg-red-500/10 p-3 rounded-xl h-fit shrink-0">
+                           <AlertTriangle className="text-red-500" size={24} />
+                        </div>
+                        <div>
+                           <p className="text-xl font-bold mb-2">Accounts are closed when money arrives with no clear reason.</p>
+                        </div>
+                     </li>
+                     <li className="flex gap-4">
+                        <div className="bg-red-500/10 p-3 rounded-xl h-fit shrink-0">
+                           <AlertTriangle className="text-red-500" size={24} />
+                        </div>
+                        <div>
+                           <p className="text-xl font-bold mb-2">Unexplained transfers trigger reviews and freezes.</p>
+                        </div>
+                     </li>
+                  </ul>
+               </div>
+
+               {/* Right: The Solution (Lighter/Gradient) */}
+               <div className="bg-white p-10 md:p-16 flex flex-col justify-center relative">
+                  <div className="absolute top-0 right-0 p-10 opacity-5">
+                     <ShieldCheck size={200} />
+                  </div>
+                  
+                  <div className="mb-10 relative z-10">
+                     <div className="inline-flex items-center gap-2 bg-green-100 text-green-600 px-4 py-2 rounded-full font-bold uppercase text-sm mb-6">
+                        <Check size={16} /> The Solution
+                     </div>
+                     <h2 className="text-3xl md:text-5xl font-gulfs uppercase mb-6 leading-tight text-gray-900">
+                        How Spenny Piggy <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-green-500">Prevents This</span>
+                     </h2>
+                  </div>
+
+                  <ul className="space-y-6 relative z-10">
+                     {[
+                        "Payments always linked to platform features",
+                        "Clear usage and content rules",
+                        "Monthly compliance reminders",
+                        "Activity logs Stripe expects"
+                     ].map((item, i) => (
+                        <li key={i} className="flex items-center gap-4 text-lg font-bold text-gray-800">
+                           <div className="bg-green-500 text-white p-1 rounded-full shrink-0">
+                              <Check size={16} strokeWidth={3} />
+                           </div>
+                           {item}
+                        </li>
+                     ))}
+                  </ul>
+               </div>
+            </div>
+
+            {/* Disputes Section */}
+            <div className="max-w-7xl mx-auto px-6 mt-12">
+               <div className="bg-white border border-gray-100 text-gray-900 p-10 md:p-12 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+                  <div>
+                     <h2 className="text-3xl md:text-4xl font-gulfs uppercase mb-4">Disputes</h2>
+                     <ul className="space-y-3">
+                        <li className="flex items-center gap-3 text-lg text-gray-600">
+                           <Lock className="text-pink-600" size={20} /> Disputes are handled by the platform.
+                        </li>
+                        <li className="flex items-center gap-3 text-lg text-gray-600">
+                           <Lock className="text-pink-600" size={20} /> Creators are never debited.
+                        </li>
+                     </ul>
+                  </div>
+                  <div className="shrink-0">
+                     <ShieldCheck size={80} className="text-pink-500 opacity-80" />
+                  </div>
+               </div>
+            </div>
+
           </div>
         </div>
       </Guest>

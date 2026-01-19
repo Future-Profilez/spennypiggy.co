@@ -132,7 +132,7 @@ class ProcessTaskAutoConfirmations extends Command
                 $amount = (int) round(($purchase->transfer_amount ?? 0) * $multiplier);
 
                 if ($amount > 0) {
-                    $transferMetadata = [
+                    $baseTransferMetadata = [
                         'type' => 'task_payout',
                         'task_id' => (string) $task->id,
                         'task_uuid' => (string) $task->uuid,
@@ -141,6 +141,28 @@ class ProcessTaskAutoConfirmations extends Command
                         'supporter_id' => (string) $purchase->supporter_id,
                         'payment_intent_id' => (string) $purchase->payment_intent_id,
                     ];
+
+                    $piMetadata = [];
+                    foreach (($pi->metadata ?? []) as $k => $v) {
+                        $piMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
+                    }
+
+                    $chargeMetadata = [];
+                    $charge = null;
+                    if ($chargeId) {
+                        try {
+                            $charge = $client->charges->retrieve($chargeId);
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to retrieve charge for metadata merge: ' . $e->getMessage());
+                        }
+                    }
+                    if ($charge) {
+                        foreach (($charge->metadata ?? []) as $k => $v) {
+                            $chargeMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
+                        }
+                    }
+
+                    $transferMetadata = array_merge($baseTransferMetadata, $piMetadata, $chargeMetadata);
 
                     $transfer = \App\StripeControl::createTransfer([
                         'amount' => $amount,
