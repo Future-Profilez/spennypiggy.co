@@ -311,7 +311,7 @@ export default function Discover(props) {
                         {isSearching && searchResults ? (
                             <div className="space-y-12">
                                 {searchResults.creators && searchResults.creators.length > 0 && (
-                                    <div className="pb-6">
+                                    <div className="pb-6 mt-5">
                                         <h2 className=" text-2xl text-gray-900 font-gulfs uppercase"><span className="text-pink">Creators</span> : Showing  {searchResults.creators.length} Results</h2>
                                         {filters.type === 'trending' && (
                                             <p className="text-gray-600">Trending creators are selected based on their recent activity, supporter engagement, and overall popularity on the platform.</p>

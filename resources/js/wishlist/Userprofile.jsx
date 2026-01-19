@@ -73,7 +73,7 @@ export default function Userprofile({ IsloggedIn }) {
                             auth &&
                             auth?.user?.avatar_approved === 2 &&
                             !auth?.user?.avatar_url && (
-                                <div className="absolute approvetag top-3 mx-auto">
+                                <div className="absolute mr-3 top-3">
                                     <button className="tooltipbtn">
                                         <svg
                                             width="20"

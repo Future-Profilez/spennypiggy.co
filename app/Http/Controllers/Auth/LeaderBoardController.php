@@ -9,6 +9,7 @@ use App\Models\MembershipPayment;
 use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
+use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\WishItemSubscription;
@@ -81,7 +82,6 @@ class LeaderBoardController extends Controller
             "per_page" => $paginator->perPage() ?? null,
             "stars" => $paginator->perPage() ?? null,
         ]);
-        
     }
 
 
@@ -182,7 +182,7 @@ class LeaderBoardController extends Controller
             $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'USD');
             $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'USD');
             $user->total_shop = Helpers::priceFormat($user->default_currency, $user->total_shop, 'USD');
-            
+
             // Calculate total monetary amount (legacy metric) with NaN protection
             $amounts = [
                 $user->total_payments,
@@ -192,27 +192,27 @@ class LeaderBoardController extends Controller
                 $user->total_bill,
                 $user->total_shop
             ];
-            
+
             // Filter out NaN values and ensure we have valid numbers
-            $validAmounts = array_filter($amounts, function($amount) {
+            $validAmounts = array_filter($amounts, function ($amount) {
                 return is_numeric($amount) && !is_nan($amount) && is_finite($amount);
             });
-            
+
             $user->total_amount = array_sum($validAmounts);
-            
+
             // Calculate social engagement metrics
             $user->total_supporters = $user->followers_count;
-            
+
             // Calculate engagement score based on followers and content
             $engagementScore = $user->followers_count * 2; // 2 points per follower
-            
+
             // Add bonus for verified creators
             if ($user->profile_status_lock == 2) {
                 $engagementScore *= 1.2; // 20% bonus for verified creators
             }
-            
+
             $user->engagement_score = $engagementScore;
-            
+
             // Combined score prioritizes engagement but includes monetary as fallback
             $user->combined_score = $user->engagement_score > 0 ? $user->engagement_score : $user->total_amount;
         });
@@ -299,12 +299,11 @@ class LeaderBoardController extends Controller
                 ]);
             }
 
-        return response()->json([
-            "success" => true,
-            'data' => $data,
-            "message" => 'Top supporters by frequency retrieved successfully',
-        ]);
-            
+            return response()->json([
+                "success" => true,
+                'data' => $data,
+                "message" => 'Top supporters by frequency retrieved successfully',
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 "success" => false,
@@ -323,16 +322,16 @@ class LeaderBoardController extends Controller
         try {
             // Calculate basic platform statistics from existing data
             $totalUsers = User::where('stripe_details_submitted', 1)
-                            ->where('suspended_account', 0)
-                            ->count();
-            
+                ->where('suspended_account', 0)
+                ->count();
+
             $activeCreators = User::where('stripe_details_submitted', 1)
-                                 ->where('suspended_account', 0)
-                                 ->whereHas('paymentitems')
-                                 ->count();
-                                 
-            $totalSupporters = User::whereHas('paymentitems', function($q) {
-                $q->whereHas('payment', function($query) {
+                ->where('suspended_account', 0)
+                ->whereHas('paymentitems')
+                ->count();
+
+            $totalSupporters = User::whereHas('paymentitems', function ($q) {
+                $q->whereHas('payment', function ($query) {
                     $query->where('payment_status', 'paid');
                 });
             })->count();
@@ -386,7 +385,6 @@ class LeaderBoardController extends Controller
                 'data' => $data,
                 "message" => 'Platform analytics retrieved successfully',
             ]);
-            
         } catch (\Exception $e) {
             Log::error('Platform analytics error: ' . $e->getMessage());
             return response()->json([
@@ -407,13 +405,13 @@ class LeaderBoardController extends Controller
             // Wishlist Payments
             $wishes = StripePaymentItems::whereHas('payment', function ($q) use ($last24hour) {
                 $q->where('payment_status', 'paid')
-                ->where('created_at', '>', $last24hour);
+                    ->where('created_at', '>', $last24hour);
             })->with('payment.user')->get();
 
             foreach ($wishes as $item) {
                 $user = $item->payment->user ?? null;
                 if ($user) {
-                    $gifters[] = [ 
+                    $gifters[] = [
                         'id' => $user->id,
                         'name' => $user->name ?? "Anonymous",
                         'username' => $user->username ?? "Anonymous",
@@ -512,15 +510,14 @@ class LeaderBoardController extends Controller
             }
 
             // Sort by amount (optional)
-            usort($gifters, fn ($a, $b) => $b['amount'] <=> $a['amount']);
- 
+            usort($gifters, fn($a, $b) => $b['amount'] <=> $a['amount']);
+
             $gifters = collect($gifters)->unique('username')->values()->take(5);
 
             return response()->json([
                 "status" => true,
                 'data' => $gifters,
             ]);
-            
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
@@ -794,9 +791,8 @@ class LeaderBoardController extends Controller
             $sortedGifters = collect($gifters)->sortByDesc('amount')->values();
             return response()->json([
                 "status" => true,
-            'data' => $sortedGifters,
+                'data' => $sortedGifters,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 "status" => false,
@@ -809,91 +805,90 @@ class LeaderBoardController extends Controller
 
 
     public function top10UniqueBiggestGifters()
-{
-    try {
-        $gifters = [];
+    {
+        try {
+            $gifters = [];
 
-        $storeMaxPayment = function (&$gifters, $user, $amount, $currency, $type, $createdAt) {
-            $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
+            $storeMaxPayment = function (&$gifters, $user, $amount, $currency, $type, $createdAt) {
+                $username = $user->username ?? 'anonymous_' . ($user->id ?? uniqid());
 
-            if (
-                !isset($gifters[$username]) || 
-                $amount > $gifters[$username]['amount']
-            ) {
-                $gifters[$username] = [
-                    'id' => $user->id ?? null,
-                    'type' => $type,
-                    'name' => $user->name ?? "Anonymous",
-                    'username' => $user->username ?? "Anonymous",
-                    'avatar_url' => $user->avatar_url ?? null,
-                    'cover_url' => $user->cover_url ?? 'Anonymous',
-                    'role' => $user->role ?? 'Anonymous',
-                    'profile_status_lock' => $user->profile_status_lock ?? 1,
-                    'amount' => $amount,
-                    'currency' => $currency,
-                    'created_at' => $createdAt,
-                ];
+                if (
+                    !isset($gifters[$username]) ||
+                    $amount > $gifters[$username]['amount']
+                ) {
+                    $gifters[$username] = [
+                        'id' => $user->id ?? null,
+                        'type' => $type,
+                        'name' => $user->name ?? "Anonymous",
+                        'username' => $user->username ?? "Anonymous",
+                        'avatar_url' => $user->avatar_url ?? null,
+                        'cover_url' => $user->cover_url ?? 'Anonymous',
+                        'role' => $user->role ?? 'Anonymous',
+                        'profile_status_lock' => $user->profile_status_lock ?? 1,
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'created_at' => $createdAt,
+                    ];
+                }
+            };
+
+            // Wishlist Gifts
+            $wishes = StripePaymentItems::whereHas('payment', fn($q) => $q->where('payment_status', 'paid'))
+                ->with('payment.user')->get();
+
+            foreach ($wishes as $item) {
+                $user = $item->payment->user ?? null;
+                if ($user) {
+                    $storeMaxPayment($gifters, $user, $item->amount, $item->payment->currency, 'wishlist_gift', $item->created_at);
+                }
             }
-        };
 
-        // Wishlist Gifts
-        $wishes = StripePaymentItems::whereHas('payment', fn($q) => $q->where('payment_status', 'paid'))
-            ->with('payment.user')->get();
-
-        foreach ($wishes as $item) {
-            $user = $item->payment->user ?? null;
-            if ($user) {
-                $storeMaxPayment($gifters, $user, $item->amount, $item->payment->currency, 'wishlist_gift', $item->created_at);
+            // Subscriptions
+            $subs = WishItemSubscription::with('user')->where('status', 'paid')->get();
+            foreach ($subs as $sub) {
+                if ($sub->user) {
+                    $storeMaxPayment($gifters, $sub->user, $sub->amount, $sub->currency, 'subscription', $sub->created_at);
+                }
             }
+
+            // Tips
+            $tips = TipGoalsPayment::with('user')->where('status', 'paid')->get();
+            foreach ($tips as $tip) {
+                if ($tip->user) {
+                    $storeMaxPayment($gifters, $tip->user, $tip->amount, $tip->currency, 'tip', $tip->created_at);
+                }
+            }
+
+            // Memberships
+            $memberships = MembershipPayment::with('user')->where('status', 'paid')->get();
+            foreach ($memberships as $member) {
+                if ($member->user) {
+                    $storeMaxPayment($gifters, $member->user, $member->amount, $member->currency, 'membership', $member->created_at);
+                }
+            }
+
+            // Bills
+            $bills = BillPayment::with('user')->where('status', 'paid')->get();
+            foreach ($bills as $bill) {
+                if ($bill->user) {
+                    $storeMaxPayment($gifters, $bill->user, $bill->amount, $bill->currency, 'bill', $bill->created_at);
+                }
+            }
+
+            $topUniqueGifters = collect($gifters)->sortByDesc('amount')->values()->take(5);
+
+            return response()->json([
+                'status' => true,
+                'data' => $topUniqueGifters,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Something went wrong',
+                'error' => $e->getMessage(),
+            ]);
         }
-
-        // Subscriptions
-        $subs = WishItemSubscription::with('user')->where('status', 'paid')->get();
-        foreach ($subs as $sub) {
-            if ($sub->user) {
-                $storeMaxPayment($gifters, $sub->user, $sub->amount, $sub->currency, 'subscription', $sub->created_at);
-            }
-        }
-
-        // Tips
-        $tips = TipGoalsPayment::with('user')->where('status', 'paid')->get();
-        foreach ($tips as $tip) {
-            if ($tip->user) {
-                $storeMaxPayment($gifters, $tip->user, $tip->amount, $tip->currency, 'tip', $tip->created_at);
-            }
-        }
-
-        // Memberships
-        $memberships = MembershipPayment::with('user')->where('status', 'paid')->get();
-        foreach ($memberships as $member) {
-            if ($member->user) {
-                $storeMaxPayment($gifters, $member->user, $member->amount, $member->currency, 'membership', $member->created_at);
-            }
-        }
-
-        // Bills
-        $bills = BillPayment::with('user')->where('status', 'paid')->get();
-        foreach ($bills as $bill) {
-            if ($bill->user) {
-                $storeMaxPayment($gifters, $bill->user, $bill->amount, $bill->currency, 'bill', $bill->created_at);
-            }
-        }
-
-        $topUniqueGifters = collect($gifters)->sortByDesc('amount')->values()->take(5);
-
-        return response()->json([
-            'status' => true, 
-            'data' => $topUniqueGifters,
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'msg' => 'Something went wrong',
-            'error' => $e->getMessage(),
-        ]);
     }
-}
 
 
     /**
@@ -912,13 +907,13 @@ class LeaderBoardController extends Controller
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
-        
+
         $data = [];
         $rank = 1;
         foreach ($paginator as $query) {
             // Calculate period-specific engagement metrics
             $periodFollowers = $this->calculatePeriodFollowers($query, $type);
-            
+
             $data[] = [
                 'id' => $query->id,
                 'rank' => $rank,
@@ -937,7 +932,7 @@ class LeaderBoardController extends Controller
             ];
             $rank++;
         }
-        
+
         return response()->json([
             "success" => true,
             'data' => $data,
@@ -958,13 +953,13 @@ class LeaderBoardController extends Controller
         if (!$type) {
             return $user->followers_count ?? 0;
         }
-        
+
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
         $currentWeekStartDate = Carbon::now()->startOfWeek();
         $currentWeekEndDate = Carbon::now()->endOfWeek();
         $currentDate = Carbon::today()->format('Y-m-d');
-        
+
         // For simplicity, we'll return total followers for now
         // In a real implementation, you'd track follower growth over time
         return $user->followers_count ?? 0;
@@ -987,7 +982,7 @@ class LeaderBoardController extends Controller
                     $supporters[$username] = [
                         'id' => $user->id,
                         'name' => $user->name ?? "Anonymous",
-                        'username' => $user->username ?? "Anonymous", 
+                        'username' => $user->username ?? "Anonymous",
                         'avatar_url' => $user->avatar_url ?? null,
                         'cover_url' => $user->cover_url ?? 'Anonymous',
                         'role' => $user->role ?? 'Anonymous',
@@ -1001,7 +996,7 @@ class LeaderBoardController extends Controller
 
                 $supporters[$username]['gift_count']++;
                 $supporters[$username]['latest_support_type'] = $type;
-                
+
                 // Track unique support types
                 if (!in_array($type, $supporters[$username]['support_types'])) {
                     $supporters[$username]['support_types'][] = $type;
@@ -1078,7 +1073,6 @@ class LeaderBoardController extends Controller
                 'status' => true,
                 'data' => $topSupporters,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -1098,217 +1092,375 @@ class LeaderBoardController extends Controller
      */
     public function earnings($type = 'today')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())
+            ->where('is_uk', 0)
+            ->firstOrFail();
 
-        $currentMonth = Carbon::now()->month;
-        $currentYear = Carbon::now()->year;
-        $currentWeekStartDate = Carbon::now()->startOfWeek();
-        $currentWeekEndDate = Carbon::now()->endOfWeek();
-        $currentDate = Carbon::today();
+        $now = Carbon::now();
 
-        $single_wish = StripePaymentItems::whereHas('payment', function ($q) use ($user) {
-            $q->where('owner_id', $user->id);
-        })->whereHas('wish', function ($q) use ($user) {
-            $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
-        })->groupBy('wish_item_id');
+        /* ---------------------------------
+     | Date Range
+     |----------------------------------*/
+        match ($type) {
+            'week' => [
+                $start = $now->copy()->startOfWeek(),
+                $end   = $now->copy()->endOfWeek(),
+            ],
+            'month' => [
+                $start = $now->copy()->startOfMonth(),
+                $end   = $now->copy()->endOfMonth(),
+            ],
+            default => [
+                $start = $now->copy()->startOfDay(),
+                $end   = $now->copy()->endOfDay(),
+            ],
+        };
 
-        // $crowd_wish = StripePaymentItems::whereHas('wish',function($q){
-        //     $q->whereNull('stripe_product_id');
-        // })->whereHas('payment',function($query) use($user){
-        //     $query->where('owner_id',$user->id);
-        // });
+        /* ---------------------------------
+     | Base Queries
+     |----------------------------------*/
 
-        // $surprise = StripePaymentItems::whereNull('wish_item_id')
-        // ->whereHas('payment',function($query) use($user){
-        //     $query->where('owner_id',$user->id);
-        // });
+        $singleWishQuery = StripePaymentItems::whereBetween('created_at', [$start, $end])
+            ->whereHas('payment', fn($q) => $q->where('owner_id', $user->id))
+            ->whereHas(
+                'wish',
+                fn($q) =>
+                $q->whereNotNull('stripe_product_id')
+                    ->where('user_id', $user->id)
+            )
+            ->groupBy('wish_item_id');
 
-        $subscriptions = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        });
+        // $subscriptionsQuery = WishItemSubscription::whereBetween('created_at', [$start, $end])
+        //     ->where('status', 'paid') // ✅ paidTask condition
+        //     // OR ->where('payment_status', 'paid')
+        //     // OR ->where('paid_task', 1)
+        //     ->whereHas(
+        //         'wish_item',
+        //         fn($q) =>
+        //         $q->where('user_id', $user->id)
+        //     );
 
-        $tip_goal = TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        });
+        $taskQuery = TaskPurchase::whereBetween('created_at', [$start, $end])
+            ->where('creator_id', $user->id)
+            ->where('status', 'paid');
 
-        $membership = MembershipPayment::whereHas('membership', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        });
+        $tipGoalQuery = TipGoalsPayment::whereBetween('created_at', [$start, $end])
+            ->where('creator_id', $user->id)
+            ->where('status', 'paid');
 
-        $bill = BillPayment::whereHas('bill', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        });
+        $membershipQuery = MembershipPayment::whereBetween('created_at', [$start, $end])
+            ->whereHas(
+                'membership',
+                fn($q) =>
+                $q->where('user_id', $user->id)
+            );
 
-        $shop = ShopPayment::whereHas('shop', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        });
+        $billQuery = BillPayment::whereBetween('created_at', [$start, $end])
+            ->whereHas(
+                'bill',
+                fn($q) =>
+                $q->where('user_id', $user->id)
+            );
 
-        if ($type == 'today') {
+        $shopQuery = ShopPayment::whereBetween('created_at', [$start, $end])
+            ->whereHas(
+                'shop',
+                fn($q) =>
+                $q->where('user_id', $user->id)
+            );
 
-            $single_wish->whereDate('created_at', $currentDate);
-            // $crowd_wish->where('created_at', $currentDate);
-            // $surprise->where('created_at', $currentDate);
-            $subscriptions->whereDate('created_at', $currentDate);
-            $tip_goal->whereDate('created_at', $currentDate);
-            $membership->whereDate('created_at', $currentDate);
-            $bill->whereDate('created_at', $currentDate);
-            $shop->whereDate('created_at', $currentDate);
-        } else if ($type == 'week') {
+        /* ---------------------------------
+     | Sums (CALCULATED ONCE)
+     |----------------------------------*/
+        $singleWishAmount = (float) $singleWishQuery->sum('amount');
+        // $subscriptionAmount = (float) $subscriptionsQuery->sum('amount');
+        $paidTaskAmount = (float) $taskQuery->sum('amount');
+        $tipGoalAmount = (float) $tipGoalQuery->sum('amount');
+        $membershipAmount = (float) $membershipQuery->sum('amount');
+        $billAmount = (float) $billQuery->sum('amount');
+        $shopAmount = (float) $shopQuery->sum('amount');
 
-            $single_wish->whereBetween('created_at', [
-                $currentWeekStartDate,
-                $currentWeekEndDate,
-            ]);
-            // $crowd_wish->whereBetween('created_at', [
-            //     $currentWeekStartDate,
-            //     $currentWeekEndDate,
-            // ]);
-            // $surprise->whereBetween('created_at', [
-            //     $currentWeekStartDate,
-            //     $currentWeekEndDate,
-            // ]);
-            $subscriptions->whereBetween('created_at', [
-                $currentWeekStartDate,
-                $currentWeekEndDate,
-            ]);
-            $tip_goal->whereBetween('created_at', [
-                $currentWeekStartDate,
-                $currentWeekEndDate,
-            ]);
+        $gross = round(
+            $singleWishAmount +
+                // $subscriptionAmount +
+                $paidTaskAmount +
+                $tipGoalAmount +
+                $membershipAmount +
+                $billAmount +
+                $shopAmount,
+            2,
+            PHP_ROUND_HALF_UP
+        );
 
-            $membership->whereBetween('created_at', [
-                $currentWeekStartDate,
-                $currentWeekEndDate,
-            ]);
-            $bill->whereBetween('created_at', [
-                $currentWeekStartDate,
-                $currentWeekEndDate,
-            ]);
-            $shop->whereBetween('created_at', [
-                $currentWeekStartDate,
-                $currentWeekEndDate,
-            ]);
-        } else if ($type == 'month') {
+        $percent = fn($amount) =>
+        $gross > 0 ? round(($amount * 100) / $gross, 2, PHP_ROUND_HALF_UP) : 0;
 
-            $single_wish->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-
-            // $crowd_wish->whereYear('created_at', '=', $currentYear)
-            // ->whereMonth('created_at',$currentMonth);
-
-            // $surprise->whereYear('created_at', '=', $currentYear)
-            // ->whereMonth('created_at',$currentMonth);
-
-            $subscriptions->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-
-            $tip_goal->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-
-            $membership->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-
-            $bill->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-
-            $shop->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-        }
-
-        // $performance = Earning::performance($type);
-
-        $resp['gross'] = round($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount') + $shop->sum('amount'), 2, PHP_ROUND_HALF_UP);
-
-        // if ($performance['tip_goal'] == 0 && $tip_goal->sum('amount') == 0) {
-        //     $per = 0;
-        // } elseif ($performance['tip_goal'] == 0) {
-        //     $per = 100;
-        // } else {
-        //     $per = (($tip_goal->sum('amount') - $performance['tip_goal']) / $performance['tip_goal']) * 100;
-        // }
-
-        $resp['earnings'][0] = [
-            'amount' => $single_wish->sum('amount'),
-            // 'performance' => $per,
-            // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
-            'percent' => $single_wish->sum('amount') != 0 ?  round(($single_wish->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'single wish',
-            'tag' => 'single_wish'
-        ];
-
-
-        $resp['earnings'][1] = [
-            'amount' => $tip_goal->sum('amount'),
-            // 'performance' => $per,
-            // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
-            'percent' => $tip_goal->sum('amount') != 0 ? round(($tip_goal->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'piggy bank',
-            'tag' => 'tip_goal'
-        ];
-
-
-        // if ($performance['bill'] == 0 && $bill->sum('amount') == 0) {
-        //     $per = 0;
-        // } elseif ($performance['bill'] == 0) {
-        //     $per = 100;
-        // } else {
-        //     $per = (($bill->sum('amount') - $performance['bill']) / $performance['bill']) * 100;
-        // }
-        $resp['earnings'][2] = [
-            'amount' => $bill->sum('amount'),
-            // 'performance' => $per,
-            // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
-            'percent' => $bill->sum('amount') != 0 ? round(($bill->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'bills',
-            'tag' => 'bills'
-        ];
-
-        // if ($performance['subscriptions'] == 0 && $subscriptions->sum('amount') == 0) {
-        //     $per = 0;
-        // } elseif ($performance['subscriptions'] == 0) {
-        //     $per = 100;
-        // } else {
-        //     $per = (($subscriptions->sum('amount') - $performance['subscriptions']) / $performance['subscriptions']) * 100;
-        // }
-        $resp['earnings'][3] = [
-            'amount' => $subscriptions->sum('amount'),
-            // 'performance' => $per,
-            // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
-            'percent' => $subscriptions->sum('amount') != 0 ?  round(($subscriptions->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'subscriptions',
-            'tag' => 'subscriptions'
-        ];
-
-
-
-        // if ($performance['membership'] == 0 && $membership->sum('amount') == 0) {
-        //     $per = 0;
-        // } elseif ($performance['membership'] == 0) {
-        //     $per = 100;
-        // } else {
-        //     $per = (($membership->sum('amount') - $performance['membership']) / $performance['membership']) * 100;
-        // }
-        $resp['earnings'][4] = [
-            'amount' => $membership->sum('amount'),
-            // 'performance' => $per,
-            // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
-            'percent' => $membership->sum('amount') != 0 ?  round(($membership->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'memberships',
-            'tag' => 'memberships'
-        ];
-
-
-        $resp['earnings'][5] = [
-            'amount' => $shop->sum('amount'),
-            // 'performance' => $per,
-            // 'increase' => $shop->sum('amount') > $performance['shop'] ? true : false,
-            'percent' => $shop->sum('amount') != 0 ?  round(($shop->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
-            'title' => 'shop items',
-            'tag' => 'shops'
+        /* ---------------------------------
+     | Response
+     |----------------------------------*/
+        $resp = [
+            'gross' => $gross,
+            'earnings' => [
+                [
+                    'amount' => $singleWishAmount,
+                    'percent' => $percent($singleWishAmount),
+                    'title' => 'single wish',
+                    'tag' => 'single_wish',
+                ],
+                [
+                    'amount' => $tipGoalAmount,
+                    'percent' => $percent($tipGoalAmount),
+                    'title' => 'piggy bank',
+                    'tag' => 'tip_goal',
+                ],
+                [
+                    'amount' => $billAmount,
+                    'percent' => $percent($billAmount),
+                    'title' => 'bills',
+                    'tag' => 'bills',
+                ],
+                // [
+                //     'amount' => $subscriptionAmount,
+                //     'percent' => $percent($subscriptionAmount),
+                //     'title' => 'subscriptions',
+                //     'tag' => 'subscriptions',
+                // ],
+                [
+                    'amount' => $paidTaskAmount,
+                    'percent' => $percent($paidTaskAmount),
+                    'title' => 'paid task',
+                    'tag' => 'task',
+                ],
+                [
+                    'amount' => $membershipAmount,
+                    'percent' => $percent($membershipAmount),
+                    'title' => 'memberships',
+                    'tag' => 'memberships',
+                ],
+                [
+                    'amount' => $shopAmount,
+                    'percent' => $percent($shopAmount),
+                    'title' => 'shop items',
+                    'tag' => 'shops',
+                ],
+            ],
         ];
 
         return response()->json($resp, 200);
     }
+
+    // public function earnings($type = 'today')
+    // {
+    //     $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
+    //     $currentMonth = Carbon::now()->month;
+    //     $currentYear = Carbon::now()->year;
+    //     $currentWeekStartDate = Carbon::now()->startOfWeek();
+    //     $currentWeekEndDate = Carbon::now()->endOfWeek();
+    //     $currentDate = Carbon::today();
+
+    //     $single_wish = StripePaymentItems::whereHas('payment', function ($q) use ($user) {
+    //         $q->where('owner_id', $user->id);
+    //     })->whereHas('wish', function ($q) use ($user) {
+    //         $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
+    //     })->groupBy('wish_item_id');
+
+    //     // $crowd_wish = StripePaymentItems::whereHas('wish',function($q){
+    //     //     $q->whereNull('stripe_product_id');
+    //     // })->whereHas('payment',function($query) use($user){
+    //     //     $query->where('owner_id',$user->id);
+    //     // });
+
+    //     // $surprise = StripePaymentItems::whereNull('wish_item_id')
+    //     // ->whereHas('payment',function($query) use($user){
+    //     //     $query->where('owner_id',$user->id);
+    //     // });
+
+    //     $subscriptions = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     });
+
+    //     $tip_goal = TipGoalsPayment::with('tipGoal', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     })->where('creator_id', $user->id)->where('status', 'paid');
+
+    //     $membership = MembershipPayment::whereHas('membership', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     });
+
+    //     $bill = BillPayment::whereHas('bill', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     });
+
+    //     $shop = ShopPayment::whereHas('shop', function ($q) use ($user) {
+    //         $q->where('user_id', $user->id);
+    //     });
+
+    //     if ($type == 'today') {
+
+    //         $single_wish->whereDate('created_at', $currentDate);
+    //         // $crowd_wish->where('created_at', $currentDate);
+    //         // $surprise->where('created_at', $currentDate);
+    //         $subscriptions->whereDate('created_at', $currentDate);
+    //         $tip_goal->whereDate('created_at', $currentDate);
+    //         $membership->whereDate('created_at', $currentDate);
+    //         $bill->whereDate('created_at', $currentDate);
+    //         $shop->whereDate('created_at', $currentDate);
+    //     } else if ($type == 'week') {
+
+    //         $single_wish->whereBetween('created_at', [
+    //             $currentWeekStartDate,
+    //             $currentWeekEndDate,
+    //         ]);
+    //         // $crowd_wish->whereBetween('created_at', [
+    //         //     $currentWeekStartDate,
+    //         //     $currentWeekEndDate,
+    //         // ]);
+    //         // $surprise->whereBetween('created_at', [
+    //         //     $currentWeekStartDate,
+    //         //     $currentWeekEndDate,
+    //         // ]);
+    //         $subscriptions->whereBetween('created_at', [
+    //             $currentWeekStartDate,
+    //             $currentWeekEndDate,
+    //         ]);
+    //         $tip_goal->whereBetween('created_at', [
+    //             $currentWeekStartDate,
+    //             $currentWeekEndDate,
+    //         ]);
+
+    //         $membership->whereBetween('created_at', [
+    //             $currentWeekStartDate,
+    //             $currentWeekEndDate,
+    //         ]);
+    //         $bill->whereBetween('created_at', [
+    //             $currentWeekStartDate,
+    //             $currentWeekEndDate,
+    //         ]);
+    //         $shop->whereBetween('created_at', [
+    //             $currentWeekStartDate,
+    //             $currentWeekEndDate,
+    //         ]);
+    //     } else if ($type == 'month') {
+
+    //         $single_wish->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $currentMonth);
+
+    //         // $crowd_wish->whereYear('created_at', '=', $currentYear)
+    //         // ->whereMonth('created_at',$currentMonth);
+
+    //         // $surprise->whereYear('created_at', '=', $currentYear)
+    //         // ->whereMonth('created_at',$currentMonth);
+
+    //         $subscriptions->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $currentMonth);
+
+    //         $tip_goal->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $currentMonth);
+
+    //         $membership->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $currentMonth);
+
+    //         $bill->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $currentMonth);
+
+    //         $shop->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $currentMonth);
+    //     }
+
+    //     // $performance = Earning::performance($type);
+
+    //     $resp['gross'] = round($single_wish->sum('amount') + $subscriptions->sum('amount') + $tip_goal->sum('amount') + $membership->sum('amount') + $bill->sum('amount') + $shop->sum('amount'), 2, PHP_ROUND_HALF_UP);
+
+    //     // if ($performance['tip_goal'] == 0 && $tip_goal->sum('amount') == 0) {
+    //     //     $per = 0;
+    //     // } elseif ($performance['tip_goal'] == 0) {
+    //     //     $per = 100;
+    //     // } else {
+    //     //     $per = (($tip_goal->sum('amount') - $performance['tip_goal']) / $performance['tip_goal']) * 100;
+    //     // }
+
+    //     $resp['earnings'][0] = [
+    //         'amount' => $single_wish->sum('amount'),
+    //         // 'performance' => $per,
+    //         // 'increase' => $single_wish->sum('amount') > $performance['single_wish'] ? true : false,
+    //         'percent' => $single_wish->sum('amount') != 0 ?  round(($single_wish->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+    //         'title' => 'single wish',
+    //         'tag' => 'single_wish'
+    //     ];
+
+    //     $resp['earnings'][1] = [
+    //         'amount' => $tip_goal->sum('amount'),
+    //         // 'performance' => $per,
+    //         // 'increase' => $tip_goal->sum('amount') > $performance['tip_goal'] ? true : false,
+    //         'percent' => $tip_goal->sum('amount') != 0 ? round(($tip_goal->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+    //         'title' => 'piggy bank',
+    //         'tag' => 'tip_goal'
+    //     ];
+
+
+    //     // if ($performance['bill'] == 0 && $bill->sum('amount') == 0) {
+    //     //     $per = 0;
+    //     // } elseif ($performance['bill'] == 0) {
+    //     //     $per = 100;
+    //     // } else {
+    //     //     $per = (($bill->sum('amount') - $performance['bill']) / $performance['bill']) * 100;
+    //     // }
+    //     $resp['earnings'][2] = [
+    //         'amount' => $bill->sum('amount'),
+    //         // 'performance' => $per,
+    //         // 'increase' => $bill->sum('amount') > $performance['bill'] ? true : false,
+    //         'percent' => $bill->sum('amount') != 0 ? round(($bill->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+    //         'title' => 'bills',
+    //         'tag' => 'bills'
+    //     ];
+
+    //     // if ($performance['subscriptions'] == 0 && $subscriptions->sum('amount') == 0) {
+    //     //     $per = 0;
+    //     // } elseif ($performance['subscriptions'] == 0) {
+    //     //     $per = 100;
+    //     // } else {
+    //     //     $per = (($subscriptions->sum('amount') - $performance['subscriptions']) / $performance['subscriptions']) * 100;
+    //     // }
+    //     $resp['earnings'][3] = [
+    //         'amount' => $subscriptions->sum('amount'),
+    //         // 'performance' => $per,
+    //         // 'increase' => $subscriptions->sum('amount') > $performance['subscriptions'] ? true : false,
+    //         'percent' => $subscriptions->sum('amount') != 0 ?  round(($subscriptions->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+    //         'title' => 'subscriptions',
+    //         'tag' => 'subscriptions'
+    //     ];
+
+
+
+    //     // if ($performance['membership'] == 0 && $membership->sum('amount') == 0) {
+    //     //     $per = 0;
+    //     // } elseif ($performance['membership'] == 0) {
+    //     //     $per = 100;
+    //     // } else {
+    //     //     $per = (($membership->sum('amount') - $performance['membership']) / $performance['membership']) * 100;
+    //     // }
+    //     $resp['earnings'][4] = [
+    //         'amount' => $membership->sum('amount'),
+    //         // 'performance' => $per,
+    //         // 'increase' => $membership->sum('amount') > $performance['membership'] ? true : false,
+    //         'percent' => $membership->sum('amount') != 0 ?  round(($membership->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+    //         'title' => 'memberships',
+    //         'tag' => 'memberships'
+    //     ];
+
+
+    //     $resp['earnings'][5] = [
+    //         'amount' => $shop->sum('amount'),
+    //         // 'performance' => $per,
+    //         // 'increase' => $shop->sum('amount') > $performance['shop'] ? true : false,
+    //         'percent' => $shop->sum('amount') != 0 ?  round(($shop->sum('amount') * 100) / $resp['gross'], 2, PHP_ROUND_HALF_UP) : 0,
+    //         'title' => 'shop items',
+    //         'tag' => 'shops'
+    //     ];
+
+    //     return response()->json($resp, 200);
+    // }
 
     public function graphData()
     {
@@ -1322,7 +1474,8 @@ class LeaderBoardController extends Controller
 
             // Clone initial queries
             $single_wish_query = clone $this->initialQuery($user, "wish");
-            $subscriptions_query = clone $this->initialQuery($user, "subs");
+            // $subscriptions_query = clone $this->initialQuery($user, "subs");
+            $paid_task_query = clone $this->initialQuery($user, "task");
             $tip_goal_query = clone $this->initialQuery($user, "tip");
             $membership_query = clone $this->initialQuery($user, "mem");
             $bill_query = clone $this->initialQuery($user, "bill");
@@ -1331,7 +1484,9 @@ class LeaderBoardController extends Controller
             // Apply additional conditions for each query
             $single_wish_query->whereYear('created_at', $currentYear)
                 ->whereMonth('created_at', $month);
-            $subscriptions_query->whereYear('created_at', '=', $currentYear)
+            // $subscriptions_query->whereYear('created_at', '=', $currentYear)
+            //     ->whereMonth('created_at', $month);
+            $paid_task_query->whereYear('created_at', '=', $currentYear)
                 ->whereMonth('created_at', $month);
             $tip_goal_query->whereYear('created_at', '=', $currentYear)
                 ->whereMonth('created_at', $month);
@@ -1345,7 +1500,8 @@ class LeaderBoardController extends Controller
             // Fetch sums for each category
             $data[$month - 1] = [
                 'Wishes' => $single_wish_query->sum('amount'),
-                'Subscriptions' => $subscriptions_query->sum('amount'),
+                // 'Subscriptions' => $subscriptions_query->sum('amount'),
+                'PaidTask' => $paid_task_query->sum('amount'),
                 'PiggyBank' => $tip_goal_query->sum('amount'),
                 'Memberships' => $membership_query->sum('amount'),
                 'Bills' => $bill_query->sum('amount'),
@@ -1371,9 +1527,15 @@ class LeaderBoardController extends Controller
             });
         }
 
-        if ($type = 'subs') {
-            return WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
+        // if ($type = 'subs') {
+        //     return WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+        //         $q->where('user_id', $user->id);
+        //     });
+        // }
+
+        if ($type = 'task') {
+            return TaskPurchase::whereHas('task', function ($q) use ($user) {
+                $q->where('creator_id', $user->id);
             });
         }
 
@@ -1433,24 +1595,52 @@ class LeaderBoardController extends Controller
         ]);
     }
 
-    public function topSubscription()
+    // public function topSubscription()
+    // {
+    //     $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
+    //     $pay = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+    //         $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
+    //     })->groupBy('wish_item_id')
+    //         ->selectRaw('wish_item_id, sum(amount) as total_amount')
+    //         ->orderBy('total_amount', 'DESC')->take(5)->get();
+
+    //     $resp = [];
+
+    //     foreach ($pay as $p) {
+    //         $resp[] = [
+    //             'uuid' => $p->wish_item->uuid,
+    //             'title' => $p->wish_item->wishname,
+    //             'amount' => $p->total_amount,
+    //             'media' => $p->wish_item->perma_link
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'data' => $resp
+    //     ]);
+    // }
+
+    public function topPaidTask()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
-        $pay = WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
-            $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
-        })->groupBy('wish_item_id')
-            ->selectRaw('wish_item_id, sum(amount) as total_amount')
+        $pay = TaskPurchase::whereHas('task', function ($q) use ($user) {
+            $q->where('creator_id', $user->id);
+            // $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
+        })->groupBy('task_id')
+            ->selectRaw('task_id, sum(amount) as total_amount')
             ->orderBy('total_amount', 'DESC')->take(5)->get();
 
         $resp = [];
 
         foreach ($pay as $p) {
             $resp[] = [
-                'uuid' => $p->wish_item->uuid,
-                'title' => $p->wish_item->wishname,
+                'uuid' => $p->task->uuid,
+                'title' => $p->task->title,
                 'amount' => $p->total_amount,
-                'media' => $p->wish_item->perma_link
+                'media' => $p->task->media_url
             ];
         }
 
@@ -1550,31 +1740,31 @@ class LeaderBoardController extends Controller
             // Use the past 3 months instead of just current month to ensure we show data
             $threeMonthsAgo = Carbon::now()->subMonths(3);
             $currentDate = Carbon::now();
-            
+
             // This will capture data from the last 3 months instead of just current month
-            
+
             // Get wishes leaders - focus on creators who received payments for their wishes
             $wishesLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
                 ->where('is_uk', 0)
-                ->whereHas('paymentitems', function($query) use ($threeMonthsAgo, $currentDate) {
-                    $query->whereHas('payment', function($q) {
+                ->whereHas('paymentitems', function ($query) use ($threeMonthsAgo, $currentDate) {
+                    $query->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid');
                     })
-                    ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
+                        ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
                 })
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($threeMonthsAgo, $currentDate) {
                         $query->select(DB::raw("COALESCE(SUM(amount), 0)"))
-                            ->whereHas('payment', function($q) {
+                            ->whereHas('payment', function ($q) {
                                 $q->where('payment_status', 'paid');
                             })
                             ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'paymentitems as total_count' => function ($query) use ($threeMonthsAgo, $currentDate) {
-                        $query->whereHas('payment', function($q) {
-                                $q->where('payment_status', 'paid');
-                            })
+                        $query->whereHas('payment', function ($q) {
+                            $q->where('payment_status', 'paid');
+                        })
                             ->whereBetween('stripe_payment_items.created_at', [$threeMonthsAgo, $currentDate]);
                     },
                     'followers as supporters_count'
@@ -1800,7 +1990,7 @@ class LeaderBoardController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Category leaders error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'error' => 'Unable to fetch category leaders',
@@ -1826,7 +2016,7 @@ class LeaderBoardController extends Controller
             // Use the past 3 months for recent supporter activity
             $threeMonthsAgo = Carbon::now()->subMonths(3);
             $currentDate = Carbon::now();
-            
+
             $supporters = [];
 
             // Helper function to accumulate supporter data
@@ -1854,12 +2044,12 @@ class LeaderBoardController extends Controller
 
                 $supporters[$username]['total_amount'] += $amount;
                 $supporters[$username]['total_gifts']++;
-                
+
                 // Track unique support types
                 if (!in_array($type, $supporters[$username]['support_types'])) {
                     $supporters[$username]['support_types'][] = $type;
                 }
-                
+
                 // Update latest support date if more recent
                 if ($createdAt > $supporters[$username]['latest_support_date']) {
                     $supporters[$username]['latest_support_date'] = $createdAt;
@@ -1869,7 +2059,7 @@ class LeaderBoardController extends Controller
             // Wishlist Payments
             $wishes = StripePaymentItems::whereHas('payment', function ($q) use ($threeMonthsAgo, $currentDate) {
                 $q->where('payment_status', 'paid')
-                  ->whereBetween('stripe_payment_details.created_at', [$threeMonthsAgo, $currentDate]);
+                    ->whereBetween('stripe_payment_details.created_at', [$threeMonthsAgo, $currentDate]);
             })->with(['payment.user', 'wish.user'])->get();
 
             foreach ($wishes as $item) {
@@ -1973,22 +2163,22 @@ class LeaderBoardController extends Controller
             foreach ($supporters as &$supporter) {
                 $supporter['creators_supported_count'] = count($supporter['creators_supported']);
                 $supporter['support_types_count'] = count($supporter['support_types']);
-                
+
                 // VIP Score calculation:
                 // - Total amount (normalized to 0-40 points)
                 // - Number of gifts (up to 30 points)
                 // - Diversity of creators supported (up to 20 points)
                 // - Variety of support types (up to 10 points)
                 $supporter['vip_score'] = min(40, $supporter['total_amount']) +
-                                        min(30, $supporter['total_gifts'] * 2) +
-                                        min(20, $supporter['creators_supported_count'] * 4) +
-                                        min(10, $supporter['support_types_count'] * 2);
-                
+                    min(30, $supporter['total_gifts'] * 2) +
+                    min(20, $supporter['creators_supported_count'] * 4) +
+                    min(10, $supporter['support_types_count'] * 2);
+
                 // Add recency bonus (up to 10 points for recent activity)
                 $daysSinceLastSupport = Carbon::parse($supporter['latest_support_date'])->diffInDays($currentDate);
                 $recencyBonus = max(0, 10 - ($daysSinceLastSupport / 3));
                 $supporter['vip_score'] += $recencyBonus;
-                
+
                 // Clean up internal arrays
                 unset($supporter['creators_supported']);
             }
@@ -2011,10 +2201,9 @@ class LeaderBoardController extends Controller
                 'data' => $topVipSupporters,
                 'message' => 'VIP supporters retrieved successfully',
             ]);
-            
         } catch (\Exception $e) {
             Log::error('VIP Supporters error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'error' => 'Unable to fetch VIP supporters',
@@ -2046,7 +2235,7 @@ class LeaderBoardController extends Controller
             $currentYear = Carbon::now()->year;
             $currentWeekStartDate = Carbon::now()->startOfWeek();
             $currentWeekEndDate = Carbon::now()->endOfWeek();
-            
+
             // Get total active creators
             $totalCreators = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
@@ -2136,7 +2325,7 @@ class LeaderBoardController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Growth trends error: ' . $e->getMessage());
-            
+
             // Return default structure with empty data in case of error
             return response()->json([
                 'success' => false,
@@ -2163,4 +2352,4 @@ class LeaderBoardController extends Controller
             ]);
         }
     }
-    }
+}

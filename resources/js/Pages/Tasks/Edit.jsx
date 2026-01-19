@@ -124,7 +124,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                     <p className="text-red-600 text-xs mt-2">
                                                         Rejected on:{" "}
                                                         {new Date(
-                                                            task.rejected_at
+                                                            task.rejected_at,
                                                         ).toLocaleDateString()}
                                                     </p>
                                                 )}
@@ -175,7 +175,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                         onChange={(e) =>
                                             setData(
                                                 "description",
-                                                e.target.value
+                                                e.target.value,
                                             )
                                         }
                                         placeholder="Describe exactly what you will provide..."
@@ -190,7 +190,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     {/* Price */}
                                     <div className="mb-0">
                                         <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl text-green-700 z-10 pointer-events-none">
                                                 {currencySymbol}
                                             </span>
                                             <input
@@ -202,7 +202,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 onChange={(e) =>
                                                     setData(
                                                         "price",
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                             />
@@ -222,7 +222,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             onChange={(e) =>
                                                 setData(
                                                     "category",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             placeholder="Category (e.g. Shoutout, Art)"
@@ -308,7 +308,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             onChange={(e) =>
                                                 setData(
                                                     "sla_hours",
-                                                    e.target.value
+                                                    e.target.value,
                                                 )
                                             }
                                             min="1"
@@ -345,7 +345,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 onChange={(e) =>
                                                     setData(
                                                         "deliverable_note",
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                             ></textarea>
@@ -363,7 +363,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                                 <strong>
                                                                     {task.deliverable_content
                                                                         .split(
-                                                                            "/"
+                                                                            "/",
                                                                         )
                                                                         .pop()}
                                                                 </strong>
@@ -373,7 +373,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                             <a
                                                                 href={route(
                                                                     "task.download",
-                                                                    task.uuid
+                                                                    task.uuid,
                                                                 )}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
