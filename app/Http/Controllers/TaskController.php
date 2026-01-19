@@ -221,7 +221,7 @@ class TaskController extends Controller
             $task->media_url = $request->media_file['url'] ?? null;
         }
 
-        if ($task->is_approved == 2) {
+        if ($task->is_approved == 2 || $task->is_approved == 1) {
             $task->is_approved = 0;
         }
 

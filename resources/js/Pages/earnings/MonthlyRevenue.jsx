@@ -109,7 +109,8 @@ export default function MonthlyRevenue() {
             <Line type="monotone" dataKey="Bills"  stroke="var(--mint)" activeDot={{ r: 8 }} />
             <Line type="monotone" dataKey="Memberships"  stroke="var(--voilet)" />
             <Line type="monotone" dataKey="Wishes"  stroke="#bec50f" />
-            <Line type="monotone" dataKey="Subscriptions"  stroke="#000000" />
+            <Line type="monotone" dataKey="PaidTask"  stroke="#000000" />
+            {/* <Line type="monotone" dataKey="Subscriptions"  stroke="#000000" /> */}
             <Line type="monotone" dataKey="Piggy_Bank"  stroke="#82ca9d" />
           </LineChart>
         </ResponsiveContainer>

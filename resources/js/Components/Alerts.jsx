@@ -1,88 +1,65 @@
 import { toast } from "react-hot-toast";
 
 export const useAlerts = () => {
+    const clearToasts = () => {
+        toast.dismiss(); // 🔥 clears all existing toasts
+    };
 
-    /**
-     * Success Taost Alert
-     * @param {String} message Alert Message
-     * @param {String} position Position of Toast
-     * @param {Number} duration MiliSeconds
-     * @returns {void}
-     */
     const successAlert = (message, position = "top-right", duration = 4500) => {
+        clearToasts();
         toast.success(message, {
-            duration: duration,
-            position: position,
+            duration,
+            position,
         });
-        return;
-    }
+    };
 
-
-    /**
-     * Error Taost Alert
-     * @param {String} message Alert Message
-     * @param {String} position Position of Toast
-     * @param {Number} duration MiliSeconds
-     * @returns {void}
-     */
     const errorAlert = (message, position = "top-right", duration = 4500) => {
+        clearToasts();
         toast.error(message, {
-            duration: duration,
-            position: position,
+            duration,
+            position,
         });
-        return;
-    }
+    };
 
-    /**
-     * Warning Taost Alert
-     * @param {String} message Alert Message
-     * @param {String} position Position of Toast
-     * @param {Number} duration MiliSeconds
-     * @returns {void}
-     */
     const warningAlert = (message, position = "top-right", duration = 4500) => {
+        clearToasts();
         toast(message, {
-            duration: duration,
-            position: position,
-            className: "bg-yellow-800 text-white"
+            duration,
+            position,
+            className: "bg-yellow-800 text-white",
         });
-        return;
-    }
+    };
 
-    /**
-     * Info Taost Alert
-     * @param {String} message Alert Message
-     * @param {String} position Position of Toast
-     * @param {Number} duration MiliSeconds
-     * @returns {void}
-     */
     const infoAlert = (message, position = "top-right", duration = 4500) => {
+        clearToasts();
         toast(message, {
-            duration: duration,
-            position: position,
+            duration,
+            position,
         });
-        return;
-    }
-
+    };
 
     const errorsHandling = (error, position = "top-right", duration = 4500) => {
-        if(error?.response?.data?.errors){ 
-            const Error = error?.response?.data?.errors;
-            Object.keys(Error).map((key) => {
-                let err = Error[key];
-                err.map((m, i) => { 
-                    toast.error(m, {
-                        duration: duration,
-                        position: position
+        clearToasts();
+
+        if (error?.response?.data?.errors) {
+            const Error = error.response.data.errors;
+
+            Object.keys(Error).forEach((key) => {
+                Error[key].forEach((message) => {
+                    toast.error(message, {
+                        duration,
+                        position,
                     });
                 });
             });
-        } 
-        return;
-    }
+        }
+    };
 
-
-
-    return { successAlert, errorAlert, warningAlert, infoAlert, errorsHandling };
-
-}
+    return {
+        successAlert,
+        errorAlert,
+        warningAlert,
+        infoAlert,
+        errorsHandling,
+    };
+};

@@ -5,6 +5,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import { BiSolidShow } from "react-icons/bi";
+import userphoto from "../../../assets/siteicon.png";
 import { BiHide } from "react-icons/bi";
 
 const datas = [
@@ -324,7 +325,6 @@ const datas = [
     },
 ];
 
-
 export default function AddressForm({
     setHasAdded,
     isEditPopup,
@@ -384,8 +384,6 @@ export default function AddressForm({
         }
     }, [addressData]); // Runs when addressData updates
 
-    
-
     const updated = datas.sort((a, b) => a.label.localeCompare(b.label));
 
     const handleChange = (e) => {
@@ -395,7 +393,7 @@ export default function AddressForm({
     const getCountry = (e) => {
         const selectedCode = e.target.value;
         const selectedCountry = datas.find(
-            (country) => country.code === selectedCode
+            (country) => country.code === selectedCode,
         );
 
         if (selectedCountry) {
@@ -412,7 +410,7 @@ export default function AddressForm({
         try {
             const response = await axios.post(
                 "creator-store-address",
-                formData
+                formData,
             );
 
             if (response?.data?.status) {
@@ -441,15 +439,21 @@ export default function AddressForm({
     };
     const [showDetails, setShowDetails] = useState(addressData ? true : false);
 
-
     return (
         <form onSubmit={handleSubmit} className="soverflow-auto smax-h-[70vh]">
             <div className="flex flex-col items-center">
                 <div className="flex items-center">
-                    <div
+                    {/* <div
                         className={`gift-icon me-2 voilet`}
                         dangerouslySetInnerHTML={{ __html: piggy }}
-                    />
+                    /> */}
+                    <div className="{`gift-icon me-2 voilet`}">
+                        <img
+                            src={userphoto}
+                            alt=""
+                            className="h-10 w-10 object-fill rounded-full"
+                        />
+                    </div>
                     <h2 className="text-xl font-bold text-dark-500">
                         Add Your Billing Address Details
                     </h2>
@@ -461,168 +465,208 @@ export default function AddressForm({
                     {/* These details will be used to ship the gifts directly to your door. These details are kept secure and not shared with the gifter. */}
                 </p>
             </div>
-            {showDetails ?<div>
-                {/* First Name */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">First Name</label>
-                    <input
-                        onChange={handleChange}
-                        value={formData.first_name}
-                        name="first_name"
-                        placeholder="First Name"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* Last Name */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Last Name</label>
-                    <input
-                        onChange={handleChange}
-                        value={formData.last_name}
-                        name="last_name"
-                        placeholder="Last Name"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* Phone */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Phone</label>
-                    <input
-                        onChange={(e) => {
-                            if (
-                                e.target.value.length <= 10 &&
-                                /^[0-9]*$/.test(e.target.value)
-                            ) {
-                                handleChange(e);
-                            }
-                        }}
-                        value={formData.phone}
-                        name="phone"
-                        type="text"
-                        maxLength="10"
-                        placeholder="Phone"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* Address 1 */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Address 1</label>
-                    <input
-                        onChange={handleChange}
-                        value={formData.address_1}
-                        name="address_1"
-                        placeholder="Address 1"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* Address 2 */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Address 2</label>
-                    <input
-                        onChange={handleChange}
-                        value={formData.address_2}
-                        name="address_2"
-                        placeholder="Address 2"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* City */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">City</label>
-                    <input
-                        onChange={handleChange}
-                        value={formData.city}
-                        name="city"
-                        placeholder="City"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* Province Code */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Province</label>
-                    <input
-                        onChange={(e) => {
-                            if (e.target.value.length <= 3) {
-                                handleChange(e);
-                            }
-                        }}
-                        value={formData.province_code}
-                        name="province_code"
-                        placeholder="Province Code"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                {/* Country Select */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Country</label>
-                    <select
-                        onChange={getCountry}
-                        name="country_code"
-                        value={formData.country_code}
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    >
-                        <option value="" disabled>
-                            Choose
-                        </option>
-                        {updated.map((c, i) => (
-                            <option key={`country-${i}`} value={c.code}>
-                                {c.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Postal Code */}
-                <div className="flex items-center mb-3">
-                    <label className="w-28 text-grey-500">Postal Code</label>
-                    <input
-                        onChange={handleChange}
-                        type="number"
-                        value={formData.postal_code}
-                        name="postal_code"
-                        placeholder="Postal Code"
-                        className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
-                        required
-                    />
-                </div>
-
-                <LoaderButton type="submit" disabled={loading} className="button p mt-2 "
-                    spinnerClassName="fill-red-600" >
-                    {loading && isEditPopup
-                        ? "Updating..."
-                        : loading && !isEditPopup
-                        ? "Adding..."
-                        : isEditPopup
-                        ? "Update Address"
-                        : "Add Details"}
-                </LoaderButton>
-            </div> 
-            :
-            <div className="showHideDetailsCol flex justify-center my-4">
+            {showDetails ? (
                 <div>
-                    <div className="h-[50px] w-[50px] flex items-center justify-center rounded-full bluebg text-white  m-auto"><BiHide size={'1.6rem'} /></div>
-                    <h2 className="text-center text-xl font-bold mt-2">Your Details are hidden</h2>
-                    <p className="text-gray-500 text-center mt-2">Your address is hidden to keep you safe.</p>
-                    <p className="text-gray-500 text-center mt-1">Please do not this information on stream or while you are record.</p>
-                    <button  className="cursor-pointer m-auto flex items-center pinkbg text-white p-2 rounded-xl px-3 my-3" onClick={() => setShowDetails(!showDetails)} > {showDetails  ? <> <BiHide size={'1.6rem'} className="me-1" /> Hide Details</> : <> <BiSolidShow className="me-1" size={'1.6rem'} /> Show Details</> } </button>
+                    {/* First Name */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">First Name</label>
+                        <input
+                            onChange={handleChange}
+                            value={formData.first_name}
+                            name="first_name"
+                            placeholder="First Name"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* Last Name */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">Last Name</label>
+                        <input
+                            onChange={handleChange}
+                            value={formData.last_name}
+                            name="last_name"
+                            placeholder="Last Name"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* Phone */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">Phone</label>
+                        <input
+                            onChange={(e) => {
+                                if (
+                                    e.target.value.length <= 10 &&
+                                    /^[0-9]*$/.test(e.target.value)
+                                ) {
+                                    handleChange(e);
+                                }
+                            }}
+                            value={formData.phone}
+                            name="phone"
+                            type="text"
+                            maxLength="10"
+                            placeholder="Phone"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* Address 1 */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">Address 1</label>
+                        <input
+                            onChange={handleChange}
+                            value={formData.address_1}
+                            name="address_1"
+                            placeholder="Address 1"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* Address 2 */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">Address 2</label>
+                        <input
+                            onChange={handleChange}
+                            value={formData.address_2}
+                            name="address_2"
+                            placeholder="Address 2"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* City */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">City</label>
+                        <input
+                            onChange={handleChange}
+                            value={formData.city}
+                            name="city"
+                            placeholder="City"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* Province Code */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">Province</label>
+                        <input
+                            onChange={(e) => {
+                                if (e.target.value.length <= 3) {
+                                    handleChange(e);
+                                }
+                            }}
+                            value={formData.province_code}
+                            name="province_code"
+                            placeholder="Province Code"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    {/* Country Select */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">Country</label>
+                        <select
+                            onChange={getCountry}
+                            name="country_code"
+                            value={formData.country_code}
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        >
+                            <option value="" disabled>
+                                Choose
+                            </option>
+                            {updated.map((c, i) => (
+                                <option key={`country-${i}`} value={c.code}>
+                                    {c.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Postal Code */}
+                    <div className="flex items-center mb-3">
+                        <label className="w-28 text-grey-500">
+                            Postal Code
+                        </label>
+                        <input
+                            onChange={handleChange}
+                            type="number"
+                            value={formData.postal_code}
+                            name="postal_code"
+                            placeholder="Postal Code"
+                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            required
+                        />
+                    </div>
+
+                    <LoaderButton
+                        type="submit"
+                        disabled={loading}
+                        className="button p mt-2 "
+                        spinnerClassName="fill-red-600"
+                    >
+                        {loading && isEditPopup
+                            ? "Updating..."
+                            : loading && !isEditPopup
+                              ? "Adding..."
+                              : isEditPopup
+                                ? "Update Address"
+                                : "Add Details"}
+                    </LoaderButton>
                 </div>
-            </div>
-            }
+            ) : (
+                <div className="showHideDetailsCol flex justify-center my-4">
+                    <div>
+                        <div className="h-[50px] w-[50px] flex items-center justify-center rounded-full bluebg text-white  m-auto">
+                            <BiHide size={"1.6rem"} />
+                        </div>
+                        <h2 className="text-center text-xl font-bold mt-2">
+                            Your Details are hidden
+                        </h2>
+                        <p className="text-gray-500 text-center mt-2">
+                            Your address is hidden to keep you safe.
+                        </p>
+                        <p className="text-gray-500 text-center mt-1">
+                            Please do not this information on stream or while
+                            you are record.
+                        </p>
+                        <button
+                            className="cursor-pointer m-auto flex items-center pinkbg text-white p-2 rounded-xl px-3 my-3"
+                            onClick={() => setShowDetails(!showDetails)}
+                        >
+                            {" "}
+                            {showDetails ? (
+                                <>
+                                    {" "}
+                                    <BiHide
+                                        size={"1.6rem"}
+                                        className="me-1"
+                                    />{" "}
+                                    Hide Details
+                                </>
+                            ) : (
+                                <>
+                                    {" "}
+                                    <BiSolidShow
+                                        className="me-1"
+                                        size={"1.6rem"}
+                                    />{" "}
+                                    Show Details
+                                </>
+                            )}{" "}
+                        </button>
+                    </div>
+                </div>
+            )}
         </form>
     );
 }

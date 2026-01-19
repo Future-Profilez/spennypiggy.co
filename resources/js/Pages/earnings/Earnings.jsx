@@ -59,7 +59,7 @@ export default function Earnings(props) {
       </div>
     </header>
     <h2 className="mt-2 text-xs md:text-base tracking-tight uppercase font-bold text-stone-900">{data.title}</h2>
-    <p className="mt-1 text-lg md:text-3xl font-bold tracking-tight text-stone-900">{formatMultiPrice((data && data.amount), (auth && auth.user && auth.user.currency || 'gbp'))} </p>
+    <p className="mt-1 text-lg md:text-3xl font-bold tracking-tight text-stone-900">{formatMultiPrice((data && data.amount), (auth && auth.user && auth.user.default_currency || 'gbp'))} </p>
   </article>
   }
 
