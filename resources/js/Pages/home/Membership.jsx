@@ -134,7 +134,7 @@ export default function Membership() {
                   }}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative z-10 transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 drop-shadow-lg">
+                <div className="relative z-1 transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 drop-shadow-lg">
                   <item.icon size={60} color={item.color} />
                 </div>
               </div>
