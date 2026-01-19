@@ -1,6 +1,7 @@
 import { TimeFormat } from '@/includes/TimeFormat'
 import { useState } from "react";
 import AddComment from './AddComment';
+import userphoto from "../../../assets/siteicon.png";
 export default function Comment({c, update, updateComments}) {
 
   const [handleReply, sethandleReply] = useState(false);
@@ -15,7 +16,7 @@ export default function Comment({c, update, updateComments}) {
         <div className="w-full h-auto flex flex-col space-y-2">
           <div className="flex items-center space-x-2">
             <div className="flex flex-shrink-0 self-start cursor-pointer">
-              <img src={item.user?.avatar_url || ''} alt="" className="h-10 w-10 object-fill rounded-full" />
+              <img src={item.user?.avatar_url || userphoto} alt="" className="h-10 w-10 object-fill rounded-full" />
             </div>
             <div className="flex items-center justify-center space-x-2">
               <div className="block">
@@ -54,7 +55,7 @@ export default function Comment({c, update, updateComments}) {
 
         <div className="flex items-center space-x-2 w-full">
           <div className="flex flex-shrink-0 self-start cursor-pointer">
-            <img src={c?.user?.avatar_url || ''} alt="" className="h-10 w-10 object-fill rounded-full" />
+            <img src={c?.user?.avatar_url || userphoto} alt="" className="h-10 w-10 object-fill rounded-full" />
           </div>
 
           <div className="items-center w-full ">
