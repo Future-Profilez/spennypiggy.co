@@ -184,7 +184,7 @@ createInertiaApp({
         root.render(
             <React.StrictMode>
                 <Provider store={store}>
-                    <Suspense fallback={<>Loading...</>}>
+                    <Suspense fallback={null}>
                         <App {...props} />
                     </Suspense>
                 </Provider>

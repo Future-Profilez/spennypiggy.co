@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas';
 import { renderSupportCard, truncateName, formatCurrency } from './SocialImageTemplates.js';
 
 /**
@@ -85,6 +84,9 @@ export async function generateSupportSocialImage(payload) {
 
         console.log('🖼️ Converting HTML to canvas...');
         
+        // Dynamic import to avoid SSR issues
+        const html2canvas = (await import('html2canvas')).default;
+
         // Convert to canvas using html2canvas
         const canvas = await html2canvas(card, {
             useCORS: true,

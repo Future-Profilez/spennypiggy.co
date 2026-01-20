@@ -7,14 +7,24 @@ export default function Index() {
     <>
       <Head title="Creators — Keep 100%. We Protect Your Payouts.">
         <link rel="canonical" href="/creators" />
+        <meta name="description" content="All-in-one monetisation tools for creators. Keep 100% with fast payouts, dispute protection and Stripe-aligned safety." />
+        <meta property="og:title" content="Creators — Keep 100%. We Protect Your Payouts." />
+        <meta property="og:description" content="All-in-one monetisation tools for creators. Keep 100% with fast payouts, dispute protection and Stripe-aligned safety." />
+        <meta property="og:image" content="/siteicon.png" />
+        <meta property="og:url" content="https://spennypiggy.co/creators" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Creators — Keep 100%. We Protect Your Payouts." />
+        <meta name="twitter:description" content="All-in-one monetisation tools for creators. Keep 100% with fast payouts, dispute protection and Stripe-aligned safety." />
+        <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9]  font-sans text-gray-900 pb-20 relative  ">
           <div className='containerbox max-auto'>
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-0 left-10 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float"></div>
-                <div className="absolute top-20 right-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float-delayed" style={{animationDelay: '1s'}}></div>
-                <div className="absolute top-[400px] left-1/3 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-pulse" style={{animationDelay: '2s'}}></div>
+                <div className="absolute top-20 right-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float-delayed" style={{animationDelay: '2s'}}></div>
+                <div className="absolute top-[400px] left-1/3 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 floating-shape animate-pulse" style={{animationDelay: '5s', animationDuration: '5s'}}></div>
             </div>
             <div className="relative z-1">
               <div className=" pt-12 pb-16 md:pt-24 md:pb-24">

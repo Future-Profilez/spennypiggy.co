@@ -1,15 +1,15 @@
 import { Link, Head } from "@inertiajs/react";
-import { useEffect, lazy } from "react";
+import { useEffect } from "react";
 import Hero from './home/Hero';
 import Guest from '@/Layouts/GuestLayout';
 import ComingNext from "./home/ComingNext";
 import LiveBarSection from "./home/LiveBarSection";
 import ForCreators from "./home/ForCreators";
-const LiveBar = lazy(() => import('@/includes/LiveBar'));
-const FunPart = lazy(() => import('./home/FunPart'));
-const WhyLove = lazy(() => import('./home/WhyLove'));
-const HappyCreators = lazy(() => import('./home/HappyCreators'));
-const JoinUs = lazy(() => import('@/Components/JoinUs'));
+import LiveBar from '@/includes/LiveBar';
+import FunPart from './home/FunPart';
+import WhyLove from './home/WhyLove';
+import HappyCreators from './home/HappyCreators';
+import JoinUs from '@/Components/JoinUs';
 import seek from "../../assets/img/seeksearch.png";
 import fill from "../../assets/img/fillbank.png";
 import fun1 from "../../assets/new/Fun1.png";
@@ -57,6 +57,19 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
     console.log("Sentry enabled in ENV:", appEnv);
 
     return <>
+        <Head title="Spenny Piggy — Exclusive Content, Memberships & More!">
+            <link rel="canonical" href="/" />
+            <meta name="description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
+            <meta property="og:title" content="Spenny Piggy — Exclusive Content, Memberships & More!" />
+            <meta property="og:description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
+            <meta property="og:image" content="/siteicon.png" />
+            <meta property="og:url" content="https://spennypiggy.co/" />
+            <meta property="og:type" content="website" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content="Spenny Piggy — Exclusive Content, Memberships & More!" />
+            <meta name="twitter:description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
+            <meta name="twitter:image" content="/siteicon.png" />
+        </Head>
         <Guest auth={auth.user} user={auth.user}>
         <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
         <Hero auth={auth} />

@@ -7,7 +7,6 @@ import { useForm, usePage } from '@inertiajs/react';
 import { useAlerts } from '@/Components/Alerts';
 import UpdateAvatar from './UpdateAvatar';
 import LoaderButton from '@/Components/LoaderButton';
-import html2canvas from 'html2canvas';
 import { useEffect } from 'react';
 import spennypiggy from "../../../assets/img/logo.png";
 import socialbg from "../../../assets/social-bg.png";
@@ -104,6 +103,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         }));
         
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const html2canvas = (await import('html2canvas')).default;
+
         const canvas = await html2canvas(card, {
         useCORS: true,
         scale: 2,

@@ -5,8 +5,18 @@ import { Check, ArrowRight, Gavel, ShieldCheck, Clock, FileCheck, Lock } from 'l
 export default function Disputes() {
   return (
     <>
-      <Head title="Disputes Are Managed by the Platform.">
+      <Head title="Disputes — Platform-Managed Protection, Creators Never Debited">
         <link rel="canonical" href="/creators/disputes" />
+        <meta name="description" content="Disputes are handled by the platform with delivery receipts and activity logs. Creators are never debited." />
+        <meta property="og:title" content="Disputes — Platform-Managed Protection, Creators Never Debited" />
+        <meta property="og:description" content="Disputes are handled by the platform with delivery receipts and activity logs. Creators are never debited." />
+        <meta property="og:image" content="/siteicon.png" />
+        <meta property="og:url" content="https://spennypiggy.co/creators/disputes" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Disputes — Platform-Managed Protection, Creators Never Debited" />
+        <meta name="twitter:description" content="Disputes are handled by the platform with delivery receipts and activity logs. Creators are never debited." />
+        <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9] min-h-screen font-sans text-gray-900 pb-20 flex flex-col items-center justify-center relative overflow-hidden">

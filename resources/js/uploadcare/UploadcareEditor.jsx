@@ -1,20 +1,27 @@
 import { useEffect } from "react";
-import * as LR from 'https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js';
 
 export default function UploadcareEditor({uuid, updateFile, setIsEditable, height, ctxName = "my-editor"}){
 
   useEffect(() => {
-    LR.registerBlocks(LR);
-    const callback = (text) => (event) => {
-      updateFile && updateFile(event.detail, uuid);
-      setIsEditable && setIsEditable(false);
-    };
-    const instance = document.querySelector(`#${ctxName}`);
-    instance && instance.addEventListener('apply', callback('Apply'));
-    instance && instance.addEventListener('cancel', callback('Cancel'));
+    async function loadEditor() {
+      if (typeof window === 'undefined') return;
+      const LR = await import('https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js');
+      LR.registerBlocks(LR);
+      const callback = (text) => (event) => {
+        updateFile && updateFile(event.detail, uuid);
+        setIsEditable && setIsEditable(false);
+      };
+      const instance = document.querySelector(`#${ctxName}`);
+      instance && instance.addEventListener('apply', callback('Apply'));
+      instance && instance.addEventListener('cancel', callback('Cancel'));
+      return () => {
+        instance && instance.removeEventListener('apply', callback('Apply'));
+        instance && instance.removeEventListener('cancel', callback('Cancel'));
+      };
+    }
+    const cleanupPromise = loadEditor();
     return () => {
-      instance && instance.removeEventListener('apply', callback('Apply'));
-      instance && instance.removeEventListener('cancel', callback('Cancel'));
+      cleanupPromise.then((cleanup) => typeof cleanup === 'function' && cleanup()).catch(() => {});
     };
   }, [uuid, ctxName]);
 

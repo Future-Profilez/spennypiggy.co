@@ -5,8 +5,18 @@ import { Check, ArrowRight, Layers, Shield, Zap, Gift, ListChecks, FileText, Vid
 export default function Features() {
   return (
     <>
-      <Head title="Everything You Need to Monetise — In One Platform.">
+      <Head title="Features — Monetise With Gifting, Tasks, Bills & Memberships">
         <link rel="canonical" href="/creators/features" />
+        <meta name="description" content="Everything you need to monetise: wishlist gifting, paid tasks, bills, memberships, intros and leaderboards — designed for repeat spending." />
+        <meta property="og:title" content="Features — Monetise With Gifting, Tasks, Bills & Memberships" />
+        <meta property="og:description" content="Everything you need to monetise: wishlist gifting, paid tasks, bills, memberships, intros and leaderboards — designed for repeat spending." />
+        <meta property="og:image" content="/siteicon.png" />
+        <meta property="og:url" content="https://spennypiggy.co/creators/features" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Features — Monetise With Gifting, Tasks, Bills & Memberships" />
+        <meta name="twitter:description" content="Everything you need to monetise: wishlist gifting, paid tasks, bills, memberships, intros and leaderboards — designed for repeat spending." />
+        <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9] min-h-screen font-sans text-gray-900 pb-12 md:pb-20 relative overflow-hidden">

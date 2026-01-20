@@ -2,12 +2,17 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 // import { visualizer } from 'rollup-plugin-visualizer';
 
-export default defineConfig({
+export default defineConfig((env) => {
+    console.log('Config Env:', env);
+    const ssrBuild = env.ssrBuild || process.argv.includes('--ssr');
+    return {
     plugins: [
         laravel({
             input: 'resources/js/app.jsx',
+            ssr: 'resources/js/ssr-marketing.jsx',
             refresh: true,
         }), 
         react(),
@@ -26,17 +31,15 @@ export default defineConfig({
 
     build: {
         sourcemap: false,
-        // Simplified chunk splitting to avoid bundling issues
         rollupOptions: {
-            output: {
+            output: ssrBuild ? {
+                entryFileNames: '[name].js',
+            } : {
                 manualChunks: {
-                    // Keep vendors separate for better caching
                     'vendor-react': ['react', 'react-dom'],
                     'vendor-inertia': ['@inertiajs/react'],
                     'vendor-other': ['axios', 'react-bootstrap']
                 },
-                
-                // Optimize chunk naming for better caching
                 chunkFileNames: 'js/[name]-[hash].js',
                 entryFileNames: 'js/[name]-[hash].js',
                 assetFileNames: (assetInfo) => {
@@ -50,11 +53,12 @@ export default defineConfig({
                 }
             }
         },
-        
-        // Performance optimizations
         target: 'es2020',
-        minify: 'esbuild', // Use esbuild instead of terser for better compatibility
+        minify: 'esbuild',
         chunkSizeWarningLimit: 1000,
+    },
+    ssr: {
+        noExternal: true
     },
     
     // Optimize dev server
@@ -73,6 +77,9 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': '/resources/js',
+            ...(ssrBuild ? { 
+                '^html2canvas$': path.resolve(process.cwd(), 'resources/js/ssr-html2canvas-mock.js') 
+            } : {}),
         },
     },
     
@@ -84,5 +91,6 @@ export default defineConfig({
             '@inertiajs/react',
             'axios'
         ]
+    }
     }
 });

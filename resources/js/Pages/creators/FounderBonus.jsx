@@ -5,8 +5,18 @@ import { ArrowRight, Star, Award, AlertCircle, Clock } from 'lucide-react';
 export default function FounderBonus() {
   return (
     <>
-      <Head title="Founder Bonuses for Early Creators.">
+      <Head title="Founder Bonuses — Rewards for Early Creators">
         <link rel="canonical" href="/creators/founder-bonus" />
+        <meta name="description" content="Exclusive founder bonuses reward early creators based on platform activity with priority perks and access to new tools." />
+        <meta property="og:title" content="Founder Bonuses — Rewards for Early Creators" />
+        <meta property="og:description" content="Exclusive founder bonuses reward early creators based on platform activity with priority perks and access to new tools." />
+        <meta property="og:image" content="/siteicon.png" />
+        <meta property="og:url" content="https://spennypiggy.co/creators/founder-bonus" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Founder Bonuses — Rewards for Early Creators" />
+        <meta name="twitter:description" content="Exclusive founder bonuses reward early creators based on platform activity with priority perks and access to new tools." />
+        <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9] min-h-screen font-sans text-gray-900 pb-12 md:pb-20 relative overflow-hidden"> 

@@ -5,8 +5,18 @@ import { Check, ArrowRight, AlertTriangle, ShieldCheck, Lock } from 'lucide-reac
 export default function StripeSafe() {
   return (
     <>
-      <Head title="Built for Reliable Payouts — Not Sudden Shutdowns.">
+      <Head title="Stripe Safe — Avoid Freezes, Shutdowns & Clawbacks">
         <link rel="canonical" href="/creators/stripe-safe" />
+        <meta name="description" content="Built to align with Stripe expectations: clear usage, linked payments and dispute protection to keep your account safe." />
+        <meta property="og:title" content="Stripe Safe — Avoid Freezes, Shutdowns & Clawbacks" />
+        <meta property="og:description" content="Built to align with Stripe expectations: clear usage, linked payments and dispute protection to keep your account safe." />
+        <meta property="og:image" content="/siteicon.png" />
+        <meta property="og:url" content="https://spennypiggy.co/creators/stripe-safe" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Stripe Safe — Avoid Freezes, Shutdowns & Clawbacks" />
+        <meta name="twitter:description" content="Built to align with Stripe expectations: clear usage, linked payments and dispute protection to keep your account safe." />
+        <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9] min-h-screen font-sans text-gray-900 pb-12 md:pb-20 relative overflow-hidden">

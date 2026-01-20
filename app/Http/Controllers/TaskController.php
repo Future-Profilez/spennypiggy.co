@@ -803,7 +803,7 @@ class TaskController extends Controller
             $purchase->reviewed_at = now();
 
             if ($wasDispute) {
-                $purchase->dispute_status = 'resolved';
+                $purchase->dispute_status = 'won';
             }
 
             $purchase->save();
@@ -819,7 +819,7 @@ class TaskController extends Controller
 
                     if ($wasDispute) {
                         $metadata['dispute_resolution'] = 'supporter_accepted';
-                        $metadata['dispute_status'] = 'resolved';
+                        $metadata['dispute_status'] = 'won';
                     }
 
                     app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, $metadata);

@@ -5,8 +5,18 @@ import { Check, ArrowRight, DollarSign, ShieldCheck } from 'lucide-react';
 export default function Keep100() {
   return (
     <>
-      <Head title="You Keep 100% of What You Earn.">
+      <Head title="Keep 100% — Creators Keep All Their Earnings">
         <link rel="canonical" href="/creators/keep-100" />
+        <meta name="description" content="No revenue cuts. Supporters pay the platform fee. Fast payouts with full dispute protection." />
+        <meta property="og:title" content="Keep 100% — Creators Keep All Their Earnings" />
+        <meta property="og:description" content="No revenue cuts. Supporters pay the platform fee. Fast payouts with full dispute protection." />
+        <meta property="og:image" content="/siteicon.png" />
+        <meta property="og:url" content="https://spennypiggy.co/creators/keep-100" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Keep 100% — Creators Keep All Their Earnings" />
+        <meta name="twitter:description" content="No revenue cuts. Supporters pay the platform fee. Fast payouts with full dispute protection." />
+        <meta name="twitter:image" content="/siteicon.png" />
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9] min-h-screen font-sans text-gray-900 pb-12 md:pb-20 relative ">

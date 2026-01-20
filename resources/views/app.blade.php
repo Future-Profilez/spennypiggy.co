@@ -219,7 +219,11 @@
 </head>
 
 <body class="font-sans antialiased">
-    <!-- Initial loading screen for PWA -->
+    @php
+        $isMarketingRoute = request()->is('/') || request()->is('creators') || request()->is('creators/*');
+    @endphp
+    @unless($isMarketingRoute)
+    <!-- Initial loading screen for PWA (excluded on marketing pages) -->
     <div id="initial-loading-screen" style="
         position: fixed;
         top: 0;
@@ -235,24 +239,18 @@
         opacity: 1;
         transition: opacity 0.5s ease-out;
     ">
-        <div style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            animation: fadeInUp 0.8s ease-out;
-        ">
+        <div style="display: flex; flex-direction: column; align-items: center; animation: fadeInUp 0.8s ease-out;">
             <img 
                 src="{{ URL::asset('/siteicon.png') }}" 
                 alt="Spenny Piggy Logo" 
                 style="
-                    width: 120px;
-                    height: 120px;
-                    border-radius: 20px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-                    margin-bottom: 24px;
-                    animation: pulse 2s ease-in-out infinite;
-                "
-            />
+                    width: 120px; 
+                    height: 120px; 
+                    border-radius: 20px; 
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
+                    margin-bottom: 24px; 
+                    animation: pulse 2s ease-in-out infinite; 
+            "/>
             <h1 style="
                 font-family: 'Anton', sans-serif;
                 font-size: 28px;
@@ -334,10 +332,11 @@
                    document.referrer.includes('android-app://');
         }
 
-        if (isPWA()) {
+        if (!@json($isMarketingRoute) && isPWA()) {
             document.getElementById('initial-loading-screen').style.display = 'flex';
         }
     </script>
+    @endunless
     <script nonce="{{ $cspNonce ?? '' }}" type="speculationrules">
     {
     "prerender": [{ "source": "document", "eagerness": "moderate" }]
