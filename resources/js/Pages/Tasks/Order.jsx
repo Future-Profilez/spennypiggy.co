@@ -3,6 +3,7 @@ import { Head, useForm, Link } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import GlobalUploader from "@/uploadcare/Uploader";
 import PriceFormat from "@/includes/PriceFormat";
+import userphoto from "../../../assets/siteicon.png";
 
 const Countdown = ({ createdAt, hours, targetDate, onExpire }) => {
     // Determine target date: either passed directly or calculated
@@ -193,7 +194,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                         <div className='flex'>
                             <Link href={route('user.show', purchase.creator.username)} className="flex items-center gap-4 group">
                                 <img 
-                                    src={purchase.creator.avatar_url || purchase.creator.avatar} 
+                                    src={purchase.creator.avatar_url || purchase.creator.avatar || userphoto} 
                                     alt={purchase.creator.name} 
                                     className="w-14 h-14 rounded-full border-2 border-black object-cover"
                                 />

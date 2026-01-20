@@ -4,6 +4,7 @@ import Guest from '@/Layouts/GuestLayout';
 import PriceFormat from "@/includes/PriceFormat";
 import Turnstile from "@/Components/Turnstile";
 import toast from "react-hot-toast";
+import userphoto from "../../../assets/siteicon.png";
 
 export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol }) {
     const { turnstileSiteKey } = usePage().props;
@@ -125,7 +126,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                 <div className='flex'>
                                     <Link href={route('user.show', task.creator.username)} className="flex items-center gap-4 group">
                                         <img 
-                                            src={task.creator.avatar_url} 
+                                            src={task.creator.avatar_url || userphoto} 
                                             alt={task.creator.name} 
                                             className="w-14 h-14 rounded-full border-2 border-black object-cover"
                                         />
