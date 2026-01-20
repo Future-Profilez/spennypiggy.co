@@ -217,7 +217,8 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
 
                             {purchase.status === 'refunded' ? 
                             <div>
-                                <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been automatically refunded because it was not accepted by the supporter or fulfilled within the defined SLA period.</p>
+                                <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been refunded.</p>
+                                {/* <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been refunded automatically because it was not accepted by the supporter or fulfilled within the defined SLA period.</p> */}
                             </div>
                             : null} 
 
