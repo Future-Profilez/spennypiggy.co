@@ -52,7 +52,6 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             <Head title={task.title} />
             <div className="bg-white px-3 py-3 min-h-screen">
                 <div className="max-w-3xl mx-auto">
-                    {/* Back Button */}
                     <Link href={route('task.dashboard')} className="inline-block mb-6 mt-6 text-black font-bold uppercase tracking-wide hover:text-pink-500 transition-colors">
                         &larr; Back to Dashboard
                     </Link>
@@ -124,7 +123,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             <div className="items-center gap-4 ">
                                 <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Created By</p>
                                 <div className='flex'>
-                                    <Link href={route('user.show', task.creator.username)} className="flex items-center gap-4 group">
+                                    <Link href={`/${task.creator.username}/tasks`} className="flex items-center gap-3 group">
                                         <img 
                                             src={task.creator.avatar_url || userphoto} 
                                             alt={task.creator.name} 

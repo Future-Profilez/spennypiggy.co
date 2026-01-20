@@ -118,7 +118,7 @@ export default function Header({ classMagicword }) {
                                 className="d-none d-md-block ms-3"
                                 href={"/giftstore"}
                             >
-                                <span className="flex items-center text-xl uppercase text-white font-gulfs">
+                                <span className="flex items-center text-xl !font-light tracking-wider uppercase text-white font-gulfs">
                                     Gift Store
                                 </span>
                             </Link>

@@ -33,8 +33,7 @@ class StripeMetadataService
         bool $skipDeliveryFields = false
     ): bool {
         try {
-            // Initialize Stripe with secret key
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
             
             // Build metadata array with new flattened format
             $metadata = [
@@ -121,27 +120,81 @@ class StripeMetadataService
             return false;
         }
 
-        // Check if this is a support payment with certificate
+        if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
+            try {
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+                $pi = \Stripe\PaymentIntent::retrieve(
+                    $deliverable->payment_intent_id,
+                    ['expand' => ['latest_charge']]
+                );
+                $chargeId = is_object($pi->latest_charge)
+                    ? ($pi->latest_charge->id ?? null)
+                    : ($pi->latest_charge ?? null);
+
+                if (!$chargeId) {
+                    try {
+                        $charges = \Stripe\Charge::all(['payment_intent' => $deliverable->payment_intent_id, 'limit' => 1]);
+                        if (!empty($charges->data)) {
+                            $chargeId = $charges->data[0]->id;
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('StripeMetadataService: Fallback charge lookup failed', [
+                            'payment_intent_id' => $deliverable->payment_intent_id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                    if (!$chargeId) {
+                        Log::warning('StripeMetadataService: No latest charge found for task deliverable', [
+                            'payment_intent_id' => $deliverable->payment_intent_id
+                        ]);
+                        return false;
+                    }
+                }
+
+                $newFormatMetadata = $this->buildNewFlattenedMetadata($deliverable);
+                $productSpecificMetadata = $this->buildProductSpecificMetadata($deliverable);
+
+                $metadata = array_merge(
+                    [
+                        'updated_at' => now()->toISOString(),
+                    ],
+                    $newFormatMetadata,
+                    $productSpecificMetadata,
+                    $additionalMetadata
+                );
+
+                unset(
+                    $metadata['buyer_id'],
+                    $metadata['creator_id'],
+                    $metadata['observer_created_event'],
+                    $metadata['platform'],
+                    $metadata['task_id'],
+                    $metadata['task_uuid']
+                );
+
+                \Stripe\Charge::update($chargeId, ['metadata' => $metadata]);
+
+                Log::info('StripeMetadataService: Updated latest charge metadata for task deliverable', [
+                    'charge_id' => $chargeId,
+                    'payment_intent_id' => $deliverable->payment_intent_id
+                ]);
+                return true;
+            } catch (\Exception $e) {
+                Log::error('StripeMetadataService: Failed to update latest charge metadata for task deliverable', [
+                    'payment_intent_id' => $deliverable->payment_intent_id,
+                    'error' => $e->getMessage()
+                ]);
+                return false;
+            }
+        }
+
         $isSupportPaymentWithCert = $this->isSupportPaymentWithCertificate($deliverable);
-        
-        // For support payments: include cert fields if certificate exists, otherwise exclude
-        // For tasks: always skip delivery fields (certificate, delivery url, etc) to keep metadata clean
         $skipDeliveryFields = ($deliverable->product_type === 'support_payment' && !$isSupportPaymentWithCert)
                             || in_array($deliverable->product_type, ['task', 'task_purchase']);
-        
-        // Determine delivery status 
         $deliveryStatus = $skipDeliveryFields ? 'pending' : $this->mapDeliverableStatusToDeliveryStatus($deliverable->status);
-        
-        // Build NEW FLATTENED metadata format
         $newFormatMetadata = $this->buildNewFlattenedMetadata($deliverable);
-
-        // Build Product Specific Metadata (Task details, etc.)
         $productSpecificMetadata = $this->buildProductSpecificMetadata($deliverable);
-        
-        // Merge all metadata: New Format + Product Specific + Additional
         $allAdditionalMetadata = array_merge($newFormatMetadata, $productSpecificMetadata, $additionalMetadata);
-        
-        // Add special logging for support payments with certificates
         if ($isSupportPaymentWithCert) {
             Log::info('StripeMetadataService: Support payment metadata + cert URL', [
                 'deliverable_id' => $deliverable->id,
@@ -149,7 +202,6 @@ class StripeMetadataService
                 'payment_intent_id' => $deliverable->payment_intent_id
             ]);
         }
-        
         return $this->updatePaymentIntentMetadata(
             $deliverable->payment_intent_id,
             $skipDeliveryFields ? null : $deliverable->certificate_url,
@@ -186,11 +238,17 @@ class StripeMetadataService
             'delivered' => 'completed',
             'completed_accepted' => 'completed',
             'completed' => 'completed',
+            'paid_out' => 'completed',
+            'initiated' => 'pending',
             'pending' => 'pending',
+            'paid' => 'pending',
             'assigned' => 'pending',
             'pending_review' => 'pending',
             'rejected_once' => 'pending',
-            'escalated' => 'pending',
+            'running_late' => 'overdue',
+            'escalated' => 'escalated',
+            'expired' => 'failed',
+            'sla_missed' => 'failed',
             'failed' => 'failed',
             'refunded' => 'cancelled',
             'cancelled' => 'cancelled',
@@ -208,10 +266,14 @@ class StripeMetadataService
     {
         $metadata = [
             'product_type' => $deliverable->product_type,
-            'deliverable_type' => $deliverable->deliverable_type,
             'transaction_amount' => (string) $deliverable->transaction_amount,
             'payment_currency' => $deliverable->payment_currency ?? 'GBP'
         ];
+        
+        // Only add deliverable_type if it's NOT a task (to keep metadata clean as per request)
+        if (!in_array($deliverable->product_type, ['task', 'task_purchase'])) {
+            $metadata['deliverable_type'] = $deliverable->deliverable_type;
+        }
         
         // Add product-specific details based on product type
         switch ($deliverable->product_type) {
@@ -245,20 +307,15 @@ class StripeMetadataService
             case 'task_purchase':
                 if ($deliverable->task) {
                     $task = $deliverable->task;
-                    $metadata['task_id'] = $task->id;
-                    $metadata['task_uuid'] = $task->uuid;
                     $metadata['task_type'] = $task->type;
                     $metadata['purpose'] = 'paid_task';
                     $metadata['sla_timeline'] = $task->type === 'timed' ? ($task->sla_hours . ' hours') : 'instant';
-                    $metadata['payment_date'] = $deliverable->created_at ? $deliverable->created_at->toIso8601String() : now()->toIso8601String();
-                    
-                    // Order status - Prefer granular purchase status if available
-                    if ($deliverable->purchase) {
-                        $metadata['current_status_of_order'] = $deliverable->purchase->status;
-                    } else {
-                        $metadata['current_status_of_order'] = $deliverable->status;
-                    }
-                    
+                    $metadata['payment_date'] = $deliverable->created_at
+                        ? $deliverable->created_at->toIso8601String()
+                        : now()->toIso8601String();
+                    $orderStatus = $deliverable->purchase ? $deliverable->purchase->status : $deliverable->status;
+                    $metadata['current_status_of_order'] = $orderStatus;
+                    $metadata['delivery_status'] = $this->mapDeliverableStatusToDeliveryStatus($orderStatus);
                     $metadata['payment_status'] = $deliverable->payment_status ?? 'pending';
                 }
                 break;
@@ -507,11 +564,16 @@ class StripeMetadataService
 
                 $metadata['payment_date'] = $deliverable->created_at ? $deliverable->created_at->toIso8601String() : now()->toIso8601String();
                 
-                // Unset generic fields we don't want for tasks (cleanup)
+                $orderStatus = $metadata['current_status_of_order'] ?? $deliverable->status;
+                $metadata['current_status_of_order'] = $orderStatus;
+                $metadata['delivery_status'] = $this->mapDeliverableStatusToDeliveryStatus($orderStatus);
+
                 unset($metadata['creator_username']);
                 unset($metadata['buyer_username']);
                 unset($metadata['task_id']);
                 unset($metadata['task_uuid']);
+                unset($metadata['buyer_id']);
+                unset($metadata['creator_id']);
                 break;
         }
     }

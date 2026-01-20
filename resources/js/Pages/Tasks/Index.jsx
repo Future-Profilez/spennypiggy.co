@@ -109,7 +109,6 @@ export default function Index({
         return colorMap[status] || "bg-gray-100 text-gray-800 border-gray-200";
     };
 
-    // Function to get creator note based on task status
     const getCreatorNote = (task) => {
         const status = getTaskStatus(task);
 
@@ -121,7 +120,7 @@ export default function Index({
                         "Your task has been rejected. Please review the feedback below, make necessary edits, and resubmit for admin review.",
                     color: "red",
                     bgColor: "bg-red-50",
-                    borderColor: "border-red-200",
+                    borderColor: "!border-red-300",
                     textColor: "text-red-700",
                     lightTextColor: "text-red-600",
                     icon: (
@@ -149,7 +148,7 @@ export default function Index({
                     action: "Wait for Review",
                     color: "yellow",
                     bgColor: "bg-yellow-50",
-                    borderColor: "border-yellow-200",
+                    borderColor: "!border-yellow-300",
                     textColor: "text-yellow-700",
                     lightTextColor: "text-yellow-600",
                     icon: (
@@ -177,9 +176,9 @@ export default function Index({
                     action: "Task is Active",
                     color: "green",
                     bgColor: "bg-green-50",
-                    borderColor: "border-green-200",
-                    textColor: "text-green-700",
-                    lightTextColor: "text-green-600",
+                    borderColor: "!border-green-500",
+                    textColor: "!text-green-800",
+                    lightTextColor: "text-green-700",
                     icon: (
                         <svg
                             className="w-5 h-5"
@@ -553,9 +552,7 @@ export default function Index({
 
                                                 {/* Creator Note Section - Properly structured container */}
                                                 {creatorNote && (
-                                                    <div
-                                                        className={`mt-4 p-4 ${creatorNote.bgColor} ${creatorNote.borderColor} rounded-lg`}
-                                                    >
+                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-lg`} >
                                                         <div className="flex items-start gap-3">
                                                             
                                                             <div className="flex-1">

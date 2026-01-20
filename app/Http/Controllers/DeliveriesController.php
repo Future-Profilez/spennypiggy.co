@@ -15,14 +15,10 @@ class DeliveriesController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        
         // Get deliverables for the authenticated user (as creator or gifter)
-        $deliverables = Deliverable::query()
-            ->where(function ($query) use ($user) {
-                $query->where('creator_id', $user->id)
-                      ->orWhere('gifter_id', $user->id);
-            })
-            ->with(['creator', 'gifter', 'task'])
+        $deliverables = Deliverable::query()->where(function ($query) use ($user) {
+                $query->where('creator_id', $user->id)->orWhere('gifter_id', $user->id);
+            })->with(['creator', 'gifter', 'task'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
