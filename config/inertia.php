@@ -21,11 +21,11 @@ return [
 
     'ssr' => [
 
-        'enabled' => true,
+        'enabled' => env('INERTIA_SSR_ENABLED', true),
 
-        'url' => 'http://127.0.0.1:13714',
+        'url' => env('SSR_URL', env('INERTIA_SSR_URL', null)),
 
-        'bundle' => base_path('bootstrap/ssr/ssr-marketing.js'),
+        'bundle' => base_path('bootstrap/ssr/ssr.js'),
 
     ],
 

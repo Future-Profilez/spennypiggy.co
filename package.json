@@ -5,7 +5,7 @@
         "dev": "vite",
         "livebuild": "php vendor/bin/vapor deploy production --message='implementing stripe identity verification' --commit='619ad66b'",
         "devbuild": "php vendor/bin/vapor deploy development --message='implementing stripe identity verification' --commit='619ad66b'",
-        "build": "vite build && npm run sw:build",
+        "build": "vite build && vite build --ssr resources/js/ssr-marketing.jsx --outDir bootstrap/ssr && npm run sw:build",
         "build:fast": "vite build --mode=production --minify --no-sourcemap",
         "clear": "php artisan cache:clear && php artisan optimize:clear && php artisan config:clear && php artisan route:clear",
         "build:critical": "./scripts/build-with-critical-css.sh && npm run sw:build",
@@ -72,8 +72,6 @@
         "@magicbell/webpush": "^2.1.0",
         "@midudev/tailwind-animations": "^0.2.0",
         "@reduxjs/toolkit": "^1.9.7",
-        "@rollup/rollup-darwin-arm64": "^4.54.0",
-        "@rollup/rollup-win32-x64-msvc": "^4.55.1",
         "@rye-api/rye-sdk": "^1.4.2",
         "@sentry/react": "^9.39.0",
         "@sentry/replay": "^7.116.0",
@@ -112,6 +110,7 @@
         "styled-components": "^6.1.1",
         "swiper": "^11.0.3",
         "web-vitals": "^3.5.2",
-        "workbox-window": "^7.3.0"
+        "workbox-window": "^7.3.0",
+        "ziggy-js": "^2.6.0"
     }
 }

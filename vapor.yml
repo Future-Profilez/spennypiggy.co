@@ -11,15 +11,18 @@ environments:
     cli-memory: 512
     timeout: 120
     runtime: "php-8.2:al2"
+    ssr: true
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
+    assets:
+      - "public/build/**"
+      - "bootstrap/ssr/**"
     build:
       - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "rm -rf node_modules package-lock.json"
-      # - "npm install --no-audit --no-fund"
+      - "npm install --no-audit --no-fund"
       - "rm -rf public/build"
       - "npm run build"
       # - "npm run clear"
@@ -50,17 +53,20 @@ environments:
     timeout: 60
     # cache: spenny-piggy-redis-caches
     runtime: "php-8.2:al2"
+    ssr: true
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
     health-checks: false 
+    assets:
+      - "public/build/**"
+      - "bootstrap/ssr/**"
     build:
       - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "php artisan config:cache"
-      - "rm -rf node_modules package-lock.json"
-      # - "npm install --no-audit --no-fund"
+      - "npm install --no-audit --no-fund"
       - "rm -rf public/build" # Linux/mac/OS
       - "npm run build"
       # - "npm run clear"

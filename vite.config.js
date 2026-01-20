@@ -33,7 +33,7 @@ export default defineConfig((env) => {
         sourcemap: false,
         rollupOptions: {
             output: ssrBuild ? {
-                entryFileNames: '[name].js',
+                entryFileNames: 'ssr.js',
             } : {
                 manualChunks: {
                     'vendor-react': ['react', 'react-dom'],

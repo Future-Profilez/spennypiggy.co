@@ -1,19 +1,21 @@
 const __noop = function() {};
 const __classList = { add: __noop, remove: __noop, toggle: __noop, contains: () => false };
 const __createStubEl = (id = '') => {
+    let _innerHTML = '';
     const el = {
         id,
         style: {},
         classList: __classList,
         setAttribute: __noop,
         getAttribute: () => null,
+        getAttributeNames: () => [],
+        hasAttribute: () => false,
         appendChild: __noop,
         removeChild: __noop,
         replaceChild: __noop,
         remove: __noop,
         addEventListener: __noop,
         removeEventListener: __noop,
-        innerHTML: '',
         textContent: '',
         firstChild: null,
         lastChild: null,
@@ -28,6 +30,20 @@ const __createStubEl = (id = '') => {
         getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0, bottom: 0, right: 0 }),
         contains: () => false,
     };
+
+    Object.defineProperty(el, 'innerHTML', {
+        get() { return _innerHTML; },
+        set(val) {
+            _innerHTML = val;
+            if (this.tagName === 'TEMPLATE' && this.content) {
+                const child = __createStubEl();
+                child.innerHTML = val;
+                this.content.firstChild = child;
+            }
+        },
+        configurable: true
+    });
+
     return el;
 };
 
@@ -112,6 +128,15 @@ if (typeof globalThis.document === 'undefined') {
   
   globalThis.document = doc;
 }
+
+// Patch console.error to suppress specific React SSR warnings
+const originalConsoleError = console.error;
+console.error = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('useLayoutEffect does nothing on the server')) {
+        return;
+    }
+    originalConsoleError(...args);
+};
 
 if (typeof globalThis.navigator === 'undefined') {
   globalThis.navigator = window.navigator;
