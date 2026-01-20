@@ -22,8 +22,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
     const [filledSteps, setFilledSteps] = useState(0);
-
-    const hasAnySocialMedia = slinks && Object.values(slinks).some((value) => value !== null && value !== "");
+    const hasAnySocialMedia =
+        slinks &&
+        Object.values(slinks).some((value) => value !== null && value !== "");
     const updateProfileSteps = () => {
         window.location.reload(false);
     };
@@ -224,10 +225,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                 {/* Step 3: Bio */}
                 {auth?.user?.bio ? (
-                    auth?.user?.bio_approved == 0 ? (
+                    auth?.user?.bio_approved === 0 ? (
+                        /* 🔄 UNDER REVIEW */
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon me-2 pt-1`}>
+                                <div className="check-icon me-2 pt-1">
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -244,12 +246,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     </p>
                                 </div>
                             </div>
-                            <BsStopwatch color="#dd9100" size={"28px"} />
+                            <BsStopwatch color="#dd9100" size="28px" />
                         </div>
-                    ) : (
+                    ) : auth?.user?.bio_approved === 1 ? (
+                        /* ✅ APPROVED */
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon checked me-2 pt-1`}>
+                                <div className="check-icon checked me-2 pt-1">
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -266,17 +269,41 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </div>
                             </div>
                         </div>
+                    ) : (
+                        /* ❌ REJECTED */
+                        <div className="profile-steps border border-red-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
+                                <div className="check-icon me-2 pt-1">
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: checkedItem,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-red-600 font-bold">
+                                        Bio Rejected
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Your profile bio was rejected. Please
+                                        update and resubmit.
+                                    </p>
+                                </div>
+                            </div>
+                            <EditProfile
+                                text="Edit Bio"
+                                updateProfileSteps={updateProfileSteps}
+                                user={user}
+                                classes="updatebtn whitespace-nowrap text-pink"
+                                global_currency={global_currency}
+                            />
+                        </div>
                     )
                 ) : (
+                    /* 📝 NO BIO */
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
-                            <div
-                                className={`check-icon me-2 pt-1 ${
-                                    auth?.user?.bio_approved == 1
-                                        ? "checked"
-                                        : ""
-                                }`}
-                            >
+                            <div className="check-icon me-2 pt-1">
                                 <div
                                     dangerouslySetInnerHTML={{
                                         __html: checkedItem,
@@ -333,7 +360,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     {auth?.user?.avatar_approved &&
                     auth?.user?.bio_approved &&
                     auth?.user?.is_subscribed == 0 &&
-                    hasAnySocialMedia ? (
+                    hasAnySocialMedia && slinks?.status == 1 ? (
                         <Link
                             className="text-pink text-nowrap"
                             href="/activate-subscription"

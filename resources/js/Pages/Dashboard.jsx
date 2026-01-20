@@ -706,7 +706,7 @@ export default function Dashboard(props) {
                                                                             </p>
 
                                                                             {IsloggedIn &&
-                                                                            user?.edit_bio_reason ? (
+                                                                            user?.edit_bio_reason && user?.bio_approved == 2 ? (
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">
                                                                                         Bio
