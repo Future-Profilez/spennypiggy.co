@@ -18,15 +18,12 @@ import { FaLock } from "react-icons/fa";
 import { empty } from "@apollo/client";
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
-
     const { auth, user, global_currency, slinks } = usePage().props;
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
     const [filledSteps, setFilledSteps] = useState(0);
 
-    const hasAnySocialMedia =
-        slinks &&
-        Object.values(slinks).some((value) => value !== null && value !== "");
+    const hasAnySocialMedia = slinks && Object.values(slinks).some((value) => value !== null && value !== "");
     const updateProfileSteps = () => {
         window.location.reload(false);
     };
@@ -42,7 +39,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         setFilledSteps(steps);
     }, []);
 
-     const error = (() => {
+    const error = (() => {
         try {
             return JSON.parse(auth?.user?.identity_verification_error);
         } catch {
@@ -79,150 +76,36 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     Complete these steps and let your fans fund your lifestyle.
                 </p>
                 <ProgressBar now={filledSteps} max={6} />
-                {IsloggedIn && user?.profile_reject_reason != null &&
-                user?.profile_status_lock == 0 ?
+                {IsloggedIn &&
+                user?.profile_reject_reason != null &&
+                user?.profile_status_lock == 0 ? (
                     <>
                         <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-lg mt-3">
                             <strong className="text-red-800">
                                 Profile Verification Rejected
                             </strong>
-                            <p className="text-sm">{user?.profile_reject_reason}</p>
+                            <p className="text-sm">
+                                {user?.profile_reject_reason}
+                            </p>
                         </div>
-                        <Link  className="bg-[#fce100] mt-3 mb-4 block rounded-xl px-3 py-2 text-sm text-center focus:opacity-[0.8]"
-                        href="/update-profile-lock-status" >
+                        <Link
+                            className="bg-[#fce100] mt-3 mb-4 block rounded-xl px-3 py-2 text-sm text-center focus:opacity-[0.8]"
+                            href="/update-profile-lock-status"
+                        >
                             Submit Re-verification Request
                         </Link>
                     </>
-                 : (
+                ) : (
                     ""
                 )}
 
-                {/* Step 1: Subscription */}
-                <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                    <div className="step-title flex max-w-[390px] pe-3">
-                        <div
-                            className={`check-icon me-2 pt-1 ${
-                                auth?.user?.is_subscribed == 1 ? "checked" : ""
-                            }`}
-                        >
-                            <div
-                                dangerouslySetInnerHTML={{
-                                    __html: checkedItem,
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <h2 className="text-dark font-bold">
-                                Start 3-Days Free Trial
-                            </h2>
-                            <p className="text-gray-500 text-[14px]">
-                                Unlock full access with a{" "}
-                                <strong className="text-black">
-                                    Free Trial
-                                </strong>{" "}
-                                subscription of £4/month. No charges until the
-                                trial period ends.
-                            </p>
-                        </div>
-                    </div>
-                    {auth?.user?.is_subscribed == 0 && (
-                        <Link
-                            className="text-pink text-nowrap"
-                            href="/activate-subscription"
-                        >
-                            Start for Free
-                        </Link>
-                    )}
-                </div>
-
-                {/* Step 2: Social Handles */}
+                {/* Step 1: Social Handles */}
                 <div className="profile-steps border border-gray-200 rounded-xl p-3 mt-3">
                     <div className="flex items-center   justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
                             <div
                                 // className={`check-icon me-2 pt-1 ${ hasAnySocialMedia && slinks?.status !== 2 ? "checked" : "" }`} >
-                                className={`check-icon me-2 pt-1 ${slinks?.status == 1 ? "checked" : "" }`} >
-                                <div
-                                    dangerouslySetInnerHTML={{
-                                        __html: checkedItem,
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <h2 className="text-dark font-bold">Add Social Handles</h2>
-                                <p className="text-gray-500 text-[14px]" >
-                                    Update at least one social media handle to help
-                                    fans connect with you. {slinks?.status !== 1 ? <span className="text-pink text-[14px]">
-                                    It must show an active account. Older than 6 months.
-                                </span> : ''}
-                                </p>
-                            </div>
-                        </div>
-                        {slinks?.status !== 1 && <Social links={slinks} />}
-                    </div>
-
-                    
-                    {hasAnySocialMedia && slinks?.status == 0 ? 
-                        <p className="px-3 text-yellow-500 text-sm mt-2">
-                            <strong>Verification</strong> : Social Media Handle are under review. Please move to the next step.
-                        </p> : null}
-                </div>
-
-
-                {/* Step 4: Bio */}
-                {auth?.user?.bio ? (
-                    auth?.user?.bio_approved == 0 ? (
-                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon me-2 pt-1`}>
-                                    <div
-                                        dangerouslySetInnerHTML={{
-                                            __html: checkedItem,
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <h2 className="text-dark font-bold">
-                                        Bio Approval Pending
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Your profile bio is currently under
-                                        review.
-                                    </p>
-                                </div>
-                            </div>
-                            <BsStopwatch color="#dd9100" size={"28px"} />
-                        </div>
-                    ) : (
-                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon checked me-2 pt-1`}>
-                                    <div
-                                        dangerouslySetInnerHTML={{
-                                            __html: checkedItem,
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <h2 className="text-dark font-bold">
-                                        Profile Bio Approved
-                                    </h2>
-                                    <p className="text-gray-500 text-[14px]">
-                                        Your profile bio has been approved.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                ) : (
-                    <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
-                            <div
-                                className={`check-icon me-2 pt-1 ${
-                                    auth?.user?.bio_approved == 1
-                                        ? "checked"
-                                        : ""
-                                }`}
+                                className={`check-icon me-2 pt-1 ${slinks?.status == 1 ? "checked" : ""}`}
                             >
                                 <div
                                     dangerouslySetInnerHTML={{
@@ -232,24 +115,34 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                             <div>
                                 <h2 className="text-dark font-bold">
-                                    Update Profile Bio
+                                    Add Social Handles
                                 </h2>
                                 <p className="text-gray-500 text-[14px]">
-                                    Add a short bio to complete your profile.
+                                    Update at least one social media handle to
+                                    help fans connect with you.{" "}
+                                    {slinks?.status !== 1 ? (
+                                        <span className="text-pink text-[14px]">
+                                            It must show an active account.
+                                            Older than 6 months.
+                                        </span>
+                                    ) : (
+                                        ""
+                                    )}
                                 </p>
                             </div>
                         </div>
-                        <EditProfile
-                            text="Update Bio"
-                            updateProfileSteps={updateProfileSteps}
-                            user={user}
-                            classes="updatebtn whitespace-nowrap text-pink"
-                            global_currency={global_currency}
-                        />
+                        {slinks?.status !== 1 && <Social links={slinks} />}
                     </div>
-                )}
 
-                {/* Step 3: Avatar */}
+                    {hasAnySocialMedia && slinks?.status == 0 ? (
+                        <p className="px-3 text-yellow-500 text-sm mt-2">
+                            <strong>Verification</strong> : Social Media Handle
+                            are under review. Please move to the next step.
+                        </p>
+                    ) : null}
+                </div>
+
+                {/* Step 2: Avatar */}
                 {auth?.user?.avatar ? (
                     auth?.user?.avatar_approved == 0 ? (
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
@@ -329,6 +222,131 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
                 )}
 
+                {/* Step 3: Bio */}
+                {auth?.user?.bio ? (
+                    auth?.user?.bio_approved == 0 ? (
+                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
+                                <div className={`check-icon me-2 pt-1`}>
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: checkedItem,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Bio Approval Pending
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Your profile bio is currently under
+                                        review.
+                                    </p>
+                                </div>
+                            </div>
+                            <BsStopwatch color="#dd9100" size={"28px"} />
+                        </div>
+                    ) : (
+                        <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                            <div className="step-title flex max-w-[390px] pe-3">
+                                <div className={`check-icon checked me-2 pt-1`}>
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: checkedItem,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-dark font-bold">
+                                        Profile Bio Approved
+                                    </h2>
+                                    <p className="text-gray-500 text-[14px]">
+                                        Your profile bio has been approved.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                ) : (
+                    <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                        <div className="step-title flex max-w-[390px] pe-3">
+                            <div
+                                className={`check-icon me-2 pt-1 ${
+                                    auth?.user?.bio_approved == 1
+                                        ? "checked"
+                                        : ""
+                                }`}
+                            >
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: checkedItem,
+                                    }}
+                                />
+                            </div>
+                            <div>
+                                <h2 className="text-dark font-bold">
+                                    Update Profile Bio
+                                </h2>
+                                <p className="text-gray-500 text-[14px]">
+                                    Add a short bio to complete your profile.
+                                </p>
+                            </div>
+                        </div>
+                        <EditProfile
+                            text="Update Bio"
+                            updateProfileSteps={updateProfileSteps}
+                            user={user}
+                            classes="updatebtn whitespace-nowrap text-pink"
+                            global_currency={global_currency}
+                        />
+                    </div>
+                )}
+
+                {/* Step 4: Subscription */}
+                <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
+                    <div className="step-title flex max-w-[390px] pe-3">
+                        <div
+                            className={`check-icon me-2 pt-1 ${
+                                auth?.user?.is_subscribed == 1 ? "checked" : ""
+                            }`}
+                        >
+                            <div
+                                dangerouslySetInnerHTML={{
+                                    __html: checkedItem,
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <h2 className="text-dark font-bold">
+                                Start 3-Days Free Trial
+                            </h2>
+                            <p className="text-gray-500 text-[14px]">
+                                Unlock full access with a{" "}
+                                <strong className="text-black">
+                                    Free Trial
+                                </strong>{" "}
+                                subscription of £4/month. No charges until the
+                                trial period ends.
+                            </p>
+                        </div>
+                    </div>
+                    {auth?.user?.avatar_approved &&
+                    auth?.user?.bio_approved &&
+                    auth?.user?.is_subscribed == 0 &&
+                    hasAnySocialMedia ? (
+                        <Link
+                            className="text-pink text-nowrap"
+                            href="/activate-subscription"
+                        >
+                            Start for Free
+                        </Link>
+                    ) : (
+                        <Link className="text-pink text-nowrap disabled">
+                            Start for Free
+                        </Link>
+                    )}
+                </div>
+
                 {/* Status Message */}
                 {auth?.user?.is_subscribed == 1 &&
                 auth?.user?.bio &&
@@ -344,22 +362,32 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             complete.
                         </p>
 
-                        {slinks?.status == 2 ? <p className="text-lg text-red-500 text-sm mt-2">Social Media Handle Update Request : Rejected due to {slinks?.reason ? slinks?.reason : ""}</p> : null}
-
+                        {slinks?.status == 2 ? (
+                            <p className="text-lg text-red-500 text-sm mt-2">
+                                Social Media Handle Update Request : Rejected
+                                due to {slinks?.reason ? slinks?.reason : ""}
+                            </p>
+                        ) : null}
                     </div>
                 ) : (
                     ""
                 )}
 
-                {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ? (
+                {auth?.user?.profile_status_lock == 0 &&
+                auth?.user?.profile_reject_reason ? (
                     <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-lg mt-3">
                         <strong className="text-red-800">
                             Profile Verification Rejected
                         </strong>
                         <p className="text-sm capitalize">
-                           {auth?.user?.profile_reject_reason}
-                        </p> 
-                        <Link href={route('update.profile.lock.status')} method='get'  >Submit For Re-Verification</Link>
+                            {auth?.user?.profile_reject_reason}
+                        </p>
+                        <Link
+                            href={route("update.profile.lock.status")}
+                            method="get"
+                        >
+                            Submit For Re-Verification
+                        </Link>
                     </div>
                 ) : (
                     ""
@@ -398,8 +426,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         auth?.user?.identity_status == 1
                                             ? "checked"
                                             : ""
-                                    }`} >
-                                    <div dangerouslySetInnerHTML={{ __html: checkedItem, }}
+                                    }`}
+                                >
+                                    <div
+                                        dangerouslySetInnerHTML={{
+                                            __html: checkedItem,
+                                        }}
                                     />
                                 </div>
                                 <div>
@@ -410,22 +442,32 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         Secure your account and meet compliance
                                         requirements.
                                     </p>
-
                                 </div>
                             </div>
                             <>
                                 {auth?.user?.identity_status == 1 ? (
-                                    <span className="text-green-600">Verified</span>
+                                    <span className="text-green-600">
+                                        Verified
+                                    </span>
                                 ) : auth?.user?.identity_status == 2 ? (
-                                    <Link className={"text-pink"} href="/stripe/identity-verification">Re-verify</Link>
+                                    <Link
+                                        className={"text-pink"}
+                                        href="/stripe/identity-verification"
+                                    >
+                                        Re-verify
+                                    </Link>
                                 ) : auth?.user?.profile_status_lock == 2 ? (
-                                    <Link className={"text-pink"} href="/stripe/identity-verification">Verify</Link>
+                                    <Link
+                                        className={"text-pink"}
+                                        href="/stripe/identity-verification"
+                                    >
+                                        Verify
+                                    </Link>
                                 ) : (
                                     <p className={"text-gray-400"}>Verify</p>
                                 )}
                             </>
                         </div>
-
 
                         {/* {auth?.user?.identity_admin_status !== 2 && auth?.user?.identity_status == 1 && auth?.user?.identity_admin_status != 1 && (
                             <div className="mt-2 text-yellow-700 bg-yellow-50 px-3 py-2 rounded">
@@ -435,16 +477,25 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                         {auth?.user?.identity_verification_error && (
                             <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-start">
-                                <p className="font-semibold mb-2">Why are you seeing this error?</p>
+                                <p className="font-semibold mb-2">
+                                    Why are you seeing this error?
+                                </p>
                                 <p className="text-sm">
-                                    Your last attempt to complete identity verification was unsuccessful. Please review the details below and try again.
+                                    Your last attempt to complete identity
+                                    verification was unsuccessful. Please review
+                                    the details below and try again.
                                 </p>
                             </div>
                         )}
 
                         {auth?.user?.identity_verification_error && (
                             <div className="text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-red-600 text-start flex flex-col gap-1 capitalize">
-                                <p>Error: {error?.code?.replaceAll("_", " ") || error?.code || "Unknown Error Occurred"}</p>
+                                <p>
+                                    Error:{" "}
+                                    {error?.code?.replaceAll("_", " ") ||
+                                        error?.code ||
+                                        "Unknown Error Occurred"}
+                                </p>
                                 <p>Possible Reason: {error?.reason || "N/A"}</p>
                             </div>
                         )}
@@ -459,13 +510,22 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 )}
                             </div>
                         )} */}
-                     </div>
+                    </div>
 
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pe-3">
-                            <div className={`check-icon me-2 pt-1 ${
-                                    auth?.user?.stripe_details_submitted == 1 ? "checked" : "" }`} >
-                                <div dangerouslySetInnerHTML={{ __html: checkedItem, }} />
+                            <div
+                                className={`check-icon me-2 pt-1 ${
+                                    auth?.user?.stripe_details_submitted == 1
+                                        ? "checked"
+                                        : ""
+                                }`}
+                            >
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: checkedItem,
+                                    }}
+                                />
                             </div>
                             <div>
                                 <h2 className="text-dark font-bold">
@@ -479,24 +539,36 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                         </div>
 
-                        {auth?.user?.stripe_details_submitted == 0 || auth?.user?.stripe_details_submitted == null ?
-                           <div>
-                            { auth?.user?.identity_status == 1 ?
-                            <Link className={"text-pink"} href="/stripe">Connect</Link>
-                             :
-                             <p className={"text-gray-400"}  >Connect</p>
-                            }
-                           </div> :
-                            ''
-                        }
-                        
-                        {auth?.user?.stripe_details_submitted == 1 ?
-                           <div> <span className="text-green-600">Connected</span> </div> 
-                           : ''
-                        }
+                        {auth?.user?.stripe_details_submitted == 0 ||
+                        auth?.user?.stripe_details_submitted == null ? (
+                            <div>
+                                {auth?.user?.identity_status == 1 ? (
+                                    <Link
+                                        className={"text-pink"}
+                                        href="/stripe"
+                                    >
+                                        Connect
+                                    </Link>
+                                ) : (
+                                    <p className={"text-gray-400"}>Connect</p>
+                                )}
+                            </div>
+                        ) : (
+                            ""
+                        )}
 
-                     </div>
-                  </div>
+                        {auth?.user?.stripe_details_submitted == 1 ? (
+                            <div>
+                                {" "}
+                                <span className="text-green-600">
+                                    Connected
+                                </span>{" "}
+                            </div>
+                        ) : (
+                            ""
+                        )}
+                    </div>
+                </div>
             </div>
         </>
     );
