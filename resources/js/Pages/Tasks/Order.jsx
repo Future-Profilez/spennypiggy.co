@@ -214,13 +214,12 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                     {task.type === 'timed' && (
                         <div>
                             <h2 className="text-2xl font-black capitalize font-bold font-poppins pb-3 mt-12">Fulfillment Status</h2>
-                            {/* CREATOR ACTIONS */}
-
                             {purchase.status === 'refunded' ? 
                             <div>
-                                <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been automatically refunded because it was not accepted by the supporter or fulfilled within the defined SLA period.</p>
+                                <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been refunded.</p>
+                                {/* <p className="font-bold mb-6 text-gray-500 capitalize text-xl">This order has been refunded automatically because it was not accepted by the supporter or fulfilled within the defined SLA period.</p> */}
                             </div>
-                            : null} 
+                            : null}  
 
                             {isCreator && (
                                 <div>

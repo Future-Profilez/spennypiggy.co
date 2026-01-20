@@ -866,6 +866,17 @@ class TaskController extends Controller
                     $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
                     $chargeId = $pi->latest_charge ?? null;
 
+                    if (!$chargeId) {
+                        try {
+                            $charges = $client->charges->all(['payment_intent' => $purchase->payment_intent_id, 'limit' => 1]);
+                            if (!empty($charges->data)) {
+                                $chargeId = $charges->data[0]->id;
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::warning('Fallback charge lookup failed: ' . $e->getMessage());
+                        }
+                    }
+
                     // Retrieve Charge with Balance Transaction to determine SETTLEMENT currency
                     // This fixes "currency of source_transaction's balance transaction (usd) must be the same as the transfer currency (eur)" error
                     $charge = null;
@@ -946,14 +957,18 @@ class TaskController extends Controller
 
                         $transferMetadata = array_merge($baseTransferMetadata, $piMetadata, $chargeMetadata);
 
-                        $transfer = \App\StripeControl::createTransfer([
+                        $transferPayload = [
                             'amount' => $amount,
                             'currency' => strtolower($settlementCurrency),
                             'destination' => $creator->account_id,
-                            'source_transaction' => $chargeId,
                             'transfer_group' => "paid_task_{$task->id}",
                             'metadata' => $transferMetadata,
-                        ]);
+                        ];
+                        if ($chargeId) {
+                            $transferPayload['source_transaction'] = $chargeId;
+                        }
+
+                        $transfer = \App\StripeControl::createTransfer($transferPayload);
 
                         $purchase->status = 'paid_out';
                         $purchase->transfer_id = $transfer->id;

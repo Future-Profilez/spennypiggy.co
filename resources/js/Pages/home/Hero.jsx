@@ -88,8 +88,6 @@ export default function Hero({auth}) {
         </Scrollspy>
       </div>
 
-
-      {/* Critical LCP optimization: Inline 1x1 transparent placeholder */}
       <img 
         src={transparentPixel} 
         alt="" 
@@ -100,7 +98,7 @@ export default function Hero({auth}) {
         fetchPriority="high"
       />
       
-      <div id="home" className="bg-black relative  min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center overflow-hidden py-2 md:py-24">
+      <div id="home" className="bg-black relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24">
         {/* Decorative Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-0 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-40 floating-shape animate-float"></div>

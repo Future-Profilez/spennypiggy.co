@@ -4,7 +4,6 @@ import { FaBolt, FaMagic, FaShieldAlt, FaRocket, FaStar, FaHeart } from 'react-i
 export default function PaidTasksAnnouncement() {
     return (
         <>
-            
             <style jsx>{`
                 .excited-gradient {
                     background: linear-gradient(120deg, #FF0080, #7928CA, #FF0080);

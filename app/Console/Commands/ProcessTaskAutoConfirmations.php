@@ -124,6 +124,16 @@ class ProcessTaskAutoConfirmations extends Command
                 $client = new StripeClient(config('services.stripe.secret'));
                 $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
                 $chargeId = $pi->latest_charge ?? null;
+                if (!$chargeId) {
+                    try {
+                        $charges = $client->charges->all(['payment_intent' => $purchase->payment_intent_id, 'limit' => 1]);
+                        if (!empty($charges->data)) {
+                            $chargeId = $charges->data[0]->id;
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Fallback charge lookup failed (AutoConfirm): ' . $e->getMessage());
+                    }
+                }
                 $currency = $pi->currency ?? $purchase->task->currency ?? 'gbp';
 
                 $task = $purchase->task;
@@ -164,14 +174,18 @@ class ProcessTaskAutoConfirmations extends Command
 
                     $transferMetadata = array_merge($baseTransferMetadata, $piMetadata, $chargeMetadata);
 
-                    $transfer = \App\StripeControl::createTransfer([
+                    $transferPayload = [
                         'amount' => $amount,
                         'currency' => strtolower($currency),
                         'destination' => $purchase->creator->account_id,
-                        'source_transaction' => $chargeId,
                         'transfer_group' => "paid_task_{$task->id}",
                         'metadata' => $transferMetadata,
-                    ]);
+                    ];
+                    if ($chargeId) {
+                        $transferPayload['source_transaction'] = $chargeId;
+                    }
+
+                    $transfer = \App\StripeControl::createTransfer($transferPayload);
 
                     $purchase->status = 'paid_out';
                     $purchase->transfer_id = $transfer->id;
