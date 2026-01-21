@@ -228,7 +228,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         : ''}
                                                     </li>
 
-
+                                                            
                                                     {deliverable?.product_type == 'support_payment' ?
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 

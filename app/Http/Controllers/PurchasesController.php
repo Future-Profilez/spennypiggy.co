@@ -33,7 +33,7 @@ class PurchasesController extends Controller
             
         // Get deliverables received by the user (as creator)
         $receivedDeliverables = Deliverable::where('creator_id', $user->id)
-            ->with(['gifter', 'wishItem', 'bill', 'membership', 'task', 'purchase'])
+            ->with(['gifter', 'wishItem', 'bill', 'membership', 'task', 'purchase','creator'])
             ->select(['id', 'uuid', 'gifter_id', 'item_id', 'order_id', 'deliverable_type', 'transaction_amount', 'product_type', 'payment_currency', 'certificate_url', 'deliverable_url', 'status', 'metadata', 'created_at'])
             ->orderBy('created_at', 'desc')
             ->get();

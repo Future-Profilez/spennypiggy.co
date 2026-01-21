@@ -20,16 +20,25 @@ import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
 
 export default function Accountsetting(props) {
-
     const { successAlert, errorAlert } = useAlerts();
-    const { auth, user, global_currency, auto_tweet, pwa_notification_details, site_subscription, subscription_history, subscription_status } = props;
+    const {
+        auth,
+        user,
+        global_currency,
+        auto_tweet,
+        pwa_notification_details,
+        site_subscription,
+        subscription_history,
+        subscription_status,
+    } = props;
     const [showModal, setShowModal] = useState(false);
+    const [emailPopupAction, setEmailPopupAction] = useState(null);
 
     const [emailEnabled, setSetEnabled] = useState(
-        auth && auth.user && auth.user.notification_send == 1 ? true : false
+        auth && auth.user && auth.user.notification_send == 1 ? true : false,
     );
     const [showEarning, setShowEarning] = useState(
-        auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false
+        auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false,
     );
     const swicthEarning = () => {
         setShowEarning(!showEarning);
@@ -72,8 +81,17 @@ export default function Accountsetting(props) {
     };
 
     const [vatpercent, setvatpercent] = useState(
-        (auth && auth?.user?.vat_amount_percentage) || ""
+        (auth && auth?.user?.vat_amount_percentage) || "",
     );
+
+    const closeEmailPopup = () => {
+        setEmailPopupAction(false);
+
+        // 🔑 reset so it works next time
+        setTimeout(() => {
+            setEmailPopupAction(null);
+        }, 50);
+    };
 
     return (
         <Authenticated user={user} auth={auth.user}>
@@ -87,125 +105,228 @@ export default function Accountsetting(props) {
                     </div>
                     <div className="accsettingList !p-6">
                         <ul>
-                            { auth && auth.user && auth?.user?.role == 1 && auth.user.stripe_details_submitted == 1 ? (
-                                    <li>
-                                        <PaymentDashboard
-                                            classes="w-100 !bg-white !py-0 !mt-0 !text-black hover:!text-black"
-                                            text={
-                                                <>
-                                                    PAYMENT DASHBOARD 
-                                                    <span className="text-green-600 font-bold text-sm">
-                                                        Linked
-                                                    </span>
-                                                </>
-                                            }
-                                        />
-                                    </li>
-                                ) : (
-                                    ""
-                                )
-                            }
-
-                        {auth && auth.user && auth?.user?.role == 1 ?  
-                            <li>
-                                <Popup
-                                    space="4"
-                                    modalclassName="pinkmodal"
-                                    text={
-                                        <div className="flex items-center justify-between w-full">
-                                            <p className="text-start">SPENNY PIGGY SUBSCRIPTION </p>
-                                            
-                                            <span className={`
-                                                text-gray  text-start
-                                                uppercase
-                                                ${site_subscription && site_subscription.status == "ACTIVE" || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"} `}>
-                                                {site_subscription?.trial_status === "active" ? "Free Trial" : 
-                                                <>
-                                                {site_subscription && site_subscription.status || "Start"}
-                                                </>
-                                                }
-                                            </span>
-                                        </div>
-                                    }
-                                >
-                                    <h2 className="text-black text-start font-gulfs text-xl mb-3">SPENNY PIGGY SUBSCRIPTION</h2>
-                                    
-                                    
-
-                                    {site_subscription?.trial_status === "active" ? <>
-                                            <h2>Subscription Status : <span className="text-green-600 font-bold text-lg uppercase">Free Trial</span></h2>
-                                            <p className="text-lg my-2">Free Trial Start : <strong>{site_subscription?.trial_start ||''}</strong></p>
-                                            <p className="text-lg my-2">Free Trial End In : <strong>{site_subscription?.trial_end_in ||''}</strong></p>
-                                    </>
-                                    : <>
-                                        {site_subscription && site_subscription.status == "ACTIVE" ? <>
-                                        <p className="text-lg my-2">Subscription Start On : <strong>{site_subscription?.subscription_start ||''}</strong></p>
-                                        <p className="text-lg my-2">Subscription Renew On : <strong>{site_subscription?.subscription_renew_in ||''}</strong></p>
-                                        <p className="text-lg my-2">Next Payment On : <strong>{site_subscription?.next_payment_date ||''}</strong></p>
-                                        </> : ''}
-                                    </> }
-
-
-                                    {site_subscription && site_subscription.status == "EXPIRED" ? <>
-                                        {site_subscription?.subscription_end ?
-                                            <p className="text-lg text-red-600 my-2">Subscription expired on : <strong>{site_subscription?.subscription_end ||''}</strong></p>
-                                            :
+                            {auth &&
+                            auth.user &&
+                            auth?.user?.role == 1 &&
+                            auth.user.stripe_details_submitted == 1 ? (
+                                <li>
+                                    <PaymentDashboard
+                                        classes="w-100 !bg-white !py-0 !mt-0 !text-black hover:!text-black"
+                                        text={
                                             <>
-                                                {site_subscription?.trial_end_in ? 
-                                                    <p className="text-lg my-2 text-red-600">Subscription Free trial ended {site_subscription?.trial_end_in||''}  </p>
-                                                : ''}
+                                                PAYMENT DASHBOARD
+                                                <span className="text-green-600 font-bold text-sm">
+                                                    Linked
+                                                </span>
                                             </>
                                         }
-                                    </> : ''}
+                                    />
+                                </li>
+                            ) : (
+                                ""
+                            )}
 
-                                    {site_subscription && site_subscription.status == "INACTIVE" ?  
-                                            <p className="text-lg my-2 text-blue-700">You don't have any active subscription</p>
-                                     : ''}
+                            {auth && auth.user && auth?.user?.role == 1 ? (
+                                <li>
+                                    <Popup
+                                        space="4"
+                                        modalclassName="pinkmodal"
+                                        text={
+                                            <div className="flex items-center justify-between w-full">
+                                                <p className="text-start">
+                                                    SPENNY PIGGY
+                                                    SUBSCRIPTION{" "}
+                                                </p>
 
+                                                <span
+                                                    className={`
+                                                text-gray  text-start
+                                                uppercase
+                                                ${(site_subscription && site_subscription.status == "ACTIVE") || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"} `}
+                                                >
+                                                    {site_subscription?.trial_status ===
+                                                    "active" ? (
+                                                        "Free Trial"
+                                                    ) : (
+                                                        <>
+                                                            {(site_subscription &&
+                                                                site_subscription.status) ||
+                                                                "Start"}
+                                                        </>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        }
+                                    >
+                                        <h2 className="text-black text-start font-gulfs text-xl mb-3">
+                                            SPENNY PIGGY SUBSCRIPTION
+                                        </h2>
 
-                                    
-                                </Popup>
-                            </li> : 
-                             ""}
+                                        {site_subscription?.trial_status ===
+                                        "active" ? (
+                                            <>
+                                                <h2>
+                                                    Subscription Status :{" "}
+                                                    <span className="text-green-600 font-bold text-lg uppercase">
+                                                        Free Trial
+                                                    </span>
+                                                </h2>
+                                                <p className="text-lg my-2">
+                                                    Free Trial Start :{" "}
+                                                    <strong>
+                                                        {site_subscription?.trial_start ||
+                                                            ""}
+                                                    </strong>
+                                                </p>
+                                                <p className="text-lg my-2">
+                                                    Free Trial End In :{" "}
+                                                    <strong>
+                                                        {site_subscription?.trial_end_in ||
+                                                            ""}
+                                                    </strong>
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {site_subscription &&
+                                                site_subscription.status ==
+                                                    "ACTIVE" ? (
+                                                    <>
+                                                        <p className="text-lg my-2">
+                                                            Subscription Start
+                                                            On :{" "}
+                                                            <strong>
+                                                                {site_subscription?.subscription_start ||
+                                                                    ""}
+                                                            </strong>
+                                                        </p>
+                                                        <p className="text-lg my-2">
+                                                            Subscription Renew
+                                                            On :{" "}
+                                                            <strong>
+                                                                {site_subscription?.subscription_renew_in ||
+                                                                    ""}
+                                                            </strong>
+                                                        </p>
+                                                        <p className="text-lg my-2">
+                                                            Next Payment On :{" "}
+                                                            <strong>
+                                                                {site_subscription?.next_payment_date ||
+                                                                    ""}
+                                                            </strong>
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    ""
+                                                )}
+                                            </>
+                                        )}
 
-                        {auth && auth.user && auth?.user?.role == 1 && subscription_history && subscription_history.length > 0 ?
+                                        {site_subscription &&
+                                        site_subscription.status ==
+                                            "EXPIRED" ? (
+                                            <>
+                                                {site_subscription?.subscription_end ? (
+                                                    <p className="text-lg text-red-600 my-2">
+                                                        Subscription expired on
+                                                        :{" "}
+                                                        <strong>
+                                                            {site_subscription?.subscription_end ||
+                                                                ""}
+                                                        </strong>
+                                                    </p>
+                                                ) : (
+                                                    <>
+                                                        {site_subscription?.trial_end_in ? (
+                                                            <p className="text-lg my-2 text-red-600">
+                                                                Subscription
+                                                                Free trial ended{" "}
+                                                                {site_subscription?.trial_end_in ||
+                                                                    ""}{" "}
+                                                            </p>
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                    </>
+                                                )}
+                                            </>
+                                        ) : (
+                                            ""
+                                        )}
+
+                                        {site_subscription &&
+                                        site_subscription.status ==
+                                            "INACTIVE" ? (
+                                            <p className="text-lg my-2 text-blue-700">
+                                                You don't have any active
+                                                subscription
+                                            </p>
+                                        ) : (
+                                            ""
+                                        )}
+                                    </Popup>
+                                </li>
+                            ) : (
+                                ""
+                            )}
+
+                            {auth &&
+                            auth.user &&
+                            auth?.user?.role == 1 &&
+                            subscription_history &&
+                            subscription_history.length > 0 ? (
+                                <li>
+                                    <Popup
+                                        space="4"
+                                        modalclassName="pinkmodal"
+                                        text={
+                                            <div className="flex w-full justify-between items-center">
+                                                <p className="text-start">
+                                                    SUBSCRIPTION HISTORY
+                                                </p>
+                                                <span className="text-gray whitespace-nowrap">
+                                                    {
+                                                        subscription_history.length
+                                                    }{" "}
+                                                    records
+                                                </span>
+                                            </div>
+                                        }
+                                    >
+                                        <h2 className="text-black font-gulfs text-xl mb-3">
+                                            SUBSCRIPTION PAYMENT HISTORY
+                                        </h2>
+                                        <SubscriptionHistory
+                                            subscriptionHistory={
+                                                subscription_history
+                                            }
+                                        />
+                                    </Popup>
+                                </li>
+                            ) : (
+                                ""
+                            )}
+
                             <li>
                                 <Popup
-                                    space="4"
-                                    modalclassName="pinkmodal"
-                                    text={
-                                        <div className="flex w-full justify-between items-center">
-                                            <p className="text-start">SUBSCRIPTION HISTORY</p>
-                                            <span className="text-gray whitespace-nowrap">
-                                                {subscription_history.length} records
-                                            </span>
-                                        </div>
-                                    }
-                                >
-                                    <h2 className="text-black font-gulfs text-xl mb-3">SUBSCRIPTION PAYMENT HISTORY</h2>
-                                    <SubscriptionHistory subscriptionHistory={subscription_history} />
-                                </Popup>
-                            </li> : 
-                             ""}
-
-                            <li>
-                                <Popup
+                                    action={emailPopupAction}
                                     space="4"
                                     modalclassName="pinkmodal"
                                     text={
                                         <>
                                             EMAIL{" "}
                                             <span className="text-gray">
-                                                {auth &&
-                                                    auth.user &&
-                                                    auth.user.email}
+                                                {auth?.user?.email}
                                             </span>
                                         </>
                                     }
                                 >
-                                    <UpdateProfileInformation />
+                                    <UpdateProfileInformation
+                                        closeModal={closeEmailPopup}
+                                    />
                                 </Popup>
                             </li>
+
                             <li>
                                 <Popup
                                     action={passClose}
@@ -378,9 +499,13 @@ export default function Accountsetting(props) {
                             )}
 
                             {auth && auth?.user?.role == 1 ? (
-                                    <li>
-                                        <FollowersBulkNotification pwa_notification_details={pwa_notification_details} />
-                                    </li>
+                                <li>
+                                    <FollowersBulkNotification
+                                        pwa_notification_details={
+                                            pwa_notification_details
+                                        }
+                                    />
+                                </li>
                             ) : (
                                 ""
                             )}

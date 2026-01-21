@@ -48,8 +48,8 @@ import {
 } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
-const ProfileProductLists = lazy(() =>
-    import("./shop/profile/ProfileProductLists")
+const ProfileProductLists = lazy(
+    () => import("./shop/profile/ProfileProductLists"),
 );
 const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
 const AddItem = lazy(() => import("./shop/AddItem"));
@@ -71,11 +71,11 @@ import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
 
 // Creator Activity and Subscription Components
-const CreatorActivityWidget = lazy(() =>
-    import("@/Components/CreatorActivityWidget")
+const CreatorActivityWidget = lazy(
+    () => import("@/Components/CreatorActivityWidget"),
 );
-const CreatorSubscriptionWidget = lazy(() =>
-    import("@/Components/CreatorSubscriptionWidget")
+const CreatorSubscriptionWidget = lazy(
+    () => import("@/Components/CreatorSubscriptionWidget"),
 );
 export default function Dashboard(props) {
     const w = useWidthCount();
@@ -118,7 +118,7 @@ export default function Dashboard(props) {
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) == (user && user.username)
+        (auth && auth.user && auth.user.username) == (user && user.username),
     );
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -215,7 +215,7 @@ export default function Dashboard(props) {
         }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
-        })
+        }),
     );
 
     const handleDragEnd = (event) => {
@@ -224,7 +224,7 @@ export default function Dashboard(props) {
         }
         const { active, over } = event;
         const activeIndex = wishitems.findIndex(
-            (item) => item.id === active.id
+            (item) => item.id === active.id,
         );
         const newOverIndex = over
             ? wishitems.findIndex((item) => item.id === over.id)
@@ -277,7 +277,7 @@ export default function Dashboard(props) {
             return () => {
                 window.removeEventListener(
                     "toggleAddOptions",
-                    handleToggleEvent
+                    handleToggleEvent,
                 );
             };
         }, []);
@@ -372,7 +372,7 @@ export default function Dashboard(props) {
                                                             <div
                                                                 onClick={() =>
                                                                     setWishOptions(
-                                                                        true
+                                                                        true,
                                                                     )
                                                                 }
                                                                 className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer"
@@ -478,11 +478,11 @@ export default function Dashboard(props) {
     };
 
     const [UserStripeConnected, setUserStripeConnected] = useState(
-        parseInt(user && user?.stripe_details_submitted) || 0
+        parseInt(user && user?.stripe_details_submitted) || 0,
     );
     const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(
         parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) ||
-            0
+            0,
     );
 
     return (
@@ -706,7 +706,9 @@ export default function Dashboard(props) {
                                                                             </p>
 
                                                                             {IsloggedIn &&
-                                                                            user?.edit_bio_reason && user?.bio_approved == 2 ? (
+                                                                            user?.edit_bio_reason &&
+                                                                            user?.bio_approved ==
+                                                                                2 ? (
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">
                                                                                         Bio
@@ -770,8 +772,17 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
-                                                                                        <PaymentDashboard classes="b w-full" text="Payment Dashboard"/>
+                                                                                    {auth.user &&
+                                                                                    auth
+                                                                                        .user
+                                                                                        .role ==
+                                                                                        1 &&
+                                                                                    AuthUserStripeConnected ==
+                                                                                        1 ? (
+                                                                                        <PaymentDashboard
+                                                                                            classes="b w-full"
+                                                                                            text="Payment Dashboard"
+                                                                                        />
                                                                                     ) : (
                                                                                         <>
                                                                                             {/* {auth?.user?.identity_status == 1 ? 
@@ -942,7 +953,7 @@ export default function Dashboard(props) {
                                                                                                 username:
                                                                                                     user.username,
                                                                                                 page: "wishes",
-                                                                                            }
+                                                                                            },
                                                                                         )}
                                                                                         className={`${
                                                                                             selectedCategory ==
@@ -953,31 +964,16 @@ export default function Dashboard(props) {
                                                                                     >
                                                                                         All
                                                                                     </Link>
-                                                                                    {wish_categories.map(
-                                                                                        (
-                                                                                            c,
-                                                                                            i
-                                                                                        ) => {
+                                                                                    {wish_categories.map((c, i,) => {
                                                                                             return (
                                                                                                 <>
-                                                                                                    <Link
-                                                                                                        preserveScroll
-                                                                                                        href={route(
-                                                                                                            "user.show",
-                                                                                                            {
-                                                                                                                username:
-                                                                                                                    user.username,
+                                                                                                    <Link preserveScroll href={route("user.show",{
+                                                                                                                username: user.username,
                                                                                                                 page: "wishes",
-                                                                                                                category:
-                                                                                                                    c.id,
-                                                                                                            }
+                                                                                                                category: c.id,
+                                                                                                            },
                                                                                                         )}
-                                                                                                        className={`${
-                                                                                                            selectedCategory ==
-                                                                                                            c.id
-                                                                                                                ? "active"
-                                                                                                                : ""
-                                                                                                        } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                                        className={`${selectedCategory == c.id ? "active" : "" } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
                                                                                                         key={`cats-${i}`}
                                                                                                     >
                                                                                                         {
@@ -986,7 +982,7 @@ export default function Dashboard(props) {
                                                                                                     </Link>
                                                                                                 </>
                                                                                             );
-                                                                                        }
+                                                                                        },
                                                                                     )}
                                                                                     {IsloggedIn ? (
                                                                                         <EditCategories
@@ -1040,7 +1036,7 @@ export default function Dashboard(props) {
                                                                                             {wishitems.map(
                                                                                                 (
                                                                                                     c,
-                                                                                                    i
+                                                                                                    i,
                                                                                                 ) => {
                                                                                                     return (
                                                                                                         <Wishlistbox
@@ -1073,7 +1069,7 @@ export default function Dashboard(props) {
                                                                                                             }
                                                                                                         />
                                                                                                     );
-                                                                                                }
+                                                                                                },
                                                                                             )}
                                                                                         </SortableContext>
                                                                                     </DndContext>
@@ -1200,11 +1196,11 @@ export default function Dashboard(props) {
                                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                                                                         {gifts.map(
                                                                             (
-                                                                                gift
+                                                                                gift,
                                                                             ) => {
                                                                                 const details =
                                                                                     JSON.parse(
-                                                                                        gift.details
+                                                                                        gift.details,
                                                                                     ); // Parse the details JSON
                                                                                 return (
                                                                                     <>
@@ -1237,7 +1233,7 @@ export default function Dashboard(props) {
                                                                                         )}
                                                                                     </>
                                                                                 );
-                                                                            }
+                                                                            },
                                                                         )}
                                                                     </div>
                                                                 ) : (
