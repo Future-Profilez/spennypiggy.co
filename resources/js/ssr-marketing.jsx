@@ -33,36 +33,31 @@ globalThis.route = (name, params, absolute) => {
     return route(name, params, absolute, Ziggy);
 };
 
-export default (page) => {
-  // Hide window so createInertiaApp detects "server" environment
+export default async (page) => {
   hideWindowForInertia = true;
-  
-  const promise = createInertiaApp({
-    page,
-    render: renderToString,
-    title: title => `${title || appName} - ${appName}`,
-    resolve: name => {
-      const mod = pages[`./Pages/${name}.jsx`];
-      return (mod && mod.default) || (() => React.createElement('div', null, ''));
-    },
-    setup: ({ App, props }) => {
-      // Ensure Ziggy is available in props
-      const ziggy = props.initialPage.props.ziggy;
-      if (ziggy) {
-          globalThis.Ziggy = ziggy;
-      }
-      
-      // Hook route into the component context if needed, but globalThis.route should cover it
-      return React.createElement(
-        Provider,
-        { store },
-        React.createElement(App, props)
-      );
-    },
-  });
-
-  // Restore window immediately so components can use it during rendering
-  hideWindowForInertia = false;
-
-  return promise;
+  try {
+    const html = await createInertiaApp({
+      page,
+      render: renderToString,
+      title: title => `${title || appName} - ${appName}`,
+      resolve: name => {
+        const mod = pages[`./Pages/${name}.jsx`];
+        return (mod && mod.default) || (() => React.createElement('div', null, ''));
+      },
+      setup: ({ App, props }) => {
+        const ziggy = props.initialPage.props.ziggy;
+        if (ziggy) {
+            globalThis.Ziggy = ziggy;
+        }
+        return React.createElement(
+          Provider,
+          { store },
+          React.createElement(App, props)
+        );
+      },
+    });
+    return html;
+  } finally {
+    hideWindowForInertia = false;
+  }
 };
