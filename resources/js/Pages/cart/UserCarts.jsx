@@ -9,6 +9,7 @@ import Turnstile from "@/Components/Turnstile";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
+    console.log("UserCarts props", props);
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
@@ -158,6 +159,8 @@ export default function UserCarts(props) {
         updateTotals();
     }, [items]);
 
+    console.log("UserCarts items", items);
+
     return (
         <div className={`${cartCleared ? "d-none" : ""} px-2 containerbox`}>
             <div className="my-4 pb-12 mb-16 border-b border-[#000] cartPage overflow-hidden bg-white md:shadow-black md:border md:border-black md:rounded-[35px]">
@@ -181,7 +184,8 @@ export default function UserCarts(props) {
                                 items.map((c, i) => {
                                     return (
                                         <CartItem
-                                            currency={datas?.user && datas?.user?.default_currency}
+                                            currency={datas?.user && auth?.default_currency}
+                                            // currency={datas?.user && datas?.user?.default_currency}
                                             quantityUpdate={quantityUpdate}
                                             removeCart={removeCart}
                                             data={c}
@@ -195,13 +199,15 @@ export default function UserCarts(props) {
                             <div className="fading cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>
                                 <strong className="text-end text-black">
-                                    {formatMultiPrice(subtotal || "",datas?.user && datas?.user?.default_currency)}
+                                    {formatMultiPrice(subtotal || "", datas?.user && auth?.default_currency)}
+                                    {/* {formatMultiPrice(subtotal || "", datas?.user && datas?.user?.default_currency)} */}
                                 </strong>
                             </div>
                             <div className="fading cartSubTotal whitespace-nowrap text-right mt-1">
                                 <span className="sm:ps-[5px]">Platform Fee :</span>{" "}
                                 <strong className="text-end text-black">  
-                                    {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')}
+                                    {formatMultiPrice(fee || "",datas?.user && auth?.default_currency, 'adminfee')}
+                                    {/* {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')} */}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
                                         <p className="fading max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-[20px] bottom-[20px] right-[10px] text-left font-normal text-[15px] z-[99] hidden group-hover:block">
                                             {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
@@ -214,7 +220,8 @@ export default function UserCarts(props) {
                             <div className="fading cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>
                                 <strong className="text-end text-black">
-                                    {formatMultiPrice((fee + subtotal) || "",datas?.user && datas?.user?.default_currency, 'adminfees')}
+                                    {formatMultiPrice((fee + subtotal) || "",datas?.user && auth?.default_currency, 'adminfees')}
+                                    {/* {formatMultiPrice((fee + subtotal) || "",datas?.user && datas?.user?.default_currency, 'adminfees')} */}
                                 </strong>
                             </div>
                         </div>
@@ -309,7 +316,7 @@ export default function UserCarts(props) {
                                                     setIsChecked(e.target.checked)
                                                 }
                                                 type="checkbox"
-                                                // id="agreeterm"
+                                                id="agreeterm"
                                                 name="agreeterm"
                                                 className="me-2"
                                                 value="agreeterm"

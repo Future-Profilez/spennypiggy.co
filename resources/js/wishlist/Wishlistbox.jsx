@@ -35,6 +35,7 @@ export default function Wishlistbox(props) {
         key,
         trackClick,
     } = props;
+    console.log("props", props);
     const {
         attributes,
         listeners,
@@ -53,8 +54,6 @@ export default function Wishlistbox(props) {
     const stylenone = {
         transform: "",
     };
-
-    console.log("itm", itm);
 
     const [itemUID, setItemUID] = useState(itemid);
     const [open, setOpen] = useState();
@@ -76,8 +75,9 @@ export default function Wishlistbox(props) {
         return r.toFixed(1);
     };
 
-    const processingFee =
+    const processingFee = 
         ((itm?.price || 0) * (window.platformFeePercentage || 20)) / 100;
+        console.log("processingFee", processingFee);
 
     return (
         <div
@@ -191,8 +191,8 @@ export default function Wishlistbox(props) {
                                 </>
                             ) : (
                                 <>
-                                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'USD', 'adminfee')}
-                                    {/* {formatMultiPrice(parseInt(itm.price) + parseInt(processingFee || 0), itm?.currency || "GBP", "adminfee")} */}
+                                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'USD', 'adminfee')} 
+                                    {/* {formatMultiPrice(parseInt(itm.price) + parseInt(processingFee || 0), itm?.currency || "GBP", "adminfee")} */} 
                                 </>
                             )}
                             {IsloggedIn ? (

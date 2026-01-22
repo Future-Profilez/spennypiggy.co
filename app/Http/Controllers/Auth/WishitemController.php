@@ -2389,7 +2389,7 @@ class WishitemController extends Controller
                 ->first();
             $cart = [];
             if ($user) {
-                $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+                $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('status', 1)->get();
                 $groupedWishes = [];
                 foreach ($carts as $wish) {
                     $owner_id = $wish->owner_id;
