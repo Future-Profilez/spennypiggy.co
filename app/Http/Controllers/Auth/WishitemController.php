@@ -2490,7 +2490,6 @@ class WishitemController extends Controller
         } else {
             $cart = [];
         }
-        dd($cart);
         return Inertia::render('cart/Cart', [
             "carts" => $cart,
         ]);

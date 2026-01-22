@@ -13,7 +13,7 @@ export default function UserCarts(props) {
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
-    const { auth, removeFromCart } = props;
+    const { auth, removeFromCart, currency } = props;
     const { format, formatMultiPrice } = PriceFormat();
     const datas = props.data;
     
@@ -184,7 +184,7 @@ export default function UserCarts(props) {
                                 items.map((c, i) => {
                                     return (
                                         <CartItem
-                                            currency={datas?.user && auth?.default_currency}
+                                            currency={datas?.user && currency}
                                             // currency={datas?.user && datas?.user?.default_currency}
                                             quantityUpdate={quantityUpdate}
                                             removeCart={removeCart}
@@ -194,20 +194,19 @@ export default function UserCarts(props) {
                                     );
                                 })}
                         </div>
-                                {console.log("subtotal", auth?.default_currency)}
-                                {console.log("datas?.user?.default_currency", datas?.user?.default_currency)}
+
                         <div className="cartTotal pt-3 pb-6">
                             <div className="fading cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>
                                 <strong className="text-end text-black">
-                                    {formatMultiPrice(subtotal || "", datas?.user && auth?.default_currency)}
+                                    {formatMultiPrice(subtotal || "", datas?.user && currency)}
                                     {/* {formatMultiPrice(subtotal || "", datas?.user && datas?.user?.default_currency)} */}
                                 </strong>
                             </div>
                             <div className="fading cartSubTotal whitespace-nowrap text-right mt-1">
                                 <span className="sm:ps-[5px]">Platform Fee :</span>{" "}
                                 <strong className="text-end text-black">  
-                                    {formatMultiPrice(fee || "",datas?.user && auth?.default_currency, 'adminfee')}
+                                    {formatMultiPrice(fee || "",datas?.user && currency, 'adminfee')}
                                     {/* {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')} */}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
                                         <p className="fading max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-[20px] bottom-[20px] right-[10px] text-left font-normal text-[15px] z-[99] hidden group-hover:block">
@@ -221,7 +220,7 @@ export default function UserCarts(props) {
                             <div className="fading cartSubTotal text-right mt-1">
                                 <strong className="text-dark">Total :</strong>
                                 <strong className="text-end text-black">
-                                    {formatMultiPrice((fee + subtotal) || "",datas?.user && auth?.default_currency, 'adminfees')}
+                                    {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
                                     {/* {formatMultiPrice((fee + subtotal) || "",datas?.user && datas?.user?.default_currency, 'adminfees')} */}
                                 </strong>
                             </div>

@@ -11,11 +11,10 @@ import { GiCardboardBox } from "react-icons/gi";
 
 export default function Cart(props) {
     const deviceid = useMemo(() => DeviceID(), []);
-    const { auth, user } = props;
-    const [cartsItems, setCartItems] = useState([]);
+    const { auth, user, carts } = props;
+    const [cartsItems, setCartItems] = useState(carts);
     const [loading, setLoading] = useState(false);
     const isAuthenticated = useMemo(() => Boolean(auth?.user), [auth?.user?.id]);
-    
     const fetchCartItem = useCallback(() => {
         setLoading(true);
         const timestamp = new Date().getTime();
@@ -149,6 +148,7 @@ export default function Cart(props) {
                                                             auth={auth && auth.user}
                                                             key={`user-cart-${i}`}
                                                             data={c}
+                                                            currency={carts[0]?.user?.currency}
                                                         /> 
                                                     </>
                                                 );
