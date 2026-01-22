@@ -194,7 +194,8 @@ export default function UserCarts(props) {
                                     );
                                 })}
                         </div>
-
+                                {console.log("subtotal", auth?.default_currency)}
+                                {console.log("datas?.user?.default_currency", datas?.user?.default_currency)}
                         <div className="cartTotal pt-3 pb-6">
                             <div className="fading cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>
