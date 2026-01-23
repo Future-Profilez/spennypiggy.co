@@ -44,6 +44,8 @@ environments:
     memory: 1024
     queue-memory: 512
     cli-memory: 1024
+    ssr-memory: 2048
+    nodejs: 18
     scheduler: true
     cli-timeout: 120
     cli-concurrency: 10
