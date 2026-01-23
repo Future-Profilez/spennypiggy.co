@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 
 async function buildServiceWorker() {
   try {
-    console.log('🔧 Building Service Worker with Workbox...');
     
     // Use injectManifest to work with our custom service worker
     const { count, size, warnings } = await injectManifest({
@@ -49,9 +48,6 @@ async function buildServiceWorker() {
         return { manifest };
       }],
     });
-
-    console.log(`✅ Service Worker generated successfully!`);
-    console.log(`📦 ${count} files will be precached, totaling ${(size / 1024 / 1024).toFixed(2)} MB.`);
     
     if (warnings.length > 0) {
       console.warn('⚠️  Warnings:', warnings);
@@ -67,16 +63,13 @@ if ('serviceWorker' in navigator) {
         updateViaCache: 'none' // Always check for updates
       });
 
-      console.log('✅ Service Worker registered successfully:', registration.scope);
 
       // Handle updates
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
-        console.log('🔄 New Service Worker found, updating...');
         
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('🔄 New Service Worker installed, refreshing page...');
             // Auto-refresh when new SW is ready
             setTimeout(() => window.location.reload(), 1000);
           }
@@ -86,7 +79,6 @@ if ('serviceWorker' in navigator) {
       // Listen for messages from SW
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'CACHE_UPDATED') {
-          console.log('💾 Cache updated:', event.data.payload);
         }
       });
 
@@ -106,7 +98,6 @@ if ('serviceWorker' in navigator) {
 `;
 
     fs.writeFileSync('public/sw-register.js', registrationScript);
-    console.log('✅ Service Worker registration script created!');
 
     return { count, size };
   } catch (error) {

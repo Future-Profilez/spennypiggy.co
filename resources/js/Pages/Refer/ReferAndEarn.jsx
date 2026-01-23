@@ -12,14 +12,6 @@ export default function ReferAndEarn({
     referrals = [],
     canRedeem = false, // ✅ FIX 1
 }) {
-    console.log("ReferAndEarn props:", {
-        auth,
-        referral,
-        stats,
-        referrals,
-        canRedeem,
-    }); // ✅ FIX 2
-
     const [copied, setCopied] = useState(false);
     const [referralCode, setReferralCode] = useState(referral?.code || null);
     const [referralLink, setReferralLink] = useState(referral?.link || null);

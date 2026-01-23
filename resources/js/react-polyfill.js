@@ -2,7 +2,6 @@
 // This must run before ANY React code executes to prevent Children undefined error
 
 // Immediate console log to verify loading
-console.log('🚨 EMERGENCY REACT CHILDREN PATCH LOADING...');
 
 // Pre-emptively create a React Children implementation before React loads
 const createReactChildrenImplementation = () => {
@@ -80,34 +79,23 @@ const EmergencyChildren = createReactChildrenImplementation();
 // Patch global objects BEFORE importing React
 if (typeof window !== 'undefined') {
     window.__REACT_CHILDREN_EMERGENCY_PATCH__ = EmergencyChildren;
-    console.log('🔧 Emergency Children patch installed on window');
 }
 
 if (typeof globalThis !== 'undefined') {
     globalThis.__REACT_CHILDREN_EMERGENCY_PATCH__ = EmergencyChildren;
-    console.log('🔧 Emergency Children patch installed on globalThis');
 }
 
 // Now import React - this should trigger after our emergency patch
 import React, { Children } from 'react';
-
-console.log('🚀 React imported, applying comprehensive fix...');
 
 // Comprehensive React Children fix function
 const applyComprehensiveReactFix = () => {
     const originalReact = React;
     const workingChildren = Children || EmergencyChildren;
     
-    console.log('🔧 Comprehensive React fix starting...', {
-        'Original React.Children': !!originalReact.Children,
-        'Imported Children': !!Children,
-        'Emergency Children': !!EmergencyChildren
-    });
-    
     // Fix 1: Direct assignment
     if (!originalReact.Children) {
         originalReact.Children = workingChildren;
-        console.log('✅ Step 1: Assigned Children to React.Children');
     }
     
     // Fix 2: Make React globally available
@@ -115,7 +103,6 @@ const applyComprehensiveReactFix = () => {
         window.React = originalReact;
         if (!window.React.Children) {
             window.React.Children = workingChildren;
-            console.log('✅ Step 2: Fixed window.React.Children');
         }
         
         // Use defineProperty to lock it down
@@ -126,7 +113,6 @@ const applyComprehensiveReactFix = () => {
                 enumerable: true,
                 configurable: true
             });
-            console.log('✅ Step 3: Protected window.React.Children with defineProperty');
         } catch (e) {
             console.warn('⚠️ Could not use defineProperty on window.React.Children:', e);
         }
@@ -147,7 +133,6 @@ const applyComprehensiveReactFix = () => {
     const ReactProxy = new Proxy(originalReact, {
         get: function(target, prop) {
             if (prop === 'Children' && !target.Children) {
-                console.log('🚨 Proxy intercepted React.Children access - providing emergency implementation');
                 return workingChildren;
             }
             return target[prop];
@@ -166,13 +151,6 @@ const applyComprehensiveReactFix = () => {
     if (typeof globalThis !== 'undefined') {
         globalThis.React = ReactProxy;
     }
-    
-    console.log('✅ Comprehensive React Children fix completed successfully!', {
-        'React.Children available': !!(originalReact.Children || workingChildren),
-        'window.React.Children available': !!(typeof window !== 'undefined' && window.React && window.React.Children),
-        'globalThis.React.Children available': !!(typeof globalThis !== 'undefined' && globalThis.React && globalThis.React.Children),
-        'Proxy installed': true
-    });
     
     return ReactProxy;
 };

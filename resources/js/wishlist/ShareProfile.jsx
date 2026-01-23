@@ -10,8 +10,7 @@ export default function ShareProfile({ children, username, classes, custom }) {
         const currentURL = custom ? custom : window.location.href;
 
         if (navigator) {
-            navigator &&
-                navigator?.share({
+            navigator && navigator?.share({
                     url: currentURL,
                     title: username ? username : "Spenny Piggy",
                 });

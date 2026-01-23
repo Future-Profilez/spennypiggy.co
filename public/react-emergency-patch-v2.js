@@ -82,7 +82,6 @@
             
             // Create a placeholder target to avoid the error
             target = window.React || { version: '18.3.1' };
-            console.log('✅ Created valid target for Children property');
         }
         
         // Fix undefined Children value - only if descriptor has a value property
@@ -103,10 +102,8 @@
             version: '18.3.1',
             Children: emergencyChildren
         };
-        console.log('✅ Installed window.React with Children');
     } else if (!window.React.Children) {
         window.React.Children = emergencyChildren;
-        console.log('✅ Added Children to existing window.React');
     }
     
     // Also handle globalThis for modern environments
@@ -130,12 +127,10 @@
         define = function(name, deps, factory) {
             // If this is a React definition, ensure it has Children
             if (name === 'react' || (Array.isArray(deps) && deps.indexOf('react') !== -1)) {
-                console.log('🔍 Intercepted AMD define for React');
                 const originalFactory = factory;
                 factory = function() {
                     const reactModule = originalFactory.apply(this, arguments);
                     if (reactModule && !reactModule.Children) {
-                        console.log('✅ Added Children to AMD React module');
                         reactModule.Children = emergencyChildren;
                     }
                     return reactModule;
@@ -184,14 +179,4 @@
             window.React.Children = emergencyChildren;
         }
     }, 50); // Check frequently
-    
-    console.log('✅ Global React Children emergency patch completed successfully!');
-    
-    // Debug information
-    console.log('🔍 Emergency patch status:', {
-        'window.React exists': !!window.React,
-        'window.React.Children exists': !!(window.React && window.React.Children),
-        'globalThis.React.Children exists': !!(typeof globalThis !== 'undefined' && globalThis.React && globalThis.React.Children),
-        'Emergency implementation available': !!emergencyChildren
-    });
 })();

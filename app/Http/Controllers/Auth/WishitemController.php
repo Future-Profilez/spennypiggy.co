@@ -2389,7 +2389,7 @@ class WishitemController extends Controller
                 ->first();
             $cart = [];
             if ($user) {
-                $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
+                $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('status', 1)->get();
                 $groupedWishes = [];
                 foreach ($carts as $wish) {
                     $owner_id = $wish->owner_id;
@@ -2408,6 +2408,7 @@ class WishitemController extends Controller
                         'tax' => $wish->tax,
                         'surprisemessage' => $wish->message ?? '',
                         'quantity' => $wish->quantity ?? '',
+                        'currency' => $wish->wish->currency ?? '',
                     ];
                 }
             }
@@ -2420,6 +2421,7 @@ class WishitemController extends Controller
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
                         'default_currency' => $value[0]['owner']['default_currency'],
+                        'currency' => $value[0]['currency'],
                     ],
 
                 ];
@@ -2456,7 +2458,7 @@ class WishitemController extends Controller
                             'category' => $v['wish']['category'],
                             'url' => $v['url'],
                             'quantity' => $v['quantity'],
-
+                            'currency' => $v['wish']['currency'],
                         ];
                     } else {
                         $cart[$key]['items'][$k] = [
@@ -2469,6 +2471,7 @@ class WishitemController extends Controller
                             'url' => $v['url'],
                             'surprise_message' => $v['surprisemessage'],
                             'quantity' => $v['quantity'],
+                            'currency' => $v['currency'],
                         ];
                     }
                     // if ($v['wish']['subscription'] == 2) {

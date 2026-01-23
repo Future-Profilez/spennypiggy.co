@@ -7,10 +7,6 @@ export default function TestIntercom() {
     const intercom = props?.intercom || {};
 
     useEffect(() => {
-        console.log('=== INTERCOM DEBUG INFO ===');
-        console.log('Intercom config from server:', intercom);
-        console.log('Page props:', props);
-        console.log('User:', props.auth?.user);
         
         // The IntercomProvider will automatically handle loading
         // We just need to wait and test if it works
@@ -19,24 +15,18 @@ export default function TestIntercom() {
         
         const checkIntercom = () => {
             attempts++;
-            console.log(`Checking Intercom (attempt ${attempts}/${maxAttempts})...`);
             
             if (window.Intercom) {
-                console.log('✅ Intercom loaded successfully!');
-                console.log('Current Intercom settings:', window.intercomSettings);
                 
                 // Check if the widget is actually visible
                 const widget = document.querySelector('iframe[name*="intercom"]');
-                console.log('Widget iframe present:', !!widget);
                 
                 return; // Stop checking
             } else {
-                console.log('❌ Intercom not loaded yet...');
                 
                 if (attempts < maxAttempts) {
                     setTimeout(checkIntercom, 1000);
                 } else {
-                    console.log('🚨 Intercom failed to load after', maxAttempts, 'attempts');
                     console.log('Check if IntercomProvider is working correctly');
                 }
             }
@@ -46,9 +36,7 @@ export default function TestIntercom() {
     }, []);
 
     const handleTestIntercom = () => {
-        console.log('Manual Intercom test triggered');
         if (window.Intercom) {
-            console.log('Showing Intercom widget manually');
             window.Intercom('show');
         } else {
             console.log('Intercom not available yet - check if INTERCOM_ENABLED=true and you are a creator');
@@ -56,7 +44,6 @@ export default function TestIntercom() {
     };
 
     const handleUpdateIntercom = () => {
-        console.log('Testing Intercom update');
         if (window.Intercom) {
             window.Intercom('update', {
                 ...window.intercomSettings,

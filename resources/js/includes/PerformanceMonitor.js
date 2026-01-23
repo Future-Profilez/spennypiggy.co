@@ -135,9 +135,6 @@ class PerformanceMonitor {
         };
         
         console.group('🚀 Performance Summary');
-        console.log('Page Load Time:', Math.round(summary.pageLoad), 'ms');
-        console.log('DOM Ready Time:', Math.round(summary.domReady), 'ms');
-        console.log('First Paint Time:', Math.round(summary.firstPaint), 'ms');
         
         if (summary.slowComponents.length > 0) {
             console.warn('Slow Components:', summary.slowComponents);

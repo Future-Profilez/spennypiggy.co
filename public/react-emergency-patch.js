@@ -4,8 +4,6 @@
 (function() {
     'use strict';
     
-    // console.log('🚨 GLOBAL REACT EMERGENCY PATCH LOADING...');
-    
     // Create a comprehensive Children API implementation
     const createEmergencyChildrenAPI = () => {
         return {
@@ -85,7 +83,6 @@
     // Ensure React.Children is available
     if (!window.React.Children) {
         window.React.Children = emergencyChildren;
-        // console.log('✅ Emergency React.Children installed on window.React');
     }
     
     // Also patch globalThis
@@ -95,7 +92,6 @@
         }
         if (!globalThis.React.Children) {
             globalThis.React.Children = emergencyChildren;
-            // console.log('✅ Emergency React.Children installed on globalThis.React');
         }
     }
     
@@ -127,7 +123,6 @@
                 // Ensure Children property exists on any React object assigned to window
                 if (!newReact.Children) {
                     newReact.Children = emergencyChildren;
-                    // console.log('✅ Auto-fixed missing Children on newly assigned React object');
                 }
             }
             originalReact = newReact;
@@ -135,6 +130,4 @@
         enumerable: true,
         configurable: true
     });
-    
-    // console.log('✅ Global React Children emergency patch completed successfully!');
 })();

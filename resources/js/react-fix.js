@@ -14,8 +14,6 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🔧 React Fix: Starting React initialization fix');
-
 // Import React explicitly to ensure it's available
 import ReactModule from 'react';
 
@@ -72,7 +70,6 @@ const ensureReactChildren = (ReactInstance) => {
                 };
             
             ReactInstance.Children = minimalChildren;
-            console.log('✅ React Fix: Restored React.Children from fallback');
         }
 
         // Verify React.Children methods exist
@@ -83,8 +80,6 @@ const ensureReactChildren = (ReactInstance) => {
             console.error('🚨 React Fix: React.Children missing methods:', missingMethods);
             return false;
         }
-
-        console.log('✅ React Fix: React.Children is properly initialized');
         return true;
     } catch (error) {
         console.error('🚨 React Fix: Error during React.Children initialization:', error);
@@ -94,7 +89,6 @@ const ensureReactChildren = (ReactInstance) => {
 
 // Apply the fix immediately when this module is loaded
 const applyReactFix = () => {
-    console.log('🔧 React Fix: Applying React initialization fix');
     
     // Use the imported React module
     if (!ReactModule) {
@@ -125,7 +119,6 @@ const applyReactFix = () => {
             ReactModule.Fragment = 'react.fragment';
         }
         
-        console.log('✅ React Fix: JSX runtime compatibility checks passed');
     } catch (jsxError) {
         console.error('🚨 React Fix: JSX runtime error:', jsxError);
     }

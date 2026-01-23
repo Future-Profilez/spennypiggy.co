@@ -8,7 +8,6 @@ import Nocontent from "@/includes/Nocontent";
 
 export default function FollowersBulkNotification() {
     const { pwa_notification_details } = usePage().props;
-    console.log("pwa_notification_detailsssssssss", pwa_notification_details);
     const { successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({ title: "", body: "" });

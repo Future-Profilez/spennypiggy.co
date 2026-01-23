@@ -22,9 +22,7 @@ export default function FounderLeaderboard({ currentUser }) {
         }
         
         try {
-            console.log('Fetching leaderboard data for user:', currentUser);
             const response = await axios.get('/founder/leaderboard');
-            console.log('Leaderboard response:', response.data);
             
             if (response.data) {
                 setLeaderboardData(response.data);

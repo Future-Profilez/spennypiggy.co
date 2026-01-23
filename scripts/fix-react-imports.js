@@ -36,13 +36,11 @@ function addReactImport(filePath) {
         
         // Skip if already has React import
         if (content.includes('import React') || content.includes('import { React }')) {
-            console.log(`✅ ${filePath} already has React import`);
             return false;
         }
         
         // Skip if doesn't actually use JSX
         if (!usesJSX(content)) {
-            console.log(`⏭️  ${filePath} doesn't use JSX, skipping`);
             return false;
         }
         
@@ -68,8 +66,6 @@ function addReactImport(filePath) {
         
         const newContent = lines.join('\n');
         fs.writeFileSync(filePath, newContent, 'utf8');
-        
-        console.log(`✅ Added React import to ${filePath}`);
         return true;
     } catch (error) {
         console.error(`❌ Error processing ${filePath}:`, error.message);
@@ -78,10 +74,8 @@ function addReactImport(filePath) {
 }
 
 // Main execution
-console.log('🔍 Finding JSX files without React imports...');
 
 const files = findJSXFilesWithoutReact();
-console.log(`Found ${files.length} files to check`);
 
 let fixed = 0;
 let skipped = 0;
@@ -94,11 +88,6 @@ files.forEach(file => {
         skipped++;
     }
 });
-
-console.log('\n📊 Summary:');
-console.log(`✅ Fixed: ${fixed} files`);
-console.log(`⏭️  Skipped: ${skipped} files`);
-console.log(`📁 Total checked: ${files.length} files`);
 
 if (fixed > 0) {
     console.log('\n🎉 React imports have been added to JSX files that need them!');

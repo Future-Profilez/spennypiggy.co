@@ -6,17 +6,8 @@ export default function IntercomProviderFixed() {
 
     async function configIntercom() {
         setTimeout(() => {
-            console.log('🔍 Intercom config starting...', { auth: !!auth, user: !!auth?.user });
             
             if (auth && auth.user) {
-                console.log('🔍 User data for Intercom:', {
-                    id: auth.user.id,
-                    name: auth.user.name,
-                    email: auth.user.email,
-                    role: auth.user.role,
-                    created_at: auth.user.created_at,
-                    username: auth.user.username
-                });
                 
                 // Temporarily allow all roles for debugging
                 // Only show for creators (role=1) and admins (role=0)
@@ -42,8 +33,6 @@ export default function IntercomProviderFixed() {
                     }
                 };
                 
-                console.log('📞 Intercom settings:', window.intercomSettings);
-                
                 (function () {
                     var w = window;
                     var ic = w.Intercom;
@@ -62,11 +51,9 @@ export default function IntercomProviderFixed() {
                         w.Intercom = i;
                         
                         // Queue the boot command with settings
-                        console.log('⚙️ Queuing Intercom boot command...');
                         i('boot', w.intercomSettings);
                         
                         var l = function () {
-                            console.log('📦 Loading Intercom script...');
                             var s = d.createElement("script");
                             s.type = "text/javascript";
                             s.async = true;
@@ -76,11 +63,8 @@ export default function IntercomProviderFixed() {
                             x.parentNode.insertBefore(s, x);
                             
                             s.onload = function() {
-                                console.log('✅ Intercom script loaded successfully');
                                 setTimeout(() => {
-                                    const widget = document.querySelector('iframe[name*="intercom"]') || 
-                                                   document.querySelector('.intercom-lightweight-app');
-                                    console.log('📋 Widget found:', !!widget);
+                                    const widget = document.querySelector('iframe[name*="intercom"]') || document.querySelector('.intercom-lightweight-app');
                                 }, 2000);
                             };
                             
@@ -107,7 +91,6 @@ export default function IntercomProviderFixed() {
 
     useEffect(() => {
         configIntercom();
-        console.log('📞 IntercomProviderFixed initialized for user:', auth?.user?.name || 'anonymous');
     }, [auth?.user?.id]);
 
     return null; // No UI component needed

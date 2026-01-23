@@ -30,7 +30,6 @@ export default function SupportImageDemo() {
         setGeneratedImage(null);
 
         try {
-            console.log('🎨 Generating support social image...', testPayload);
             
             const imageFile = await generateSupportSocialImage(testPayload);
             
@@ -40,12 +39,6 @@ export default function SupportImageDemo() {
                 url: imageUrl,
                 file: imageFile,
                 filename: imageFile.name
-            });
-            
-            console.log('✅ Image generated successfully!', {
-                filename: imageFile.name,
-                size: `${(imageFile.size / 1024).toFixed(1)}KB`,
-                type: imageFile.type
             });
 
         } catch (err) {

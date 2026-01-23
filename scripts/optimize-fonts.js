@@ -44,24 +44,17 @@ if (!fs.existsSync(OPTIMIZED_DIR)) {
     fs.mkdirSync(OPTIMIZED_DIR, { recursive: true });
 }
 
-console.log('🚀 Starting font optimization...');
-console.log(`📊 Analyzing glyphs from: ${SITE_URL}`);
-
 // Function to run glyphhanger and create optimized fonts
 function optimizeFont(font) {
     const inputPath = path.join(FONTS_DIR, font.file);
     const outputPath = path.join(OPTIMIZED_DIR, font.file);
     
-    console.log(`\n✨ Processing ${font.name}...`);
-    
     try {
         // Step 1: Analyze the website to find used characters
-        console.log(`  📈 Analyzing glyph usage...`);
         const glyphCommand = `npx glyphhanger ${SITE_URL} --verbose`;
         const usedChars = execSync(glyphCommand, { encoding: 'utf8' });
         
         // Step 2: Create subset with only used characters
-        console.log(`  ✂️  Creating optimized subset...`);
         const subsetCommand = `npx glyphhanger --whitelist="${usedChars.trim()}" --subset=${inputPath} --css --formats=woff2`;
         execSync(subsetCommand, { cwd: OPTIMIZED_DIR });
         
@@ -70,19 +63,13 @@ function optimizeFont(font) {
         const optimizedSize = fs.statSync(outputPath).size;
         const savings = Math.round(((originalSize - optimizedSize) / originalSize) * 100);
         
-        console.log(`  📊 Original: ${(originalSize / 1024).toFixed(1)}KB`);
-        console.log(`  📊 Optimized: ${(optimizedSize / 1024).toFixed(1)}KB`);
-        console.log(`  💾 Saved: ${savings}%`);
-        
     } catch (error) {
         console.error(`❌ Error optimizing ${font.name}:`, error.message);
         
         // Fallback: create basic Latin subset if site analysis fails
-        console.log(`  🔄 Creating Latin subset as fallback...`);
         const fallbackCommand = `npx glyphhanger --US_ASCII --subset=${inputPath} --css --formats=woff2`;
         try {
             execSync(fallbackCommand, { cwd: OPTIMIZED_DIR });
-            console.log(`  ✅ Latin subset created successfully`);
         } catch (fallbackError) {
             console.error(`❌ Fallback also failed:`, fallbackError.message);
         }
@@ -138,7 +125,6 @@ body {
 `;
     
     fs.writeFileSync(cssPath, optimizedCSS);
-    console.log(`\n📝 Created optimized CSS file: ${cssPath}`);
 }
 
 // Main execution
@@ -158,13 +144,6 @@ async function main() {
         // Create optimized CSS
         updateFontCSS();
         
-        console.log('\n🎉 Font optimization complete!');
-        console.log('📋 Next steps:');
-        console.log('  1. Review the optimized fonts in resources/assets/fonts/optimized/');
-        console.log('  2. Update your CSS imports to use the optimized fonts');
-        console.log('  3. Test the site to ensure all characters display correctly');
-        console.log('  4. Consider removing legacy font formats (TTF, WOFF)');
-        
     } catch (error) {
         console.error('❌ Font optimization failed:', error.message);
         process.exit(1);
@@ -176,7 +155,6 @@ if (process.argv.length > 2) {
     const url = process.argv[2];
     if (url.startsWith('http')) {
         process.env.SITE_URL = url;
-        console.log(`🌐 Using custom URL: ${url}`);
     }
 }
 

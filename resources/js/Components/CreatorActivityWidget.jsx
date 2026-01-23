@@ -3,7 +3,6 @@ import { Link, usePage } from '@inertiajs/react';
 
 const CreatorActivityWidget = (props) => {
     const pge = usePage().props;
-    console.log("Rendering CreatorActivityWidget with props:", pge);
     const { activityStatus, className = "" } = props;
     if (!activityStatus || activityStatus.status === 'not_creator') {
         return null;

@@ -77,7 +77,6 @@ class PolyfillManager {
         if (polyfillsToLoad.length > 0) {
             try {
                 await Promise.all(polyfillsToLoad);
-                console.log('Essential polyfills loaded:', polyfillsToLoad.length);
             } catch (error) {
                 console.warn('Some polyfills failed to load:', error);
             }

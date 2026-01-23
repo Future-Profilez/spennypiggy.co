@@ -23,7 +23,6 @@ export const PwaDebug = {
    */
   forceShow() {
     resetPromptTiming();
-    console.log('🔄 PWA prompt timing reset. Refresh the page to potentially see the prompt.');
   },
 
   /**
@@ -31,7 +30,6 @@ export const PwaDebug = {
    */
   markShown() {
     markPromptShown();
-    console.log('✅ PWA prompt marked as shown for this month.');
   },
 
   /**
@@ -41,7 +39,6 @@ export const PwaDebug = {
     const event = new Event('beforeinstallprompt');
     event.preventDefault = () => console.log('preventDefault called');
     window.dispatchEvent(event);
-    console.log('📱 Simulated beforeinstallprompt event');
   },
 
   /**
@@ -63,5 +60,4 @@ export const PwaDebug = {
 // Make debug utilities available globally in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   window.PwaDebug = PwaDebug;
-  console.log('🐷 PWA Debug utilities available via window.PwaDebug');
 }

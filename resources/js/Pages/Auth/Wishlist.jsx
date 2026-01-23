@@ -186,9 +186,6 @@ export default function Wishlist(props) {
             content_file_type: metadata.type,
             content_file_size: metadata.size
         }));
-        
-        console.log("Content file uploaded:", uuid, metadata);
-        console.log("Current thumbnail state:", thumbnail);
     };
 
     // Content file updates are handled in getContentFileUID function
@@ -200,7 +197,6 @@ export default function Wishlist(props) {
         if (data?.uuid) {
             let thumbnailUuid = data.uuid;
             setThumbnail(thumbnailUuid);
-            console.log("Thumbnail uploaded:", thumbnailUuid);
             // setIsEditable(true);
         }
     };
@@ -245,7 +241,6 @@ export default function Wishlist(props) {
 
     useEffect(() => {
         setData("thumbnail", thumbnail);
-        console.log("thumbnail",thumbnail);
     }, [thumbnail]);
 
 

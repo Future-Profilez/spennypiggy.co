@@ -54,8 +54,6 @@ export default function Wishlistbox(props) {
         transform: "",
     };
 
-    console.log("itm", itm);
-
     const [itemUID, setItemUID] = useState(itemid);
     const [open, setOpen] = useState();
     const openAddtocart = () => {
@@ -76,7 +74,7 @@ export default function Wishlistbox(props) {
         return r.toFixed(1);
     };
 
-    const processingFee =
+    const processingFee = 
         ((itm?.price || 0) * (window.platformFeePercentage || 20)) / 100;
 
     return (
@@ -191,8 +189,8 @@ export default function Wishlistbox(props) {
                                 </>
                             ) : (
                                 <>
-                                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'USD', 'adminfee')}
-                                    {/* {formatMultiPrice(parseInt(itm.price) + parseInt(processingFee || 0), itm?.currency || "GBP", "adminfee")} */}
+                                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'USD', 'adminfee')} 
+                                    {/* {formatMultiPrice(parseInt(itm.price) + parseInt(processingFee || 0), itm?.currency || "GBP", "adminfee")} */} 
                                 </>
                             )}
                             {IsloggedIn ? (

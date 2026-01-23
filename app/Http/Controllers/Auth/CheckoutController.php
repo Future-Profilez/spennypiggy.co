@@ -57,6 +57,7 @@ class CheckoutController extends Controller
 
         $user = Auth::user();
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        // dd($currency,auth()->user()->default_currency);
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -244,7 +245,7 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                $ConvertedAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, $currency);
+                $ConvertedAmount = Helpers::priceFormat($dd->wish->currency, $totalAmount, $currency);
                 $platformFeeAmount = $ConvertedAmount * $taxPercentage / 100;
                 $showTax = $platformFeeAmount + $showAdminsFees;
                 $showTaxWithQuantity = $showTax * $dd->quantity;
