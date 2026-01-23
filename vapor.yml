@@ -17,17 +17,17 @@ environments:
       - "public/build/**"
       - "bootstrap/ssr/**"
     build:
-    - "composer install --no-dev"
-    - "php artisan event:cache"
-    - "php artisan optimize:clear"
-    - "php artisan config:cache"
-    - "rm -rf node_modules package-lock.json"
-    # - "npm install --no-audit --no-fund"
-    - "rm -rf public/build" # Linux/mac/OS
-    - "npm run build"
-    # - "npm run clear"
-    - "rm -rf node_modules" # Linux/mac/OS
-    # - "rm -rf package-lock.json"   # Keep fo
+      - "composer install --no-dev"
+      - "php artisan event:cache"
+      - "php artisan optimize:clear"
+      - "npm install --no-audit --no-fund"
+      - "rm -rf public/build" # Linux/mac/OS
+      - "rm -rf bootstrap/ssr" # Linux/mac/OS
+      - "npm run build"
+      # - "npm run clear"
+      - "rm -rf node_modules" # Linux/mac/OS
+      # - "rm -rf package-lock.json"   # Keep for npm ci in build process
+      # - "rd /s /q node_modules" # Windows
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
