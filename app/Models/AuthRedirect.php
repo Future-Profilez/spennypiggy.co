@@ -17,6 +17,8 @@ class AuthRedirect extends Model
         "country",
         "origin",
         "target",
+        "ip_address",
+        "user_agent",
         "query_string",
         "used_at"
     ];

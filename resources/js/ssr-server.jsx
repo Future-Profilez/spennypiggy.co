@@ -1,10 +1,11 @@
 import React from 'react';
-import './ssr-shims.js'; // Import shims first to ensure globals are set
 // Shim useLayoutEffect for SSR to avoid warnings
 if (typeof React.useLayoutEffect !== 'undefined') {
     React.useLayoutEffect = React.useEffect;
 }
+import './ssr-shims.js';
 import { createInertiaApp } from '@inertiajs/react';
+import createServer from '@inertiajs/react/server';
 import { renderToString } from 'react-dom/server';
 import { Provider } from 'react-redux';
 import store from './Pages/redux/Store';
@@ -28,24 +29,23 @@ try {
     console.error('Failed to redefine global.window:', e);
 }
 
-// Global route helper for SSR
 globalThis.route = (name, params, absolute) => {
-    return route(name, params, absolute, Ziggy);
+  return route(name, params, absolute, Ziggy);
 };
 
-export default async (page) => {
+createServer(async (page) => {
   hideWindowForInertia = true;
-  console.log('SSR render start', page && page.component);
   try {
-    const html = await createInertiaApp({
+    return await createInertiaApp({
       page,
       render: renderToString,
-      title: title => `${title || appName} - ${appName}`,
-      resolve: name => {
+      title: (title) => `${title || appName} - ${appName}`,
+      resolve: (name) => {
         const mod = pages[`./Pages/${name}.jsx`];
         return (mod && mod.default) || (() => React.createElement('div', null, ''));
       },
       setup: ({ App, props }) => {
+        // Ensure Ziggy is available in the component tree if passed via props
         const ziggy = props.initialPage.props.ziggy;
         if (ziggy) {
             globalThis.Ziggy = ziggy;
@@ -57,12 +57,10 @@ export default async (page) => {
         );
       },
     });
-    console.log('SSR render ok', page && page.component);
-    return html;
-  } catch (err) {
-    console.error('SSR render error', err && err.stack ? err.stack : err);
-    throw err;
+  } catch (error) {
+    console.error('SSR Error:', error);
+    throw error;
   } finally {
     hideWindowForInertia = false;
   }
-};
+});

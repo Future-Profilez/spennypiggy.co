@@ -20,7 +20,7 @@ export default function Index() {
       </Head>
       <Guest>
         <div className="bg-[#F9F9F9]  font-sans text-gray-900 pb-20 relative  ">
-          <div className='containerbox max-auto'>
+          <div className='containerbox mx-auto'>
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                 <div className="absolute top-0 left-10 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float"></div>
                 <div className="absolute top-20 right-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 floating-shape animate-float-delayed" style={{animationDelay: '2s'}}></div>
@@ -30,8 +30,7 @@ export default function Index() {
               <div className=" pt-12 pb-16 md:pt-24 md:pb-24">
                 <div className="max-w-6xl">
                   <h1 className="text-3xl md:text-5xl lg:text-6xl  font-gulfs uppercase leading-[0.9] tracking-wide mb-8 text-black">
-                    Creators 
-                    Keep <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600">100%.</span> <br/>
+                    Creators Keep <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600">100%.</span> <br/>
                     <span className="text-gray-600">We Protect Your Payouts.</span>
                   </h1>
                   <p className="text-lg sm:text-xl md:text-2xl font-medium text-gray-600 max-w-2xl leading-relaxed mb-8">

@@ -70,7 +70,7 @@ class RegisteredUserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
             'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
@@ -105,7 +105,7 @@ class RegisteredUserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
         ]);
@@ -295,6 +295,8 @@ class RegisteredUserController extends Controller
             "username" => [
                 "required",
                 "string",
+                "alpha_num",
+                "not_regex:/@/",
                 "min:5",
                 "max:20"
             ]

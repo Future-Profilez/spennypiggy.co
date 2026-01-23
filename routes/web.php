@@ -51,77 +51,78 @@ Route::get('/csrf-cookie', function () {
 
 
 // Debug route to test subscription status
-Route::get('/debug-subscription/{userId}', function ($userId) {
-    $user = App\Models\User::find($userId);
-    if (!$user) {
-        return response()->json(['error' => 'User not found']);
-    }
-    
-    $subscription = $user->creatorMonthlySubscription;
-    
-    return response()->json([
-        'user_id' => $user->id,
-        'username' => $user->username,
-        'role' => $user->role,
-        'is_subscribed' => $user->is_subscribed,
-        'created_at' => $user->created_at,
-        'subscription_status_accessor' => $user->subscription_status,
-        'has_monthly_charge_record' => $subscription ? true : false,
-        'monthly_charge_data' => $subscription ? [
-            'id' => $subscription->id,
-            'status' => $subscription->status,
-            'stripe_id' => $subscription->stripe_id,
-            'current_start_trial_date' => $subscription->current_start_trial_date,
-            'current_end_trial_date' => $subscription->current_end_trial_date,
-            'current_start_subscription_date' => $subscription->current_start_subscription_date,
-            'current_end_subscription_date' => $subscription->current_end_subscription_date,
-            'created_at' => $subscription->created_at,
-        ] : null,
-        'trial_calculation' => [
-            'user_created_at' => $user->created_at,
-            'trial_end_date' => \Carbon\Carbon::parse($user->created_at)->addDays(3),
-            'now' => \Carbon\Carbon::now(),
-            'is_within_trial' => \Carbon\Carbon::now()->lessThan(\Carbon\Carbon::parse($user->created_at)->addDays(3)),
-        ],
-        'timestamp' => now(),
-    ]);
-})->middleware('auth');
+if (app()->environment('local')) {
+    Route::get('/debug-subscription/{userId}', function ($userId) {
+        $user = App\Models\User::find($userId);
+        if (!$user) {
+            return response()->json(['error' => 'User not found']);
+        }
+        
+        $subscription = $user->creatorMonthlySubscription;
+        
+        return response()->json([
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'role' => $user->role,
+            'is_subscribed' => $user->is_subscribed,
+            'created_at' => $user->created_at,
+            'subscription_status_accessor' => $user->subscription_status,
+            'has_monthly_charge_record' => $subscription ? true : false,
+            'monthly_charge_data' => $subscription ? [
+                'id' => $subscription->id,
+                'status' => $subscription->status,
+                'stripe_id' => $subscription->stripe_id,
+                'current_start_trial_date' => $subscription->current_start_trial_date,
+                'current_end_trial_date' => $subscription->current_end_trial_date,
+                'current_start_subscription_date' => $subscription->current_start_subscription_date,
+                'current_end_subscription_date' => $subscription->current_end_subscription_date,
+                'created_at' => $subscription->created_at,
+            ] : null,
+            'trial_calculation' => [
+                'user_created_at' => $user->created_at,
+                'trial_end_date' => \Carbon\Carbon::parse($user->created_at)->addDays(3),
+                'now' => \Carbon\Carbon::now(),
+                'is_within_trial' => \Carbon\Carbon::now()->lessThan(\Carbon\Carbon::parse($user->created_at)->addDays(3)),
+            ],
+            'timestamp' => now(),
+        ]);
+    })->middleware('auth');
 
-// Debug route to test cart API
-Route::get('/debug-cart-api', function () {
-    $controller = app(App\Http\Controllers\Auth\WishitemController::class);
-    $response = $controller->authenticatedCartItems();
-    
-    $authUser = Auth::user();
-    return response()->json([
-        'timestamp' => now(),
-        'auth_id' => Auth::id(),
-        'auth_user' => $authUser instanceof App\Models\User ? [
-            'id' => $authUser->id,
-            'name' => $authUser->name,
-            'email' => $authUser->email,
-        ] : null,
-        'cart_api_response' => json_decode($response->getContent(), true),
-        'db_cart_count' => App\Models\UserCart::count()
-    ]);
-})->name('debug.cart.api');
+    // Debug route to test cart API
+    Route::get('/debug-cart-api', function () {
+        $controller = app(App\Http\Controllers\Auth\WishitemController::class);
+        $response = $controller->authenticatedCartItems();
+        
+        $authUser = Auth::user();
+        return response()->json([
+            'timestamp' => now(),
+            'auth_id' => Auth::id(),
+            'auth_user' => $authUser instanceof App\Models\User ? [
+                'id' => $authUser->id,
+                'name' => $authUser->name,
+                'email' => $authUser->email,
+            ] : null,
+            'cart_api_response' => json_decode($response->getContent(), true),
+            'db_cart_count' => App\Models\UserCart::count()
+        ]);
+    })->name('debug.cart.api');
 
-Route::get('/send-test-mail', function () {
-    Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
-        $message->to('prem@futureprofilez.com')
-            ->subject('Test Email');
+    Route::get('/send-test-mail', function () {
+        Mail::raw('This is a test email. If you are seeing this, your mail configuration is working!', function ($message) {
+            $message->to('prem@futureprofilez.com')
+                ->subject('Test Email');
+        });
+        return 'Test email sent!';
     });
-    return 'Test email sent!';
-});
 
-
-// seeding command
-Route::get('seed/{seeder}', function ($seeder) {
-    Artisan::call("db:seed --className=$seeder");
-    return response()->json([
-        'seed completed'
-    ]);
-});
+    // seeding command
+    Route::get('seed/{seeder}', function ($seeder) {
+        Artisan::call("db:seed --className=$seeder");
+        return response()->json([
+            'seed completed'
+        ]);
+    });
+}
 
 
 
@@ -216,18 +217,20 @@ Route::get('/creators/founder-bonus', function () {
 // })->name('test.stripe');
 
 
-Route::get('create-product-for-creator-and-gifter', [StripeWebhookController::class, 'CreateProductForCreatorAndGifter']);
+if (app()->environment('local')) {
+    Route::get('create-product-for-creator-and-gifter', [StripeWebhookController::class, 'CreateProductForCreatorAndGifter']);
 
-// routes/web.php or routes/api.php
+    // routes/web.php or routes/api.php
 
-Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
+    Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
 
-// delete all products from stripe
-Route::get('archived-all-products', [TestController::class, 'archiveAllStripeProducts'])->name('archived.all.products');
+    // delete all products from stripe
+    Route::get('archived-all-products', [TestController::class, 'archiveAllStripeProducts'])->name('archived.all.products');
 
-Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
+    Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
 
-Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
+    Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
+}
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
@@ -313,16 +316,18 @@ Route::get('/pwa-debug', function () {
 // Manual trigger for pending approval job (accessible in all environments)
 Route::get('/pending-approval/manual-trigger', [PendingApprovalController::class, 'manualTrigger'])->name('pending-approval.trigger');
 
-// create bypass entry for all users in userVerificationEntry
-Route::get("seed-user-verification-status", [TestController::class, "seedUserVerificationStatus"]);
+if (app()->environment('local')) {
+    // create bypass entry for all users in userVerificationEntry
+    Route::get("seed-user-verification-status", [TestController::class, "seedUserVerificationStatus"]);
 
-Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey']);
-Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
-Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
+    Route::get('/magicbell/user-key', [NotificationController::class, 'getUserKey']);
+    Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
+    Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
 
-// Debug: Test support image generation end-to-end (Node + PHP fallback)
-Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
-    ->name('debug.test-support-image');
+    // Debug: Test support image generation end-to-end (Node + PHP fallback)
+    Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
+        ->name('debug.test-support-image');
+}
 
 // Creator Activity Routes
 Route::middleware('auth')->prefix('creator')->name('creator.')->group(function () {
