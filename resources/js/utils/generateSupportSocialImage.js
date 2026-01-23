@@ -13,7 +13,6 @@ import { renderSupportCard, truncateName, formatCurrency } from './SocialImageTe
  */
 export async function generateSupportSocialImage(payload) {
     try {
-        console.log('🎨 Generating support social image with payload:', payload);
 
         // Validate required data
         if (!payload.creator || !payload.creator.avatar) {
@@ -53,16 +52,13 @@ export async function generateSupportSocialImage(payload) {
 
         // Wait for all images to load
         const images = card.querySelectorAll('img');
-        console.log(`⏳ Waiting for ${images.length} images to load...`);
         
         await Promise.all(Array.from(images).map(img => {
             return new Promise((resolve, reject) => {
                 if (img.complete && img.naturalWidth > 0) {
-                    console.log(`✅ Image already loaded: ${img.src.substring(0, 50)}...`);
                     resolve();
                 } else {
                     img.onload = () => {
-                        console.log(`✅ Image loaded: ${img.src.substring(0, 50)}...`);
                         resolve();
                     };
                     img.onerror = (error) => {
@@ -81,8 +77,6 @@ export async function generateSupportSocialImage(payload) {
 
         // Add small delay to ensure rendering is complete
         await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log('🖼️ Converting HTML to canvas...');
         
         // Dynamic import to avoid SSR issues
         const html2canvas = (await import('html2canvas')).default;
@@ -98,8 +92,6 @@ export async function generateSupportSocialImage(payload) {
             height: 337.5
         });
 
-        console.log(`📐 Canvas dimensions: ${canvas.width}x${canvas.height}`);
-
         // Convert canvas to blob
         const blob = await new Promise(resolve => {
             canvas.toBlob(resolve, 'image/png', 1.0);
@@ -109,13 +101,9 @@ export async function generateSupportSocialImage(payload) {
             throw new Error('Failed to convert canvas to blob');
         }
 
-        console.log(`📦 Generated blob size: ${(blob.size / 1024).toFixed(1)}KB`);
-
         // Create File object
         const filename = `${payload.creator.username}-support-${Date.now()}.png`;
         const file = new File([blob], filename, { type: blob.type });
-
-        console.log(`✅ Support social image generated successfully: ${filename}`);
 
         return file;
 
@@ -142,8 +130,6 @@ export async function generateSupportSocialImage(payload) {
  */
 export async function uploadSupportImageToUploadcare(imageFile) {
     try {
-        console.log('📤 Uploading support image to Uploadcare...');
-
         const formData = new FormData();
         formData.append('UPLOADCARE_PUB_KEY', window.uploadcarePublicKey || process.env.UPLOADCARE_PUBLIC_KEY);
         formData.append('UPLOADCARE_STORE', '1');
@@ -163,8 +149,6 @@ export async function uploadSupportImageToUploadcare(imageFile) {
         if (!data.file) {
             throw new Error('No file UUID returned from Uploadcare');
         }
-
-        console.log(`✅ Image uploaded to Uploadcare: ${data.file}`);
         return data.file;
 
     } catch (error) {
@@ -180,7 +164,6 @@ export async function uploadSupportImageToUploadcare(imageFile) {
  */
 export async function generateAndUploadSupportSocialImage(payload) {
     try {
-        console.log('🚀 Starting complete support social image workflow...');
 
         const imageFile = await generateSupportSocialImage(payload);
         const uuid = await uploadSupportImageToUploadcare(imageFile);
@@ -191,8 +174,7 @@ export async function generateAndUploadSupportSocialImage(payload) {
             url: `https://ucarecdn.com/${uuid}/`,
             filename: imageFile.name
         };
-
-        console.log('🎉 Support social image workflow completed successfully:', result);
+        
         return result;
 
     } catch (error) {

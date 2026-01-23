@@ -579,7 +579,7 @@ const { ziggy } = usePage().props;
                                     )} */}
 
                                 <div className="userManageRt mt-4 ">
-                                    <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : "" }`}>
+                                    <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : "" }`}>
                                         <div className="inlinetab ">
                                             {/* Show rejection message if profile is rejected */}
                                             {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (

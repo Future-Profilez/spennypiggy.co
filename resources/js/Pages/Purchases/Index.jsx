@@ -7,9 +7,6 @@ import PriceFormat from '@/includes/PriceFormat';
 import Nocontent from '@/includes/Nocontent';
 
 export default function Index({ auth, sentDeliverables, receivedDeliverables, activeSubscriptions = [] }) {
-    console.log("Sent Deliverables:", sentDeliverables);
-    console.log("Received Deliverables:", receivedDeliverables);
-    console.log("Active Subscriptions:", activeSubscriptions);
 
     const [selectedDeliverable, setSelectedDeliverable] = useState(null);
     const [showPopup, setShowPopup] = useState(false);

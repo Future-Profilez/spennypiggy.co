@@ -122,7 +122,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             // Update the preview with the newly generated banner
             const bannerUrl = URL.createObjectURL(blob);
             setCurrentSocialBanner(bannerUrl);
-            console.log('Banner generated successfully');
         },500);
 
         // 7. Cleanup

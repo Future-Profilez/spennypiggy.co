@@ -14,9 +14,6 @@ export default function IntercomProviderSimple() {
             return;
         }
 
-        console.log('🚀 Initializing Intercom (matching Footer method)');
-        console.log('📊 Boot data:', boot);
-
         // Use a delay like the original Footer (but shorter for better UX)
         setTimeout(() => {
             // Set global settings exactly like Footer
@@ -58,18 +55,11 @@ export default function IntercomProviderSimple() {
                 }
             })();
             
-            console.log('✅ Intercom initialized with Footer method');
-            
             // Debug check
             setTimeout(() => {
-                console.log('🔍 Intercom status check:');
-                console.log('  - window.Intercom:', typeof window.Intercom);
-                console.log('  - intercomSettings:', window.intercomSettings);
                 
                 const launcher = document.querySelector('.intercom-launcher');
                 const frames = document.querySelectorAll('iframe');
-                console.log('  - Launcher element:', !!launcher);
-                console.log('  - Total iframes:', frames.length);
             }, 3000);
             
         }, 1000); // Much shorter delay than Footer's 7000ms
@@ -83,7 +73,6 @@ export default function IntercomProviderSimple() {
         if (initRef.current && !loggedInUserId && typeof window.Intercom === 'function') {
             window.Intercom('shutdown');
             initRef.current = false;
-            console.log('🔄 Intercom shut down for logout');
         }
     }, [loggedInUserId]);
 

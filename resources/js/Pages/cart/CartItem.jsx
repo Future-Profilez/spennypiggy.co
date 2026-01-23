@@ -5,7 +5,6 @@ import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 
 export default function CartItem({data, removeCart, quantityUpdate, currency}) {
-    console.log("cart item data", data);
 
     const { formatMultiPrice } = PriceFormat();
     const [quantity, setQuantity] = useState(data && data.quantity || 1);

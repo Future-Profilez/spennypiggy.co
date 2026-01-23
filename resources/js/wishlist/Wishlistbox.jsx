@@ -35,7 +35,6 @@ export default function Wishlistbox(props) {
         key,
         trackClick,
     } = props;
-    console.log("props", props);
     const {
         attributes,
         listeners,
@@ -77,7 +76,6 @@ export default function Wishlistbox(props) {
 
     const processingFee = 
         ((itm?.price || 0) * (window.platformFeePercentage || 20)) / 100;
-        console.log("processingFee", processingFee);
 
     return (
         <div

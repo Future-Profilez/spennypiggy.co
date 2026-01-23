@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { useState } from "react";
 import userphoto from "../../../assets/siteicon.png";
 
-export default function TopEarnWishes() {
+export default function TopEarnWishes({currency}) {
 
   const { formatMultiPrice } = PriceFormat();
   const { auth } = usePage().props;
@@ -29,7 +29,7 @@ export default function TopEarnWishes() {
     fetchingStats();
   },[]);
 
-  function WishItem({ item }) {
+  function WishItem({ item, currency }) {
     return (
       <div className="flex gap-5 justify-between py-3  max-w-full border-b border-gray-150 ">
         <div className="flex">
@@ -38,7 +38,7 @@ export default function TopEarnWishes() {
           </div>
           <div className="flex-auto my-auto">{item.title}</div>
         </div>
-        <div className="my-auto font-bold"> {formatMultiPrice((item && item.amount), (auth && auth.user && auth.user.currency || 'gbp'))}</div>
+        <div className="my-auto font-bold"> {formatMultiPrice((item && item.amount), (currency || 'gbp'))}</div>
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function TopEarnWishes() {
 
       <div className="p-4 pt-2" >
         {lists && lists.length ? lists.map((item, index) => <>
-          <WishItem key={index} item={item} />
+          <WishItem key={index} item={item} currency={currency} />
         </>
         ) : <Nocontent mode="clean" classes={'bg-white'} text='Nothing to see' /> }
       </div>

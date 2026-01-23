@@ -4,8 +4,6 @@
 (function() {
     'use strict';
     
-    console.log('🚨 SIMPLE REACT EMERGENCY PATCH LOADING...');
-    
     // Create emergency Children implementation
     const EmergencyChildren = {
         map: function(children, fn, thisArg) {
@@ -91,7 +89,6 @@
                     window.React = {};
                 }
                 window.React.Children = EmergencyChildren;
-                console.log('✅ Applied emergency Children fix after error');
                 return window.React;
             }
             
@@ -107,7 +104,6 @@
         }
         if (!window.React.Children) {
             window.React.Children = EmergencyChildren;
-            console.log('✅ Pre-installed React.Children on window.React');
         }
     }
     
@@ -117,17 +113,10 @@
         }
         if (!globalThis.React.Children) {
             globalThis.React.Children = EmergencyChildren;
-            console.log('✅ Pre-installed React.Children on globalThis.React');
         }
     }
     
     // Store emergency reference
     window.__EMERGENCY_CHILDREN__ = EmergencyChildren;
-    
-    console.log('✅ Simple React Children emergency patch completed!');
-    console.log('🔍 Status:', {
-        'window.React.Children': !!(window.React && window.React.Children),
-        'Emergency available': !!EmergencyChildren
-    });
-    
+
 })();

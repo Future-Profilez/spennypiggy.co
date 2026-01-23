@@ -32,9 +32,6 @@ const TestApp = () => {
 // Minimal test without JSX to avoid any JSX transform issues
 function runReactTest() {
     try {
-        console.log('🔍 Running React diagnosis...');
-        console.log('React:', React);
-        console.log('createRoot:', createRoot);
         
         // Create test container
         let testContainer = document.getElementById('react-test-container');
@@ -47,11 +44,9 @@ function runReactTest() {
         
         // Create React root
         const root = createRoot(testContainer);
-        console.log('✅ createRoot successful');
         
         // Render test component
         root.render( createElement(TestApp));
-        console.log('✅ render successful');
         
         return true;
         

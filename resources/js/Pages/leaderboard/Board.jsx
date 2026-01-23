@@ -17,8 +17,6 @@ import { trackSearchClick } from "@/includes/Analytics";
 
 export default function Board(props) {
     const { auth, data, is_daily } = props;
-
-    console.log("data", data);
     const [positions, setPositions] = useState([]);
     const [ranks, setRanks] = useState([]);
 

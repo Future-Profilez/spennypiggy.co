@@ -46,7 +46,6 @@ export default function PwaTest({ auth }) {
             e.preventDefault();
             setInstallPrompt(e);
             setCanInstall(true);
-            console.log('✅ beforeinstallprompt event fired - PWA can be installed!');
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -56,7 +55,6 @@ export default function PwaTest({ auth }) {
             setIsInstalled(true);
             setCanInstall(false);
             setInstallPrompt(null);
-            console.log('✅ PWA installed successfully!');
         };
 
         window.addEventListener('appinstalled', handleAppInstalled);

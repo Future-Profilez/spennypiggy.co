@@ -608,10 +608,8 @@ export default function Register(props) {
         if(token !== null || token !== '' || token !== undefined) {
             setData("cf_turnstile_response", token || "");
             setVerified(!!token);
-            console.log("verified",verified)
             console.warn("Turnstile token VERIFIED");
         }else { 
-            console.log("verified",verified)
             console.warn("No Turnstile token VERIFIED");
         }
     };

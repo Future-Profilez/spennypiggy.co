@@ -52,17 +52,12 @@ if (!fs.existsSync(OPTIMIZED_DIR)) {
     fs.mkdirSync(OPTIMIZED_DIR, { recursive: true });
 }
 
-console.log('🚀 Starting basic font subsetting...');
-
 function subsetFont(font) {
     const inputPath = path.join(FONTS_DIR, font.file);
     const outputPath = path.join(OPTIMIZED_DIR, font.file);
     
-    console.log(`\n✨ Processing ${font.name}...`);
-    
     try {
         // Create subset with common Latin characters
-        console.log(`  ✂️  Creating Latin subset...`);
         const subsetCommand = `npx glyphhanger --whitelist="${UNICODE_RANGES}" --subset="${inputPath}" --formats=woff2`;
         
         execSync(subsetCommand, { 
@@ -75,12 +70,7 @@ function subsetFont(font) {
             const originalSize = fs.statSync(inputPath).size;
             const optimizedSize = fs.statSync(outputPath).size;
             const savings = Math.round(((originalSize - optimizedSize) / originalSize) * 100);
-            
-            console.log(`  📊 Original: ${(originalSize / 1024).toFixed(1)}KB`);
-            console.log(`  📊 Optimized: ${(optimizedSize / 1024).toFixed(1)}KB`);
-            console.log(`  💾 Saved: ${savings}%`);
         } else {
-            console.log(`  ⚠️  Output file not found, glyphhanger may have used a different naming convention`);
             // List files in optimized directory to see what was created
             const files = fs.readdirSync(OPTIMIZED_DIR).filter(f => f.includes(font.name.toLowerCase()));
             if (files.length > 0) {
@@ -143,14 +133,11 @@ function createOptimizedCSS() {
 `;
     
     fs.writeFileSync(cssPath, optimizedCSS);
-    console.log(`\n📝 Created optimized CSS file: ${cssPath}`);
 }
 
 // Main execution
 async function main() {
     try {
-        console.log(`📋 Unicode ranges: ${UNICODE_RANGES}`);
-        
         // Sort fonts by priority (high priority first for better FOIT prevention)
         const sortedFonts = fonts.sort((a, b) => {
             const priority = { high: 3, medium: 2, low: 1 };
@@ -164,13 +151,6 @@ async function main() {
         
         // Create optimized CSS
         createOptimizedCSS();
-        
-        console.log('\n🎉 Basic font subsetting complete!');
-        console.log('📋 Next steps:');
-        console.log('  1. Review the optimized fonts in resources/assets/fonts/optimized/');
-        console.log('  2. Test the optimized CSS file: resources/css/fonts-optimized.css');
-        console.log('  3. Update your theme.css to use the optimized fonts');
-        console.log('  4. Run `npm run fonts:optimize:prod` for production site analysis');
         
     } catch (error) {
         console.error('❌ Font subsetting failed:', error.message);

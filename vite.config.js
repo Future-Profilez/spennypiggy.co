@@ -6,7 +6,6 @@ import path from 'path';
 // import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig((env) => {
-    console.log('Config Env:', env);
     const ssrBuild = env.ssrBuild || process.argv.includes('--ssr');
     return {
     plugins: [

@@ -11,7 +11,6 @@ import TopSupporters from './TopSupporters';
 import MonthlyRevenue from './MonthlyRevenue';
 
 export default function Earnings(props) {
-
   const colors = [ '#F94F96', 'var(--mint)', 'var(--voilet)','var(--yellow)', '#0005', 'var(--mint)',  ]
   const { formatMultiPrice } = PriceFormat();
   const { auth } = usePage().props;
@@ -95,7 +94,7 @@ export default function Earnings(props) {
                 </div>
               <div className='row' >
                 <div className=' col-xl-8 col-lg-12 mb-4' > <MonthlyRevenue /> </div>
-                <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnWishes /> </div>
+                <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnWishes currency={props?.global_currency || 'gbp'}  /> </div>
                 <div className=' col-xl-4 col-lg-6 mb-4' > <SubcriptionEarnings /></div>
                 <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnBills /> </div>
                 <div className=' col-xl-4 col-lg-6 mb-4' > <TopSupporters /> </div>

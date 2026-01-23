@@ -8,7 +8,6 @@ export default function ShareProfile({ children, username, classes, custom }) {
         e.stopPropagation();
         const width = window && window.innerWidth;
         const currentURL = custom ? custom : window.location.href;
-        console.log("current url", currentURL);
 
         if (navigator) {
             navigator && navigator?.share({

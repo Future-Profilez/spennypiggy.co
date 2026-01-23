@@ -10,7 +10,6 @@ import "../css/home.css";
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 
-console.log('📦 App.jsx loaded - React polyfill should be active');
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { router } from "@inertiajs/react";
@@ -24,7 +23,6 @@ import "./utils/pwaDebug";
 
 // Only initialize Sentry on the production domain
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' || window.location.hostname === 'https://www.spennypiggy.co') {
-    console.log("Sentry Enabled");
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
         sendDefaultPii: true,
@@ -48,11 +46,9 @@ function setupGlobalCartFunctions(props) {
     const auth = props?.page?.props?.auth;
     const deviceid = DeviceID();
     
-    console.log("Setting up global cart refresh functions, auth:", !!auth?.user);
     
     // Anonymous cart refresh function
     const fetchAnonymousCartItems = async () => {
-        console.log("Global fetchAnonymousCartItems called with deviceid:", deviceid);
         try {
             const timestamp = new Date().getTime();
             const config = {
@@ -63,7 +59,6 @@ function setupGlobalCartFunctions(props) {
                 }
             };
             const response = await axios.get(`anonymous-cart/${deviceid}?_t=${timestamp}`, config);
-            console.log("Global anonymous cart response:", response.data);
             // Dispatch event for components to listen to
             window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
                 detail: { carts: response.data.carts, isAuthenticated: false }
@@ -75,7 +70,6 @@ function setupGlobalCartFunctions(props) {
     
     // Authenticated cart refresh function
     const fetchAuthenticatedCartItems = async () => {
-        console.log("Global fetchAuthenticatedCartItems called");
         try {
             // Include device_id for potential cart merging fallback
             const config = {
@@ -86,14 +80,11 @@ function setupGlobalCartFunctions(props) {
             // Add cache-busting parameter
             const timestamp = new Date().getTime();
             const response = await axios.get(`authenticated-cart?_t=${timestamp}`, config);
-            console.log("Global authenticated cart response:", response.data);
-            console.log("Authenticated cart items count:", response.data.carts ? response.data.carts.length : 0);
             if (response.data.success) {
                 // Dispatch event for components to listen to
                 window.dispatchEvent(new CustomEvent('cartItemsRefreshed', {
                     detail: { carts: response.data.carts, isAuthenticated: true }
                 }));
-                console.log("Dispatched cartItemsRefreshed event for authenticated user");
             } else {
                 console.error("Authenticated cart API returned success=false:", response.data);
             }
@@ -105,7 +96,6 @@ function setupGlobalCartFunctions(props) {
     
     // Rye items refresh function
     const fetchRyeItems = async () => {
-        console.log("Global fetchRyeItems called");
         try {
             const response = await axios.get(`get-cart-details`);
             if (response?.data?.status) {
@@ -121,7 +111,6 @@ function setupGlobalCartFunctions(props) {
     
     // Cart counter refresh function 
     const fetchCartCounter = async () => {
-        console.log("Global fetchCartCounter called with deviceid:", deviceid);
         try {
             const timestamp = new Date().getTime();
             const config = {
@@ -132,7 +121,6 @@ function setupGlobalCartFunctions(props) {
                 }
             };
             const response = await axios.get(`/counter/${deviceid}?_t=${timestamp}`, config);
-            console.log("Global cart counter response:", response.data.counter);
             // Dispatch event for components to listen to
             window.dispatchEvent(new CustomEvent('cartCounterRefreshed', {
                 detail: { counter: response.data.counter }
@@ -145,10 +133,8 @@ function setupGlobalCartFunctions(props) {
     // Set up global refresh functions based on authentication status
     if (typeof window !== 'undefined') {
         if (auth?.user) {
-            console.log("Setting up authenticated cart refresh functions");
             window.refreshCartItems = fetchAuthenticatedCartItems;
         } else {
-            console.log("Setting up anonymous cart refresh functions");
             window.refreshCartItems = fetchAnonymousCartItems;
         }
         window.refreshRyeItems = fetchRyeItems;
@@ -158,10 +144,8 @@ function setupGlobalCartFunctions(props) {
         document.addEventListener('inertia:success', (event) => {
             const newAuth = event?.detail?.page?.props?.auth;
             if (newAuth?.user) {
-                console.log("Auth state changed to authenticated - updating refresh functions");
                 window.refreshCartItems = fetchAuthenticatedCartItems;
             } else {
-                console.log("Auth state changed to anonymous - updating refresh functions");
                 window.refreshCartItems = fetchAnonymousCartItems;
             }
         });

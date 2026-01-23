@@ -9,7 +9,6 @@ import Turnstile from "@/Components/Turnstile";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
-    console.log("UserCarts props", props);
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
@@ -159,7 +158,6 @@ export default function UserCarts(props) {
         updateTotals();
     }, [items]);
 
-    console.log("UserCarts items", items);
 
     return (
         <div className={`${cartCleared ? "d-none" : ""} px-2 containerbox`}>

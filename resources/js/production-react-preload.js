@@ -1,7 +1,6 @@
 // Minimal React Children preload to prevent production errors
 // This creates a fallback for React.Children if it's accessed before React loads
 
-console.log('🚀 React Children Preload: Initializing minimal fallback...');
 
 if (typeof window !== 'undefined') {
     // Create minimal React Children fallback
@@ -44,6 +43,4 @@ if (typeof window !== 'undefined') {
     
     // Store the fallback for our React fix to use
     window.__MINIMAL_REACT_CHILDREN__ = minimalChildren;
-    
-    console.log('✅ React Children Preload: Minimal fallback ready');
 }

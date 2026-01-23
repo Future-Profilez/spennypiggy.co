@@ -56,7 +56,6 @@ export default function PwaInstallPrompt() {
 
     // Listen for beforeinstallprompt (Chrome/Edge)
     const onBeforeInstallPrompt = (e) => {
-      console.log('🎆 beforeinstallprompt event fired!');
       e.preventDefault();
       deferredPromptRef.current = e;
       
@@ -76,7 +75,6 @@ export default function PwaInstallPrompt() {
       // Force service worker registration check
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
-          console.log('Service workers registered:', registrations.length);
           if (registrations.length === 0) {
             // Try to register service worker
             navigator.serviceWorker.register('/service-worker.js').catch(err => {
@@ -104,7 +102,6 @@ export default function PwaInstallPrompt() {
       resetTimer: () => {
         try {
           localStorage.removeItem('pwa_install_last_shown');
-          console.log('✅ PWA install timer reset. Refresh page to see prompt.');
         } catch (error) {
           console.error('Error resetting PWA timer:', error);
         }
@@ -113,7 +110,6 @@ export default function PwaInstallPrompt() {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         if (!isStandalone) {
           setVisible(true);
-          console.log('✅ PWA prompt forced to show');
         } else {
           console.log('❌ Cannot show prompt - app is already installed');
         }

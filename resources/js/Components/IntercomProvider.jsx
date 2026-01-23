@@ -25,9 +25,6 @@ export default function IntercomProvider() {
         if (!intercom?.enabled || !appId) {
             return;
         }
-
-        console.log('🚀 Initializing Intercom with appId:', appId);
-        console.log('📊 Boot data:', boot);
         
         // Use the standard Intercom initialization approach
         const initializeIntercom = () => {
@@ -51,57 +48,36 @@ export default function IntercomProvider() {
             script.src = `https://widget.intercom.io/widget/${appId}`;
             
             script.onload = () => {
-                console.log('✅ Intercom script loaded successfully');
                 
                 setTimeout(() => {
                     try {
-                        console.log('🔍 Checking Intercom function:', typeof window.Intercom);
-                        console.log('🔍 window.Intercom:', window.Intercom);
                         
                         if (typeof window.Intercom === 'function') {
                             if (!bootedRef.current || currentUserIdRef.current !== loggedInUserId) {
-                                console.log('🚀 Booting Intercom with settings:');
-                                console.log('  - App ID:', boot.app_id);
-                                console.log('  - User ID:', boot.user_id);
-                                console.log('  - Email:', boot.email);
-                                console.log('  - Name:', boot.name);
-                                console.log('  - Full boot object:', boot);
                                 
                                 window.Intercom('boot', boot);
                                 bootedRef.current = true;
                                 currentUserIdRef.current = loggedInUserId;
-                                console.log('✅ Intercom booted successfully');
                                 
                                 // Try to show the messenger to test if it's working
                                 setTimeout(() => {
                                     try {
                                         window.Intercom('show');
-                                        console.log('📨 Attempted to show Intercom messenger');
                                     } catch (e) {
                                         console.warn('⚠️ Could not show messenger:', e);
                                     }
                                 }, 1000);
                                 
                             } else {
-                                console.log('🔄 Updating Intercom with:', boot);
                                 window.Intercom('update', boot);
-                                console.log('✅ Intercom updated successfully');
                             }
                             
                             // Check widget presence after delays
                             setTimeout(() => {
-                                console.log('🔍 Checking for Intercom DOM elements...');
                                 const launcher = document.querySelector('.intercom-launcher');
                                 const messenger = document.querySelector('.intercom-messenger');
                                 const frame = document.querySelector('iframe[name*="intercom"]');
                                 const allFrames = document.querySelectorAll('iframe');
-                                
-                                console.log('DOM Elements found:', {
-                                    launcher: !!launcher,
-                                    messenger: !!messenger,
-                                    intercomFrame: !!frame,
-                                    totalFrames: allFrames.length
-                                });
                                 
                                 // List all iframes for debugging
                                 allFrames.forEach((iframe, index) => {
@@ -115,7 +91,6 @@ export default function IntercomProvider() {
                                 // Try to get Intercom status
                                 try {
                                     const status = window.Intercom('getVisitorId');
-                                    console.log('🎯 Intercom visitor ID:', status);
                                 } catch (e) {
                                     console.log('⚠️ Could not get visitor ID:', e.message);
                                 }
@@ -138,7 +113,6 @@ export default function IntercomProvider() {
             if (!document.getElementById('intercom-script')) {
                 script.id = 'intercom-script';
                 document.head.appendChild(script);
-                console.log('Intercom script added to DOM');
             }
         };
         
