@@ -1,7 +1,0 @@
-import{j as r}from"./jsx-runtime-BJoFowxM.js";import{r as p}from"../ssr.mjs";try{let e=typeof window<"u"?window:typeof global<"u"?global:typeof globalThis<"u"?globalThis:typeof self<"u"?self:{},t=new e.Error().stack;t&&(e._sentryDebugIds=e._sentryDebugIds||{},e._sentryDebugIds[t]="7b3eb31e-545c-4f6c-afcd-ad9bc2b511ca",e._sentryDebugIdIdentifier="sentry-dbid-7b3eb31e-545c-4f6c-afcd-ad9bc2b511ca")}catch{}function m({uuid:e,updateFile:t,setIsEditable:c,height:i,ctxName:o="my-editor"}){return p.useEffect(()=>{async function a(){if(typeof window>"u")return;const s=await import("https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js");s.registerBlocks(s);const d=b=>f=>{t&&t(f.detail,e),c&&c(!1)},n=document.querySelector(`#${o}`);return n&&n.addEventListener("apply",d()),n&&n.addEventListener("cancel",d()),()=>{n&&n.removeEventListener("apply",d()),n&&n.removeEventListener("cancel",d())}}const l=a();return()=>{l.then(s=>typeof s=="function"&&s()).catch(()=>{})}},[e,o]),r.jsxs(r.Fragment,{children:[r.jsx("style",{children:`
-          body {
-            height: ${i||"100vh"};
-            width: 100vw;
-            margin: 0;
-          }
-        `}),e?r.jsxs("div",{className:"image-editor border rounded-4 overflow-hidden",children:[r.jsx("lr-config",{"ctx-name":o}),r.jsx("lr-cloud-image-editor",{id:o,"ctx-name":o,"css-src":"https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.css",uuid:e,"crop-preset":"1:1",crop:"true"})]}):""]})}export{m as U};

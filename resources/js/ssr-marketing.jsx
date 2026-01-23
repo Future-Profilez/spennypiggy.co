@@ -32,16 +32,29 @@ try {
 
 // Global route helper for SSR
 globalThis.route = (name, params, absolute) => {
-    return route(name, params, absolute, Ziggy);
+    // Prefer the Ziggy object from props (set in setup()) if available, otherwise use imported default
+    const ziggyConfig = globalThis.Ziggy || Ziggy;
+    return route(name, params, absolute, ziggyConfig);
 };
 
 createServer((page) => {
+  console.log('Rendering page:', page.component, 'Props:', Object.keys(page.props));
   hideWindowForInertia = true;
   return createInertiaApp({
     page,
     render: renderToString,
     title: (title) => `${title || appName} - ${appName}`,
     resolve: (name) => {
+      // Normalize name to handle potential path mismatches
+      // The server might request 'marketing/CreatorVerificationNew' but the file is at 'Pages/Profile/CreatorVerificationNew.jsx'
+      // or 'Pages/marketing/CreatorVerificationNew.jsx' depending on where it actually is.
+      // Based on LS output, CreatorVerificationNew is in Pages/Profile/.
+
+      // Handle specific known mapping issues
+      if (name === 'marketing/CreatorVerificationNew') {
+          name = 'Profile/CreatorVerificationNew';
+      }
+
       let pageFn = pages[`./Pages/${name}.jsx`];
       if (!pageFn) {
          console.error(`Page not found: ${name}`);

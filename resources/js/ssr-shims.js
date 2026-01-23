@@ -73,6 +73,16 @@ if (typeof globalThis.window === 'undefined') {
   };
 }
 
+// Ensure global objects are available
+if (typeof globalThis.navigator === 'undefined') {
+    globalThis.navigator = globalThis.window.navigator;
+}
+
+// Ensure window.location is always available on globalThis for libraries that check it directly
+if (typeof globalThis.location === 'undefined') {
+    globalThis.location = globalThis.window.location;
+}
+
 if (typeof globalThis.document === 'undefined') {
   const doc = {
     head: { 
