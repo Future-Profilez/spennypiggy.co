@@ -30,6 +30,7 @@ import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
+
 import {
     arrayMove,
     SortableContext,
@@ -78,6 +79,7 @@ const CreatorSubscriptionWidget = lazy(
     () => import("@/Components/CreatorSubscriptionWidget"),
 );
 export default function Dashboard(props) {
+const { ziggy } = usePage().props;
     const w = useWidthCount();
     const {
         auth,
@@ -485,6 +487,7 @@ export default function Dashboard(props) {
             0,
     );
 
+
     return (
         <>
             <Guest auth={auth.user} user={user}>
@@ -576,11 +579,7 @@ export default function Dashboard(props) {
                                     )} */}
 
                                 <div className="userManageRt mt-4 ">
-                                    <div
-                                        className={`  tabs-container ${
-                                            IsloggedIn ? "IsloggedIn" : ""
-                                        }`}
-                                    >
+                                    <div className={`  tabs-container ${IsloggedIn ? "IsloggedIn" : "" }`}>
                                         <div className="inlinetab ">
                                             {/* Show rejection message if profile is rejected */}
                                             {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
@@ -602,8 +601,7 @@ export default function Dashboard(props) {
                                             />
 
                                             <div className="tabs-containers min-height">
-                                                {page === "about" ||
-                                                page === false ? (
+                                                {page === "about" || page === false ? (
                                                     <Suspense
                                                         fallback={
                                                             <LoadingScreen />
@@ -653,30 +651,16 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    auth?.user
-                                                                        ?.subscription_status ==
-                                                                        0 ? (
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status == 0 ? (
                                                                         <SiteSubscription
-                                                                            charges={
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.monthly_charge_enabled
-                                                                            }
-                                                                            user={
-                                                                                auth?.user
-                                                                            }
+                                                                            charges={auth?.user?.monthly_charge_enabled}
+                                                                            user={auth?.user}
                                                                         />
                                                                     ) : (
                                                                         ""
                                                                     )}
 
-                                                                    {UserStripeConnected ==
-                                                                    1 ? (
+                                                                    {UserStripeConnected == 1 ? (
                                                                         <MyGoal
                                                                             IsloggedIn={
                                                                                 IsloggedIn
@@ -705,10 +689,7 @@ export default function Dashboard(props) {
                                                                                     "Hy, I am a creator on SpennyPiggy."}
                                                                             </p>
 
-                                                                            {IsloggedIn &&
-                                                                            user?.edit_bio_reason &&
-                                                                            user?.bio_approved ==
-                                                                                2 ? (
+                                                                            {IsloggedIn && user?.edit_bio_reason && user?.bio_approved == 2 ? (
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">
                                                                                         Bio
@@ -734,15 +715,10 @@ export default function Dashboard(props) {
                                                                                 ""
                                                                             )}
 
-                                                                            <SocialLinks
-                                                                                links={
-                                                                                    sLinks
-                                                                                }
-                                                                            />
+                                                                            <SocialLinks links={sLinks}/>
 
                                                                             {/* SOCIAL MEDIA REJECT REASON */}
-                                                                            {IsloggedIn &&
-                                                                                slinks?.reason && (
+                                                                            {IsloggedIn && slinks?.reason && (
                                                                                     <div className="mt-3">
                                                                                         <p className="text-red-700 font-semibold">
                                                                                             Social
@@ -772,13 +748,7 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    {auth.user &&
-                                                                                    auth
-                                                                                        .user
-                                                                                        .role ==
-                                                                                        1 &&
-                                                                                    AuthUserStripeConnected ==
-                                                                                        1 ? (
+                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
                                                                                             classes="b w-full"
                                                                                             text="Payment Dashboard"
@@ -812,15 +782,12 @@ export default function Dashboard(props) {
                                                                                                     }
                                                                                                 />
                                                                                             </li>
+                                                                                            
                                                                                             <li>
                                                                                                 <ShareProfile
-                                                                                                    username={
-                                                                                                        user &&
-                                                                                                        user.name
-                                                                                                    }
-                                                                                                    classes={
-                                                                                                        "flex ms-auto"
-                                                                                                    }
+                                                                                                    username={user && user.name}
+                                                                                                    classes={"flex ms-auto"}
+                                                                                                    custom={`${ziggy?.url}/${user?.username}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
                                                                                                     Share
                                                                                                     Profile
@@ -930,8 +897,7 @@ export default function Dashboard(props) {
                                                     ""
                                                 )}
 
-                                                {IsloggedIn ||
-                                                UserStripeConnected == 1 ? (
+                                                {IsloggedIn || UserStripeConnected == 1 ? (
                                                     <>
                                                         {page === "wishes" ? (
                                                             <ErrorBoundary>
@@ -1124,23 +1090,10 @@ export default function Dashboard(props) {
                                                             ""
                                                         )}
 
-                                                        {page ===
-                                                        "memberships" ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <MembershipsLists
-                                                                    IsloggedIn={
-                                                                        IsloggedIn
-                                                                    }
-                                                                    username={
-                                                                        user?.username ||
-                                                                        auth
-                                                                            ?.user
-                                                                            ?.username
-                                                                    }
+                                                        {page === "memberships" ? (
+                                                            <Suspense fallback={<LoadingScreen />}>
+                                                                <MembershipsLists IsloggedIn={IsloggedIn}
+                                                                    username={user?.username || auth?.user?.username}
                                                                 />
                                                             </Suspense>
                                                         ) : (
@@ -1194,41 +1147,19 @@ export default function Dashboard(props) {
                                                                   gifts.length >
                                                                       0 ? (
                                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                                        {gifts.map(
-                                                                            (
-                                                                                gift,
-                                                                            ) => {
-                                                                                const details =
-                                                                                    JSON.parse(
-                                                                                        gift.details,
-                                                                                    ); // Parse the details JSON
+                                                                        {gifts.map((gift,) => {
+                                                                                const details = JSON.parse(gift.details); // Parse the details JSON
                                                                                 return (
                                                                                     <>
-                                                                                        {(IsloggedIn ||
-                                                                                            gift?.deleted_at ===
-                                                                                                null) && (
+                                                                                        {(IsloggedIn || gift?.deleted_at === null) && (
                                                                                             <GiftListing
-                                                                                                key={
-                                                                                                    gift.id
-                                                                                                }
-                                                                                                gift={
-                                                                                                    gift
-                                                                                                }
-                                                                                                details={
-                                                                                                    details
-                                                                                                }
-                                                                                                user={
-                                                                                                    user
-                                                                                                }
-                                                                                                IsloggedIn={
-                                                                                                    IsloggedIn
-                                                                                                }
-                                                                                                fetch_gifts={
-                                                                                                    fetch_gifts
-                                                                                                }
-                                                                                                auth={
-                                                                                                    auth
-                                                                                                }
+                                                                                                key={gift.id}
+                                                                                                gift={gift}
+                                                                                                details={details}
+                                                                                                user={user}
+                                                                                                IsloggedIn={IsloggedIn}
+                                                                                                fetch_gifts={fetch_gifts}
+                                                                                                auth={auth}
                                                                                             />
                                                                                         )}
                                                                                     </>
