@@ -79,7 +79,7 @@ const CreatorSubscriptionWidget = lazy(
     () => import("@/Components/CreatorSubscriptionWidget"),
 );
 export default function Dashboard(props) {
-const { ziggy } = usePage().props;
+    const { ziggy } = usePage().props;
     const w = useWidthCount();
     const {
         auth,
@@ -487,7 +487,6 @@ const { ziggy } = usePage().props;
             0,
     );
 
-
     return (
         <>
             <Guest auth={auth.user} user={user}>
@@ -579,7 +578,9 @@ const { ziggy } = usePage().props;
                                     )} */}
 
                                 <div className="userManageRt mt-4 ">
-                                    <div className={`tabs-container ${IsloggedIn ? "IsloggedIn" : "" }`}>
+                                    <div
+                                        className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
+                                    >
                                         <div className="inlinetab ">
                                             {/* Show rejection message if profile is rejected */}
                                             {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
@@ -601,7 +602,8 @@ const { ziggy } = usePage().props;
                                             />
 
                                             <div className="tabs-containers min-height">
-                                                {page === "about" || page === false ? (
+                                                {page === "about" ||
+                                                page === false ? (
                                                     <Suspense
                                                         fallback={
                                                             <LoadingScreen />
@@ -651,16 +653,30 @@ const { ziggy } = usePage().props;
                                                                         ""
                                                                     )}
 
-                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.subscription_status == 0 ? (
+                                                                    {IsloggedIn &&
+                                                                    auth?.user &&
+                                                                    auth?.user
+                                                                        ?.role ==
+                                                                        1 &&
+                                                                    auth?.user
+                                                                        ?.subscription_status ==
+                                                                        0 ? (
                                                                         <SiteSubscription
-                                                                            charges={auth?.user?.monthly_charge_enabled}
-                                                                            user={auth?.user}
+                                                                            charges={
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.monthly_charge_enabled
+                                                                            }
+                                                                            user={
+                                                                                auth?.user
+                                                                            }
                                                                         />
                                                                     ) : (
                                                                         ""
                                                                     )}
 
-                                                                    {UserStripeConnected == 1 ? (
+                                                                    {UserStripeConnected ==
+                                                                    1 ? (
                                                                         <MyGoal
                                                                             IsloggedIn={
                                                                                 IsloggedIn
@@ -689,7 +705,10 @@ const { ziggy } = usePage().props;
                                                                                     "Hy, I am a creator on SpennyPiggy."}
                                                                             </p>
 
-                                                                            {IsloggedIn && user?.edit_bio_reason && user?.bio_approved == 2 ? (
+                                                                            {IsloggedIn &&
+                                                                            user?.edit_bio_reason &&
+                                                                            user?.bio_approved ==
+                                                                                2 ? (
                                                                                 <div className="mt-3">
                                                                                     <p className="text-red-700">
                                                                                         Bio
@@ -715,10 +734,15 @@ const { ziggy } = usePage().props;
                                                                                 ""
                                                                             )}
 
-                                                                            <SocialLinks links={sLinks}/>
+                                                                            <SocialLinks
+                                                                                links={
+                                                                                    sLinks
+                                                                                }
+                                                                            />
 
                                                                             {/* SOCIAL MEDIA REJECT REASON */}
-                                                                            {IsloggedIn && slinks?.reason && (
+                                                                            {IsloggedIn &&
+                                                                                slinks?.reason && (
                                                                                     <div className="mt-3">
                                                                                         <p className="text-red-700 font-semibold">
                                                                                             Social
@@ -748,7 +772,13 @@ const { ziggy } = usePage().props;
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
-                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                    {auth.user &&
+                                                                                    auth
+                                                                                        .user
+                                                                                        .role ==
+                                                                                        1 &&
+                                                                                    AuthUserStripeConnected ==
+                                                                                        1 ? (
                                                                                         <PaymentDashboard
                                                                                             classes="b w-full"
                                                                                             text="Payment Dashboard"
@@ -782,11 +812,16 @@ const { ziggy } = usePage().props;
                                                                                                     }
                                                                                                 />
                                                                                             </li>
-                                                                                            
+
                                                                                             <li>
                                                                                                 <ShareProfile
-                                                                                                    username={user && user.name}
-                                                                                                    classes={"flex ms-auto"}
+                                                                                                    username={
+                                                                                                        user &&
+                                                                                                        user.name
+                                                                                                    }
+                                                                                                    classes={
+                                                                                                        "flex ms-auto"
+                                                                                                    }
                                                                                                     custom={`${ziggy?.url}/${user?.username}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
                                                                                                     Share
@@ -897,7 +932,8 @@ const { ziggy } = usePage().props;
                                                     ""
                                                 )}
 
-                                                {IsloggedIn || UserStripeConnected == 1 ? (
+                                                {IsloggedIn ||
+                                                UserStripeConnected == 1 ? (
                                                     <>
                                                         {page === "wishes" ? (
                                                             <ErrorBoundary>
@@ -930,16 +966,26 @@ const { ziggy } = usePage().props;
                                                                                     >
                                                                                         All
                                                                                     </Link>
-                                                                                    {wish_categories.map((c, i,) => {
+                                                                                    {wish_categories.map(
+                                                                                        (
+                                                                                            c,
+                                                                                            i,
+                                                                                        ) => {
                                                                                             return (
                                                                                                 <>
-                                                                                                    <Link preserveScroll href={route("user.show",{
-                                                                                                                username: user.username,
+                                                                                                    <Link
+                                                                                                        preserveScroll
+                                                                                                        href={route(
+                                                                                                            "user.show",
+                                                                                                            {
+                                                                                                                username:
+                                                                                                                    user.username,
                                                                                                                 page: "wishes",
-                                                                                                                category: c.id,
+                                                                                                                category:
+                                                                                                                    c.id,
                                                                                                             },
                                                                                                         )}
-                                                                                                        className={`${selectedCategory == c.id ? "active" : "" } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                                        className={`${selectedCategory == c.id ? "active" : ""} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
                                                                                                         key={`cats-${i}`}
                                                                                                     >
                                                                                                         {
@@ -1090,10 +1136,23 @@ const { ziggy } = usePage().props;
                                                             ""
                                                         )}
 
-                                                        {page === "memberships" ? (
-                                                            <Suspense fallback={<LoadingScreen />}>
-                                                                <MembershipsLists IsloggedIn={IsloggedIn}
-                                                                    username={user?.username || auth?.user?.username}
+                                                        {page ===
+                                                        "memberships" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <MembershipsLists
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                    username={
+                                                                        user?.username ||
+                                                                        auth
+                                                                            ?.user
+                                                                            ?.username
+                                                                    }
                                                                 />
                                                             </Suspense>
                                                         ) : (
@@ -1147,19 +1206,41 @@ const { ziggy } = usePage().props;
                                                                   gifts.length >
                                                                       0 ? (
                                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                                        {gifts.map((gift,) => {
-                                                                                const details = JSON.parse(gift.details); // Parse the details JSON
+                                                                        {gifts.map(
+                                                                            (
+                                                                                gift,
+                                                                            ) => {
+                                                                                const details =
+                                                                                    JSON.parse(
+                                                                                        gift.details,
+                                                                                    ); // Parse the details JSON
                                                                                 return (
                                                                                     <>
-                                                                                        {(IsloggedIn || gift?.deleted_at === null) && (
+                                                                                        {(IsloggedIn ||
+                                                                                            gift?.deleted_at ===
+                                                                                                null) && (
                                                                                             <GiftListing
-                                                                                                key={gift.id}
-                                                                                                gift={gift}
-                                                                                                details={details}
-                                                                                                user={user}
-                                                                                                IsloggedIn={IsloggedIn}
-                                                                                                fetch_gifts={fetch_gifts}
-                                                                                                auth={auth}
+                                                                                                key={
+                                                                                                    gift.id
+                                                                                                }
+                                                                                                gift={
+                                                                                                    gift
+                                                                                                }
+                                                                                                details={
+                                                                                                    details
+                                                                                                }
+                                                                                                user={
+                                                                                                    user
+                                                                                                }
+                                                                                                IsloggedIn={
+                                                                                                    IsloggedIn
+                                                                                                }
+                                                                                                fetch_gifts={
+                                                                                                    fetch_gifts
+                                                                                                }
+                                                                                                auth={
+                                                                                                    auth
+                                                                                                }
                                                                                             />
                                                                                         )}
                                                                                     </>
