@@ -513,7 +513,13 @@ export default function Dashboard(props) {
                                     height={400}
                                     width={1200}
                                     className="w-full border-black border-2 shadow-mint rounded-[30px]"
-                                    src={IsloggedIn ? user?.cover_url : user?.cover_approved == 1 ? user?.cover_url : wishlistbannerimg}
+                                    src={
+                                        IsloggedIn
+                                            ? user?.cover_url
+                                            : user?.cover_approved == 1
+                                              ? user?.cover_url
+                                              : wishlistbannerimg
+                                    }
                                     loading="eager"
                                     fetchPriority="high"
                                 />
@@ -580,12 +586,12 @@ export default function Dashboard(props) {
                                 <div className="userManageRt mt-4 ">
                                     <div
                                         className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
-                                    >
+                                        >
                                         <div className="inlinetab ">
                                             {/* Show rejection message if profile is rejected */}
                                             {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
                                                     <div className="text-red-600 text-xl">
-                                                        This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
                                                     </div>
                                                 )} */}
 
@@ -599,15 +605,15 @@ export default function Dashboard(props) {
                                                 onTabChange={(tabId) => {
                                                     // Handle tab change if needed
                                                 }}
-                                            />
+                                                />
 
                                             <div className="tabs-containers min-height">
                                                 {page === "about" ||
                                                 page === false ? (
                                                     <Suspense
-                                                        fallback={
-                                                            <LoadingScreen />
-                                                        }
+                                                    fallback={
+                                                        <LoadingScreen />
+                                                    }
                                                     >
                                                         <div className="row about-sec align-self-start">
                                                             <div className="col-lg-6  h-auto">
@@ -616,25 +622,25 @@ export default function Dashboard(props) {
                                                                         migrationStatus={
                                                                             migration_status
                                                                         }
-                                                                    />
+                                                                        />
 
                                                                     {IsloggedIn &&
                                                                     auth?.user &&
                                                                     auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
+                                                                    ?.role ==
+                                                                    1 &&
                                                                     stripe_requirements &&
                                                                     stripe_requirements.has_requirements &&
                                                                     stripe_requirements.requirements &&
                                                                     stripe_requirements
-                                                                        .requirements
-                                                                        .length >
-                                                                        0 &&
+                                                                    .requirements
+                                                                    .length >
+                                                                    0 &&
                                                                     AuthUserStripeConnected ? (
                                                                         <ActionRequired
-                                                                            requirements={
-                                                                                stripe_requirements.requirements
-                                                                            }
+                                                                        requirements={
+                                                                            stripe_requirements.requirements
+                                                                        }
                                                                         />
                                                                     ) : (
                                                                         ""
@@ -774,22 +780,22 @@ export default function Dashboard(props) {
                                                                                 <div className="userProfileDate pt-0 pt-md-3">
                                                                                     {auth.user &&
                                                                                     auth
-                                                                                        .user
-                                                                                        .role ==
-                                                                                        1 &&
+                                                                                    .user
+                                                                                    .role ==
+                                                                                    1 &&
                                                                                     AuthUserStripeConnected ==
-                                                                                        1 ? (
+                                                                                    1 ? (
                                                                                         <PaymentDashboard
-                                                                                            classes="b w-full"
-                                                                                            text="Payment Dashboard"
+                                                                                        classes="b w-full"
+                                                                                        text="Payment Dashboard"
                                                                                         />
                                                                                     ) : (
                                                                                         <>
                                                                                             {/* {auth?.user?.identity_status == 1 ? 
                                                                                             <div className="finish mt-4 d-block">
-                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
-                                                                                                </Link>
+                                                                                            <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                            <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                            </Link>
                                                                                             </div> 
                                                                                             : ''} */}
                                                                                         </>
@@ -812,7 +818,6 @@ export default function Dashboard(props) {
                                                                                                     }
                                                                                                 />
                                                                                             </li>
-
                                                                                             <li>
                                                                                                 <ShareProfile
                                                                                                     username={
