@@ -26,6 +26,9 @@ class LeaderBoardController extends Controller
 {
     public function wishtenderWishers($type = null)
     {
+        if (Auth::user()->suspended_account == 1) {
+            return Inertia::render('Suspanded');
+        }
         $users = $this->calc($type);
         $perPage = 50;
         $page = request()->get('page', 1);

@@ -124,6 +124,7 @@ export default function Userprofile({ IsloggedIn }) {
                             <ShareProfile
                                 username={user?.name}
                                 classes="flex text-gray-300 mr-4 items-center"
+                                custom={`${window.location.origin}/${user?.username}`}
                             >
                                 @{user?.username}
                                 <MdOutlineContentCopy className="ms-2  font-bold text-gray-300 mt-0" />

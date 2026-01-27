@@ -7,9 +7,11 @@ use Closure;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
-class UserEmailVerify{
+class UserEmailVerify
+{
     /**
      * Handle an incoming request.
      *
@@ -20,6 +22,10 @@ class UserEmailVerify{
         if (Auth::user() && Auth::user()->email_verified_at === null) {
             // toastr()->error('please verify your email to access the website');
             return redirect()->route('verification.notice');
+        }
+
+        if (Auth::user()->suspended_account == 1) {
+            return Inertia::render('Suspanded');
         }
         return $next($request);
     }
