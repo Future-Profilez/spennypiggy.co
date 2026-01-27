@@ -102,7 +102,6 @@ export default function Dashboard(props) {
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
 
-    // Memoized wishitems to prevent unnecessary re-renders
     const memoizedWishItems = useMemo(() => {
         return items && Array.isArray(items) ? items : [];
     }, [items]);

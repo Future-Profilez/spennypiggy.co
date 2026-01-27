@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\CacheableModel;
+use App\Traits\InvalidatesUserCache;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,7 +21,7 @@ use App\Models\MonthlyCharge;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, CacheableModel;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, CacheableModel, InvalidatesUserCache;
 
     protected $dates = ['deleted_at'];
 
