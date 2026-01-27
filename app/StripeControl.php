@@ -1,7 +1,6 @@
 <?php
 
 namespace App;
-
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\ApiConnectionException;

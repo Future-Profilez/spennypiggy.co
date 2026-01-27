@@ -25,8 +25,8 @@ environments:
       - "rm -rf public/build" # Linux/mac/OS
       - "rm -rf bootstrap/ssr" # Linux/mac/OS
       - "npm run build"
-      # - "npm run clear"
-      # - "rm -rf node_modules" # Linux/mac/OS
+      - "npm run clear"
+      - "rm -rf node_modules" # Linux/mac/OS
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules" # Windows
     deploy:
@@ -45,12 +45,12 @@ environments:
     memory: 1024
     queue-memory: 512
     cli-memory: 1024
-    ssr-memory: 2048
+    ssr-memory: 1024
     nodejs: 18
     scheduler: true
     cli-timeout: 120
     cli-concurrency: 10
-    warm: 5
+    warm: 1
     gateway-version: 2
     timeout: 60
     cache: spenny-piggy-redis-caches
@@ -65,13 +65,13 @@ environments:
       - "bootstrap/ssr/**"
     build:
       - "npm run clear"
-      # - "composer install --no-dev"
+      - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
       - "npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
-      - "rm -rf public/build" # Linux/mac/OS
-      - "rm -rf bootstrap/ssr" # Linux/mac/OS
+      - "rm -rf public/build"
+      - "rm -rf bootstrap/ssr"
       - "npm run build"
       - "npm run clear"
       - "rm -rf node_modules" # Linux/mac/OS

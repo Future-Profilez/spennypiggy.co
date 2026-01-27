@@ -183,7 +183,7 @@
 /* Enhanced mobile bottom bar spacing for retro theme */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 80px; /* Extra space for retro bottom bar */
+    padding-bottom: 80px; 
   }
   
   .retro-bottom-bar {

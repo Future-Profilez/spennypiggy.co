@@ -7,7 +7,13 @@ import { useEffect } from "react";
 
 export default function ErrorPage(props) {
 
-    const { status, message = '', auth } = props;
+    const { status, message = '', consoleMessage = '', auth } = props;
+
+    useEffect(() => {
+        if (consoleMessage) {
+            console.error('[Application Error]:', consoleMessage);
+        }
+    }, [consoleMessage]);
     
     function ReportBugButton() {
         Sentry.showReportDialog({

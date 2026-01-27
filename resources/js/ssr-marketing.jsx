@@ -30,15 +30,20 @@ try {
     console.error('Failed to redefine global.window:', e);
 }
 
-// Global route helper for SSR
 globalThis.route = (name, params, absolute) => {
-    // Prefer the Ziggy object from props (set in setup()) if available, otherwise use imported default
     const ziggyConfig = globalThis.Ziggy || Ziggy;
-    return route(name, params, absolute, ziggyConfig);
+    try {
+        return route(name, params, absolute, ziggyConfig);
+    } catch (e) {
+        const fallback = name === 'home' ? '/' : `/${name}`;
+        return fallback;
+    }
 };
 
 createServer((page) => {
-  console.log('Rendering page:', page.component, 'Props:', Object.keys(page.props));
+  // console.log('[SSR] Rendering page:', page.component);
+  // console.log('[SSR] Props keys:', Object.keys(page.props));
+  
   hideWindowForInertia = true;
   return createInertiaApp({
     page,
@@ -46,23 +51,18 @@ createServer((page) => {
     title: (title) => `${title || appName} - ${appName}`,
     resolve: (name) => {
       // Normalize name to handle potential path mismatches
-      // The server might request 'marketing/CreatorVerificationNew' but the file is at 'Pages/Profile/CreatorVerificationNew.jsx'
-      // or 'Pages/marketing/CreatorVerificationNew.jsx' depending on where it actually is.
-      // Based on LS output, CreatorVerificationNew is in Pages/Profile/.
-
-      // Handle specific known mapping issues
       if (name === 'marketing/CreatorVerificationNew') {
           name = 'Profile/CreatorVerificationNew';
       }
 
       let pageFn = pages[`./Pages/${name}.jsx`];
       if (!pageFn) {
-         console.error(`Page not found: ${name}`);
+         console.error(`[SSR] Page not found: ${name}`);
          // Try case-insensitive matching if not found
          const expectedPath = `./Pages/${name}.jsx`.toLowerCase();
          const match = Object.keys(pages).find(key => key.toLowerCase() === expectedPath);
          if (match) {
-             console.log(`Found case-insensitive match: ${match} for ${name}`);
+             console.log(`[SSR] Found case-insensitive match: ${match} for ${name}`);
              pageFn = pages[match];
          }
       }
@@ -76,6 +76,9 @@ createServer((page) => {
       const ziggy = props.initialPage.props.ziggy;
       if (ziggy) {
           globalThis.Ziggy = ziggy;
+          // console.log(`[SSR] Injected Ziggy from props. URL: ${ziggy.url}, Routes: ${Object.keys(ziggy.routes).length}`);
+      } else {
+          console.warn('[SSR] Ziggy prop missing! Using default.');
       }
       return React.createElement(
         Provider,
