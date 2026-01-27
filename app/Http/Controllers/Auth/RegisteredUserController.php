@@ -157,7 +157,7 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================EMAIL DOMAIN CHECK========================== */
-        $domain = explode('@', $request->email)[1] ?? '';
+        $domain = strtolower(explode('@', $request->email)[1] ?? '');
         $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
         if (!in_array($domain, $allowedDomains)) {
@@ -203,7 +203,7 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'tfa_key'             => $secret,
             'name'                => $request->name,
-            'email'               => strtolower($request->email),
+            'email'               => $request->email,
             'username'            => $request->username,
             'gender'              => $request->gender ?? null,
             'password'            => Hash::make($request->password),

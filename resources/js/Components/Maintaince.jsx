@@ -6,8 +6,8 @@ export default function Maintaince() {
       <style>{`
          body {padding-bottom: 0px !important;}
       `}</style>
-      <div className="h-screen py-12 overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#F94F96] via-[#EFEA7B] to-white md:px-4">
-         <div className="max-w-2xl w-full bg-[#fff] md:bg-white rounded-3xl shadow-xl px-8 py-20 text-center relative">
+      <div className="min-h-screen md:py-12 overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#F94F96] via-[#EFEA7B] to-white p-6">
+         <div className="max-w-2xl w-full bg-[#fff] md:bg-white rounded-[30px] md:rounded-[50px] shadow-xl p-6 sm:p-8 md:p-12 text-center relative">
             <div className="absolute inset-x-0 -bottom-10 opacity-10 pointer-events-none">
                   <div className="h-24 bg-repeat-x bg-[radial-gradient(circle_at_1px_1px,#F94F96_1px,transparent_0)]" />
             </div>
@@ -18,7 +18,7 @@ export default function Maintaince() {
             <p className="uppercase tracking-[0.25em] text-xs text-[#F94F96] font-semibold mb-2">
                   live update in progress
             </p>
-            <h1 className="text-2xl md:text-3xl font-gulfs text-[#F94F96] mb-3 tracking-wide uppercase">
+            <h1 className="text-xl md:text-3xl font-gulfs text-[#F94F96] mb-3 tracking-wide uppercase">
                   We are tuning things behind the scenes
             </h1>
             <p className="text-gray-700 mb-2">

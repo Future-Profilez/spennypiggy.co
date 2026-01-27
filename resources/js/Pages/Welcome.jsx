@@ -137,7 +137,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
             textbg={`bg-[#F94F96]`}
             heading={`Let your fans spoil you with gifts from any online store!`}
         />
-
         <FunPart 
             classes={`border-top-0`}
             img={fun3} reverse={true}
