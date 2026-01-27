@@ -178,7 +178,7 @@ class ProfileController extends Controller
                     dispatch(new SendBioSocialUpdateEmail($user, $updatedFields));
                 }
 
-                if ($user->bio_approved == 2) {
+                if ($user->bio_approved == 2 || $user->bio_approved == 1) {
                     $user->bio_approved = 0;
                 }
 
