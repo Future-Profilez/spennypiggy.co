@@ -1,21 +1,20 @@
-import { useEffect } from 'react';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import LoaderButton from '@/Components/LoaderButton';
-import { useAlerts } from '@/Components/Alerts';
-import InputError from '@/Components/InputError';
-import EnterOTP from './EnterOTP';
-import axios from 'axios';
-import { useState } from 'react';
-import DeviceID from '@/includes/DeviceID';
+import { useEffect } from "react";
+import GuestLayout from "@/Layouts/GuestLayout";
+import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
+import LoaderButton from "@/Components/LoaderButton";
+import { useAlerts } from "@/Components/Alerts";
+import InputError from "@/Components/InputError";
+import EnterOTP from "./EnterOTP";
+import axios from "axios";
+import { useState } from "react";
+import DeviceID from "@/includes/DeviceID";
 import { HiOutlineMail } from "react-icons/hi";
 import { RiLockPasswordLine } from "react-icons/ri";
 
-
 export default function Login({ status, canResetPassword }) {
     const urlParams = new URLSearchParams(window.location.search);
-    const paramValue = urlParams.get('redirect');
-    const redirectmessage = urlParams.get('message');
+    const paramValue = urlParams.get("redirect");
+    const redirectmessage = urlParams.get("message");
     const [open, setOpen] = useState(false);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -28,20 +27,19 @@ export default function Login({ status, canResetPassword }) {
     useEffect(() => {
         setLoading(processing);
     }, [processing]);
-    
+
     // Prime CSRF cookie when component mounts
     useEffect(() => {
-        axios.get('/csrf-cookie').catch(err => {
-            console.warn('Failed to prime CSRF cookie:', err);
+        axios.get("/csrf-cookie").catch((err) => {
+            console.warn("Failed to prime CSRF cookie:", err);
         });
     }, []);
-    
+
     useEffect(() => {
         return () => {
             reset("password");
         };
     }, []);
-
 
     const { flash } = usePage().props;
     // useEffect(() => {
@@ -68,60 +66,80 @@ export default function Login({ status, canResetPassword }) {
         const deviceId = DeviceID();
         const loginData = {
             ...data,
-            device_id: deviceId
+            device_id: deviceId,
         };
         setLoading(true);
-        
+
         // axios will automatically handle CSRF token from cookie
-        axios.post(route('login-user'), loginData, {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then((response) => {
-            localStorage.removeItem("cart");
-            reset();
-            if (paramValue) {
-                router.visit(paramValue);
-            } else if (response.data && response.data.redirect_url) {
-                router.visit(response.data.redirect_url);
-            } else {
-                window.location.reload();
-            }
-        })
-        .catch((error) => {
-            setLoading(false);
-            reset("password");
-            
-            if (error.response) {
-                if (error.response.status === 422 || error.response.status === 429) {
-                    const errorData = error.response.data;
-                    if (errorData.message) {
-                        errorAlert(errorData.message);
-                    }
-                    if (errorData.errors) {
-                        Object.entries(errorData.errors).forEach(([field, messages]) => {
-                            if (Array.isArray(messages)) {
-                                messages.forEach(message => errorAlert(message));
-                            }
-                        });
-                    }
+        axios
+            .post(route("login-user"), loginData, {
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                },
+            })
+            .then((response) => {
+                localStorage.removeItem("cart");
+                reset();
+                if (paramValue) {
+                    router.visit(paramValue);
+                } else if (response.data && response.data.redirect_url) {
+                    router.visit(response.data.redirect_url);
                 } else {
-                    errorAlert('An unexpected error occurred. Please try again.');
+                    window.location.reload();
                 }
-            } else if (error.request) {
-                errorAlert('Network error. Please check your connection and try again.');
-            } else {
-                errorAlert('An error occurred. Please try again.');
-            }
-        });
+            })
+            .catch((error) => {
+                setLoading(false);
+                reset("password");
+
+                if (error.response) {
+                    if (error.response.data?.message) {
+                        errorAlert(error.response.data.message);
+                    }
+
+                    if (error.response.data?.errors) {
+                        Object.entries(error.response.data.errors).forEach(
+                            ([field, messages]) => {
+                                if (Array.isArray(messages)) {
+                                    messages.forEach((message) =>
+                                        errorAlert(message),
+                                    );
+                                }
+                            },
+                        );
+                    }
+                }
+
+                // if (error.response) {
+                //     if (error.response.status === 422 || error.response.status === 429) {
+                //         const errorData = error.response.data;
+                //         if (errorData.message) {
+                //             errorAlert(errorData.message);
+                //         }
+                //         if (errorData.errors) {
+                //             Object.entries(errorData.errors).forEach(([field, messages]) => {
+                //                 if (Array.isArray(messages)) {
+                //                     messages.forEach(message => errorAlert(message));
+                //                 }
+                //             });
+                //         }
+                //     } else {
+                //         errorAlert('An unexpected error occurred. Please try again.');
+                //     }
+                // } else if (error.request) {
+                //     errorAlert('Network error. Please check your connection and try again.');
+                // } else {
+                //     errorAlert('An error occurred. Please try again.');
+                // }
+            });
     };
 
     const checkTFA = (e) => {
         e.preventDefault();
         setLoading(true);
-        axios.post('/verify-user', data)
+        axios
+            .post("/verify-user", data)
             .then((resp) => {
                 if (resp.data.status) {
                     if (resp.data.is_2fa) {
@@ -140,14 +158,24 @@ export default function Login({ status, canResetPassword }) {
             })
             .catch((err) => {
                 console.error("Verify user error:", err);
-                if (err.response && err.response.data && err.response.data.message) {
+                if (
+                    err.response &&
+                    err.response.data &&
+                    err.response.data.message
+                ) {
                     errorAlert(err.response.data.message);
-                } else if (err.response && err.response.data && err.response.data.msg) {
+                } else if (
+                    err.response &&
+                    err.response.data &&
+                    err.response.data.msg
+                ) {
                     errorAlert(err.response.data.msg);
                 } else if (err.message) {
                     errorAlert(err.message);
                 } else {
-                    errorAlert('An error occurred during login. Please try again.');
+                    errorAlert(
+                        "An error occurred during login. Please try again.",
+                    );
                 }
                 setLoading(false);
             });
@@ -173,14 +201,18 @@ export default function Login({ status, canResetPassword }) {
                 <div className="relative  w-full ">
                     <div className="text-center mb-10">
                         <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                            Welcome <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Back!</span>
+                            Welcome{" "}
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
+                                Back!
+                            </span>
                         </h2>
-                        <h1 className="hidden">
-                            Login to your account.
-                        </h1>
+                        <h1 className="hidden">Login to your account.</h1>
                         <p className="text-gray-400 text-lg font-medium">
                             Don't have an account?{" "}
-                            <Link href={route("register")} className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4">
+                            <Link
+                                href={route("register")}
+                                className="text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                            >
                                 Signup
                             </Link>
                         </p>
@@ -197,19 +229,25 @@ export default function Login({ status, canResetPassword }) {
                         <div className="p-6 sm:p-8 bg-black/20 rounded-b-[20px]">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
-                                    <p className='text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-lg border border-red-500/20 animate-pulse'>
+                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-lg border border-red-500/20 animate-pulse">
                                         {redirectmessage}
                                     </p>
                                 )}
-                                
+
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide" htmlFor="email">
+                                    <label
+                                        className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
+                                        htmlFor="email"
+                                    >
                                         Email Address
                                     </label>
                                     <div className="relative group relative">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                            <HiOutlineMail size='24' className='absolute top-[15px] left-3 z-1' />
-                                            <input
+                                        <HiOutlineMail
+                                            size="24"
+                                            className="absolute top-[15px] left-3 z-1"
+                                        />
+                                        <input
                                             id="email"
                                             type="email"
                                             name="email"
@@ -218,19 +256,30 @@ export default function Login({ status, canResetPassword }) {
                                             autoComplete="username"
                                             autoFocus={true}
                                             placeholder="you@example.com"
-                                            onChange={(e) => setData("email", e.target.value)}
+                                            onChange={(e) =>
+                                                setData("email", e.target.value)
+                                            }
                                         />
                                     </div>
-                                    <InputError message={errors.email} className="mt-2" />
+                                    <InputError
+                                        message={errors.email}
+                                        className="mt-2"
+                                    />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide" htmlFor="password">
+                                    <label
+                                        className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
+                                        htmlFor="password"
+                                    >
                                         Password
                                     </label>
                                     <div className="relative group relative">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                        <RiLockPasswordLine size='24' className='absolute top-[14px] left-3 z-1' />
+                                        <RiLockPasswordLine
+                                            size="24"
+                                            className="absolute top-[14px] left-3 z-1"
+                                        />
                                         <input
                                             id="password"
                                             type="password"
@@ -239,15 +288,23 @@ export default function Login({ status, canResetPassword }) {
                                             className="relative w-full bg-white border border-gray-700 text-black text-lg rounded-[17px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]"
                                             autoComplete="current-password"
                                             placeholder="••••••••"
-                                            onChange={(e) => setData("password", e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "password",
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
-
                                     </div>
-                                    <InputError message={errors.password} className="mt-2" />
+                                    <InputError
+                                        message={errors.password}
+                                        className="mt-2"
+                                    />
 
                                     {canResetPassword && (
                                         <div className="flex justify-end mt-2 relative z-1">
-                                            <Link method='get'
+                                            <Link
+                                                method="get"
                                                 href={route("password.request")}
                                                 className="!cursor-pointer text-sm text-gray-400 hover:text-white transition-colors duration-200"
                                             >
@@ -261,7 +318,8 @@ export default function Login({ status, canResetPassword }) {
                                     <LoaderButton
                                         disabled={loading}
                                         className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
-                                        spinnerClassName="fill-white"  >
+                                        spinnerClassName="fill-white"
+                                    >
                                         {loading ? "Logging In..." : "Log In"}
                                     </LoaderButton>
                                 </div>

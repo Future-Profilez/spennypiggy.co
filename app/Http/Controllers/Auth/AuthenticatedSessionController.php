@@ -80,56 +80,44 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        //saving the google secret of an particular user
-
+        // ✅ First authenticate credentials
         $request->authenticate();
-        $request->session()->regenerate();
-        $request->session()->regenerateToken();
+
         $user = Auth::user();
 
+        // 🚫 BLOCK SUSPENDED USER
+        if ($user->suspended_account == 1) {
+
+            Auth::logout(); // kill login
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Your account is suspended. Please contact support.'
+            ], 403);
+        }
+
+        // ✅ Continue normal login
+        $request->session()->regenerate();
+        $request->session()->regenerateToken();
+
+        //saving the google secret of an particular user
         $secret = $this->google2FA->generateSecretKey();
+
         if (empty($user->tfa_key) && $user->role == 1) {
             $user->tfa_key = $secret;
             $user->save();
         }
+
         $ipAddress = $request->ip();
         $checkIpExist = $user->ip_address;
+
         if (empty($checkIpExist) && $user instanceof \App\Models\User) {
             $user->ip_address = $ipAddress;
             $user->save();
         }
-
-        // $auth = AuthRedirect::create([
-        //     "user_id"   =>  $user->id,
-        //     'country'   =>  $user->country,
-        //     'origin'    =>  'localhost',
-        //     'target'    =>  'localhost',
-        // ]);
-        // Auth::logout();
-        // return Inertia::location("http://localhost:8000/verify-token/{$auth->uuid}");
-        // if()
-        // if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
-        //     // return Inertia::location("https://spennypiggy.com/{$user->username}");
-        //     $auth = AuthRedirect::create([
-        //         "user_id"   =>  $user->id,
-        //         'country'   =>  $user->country,
-        //         'origin'    =>  $request->getHttpHost(),
-        //         'target'    =>  'spennypiggy.co',
-        //     ]);
-        //     Auth::logout();
-        //     return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
-        // } else
-        // if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
-        //     // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
-        //     $auth = AuthRedirect::create([
-        //         "user_id"   =>  $user->id,
-        //         'country'   =>  $user->country,
-        //         'origin'    =>  $request->getHttpHost(),
-        //         'target'    =>  'uk.spennypiggy.co',
-        //     ]);
-        //     Auth::logout();
-        //     return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
-        // }
 
         // Handle JSON requests differently
         if ($request->expectsJson()) {
@@ -140,8 +128,74 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
+        return redirect(route("user.show", ['username' => $user->username]))
+            ->with("success", "Logged in successfully.");
     }
+
+    // public function store(LoginRequest $request)
+    // {
+    //     //saving the google secret of an particular user
+
+    //     $request->authenticate();
+    //     $request->session()->regenerate();
+    //     $request->session()->regenerateToken();
+    //     $user = Auth::user();
+
+    //     $secret = $this->google2FA->generateSecretKey();
+    //     if (empty($user->tfa_key) && $user->role == 1) {
+    //         $user->tfa_key = $secret;
+    //         $user->save();
+    //     }
+    //     $ipAddress = $request->ip();
+    //     $checkIpExist = $user->ip_address;
+    //     if (empty($checkIpExist) && $user instanceof \App\Models\User) {
+    //         $user->ip_address = $ipAddress;
+    //         $user->save();
+    //     }
+
+    //     // $auth = AuthRedirect::create([
+    //     //     "user_id"   =>  $user->id,
+    //     //     'country'   =>  $user->country,
+    //     //     'origin'    =>  'localhost',
+    //     //     'target'    =>  'localhost',
+    //     // ]);
+    //     // Auth::logout();
+    //     // return Inertia::location("http://localhost:8000/verify-token/{$auth->uuid}");
+    //     // if()
+    //     // if ($request->getHttpHost() == "uk.spennypiggy.co" and $user->country != "GB") {
+    //     //     // return Inertia::location("https://spennypiggy.com/{$user->username}");
+    //     //     $auth = AuthRedirect::create([
+    //     //         "user_id"   =>  $user->id,
+    //     //         'country'   =>  $user->country,
+    //     //         'origin'    =>  $request->getHttpHost(),
+    //     //         'target'    =>  'spennypiggy.co',
+    //     //     ]);
+    //     //     Auth::logout();
+    //     //     return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
+    //     // } else
+    //     // if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
+    //     //     // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
+    //     //     $auth = AuthRedirect::create([
+    //     //         "user_id"   =>  $user->id,
+    //     //         'country'   =>  $user->country,
+    //     //         'origin'    =>  $request->getHttpHost(),
+    //     //         'target'    =>  'uk.spennypiggy.co',
+    //     //     ]);
+    //     //     Auth::logout();
+    //     //     return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
+    //     // }
+
+    //     // Handle JSON requests differently
+    //     if ($request->expectsJson()) {
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Logged in successfully.',
+    //             'redirect_url' => route('user.show', ['username' => $user->username])
+    //         ]);
+    //     }
+
+    //     return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
+    // }
 
 
     public function verifyUser(Request $request)
@@ -218,10 +272,10 @@ class AuthenticatedSessionController extends Controller
         // Get Stripe capabilities if user is a creator (for all pages)
         if ($user->role == 1 && !empty($user->account_id)) {
             [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
-        }        
+        }
         // Always load social links so they are available to all dashboard tabs/pages
         $sociallinks = SocialLinks::where('user_id', $user->id)->first();
-        if($page == 'about'){
+        if ($page == 'about') {
             $userIntro = $user->intro;
         }
         // Removed stray debug return that broke the page rendering
@@ -961,8 +1015,4 @@ class AuthenticatedSessionController extends Controller
             'first30DayEarnings' => $first30DayEarnings
         ];
     }
-
-
-
-
 }

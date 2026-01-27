@@ -66,7 +66,7 @@ export default function Header({ classMagicword }) {
         // Add event listener for global cart counter refresh
         window.addEventListener(
             "cartCounterRefreshed",
-            handleCartCounterRefresh
+            handleCartCounterRefresh,
         );
 
         // Initial fetch
@@ -76,7 +76,7 @@ export default function Header({ classMagicword }) {
         return () => {
             window.removeEventListener(
                 "cartCounterRefreshed",
-                handleCartCounterRefresh
+                handleCartCounterRefresh,
             );
         };
     }, [fetchCounter, dispatch]);
@@ -330,10 +330,6 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                        </>
-                                    ) : (
-                                        ""
-                                    )}
                                     <li>
                                         <a
                                             href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
@@ -350,6 +346,10 @@ export default function Header({ classMagicword }) {
                                             </span>
                                         </a>
                                     </li>
+                                        </>
+                                    ) : (
+                                        ""
+                                    )}
 
                                     {auth &&
                                     auth.user &&
@@ -442,10 +442,7 @@ export default function Header({ classMagicword }) {
                                                             size={"1.2rem"}
                                                         />
                                                     </span>
-                                                    <span
-                                                        className="ml-2 text-[17px]
-                                    tracking-wide truncate text-white"
-                                                    >
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         All Purchases
                                                     </span>
                                                 </Link>
@@ -467,31 +464,27 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/wish-tracker`}
+                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SlCalculator
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Wish tracker
+                                                    </span>
+                                                </Link>
+                                            </li>
                                         </>
                                     ) : (
                                         ""
                                     )}
-
-                                    <li>
-                                        <Link
-                                            onClick={toggleClass}
-                                            href={`/wish-tracker`}
-                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
-                                        >
-                                            <span className="inline-flex justify-center items-center ml-4">
-                                                <SlCalculator
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span
-                                                className="ml-2 text-[17px]
-                                tracking-wide truncate text-white"
-                                            >
-                                                Wish tracker
-                                            </span>
-                                        </Link>
-                                    </li>
                                 </>
 
                                 {auth?.user?.username ? (
