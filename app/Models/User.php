@@ -758,4 +758,28 @@ class User extends Authenticatable
     {
         return $this->hasOne(ReferralCode::class, 'creator_id');
     }
+    
+    /**
+     * Get the merchant of record consents for the user
+     */
+    public function morConsents()
+    {
+        return $this->hasMany(MorConsent::class);
+    }
+
+    /**
+     * Get the latest merchant of record consent
+     */
+    public function latestMorConsent()
+    {
+        return $this->hasOne(MorConsent::class)->latest('consent_given_at');
+    }
+
+    /**
+     * Check if user has given MoR consent
+     */
+    public function hasGivenMorConsent(): bool
+    {
+        return $this->morConsents()->where('consent_given', true)->exists();
+    }
 }

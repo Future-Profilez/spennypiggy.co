@@ -24,9 +24,6 @@ class UserEmailVerify
             return redirect()->route('verification.notice');
         }
 
-        if (Auth::user()->suspended_account == 1) {
-            return Inertia::render('Suspanded');
-        }
         return $next($request);
     }
 }

@@ -290,8 +290,17 @@ Route::middleware('auth')->group(function () {
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
             Route::prefix("stripe")->name("stripe.")->group(function () {
-                Route::get("authorize", [StripeController::class, "index"])->name("index");
+                Route::get("/authorize", [StripeController::class, "index"])->name("index");
                 Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
+                // Merchant of Record Consent Routes
+                Route::get('/mor-consent', [StripeController::class, 'showMorConsent'])->name('mor-consent');
+                Route::post('/mor-consent', [StripeController::class, 'storeMorConsent'])->name('mor-consent.store');
+
+                // Stripe Connect Routes
+                // Route::get('/stripe', [StripeController::class, 'index'])->name('index');
+                // Route::get('/stripe/connect/{step?}', [StripeController::class, 'initConnect'])->name('connect');
+                Route::get('/stripe/return', [StripeController::class, 'stripeReturn'])->name('return');
+
                 Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
                 Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
                 Route::get("/enable_card_payments", [StripeController::class, "enableCardPayments"])->name("enable.card.payments");

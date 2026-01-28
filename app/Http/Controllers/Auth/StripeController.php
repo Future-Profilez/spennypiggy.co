@@ -28,6 +28,7 @@ use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Membership;
 use App\Models\MonthlyCharge;
+use App\Models\MorConsent;
 use App\Models\Post;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -67,6 +68,7 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
 use Stripe\Account;
 use App\Services\UserProfileService;
+use Illuminate\Support\Facades\Http;
 
 class StripeController extends Controller
 {
@@ -368,35 +370,216 @@ class StripeController extends Controller
      *
      * @return Inertia
      */
+    /**
+     * Landing Page for Stripe Connect
+     *
+     * @return Inertia
+     */
     public function index()
     {
         $user = User::find(Auth::id());
+
+        // Check if Stripe is already connected
         if ($user->stripe_details_submitted == 1) {
             return redirect(route("user.show", $user->username))->with("error", "Stripe Account already connected!");
         }
 
-        // Require: approved profile, Stripe identity verified, and admin identity approved
+        // Require: approved profile, Stripe identity verified
         if (($user->profile_status_lock ?? 0) != 2) {
             return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
         }
         if (($user->identity_status ?? 0) != 1) {
             return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
         }
-        // if (($user->identity_admin_status ?? 0) != 1) {
-        //     return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
-        // }
 
+        // Check if MoR consent exists in the database
+        $morConsentGiven = MorConsent::userHasGivenConsent($user->id);
+
+        // Check if account already exists and is active
         if (!empty($user->account_id)) {
             try {
                 $account = StripeControl::getAccount($user->account_id);
                 if ($account->charges_enabled) {
-                    return redirect(route("user.show", $user->username))->with("success", "Already Connected!");
+                    $user->stripe_details_submitted = 1;
+                    $user->save();
+                    $this->userProfileService->clearUserCaches($user->username, $user->id);
+                    return redirect(route("user.show", $user->username))->with("success", "Stripe already connected!");
                 }
             } catch (Exception $e) {
-                return redirect(route("user.show", $user->username))->with("error", $e->getMessage());
+                // If there's an error fetching account, continue to show the connect page
+                Log::warning('Error fetching Stripe account', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
             }
         }
-        return Inertia::render("stripe/Stripe");
+
+        // Get latest consent details if exists
+        $morConsentDetails = null;
+        if ($morConsentGiven) {
+            $latestConsent = MorConsent::getLatestConsent($user->id);
+            if ($latestConsent) {
+                $morConsentDetails = [
+                    'given_at' => $latestConsent->consent_given_at->format('M d, Y h:i A'),
+                    'ip_address' => $latestConsent->ip_address,
+                    'device' => $latestConsent->device_type,
+                    'location' => $latestConsent->city ? $latestConsent->city . ', ' . $latestConsent->country : 'Unknown'
+                ];
+            }
+        }
+
+        return Inertia::render("stripe/Stripe", [
+            'auth' => [
+                'user' => $user
+            ],
+            'mor_consent_given' => $morConsentGiven,
+            'mor_consent_details' => $morConsentDetails,
+            'success' => session('success')
+        ]);
+    }
+
+    /**
+     * Show Merchant of Record consent page
+     */
+    public function showMorConsent(Request $request)
+    {
+        $user = Auth::user();
+
+        // Check if user has already given consent
+        if (MorConsent::userHasGivenConsent($user->id)) {
+            return redirect()->route('stripe.index');
+        }
+
+        return inertia('stripe/MorConsent', [
+            'auth' => [
+                'user' => $user
+            ]
+        ]);
+    }
+    // public function showMorConsent(Request $request)
+    // {
+    //     $user = Auth::user();
+
+    //     // Check if user has already given consent
+    //     if (MorConsent::userHasGivenConsent($user->id)) {
+    //         return redirect()->route('stripe.index');
+    //     }
+
+    //     return inertia('stripe/MorConsent', [
+    //         'auth' => [
+    //             'user' => $user
+    //         ]
+    //     ]);
+    // }
+
+    /**
+     * Store Merchant of Record consent
+     */
+    public function storeMorConsent(Request $request)
+    {
+        $request->validate([
+            'mor_agreed' => 'required|accepted'
+        ]);
+
+        $user = Auth::user();
+
+        // Check if consent already exists
+        if (MorConsent::userHasGivenConsent($user->id)) {
+            // Redirect back with success message instead of JSON
+            return redirect()->route('stripe.index')
+                ->with('success', 'Merchant of Record agreement already confirmed!');
+        }
+
+        $ipAddress = $request->ip();
+
+        // Get location data from IP (optional)
+        $locationData = $this->getLocationFromIp($ipAddress);
+
+        // Parse user agent
+        $userAgent = $request->header('User-Agent');
+        $deviceInfo = $this->parseUserAgent($userAgent);
+
+        // Create consent record
+        $morConsent = MorConsent::create([
+            'user_id' => $user->id,
+            'consent_given' => true,
+            'consent_given_at' => now(),
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'device_type' => $deviceInfo['device_type'],
+            'browser' => $deviceInfo['browser'],
+            'platform' => $deviceInfo['platform'],
+            'metadata' => [
+                'accepted_at' => now()->toISOString(),
+                'referrer' => $request->header('referer'),
+                'accept_language' => $request->header('accept-language'),
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+                'session_id' => $request->session()->getId(),
+                'location_data' => $locationData
+            ]
+        ]);
+
+        // Log the consent
+        Log::info('Merchant of Record consent stored', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'ip' => $ipAddress,
+            'device' => $deviceInfo['device_type'],
+            'time' => now()->toDateTimeString(),
+            'consent_id' => $morConsent->id
+        ]);
+
+        // Redirect back with success message
+        return redirect()->route('stripe.connect')
+            ->with('success', 'Merchant of Record agreement confirmed successfully!');
+    }
+
+    // In your main stripe method
+    public function stripe()
+    {
+        $user = Auth::user();
+
+        // Check if user has given consent
+        $morConsentGiven = MorConsent::userHasGivenConsent($user->id);
+
+        return Inertia::render('stripe/Stripe', [
+            'auth' => [
+                'user' => $user,
+            ],
+            'user' => $user,
+            'mor_consent_given' => $morConsentGiven,
+            // Pass other props as needed
+        ]);
+    }
+
+    /**
+     * Show Stripe connect page
+     */
+    public function showAllData(Request $request)
+    {
+        $user = Auth::user();
+
+        // Check if user has given MoR consent
+        if (!MorConsent::userHasGivenConsent($user->id)) {
+            return redirect()->route('stripe.mor-consent');
+        }
+
+        // Pass the latest consent info to the view
+        $latestConsent = MorConsent::getLatestConsent($user->id);
+
+        return inertia('Stripe/Connect', [
+            'auth' => [
+                'user' => $user,
+                'mor_consent' => $latestConsent ? [
+                    'given_at' => $latestConsent->consent_given_at->format('M d, Y h:i A'),
+                    'ip_address' => $latestConsent->ip_address,
+                    'device' => $latestConsent->device_type,
+                    'location' => $latestConsent->city ? $latestConsent->city . ', ' . $latestConsent->country : 'Unknown'
+                ] : null
+            ],
+            'success' => session('success')
+        ]);
     }
 
     /**
@@ -406,21 +589,39 @@ class StripeController extends Controller
      * @param string $step Connection Current Step
      * @return mixed
      */
+    /**
+     * Initialize Stripe connection (main method you provided)
+     */
+    /**
+     * Initialize Stripe connection
+     */
     public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
         $user = User::find(Auth::id());
 
-        // Require: approved profile, Stripe identity verified, and admin identity approved
+        // Check Merchant of Record consent
+        if (!MorConsent::userHasGivenConsent($user->id)) {
+            return redirect()->route('stripe.index')->with('error', 'You must agree to the Merchant of Record terms first.');
+        }
+
+        // Require: approved profile, Stripe identity verified
         if (($user->profile_status_lock ?? 0) != 2) {
             return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
         }
         if (($user->identity_status ?? 0) != 1) {
             return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
         }
-        // if (($user->identity_admin_status ?? 0) != 1) {
-        //     return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
-        // }
 
+        // Log MoR consent verification
+        $morConsent = MorConsent::getLatestConsent($user->id);
+        Log::info('Stripe connection initiated with MoR consent', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'mor_consent_id' => $morConsent->id ?? null,
+            'consent_given_at' => $morConsent->consent_given_at ?? null,
+            'country' => $country,
+            'currency' => $currency
+        ]);
 
         if (empty($user->account_id)) {
             $country = strtoupper($country);
@@ -432,7 +633,8 @@ class StripeController extends Controller
                     'user_id' => $user->id,
                     'country' => $country,
                     'service_agreement' => $serviceAgreementType,
-                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
+                    'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account',
+                    'mor_consent' => true
                 ]);
 
                 // Set capabilities based on service agreement type
@@ -441,7 +643,6 @@ class StripeController extends Controller
                     $capabilities['transfers'] = ['requested' => true];
                 } else {
                     // For card_payments capability, Stripe requires BOTH card_payments AND transfers
-                    // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
                     $capabilities['card_payments'] = ['requested' => true];
                     $capabilities['transfers'] = ['requested' => true];
                 }
@@ -452,13 +653,19 @@ class StripeController extends Controller
                     'email' => $user->email,
                     'capabilities' => $capabilities,
                     'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
-                    // 'business_type' => 'individual',
                     "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
                         'url'   => "https://spennypiggy.co/{$user->username}",
                         'mcc'   => '7278',
                     ],
                     'default_currency' => $currency,
+                    'metadata' => [
+                        'mor_consent_given' => true,
+                        'mor_consent_id' => $morConsent->id ?? null,
+                        'mor_consent_date' => $morConsent->consent_given_at->toISOString() ?? null,
+                        'user_id' => $user->id,
+                        'username' => $user->username
+                    ]
                 ];
                 $account = StripeControl::createAccount($payload);
                 $user->account_id = $account->id;
@@ -489,6 +696,203 @@ class StripeController extends Controller
         } catch (Exception $e) {
             return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
         }
+    }
+
+
+    // public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
+    // {
+    //     $user = User::find(Auth::id());
+
+    //     // Require: approved profile, Stripe identity verified, and admin identity approved
+    //     if (($user->profile_status_lock ?? 0) != 2) {
+        //         return redirect(route("user.show", $user->username))->with("error", "Your profile is not approved yet.");
+    //     }
+    //     if (($user->identity_status ?? 0) != 1) {
+    //         return redirect(route("user.show", $user->username))->with("error", "Please complete Stripe identity verification first.");
+    //     }
+    //     // if (($user->identity_admin_status ?? 0) != 1) {
+        //     //     return redirect(route("user.show", $user->username))->with("error", "Identity review is pending or rejected by admin.");
+    //     // }
+
+
+    //     if (empty($user->account_id)) {
+        //         $country = strtoupper($country);
+        //         try {
+    //             // Determine service agreement type based on country to handle cross-border payment restrictions
+    //             $serviceAgreementType = self::getServiceAgreementType($country);
+
+    //             Log::info('Creating Stripe account with service agreement', [
+    //                 'user_id' => $user->id,
+    //                 'country' => $country,
+    //                 'service_agreement' => $serviceAgreementType,
+    //                 'reason' => $serviceAgreementType === 'recipient' ? 'Cross-border payment compatibility' : 'Standard account'
+    //             ]);
+    
+    //             // Set capabilities based on service agreement type
+    //             $capabilities = [];
+    //             if ($serviceAgreementType === 'recipient') {
+    //                 $capabilities['transfers'] = ['requested' => true];
+    //             } else {
+    //                 // For card_payments capability, Stripe requires BOTH card_payments AND transfers
+    //                 // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
+    //                 $capabilities['card_payments'] = ['requested' => true];
+    //                 $capabilities['transfers'] = ['requested' => true];
+    //             }
+
+    //             $payload = [
+    //                 "country" => $country,
+    //                 "type" => "express",
+    //                 'email' => $user->email,
+    //                 'capabilities' => $capabilities,
+    //                 'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
+    //                 // 'business_type' => 'individual',
+    //                 "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
+    //                 'business_profile' => [
+        //                     'url'   => "https://spennypiggy.co/{$user->username}",
+        //                     'mcc'   => '7278',
+    //                 ],
+    //                 'default_currency' => $currency,
+    //             ];
+    //             $account = StripeControl::createAccount($payload);
+    //             $user->account_id = $account->id;
+    //             $user->country = $country;
+    //             $user->save();
+    //             $this->userProfileService->clearUserCaches($user->username, $user->id);
+    //         } catch (Exception $e) {
+    //             return redirect(route("stripe.index"))->with("error", "Account creation error:" . $e->getMessage());
+    //         }
+    //     }
+    
+    //     try {
+    //         $account = StripeControl::getAccount($user->account_id);
+    //         if ($account->charges_enabled) {
+    //             $user->stripe_details_submitted = 1;
+    //             $user->save();
+    //             $this->userProfileService->clearUserCaches($user->username, $user->id);
+    //             return redirect(route("user.show", ["username" => $user->username]))->with("success", "Stripe already connected.");
+    //         }
+    //         $link = StripeControl::createAccountLink([
+    //             "account" => $account->id,
+    //             "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
+    //             "return_url"  => route("stripe.return"),
+    //             "type"        => "account_onboarding",
+    //             "collect"   => 'currently_due'
+    //         ]);
+    //         return Inertia::location($link->url);
+    //     } catch (Exception $e) {
+        //         return redirect(route("stripe.index"))->with("error", "Internal server error:" . $e->getMessage());
+        //     }
+    // }
+
+    /**
+     * Stripe return callback
+     */
+    public function stripeReturn(Request $request)
+    {
+        $user = Auth::user();
+
+        // Log return with MoR consent info
+        $morConsent = MorConsent::getLatestConsent($user->id);
+        Log::info('Stripe return callback', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'mor_consent_id' => $morConsent->id ?? null
+        ]);
+
+        // Your existing return logic
+        // ...
+    }
+    /**
+     * Get location data from IP address
+     */
+    private function getLocationFromIp($ip)
+    {
+        try {
+            // Using ipinfo.io (free tier available)
+            $token = env('IPINFO_TOKEN');
+
+            if (!$token || $ip === '127.0.0.1' || $ip === '::1') {
+                return [];
+            }
+
+            $response = Http::withToken($token)
+                ->timeout(5)
+                ->get("https://ipinfo.io/{$ip}/json");
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                // Parse coordinates if available
+                $coords = explode(',', $data['loc'] ?? '');
+
+                return [
+                    'country' => $data['country'] ?? null,
+                    'city' => $data['city'] ?? null,
+                    'region' => $data['region'] ?? null,
+                    'latitude' => $coords[0] ?? null,
+                    'longitude' => $coords[1] ?? null,
+                    'org' => $data['org'] ?? null,
+                    'postal' => $data['postal'] ?? null,
+                    'timezone' => $data['timezone'] ?? null,
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get IP location', [
+                'ip' => $ip,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return [];
+    }
+
+    /**
+     * Parse user agent string to extract device info
+     */
+    private function parseUserAgent($userAgent)
+    {
+        $deviceType = 'Desktop';
+        $browser = 'Unknown';
+        $platform = 'Unknown';
+
+        // Device detection
+        if (preg_match('/Mobile/i', $userAgent)) {
+            $deviceType = 'Mobile';
+        } elseif (preg_match('/Tablet|iPad/i', $userAgent)) {
+            $deviceType = 'Tablet';
+        }
+
+        // Browser detection
+        if (preg_match('/Chrome/i', $userAgent)) {
+            $browser = 'Chrome';
+        } elseif (preg_match('/Firefox/i', $userAgent)) {
+            $browser = 'Firefox';
+        } elseif (preg_match('/Safari/i', $userAgent) && !preg_match('/Chrome/i', $userAgent)) {
+            $browser = 'Safari';
+        } elseif (preg_match('/Edge/i', $userAgent)) {
+            $browser = 'Edge';
+        } elseif (preg_match('/Opera|OPR/i', $userAgent)) {
+            $browser = 'Opera';
+        }
+
+        // Platform detection
+        if (preg_match('/Windows/i', $userAgent)) {
+            $platform = 'Windows';
+        } elseif (preg_match('/Macintosh|Mac OS X/i', $userAgent)) {
+            $platform = 'macOS';
+        } elseif (preg_match('/Linux/i', $userAgent)) {
+            $platform = 'Linux';
+        } elseif (preg_match('/Android/i', $userAgent)) {
+            $platform = 'Android';
+        } elseif (preg_match('/iPhone|iPad|iPod/i', $userAgent)) {
+            $platform = 'iOS';
+        }
+
+        return [
+            'device_type' => $deviceType,
+            'browser' => $browser,
+            'platform' => $platform
+        ];
     }
 
 
@@ -2028,7 +2432,7 @@ class StripeController extends Controller
                 if ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                     $subs->payment_status = 'cancelled';
                     $subs->save();
-                    
+
                     if ($subs->user) {
                         $this->userProfileService->clearUserCaches($subs->user->username, $subs->user->id);
                     }
@@ -2861,7 +3265,7 @@ class StripeController extends Controller
             $customer_id = $customer->id;
             $user->stripe_id = $customer_id;
             $user->save();
-            
+
             // Clear cache since user data changed
             $this->userProfileService->clearUserCaches($user->username, $user->id);
         }
