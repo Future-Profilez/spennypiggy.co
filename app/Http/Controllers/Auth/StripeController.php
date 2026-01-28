@@ -408,6 +408,7 @@ class StripeController extends Controller
      */
     public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
     {
+        /** @var \App\Models\User $user */
         $user = User::find(Auth::id());
 
         // Require: approved profile, Stripe identity verified, and admin identity approved
@@ -494,6 +495,7 @@ class StripeController extends Controller
 
     public function upgradeStripeAccount(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if (!$user->account_id) {
@@ -915,9 +917,6 @@ class StripeController extends Controller
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'payment_intent_data' => [
-                    'transfer_data' => [
-                        'destination' => $getdata[0]->owner->account_id, // Creator's connected account ID
-                    ],
                     'application_fee_amount' => $taxNew,
                     'receipt_email' => $user->email,
                 ],
@@ -930,6 +929,8 @@ class StripeController extends Controller
                     'certificate' => 'true',
                     'product_type' => 'wish_one_off',
                 ],
+            ], [
+                'stripe_account' => $getdata[0]->owner->account_id,
             ]);
 
             $stripePaymentDetail = StripePaymentDetail::create([
@@ -1588,36 +1589,22 @@ class StripeController extends Controller
                         'transfer_amount' => (string) $transferAmount,
                         'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
-                        'payment_type' => $hasCardPayments ? 'One-time Wish Subscription - Destination Charges with transfers' : 'One-time Wish Subscription - Platform Charges with transfers',
+                        'payment_type' => 'One-time Wish Subscription - Direct Charge',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
                         'has_card_payments' => (string) $hasCardPayments,
                     ]),
+                    'application_fee_amount' => (int) round($platformTotal * $multiplier),
                 ];
 
-                // Only add on_behalf_of if creator has card_payments capability
-                if ($hasCardPayments) {
-                    $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
-                    $paymentIntentData['transfer_data'] = [
-                        'destination' => $connectedAccountId, // Creator's connected account
-                        'amount' => $transferAmount, // What creator receives (wish + VAT)
-                    ];
-                } else {
-                    // For restricted creators, charge on platform and transfer the creator amount
-                    // Use simple destination transfer without application_fee_amount
-                    $paymentIntentData['transfer_data'] = [
-                        'destination' => $connectedAccountId,
-                        'amount' => $transferAmount, // Transfer only what creator should receive
-                    ];
-                }
+                // Direct Charges used
+                // Funds go to connected account, platform takes application fee.
 
                 $payload['payment_intent_data'] = $paymentIntentData;
 
                 Log::info('Wish subscription payment flow determined', [
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
-                    'has_card_payments' => $hasCardPayments,
-                    'using_on_behalf_of' => $hasCardPayments,
-                    'payment_type' => 'onetime'
+                    'payment_type' => 'onetime_direct'
                 ]);
             } else {
                 $subscriptionData = [
@@ -1634,29 +1621,27 @@ class StripeController extends Controller
                         'transfer_amount' => (string) $transferAmount,
                         'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
-                        'payment_type' => $hasCardPayments ? 'Recurring Wish Subscription - Destination Charges with transfers' : 'Recurring Wish Subscription - Platform Charges with transfers',
+                        'payment_type' => 'Recurring Wish Subscription - Direct Charge',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
                         'has_card_payments' => (string) $hasCardPayments,
                     ]),
-                    'transfer_data' => [
-                        'destination' => $connectedAccountId, // Creator's connected account
-                        'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
-                    ],
+                    'application_fee_percent' => $applicationFeePercent,
                 ];
 
-                // For subscriptions, on_behalf_of is not used in subscription_data, but we still log the capability
+                // Direct Charges used
+
                 $payload['subscription_data'] = $subscriptionData;
 
                 Log::info('Wish subscription payment flow determined', [
                     'creator_id' => $wish->user->id,
                     'connected_account_id' => $connectedAccountId,
-                    'has_card_payments' => $hasCardPayments,
-                    'payment_type' => 'subscription'
+                    'payment_type' => 'subscription_direct'
                 ]);
             }
 
             try {
-                $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
+                // Create session on CONNECTED account
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
                 $sub->update(['session_id' => $session->id]);
                 return Inertia::location($session->url);
             } catch (Exception $e) {
@@ -1690,8 +1675,8 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
         try {
-            // Since we're using destination charges, session is created on platform account (no connected account parameter)
-            $session = StripeControl::getCheckoutSession($sub->session_id);
+            // Retrieve session from connected account
+            $session = StripeControl::getCheckoutSession($sub->session_id, $sub->wish_item->user->account_id);
 
             $sub->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
@@ -2630,53 +2615,29 @@ class StripeController extends Controller
             // Check if creator has card_payments capability to determine payment flow
             $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($creator->account_id);
 
-            // Build payment_intent_data based on creator's capabilities
+            // Direct Charges Implementation
             $paymentIntentData = [
                 'description' => "Spenny Piggy - Support payment to {$creator->name} with platform fee",
                 "metadata" => \App\Helpers::buildStripeMetadata('support_payment', $pay, [
-                    // 'support_goal_id' => (string) ($goal->id ?? ''),
                     'item_amount' => (string) $unitAmount,
                     'certificate' => true,
                     'creator_vat_amount' => (string) $creatorVatAmount,
                     'transfer_amount' => (string) $transferAmount,
                     'platform_fee_amount' => (string) $applicationFeeAmount,
                     'total_charge_amount' => (string) $totalChargeAmount,
-                    'payment_type' => $hasCardPayments ? 'Support Payment - Destination Charges with transfers' : 'Support Payment - Platform Charges with transfers',
+                    'payment_type' => 'Support Payment - Direct Charge',
                     'anonymous' => (string) ($request->anonymous ? 'yes' : 'no'),
                     'has_card_payments' => (string) $hasCardPayments,
                 ]),
+                'application_fee_amount' => $applicationFeeAmount,
             ];
 
-            // Only add on_behalf_of if creator has card_payments capability
-            if ($hasCardPayments) {
-                $paymentIntentData['on_behalf_of'] = $creator->account_id; // Shows creator as seller-of-record
-                $paymentIntentData['transfer_data'] = [
-                    'destination' => $creator->account_id, // Creator's connected account
-                    'amount' => $transferAmount, // What creator receives (item + VAT)
-                ];
-                Log::info('Using standard flow with on_behalf_of for support payment', [
-                    'creator_id' => $creator->id,
-                    'connected_account_id' => $creator->account_id,
-                    'has_card_payments' => true,
-                    'payment_type' => 'support_payment',
-                    'transfer_amount' => $transferAmount
-                ]);
-            } else {
-                // For restricted creators (transfers-only), charge on platform and transfer the creator amount
-                // Use simple destination transfer without application_fee_amount
-                $paymentIntentData['transfer_data'] = [
-                    'destination' => $creator->account_id,
-                    'amount' => $transferAmount, // Transfer only what creator should receive
-                ];
-                Log::info('Using fallback flow without on_behalf_of for restricted support payment creator', [
-                    'creator_id' => $creator->id,
-                    'connected_account_id' => $creator->account_id,
-                    'has_card_payments' => false,
-                    'reason' => 'Creator lacks card_payments capability',
-                    'payment_type' => 'support_payment',
-                    'transfer_amount' => $transferAmount
-                ]);
-            }
+            Log::info('Using Direct Charges for support payment', [
+                'creator_id' => $creator->id,
+                'connected_account_id' => $creator->account_id,
+                'payment_type' => 'support_payment',
+                'application_fee_amount' => $applicationFeeAmount
+            ]);
 
             $payload = [
                 "mode" => 'payment',
@@ -2689,8 +2650,8 @@ class StripeController extends Controller
             ];
 
             try {
-                // Create session on PLATFORM account (no connected account parameter)
-                $session = StripeControl::createCheckoutSession($payload);
+                // Create session on CONNECTED account
+                $session = StripeControl::createCheckoutSession($payload, $creator->account_id);
                 $pay->update(['session_id' => $session->id]);
 
                 return response()->json([
@@ -2721,8 +2682,8 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Insufficient data!');
         }
         try {
-            // Since we're using destination charges, session is created on platform account (no connected account parameter)
-            $session = StripeControl::getCheckoutSession($tip_pay->session_id);
+            // Direct Charges: session is created on connected account
+            $session = StripeControl::getCheckoutSession($tip_pay->session_id, $tip_pay->creator->account_id);
             $tip_pay->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $ownerCurrency = Currency::where('iso', strtoupper($tip_pay->currency))->first();
@@ -3176,6 +3137,7 @@ class StripeController extends Controller
     {
         try {
             Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+            /** @var \App\Models\User $user */
             $user = Auth::user();
             if (!$user) {
                 return response()->json(['error' => 'User not found.'], 404);

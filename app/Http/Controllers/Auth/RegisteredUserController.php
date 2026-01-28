@@ -571,22 +571,7 @@ class RegisteredUserController extends Controller
     //     //     'orderUuid' => $orderDetails->uuid
     //     // ]);
 
-    //     $sessionCreate = $stripe->checkout->sessions->create([
-    //         'success_url' => route('card.verification.success', [$user->uuid]), // Include correct parameters
-    //         'cancel_url' => route('card.verification.failed', [$user->uuid]),
-    //         'line_items' => $lineItems,
-    //         'mode' => 'payment',
-    //         'payment_method_types' => ['card'],
-    //         'payment_intent_data' => [
-    //             'transfer_data' => [
-    //                 'destination' => $orderDetails->creator->account_id,
-    //                 'amount' => $totalAmount,
-    //             ],
-    //             'on_behalf_of' => $orderDetails->creator->account_id,
-    //             'metadata' => [
-    //                 'order_id' => $orderDetails->id,
-    //                 'user_id' => $orderDetails->user->id,
-    //                 'creator_id' => $orderDetails->creator->id,
+
     //                 'payment_type' => 'product_purchase'
     //             ],
     //         ],

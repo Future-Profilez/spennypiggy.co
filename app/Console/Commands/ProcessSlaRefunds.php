@@ -209,7 +209,7 @@ class ProcessSlaRefunds extends Command
 
         try {
             // 1. Create Refund in Stripe
-            $refund = Refund::create([
+            $refundParams = [
                 'payment_intent' => $purchase->payment_intent_id,
                 'reason' => 'requested_by_customer',
                 'metadata' => [
@@ -217,7 +217,14 @@ class ProcessSlaRefunds extends Command
                     'task_purchase_uuid' => $purchase->uuid,
                     'task_id' => $purchase->task_id
                 ]
-            ]);
+            ];
+
+            $stripeOptions = [];
+            if ($purchase->creator && $purchase->creator->account_id) {
+                $stripeOptions['stripe_account'] = $purchase->creator->account_id;
+            }
+
+            $refund = Refund::create($refundParams, $stripeOptions);
 
             // 2. Update Local Database
             $purchase->refund_status = 'refunded';

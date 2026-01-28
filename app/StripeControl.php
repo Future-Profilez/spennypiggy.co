@@ -126,10 +126,10 @@ class StripeControl
 
     /**
      * Check if connected account has card_payments capability active
-     * This determines whether we can use on_behalf_of parameter in destination charges
+     * This determines whether the account can accept direct charges
      *
      * @param string $accountId Stripe Connected Account ID
-     * @return bool True if account can accept on_behalf_of charges, false otherwise
+     * @return bool True if account can accept direct charges, false otherwise
      */
     public static function hasCardPaymentsCapability(string $accountId): bool
     {
@@ -762,30 +762,6 @@ class StripeControl
     //     }
     // }
 
-
-    /**
-     * Create a transfer to a connected account
-     *
-     * @param array $payload Transfer payload
-     * @return \Stripe\Transfer
-     * @throws Exception
-     */
-    public static function createTransfer(array $payload)
-    {
-        self::setClient();
-        
-        try {
-            return self::$client->transfers->create($payload);
-        } catch (RateLimitException $e) {
-            throw new Exception("Stripe RateLimit: " . $e->getMessage());
-        } catch (InvalidRequestException $e) {
-            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
-        } catch (ApiConnectionException $e) {
-            throw new Exception("Stripe API Connection: " . $e->getMessage());
-        } catch (ApiErrorException $e) {
-            throw new Exception("Stripe API Error: " . $e->getMessage());
-        }
-    }
 
     /**
      * Get account balance for a connected account

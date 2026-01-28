@@ -17,10 +17,10 @@ environments:
       - "public/build/**"
       - "bootstrap/ssr/**"
     build:
-      - "composer install --no-dev"
+      # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      - "npm install --no-audit --no-fund"
+      # - "npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
       - "rm -rf public/build" # Linux/mac/OS
       - "rm -rf bootstrap/ssr" # Linux/mac/OS
@@ -60,15 +60,28 @@ environments:
     database: spennypiggy-db
     database-proxy: true
     health-checks: false 
+    environment:
+      CACHE_DRIVER: redis
+      REDIS_CLIENT: phpredis
+      REDIS_CLUSTER: redis
+      CACHE_PREFIX: spennypiggy
+      SESSION_DRIVER: redis
+      SESSION_STORE: redis
+      SESSION_CONNECTION: default
+      SESSION_DOMAIN: .spennypiggy.co
+      SESSION_SAME_SITE: lax
+      SESSION_SECURE_COOKIE: true
+      SESSION_LIFETIME: 120
+      SESSION_COOKIE: spennypiggy_session
     assets:
       - "public/build/**"
       - "bootstrap/ssr/**"
     build:
       - "npm run clear"
-      - "composer install --no-dev"
+      # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      - "npm install --no-audit --no-fund"
+      # - "npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
       - "rm -rf public/build"
       - "rm -rf bootstrap/ssr"

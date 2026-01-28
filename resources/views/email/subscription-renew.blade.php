@@ -25,7 +25,7 @@ $messages = [
     'start' => [
         'text' => 'Started',
         'desc' => '🎉 You’ve successfully started your subscription!',
-        'body' => 'Get ready to unlock all premium features 🚀 — no limits, no restrictions! Enjoy exclusive access, priority support, and the full Spenny Piggy experience 🐷💎. We’re thrilled to have you on board. Let the fun begin!',
+        'body' => 'Get ready to access all premium features 🚀 — no limits, no restrictions! Enjoy exclusive access, priority support, and the full Spenny Piggy experience 🐷💎. We’re thrilled to have you on board. Let the fun begin!',
     ]
 ];
 

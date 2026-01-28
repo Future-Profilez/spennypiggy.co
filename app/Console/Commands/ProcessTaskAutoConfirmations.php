@@ -119,89 +119,29 @@ class ProcessTaskAutoConfirmations extends Command
 
     private function triggerPayout($purchase)
     {
-        if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK' && $purchase->creator && !empty($purchase->creator->account_id)) {
+        // Direct Charge: Funds are already in the connected account.
+        // We just need to mark it as paid_out in our database.
+        if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK') {
+            $purchase->status = 'paid_out';
+            $purchase->save();
+            
+            // Update Deliverable Metadata
             try {
-                $client = new StripeClient(config('services.stripe.secret'));
-                $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
-                $chargeId = $pi->latest_charge ?? null;
-                if (!$chargeId) {
-                    try {
-                        $charges = $client->charges->all(['payment_intent' => $purchase->payment_intent_id, 'limit' => 1]);
-                        if (!empty($charges->data)) {
-                            $chargeId = $charges->data[0]->id;
-                        }
-                    } catch (\Exception $e) {
-                        Log::warning('Fallback charge lookup failed (AutoConfirm): ' . $e->getMessage());
-                    }
-                }
-                $currency = $pi->currency ?? $purchase->task->currency ?? 'gbp';
-
-                $task = $purchase->task;
-                $digits = \App\Models\Currency::where('ISO', strtoupper($currency))->value('ISOdigits');
-                $multiplier = ($digits == 0) ? 1 : 100;
-                $amount = (int) round(($purchase->transfer_amount ?? 0) * $multiplier);
-
-                if ($amount > 0) {
-                    $baseTransferMetadata = [
-                        'type' => 'task_payout',
-                        'task_id' => (string) $task->id,
-                        'task_uuid' => (string) $task->uuid,
-                        'purchase_id' => (string) $purchase->id,
-                        'creator_id' => (string) $purchase->creator_id,
-                        'supporter_id' => (string) $purchase->supporter_id,
-                        'payment_intent_id' => (string) $purchase->payment_intent_id,
-                    ];
-
-                    $piMetadata = [];
-                    foreach (($pi->metadata ?? []) as $k => $v) {
-                        $piMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
-                    }
-
-                    $chargeMetadata = [];
-                    $charge = null;
-                    if ($chargeId) {
-                        try {
-                            $charge = $client->charges->retrieve($chargeId);
-                        } catch (\Exception $e) {
-                            Log::warning('Failed to retrieve charge for metadata merge: ' . $e->getMessage());
-                        }
-                    }
-                    if ($charge) {
-                        foreach (($charge->metadata ?? []) as $k => $v) {
-                            $chargeMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
-                        }
-                    }
-
-                    $transferMetadata = array_merge($baseTransferMetadata, $piMetadata, $chargeMetadata);
-
-                    $transferPayload = [
-                        'amount' => $amount,
-                        'currency' => strtolower($currency),
-                        'destination' => $purchase->creator->account_id,
-                        'transfer_group' => "paid_task_{$task->id}",
-                        'metadata' => $transferMetadata,
-                    ];
-                    if ($chargeId) {
-                        $transferPayload['source_transaction'] = $chargeId;
-                    }
-
-                    $transfer = \App\StripeControl::createTransfer($transferPayload);
-
-                    $purchase->status = 'paid_out';
-                    $purchase->transfer_id = $transfer->id;
-                    $purchase->save();
-
-                    Log::info('Paid Task auto-transfer created', [
-                        'purchase_id' => $purchase->id,
-                        'transfer_id' => $transfer->id ?? null
+                $deliverable = Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
+                    app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                        'current_status_of_order' => 'paid_out',
+                        'payment_status' => 'paid',
+                        'auto_confirmed' => 'true'
                     ]);
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to create auto-transfer', [
-                    'error' => $e->getMessage(),
-                    'purchase_id' => $purchase->id
-                ]);
+                Log::error("Failed to update metadata on auto-confirmation (payout): " . $e->getMessage());
             }
+
+            Log::info('Task marked as paid_out (Direct Charge auto-confirm)', [
+                'purchase_id' => $purchase->id
+            ]);
         }
     }
 }

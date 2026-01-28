@@ -63,7 +63,8 @@ export default function PaidTasksAnnouncement() {
                         </h2>
                         
                         <p className="fading text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto font-medium leading-relaxed">
-                            Supporters request custom tasks. You set the price and deadline. Funds are secured before you start — no awkward follow-ups, no unpaid work. 
+                            Supporters pay before requesting a task. You approve, set the rules, and deliver on your own time.
+                            Late delivery? Refunds follow your terms — enforced automatically.
                         </p>
                     </div>
 
@@ -75,10 +76,10 @@ export default function PaidTasksAnnouncement() {
                             <div className="absolute -top-6 -right-6 bg-pink-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
-                            <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Instant <br/>Unlocks</h3>
+                            <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Instant <br/>Access</h3>
                             <p className="fading text-gray-400 text-lg mb-6 leading-snug">
                                 Upload once. Get paid every time.
-                                Supporters unlock content instantly — no back-and-forth, no delivery stress.
+                                Supporters access content instantly — no back-and-forth, no delivery stress.
                             </p>
                             <div className="fading bg-gray-800 rounded-xl p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-green-400 animate-pulse"></div>
@@ -92,7 +93,11 @@ export default function PaidTasksAnnouncement() {
                                 <FaMagic />
                             </div>
                             <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Paid <br/> Tasks (Custom Requests)</h3>
-                            <p className="fading text-gray-400 text-lg mb-6 leading-snug">Supporters pay upfront to request a task. You approve, set the rules, and deliver on your schedule.
+                            <p className="fading text-gray-400 text-lg mb-6 leading-snug">
+                                Supporters want something custom?
+                                They pay first. You decide the rest.
+                                Approve what you want, set the rules, and deliver when it works for you.
+                                No chasing. No awkwardness.
                             </p>
                             <div className="fading bg-gray-800 rounded-xl p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-blue-400 animate-pulse"></div>
@@ -108,19 +113,26 @@ export default function PaidTasksAnnouncement() {
                             </div>
                             <h3 className="fading text-xl  md:text-3xl  font-gulfs text-white mb-2 md:mb-2 uppercase">Funds <br/> Protected </h3>
                             <p className="fading text-gray-400 text-lg mb-6 leading-snug">
-                                Payment is secured before work begins. If a task isn’t delivered within the agreed time, we handle refunds automatically.
+                                
+                                
+                                Paid first. Always.
+You set the timeline, the rules, and the vibe.
+
+If a task isn’t delivered on time, refunds are handled according to your terms — automatically.
+ 
+
 
                             </p>
                             <div className="fading bg-gray-800 rounded-xl p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-pink-400 animate-pulse"></div>
-                                <span className="text-sm font-bold text-gray-300 uppercase">Platform-handled protection
+                                <span className="text-sm font-bold text-gray-300 uppercase">PLATFORM-ENFORCED RULES
                                 </span>
                             </div>
                         </div>
 
                     </div>
 
-                    <p className="text-center  pt-6 md:pt-12 text-white">No chargebacks. No awkward reminders. No unpaid “promises.”</p>
+                    <p className="text-center  pt-6 md:pt-12 text-white">Clear rules reduce disputes — no awkward reminders, no unpaid “promises”.</p>
 
                     {/* CTA Section */}
                     <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">

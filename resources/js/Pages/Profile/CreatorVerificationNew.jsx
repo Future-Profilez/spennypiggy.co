@@ -722,7 +722,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </div>
                                 <div className="flex items-start">
                                     <span className="text-blue-600 mr-3 font-bold">2.</span>
-                                    <p>Once approved, you'll unlock identity verification and payment account setup</p>
+                                    <p>Once approved, you'll access identity verification and payment account setup</p>
                                 </div>
                                 <div className="flex items-start">
                                     <span className="text-blue-600 mr-3 font-bold">3.</span>

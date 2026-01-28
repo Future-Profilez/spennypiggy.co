@@ -61,7 +61,7 @@ export default function Index() {
                     <div className="space-y-4">
                       {[
                         "Live Chat Support (Real Humans) — Get help when money is on the line, not days later",
-                        "Founder Bonuses for Early Creators — Early adopters unlock extra rewards and priority perks",
+                        "Founder Bonuses for Early Creators — Early adopters receive extra rewards and priority perks",
                         "Creators Keep 100% — No revenue cuts. Supporters pay the platform fee",
                         "Payout & Chargeback Protection — Disputes handled by the platform, not you",
                         "Stripe-Aligned by Design — Built to avoid freezes, shutdowns, and clawbacks"

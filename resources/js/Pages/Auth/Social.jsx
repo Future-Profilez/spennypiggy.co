@@ -422,7 +422,7 @@ export default function AddSocial({
                             >
                                 {formValidation.hasValidFields
                                     ? "These links will help verify your creator account and improve discoverability."
-                                    : "Please add at least one social media profile to verify your creator account and unlock all features."}
+                                    : "Please add at least one social media profile to verify your creator account and access all features."}
                             </p>
                         </div>
                     </div>

@@ -20,7 +20,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
             <div className='p-4'>
                 <h2 className='text-red-600 text-xl md:text-xl mb-2 font-gulfs uppercase'>Your Stripe Account Needs an Upgrade</h2>
                 <p className={`mb-2 text-md text-red-600`}>
-                    To receive card payments and unlock full payment features like global subscriptions and payouts, please complete your Stripe account setup.
+                    To receive card payments and access full payment features like global subscriptions and payouts, please complete your Stripe account setup.
                 </p>
                 <p className={`mb-4 text-md text-red-600`}>
                     This is a quick one-time step required by Stripe to meet international compliance and allow you to earn on our platform.

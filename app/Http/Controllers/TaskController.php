@@ -455,56 +455,30 @@ class TaskController extends Controller
             'admin_fee' => $convertedAdminFee,
             'platform_fee' => $totalPlatformFee,
             'vat_amount' => $creatorVatAmount,
-            'transfer_amount' => $transferAmountMajor,
+            'creator_net_amount' => $transferAmountMajor,
         ];
 
         $paymentIntentData = [
             'description' => "Spenny Piggy - Task purchase: " . $task->title,
-            'transfer_group' => "paid_task_{$task->id}",
         ];
 
-        if ($connectedAccountId) {
-            $paymentType = $paymentType ?? 'STANDARD';
-
-            // Only apply automatic transfers if NOT a PAID_TASK
-            if ($paymentType !== 'PAID_TASK') {
-                if ($hasCardPayments) {
-                    $paymentIntentData['on_behalf_of'] = $connectedAccountId;
-                    $paymentIntentData['transfer_data'] = [
-                        'destination' => $connectedAccountId,
-                        'amount' => $transferAmount,
-                    ];
-                } else {
-                    // Fallback if no card payments capability (rare for verified creators)
-                    // We still try to transfer
-                    $paymentIntentData['transfer_data'] = [
-                        'destination' => $connectedAccountId,
-                        'amount' => $transferAmount,
-                    ];
-                }
-            } else {
-                // PAID_TASK: Funds are held on platform.
-                // Do NOT set transfer_data or on_behalf_of (unless we want on_behalf_of for statement descriptor only, 
-                // but usually that implies settlement to connected account).
-                // Spec says: "Funds settle in platform balance".
-                Log::info('Paid Task Purchase: Funds held on platform for delayed payout.', [
-                    'task_id' => $task->id,
-                    'creator_id' => $creator->id
-                ]);
-            }
-        }
-        $checkout_session = Session::create([
+        // Create session on CONNECTED account
+        $session = \App\StripeControl::createCheckoutSession([
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'mode' => 'payment',
-            'payment_intent_data' => $paymentIntentData,
+            'payment_intent_data' => [
+                'description' => "Spenny Piggy - Task purchase: " . $task->title,
+                'application_fee_amount' => (int) ($totalPlatformFee * $multiplier),
+                'metadata' => $complianceMetadata,
+            ],
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $appUrl . '/task/' . $task->uuid,
             'customer_email' => $user->email,
             'metadata' => $complianceMetadata,
-        ]);
+        ], $connectedAccountId);
 
-        return Inertia::location($checkout_session->url);
+        return Inertia::location($session->url);
     }
 
     public function success(Request $request, $uuid)
@@ -859,154 +833,28 @@ class TaskController extends Controller
             } catch (\Exception $e) {
             }
 
-            // Delayed transfer for PAID_TASK
-            if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK' && $creator && !empty($creator->account_id)) {
+            // Delayed transfer for PAID_TASK - Direct Charge handling
+            if (($purchase->payment_type ?? 'STANDARD') === 'PAID_TASK') {
+                $purchase->status = 'paid_out';
+                $purchase->save();
+
+                \Illuminate\Support\Facades\Log::info('Paid Task marked as paid_out (Direct Charge)', [
+                    'purchase_id' => $purchase->id,
+                    'payment_intent' => $purchase->payment_intent_id
+                ]);
+
+                // Update Metadata with new status (paid_out / transferred)
                 try {
-                    $client = new StripeClient(config('services.stripe.secret'));
-                    $pi = $client->paymentIntents->retrieve($purchase->payment_intent_id);
-                    $chargeId = $pi->latest_charge ?? null;
-
-                    if (!$chargeId) {
-                        try {
-                            $charges = $client->charges->all(['payment_intent' => $purchase->payment_intent_id, 'limit' => 1]);
-                            if (!empty($charges->data)) {
-                                $chargeId = $charges->data[0]->id;
-                            }
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::warning('Fallback charge lookup failed: ' . $e->getMessage());
-                        }
-                    }
-
-                    // Retrieve Charge with Balance Transaction to determine SETTLEMENT currency
-                    // This fixes "currency of source_transaction's balance transaction (usd) must be the same as the transfer currency (eur)" error
-                    $charge = null;
-                    $balanceTransaction = null;
-                    if ($chargeId) {
-                        try {
-                            $charge = $client->charges->retrieve($chargeId, ['expand' => ['balance_transaction']]);
-                            $balanceTransaction = $charge->balance_transaction;
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::warning('Failed to retrieve charge/balance transaction: ' . $e->getMessage());
-                        }
-                    }
-
-                    // The transfer MUST use the settlement currency (e.g., USD) even if the charge was in EUR
-                    $settlementCurrency = ($balanceTransaction && isset($balanceTransaction->currency)) ? $balanceTransaction->currency : $pi->currency;
-                    
-                    // Determine the original currency (Source of Truth)
-                    $originalCurrency = $pi->currency;
-                    if (empty($originalCurrency)) {
-                        // Fallback logic
-                        $originalCurrency = $task->currency;
-                        if (empty($originalCurrency)) {
-                            $deliverableForCurrency = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
-                            $originalCurrency = $deliverableForCurrency ? $deliverableForCurrency->payment_currency : 'gbp';
-                        }
-                    }
-                    
-                    // Default to GBP if still empty
-                    $originalCurrency = $originalCurrency ?: 'gbp';
-
-                    $digits = \App\Models\Currency::where('ISO', strtoupper($originalCurrency))->value('ISOdigits');
-                    $multiplier = ($digits == 0) ? 1 : 100;
-                    $originalTransferAmountMinor = ($purchase->transfer_amount ?? 0) * $multiplier;
-
-                    // Calculate final transfer amount in settlement currency
-                    $amount = (int) round($originalTransferAmountMinor);
-                    
-                    if ($charge && $balanceTransaction && strtolower($originalCurrency) !== strtolower($settlementCurrency)) {
-                         if ($charge->amount > 0 && isset($balanceTransaction->amount)) {
-                             // Calculate exchange rate from the transaction itself
-                             $rate = $balanceTransaction->amount / $charge->amount;
-                             $amount = (int) round($originalTransferAmountMinor * $rate);
-                             
-                             \Illuminate\Support\Facades\Log::info('Currency conversion for Paid Task transfer', [
-                                 'original_currency' => $originalCurrency,
-                                 'settlement_currency' => $settlementCurrency,
-                                 'rate' => $rate,
-                                 'original_amount' => $originalTransferAmountMinor,
-                                 'converted_amount' => $amount,
-                                 'charge_amount' => $charge->amount,
-                                 'bt_amount' => $balanceTransaction->amount
-                             ]);
-                         }
-                    }
-
-                    if ($amount > 0) {
-                        $baseTransferMetadata = [
-                            'type' => 'task_payout',
-                            'task_id' => (string) $task->id,
-                            'task_uuid' => (string) $task->uuid,
-                            'purchase_id' => (string) $purchase->id,
-                            'creator_id' => (string) $purchase->creator_id,
-                            'supporter_id' => (string) $purchase->supporter_id,
-                            'payment_intent_id' => (string) $purchase->payment_intent_id,
-                        ];
-
-                        $piMetadata = [];
-                        foreach (($pi->metadata ?? []) as $k => $v) {
-                            $piMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
-                        }
-
-                        $chargeMetadata = [];
-                        if ($charge) {
-                            foreach (($charge->metadata ?? []) as $k => $v) {
-                                $chargeMetadata[(string) $k] = is_array($v) ? json_encode($v) : (string) $v;
-                            }
-                        }
-
-                        $transferMetadata = array_merge($baseTransferMetadata, $piMetadata, $chargeMetadata);
-
-                        $transferPayload = [
-                            'amount' => $amount,
-                            'currency' => strtolower($settlementCurrency),
-                            'destination' => $creator->account_id,
-                            'transfer_group' => "paid_task_{$task->id}",
-                            'metadata' => $transferMetadata,
-                        ];
-                        if ($chargeId) {
-                            $transferPayload['source_transaction'] = $chargeId;
-                        }
-
-                        $transfer = \App\StripeControl::createTransfer($transferPayload);
-
-                        $purchase->status = 'paid_out';
-                        $purchase->transfer_id = $transfer->id;
-                        $purchase->save();
-
-                        \Illuminate\Support\Facades\Log::info('Paid Task transfer created', [
-                            'purchase_id' => $purchase->id,
-                            'transfer_id' => $transfer->id ?? null,
-                            'was_escalated' => $wasDispute ?? false,
-                            'amount' => $amount,
-                            'currency' => $settlementCurrency
-                        ]);
-
-                        // Update Metadata with new status (paid_out / transferred)
-                        try {
-                            $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
-                            if ($deliverable) {
-                                app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
-                                    'transfer_status' => 'transferred',
-                                    'current_status_of_order' => 'paid_out',
-                                    'payment_status' => 'paid'
-                                ]);
-                            }
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::error("Failed to update metadata after transfer: " . $e->getMessage());
-                        }
-                    } else {
-                        \Illuminate\Support\Facades\Log::warning('Paid Task transfer skipped: Amount is 0', [
-                            'purchase_id' => $purchase->id,
-                            'transfer_amount' => $purchase->transfer_amount,
-                            'was_escalated' => $wasDispute ?? false
+                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    if ($deliverable) {
+                        app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                            'transfer_status' => 'transferred',
+                            'current_status_of_order' => 'paid_out',
+                            'payment_status' => 'paid'
                         ]);
                     }
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Failed to create transfer on proof acceptance', [
-                        'error' => $e->getMessage(),
-                        'purchase_id' => $purchase->id
-                    ]);
+                    \Illuminate\Support\Facades\Log::error("Failed to update metadata after marking paid_out: " . $e->getMessage());
                 }
             }
         } else {

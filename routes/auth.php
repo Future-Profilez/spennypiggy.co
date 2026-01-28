@@ -303,9 +303,16 @@ Route::middleware('auth')->group(function () {
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
             Route::get('account', function () {
-                $user = Auth::user();
-                $auto_tweet = $user->auto_tweet == 1;
-                $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
+                try {
+                    $user = Auth::user();
+                    if (!$user) {
+                        return redirect()->route('login');
+                    }
+
+                    $auto_tweet = (int)($user->auto_tweet ?? 0) === 1;
+                    $pwaNotificationDetails = Cache::remember("account:pwa_notifications:{$user->id}", 300, function () use ($user) {
+                        return BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
+                    });
 
                 // Find the currently active subscription period
                 $now = Carbon::now();
@@ -333,10 +340,11 @@ Route::middleware('auth')->group(function () {
                 }
 
                 // Get complete subscription history for the user
-                $subscription_history = MonthlyCharge::where('user_id', $user->id)
-                    ->orderByDesc('current_start_subscription_date')
-                    ->get()
-                    ->map(function ($charge) {
+                $subscription_history = Cache::remember("account:subscription_history:{$user->id}", 300, function () use ($user) {
+                    return MonthlyCharge::where('user_id', $user->id)
+                        ->orderByDesc('current_start_subscription_date')
+                        ->get()
+                        ->map(function ($charge) {
                         return [
                             'id' => $charge->id,
                             'uuid' => $charge->uuid,
@@ -352,7 +360,8 @@ Route::middleware('auth')->group(function () {
                             'created_at' => $charge->created_at,
                             'updated_at' => $charge->updated_at,
                         ];
-                    });
+                        });
+                });
 
                 $site_subscription = [
                     'status' => 'INACTIVE',
@@ -415,6 +424,14 @@ Route::middleware('auth')->group(function () {
                     'pwa_notification_details' => $pwaNotificationDetails ?? null,
                     'subscription_status' => $user->subscription_status, // Add numeric status for debugging
                 ]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
+                    return Inertia::render('ErrorPage', [
+                        'status' => 500,
+                        'message' => 'Something went wrong',
+                        'consoleMessage' => $e->getMessage(),
+                    ]);
+                }
             });
 
             Route::get('/refer-and-earn', [ReferAndEarnController::class, 'index'])->name('refer-and-earn');

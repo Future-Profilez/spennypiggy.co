@@ -22,7 +22,7 @@ export default function Post({item}) {
     if(item && item?.for_module == 'public'){
       return item.image_url || false
     }
-    // Check if user is the post owner OR post is unlocked
+    // Check if user is the post owner OR post is accessible
     if(IsloggedIn || (item && item.is_lock === 0)){
       return item.image_url
     } else {

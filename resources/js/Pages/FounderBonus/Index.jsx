@@ -452,7 +452,7 @@ export default function FounderBonusIndex() {
                            {/* {availableSeats} */}
                     <div className="mt-8 text-center">
                         <p className="text-sm text-gray-500">
-                                    Hit £2,500 in your first 30 days and unlock a year-long 10% platform-fee bonus (150 seats only; new creators from Nov 1st). We only confirm eligibility on the 1st of each month — so your first bonus pays on the 7th of the next month, no matter when you qualify during the month.
+                                    Hit £2,500 in your first 30 days and receive a year-long 10% platform-fee bonus (150 seats only; new creators from Nov 1st). We only confirm eligibility on the 1st of each month — so your first bonus pays on the 7th of the next month, no matter when you qualify during the month.
                         </p>
                     </div>
                 </div>

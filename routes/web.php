@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 
@@ -43,6 +44,65 @@ Route::get('/health', function () {
         'environment' => config('app.env')
     ], 200);
 })->name('health.check');
+
+Route::get('/cache-test', function (Request $request) {
+    $key = 'cache_test_key';
+    if ($request->boolean('forget')) {
+        Cache::forget($key);
+    }
+    $value = Cache::remember($key, 300, function () {
+        return now()->toDateTimeString();
+    });
+    return response()->json([
+        'env' => config('app.env'),
+        'driver' => config('cache.default'),
+        'value' => $value,
+        'now' => now()->toDateTimeString(),
+        'same' => $value === Cache::get($key),
+    ], 200);
+})->name('cache.test');
+
+Route::get('/session-test', function (Request $request) {
+    if ($request->boolean('set')) {
+        $request->session()->put('session_test_value', now()->toDateTimeString());
+    }
+    $stored = $request->session()->get('session_test_value');
+    return response()->json([
+        'env' => config('app.env'),
+        'session_driver' => config('session.driver'),
+        'stored' => $stored,
+        'now' => now()->toDateTimeString(),
+        'persisting' => !empty($stored),
+    ], 200);
+})->name('session.test');
+
+Route::get('/config-diag', function () {
+    $hasConfigCache = file_exists(base_path('bootstrap/cache/config.php'));
+    return response()->json([
+        'env' => config('app.env'),
+        'cache' => [
+            'config_default' => config('cache.default'),
+            'env_value' => env('CACHE_DRIVER'),
+            'prefix' => config('cache.prefix'),
+        ],
+        'session' => [
+            'config_driver' => config('session.driver'),
+            'env_driver' => env('SESSION_DRIVER'),
+            'store' => config('session.store'),
+        ],
+        'redis' => [
+            'url' => env('REDIS_URL'),
+            'host_default' => config('database.redis.default.host'),
+            'host_cache' => config('database.redis.cache.host'),
+            'client' => config('database.redis.client'),
+        ],
+        'dynamodb' => [
+            'table' => env('DYNAMODB_CACHE_TABLE'),
+            'region' => env('AWS_DEFAULT_REGION'),
+        ],
+        'config_cache_file_present' => $hasConfigCache,
+    ]);
+})->name('config.diag');
 
 // CSRF Cookie route for SPA authentication
 Route::get('/csrf-cookie', function () {

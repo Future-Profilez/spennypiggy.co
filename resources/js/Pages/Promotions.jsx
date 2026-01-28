@@ -60,7 +60,7 @@ export default function Promotions(props) {
                                     <strong>150 verified creators</strong> to
                                     join Spenny Piggy and hit{" "}
                                     <strong>£2,500 / $3,000</strong> in
-                                    supporter earnings within 30 days to unlock
+                                    supporter earnings within 30 days to receive
                                     a <strong>12‑month Founder Bonus</strong>.
                                 </p>
 

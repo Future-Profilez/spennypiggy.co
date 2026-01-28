@@ -77,7 +77,7 @@ export default function Stripe(props) {
                     {!finalStepsUnlocked && (
                         <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg text-yellow-800">
                             <p className="font-semibold">Admin Profile Approval Required</p>
-                            <p className="text-sm">Complete your basic profile and submit for admin approval to unlock payment setup.</p>
+                            <p className="text-sm">Complete your basic profile and submit for admin approval to access payment setup.</p>
                         </div>
                     )}
                     {/* {finalStepsUnlocked && !adminIdentityApproved && (

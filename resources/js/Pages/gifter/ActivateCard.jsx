@@ -55,7 +55,7 @@ export default function ActivateCard() {
                                     ""
                                 )}
                                 <p className="mb-1 text-[17px] text-center text-gray-400">
-                                    To activate your card and unlock the ability
+                                    To activate your card and access the ability
                                     to make payments on our platform, simply
                                     click the button below and complete a
                                     one-time verification fee of £1. This quick
