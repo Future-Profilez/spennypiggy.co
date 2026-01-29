@@ -92,7 +92,8 @@ class OptimizedProfileController extends Controller
             return [false, true, []];
         }
 
-        $cacheKey = "stripe_capabilities_{$user->account_id}";
+        $version = $this->profileService->getUserCacheVersion($user->id);
+        $cacheKey = "stripe_capabilities_{$user->account_id}_v{$version}";
         
         return Cache::remember($cacheKey, 300, function () use ($user) {
             try {
@@ -151,7 +152,8 @@ class OptimizedProfileController extends Controller
         }
 
         // Use caching to avoid repeated Stripe API calls
-        $cacheKey = "migration_status_{$user->id}";
+        $version = $this->profileService->getUserCacheVersion($user->id);
+        $cacheKey = "migration_status_{$user->id}_v{$version}";
         
         return Cache::remember($cacheKey, 600, function () use ($user) {
             try {
@@ -184,15 +186,20 @@ class OptimizedProfileController extends Controller
     private function getCategoriesWithItems($user)
     {
         $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+        $version = $this->profileService->getUserCacheVersion($user->id);
+        $viewType = $isPublicView ? 'public' : 'private';
+        $cacheKey = "user_categories_with_items_{$user->id}_{$viewType}_v{$version}";
 
-        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
-            $q->where('user_id', $user->id);
-            if ($isPublicView) {
-                $q->where('is_approved', 1);
-            }
-        })->pluck('user_category_id')->unique()->filter();
+        return Cache::remember($cacheKey, 300, function () use ($user, $isPublicView) {
+            $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+                $q->where('user_id', $user->id);
+                if ($isPublicView) {
+                    $q->where('is_approved', 1);
+                }
+            })->pluck('user_category_id')->unique()->filter();
 
-        return $user->user_categories()->whereIn('id', $categoryIds)->get();
+            return $user->user_categories()->whereIn('id', $categoryIds)->get();
+        });
     }
 
     /**
@@ -338,9 +345,16 @@ class OptimizedProfileController extends Controller
                 ]);
             }
 
+            $version = $this->profileService->getUserCacheVersion($user->id);
+            $cacheKey = "user_categories_list_{$user->id}_v{$version}";
+
+            $categories = Cache::remember($cacheKey, 300, function () use ($user) {
+                return $user->user_categories ?? [];
+            });
+
             return response()->json([
                 "success" => true,
-                "categories" => $user->user_categories ?? [],
+                "categories" => $categories,
             ]);
         } catch (\Throwable $th) {
             return response()->json([
@@ -396,17 +410,20 @@ class OptimizedProfileController extends Controller
      */
     public function userGiftItems(string $username)
     {
-        $cacheKey = "gift_items_{$username}";
+        $user = $this->profileService->getUserWithRelations($username);
         
-        $items = Cache::remember($cacheKey, 300, function () use ($username) {
-            $user = \App\Models\User::where('username', $username)
-                ->where('is_uk', 0)
-                ->first();
-                
-            if (!$user) {
-                return [];
-            }
+        // Ensure user exists and is not UK (if required by legacy logic)
+        if (!$user || ($user->is_uk ?? 0) != 0) {
+             return response()->json([
+                'success' => true,
+                'items' => []
+            ]);
+        }
 
+        $version = $this->profileService->getUserCacheVersion($user->id);
+        $cacheKey = "gift_items_{$user->id}_v{$version}";
+        
+        $items = Cache::remember($cacheKey, 300, function () use ($user) {
             return \App\Models\RyeProduct::where('user_id', $user->id)
                 ->latest()
                 ->limit(20)

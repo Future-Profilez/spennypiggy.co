@@ -277,8 +277,8 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                      className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
                                                          !data.agree || !verified) ?'disabled':'enabled'}`} >
                                                      {processing ? 'Processing...' : (
-                                                         purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝')
-                                                     )}
+                            purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
+                        )}
                                                  </button>
                                              </form>
                                         </div>

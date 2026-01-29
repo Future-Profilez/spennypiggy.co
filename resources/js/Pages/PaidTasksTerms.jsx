@@ -59,11 +59,12 @@ export default function PaidTasksTerms(props) {
 
                         <div className="my-6 h-px w-full bg-gray-200" />
 
-                        <h2 className="text-lg md:text-2xl font-semibold mb-3">No Guarantees</h2>
-                        <ul className="list-disc pl-6 space-y-2 mb-6">
-                            <li>Paid Tasks do not guarantee earnings, income levels, or request volume.</li>
-                            <li>The platform does not guarantee task acceptance, completion, or outcomes.</li>
-                        </ul>
+                        <h2 className="text-lg md:text-2xl font-semibold mb-3">Service Disclaimer</h2>
+                        <p className="mb-4">
+                            Please note that Spenny Piggy does not promise specific results from any task.
+                            Tasks are created by users, and while we strive for quality, we cannot ensure
+                            specific outcomes.
+                        </p>
 
                         <div className="my-6 h-px w-full bg-gray-200" />
 

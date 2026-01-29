@@ -268,7 +268,7 @@ export default function Dashboard(props) {
                   </p>
                   <p>
                       5.13. When making a donation through the site, it's your responsibility to understand how your
-                      donation will be utilized. Spenny Piggy does not endorse or guarantee any offers, promises, or
+                      donation will be utilized. Spenny Piggy does not endorse or ensure any offers, promises, or
                       rewards made by Users. Any offers or promises made by Wishers connected to gift funding are
                       expressly prohibited and may result in account deactivation.
                   </p>
@@ -644,10 +644,10 @@ export default function Dashboard(props) {
                   checking out on Spenny Piggy, in an email receipt, an email, a page on Spenny Piggy, or
                   elsewhere. The Thank You note might be automated by Spenny Piggy on behalf of the Wisher,
                   automated by the Wisher themselves, or manually created by the Wisher and sent to the user
-                  through Spenny Piggy. If users don't provide a valid email address, we cannot guarantee the
+                  through Spenny Piggy. If users don't provide a valid email address, we cannot ensure the
                   delivery of the Thank You note. Similarly, if there are any email delivery issues, we cannot be
                   held responsible as these issues involve third parties, such as the user's email provider. We
-                  cannot guarantee the delivery of the Thank You note if the user exits Spenny Piggy before the
+                  cannot ensure the delivery of the Thank You note if the user exits Spenny Piggy before the
                   note is displayed. These notes have no minimum length or required sentiment or text.</p>
 
 

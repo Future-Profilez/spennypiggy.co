@@ -110,10 +110,10 @@ class DeliverableService
             $certificateUrl = app(CertificateService::class)->generateSupporterCertificate($deliverable);
             
             // Generate receipt
-            $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
+            // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
             
             // Mark as delivered immediately (instant delivery)
-            $deliverable->markAsDelivered($certificateUrl, $receiptUrl);
+            $deliverable->markAsDelivered($certificateUrl, null);
             $deliverable->update(['certificate_url' => $certificateUrl]);
             
             // Add to supporter wall (this would be handled by another service)
@@ -143,13 +143,13 @@ class DeliverableService
             $certificateUrl = app(CertificateService::class)->generateAccessCertificate($deliverable);
             
             // Generate receipt
-            $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
+            // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
             
             // Grant access entitlement (this would be handled by membership service)
             // app(MembershipService::class)->grantAccess($deliverable);
             
             // Mark as delivered immediately (instant delivery)
-            $deliverable->markAsDelivered($certificateUrl, $receiptUrl);
+            $deliverable->markAsDelivered($certificateUrl, null);
             $deliverable->update(['certificate_url' => $certificateUrl]);
             
             // Send delivery notification
@@ -176,13 +176,13 @@ class DeliverableService
             $certificateUrl = app(CertificateService::class)->generateSubscriptionCertificate($deliverable);
             
             // Generate receipt
-            $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
+            // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
             
-            // Unlock wish feed access (this would be handled by wish service)
-            // app(WishService::class)->unlockFeedAccess($deliverable);
+            // Grant wish feed access
+            // app(WishService::class)->grantFeedAccess($deliverable);
             
             // Mark as delivered immediately (instant delivery)
-            $deliverable->markAsDelivered($certificateUrl, $receiptUrl);
+            $deliverable->markAsDelivered($certificateUrl, null);
             $deliverable->update(['certificate_url' => $certificateUrl]);
             
             // Send delivery notification
@@ -205,9 +205,9 @@ class DeliverableService
     private function generateBillSubscriptionDeliverable(Deliverable $deliverable): void
     {
         try {
-            // Generate monthly receipt PDF
-            $receiptUrl = app(ReceiptService::class)->generateMonthlyReceipt($deliverable);
-            
+            // TODO: ReceiptService class is missing. Re-enable this when the service is restored or defined.
+        // $receiptUrl = app(ReceiptService::class)->generateMonthlyReceipt($deliverable);
+        $receiptUrl = null;  
             // Mark as delivered (SLA: 1 day)
             $deliverable->markAsDelivered($receiptUrl, $receiptUrl);
             
@@ -236,8 +236,8 @@ class DeliverableService
     {
         try {
             // Generate receipt
-            $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
-            $deliverable->update(['receipt_url' => $receiptUrl]);
+            // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
+            // $deliverable->update(['receipt_url' => $receiptUrl]);
             
             // Send pending notification to buyer
             DeliverableNotification::createDeliverablePending($deliverable);
@@ -264,7 +264,7 @@ class DeliverableService
     {
         try {
             // Generate receipt
-            $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
+            // $receiptUrl = app(ReceiptService::class)->generateReceipt($deliverable);
             $deliverable->update(['receipt_url' => $receiptUrl]);
             
             // Send pending notification to buyer

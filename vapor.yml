@@ -7,7 +7,6 @@ environments:
     scheduler: true
     cli-timeout: 120
     cli-concurrency: 10
-    # cli-concurrency: 2  (ensure at least 2 if using sub-minute)
     cli-memory: 512
     timeout: 120
     runtime: "php-8.2:al2"
@@ -18,21 +17,23 @@ environments:
       - "public/build/**"
       - "bootstrap/ssr/**"
     build:
-      - "composer install --no-dev"
+      # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      - "php artisan config:cache"
-      - "npm install --no-audit --no-fund"
-      - "rm -rf public/build"
+      # - "npm install --no-audit --no-fund"
+      - "php artisan ziggy:generate"
+      - "rm -rf public/build" # Linux/mac/OS
+      - "rm -rf bootstrap/ssr" # Linux/mac/OS
       - "npm run build"
-      # - "npm run clear"
-      - "rm -rf node_modules"   # Linux/macOS
+      - "npm run clear"
+      - "rm -rf node_modules" # Linux/mac/OS
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
-      # - "rd /s /q node_modules"  # Windows/
+      # - "rd /s /q node_modules" # Windows
     deploy:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
       - "php artisan config:clear"
+      - "php artisan config:cache"
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
@@ -43,33 +44,49 @@ environments:
   production:
     memory: 1024
     queue-memory: 512
-    cli-memory: 512
+    cli-memory: 1024
+    ssr-memory: 1024
+    nodejs: 18
     scheduler: true
     cli-timeout: 120
-    # Ensure at least 2 when using sub-minute scheduling
     cli-concurrency: 10
-    warm: 5
+    warm: 1
     gateway-version: 2
     timeout: 60
-    # cache: spenny-piggy-redis-caches
+    cache: spenny-piggy-redis-caches
     runtime: "php-8.2:al2"
     ssr: true
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
     health-checks: false 
+    environment:
+      CACHE_DRIVER: redis
+      REDIS_CLIENT: phpredis
+      REDIS_CLUSTER: redis
+      CACHE_PREFIX: spennypiggy
+      SESSION_DRIVER: redis
+      SESSION_STORE: redis
+      SESSION_CONNECTION: default
+      SESSION_DOMAIN: .spennypiggy.co
+      SESSION_SAME_SITE: lax
+      SESSION_SECURE_COOKIE: true
+      SESSION_LIFETIME: 120
+      SESSION_COOKIE: spennypiggy_session
     assets:
       - "public/build/**"
       - "bootstrap/ssr/**"
     build:
-      - "composer install --no-dev"
+      - "npm run clear"
+      # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      - "php artisan config:cache"
-      - "npm install --no-audit --no-fund"
-      - "rm -rf public/build" # Linux/mac/OS
+      # - "npm install --no-audit --no-fund"
+      - "php artisan ziggy:generate"
+      - "rm -rf public/build"
+      - "rm -rf bootstrap/ssr"
       - "npm run build"
-      # - "npm run clear"
+      - "npm run clear"
       - "rm -rf node_modules" # Linux/mac/OS
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules" # Windows
@@ -78,12 +95,13 @@ environments:
       - "php artisan migrations:fix-state"
       - "php artisan migrate --force"
       - "php artisan config:clear"
+      - "php artisan config:cache"
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-      # - "php artisan subscription:sync --all"
-      # Optional: Generate sitemaps (comment out for faster deployments)
-      # - "php artisan sitemap:generate --force"
+      - "php artisan cache:clear"
 
 
+# - "php artisan subscription:sync --all"
+# - "php artisan sitemap:generate --force"
 # php artisan app:notifications-pending-approval

@@ -7,7 +7,7 @@ import path from 'path';
 
 export default defineConfig((env) => {
     const ssrBuild = env.ssrBuild || process.argv.includes('--ssr');
-    return {
+    return { 
     plugins: [
         laravel({
             input: 'resources/js/app.jsx',
@@ -27,7 +27,6 @@ export default defineConfig((env) => {
         //     brotliSize: true,
         // })
     ].filter(Boolean),
-
     build: {
         sourcemap: false,
         rollupOptions: {

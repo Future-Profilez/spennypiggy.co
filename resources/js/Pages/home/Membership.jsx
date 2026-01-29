@@ -24,7 +24,7 @@ const supportData = [
   {
     title: "Rewards",
     description:
-      "Let Supporters unlock exclusive posts, member-only products and more.",
+      "Let Supporters access exclusive posts, member-only products and more.",
     color: "#D9DE62",
     icon: FaAward,
   },
@@ -85,7 +85,7 @@ export default function Membership() {
         <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-tight">
             Premium <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Membership</span>
         </h2>
-        <p className='fading max-w-4xl text-gray-300 m-auto text-center text-lg md:text-xl font-poppins leading-relaxed mb-12' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Unlock premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
+        <p className='fading max-w-4xl text-gray-300 m-auto text-center text-lg md:text-xl font-poppins leading-relaxed mb-12' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Access premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
       </div>
 
         <div className='relative p-0 md:p-4  ' >

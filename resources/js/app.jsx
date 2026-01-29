@@ -20,8 +20,8 @@ import * as Sentry from "@sentry/react";
 import axios from "axios";
 import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
+import Maintaince from "./Components/Maintaince.jsx";
 
-// Only initialize Sentry on the production domain
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' || window.location.hostname === 'https://www.spennypiggy.co') {
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
@@ -41,7 +41,6 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
         replaysOnErrorSampleRate: 1.0
     });
 } 
-// Global cart refresh functions setup
 function setupGlobalCartFunctions(props) {
     const auth = props?.page?.props?.auth;
     const deviceid = DeviceID();
@@ -152,6 +151,37 @@ function setupGlobalCartFunctions(props) {
     }
 }
 
+class GlobalErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, errorMessage: "" };
+    }
+
+    static getDerivedStateFromError(error) {
+        return {
+            hasError: true,
+            errorMessage: error && error.message ? error.message : ""
+        };
+    }
+
+    componentDidCatch(error) {
+        try {
+            Sentry.captureException(error);
+        } catch (e) {
+        }
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <Maintaince />
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
 
 createInertiaApp({
     title: (title) =>
@@ -169,7 +199,9 @@ createInertiaApp({
             <React.StrictMode>
                 <Provider store={store}>
                     <Suspense fallback={null}>
-                        <App {...props} />
+                        <GlobalErrorBoundary>
+                            <App {...props} />
+                        </GlobalErrorBoundary>
                     </Suspense>
                 </Provider>
             </React.StrictMode>

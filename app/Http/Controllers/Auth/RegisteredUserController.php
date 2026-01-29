@@ -70,7 +70,7 @@ class RegisteredUserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['sometimes', 'required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['sometimes', 'required', 'string', Rules\Password::defaults()],
             'password_confirmation' => ['sometimes', 'required_with:password', 'same:password'],
@@ -105,7 +105,7 @@ class RegisteredUserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'min:5', 'max:20', 'unique:users,username'],
+            'username' => ['required', 'string', 'lowercase', 'alpha_num', 'not_regex:/@/', 'min:5', 'max:20', 'unique:users,username'],
             'role'     => ['required'],
             'promo'    => ['nullable', 'string'], // referral code
         ]);
@@ -157,7 +157,7 @@ class RegisteredUserController extends Controller
         }
 
         /* =========================EMAIL DOMAIN CHECK========================== */
-        $domain = explode('@', $request->email)[1] ?? '';
+        $domain = strtolower(explode('@', $request->email)[1] ?? '');
         $allowedDomains = AllowedDomain::pluck('name')->toArray();
 
         if (!in_array($domain, $allowedDomains)) {
@@ -203,7 +203,7 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'tfa_key'             => $secret,
             'name'                => $request->name,
-            'email'               => strtolower($request->email),
+            'email'               => $request->email,
             'username'            => $request->username,
             'gender'              => $request->gender ?? null,
             'password'            => Hash::make($request->password),
@@ -295,6 +295,8 @@ class RegisteredUserController extends Controller
             "username" => [
                 "required",
                 "string",
+                "alpha_num",
+                "not_regex:/@/",
                 "min:5",
                 "max:20"
             ]
@@ -569,22 +571,7 @@ class RegisteredUserController extends Controller
     //     //     'orderUuid' => $orderDetails->uuid
     //     // ]);
 
-    //     $sessionCreate = $stripe->checkout->sessions->create([
-    //         'success_url' => route('card.verification.success', [$user->uuid]), // Include correct parameters
-    //         'cancel_url' => route('card.verification.failed', [$user->uuid]),
-    //         'line_items' => $lineItems,
-    //         'mode' => 'payment',
-    //         'payment_method_types' => ['card'],
-    //         'payment_intent_data' => [
-    //             'transfer_data' => [
-    //                 'destination' => $orderDetails->creator->account_id,
-    //                 'amount' => $totalAmount,
-    //             ],
-    //             'on_behalf_of' => $orderDetails->creator->account_id,
-    //             'metadata' => [
-    //                 'order_id' => $orderDetails->id,
-    //                 'user_id' => $orderDetails->user->id,
-    //                 'creator_id' => $orderDetails->creator->id,
+
     //                 'payment_type' => 'product_purchase'
     //             ],
     //         ],

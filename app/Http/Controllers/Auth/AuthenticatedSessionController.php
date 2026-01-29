@@ -819,13 +819,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function verify2FA(Request $request)
     {
-        $email = $request->query('email');
-        $password = $request->query('password');
+        $email = $request->input('email');
+        $password = $request->input('password');
 
         $user = User::where('email', $email)->where('is_uk', 0)->first();
 
-        $otp = $request->query('otp');
-        $backup_code = $request->query('backup_code');
+        $otp = $request->input('otp');
+        $backup_code = $request->input('backup_code');
 
 
 
@@ -874,6 +874,8 @@ class AuthenticatedSessionController extends Controller
                         'country'   =>  $user->country,
                         'origin'    =>  $request->getHttpHost(),
                         'target'    =>  'uk.spennypiggy.co',
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
                     ]);
 
                     Auth::logout();

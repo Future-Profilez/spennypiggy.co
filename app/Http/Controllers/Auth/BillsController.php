@@ -604,23 +604,20 @@ class BillsController extends Controller
                             'recurring_for' => $reccure,
                             'item_amount' => (string) round($bill->price * $multiplier),
                             'creator_vat_amount' => (string) $creatorVatAmount,
-                            'transfer_amount' => (string) $transferAmount,
+                            'creator_net_amount' => (string) $transferAmount,
                             'platform_fee_amount' => (string) round($totalPaymentTaxAmount * $multiplier),
                             'total_charge_amount' => (string) $totalChargeAmount,
-                            'payment_type' => 'Bill Payment - Destination Charges with transfers',
+                            'payment_type' => 'Bill Payment - Direct Charges',
                             'anonymous' => (string) ($sub->anonymous ?? 0),
                         ]),
-                        'transfer_data' => [
-                            'destination' => $connectedAccountId, // Creator's connected account
-                            'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
-                        ],
+                        'application_fee_percent' => round((round($totalPaymentTaxAmount * $multiplier) / $totalChargeAmount) * 100, 2),
                     ],
                     'customer_email' => $user->email ?? $request->email,
                     'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
 
-                $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId); // Create session on CONNECTED account
 
                 $sub->update([
                     'session_id' => $session->id,
@@ -669,8 +666,8 @@ class BillsController extends Controller
             // Update GMV for creator
             Helpers::addGmv($bill_pay->bill->user_id, (float) $bill_pay->amount, $bill_pay->bill->user->default_currency);
 
-            // Since we're using destination charges, session is created on platform account (no connected account parameter)
-            $session = StripeControl::getCheckoutSession($bill_pay->session_id);
+            // Direct Charges: session is created on connected account
+            $session = StripeControl::getCheckoutSession($bill_pay->session_id, $bill_pay->bill->user->account_id);
             $bill_pay->status = $session->payment_status;
 
             if ($session->payment_status === 'paid') {

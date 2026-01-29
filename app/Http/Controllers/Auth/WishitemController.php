@@ -418,7 +418,7 @@ class WishitemController extends Controller
 
     public function updateWishItem(Request $request, $uuid = null)
     {
-        $wish = WishItem::where('uuid', $uuid)->first();
+        $wish = WishItem::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
         $old_wish = $wish->subscription;
         $old_wish_name = $wish->wish_name;
         $old_price_id = $wish->price_id;
@@ -1527,7 +1527,7 @@ class WishitemController extends Controller
                 'orderUuid' => $orderDetails->uuid
             ]);
             
-            // Build payment_intent_data based on creator's capabilities
+            // Build payment_intent_data for Direct Charges
             $paymentIntentData = [
                 'metadata' => [
                     'order_id' => $orderDetails->id,
@@ -1538,36 +1538,11 @@ class WishitemController extends Controller
                 ],
             ];
             
-            // Only add on_behalf_of if creator has card_payments capability
-            if ($hasCardPayments) {
-                $paymentIntentData['on_behalf_of'] = $orderDetails->creator->account_id;
-                $paymentIntentData['transfer_data'] = [
-                    'destination' => $orderDetails->creator->account_id,
-                    'amount' => $totalAmount,
-                ];
-                Log::info('Using standard flow with on_behalf_of for Rye product payment', [
-                    'creator_id' => $orderDetails->creator->id,
-                    'connected_account_id' => $orderDetails->creator->account_id,
-                    'has_card_payments' => true,
-                    'order_id' => $orderDetails->id,
-                    'transfer_amount' => $totalAmount
-                ]);
-            } else {
-                // For restricted creators (transfers-only), charge on platform and transfer full amount to creator
-                // Use simple destination transfer without application_fee_amount
-                $paymentIntentData['transfer_data'] = [
-                    'destination' => $orderDetails->creator->account_id,
-                    'amount' => $totalAmount, // Transfer full amount to creator since no platform fee for product purchases
-                ];
-                Log::info('Using fallback flow without on_behalf_of for restricted Rye creator', [
-                    'creator_id' => $orderDetails->creator->id,
-                    'connected_account_id' => $orderDetails->creator->account_id,
-                    'has_card_payments' => false,
-                    'reason' => 'Creator lacks card_payments capability',
-                    'order_id' => $orderDetails->id,
-                    'transfer_amount' => $totalAmount
-                ]);
-            }
+            Log::info('Using Direct Charges for Rye product payment', [
+                'creator_id' => $orderDetails->creator->id,
+                'connected_account_id' => $orderDetails->creator->account_id,
+                'order_id' => $orderDetails->id,
+            ]);
 
             $sessionCreate = $stripe->checkout->sessions->create([
                 'success_url' => $successUrl, // Include correct parameters
@@ -1583,6 +1558,8 @@ class WishitemController extends Controller
                     'payment_source' => 'website',
                     'has_card_payments' => (string) $hasCardPayments,
                 ],
+            ], [
+                'stripe_account' => $orderDetails->creator->account_id,
             ]);
 
             RyeProductPayment::whereUuid($ryeProductPayment->uuid)->update(['payment_metadata' => json_encode($sessionCreate)]);
@@ -1700,22 +1677,7 @@ class WishitemController extends Controller
     //         // Log::error("Error in createCheckout: " . $th->getMessage());
 
     //         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-    //         // Create Stripe checkout session
-    //         $sessionCreate = $stripe->checkout->sessions->create([
-    //             'success_url' => route('rye.success.payment', [$ryeProductPayment->uuid]),
-    //             'cancel_url' => route('rye.cancel.payment', [$ryeProductPayment->uuid]),
-    //             'line_items' => $lineItems,
-    //             'mode' => 'payment',
-    //             'payment_method_types' => ['card'],
-    //             'payment_intent_data' => [
-    //                 'transfer_data' => [
-    //                     'destination' => $orderDetails->creator->account_id,
-    //                     'amount' => $totalAmount,
-    //                 ],
-    //                 'on_behalf_of' => $orderDetails->creator->account_id,
-    //             ],
-    //             'customer_email' => $orderDetails->user->email,
-    //         ]);
+
 
     //         $now = Carbon::now()->format('h:i A d-m-Y');
     //         $emailSubject = "Payment Process Failed - $now";

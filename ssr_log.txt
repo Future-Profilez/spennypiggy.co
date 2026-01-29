@@ -1,0 +1,41 @@
+Starting SSR server on port 13714...
+Inertia SSR server started.
+Rendering page: creators/Index Props: [ 'auth', 'errors', 'ziggy' ]
+Rendering page: index/Index Props: [ 'auth', 'errors', 'ziggy' ]
+Page not found: index/Index
+Rendering page: Welcome Props: [ 'auth', 'errors', 'ziggy' ]
+Sentry enabled in ENV: local
+Warning: React does not recognize the `fetchPriority` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `fetchpriority` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+    at img
+    at Ve (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/assets/Hero-DzLkI508.js:1:6501)
+    at g (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/assets/GuestLayout-B8Z9FLh7.js:1:591)
+    at fo (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/assets/Welcome-BqT-Jeud.js:5:13047)
+    at mD (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/ssr.mjs:135:11735)
+    at oz (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/ssr.mjs:488:3684)
+    at div
+Warning: Received `true` for a non-boolean attribute `jsx`.
+
+If you want to write it to the DOM, pass a string instead: jsx="true" or jsx={value.toString()}.
+    at style
+    at I
+    at g (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/assets/GuestLayout-B8Z9FLh7.js:1:591)
+    at fo (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/assets/Welcome-BqT-Jeud.js:5:13047)
+    at mD (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/ssr.mjs:135:11735)
+    at oz (file:///Users/naveentehrpariya/Office/SPENNYPIGGY/spennypiggy.co/bootstrap/ssr/ssr.mjs:488:3684)
+    at div
+Rendering page: creators/Index Props: [
+  'errors',
+  'auth',
+  'follow_status',
+  'notification_count',
+  'ziggy',
+  'flash',
+  'cart_count',
+  'symbols',
+  'rates',
+  'currencies',
+  'global_currency',
+  'turnstileSiteKey',
+  'intercom'
+]
+Rendering page: Errors/404 Props: [ 'popularCreators', 'helpLinks', 'searchSuggestions', 'currentUrl' ]

@@ -78,7 +78,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                             <strong>Tip:</strong> {filter === 'supporters' && 'Send a tip'} 
                             {filter === 'members' && 'Purchase a membership'} 
                             {filter === 'subscribers' && 'Subscribe to their content'} 
-                            {username && ` to ${username}`} to unlock exclusive content!
+                            {username && ` to ${username}`} to access exclusive content!
                         </p>
                     </div>
                 )}

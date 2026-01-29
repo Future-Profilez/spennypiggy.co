@@ -6,6 +6,7 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -56,39 +57,62 @@ class Handler extends ExceptionHandler
 
 
     public function render($request, Throwable $e){
+        // Ensure ErrorPage renders even if APP_DEBUG is true for specific cases or all production-like errors
+        
+        if ($e instanceof ValidationException) {
+            return parent::render($request, $e);
+        }
 
         $status = 500;
         if ($e instanceof HttpExceptionInterface) {
             $status = $e->getStatusCode();
         }
 
-        // Use the new enhanced 404 page for 404 errors
         if ($status === 404) {
             $errorController = new \App\Http\Controllers\ErrorController();
             return $errorController->show404();
         }
 
-        // Render Inertia ErrorPage for Inertia requests
+        $message = $this->messages[$status] ?? $this->messages[500];
+        
+        // Pass actual error message to view for console logging in debug mode or if requested
+        $consoleMessage = $e->getMessage();
+
+        Log::error('Unhandled exception', [
+            'status' => $status,
+            'exception_message' => $e->getMessage(),
+            'exception' => $e,
+        ]);
+
         if ($request->header('X-Inertia')) {
-            return Inertia::render('ErrorPage', [
-                'status' => $status,
-                'message' => $e->getMessage()
-            ])
-                ->toResponse($request)
-                ->setStatusCode($status);
+            try {
+                return Inertia::render('ErrorPage', [
+                    'status' => $status,
+                    'message' => $message,
+                    'consoleMessage' => $consoleMessage
+                ])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+            } catch (Throwable $t) {
+                Log::error('Failed to render Inertia ErrorPage (X-Inertia)', ['error' => $t->getMessage()]);
+            }
         }
 
-        // Render Inertia ErrorPage even for full-page browser loads
         if ($request->isMethod('GET') && $request->acceptsHtml()) {
-            return Inertia::render('ErrorPage', [
-                'status' => $status,
-                'message' => $e->getMessage()
-            ])
-                ->toResponse($request)
-                ->setStatusCode($status);
+            try {
+                return Inertia::render('ErrorPage', [
+                    'status' => $status,
+                    'message' => $message,
+                    'consoleMessage' => $consoleMessage
+                ])
+                    ->toResponse($request)
+                    ->setStatusCode($status);
+            } catch (Throwable $t) {
+                Log::error('Failed to render Inertia ErrorPage (HTML)', ['error' => $t->getMessage()]);
+            }
         }
-        // Fallback for API or JSON
-        return parent::render($request, $e ?? 'Something went wrong');
+
+        return parent::render($request, $e);
     }
 
 

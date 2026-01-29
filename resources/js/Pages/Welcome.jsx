@@ -70,6 +70,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
             <meta name="twitter:description" content="Keep 100% of what you earn. Real gifting, paid tasks, bills and memberships with fast payouts and Stripe-aligned safety." />
             <meta name="twitter:image" content="/siteicon.png" />
         </Head>
+
         <Guest auth={auth.user} user={auth.user}>
         <LiveBar reps={15} classes={'blackbg barouter'} text={"🤑 Keep 100% of what you earn! ⚡️Fast & Easy Payment's through 🍎 Pay! "} />
         <Hero auth={auth} />
@@ -78,10 +79,13 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <LiveBarSection />
 
         {trendingCreators && trendingCreators.length > 0 ? <TrendingCreators creators={trendingCreators} /> : ''}
+        
         {newVerifiedCreators && newVerifiedCreators.length > 0 ? <NewVerified creators={newVerifiedCreators} /> : ''}
+        
         {topEarners && topEarners.length > 0 ? <TopEarners creators={topEarners} periodLabel={topEarnersLabel} /> : ''}
 
         <PaymentSlider/>
+
         {/* <ForCreators /> */}
 
         {/* <FunPart classes={``}
@@ -91,7 +95,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         heading={`Seek & Search`}
         text={`Looking for your favorite creator or their wishlist? Seek & Search makes it easy. Whether you're eager to support your beloved content creators or find the perfect gift, our intuitive search feature lets you quickly locate creators or their wishlists with just a few clicks. Dive into the world of creativity and generosity today with Seek & Search!`}
         /> */}
-
 
         {/* <FunPart classes={`border-top-0`}
         img={fill} reverse={true}
@@ -109,7 +112,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         text={`Think ebooks, art commissions, 1-1 zoom calls and everything else in between. Anything that probably doesn’t have a place on shopify, Your profile shop is the place to start selling direct to your fans whilst enhancing your earnings potential.`}
         /> */}
 
-
         {/* <FunPart classes={`border-top-0`}
         img={lockprofile} reverse={true}
         imgbg={`yellowbg`} eclasses={``}
@@ -120,25 +122,27 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         All the creator & Fan information stays private and is not shared between parties. `}
         /> */}
 
-        <FunPart classes={`border-top-0`}
-        img={fun1} reverse={true}
-        mainbg={`bg-[#EFEA7B]`} eclasses={``}
-        textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-        heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
+        <FunPart 
+            classes={`border-top-0`}
+            img={fun1} reverse={true}
+            mainbg={`bg-[#EFEA7B]`} eclasses={``}
+            textbg={`bg-[#EFEA7B]`} textcolor='text-black'
+            heading={`Effortlessly add your dream items, share your page, and get going in minutes!`}
         />
 
-        <FunPart classes={`border-top-0`}
-        img={fun2} reverse={false}
-        mainbg={`bg-[#F94F96]`} eclasses={``}
-        textbg={`bg-[#F94F96]`}
-        heading={`Let your fans spoil you with gifts from any online store!`}
+        <FunPart 
+            classes={`border-top-0`}
+            img={fun2} reverse={false}
+            mainbg={`bg-[#F94F96]`} eclasses={``}
+            textbg={`bg-[#F94F96]`}
+            heading={`Let your fans spoil you with gifts from any online store!`}
         />
-
-        <FunPart classes={`border-top-0`}
-        img={fun3} reverse={true}
-        mainbg={`bg-[#EFEA7B]`} eclasses={``}
-        textbg={`bg-[#EFEA7B]`} textcolor='text-black'
-        heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
+        <FunPart 
+            classes={`border-top-0`}
+            img={fun3} reverse={true}
+            mainbg={`bg-[#EFEA7B]`} eclasses={``}
+            textbg={`bg-[#EFEA7B]`} textcolor='text-black'
+            heading={`Build your profile shop! the creative way to sell anything that probably doesn’t have a place on shopify...`}
         />
 
         <Membership />

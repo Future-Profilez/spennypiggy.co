@@ -20,16 +20,28 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class LeaderBoardController extends Controller
 {
+    private function ttlForType($type)
+    {
+        return match ($type) {
+            'daily' => 300,
+            'weekly' => 600,
+            'monthly' => 900,
+            default => 300,
+        };
+    }
     public function wishtenderWishers($type = null)
     {
         if (Auth::user() && Auth::user()->suspended_account == 1) {
             return Inertia::render('Suspanded');
         }
-        $users = $this->calc($type);
+        $users = Cache::remember('leaderboard_calc_' . ($type ?? 'all'), $this->ttlForType($type), function () use ($type) {
+            return $this->calc($type);
+        });
         $perPage = 50;
         $page = request()->get('page', 1);
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -900,7 +912,9 @@ class LeaderBoardController extends Controller
      */
     public function enhancedLeaderboard($type = null)
     {
-        $users = $this->calc($type);
+        $users = Cache::remember('leaderboard_calc_' . ($type ?? 'all'), $this->ttlForType($type), function () use ($type) {
+            return $this->calc($type);
+        });
         $perPage = 50;
         $page = request()->get('page', 1);
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(

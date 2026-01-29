@@ -1,7 +1,7 @@
 export default function DeviceID(){
 
    function generateUniqueIdentifier() {
-      if(navigator && window){
+      if(typeof navigator !== 'undefined' && typeof window !== 'undefined'){
         const userAgent = navigator.userAgent;
         const platform = navigator.platform;
         const screenWidth = window.screen.width;

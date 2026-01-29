@@ -36,7 +36,7 @@ class UserProfileService
      * Get the current cache version for a user.
      * This allows us to invalidate all caches for a user instantly by incrementing the version.
      */
-    private function getUserCacheVersion(int $userId): int
+    public function getUserCacheVersion(int $userId): int
     {
         return (int) Cache::get("user_cache_version_{$userId}", 1);
     }
@@ -44,7 +44,7 @@ class UserProfileService
     /**
      * Increment the cache version for a user, effectively invalidating all their caches.
      */
-    private function incrementUserCacheVersion(int $userId): void
+    public function incrementUserCacheVersion(int $userId): void
     {
         Cache::increment("user_cache_version_{$userId}");
     }
@@ -54,24 +54,39 @@ class UserProfileService
      */
     public function getUserWithRelations(string $username): ?User
     {
-        // NO CACHE - REAL TIME DATA
-        $query = User::select([
-            'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
-            'avatar', 'avatar_approved', 'cover', 'suspended_account',
-            'social_image', 'account_id', 'stripe_details_submitted',
-            'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
-            'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at'
-        ])
-        ->with([
-            'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
-            'user_categories:id,user_id,category,created_at',
-            // Include uuid so perma_link accessor can build a playable URL
-            'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
-        ])
-        ->where('username', $username);
+        // 1. Get User ID from username (cached)
+        $userId = Cache::remember("userid_by_username_{$username}", self::getLongCacheTtl(), function () use ($username) {
+            return User::where('username', $username)->value('id');
+        });
 
-        // Remove is_uk filter for profile viewing to prevent false 404s in all environments
-        return $query->first();
+        if (!$userId) {
+            return null;
+        }
+
+        // 2. Get current cache version
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "user_full_profile_{$userId}_v{$version}";
+
+        // 3. Get User Data (cached with version)
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($username) {
+            $query = User::select([
+                'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
+                'avatar', 'avatar_approved', 'cover', 'suspended_account',
+                'social_image', 'account_id', 'stripe_details_submitted',
+                'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
+                'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'is_uk'
+            ])
+            ->with([
+                'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
+                'user_categories:id,user_id,category,created_at',
+                // Include uuid so perma_link accessor can build a playable URL
+                'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
+            ])
+            ->where('username', $username);
+
+            // Remove is_uk filter for profile viewing to prevent false 404s in all environments
+            return $query->first();
+        });
     }
 
     /**
@@ -118,24 +133,29 @@ class UserProfileService
      */
     private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner): array
     {
-        $query = WishItem::select([
-            'id', 'uuid', 'name', 'price', 'currency', 'thumbnail', 
-            'is_approved', 'sort', 'created_at'
-        ])->where('user_id', $userId);
-        
-        if (!$isOwner) {
-            $query->where('is_approved', 1);
-        }
-        
-        if ($categoryId && $categoryId !== 'all') {
-            $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
-        }
-        
-        return $query->orderBy('sort')
-            ->orderBy('created_at', 'desc')
-            ->limit(20)
-            ->get()
-            ->toArray();
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "optimized_wishes_{$userId}_{$categoryId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $categoryId, $isOwner) {
+            $query = WishItem::select([
+                'id', 'user_id', 'uuid', 'wishname', 'price', 'currency', 'thumbnail', 
+                'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason'
+            ])->with('user:id,name,username,suspended_account')->where('user_id', $userId);
+            
+            if (!$isOwner) {
+                $query->where('is_approved', 1);
+            }
+            
+            if ($categoryId && $categoryId !== 'all') {
+                $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
+            }
+            
+            return $query->orderBy('sort')
+                ->orderBy('created_at', 'desc')
+                ->limit(20)
+                ->get()
+                ->toArray();
+        });
     }
     
     /**
@@ -143,16 +163,21 @@ class UserProfileService
      */
     private function getOptimizedMemberships(int $userId, bool $isOwner): array
     {
-        $query = Membership::select([
-            'id', 'uuid', 'name', 'level', 'price', 'currency', 
-            'thumbnail', 'approved', 'created_at'
-        ])->where('user_id', $userId);
-        
-        if (!$isOwner) {
-            $query->where('approved', 1);
-        }
-        
-        return $query->latest()->get()->toArray();
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "optimized_memberships_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
+            $query = Membership::select([
+                'id', 'uuid', 'name', 'level', 'price', 'currency', 
+                'thumbnail', 'approved', 'created_at'
+            ])->where('user_id', $userId);
+            
+            if (!$isOwner) {
+                $query->where('approved', 1);
+            }
+            
+            return $query->latest()->get()->toArray();
+        });
     }
     
     /**
@@ -177,17 +202,22 @@ class UserProfileService
      */
     private function getOptimizedShopItems(int $userId, bool $isOwner): array
     {
-        $query = Shop::select([
-            'id', 'uuid', 'name', 'price', 'currency',
-            'thumbnail', 'approved', 'created_at'
-        ])->where('user_id', $userId)
-        ->with(['shop_varients:id,shop_id,name,price']);
-        
-        if (!$isOwner) {
-            $query->where('approved', 1);
-        }
-        
-        return $query->latest()->get()->toArray();
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "optimized_shops_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
+            $query = Shop::select([
+                'id', 'uuid', 'name', 'price', 'currency',
+                'thumbnail', 'approved', 'created_at'
+            ])->where('user_id', $userId)
+            ->with(['shop_varients:id,shop_id,name,price']);
+            
+            if (!$isOwner) {
+                $query->where('approved', 1);
+            }
+            
+            return $query->latest()->get()->toArray();
+        });
     }
     
     /**
@@ -195,16 +225,21 @@ class UserProfileService
      */
     private function getOptimizedPosts(int $userId, bool $isOwner, int $limit = 5): array
     {
-        $query = Post::select([
-            'id', 'uuid', 'content', 'thumbnail',
-            'approved', 'created_at'
-        ])->where('user_id', $userId);
-        
-        if (!$isOwner) {
-            $query->where('approved', 1);
-        }
-        
-        return $query->latest()->limit($limit)->get()->toArray();
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "optimized_posts_{$userId}_{$limit}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+
+        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner, $limit) {
+            $query = Post::select([
+                'id', 'uuid', 'content', 'thumbnail',
+                'approved', 'created_at'
+            ])->where('user_id', $userId);
+            
+            if (!$isOwner) {
+                $query->where('approved', 1);
+            }
+            
+            return $query->latest()->limit($limit)->get()->toArray();
+        });
     }
     
     /**
@@ -217,7 +252,7 @@ class UserProfileService
             $cacheKey = "user_wishes_{$userId}_{$categoryId}_{$perPage}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
             
             return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $categoryId, $perPage, $isOwner) {
-                $query = WishItem::where('user_id', $userId)
+                $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account')
                 ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
                     $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
                 });
@@ -429,7 +464,8 @@ class UserProfileService
      */
     public function getSupportersCount(int $userId): int
     {
-        $cacheKey = "supporters_count_{$userId}";
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "supporters_count_{$userId}_v{$version}";
         
         return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
             // Use raw SQL for better performance
@@ -460,7 +496,8 @@ class UserProfileService
      */
     public function getUserEarnings(int $userId): array
     {
-        $cacheKey = "user_earnings_{$userId}";
+        $version = $this->getUserCacheVersion($userId);
+        $cacheKey = "user_earnings_{$userId}_v{$version}";
         
         return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
             $goalPayment = TipGoalsPayment::where('creator_id', $userId)

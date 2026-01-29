@@ -35,6 +35,8 @@ export default function Wishlistbox(props) {
         key,
         trackClick,
     } = props;
+
+    console.log("itm",itm)
     const {
         attributes,
         listeners,
@@ -232,8 +234,7 @@ export default function Wishlistbox(props) {
                     <div className="flex justify-center items-center mt-3 ">
                         <ShareProfile
                             username={itm.wishname}
-                            custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`}
-                        >
+                            custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
                             <div className=" bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow">
                                 Share Link
                             </div>

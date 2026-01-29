@@ -221,7 +221,7 @@ export default function ReferAndEarn({
                             <li>Share your referral link with creators</li>
                             <li>Creators sign up using your link</li>
                             <li>They earn £1,000 lifetime GMV</li>
-                            <li>You unlock a £50 referral reward</li>
+                            <li>You receive a £50 referral reward</li>
                             <li>Request payout via Stripe anytime</li>
                         </ol>
                     </div>

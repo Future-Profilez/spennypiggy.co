@@ -56,7 +56,7 @@ export default function ProfileTask({ task, IsloggedIn }) {
                             {!IsloggedIn ? 
                                 <div className="">
                                     <Link href={`/task/${task.uuid}`} className="whitespace-nowrap text-sm sm:text-normal inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
-                                        <>{task.type === 'instant' ? 'Pay to Unlock 🔓' : 'Pay to Assign 📝'} </> 
+                                        <>{task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝'} </> 
                                     </Link> 
                                 </div>
                             : ''}

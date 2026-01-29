@@ -21,7 +21,13 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         return parts.length > 1;
     }
 
-    const { auth }= usePage().props;
+    // SSR Guard for usePage().props
+    const pageProps = usePage().props;
+    const auth = pageProps.auth;
+    
+    // SSR Guard for window usage
+    const isSSR = typeof window === 'undefined';
+    
     const [close, setClose] = useState()
     const { successAlert, errorAlert } = useAlerts();
     const [profileDP, setProfileDP] = useState();
@@ -244,7 +250,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                                         </li>
 
-                                        <li><strong className='d-block text-start mb-4' >Profile URL : {window.location.href}</strong></li>
+                                        <li><strong className='d-block text-start mb-4' >Profile URL : {typeof window !== 'undefined' ? window.location.href : ''}</strong></li>
 
                                         <li className="mb-3">
                                             <label className="mb-1">Bio</label>

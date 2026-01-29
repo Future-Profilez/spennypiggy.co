@@ -532,7 +532,11 @@ class MembershipController extends Controller
                     $creatorVatAmount = round(($membership->price * $membership->user->vat_amount_percentage / 100) * $multiplier);
                 }
 
-                // Use destination charges pattern with inline product creation to avoid missing product issues
+                // Use Direct Charges pattern (Standard/Express accounts)
+                // We create the session on the connected account
+                // 1. Line items are for the product/service
+                // 2. Application fee is taken from the total
+                
                 $lineItems = [
                     [
                         'quantity' => 1,
@@ -562,7 +566,7 @@ class MembershipController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product_data' => [
-                                'name' => 'Creator VAT',
+                                'name' => 'VAT',
                             ],
                             'unit_amount' => $creatorVatAmount,
                             'tax_behavior' => 'exclusive',
@@ -580,13 +584,19 @@ class MembershipController extends Controller
                     $lineItems[] = $vatLineItem;
                 }
 
-                // Add platform fee as separate line item
+                // Platform fee is calculated based on total amount
+                // Total amount user pays = Price + VAT + Platform Fees
+                // But for Direct Charges, the "amount" is what the user pays.
+                // We want the user to pay (Price + VAT + Platform Fee).
+                // So we add the Platform Fee as a line item OR we just add it to the total and take it out as app fee.
+                // Best practice for Platform Fee transparency: Add it as a line item.
+                
                 $platformFeeLineItem = [
                     'quantity' => 1,
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Membership Payment',
+                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%)',
                         ],
                         'unit_amount' => round($platformTotal * $multiplier),
                         'tax_behavior' => 'exclusive',
@@ -603,18 +613,15 @@ class MembershipController extends Controller
 
                 $lineItems[] = $platformFeeLineItem;
 
-                // Transfer amount = membership price + creator's VAT (what creator receives)
-                $transferAmount = round($membership->price * $multiplier) + $creatorVatAmount;
-
                 // Total charge amount = membership price + creator's VAT + platform fees
                 $totalChargeAmount = round($membership->price * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
-
-                // Check if creator has card_payments capability to determine payment flow
-                $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
+                
+                // Application Fee = Platform Fee
+                $applicationFeeAmount = round($platformTotal * $multiplier);
 
                 $payload = [
                     'payment_method_types' => ['card'],
-                    'line_items' => $lineItems, // Total amount determined by line items
+                    'line_items' => $lineItems,
                     'customer_email' => $user->email ?? $request->email,
                     'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
@@ -623,36 +630,19 @@ class MembershipController extends Controller
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
                     $paymentIntentData = [
-                        'description' => "Lifetime Membership for {$membership->user->username} with platform fee",
+                        'description' => "Lifetime Membership for {$membership->user->username}",
                         'metadata' => \App\Helpers::buildStripeMetadata('membership', $sub, [
                             'membership_level' => $membership->level,
                             'item_amount' => (string) round($membership->price * $multiplier),
                             'creator_vat_amount' => (string) $creatorVatAmount,
-                            'transfer_amount' => (string) $transferAmount,
-                            'platform_fee_amount' => (string) round($platformTotal * $multiplier),
+                            'platform_fee_amount' => (string) $applicationFeeAmount,
                             'total_charge_amount' => (string) $totalChargeAmount,
-                            'payment_type' => $hasCardPayments ? 'Lifetime Membership - Destination Charges with transfers' : 'Lifetime Membership - Platform Charges with transfers',
+                            'payment_type' => 'Lifetime Membership - Direct Charge',
                             'anonymous' => (string) ($request->anonymous ?? 0),
-                            'has_card_payments' => (string) $hasCardPayments,
                         ]),
+                        'application_fee_amount' => (int) $applicationFeeAmount,
                     ];
-
-                    // Only add on_behalf_of if creator has card_payments capability
-                    if ($hasCardPayments) {
-                        $paymentIntentData['on_behalf_of'] = $connectedAccountId; // Shows creator as seller-of-record
-                        $paymentIntentData['transfer_data'] = [
-                            'destination' => $connectedAccountId, // Creator's connected account
-                            'amount' => $transferAmount, // What creator receives (membership + VAT)
-                        ];
-                    } else {
-                        // For restricted creators, charge on platform and transfer the creator amount
-                        // Use simple destination transfer without application_fee_amount
-                        $paymentIntentData['transfer_data'] = [
-                            'destination' => $connectedAccountId,
-                            'amount' => $transferAmount, // Transfer only what creator should receive
-                        ];
-                    }
-
+                    
                     $payload['payment_intent_data'] = $paymentIntentData;
                 } else {
                     $payload['mode'] = 'subscription';
@@ -662,21 +652,24 @@ class MembershipController extends Controller
                             'membership_level' => $membership->level,
                             'item_amount' => (string) round($membership->price * $multiplier),
                             'creator_vat_amount' => (string) $creatorVatAmount,
-                            'transfer_amount' => (string) $transferAmount,
-                            'platform_fee_amount' => (string) round($platformTotal * $multiplier),
+                            'platform_fee_amount' => (string) $applicationFeeAmount,
                             'total_charge_amount' => (string) $totalChargeAmount,
-                            'payment_type' => $hasCardPayments ? 'Monthly Membership - Destination Charges with transfers' : 'Monthly Membership - Platform Charges with transfers',
+                            'payment_type' => 'Monthly Membership - Direct Charge',
                             'anonymous' => (string) ($request->anonymous ?? 0),
-                            'has_card_payments' => (string) $hasCardPayments,
                         ]),
-                        'transfer_data' => [
-                            'destination' => $connectedAccountId, // Creator's connected account
-                            'amount_percent' => round(($transferAmount / $totalChargeAmount) * 100, 2), // Percentage of total to transfer
-                        ],
+                        // For subscriptions in Direct Charges, application_fee_percent is common,
+                        // but we can also use application_fee_amount on the first invoice if needed,
+                        // but usually percent is better for recurring.
+                        // However, since we added a specific line item for the fee, we should take THAT amount.
+                        // Ideally, we want to take the exact amount of the platform fee line item.
+                        // If we use application_fee_percent, it applies to the WHOLE amount.
+                        // Application Fee % = (Platform Fee / Total Amount) * 100
+                        'application_fee_percent' => $applicationFeePercent,
                     ];
                 }
 
-                $session = StripeControl::createCheckoutSession($payload); // Create session on PLATFORM account (no connected account parameter)
+                // Create session on CONNECTED account
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
                 $sub->update([
                     'session_id' => $session->id,
@@ -717,8 +710,11 @@ class MembershipController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
         try {
-            // Since we're using destination charges, session is created on platform account (no connected account parameter)
-            $session = StripeControl::getCheckoutSession($mem->session_id);
+            // Retrieve session from CONNECTED account
+            // We need to pass the connected account ID because the session was created on that account
+            $connectedAccountId = $mem->membership->user->account_id;
+            $session = StripeControl::getCheckoutSession($mem->session_id, $connectedAccountId);
+            
             $mem->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $mem->stripe_id = $session->subscription;

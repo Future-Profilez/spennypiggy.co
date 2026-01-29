@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\CacheableModel;
+use App\Traits\InvalidatesUserCache;
 use App\Uploadcare;
 use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
 {
-    use HasFactory, SoftDeletes, CacheableModel;
+    use HasFactory, SoftDeletes, CacheableModel, InvalidatesUserCache;
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
@@ -82,7 +83,7 @@ class WishItem extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0)->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
     }
 
 

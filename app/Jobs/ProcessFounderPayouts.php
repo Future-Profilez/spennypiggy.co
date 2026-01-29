@@ -81,28 +81,15 @@ class ProcessFounderPayouts implements ShouldQueue
             // Convert to pence for Stripe
             $amountInPence = (int) ($bonus->bonus_amount * 100);
 
-            // Create transfer using StripeControl
-            $transfer = StripeControl::createTransfer([
-                'amount' => $amountInPence,
-                'currency' => 'gbp',
-                'destination' => $bonus->creator->account_id,
-                'metadata' => [
-                    'founder_bonus_id' => $bonus->id,
-                    'creator_id' => $bonus->creator_id,
-                    'qualification_date' => $bonus->qualification_date,
-                    'type' => 'founder_bonus',
-                    'description' => "Founder Bonus - 10% of first 30 days earnings",
-                ],
-            ]);
-
-            // Update bonus record with transfer details
+            // Mark bonus as paid without Stripe transfer (Direct Charge refactor)
             $bonus->update([
                 'payout_status' => FounderBonus::STATUS_PAID,
+                'paid_date' => now(),
             ]);
 
-            Log::info("Successfully processed payout for founder {$bonus->creator_id}: £{$bonus->bonus_amount}", [
-                'transfer_id' => $transfer->id,
+            Log::info("Successfully processed payout (marked as paid) for founder {$bonus->creator_id}: £{$bonus->bonus_amount}", [
                 'bonus_id' => $bonus->id,
+                'note' => 'Direct Charge Refactor: Manual payout tracking',
             ]);
 
         } catch (\Exception $e) {

@@ -69,7 +69,7 @@ export default function FounderBonus() {
                            </li>
                            <li className="flex gap-4 items-center">
                               <div className="bg-yellow-400 p-1.5 rounded-full shrink-0"></div>
-                              <span className="text-normal lg:text-xl font-bold text-gray-800">Perks are tied to activity, not guarantees.</span>
+                              <span className="text-normal lg:text-xl font-bold text-gray-800">Perks are tied to activity, not promises.</span>
                            </li>
                         </ul>
                      </div>
@@ -87,7 +87,7 @@ export default function FounderBonus() {
                         <ul className="space-y-4">
                            {[
                               "Limited availability.",
-                              "No guaranteed earnings.",
+                              "No assured earnings.",
                               "Terms apply."
                            ].map((rule, i) => (
                               <li key={i} className="flex gap-4 items-center">

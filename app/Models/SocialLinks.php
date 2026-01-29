@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\InvalidatesUserCache;
 
 class SocialLinks extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, InvalidatesUserCache;
     protected $dates = ['deleted_at'];
     protected $fillable = [
         'uuid',

@@ -19,13 +19,14 @@ class AppServiceProvider extends ServiceProvider
     {
         // Configure storage paths for Laravel Vapor
         if (app()->environment('production')) {
-            // Force Laravel to use /tmp/storage for all storage_path() calls in Lambda
+            // Use temporary storage path in Lambda
             app()->useStoragePath('/tmp/storage');
-            
-            // Override default drivers for serverless environment
+
+            // Respect Vapor environment variables for cache/session drivers
             config([
-                'session.driver' => 'database',
-                'cache.default' => 'array', // Use array cache for Lambda (temporary)
+                'session.driver' => env('SESSION_DRIVER', 'redis'),
+                'session.store' => env('SESSION_STORE', 'redis'),
+                'cache.default' => env('CACHE_DRIVER', 'redis'),
                 'filesystems.default' => 's3',
                 'view.compiled' => '/tmp/storage/framework/views',
                 'queue.default' => 'sqs'

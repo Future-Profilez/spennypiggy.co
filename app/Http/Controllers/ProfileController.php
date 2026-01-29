@@ -130,7 +130,7 @@ class ProfileController extends Controller
      */
     public function updateProfile(Request $request)
     {
-
+        try {
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
 
@@ -159,6 +159,13 @@ class ProfileController extends Controller
             $user->name = $request->name;
             $user->username = $request->username;
             $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
+            if (!$userProfileStatus) {
+                $userProfileStatus = UserVerificationStatus::create([
+                    'user_id' => $user->id,
+                    'role' => $user->role,
+                    'user_profile_status' => 1,
+                ]);
+            }
             if ($request->bio !== $user->bio || $request->social_handle !== $user->social_handle) {
 
                 UserVerificationStatus::UpdateOrCreate([
@@ -184,8 +191,10 @@ class ProfileController extends Controller
 
                 $user->bio = $request->bio;
                 $user->profile_status_lock = 1;
-                $userProfileStatus->user_profile_status = 0;
-                $userProfileStatus->save();
+                if ($userProfileStatus) {
+                    $userProfileStatus->user_profile_status = 0;
+                    $userProfileStatus->save();
+                }
             }
 
             $user->min_surprise_amount = $request->min_surprise_amount ?? 0;
@@ -195,8 +204,10 @@ class ProfileController extends Controller
                 $user->avatar_approved = 0;
                 // $user->profile_status_lock = 1;
                 $user->avatar_cdn_modifier = $avatar['cdnUrlModifiers'] ?? null;
-                $userProfileStatus->user_profile_status = 0;
-                $userProfileStatus->save();
+                if ($userProfileStatus) {
+                    $userProfileStatus->user_profile_status = 0;
+                    $userProfileStatus->save();
+                }
             }
             if (!empty($cover)) {
                 $user->cover = $cover['uuid'] ?? null;
@@ -252,6 +263,10 @@ class ProfileController extends Controller
             }
             $this->userProfileService->clearUserCaches($user->username, $user->id);
             return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+        }
+        } catch (\Throwable $e) {
+            Log::error('Profile update error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
+            return back()->with('error', 'Something went wrong while updating your profile.');
         }
     }
 

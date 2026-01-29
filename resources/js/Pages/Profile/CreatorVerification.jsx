@@ -26,7 +26,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         slinks &&
         Object.values(slinks).some((value) => value !== null && value !== "");
     const updateProfileSteps = () => {
-        window.location.reload(false);
+        if (typeof window !== 'undefined') {
+            window.location.reload(false);
+        }
     };
 
     useEffect(() => {

@@ -51,29 +51,24 @@ class CheckStripeTransactionTypes extends Command
 
                 // Analyze payment type
                 if (!empty($pi->transfer_data)) {
-                    // DIRECT CHARGE
-                    $directChargesCount++;
-                    $this->error("🔴 TYPE: DIRECT CHARGE");
+                    // DESTINATION CHARGE (Legacy)
+                    $destinationChargesCount++;
+                    $this->error("🔴 TYPE: DESTINATION CHARGE (Legacy/Incorrect - Uses transfer_data)");
                     $this->line("   Transfer to: {$pi->transfer_data->destination}");
                     if (isset($pi->application_fee_amount)) {
                         $fee = $pi->application_fee_amount / 100;
                         $this->line("   Platform fee: {$currency} {$fee}");
                     }
-                } elseif (isset($pi->on_behalf_of) || isset($pi->application_fee_amount)) {
-                    // DESTINATION CHARGE
+                } elseif (isset($pi->on_behalf_of)) {
+                    // DESTINATION CHARGE (Legacy)
                     $destinationChargesCount++;
-                    $this->info("🟢 TYPE: DESTINATION CHARGE");
-                    if (isset($pi->on_behalf_of)) {
-                        $this->line("   On behalf of: {$pi->on_behalf_of}");
-                    }
-                    if (isset($pi->application_fee_amount)) {
-                        $fee = $pi->application_fee_amount / 100;
-                        $this->line("   Platform fee: {$currency} {$fee}");
-                    }
+                    $this->error("🔴 TYPE: DESTINATION CHARGE (Legacy/Incorrect - Uses on_behalf_of)");
+                    $this->line("   On behalf of: {$pi->on_behalf_of}");
                 } else {
-                    // STANDARD CHARGE
+                    // STANDARD CHARGE (Platform) or DIRECT CHARGE (on connected account, invisible here)
                     $standardChargesCount++;
-                    $this->comment("🔵 TYPE: STANDARD CHARGE (Platform only)");
+                    $this->comment("🔵 TYPE: STANDARD CHARGE (Platform only) or DIRECT CHARGE (if header used)");
+                    $this->line("   Note: Direct Charges on connected accounts do not appear in platform PaymentIntent list.");
                 }
 
                 $this->line("---");
@@ -89,13 +84,13 @@ class CheckStripeTransactionTypes extends Command
             $this->line("Standard Charges: {$standardChargesCount}");
             $this->line("Total Amount: " . number_format($totalAmount, 2));
 
-            if ($directChargesCount > 0) {
-                $this->error("⚠️  WARNING: Found {$directChargesCount} direct charges!");
-                $this->error("   These payments went through your platform account first.");
-                $this->error("   This indicates some payments are using direct charges flow.");
+            if ($destinationChargesCount > 0) {
+                $this->error("⚠️  WARNING: Found {$destinationChargesCount} destination charges!");
+                $this->error("   These payments are using the legacy flow.");
+                $this->error("   Please investigate and migrate to Direct Charges.");
             } else {
-                $this->info("✅ EXCELLENT: No direct charges found!");
-                $this->info("   All payments are using destination charges as expected.");
+                $this->info("✅ EXCELLENT: No destination charges found!");
+                $this->info("   All connected account payments are using Direct Charges.");
             }
 
         } catch (\Exception $e) {

@@ -18,14 +18,17 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Response interceptor for handling CSRF token expiry
+// Response interceptor for handling CSRF token expiry / unauthenticated on POST
 axios.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Check if error is 419 (CSRF token mismatch) and not already retrying
-    if (error.response?.status === 419 && !originalRequest._retry) {
+    const status = error.response?.status;
+    const isPost = (originalRequest?.method || '').toLowerCase() === 'post';
+
+    // Retry on CSRF mismatch (419) or unauthenticated (401 on POST)
+    if ((status === 419 || (status === 401 && isPost)) && !originalRequest._retry) {
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {

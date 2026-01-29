@@ -5,8 +5,19 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable, heigh
   useEffect(() => {
     async function loadEditor() {
       if (typeof window === 'undefined') return;
-      const LR = await import('https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js');
-      LR.registerBlocks(LR);
+      
+      // Use dynamic import only on client side to avoid SSR build issues
+      try {
+          // This URL import might still be problematic for Vite bundler even inside useEffect
+          // Ideally this should be handled by a script tag or npm package
+          // But guarding it for now
+          const LR = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.js');
+          LR.registerBlocks(LR);
+      } catch (e) {
+          console.error("Failed to load Uploadcare editor", e);
+          return;
+      }
+      
       const callback = (text) => (event) => {
         updateFile && updateFile(event.detail, uuid);
         setIsEditable && setIsEditable(false);

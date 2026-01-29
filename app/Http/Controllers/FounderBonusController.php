@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FounderBonus;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -110,7 +112,7 @@ class FounderBonusController extends Controller
         $endDate = now();
         
         // Calculate earnings from deliverables table
-        $earnings = \DB::table('deliverables')
+        $earnings = DB::table('deliverables')
             ->where('creator_id', $creatorId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNotNull('transaction_amount')
@@ -183,7 +185,7 @@ class FounderBonusController extends Controller
         $endDate = $user->created_at->copy()->addDays($qualificationDays);
 
         // Get deliverables with currency information
-        $deliverables = \DB::table('deliverables')
+        $deliverables = DB::table('deliverables')
             ->where('creator_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNotNull('transaction_amount')
@@ -215,7 +217,7 @@ class FounderBonusController extends Controller
         $endDate = now();
 
         // Get deliverables with currency information
-        $deliverables = \DB::table('deliverables')
+        $deliverables = DB::table('deliverables')
             ->where('creator_id', $userId)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereNotNull('transaction_amount')
@@ -300,7 +302,7 @@ class FounderBonusController extends Controller
                     // Check if user qualifies for founder status
                     if (FounderBonus::checkFounderQualification($user->id, $first30DayEarnings)) {
                         try {
-                            \DB::transaction(function () use ($user, $first30DayEarnings) {
+                            DB::transaction(function () use ($user, $first30DayEarnings) {
                                 // Update is_founder field in users table
                                 $user->update(['is_founder' => true]);
                                 
@@ -387,7 +389,7 @@ class FounderBonusController extends Controller
                         // Send congratulations email if enabled
                         if (config('founder_bonus.features.email_notifications', true)) {
                             try {
-                                \Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
+                                Mail::to($user->email)->send(new \App\Mail\FounderCongratulations($user, $first30DayEarnings));
                             } catch (\Exception $e) {
                                 $errors[] = "Failed to send email to {$user->email}: " . $e->getMessage();
                             }
@@ -456,22 +458,7 @@ class FounderBonusController extends Controller
                     // Convert bonus amount to cents for Stripe (assuming GBP)
                     $amountInCents = (int) round($bonus->bonus_amount * 100);
 
-                    // Create transfer from platform account to creator's connected account
-                    $transfer = \App\StripeControl::createTransfer([
-                        'amount' => $amountInCents,
-                        'currency' => 'gbp',
-                        'destination' => $creator->account_id,
-                        'description' => "Founder Bonus Transfer - Qualification Date: {$bonus->qualification_date}",
-                        'metadata' => [
-                            'founder_bonus_id' => $bonus->id,
-                            'creator_id' => $creator->id,
-                            'qualification_date' => $bonus->qualification_date,
-                            'first_30d_earnings' => $bonus->first_30d_earnings,
-                            'payout_type' => 'founder_bonus',
-                        ],
-                    ]);
-
-                    // Mark bonus as paid
+                    // Mark bonus as paid without Stripe transfer (Direct Charge refactor)
                     $bonus->markAsPaid();
                     
                     $processedCount++;
@@ -481,7 +468,7 @@ class FounderBonusController extends Controller
                         'creator_id' => $creator->id,
                         'creator_username' => $creator->username,
                         'bonus_amount' => $bonus->bonus_amount,
-                        'stripe_transfer_id' => $transfer->id,
+                        'stripe_transfer_id' => 'manual_payout_direct_charge',
                     ];
 
                 } catch (\Exception $e) {
