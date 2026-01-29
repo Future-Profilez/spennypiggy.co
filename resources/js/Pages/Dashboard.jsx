@@ -652,15 +652,8 @@ export default function Dashboard(props) {
                                                                     ) : (
                                                                         ""
                                                                     )}
-
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    auth?.user
-                                                                        ?.subscription_status ==
-                                                                        0 ? (
+    {console.log('subscription check', auth)}
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed == 0 ? (
                                                                         <SiteSubscription
                                                                             charges={
                                                                                 auth
@@ -741,8 +734,7 @@ export default function Dashboard(props) {
                                                                             />
 
                                                                             {/* SOCIAL MEDIA REJECT REASON */}
-                                                                            {IsloggedIn &&
-                                                                                slinks?.reason && (
+                                                                            {IsloggedIn && slinks?.reason && (
                                                                                     <div className="mt-3">
                                                                                         <p className="text-red-700 font-semibold">
                                                                                             Social
