@@ -20,7 +20,7 @@ export default function Userprofile({ IsloggedIn }) {
         first30DayEarnings,
     } = usePage().props;
     const opponantUser = auth?.opposite_user;
-
+    
     return (
         <div className="userprofilesec mb-2 ">
             <div className="userPr px-4 py-0 py-md-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
@@ -28,11 +28,7 @@ export default function Userprofile({ IsloggedIn }) {
                     <div className="fading userphoto relative !flex items-center justify-center mb-4 ">
                         <img
                             alt={`${user?.name || "User"} - Profile Avatar`}
-                            src={
-                                user && user.avatar_url
-                                    ? user.avatar_url
-                                    : userphoto
-                            }
+                            src={IsloggedIn ? user?.avatar_url || userphoto : user?.avatar_url && user?.avatar_approved === 1 ? user?.avatar_url : userphoto}
                             height={150}
                             width={150}
                             loading="eager"
@@ -40,10 +36,7 @@ export default function Userprofile({ IsloggedIn }) {
                         />
 
                         {/* Waiting for approval (ORANGE) */}
-                        {IsloggedIn &&
-                            auth &&
-                            auth?.user?.avatar_url &&
-                            auth?.user?.avatar_approved === 0 && (
+                        {IsloggedIn && auth && auth?.user?.avatar_url && auth?.user?.avatar_approved === 0 && (
                                 <div className="absolute approvetag top-3 mx-auto">
                                     <button className="tooltipbtn">
                                         <svg
@@ -69,10 +62,7 @@ export default function Userprofile({ IsloggedIn }) {
                             )}
 
                         {/* Missing avatar (RED) */}
-                        {IsloggedIn &&
-                            auth &&
-                            auth?.user?.avatar_approved === 2 &&
-                            !auth?.user?.avatar_url && (
+                        {IsloggedIn && auth && auth?.user?.avatar_approved === 2 && !auth?.user?.avatar_url && (
                                 <div className="absolute mr-3 top-3">
                                     <button className="tooltipbtn">
                                         <svg
