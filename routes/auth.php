@@ -37,6 +37,7 @@ use App\Models\BulkPwaNotification;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MonthlyCharge;
+use App\Models\MorConsent;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
 use App\Models\User;
@@ -293,13 +294,7 @@ Route::middleware('auth')->group(function () {
                 Route::get("/authorize", [StripeController::class, "index"])->name("index");
                 Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
                 // Merchant of Record Consent Routes
-                Route::get('/mor-consent', [StripeController::class, 'showMorConsent'])->name('mor-consent');
                 Route::post('/mor-consent', [StripeController::class, 'storeMorConsent'])->name('mor-consent.store');
-
-                // Stripe Connect Routes
-                // Route::get('/stripe', [StripeController::class, 'index'])->name('index');
-                // Route::get('/stripe/connect/{step?}', [StripeController::class, 'initConnect'])->name('connect');
-                Route::get('/stripe/return', [StripeController::class, 'stripeReturn'])->name('return');
 
                 Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
                 Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
@@ -448,9 +443,25 @@ Route::middleware('auth')->group(function () {
                 $auth = Auth::user();
                 $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
                 $membership = Membership::where('user_id', $auth->id)->where('approved', 1)->count();
+                // Check if MoR consent exists in the database
+                $morConsentDetails = null;
+                $morConsentGiven = MorConsent::userHasGivenConsent($auth->id);
+                if ($morConsentGiven) {
+                    $latestConsent = MorConsent::getLatestConsent($auth->id);
+                    if ($latestConsent) {
+                        $morConsentDetails = [
+                            'given_at' => $latestConsent->consent_given_at->format('M d, Y h:i A'),
+                            'ip_address' => $latestConsent->ip_address,
+                            'device' => $latestConsent->device_type,
+                            'location' => $latestConsent->city ? $latestConsent->city . ', ' . $latestConsent->country : 'Unknown'
+                        ];
+                    }
+                }
                 return Inertia::render('stripe/Stripe', [
                     'bills_count' => $bills,
-                    'membership_count' => $membership
+                    'membership_count' => $membership,
+                    'mor_consent_given' => $morConsentGiven,
+                    'mor_consent_details' => $morConsentDetails,
                 ]);
             })->middleware(['auth', 'verified'])->name('stripe');
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');

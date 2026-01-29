@@ -7,7 +7,8 @@ import { useRef } from "react";
 import Popup from "@/Components/Popup";
 
 export default function Stripe(props) {
-    const { auth, user, success, mor_consent_given } = props;
+    const { auth, user, success, mor_consent_given, mor_consent_details } =
+        props;
     const checkRef = useRef();
     const { errorAlert, successAlert } = useAlerts();
     const { data, setData, post, processing, errors } = useForm({
@@ -18,28 +19,23 @@ export default function Stripe(props) {
     const [countryCurrency, setCountryCurrency] = useState();
     const [country, setCountry] = useState("");
     const [connecting, setConnecting] = useState(false);
-
-    // Initialize based on prop from backend
-    const [morConsentGiven, setMorConsentGiven] = useState(mor_consent_given);
-    const [showConsentForm, setShowConsentForm] = useState(!mor_consent_given);
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
 
     const adminIdentityApproved = auth?.user?.identity_admin_status === 1;
     const finalStepsUnlocked = auth?.user?.profile_status_lock == 2;
 
-    // Show success message if redirected after consent
+    // Show success message if redirected after consent AND scroll to top
     useEffect(() => {
         if (success) {
             successAlert(success);
+            // Scroll to top when success message is shown
+            window.scrollTo({ top: 0, behavior: "smooth" });
         }
     }, [success]);
 
-    // Update state when prop changes
-    useEffect(() => {
-        if (mor_consent_given !== morConsentGiven) {
-            setMorConsentGiven(mor_consent_given);
-            setShowConsentForm(!mor_consent_given);
-        }
-    }, [mor_consent_given]);
+    // Only show consent details if consent was given before this session
+    // Don't show if we just submitted the form (success message will handle that)
+    const showConsentDetails = mor_consent_details && !success;
 
     const getCountry = (e) => {
         if (e == "") {
@@ -62,8 +58,9 @@ export default function Stripe(props) {
         post(route("stripe.mor-consent.store"), {
             preserveScroll: true,
             onSuccess: () => {
-                // State will be updated via the redirect and prop change
-                // No need to manually update here
+                // The page will reload with updated props
+                // No need to manually update state here
+                // The success prop will be set and useEffect will handle scrolling
             },
             onError: (errors) => {
                 if (errors.message) {
@@ -88,28 +85,46 @@ export default function Stripe(props) {
             );
             return false;
         }
-        if (!morConsentGiven) {
+        if (!mor_consent_given) {
             errorAlert("You must agree to the Merchant of Record terms first.");
             return false;
         }
-        setConnecting(true);
-        if (checkRef.current.checked) {
-            window.location.href = route("stripe.connect", {
-                step: "init",
-                country: country,
-                currency: countryCurrency,
-            });
-            return true;
-        } else {
+
+        if (!checkRef.current.checked) {
             errorAlert("Please check accept terms & conditions checkbox");
             checkRef.current.focus();
-            setConnecting(false);
             return false;
         }
+
+        setConnecting(true);
+
+        // Generate the URL first
+        const stripeUrl = route("stripe.connect", {
+            step: "init",
+            country: country,
+            currency: countryCurrency,
+        });
+
+        // Then redirect
+        window.location.href = stripeUrl;
+        return true;
     };
 
-    // Show Merchant of Record consent ONLY if no database entry exists
-    if (!morConsentGiven) {
+    const handlePopupAction = (closeFunction) => {
+        // If there's a close function from Popup, use it
+        if (typeof closeFunction === "function") {
+            closeFunction();
+        }
+        // Also update our local state
+        setIsPopupOpen(false);
+    };
+
+    const handlePopupOpen = () => {
+        setIsPopupOpen(true);
+    };
+
+    // Agar MoR consent database mein nahi hai, to consent form dikhao
+    if (!mor_consent_given) {
         return (
             <Authenticated auth={auth.user} user={user}>
                 <Head title="Merchant of Record Consent - Spenny Piggy" />
@@ -125,6 +140,61 @@ export default function Stripe(props) {
                                 your payment account
                             </p>
                         </div>
+
+                        {/* Show success message if consent was just submitted */}
+                        {success && (
+                            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg text-green-800 animate-fade-in">
+                                <div className="flex items-center">
+                                    <svg
+                                        className="w-5 h-5 mr-2"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                    <div>
+                                        <p className="font-semibold">
+                                            Merchant of Record Agreement
+                                            Confirmed
+                                        </p>
+                                        <p className="text-sm">{success}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Show consent details ONLY if consent was given previously (not just now) */}
+                        {showConsentDetails && (
+                            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg text-blue-800">
+                                <div className="flex items-center">
+                                    <svg
+                                        className="w-5 h-5 mr-2"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                    <div>
+                                        <p className="font-semibold">
+                                            Merchant of Record Consent Found
+                                        </p>
+                                        <p className="text-sm">
+                                            Consent given on:{" "}
+                                            {mor_consent_details.given_at}
+                                            {mor_consent_details.location && ` from ${mor_consent_details.location}`}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Gating Banner */}
                         {!finalStepsUnlocked && (
@@ -437,7 +507,7 @@ export default function Stripe(props) {
         );
     }
 
-    // Show Stripe setup page ONLY if database entry exists
+    // Agar MoR consent database mein hai, to directly Stripe setup page dikhao
     return (
         <Authenticated auth={auth.user} user={user}>
             <Head title="Connect Stripe Account - Spenny Piggy" />
@@ -454,7 +524,7 @@ export default function Stripe(props) {
                         </p>
                     </div>
 
-                    {/* Success Banner for MoR Confirmation */}
+                    {/* Show success message if consent was just submitted */}
                     {success && (
                         <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg text-green-800 animate-fade-in">
                             <div className="flex items-center">
@@ -474,6 +544,36 @@ export default function Stripe(props) {
                                         Merchant of Record Agreement Confirmed
                                     </p>
                                     <p className="text-sm">{success}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Show consent details ONLY if consent was given previously (not just now) */}
+                    {showConsentDetails && (
+                        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg text-blue-800">
+                            <div className="flex items-center">
+                                <svg
+                                    className="w-5 h-5 mr-2"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                <div>
+                                    <p className="font-semibold">
+                                        Merchant of Record Consent Verified
+                                    </p>
+                                    <p className="text-sm">
+                                        Consent given on:{" "}
+                                        {mor_consent_details.given_at}
+                                        {mor_consent_details.location &&
+                                            ` from ${mor_consent_details.location}`}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -605,7 +705,8 @@ export default function Stripe(props) {
                                     modalclassName="pinkmodal full stripe-terms shadow-pink ps-0"
                                     space="4"
                                     size="md"
-                                    action={close}
+                                    action={handlePopupAction}
+                                    onOpen={handlePopupOpen}
                                     classes={` ${country == null || country == "" ? "disabled" : ""} ${!finalStepsUnlocked ? "disabled" : ""} btn-pink sm  hover:shadow-voilet transition-all duration-300 transform hover:scale-105`}
                                     text="Review Terms & Connect Stripe"
                                 >
@@ -704,7 +805,7 @@ export default function Stripe(props) {
                                                 disabled={
                                                     connecting ||
                                                     !finalStepsUnlocked ||
-                                                    !morConsentGiven
+                                                    !mor_consent_given
                                                 }
                                             >
                                                 {connecting ? (

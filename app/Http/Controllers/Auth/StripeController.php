@@ -531,7 +531,7 @@ class StripeController extends Controller
         ]);
 
         // Redirect back with success message
-        return redirect()->route('stripe.connect')
+        return redirect()->route('stripe.index')
             ->with('success', 'Merchant of Record agreement confirmed successfully!');
     }
 
