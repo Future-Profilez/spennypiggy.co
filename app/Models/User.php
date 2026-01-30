@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Traits\CacheableModel;
-use App\Traits\InvalidatesUserCache;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -21,7 +19,7 @@ use App\Models\MonthlyCharge;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, CacheableModel, InvalidatesUserCache;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $dates = ['deleted_at'];
 
@@ -77,7 +75,6 @@ class User extends Authenticatable
         'avatar_url',
         'cover_url',
         'twitter_username',
-        'monthly_charge_enabled',
         'is_creator_address_found',
         'followers_count',
         'following_count',
@@ -86,19 +83,7 @@ class User extends Authenticatable
         'grace_period_ends_at',
         'is_in_grace_period',
         'grace_period_days_remaining',
-        'social_url',
-        'avatar_url',
-        'cover_url',
-        'twitter_username',
-        'monthly_charge_enabled',
-        'is_creator_address_found',
-        'followers_count',
-        'following_count',
-        'subscription_status',
-        'grace_period_started_at',
-        'grace_period_ends_at',
-        'is_in_grace_period',
-        'grace_period_days_remaining'
+        'social_url'
     ];
     protected $with = ['social_links'];
 
@@ -239,6 +224,28 @@ class User extends Authenticatable
                     }
                     return 1;
                 }
+                
+                // PERFORMANCE OPTIMIZATION: Rely on local database state only.
+                // Do NOT call Stripe API during model serialization as it causes timeouts and page load failures.
+                // Webhooks should handle status updates.
+                
+                if ($subscription->status === 'trialing') {
+                    // Check trial dates
+                    if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
+                        $now = \Carbon\Carbon::now();
+                        $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
+                        if ($now->lessThan($trialEnd)) {
+                            return 2; // Still in trial
+                        }
+                    }
+                    return 0; // Trial expired
+                }
+                
+                // Default to active if status is paid/renew/active
+                return 1;
+                
+                /* 
+                // REMOVED STRIPE API CALL TO PREVENT TIMEOUTS
                 try {
                     // Skip Stripe API call in background jobs to prevent token errors
                     if (app()->runningInConsole() || app()->runningUnitTests()) {
@@ -255,97 +262,12 @@ class User extends Authenticatable
                         // Return based on local status instead of throwing exception
                         return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
                     }
-
-                    // Check if stripe_id is valid before making API call
-                    if (empty($subscription->stripe_id)) {
-                        Log::warning('Empty stripe_id, falling back to local subscription status', [
-                            'user_id' => $this->id,
-                            'subscription_status' => $subscription->status
-                        ]);
-                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
-                    }
-
-                    Stripe::setApiKey($stripeKey);
-                    Log::info("About to retrieve Stripe subscription", [
-                        'user_id' => $this->id,
-                        'stripe_id' => $subscription->stripe_id,
-                        'subscription_status' => $subscription->status
-                    ]);
-
-                    // Set timeout to prevent long-running API calls
-                    $timeout = 3; // 3 seconds timeout
-                    $stripeSubscription = null;
-
-                    try {
-                        // Use a timeout to prevent long API calls
-                        $stripeSubscription = Subscription::retrieve($subscription->stripe_id);
-                        Log::info("Retrieved Stripe subscription", [
-                            'user_id' => $this->id,
-                            'stripe_id' => $subscription->stripe_id,
-                            'stripe_status' => $stripeSubscription->status
-                        ]);
-                    } catch (\Exception $apiError) {
-                        Log::error('Stripe API call failed', [
-                            'user_id' => $this->id,
-                            'stripe_id' => $subscription->stripe_id,
-                            'error' => $apiError->getMessage()
-                        ]);
-                        // Return based on local status
-                        return ($subscription->status === 'active' || $subscription->status === 'trialing') ? 1 : 0;
-                    }
-
-                    if (isset($stripeSubscription) && $stripeSubscription->status === 'active') {
-                        return 1;
-                    } elseif (isset($stripeSubscription) && $stripeSubscription->status === 'trialing') {
-                        return 2;
-                    } else {
-                        // Fallback: Check local trial dates if Stripe status is different
-                        if ($subscription->status === 'trialing') {
-                            // Check if we have trial dates and if trial is still active
-                            if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
-                                $now = \Carbon\Carbon::now();
-                                $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
-                                if ($now->lessThan($trialEnd)) {
-                                    return 2; // Still in trial
-                                }
-                            }
-                            // If no trial dates or trial expired, check if user is within 3-day grace period
-                            $userCreated = \Carbon\Carbon::parse($this->created_at);
-                            $trialEndDate = $userCreated->copy()->addDays(3);
-                            if (\Carbon\Carbon::now()->lessThan($trialEndDate)) {
-                                return 2; // Within 3-day trial period
-                            }
-                        }
-                        return 0;
-                    }
+                    
+                    // ... (Rest of Stripe API logic removed)
                 } catch (\Exception $e) {
-                    Log::error('Stripe subscription check failed', [
-                        'user_id' => $this->id,
-                        'stripe_id' => $subscription->stripe_id ?? 'null',
-                        'error' => $e->getMessage(),
-                        'error_type' => get_class($e)
-                    ]);
-
-                    // Fallback when Stripe API fails
-                    if ($subscription->status === 'trialing') {
-                        // Check trial dates first
-                        if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
-                            $now = \Carbon\Carbon::now();
-                            $trialEnd = \Carbon\Carbon::parse($subscription->current_end_trial_date);
-                            if ($now->lessThan($trialEnd)) {
-                                return 2; // Still in trial
-                            }
-                        }
-                        // Fallback to 3-day grace period from user creation
-                        $userCreated = \Carbon\Carbon::parse($this->created_at);
-                        $trialEndDate = $userCreated->copy()->addDays(3);
-                        if (\Carbon\Carbon::now()->lessThan($trialEndDate)) {
-                            return 2; // Within 3-day trial period
-                        }
-                        return 0; // Trial expired
-                    }
-                    return 1; // Default to active for other statuses when API fails
+                   // ...
                 }
+                */
             }
             return 0;
         }

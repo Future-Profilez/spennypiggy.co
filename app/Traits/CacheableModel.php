@@ -33,17 +33,7 @@ trait CacheableModel
      */
     public function scopeCached(Builder $query, int $minutes = null)
     {
-        $minutes = $minutes ?? config('cache.ttl', 60);
-        $key = $this->getCacheKey($query);
-        
-        return CacheService::remember(
-            $key,
-            $minutes * 60,
-            function () use ($query) {
-                return $query->get();
-            },
-            $this->getCacheTags()
-        );
+        return $query->get();
     }
 
     /**
@@ -51,17 +41,7 @@ trait CacheableModel
      */
     public function scopeCachedFind(Builder $query, $id, int $minutes = null)
     {
-        $minutes = $minutes ?? config('cache.ttl', 60);
-        $key = $this->getCacheKeyForFind($id);
-        
-        return CacheService::remember(
-            $key,
-            $minutes * 60,
-            function () use ($query, $id) {
-                return $query->find($id);
-            },
-            $this->getCacheTags()
-        );
+        return $query->find($id);
     }
 
     /**
@@ -69,17 +49,7 @@ trait CacheableModel
      */
     public function scopeCachedPaginate(Builder $query, int $perPage = 15, array $columns = ['*'], string $pageName = 'page', int $page = null)
     {
-        $page = $page ?: request()->get($pageName, 1);
-        $key = $this->getCacheKeyForPagination($query, $perPage, $page);
-        
-        return CacheService::remember(
-            $key,
-            CacheService::MEDIUM_CACHE,
-            function () use ($query, $perPage, $columns, $pageName, $page) {
-                return $query->paginate($perPage, $columns, $pageName, $page);
-            },
-            $this->getCacheTags()
-        );
+        return $query->paginate($perPage, $columns, $pageName, $page);
     }
 
     /**
@@ -87,23 +57,7 @@ trait CacheableModel
      */
     public function scopeWithCached(Builder $query, array $relations)
     {
-        // Optimize eager loading by selecting only necessary columns
-        $optimizedRelations = [];
-        
-        foreach ($relations as $relation => $callback) {
-            if (is_numeric($relation)) {
-                $relation = $callback;
-                $callback = null;
-            }
-            
-            if ($callback) {
-                $optimizedRelations[$relation] = $callback;
-            } else {
-                $optimizedRelations[] = $relation;
-            }
-        }
-        
-        return $query->with($optimizedRelations);
+        return $query->with($relations);
     }
 
     /**
@@ -198,8 +152,7 @@ trait CacheableModel
     /**
      * Clear model cache
      */
-    public function clearModelCache()
-    {
+    public function clearModelCache() {
         CacheService::invalidateTags($this->getCacheTags());
         CacheService::invalidateModel($this);
     }

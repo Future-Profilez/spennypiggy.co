@@ -6,11 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits\InvalidatesUserCache;
 
 class UserCategory extends Model
 {
-    use HasFactory,  SoftDeletes, InvalidatesUserCache;
+    use HasFactory,  SoftDeletes;
     protected $dates = ['deleted_at'];
     protected $fillable = [
         "user_id",

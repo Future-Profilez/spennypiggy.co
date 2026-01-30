@@ -46,7 +46,7 @@ environments:
       SESSION_DRIVER: redis
       SESSION_STORE: redis
       SESSION_CONNECTION: default
-      SESSION_DOMAIN: .spennypiggy.co
+      # SESSION_DOMAIN: .spennypiggy.co
       SESSION_SECURE_COOKIE: true
       SESSION_SAME_SITE: lax
       SESSION_BLOCK: false
@@ -83,12 +83,12 @@ environments:
       SESSION_DRIVER: redis
       SESSION_STORE: redis
       SESSION_CONNECTION: default
-      SESSION_DOMAIN: spennypiggy.co
+      SESSION_DOMAIN: .spennypiggy.co
       SESSION_SECURE_COOKIE: true
       SESSION_SAME_SITE: lax
       SESSION_BLOCK: false
       SESSION_LIFETIME: 120
-      SESSION_COOKIE: spennypiggy_v2_session
+      SESSION_COOKIE: spennypiggy_v3_session
     assets:
       - "public/build/**"
       - "bootstrap/ssr/**"

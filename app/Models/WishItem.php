@@ -2,10 +2,6 @@
 
 namespace App\Models;
 
-use App\Traits\CacheableModel;
-use App\Traits\InvalidatesUserCache;
-use App\Uploadcare;
-use App\WatermarkHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 
 class WishItem extends Model
 {
-    use HasFactory, SoftDeletes, CacheableModel, InvalidatesUserCache;
+    use HasFactory, SoftDeletes;
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
