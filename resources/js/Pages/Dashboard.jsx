@@ -433,10 +433,10 @@ export default function Dashboard(props) {
                                                                 </div>
                                                             </Link>
 
-                                                            <AddItem
+                                                            {/* <AddItem
                                                                 classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
                                                                 product_type="digital_products"
-                                                            />
+                                                            /> */}
                                                             <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
                                                             {/* <AddGift
                                                                 text="Add Gift "
