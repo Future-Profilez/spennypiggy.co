@@ -484,45 +484,50 @@ class TaskController extends Controller
     public function success(Request $request, $uuid)
     {
         $sessionId = $request->query('session_id');
-        $task = Task::where('uuid', $uuid)->with('creator')->firstOrFail();
+
+        $task = Task::where('uuid', $uuid)
+            ->with('creator')
+            ->firstOrFail();
 
         Stripe::setApiKey(config('services.stripe.secret'));
-        $session = Session::retrieve($sessionId);
+
+        $session = Session::retrieve(
+            $sessionId,
+            ['stripe_account' => $task->creator->account_id]
+        );
 
         $purchase = null;
 
-        // Allow if paid OR if on localhost (bypass payment check for testing)
         $isPaid = $session->payment_status === 'paid';
-        $isLocal = \Illuminate\Support\Facades\App::environment('local');
+        $isLocal = \App::environment('local');
 
         if ($isPaid || $isLocal) {
-            // Try to find existing purchase (webhook might have created it)
+
             $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
 
-            // If webhook hasn't processed it yet, create it here synchronously
             if (!$purchase) {
                 $purchase = $this->createTaskPurchaseSync($session, $task);
             }
 
-            // Self-healing: If purchase exists but is pending/paid for an instant task, fix it.
-            // This handles cases where synchronous creation failed to set status correctly due to metadata issues.
             if ($purchase && in_array($purchase->status, ['pending', 'paid']) && $task->type === 'instant') {
+
                 $purchase->status = 'completed';
-                $purchase->completed_at = Carbon::now();
+                $purchase->completed_at = now();
                 $purchase->save();
 
-                // Update GMV for creator
-                Helpers::addGmv($purchase->creator_id, (float) $purchase->amount, $purchase->creator->default_currency);
+                Helpers::addGmv(
+                    $purchase->creator_id,
+                    (float) $purchase->amount,
+                    $purchase->creator->default_currency
+                );
 
-                // Also fix deliverable
                 $deliverable = Deliverable::where('order_id', $purchase->id)->first();
+
                 if ($deliverable) {
                     $deliverable->status = 'delivered';
-                    $deliverable->delivered_at = Carbon::now();
+                    $deliverable->delivered_at = now();
                     $deliverable->save();
                 }
-
-                Log::info('Self-healed instant task status', ['purchase_id' => $purchase->id]);
             }
         } else {
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
@@ -531,7 +536,7 @@ class TaskController extends Controller
         return Inertia::render('Tasks/Success', [
             'task' => $task,
             'purchase' => $purchase,
-            'currencySymbol' => \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$',
+            'currencySymbol' => Currency::where('ISO', $task->currency)->value('symbol') ?? '$',
             'gracePeriodHours' => config('tasks.grace_period_hours', 1),
         ]);
     }
@@ -546,7 +551,7 @@ class TaskController extends Controller
         if ($existing) return $existing;
 
         $metadata = $session->metadata;
-        
+
         // If session metadata is empty (because we moved it to PaymentIntent), try to fetch from PI
         if (empty($metadata->buyer_id) && !empty($session->payment_intent)) {
             try {
