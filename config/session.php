@@ -198,6 +198,20 @@ return [
 
     'same_site' => 'lax',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Session Blocking
+    |--------------------------------------------------------------------------
+    |
+    | To improve concurrency for applications that use the "database" or "redis"
+    | session drivers, you may specify that the session should be locked for
+    | the duration of a request, preventing race conditions from occurring.
+    |
+    */
+
+    'block' => env('SESSION_BLOCK', false),
+    'block_store' => env('SESSION_BLOCK_STORE', null),
+
 
 
 ];

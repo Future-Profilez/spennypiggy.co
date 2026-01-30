@@ -314,9 +314,7 @@ Route::middleware('auth')->group(function () {
                     }
 
                     $auto_tweet = (int)($user->auto_tweet ?? 0) === 1;
-                    $pwaNotificationDetails = Cache::remember("account:pwa_notifications:{$user->id}", 300, function () use ($user) {
-                        return BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
-                    });
+                    $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
 
                 // Find the currently active subscription period
                 $now = Carbon::now();
@@ -344,27 +342,28 @@ Route::middleware('auth')->group(function () {
                 }
 
                 // Get complete subscription history for the user
-                $subscription_history = Cache::remember("account:subscription_history:{$user->id}", 300, function () use ($user) {
-                    return MonthlyCharge::where('user_id', $user->id)
-                        ->orderByDesc('current_start_subscription_date')
-                        ->get()
-                        ->map(function ($charge) {
-                        return [
-                            'id' => $charge->id,
-                            'uuid' => $charge->uuid,
-                            'stripe_id' => $charge->stripe_id,
-                            'amount' => $charge->amount ?? 0,
-                            'currency' => $charge->currency ?? 'GBP',
-                            'status' => $charge->status ?? 'pending',
-                            'current_start_trial_date' => $charge->current_start_trial_date,
-                            'current_end_trial_date' => $charge->current_end_trial_date,
-                            'current_start_subscription_date' => $charge->current_start_subscription_date,
-                            'current_end_subscription_date' => $charge->current_end_subscription_date,
-                            'upcoming_payment' => $charge->upcoming_payment,
-                            'created_at' => $charge->created_at,
-                            'updated_at' => $charge->updated_at,
-                        ];
-                        });
+                $historyCollection = MonthlyCharge::where('user_id', $user->id)
+                    ->orderByDesc('current_start_subscription_date')
+                    ->get();
+                $subscription_history = $historyCollection->map(function ($charge) {
+                    $fmt = function ($date) {
+                        try { return $date ? \Carbon\Carbon::parse($date)->format('d F Y') : null; } catch (\Throwable $e) { return null; }
+                    };
+                    return [
+                        'id' => $charge->id,
+                        'uuid' => $charge->uuid,
+                        'stripe_id' => $charge->stripe_id,
+                        'amount' => (float)($charge->amount ?? 0),
+                        'currency' => $charge->currency ?? 'GBP',
+                        'status' => $charge->status ?? 'pending',
+                        'current_start_trial_date' => $fmt($charge->current_start_trial_date),
+                        'current_end_trial_date' => $fmt($charge->current_end_trial_date),
+                        'current_start_subscription_date' => $fmt($charge->current_start_subscription_date),
+                        'current_end_subscription_date' => $fmt($charge->current_end_subscription_date),
+                        'upcoming_payment' => $fmt($charge->upcoming_payment),
+                        'created_at' => $fmt($charge->created_at),
+                        'updated_at' => $fmt($charge->updated_at),
+                    ];
                 });
 
                 $site_subscription = [

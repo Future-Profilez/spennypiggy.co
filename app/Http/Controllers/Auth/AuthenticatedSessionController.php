@@ -46,7 +46,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
-use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf;
 use PragmaRX\Google2FALaravel\Google2FA;
 use PragmaRX\Recovery\Recovery;
 use Ramsey\Uuid\Uuid;
@@ -83,6 +82,7 @@ class AuthenticatedSessionController extends Controller
         // ✅ First authenticate credentials
         $request->authenticate();
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // 🚫 BLOCK SUSPENDED USER
@@ -378,7 +378,8 @@ class AuthenticatedSessionController extends Controller
     private function getCategoriesWithItems($user)
     {
         $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
-        $cacheKey = "wish_categories_{$user->id}_" . ($isPublicView ? 'public' : 'private');
+        $version = $this->profileService->getUserCacheVersion($user->id);
+        $cacheKey = "wish_categories_{$user->id}_" . ($isPublicView ? 'public' : 'private') . "_v{$version}";
 
         return Cache::remember($cacheKey, 300, function () use ($user, $isPublicView) {
             $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
@@ -959,23 +960,25 @@ class AuthenticatedSessionController extends Controller
         $contract->sign = $sign;
         $contract->save();
 
-        $pdf = LaravelMpdf::loadView('pdf.creator-contract', [
-            'contract' => $contract
-        ]);
+        if (class_exists('Mccarlosen\LaravelMpdf\Facades\LaravelMpdf')) {
+            $pdf = \Mccarlosen\LaravelMpdf\Facades\LaravelMpdf::loadView('pdf.creator-contract', [
+                'contract' => $contract
+            ]);
 
-        $pdfContent = $pdf->output();
+            $pdfContent = $pdf->output();
 
-        // $tempPdfPath = storage_path("app/" . Uuid::uuid4() . ".pdf");
-        // $pdf->save($tempPdfPath);
+            // Upload the PDF to Uploadcare
+            $configuration = Configuration::create((string) $_ENV['UPLOADCARE_PUBLIC_KEY'], (string) $_ENV['UPLOADCARE_SECRET_KEY']);
+            $uploader = new Uploader($configuration);
 
-        // Upload the PDF to Uploadcare
-        $configuration = Configuration::create((string) $_ENV['UPLOADCARE_PUBLIC_KEY'], (string) $_ENV['UPLOADCARE_SECRET_KEY']);
-        $uploader = new Uploader($configuration);
+            $fileInfo = $uploader->fromContent($pdfContent, 'application/pdf', Uuid::uuid4() . ".pdf");
 
-        // $fileInfo = $uploader->fromPath($tempPdfPath, null, null);
-        $fileInfo = $uploader->fromContent($pdfContent, 'application/pdf', Uuid::uuid4() . ".pdf");
+            $contract->document = $fileInfo->getUuid();
+        } else {
+            // TODO: Install mccarlosen/laravel-mpdf to enable PDF generation
+            Log::error('LaravelMpdf package missing. Contract PDF not generated.');
+        }
 
-        $contract->document = $fileInfo->getUuid();
         $contract->status = 1;
         $contract->save();
         $contract->refresh();
