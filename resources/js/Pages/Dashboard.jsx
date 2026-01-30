@@ -546,7 +546,7 @@ export default function Dashboard(props) {
                                     ""
                                 )}
                             </div>
-                            <Userprofile IsloggedIn={IsloggedIn} defaultImage={userphoto} />
+                            <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
 
                         {/* Stripe Account Migration Warning */}
