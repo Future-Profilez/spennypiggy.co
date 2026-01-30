@@ -10,6 +10,8 @@ use App\Observers\DeliverableObserver;
 use Stripe\ApiRequestor;
 use Stripe\HttpClient\CurlClient;
 
+use Illuminate\Support\Facades\URL;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -39,6 +41,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS in production to ensure secure cookies work correctly
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         // Fix Stripe connection timeout issues in local/dev environments by forcing IPv4
         if (app()->environment('local')) {
             $curl = new CurlClient([CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]);

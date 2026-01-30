@@ -134,9 +134,10 @@ class StripeControl
     public static function hasCardPaymentsCapability(string $accountId): bool
     {
         // Use cache to avoid repeated API calls for the same account
-        $cacheKey = "stripe_card_payments_capability_{$accountId}";
+        // Removed caching to ensure real-time accuracy for critical payment capability checks
+        // $cacheKey = "stripe_card_payments_capability_{$accountId}";
         
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($accountId) {
+        // return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($accountId) {
             self::setClient();
             try {
                 $account = self::$client->accounts->retrieve($accountId);
@@ -157,7 +158,7 @@ class StripeControl
                 // Default to true to maintain existing behavior for API failures
                 return true;
             }
-        });
+        // });
     }
 
     // ✅   Add a check in your class to validate capabilities

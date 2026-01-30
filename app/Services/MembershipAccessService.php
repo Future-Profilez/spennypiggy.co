@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Cache;
 
 class MembershipAccessService
 {
+    protected $profileService;
+
+    public function __construct(UserProfileService $profileService)
+    {
+        $this->profileService = $profileService;
+    }
+
     /**
      * Check if user has active membership access to a specific creator's content
      *
@@ -31,7 +38,8 @@ class MembershipAccessService
             }
 
             // Cache key for performance
-            $cacheKey = "membership_access:{$userId}:{$creatorId}:" . ($membershipLevel ?? 'any');
+            $version = $this->profileService->getUserCacheVersion($userId);
+            $cacheKey = "membership_access:{$userId}:{$creatorId}:" . ($membershipLevel ?? 'any') . "_v{$version}";
             
             return Cache::remember($cacheKey, 300, function () use ($userId, $creatorId, $membershipLevel) {
                 
