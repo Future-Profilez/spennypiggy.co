@@ -83,40 +83,36 @@ class SitemapController extends Controller
      */
     public function creators()
     {
-        // Cache the sitemap for 30 minutes to improve performance
-        $content = Cache::remember('sitemap.creators', 1800, function () {
-            try {
-                $creators = User::where('is_public_profile', 1)
-                    ->where('suspended_account', 0)
-                    ->select('username', 'updated_at')
-                    ->orderBy('updated_at', 'desc')
-                    ->limit(1000) // Reduced limit for safety
-                    ->get();
-            } catch (\Exception $e) {
-                // Fallback to empty collection if database query fails
-                $creators = collect();
-            }
+        // Removed caching to prevent issues
+        try {
+            $creators = User::where('is_public_profile', 1)
+                ->where('suspended_account', 0)
+                ->select('username', 'updated_at')
+                ->orderBy('updated_at', 'desc')
+                ->limit(1000) // Reduced limit for safety
+                ->get();
+        } catch (\Exception $e) {
+            // Fallback to empty collection if database query fails
+            $creators = collect();
+        }
 
-            $xml = '<?xml version="1.0" encoding="UTF-8"?>
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
-            foreach ($creators as $creator) {
-                $xml .= '
+        foreach ($creators as $creator) {
+            $xml .= '
   <url>
     <loc>' . url('/' . $creator->username) . '</loc>
     <lastmod>' . $creator->updated_at->toW3cString() . '</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>';
-            }
+        }
 
-            $xml .= '
+        $xml .= '
 </urlset>';
 
-            return $xml;
-        });
-
-        return response($content, 200, [
+        return response($xml, 200, [
             'Content-Type' => 'application/xml',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',
@@ -129,40 +125,36 @@ class SitemapController extends Controller
      */
     public function wishlists()
     {
-        // Cache the sitemap for 30 minutes to improve performance
-        $content = Cache::remember('sitemap.wishlists', 1800, function () {
-            try {
-                $wishlists = WishItem::where('is_approved', 1)
-                    ->select('id', 'user_id', 'updated_at')
-                    ->with('user:id,username')
-                    ->orderBy('updated_at', 'desc')
-                    ->limit(1000) // Reduced limit for safety
-                    ->get();
-            } catch (\Exception $e) {
-                // Fallback to empty collection if database query fails
-                $wishlists = collect();
-            }
+        // Removed caching to prevent issues
+        try {
+            $wishlists = WishItem::where('is_approved', 1)
+                ->select('id', 'user_id', 'updated_at')
+                ->with('user:id,username')
+                ->orderBy('updated_at', 'desc')
+                ->limit(1000) // Reduced limit for safety
+                ->get();
+        } catch (\Exception $e) {
+            // Fallback to empty collection if database query fails
+            $wishlists = collect();
+        }
 
-            $xml = '<?xml version="1.0" encoding="UTF-8"?>
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
-            foreach ($wishlists as $wishlist) {
-                $xml .= '
+        foreach ($wishlists as $wishlist) {
+            $xml .= '
   <url>
     <loc>' . url('/' . $wishlist->user->username . '/wish/' . $wishlist->id) . '</loc>
     <lastmod>' . $wishlist->updated_at->toW3cString() . '</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>';
-            }
+        }
 
-            $xml .= '
+        $xml .= '
 </urlset>';
 
-            return $xml;
-        });
-
-        return response($content, 200, [
+        return response($xml, 200, [
             'Content-Type' => 'application/xml',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',

@@ -43,6 +43,9 @@ class HandleInertiaRequests extends Middleware
     {
 
         $user = $request->user();
+        if ($user) {
+            $user->append(['monthly_charge_enabled']);
+        }
         $followedUser = User::where('username', $request->username)
             ->first();
         $follow_status = false;

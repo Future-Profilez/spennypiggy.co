@@ -92,53 +92,48 @@ class OptimizedProfileController extends Controller
             return [false, true, []];
         }
 
-        $version = $this->profileService->getUserCacheVersion($user->id);
-        $cacheKey = "stripe_capabilities_{$user->account_id}_v{$version}";
-        
-        return Cache::remember($cacheKey, 300, function () use ($user) {
-            try {
-                $account = StripeControl::getAccount($user->account_id);
-                
-                // Use the proper migration check to determine if upgrade is needed
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-                $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
-                
-                $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
-                
-                // Get comprehensive account requirements
-                $requirements = StripeControl::getAccountRequirements($user->account_id);
-                
-                // Add migration requirement if account needs upgrade
-                if ($isNeedToUpgrade) {
-                    $requirements['has_requirements'] = true;
-                    $requirements['requirements'][] = [
-                        'type' => 'legacy_upgrade',
-                        'severity' => 'high',
-                        'title' => 'Account Upgrade Required',
-                        'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
-                        'action' => 'Upgrade your Stripe account now.',
-                        'action_url' => '/stripe/upgrade-express-account'
-                    ];
-                }
-                
-                return [$isNeedToUpgrade, $cardCapabilities, $requirements];
-            } catch (\Exception $e) {
-                // Update user if account is invalid
-                $user->update(['stripe_details_submitted' => 0]);
-                return [false, true, [
-                    'has_requirements' => true,
-                    'requirements' => [[
-                        'type' => 'connection_error',
-                        'severity' => 'critical',
-                        'title' => 'Account Connection Issue',
-                        'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
-                        'action' => 'Refresh the page or contact support.',
-                        'action_url' => null
-                    ]],
-                    'account_status' => []
-                ]];
+        try {
+            $account = StripeControl::getAccount($user->account_id);
+            
+            // Use the proper migration check to determine if upgrade is needed
+            $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+            $isNeedToUpgrade = $migrationCheck['needs_migration'] ?? false;
+            
+            $cardCapabilities = StripeControl::isAccountReadyForCheckout($user->account_id);
+            
+            // Get comprehensive account requirements
+            $requirements = StripeControl::getAccountRequirements($user->account_id);
+            
+            // Add migration requirement if account needs upgrade
+            if ($isNeedToUpgrade) {
+                $requirements['has_requirements'] = true;
+                $requirements['requirements'][] = [
+                    'type' => 'legacy_upgrade',
+                    'severity' => 'high',
+                    'title' => 'Account Upgrade Required',
+                    'message' => 'Your Stripe account needs to be upgraded to the latest version to receive card payments.',
+                    'action' => 'Upgrade your Stripe account now.',
+                    'action_url' => '/stripe/upgrade-express-account'
+                ];
             }
-        });
+            
+            return [$isNeedToUpgrade, $cardCapabilities, $requirements];
+        } catch (\Exception $e) {
+            // Update user if account is invalid
+            $user->update(['stripe_details_submitted' => 0]);
+            return [false, true, [
+                'has_requirements' => true,
+                'requirements' => [[
+                    'type' => 'connection_error',
+                    'severity' => 'critical',
+                    'title' => 'Account Connection Issue',
+                    'message' => 'Unable to check your Stripe account status. Please try again or contact support.',
+                    'action' => 'Refresh the page or contact support.',
+                    'action_url' => null
+                ]],
+                'account_status' => []
+            ]];
+        }
     }
 
     /**
@@ -151,30 +146,24 @@ class OptimizedProfileController extends Controller
             return ['needs_migration' => false, 'show_warning' => false];
         }
 
-        // Use caching to avoid repeated Stripe API calls
-        $version = $this->profileService->getUserCacheVersion($user->id);
-        $cacheKey = "migration_status_{$user->id}_v{$version}";
-        
-        return Cache::remember($cacheKey, 600, function () use ($user) {
-            try {
-                $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
-                
-                return [
-                    'needs_migration' => $migrationCheck['needs_migration'] ?? false,
-                    'show_warning' => $migrationCheck['needs_migration'] ?? false,
-                    'current_agreement' => $migrationCheck['current_agreement'] ?? null,
-                    'required_agreement' => $migrationCheck['required_agreement'] ?? null,
-                    'country' => $migrationCheck['country'] ?? $user->country,
-                    'reason' => $migrationCheck['reason'] ?? 'Account check not available'
-                ];
-            } catch (\Exception $e) {
-                return [
-                    'needs_migration' => false,
-                    'show_warning' => false,
-                    'error' => 'Unable to check migration status'
-                ];
-            }
-        });
+        try {
+            $migrationCheck = StripeController::checkAccountMigrationNeeds($user);
+            
+            return [
+                'needs_migration' => $migrationCheck['needs_migration'] ?? false,
+                'show_warning' => $migrationCheck['needs_migration'] ?? false,
+                'current_agreement' => $migrationCheck['current_agreement'] ?? null,
+                'required_agreement' => $migrationCheck['required_agreement'] ?? null,
+                'country' => $migrationCheck['country'] ?? $user->country,
+                'reason' => $migrationCheck['reason'] ?? 'Account check not available'
+            ];
+        } catch (\Exception $e) {
+            return [
+                'needs_migration' => false,
+                'show_warning' => false,
+                'error' => 'Unable to check migration status'
+            ];
+        }
     }
     
     /**
@@ -186,20 +175,15 @@ class OptimizedProfileController extends Controller
     private function getCategoriesWithItems($user)
     {
         $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
-        $version = $this->profileService->getUserCacheVersion($user->id);
-        $viewType = $isPublicView ? 'public' : 'private';
-        $cacheKey = "user_categories_with_items_{$user->id}_{$viewType}_v{$version}";
+        
+        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+            $q->where('user_id', $user->id);
+            if ($isPublicView) {
+                $q->where('is_approved', 1);
+            }
+        })->pluck('user_category_id')->unique()->filter();
 
-        return Cache::remember($cacheKey, 300, function () use ($user, $isPublicView) {
-            $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
-                $q->where('user_id', $user->id);
-                if ($isPublicView) {
-                    $q->where('is_approved', 1);
-                }
-            })->pluck('user_category_id')->unique()->filter();
-
-            return $user->user_categories()->whereIn('id', $categoryIds)->get();
-        });
+        return $user->user_categories()->whereIn('id', $categoryIds)->get();
     }
 
     /**
@@ -345,12 +329,7 @@ class OptimizedProfileController extends Controller
                 ]);
             }
 
-            $version = $this->profileService->getUserCacheVersion($user->id);
-            $cacheKey = "user_categories_list_{$user->id}_v{$version}";
-
-            $categories = Cache::remember($cacheKey, 300, function () use ($user) {
-                return $user->user_categories ?? [];
-            });
+            $categories = $user->user_categories ?? [];
 
             return response()->json([
                 "success" => true,
@@ -370,13 +349,9 @@ class OptimizedProfileController extends Controller
      */
     public function checkUserName(string $username)
     {
-        $cacheKey = "username_check_{$username}";
-        
-        $exists = Cache::remember($cacheKey, 300, function () use ($username) {
-            return \App\Models\User::where('username', $username)
-                ->where('is_uk', 0)
-                ->exists();
-        });
+        $exists = \App\Models\User::where('username', $username)
+            ->where('is_uk', 0)
+            ->exists();
 
         return response()->json([
             'success' => true,
@@ -420,16 +395,11 @@ class OptimizedProfileController extends Controller
             ]);
         }
 
-        $version = $this->profileService->getUserCacheVersion($user->id);
-        $cacheKey = "gift_items_{$user->id}_v{$version}";
-        
-        $items = Cache::remember($cacheKey, 300, function () use ($user) {
-            return \App\Models\RyeProduct::where('user_id', $user->id)
-                ->latest()
-                ->limit(20)
-                ->get()
-                ->toArray();
-        });
+        $items = \App\Models\RyeProduct::where('user_id', $user->id)
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->toArray();
 
         return response()->json([
             'success' => true,

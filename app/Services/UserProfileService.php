@@ -54,22 +54,14 @@ class UserProfileService
      */
     public function getUserWithRelations(string $username): ?User
     {
-        // 1. Get User ID from username (cached)
-        $userId = Cache::remember("userid_by_username_{$username}", self::getLongCacheTtl(), function () use ($username) {
-            return User::where('username', $username)->value('id');
-        });
+        // Direct DB query - No Caching for stability
+        $userId = User::where('username', $username)->value('id');
 
         if (!$userId) {
             return null;
         }
 
-        // 2. Get current cache version
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "user_full_profile_{$userId}_v{$version}";
-
-        // 3. Get User Data (cached with version)
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($username) {
-            $query = User::select([
+        return User::select([
                 'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
                 'avatar', 'avatar_approved', 'cover', 'suspended_account',
                 'social_image', 'account_id', 'stripe_details_submitted',
@@ -82,11 +74,8 @@ class UserProfileService
                 // Include uuid so perma_link accessor can build a playable URL
                 'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
             ])
-            ->where('username', $username);
-
-            // Remove is_uk filter for profile viewing to prevent false 404s in all environments
-            return $query->first();
-        });
+            ->where('username', $username)
+            ->first();
     }
 
     /**
@@ -113,19 +102,14 @@ class UserProfileService
      */
     public function getOptimizedTasks(int $userId, bool $isOwner): array
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "user_tasks_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
-        
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
-            $query = \App\Models\Task::where('creator_id', $userId);
-            if (!$isOwner) {
-                $query->where('status', 'active')->where('is_approved', 1);
-            }
-            return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved'])
-                ->latest()
-                ->get()
-                ->toArray();
-        });
+        $query = \App\Models\Task::where('creator_id', $userId);
+        if (!$isOwner) {
+            $query->where('status', 'active')->where('is_approved', 1);
+        }
+        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved'])
+            ->latest()
+            ->get()
+            ->toArray();
     }
     
     /**
@@ -133,29 +117,24 @@ class UserProfileService
      */
     private function getOptimizedWishItems(int $userId, ?int $categoryId, bool $isOwner): array
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "optimized_wishes_{$userId}_{$categoryId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
-
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $categoryId, $isOwner) {
-            $query = WishItem::select([
-                'id', 'user_id', 'uuid', 'wishname', 'price', 'currency', 'thumbnail', 
-                'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason'
-            ])->with('user:id,name,username,suspended_account')->where('user_id', $userId);
-            
-            if (!$isOwner) {
-                $query->where('is_approved', 1);
-            }
-            
-            if ($categoryId && $categoryId !== 'all') {
-                $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
-            }
-            
-            return $query->orderBy('sort')
-                ->orderBy('created_at', 'desc')
-                ->limit(20)
-                ->get()
-                ->toArray();
-        });
+        $query = WishItem::select([
+            'id', 'user_id', 'uuid', 'wishname', 'price', 'currency', 'thumbnail', 
+            'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason'
+        ])->with('user:id,name,username,suspended_account')->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('is_approved', 1);
+        }
+        
+        if ($categoryId && $categoryId !== 'all') {
+            $query->whereHas('categories', fn($q) => $q->where('user_category_id', $categoryId));
+        }
+        
+        return $query->orderBy('sort')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->toArray();
     }
     
     /**
@@ -163,21 +142,16 @@ class UserProfileService
      */
     private function getOptimizedMemberships(int $userId, bool $isOwner): array
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "optimized_memberships_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
-
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
-            $query = Membership::select([
-                'id', 'uuid', 'name', 'level', 'price', 'currency', 
-                'thumbnail', 'approved', 'created_at'
-            ])->where('user_id', $userId);
-            
-            if (!$isOwner) {
-                $query->where('approved', 1);
-            }
-            
-            return $query->latest()->get()->toArray();
-        });
+        $query = Membership::select([
+            'id', 'uuid', 'name', 'level', 'price', 'currency', 
+            'thumbnail', 'approved', 'created_at'
+        ])->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->get()->toArray();
     }
     
     /**
@@ -202,22 +176,17 @@ class UserProfileService
      */
     private function getOptimizedShopItems(int $userId, bool $isOwner): array
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "optimized_shops_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
-
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
-            $query = Shop::select([
-                'id', 'uuid', 'name', 'price', 'currency',
-                'thumbnail', 'approved', 'created_at'
-            ])->where('user_id', $userId)
-            ->with(['shop_varients:id,shop_id,name,price']);
-            
-            if (!$isOwner) {
-                $query->where('approved', 1);
-            }
-            
-            return $query->latest()->get()->toArray();
-        });
+        $query = Shop::select([
+            'id', 'uuid', 'name', 'price', 'currency',
+            'thumbnail', 'approved', 'created_at'
+        ])->where('user_id', $userId)
+        ->with(['shop_varients:id,shop_id,name,price']);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->get()->toArray();
     }
     
     /**
@@ -225,21 +194,16 @@ class UserProfileService
      */
     private function getOptimizedPosts(int $userId, bool $isOwner, int $limit = 5): array
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "optimized_posts_{$userId}_{$limit}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
-
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner, $limit) {
-            $query = Post::select([
-                'id', 'uuid', 'content', 'thumbnail',
-                'approved', 'created_at'
-            ])->where('user_id', $userId);
-            
-            if (!$isOwner) {
-                $query->where('approved', 1);
-            }
-            
-            return $query->latest()->limit($limit)->get()->toArray();
-        });
+        $query = Post::select([
+            'id', 'uuid', 'content', 'thumbnail',
+            'approved', 'created_at'
+        ])->where('user_id', $userId);
+        
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        
+        return $query->latest()->limit($limit)->get()->toArray();
     }
     
     /**
@@ -248,26 +212,23 @@ class UserProfileService
     public function getUserWishItems(int $userId, ?int $categoryId = null, int $perPage = 20): array
     {
             $isOwner = Auth::check() && Auth::id() === $userId;
-            $version = $this->getUserCacheVersion($userId);
-            $cacheKey = "user_wishes_{$userId}_{$categoryId}_{$perPage}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
             
-            return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $categoryId, $perPage, $isOwner) {
-                $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account')
-                ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
-                    $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
-                });
-
-                // Apply approval filter for non-owners
-                if (!$isOwner) {
-                    $query->where('is_approved', 1);
-                }
-                
-                return $query->orderBy('sort')
-                    ->orderBy('created_at', 'desc')
-                    ->limit($perPage)
-                    ->get()
-                    ->toArray();
+            // Removed caching
+            $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account')
+            ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
+                $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
             });
+
+            // Apply approval filter for non-owners
+            if (!$isOwner) {
+                $query->where('is_approved', 1);
+            }
+            
+            return $query->orderBy('sort')
+                ->orderBy('created_at', 'desc')
+                ->limit($perPage)
+                ->get()
+                ->toArray();
     }
 
     /**
@@ -275,19 +236,6 @@ class UserProfileService
      */
     public function getUserPosts(int $userId, string $module = 'all', int $perPage = 10, int $page = 1)
     {
-        $isOwner = Auth::check() && Auth::id() === $userId;
-        $isGuest = !Auth::check();
-
-        // Cache first page for Owner and Guest to improve performance
-        if ($page === 1 && $module === 'all' && ($isOwner || $isGuest)) {
-            $version = $this->getUserCacheVersion($userId);
-            $cacheKey = "user_posts_{$userId}_all_1_{$perPage}_" . ($isOwner ? 'owner' : 'guest') . "_v{$version}";
-            
-            return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $module, $perPage, $page) {
-                return $this->executePostsQuery($userId, $module, $perPage, $page);
-            });
-        }
-
         return $this->executePostsQuery($userId, $module, $perPage, $page);
     }
 
@@ -404,19 +352,16 @@ class UserProfileService
      */
     public function getUserMemberships(int $userId): array
     {
-        $version = $this->getUserCacheVersion($userId);
         $isOwner = Auth::check() && Auth::id() === $userId;
-        $cacheKey = "user_memberships_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+        
+        // Removed caching
+        $query = Membership::where('user_id', $userId);
 
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
-            $query = Membership::where('user_id', $userId);
+        if (!Auth::check() || Auth::id() !== $userId) {
+            $query->where('approved', 1);
+        }
 
-            if (!Auth::check() || Auth::id() !== $userId) {
-                $query->where('approved', 1);
-            }
-
-            return $query->latest()->get()->toArray();
-        });
+        return $query->latest()->get()->toArray();
     }
 
     /**
@@ -424,19 +369,16 @@ class UserProfileService
      */
     public function getUserBills(int $userId): array
     {
-        $version = $this->getUserCacheVersion($userId);
         $isOwner = Auth::check() && Auth::id() === $userId;
-        $cacheKey = "user_bills_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+        
+        // Removed caching
+        $query = Bills::where('user_id', $userId);
 
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
-            $query = Bills::where('user_id', $userId);
+        if (!Auth::check() || Auth::id() !== $userId) {
+            $query->where('approved', 1);
+        }
 
-            if (!Auth::check() || Auth::id() !== $userId) {
-                $query->where('approved', 1);
-            }
-
-            return $query->latest()->get()->toArray();
-        });
+        return $query->latest()->get()->toArray();
     }
 
     /**
@@ -445,18 +387,15 @@ class UserProfileService
     public function getUserShopItems(int $userId): array
     {
         $isOwner = Auth::check() && Auth::id() === $userId;
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "user_shop_{$userId}_" . ($isOwner ? 'owner' : 'public') . "_v{$version}";
+        
+        // Removed caching
+        $query = Shop::where('user_id', $userId)
+        ->with(['shop_varients:id,shop_id,name,price']);
 
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId, $isOwner) {
-            $query = Shop::where('user_id', $userId)
-            ->with(['shop_varients:id,shop_id,name,price']);
-
-            if (!$isOwner) {
-                $query->where('approved', 1);
-            }
-            return $query->latest()->get()->toArray();
-        });
+        if (!$isOwner) {
+            $query->where('approved', 1);
+        }
+        return $query->latest()->get()->toArray();
     }
 
     /**
@@ -464,31 +403,27 @@ class UserProfileService
      */
     public function getSupportersCount(int $userId): int
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "supporters_count_{$userId}_v{$version}";
-        
-        return Cache::remember($cacheKey, self::getLongCacheTtl(), function () use ($userId) {
-            // Use raw SQL for better performance
-            $query = "
-                SELECT COUNT(DISTINCT supporter) as count FROM (
-                    SELECT user_id as supporter FROM tip_goals_payments 
-                    WHERE creator_id = ? AND status = 'paid' AND user_id IS NOT NULL
-                    UNION
-                    SELECT id as supporter FROM users 
-                    WHERE email IN (
-                        SELECT guest_email FROM tip_goals_payments 
-                        WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
-                    ) AND is_uk = 0
-                    UNION
-                    SELECT CONCAT('guest_', ROW_NUMBER() OVER()) as supporter FROM tip_goals_payments 
+        // Removed caching
+        // Use raw SQL for better performance
+        $query = "
+            SELECT COUNT(DISTINCT supporter) as count FROM (
+                SELECT user_id as supporter FROM tip_goals_payments 
+                WHERE creator_id = ? AND status = 'paid' AND user_id IS NOT NULL
+                UNION
+                SELECT id as supporter FROM users 
+                WHERE email IN (
+                    SELECT guest_email FROM tip_goals_payments 
                     WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
-                    AND guest_email NOT IN (SELECT email FROM users WHERE is_uk = 0)
-                ) supporters
-            ";
-            
-            $result = DB::select($query, [$userId, $userId, $userId]);
-            return $result[0]->count ?? 0;
-        });
+                ) AND is_uk = 0
+                UNION
+                SELECT CONCAT('guest_', ROW_NUMBER() OVER()) as supporter FROM tip_goals_payments 
+                WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
+                AND guest_email NOT IN (SELECT email FROM users WHERE is_uk = 0)
+            ) supporters
+        ";
+        
+        $result = DB::select($query, [$userId, $userId, $userId]);
+        return $result[0]->count ?? 0;
     }
 
     /**
@@ -496,51 +431,47 @@ class UserProfileService
      */
     public function getUserEarnings(int $userId): array
     {
-        $version = $this->getUserCacheVersion($userId);
-        $cacheKey = "user_earnings_{$userId}_v{$version}";
-        
-        return Cache::remember($cacheKey, self::getCacheTtl(), function () use ($userId) {
-            $goalPayment = TipGoalsPayment::where('creator_id', $userId)
-                ->where('status', 'paid')
-                ->sum('amount');
-                
-            $billPayment = BillPayment::whereHas('bill', fn ($q) => $q->where('user_id', $userId))
-                ->where('status', 'paid')
-                ->sum('amount');
-                
-            $memPayment = MembershipPayment::whereHas('membership', fn ($q) => $q->where('user_id', $userId))
-                ->where('status', 'paid')
-                ->sum('amount');
-                
-            $wishPayment = StripePaymentDetail::where('owner_id', $userId)
-                ->where('payment_status', 'paid')
-                ->sum('amount_subtotal');
-                
-            $subPayment = WishItemSubscription::whereHas('wish_item', fn ($q) => $q->where('user_id', $userId))
-                ->where('status', 'paid')
-                ->sum('amount');
-
-            $totalEarnings = $goalPayment + $billPayment + $memPayment + $wishPayment + $subPayment;
+        // Removed caching
+        $goalPayment = TipGoalsPayment::where('creator_id', $userId)
+            ->where('status', 'paid')
+            ->sum('amount');
             
-            $target = match (true) {
-                $totalEarnings < 100 => 100,
-                $totalEarnings < 1000 => 1000,
-                $totalEarnings < 10000 => 10000,
-                $totalEarnings < 100000 => 100000,
-                $totalEarnings < 1000000 => 1000000,
-                default => 10000000,
-            };
+        $billPayment = BillPayment::whereHas('bill', fn ($q) => $q->where('user_id', $userId))
+            ->where('status', 'paid')
+            ->sum('amount');
+            
+        $memPayment = MembershipPayment::whereHas('membership', fn ($q) => $q->where('user_id', $userId))
+            ->where('status', 'paid')
+            ->sum('amount');
+            
+        $wishPayment = StripePaymentDetail::where('owner_id', $userId)
+            ->where('payment_status', 'paid')
+            ->sum('amount_subtotal');
+            
+        $subPayment = WishItemSubscription::whereHas('wish_item', fn ($q) => $q->where('user_id', $userId))
+            ->where('status', 'paid')
+            ->sum('amount');
 
-            return [
-                'fulfilled' => $totalEarnings,
-                'target' => $target,
-                'goal_payments' => $goalPayment,
-                'bill_payments' => $billPayment,
-                'membership_payments' => $memPayment,
-                'wish_payments' => $wishPayment,
-                'subscription_payments' => $subPayment
-            ];
-        });
+        $totalEarnings = $goalPayment + $billPayment + $memPayment + $wishPayment + $subPayment;
+        
+        $target = match (true) {
+            $totalEarnings < 100 => 100,
+            $totalEarnings < 1000 => 1000,
+            $totalEarnings < 10000 => 10000,
+            $totalEarnings < 100000 => 100000,
+            $totalEarnings < 1000000 => 1000000,
+            default => 10000000,
+        };
+
+        return [
+            'fulfilled' => $totalEarnings,
+            'target' => $target,
+            'goal_payments' => $goalPayment,
+            'bill_payments' => $billPayment,
+            'membership_payments' => $memPayment,
+            'wish_payments' => $wishPayment,
+            'subscription_payments' => $subPayment
+        ];
     }
 
     /**
@@ -552,8 +483,6 @@ class UserProfileService
             return 0;
         }
 
-        $cacheKey = "notifications_{$userId}";
-        
         // NO CACHE - REAL TIME DATA
         return Notification::where('notifiable_id', $userId)
             ->where('is_read', 0)

@@ -47,20 +47,16 @@ class CriticalCssService
      */
     private function extractCriticalFromMainCss(string $template): string
     {
-        $cacheKey = "critical_css_{$template}";
+        $mainCssPath = public_path('build/assets/app.css');
         
-        return Cache::remember($cacheKey, 3600, function () use ($template) {
-            $mainCssPath = public_path('build/assets/app.css');
-            
-            if (!File::exists($mainCssPath)) {
-                return '';
-            }
+        if (!File::exists($mainCssPath)) {
+            return '';
+        }
 
-            $css = File::get($mainCssPath);
-            $criticalSelectors = $this->getCriticalSelectorsForTemplate($template);
-            
-            return $this->extractSelectorsFromCss($css, $criticalSelectors);
-        });
+        $css = File::get($mainCssPath);
+        $criticalSelectors = $this->getCriticalSelectorsForTemplate($template);
+        
+        return $this->extractSelectorsFromCss($css, $criticalSelectors);
     }
 
     /**
@@ -108,7 +104,7 @@ class CriticalCssService
             default => []
         };
 
-        return array_merge($baseSelectors, $templateSelectors[$template] ?? []);
+        return array_merge($baseSelectors, $templateSelectors);
     }
 
     /**

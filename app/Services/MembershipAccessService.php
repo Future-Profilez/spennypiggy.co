@@ -37,43 +37,37 @@ class MembershipAccessService
                 ];
             }
 
-            // Cache key for performance
-            $version = $this->profileService->getUserCacheVersion($userId);
-            $cacheKey = "membership_access:{$userId}:{$creatorId}:" . ($membershipLevel ?? 'any') . "_v{$version}";
-            
-            return Cache::remember($cacheKey, 300, function () use ($userId, $creatorId, $membershipLevel) {
-                
-                Log::info('MembershipAccessService: Checking membership access', [
-                    'user_id' => $userId,
-                    'creator_id' => $creatorId,
-                    'membership_level' => $membershipLevel
-                ]);
+            // Direct check - No Caching
+            Log::info('MembershipAccessService: Checking membership access', [
+                'user_id' => $userId,
+                'creator_id' => $creatorId,
+                'membership_level' => $membershipLevel
+            ]);
 
-                // Method 1: Check via active deliverables (most reliable)
-                $accessViaDeliverables = $this->checkAccessViaDeliverables($userId, $creatorId, $membershipLevel);
-                if ($accessViaDeliverables['has_access']) {
-                    return $accessViaDeliverables;
-                }
+            // Method 1: Check via active deliverables (most reliable)
+            $accessViaDeliverables = $this->checkAccessViaDeliverables($userId, $creatorId, $membershipLevel);
+            if ($accessViaDeliverables['has_access']) {
+                return $accessViaDeliverables;
+            }
 
-                // Method 2: Check via active subscription payments (fallback)
-                $accessViaSubscriptions = $this->checkAccessViaSubscriptions($userId, $creatorId, $membershipLevel);
-                if ($accessViaSubscriptions['has_access']) {
-                    return $accessViaSubscriptions;
-                }
+            // Method 2: Check via active subscription payments (fallback)
+            $accessViaSubscriptions = $this->checkAccessViaSubscriptions($userId, $creatorId, $membershipLevel);
+            if ($accessViaSubscriptions['has_access']) {
+                return $accessViaSubscriptions;
+            }
 
-                // Method 3: Check for lifetime membership
-                $lifetimeAccess = $this->checkLifetimeMembership($userId, $creatorId, $membershipLevel);
-                if ($lifetimeAccess['has_access']) {
-                    return $lifetimeAccess;
-                }
+            // Method 3: Check for lifetime membership
+            $lifetimeAccess = $this->checkLifetimeMembership($userId, $creatorId, $membershipLevel);
+            if ($lifetimeAccess['has_access']) {
+                return $lifetimeAccess;
+            }
 
-                return [
-                    'has_access' => false,
-                    'reason' => 'No active membership found',
-                    'membership' => null,
-                    'expires_at' => null
-                ];
-            });
+            return [
+                'has_access' => false,
+                'reason' => 'No active membership found',
+                'membership' => null,
+                'expires_at' => null
+            ];
 
         } catch (\Exception $e) {
             Log::error('MembershipAccessService: Error checking membership access', [
@@ -248,23 +242,19 @@ class MembershipAccessService
                 return false;
             }
 
-            // Cache subscription status for 5 minutes
-            $cacheKey = "subscription_status:{$subscriptionId}";
+            // Direct check - No Caching
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+            $subscription = $stripe->subscriptions->retrieve($subscriptionId);
             
-            return Cache::remember($cacheKey, 300, function () use ($subscriptionId) {
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                $subscription = $stripe->subscriptions->retrieve($subscriptionId);
-                
-                $isActive = in_array($subscription->status, ['active', 'trialing', 'past_due']);
-                
-                Log::info('MembershipAccessService: Checked Stripe subscription status', [
-                    'subscription_id' => $subscriptionId,
-                    'status' => $subscription->status,
-                    'is_active' => $isActive
-                ]);
+            $isActive = in_array($subscription->status, ['active', 'trialing', 'past_due']);
+            
+            Log::info('MembershipAccessService: Checked Stripe subscription status', [
+                'subscription_id' => $subscriptionId,
+                'status' => $subscription->status,
+                'is_active' => $isActive
+            ]);
 
-                return $isActive;
-            });
+            return $isActive;
 
         } catch (\Exception $e) {
             Log::warning('MembershipAccessService: Failed to check subscription status', [
@@ -318,13 +308,6 @@ class MembershipAccessService
      */
     public function clearUserCache($userId, $creatorId = null)
     {
-        if ($creatorId) {
-            Cache::forget("membership_access:{$userId}:{$creatorId}:any");
-        } else {
-            // Clear all membership cache for user
-            $pattern = "membership_access:{$userId}:*";
-            // Note: This is a simple implementation. In production, you might want to use Redis SCAN
-            // for more efficient cache invalidation
-        }
+        // Caching removed
     }
 }

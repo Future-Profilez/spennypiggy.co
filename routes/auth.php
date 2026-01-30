@@ -170,39 +170,25 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
     }
 
     // Section data (top 10)
-    $isProd = app()->environment('production');
+    // $isProd = app()->environment('production'); // Removed caching to prevent staleness
     $limit = 10;
     $sortBy = $filters['sortBy'] ?? null;
+    
     // Creators
-    $featuredCreators = $isProd
-        ? Cache::remember("discover:featured_creators:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
-            return $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
-        })
-        : ($sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit));
-    $newVerifiedCreators = $isProd
-        ? Cache::remember("discover:new_verified_creators:$limit", 300, fn() => $discoveryService->getNewVerifiedCreators($limit))
-        : $discoveryService->getNewVerifiedCreators($limit);
+    $featuredCreators = $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
+    
+    $newVerifiedCreators = $discoveryService->getNewVerifiedCreators($limit);
+    
     // Wishes
-    $featuredWishes = $isProd
-        ? Cache::remember("discover:featured_wishes:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
-            return $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
-        })
-        : ($sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit));
+    $featuredWishes = $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
+    
     // Top earners this week
-    $topEarnersData = $isProd
-        ? Cache::remember("discover:top_earners:weekly:$limit", 300, fn() => $discoveryService->getTopEarners('weekly', $limit)['data'])
-        : $discoveryService->getTopEarners('weekly', $limit)['data'];
+    $topEarnersData = $discoveryService->getTopEarners('weekly', $limit)['data'];
+    
     // Bills & Memberships
-    $featuredBills = $isProd
-        ? Cache::remember("discover:featured_bills:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
-            return $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
-        })
-        : ($sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit));
-    $featuredMemberships = $isProd
-        ? Cache::remember("discover:featured_memberships:$limit:" . ($sortBy ?? 'Trending'), 300, function () use ($discoveryService, $sortBy, $limit) {
-            return $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
-        })
-        : ($sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit));
+    $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
+    
+    $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
 
     return Inertia::render('discover/Discover', [
         'featuredCreators' => $featuredCreators,
