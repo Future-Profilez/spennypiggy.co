@@ -15,7 +15,6 @@ import ActivateSubscription from "./ActivateSubscription";
 import SiteSubscription from "./SiteSubscription";
 import { BsStopwatch } from "react-icons/bs";
 import { FaLock } from "react-icons/fa";
-import { empty } from "@apollo/client";
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const { auth, user, global_currency, slinks } = usePage().props;

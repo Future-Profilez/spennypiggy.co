@@ -116,6 +116,29 @@ body{position:relative;font-family:var(--para-font)}
 .animate-float-delayed {
     animation: float 6s ease-in-out 3s infinite;
 }
+
+/* LiveBar Animation */
+@keyframes slide-animation {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.scrolling-container {
+  white-space: nowrap;
+  animation: slide-animation 18s linear infinite;
+  display: flex;
+}
+
+.livebar-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.scrolling-content {
+  display: flex;
+  margin-right: 2rem;
+}
+
 /* end */
 @media (max-width:575px){.shadow-mint{box-shadow:7px 7px 0 0 var(--mint)}
 .shadow-black{box-shadow:7px 7px 0 0 rgba(0,0,0,1)}
