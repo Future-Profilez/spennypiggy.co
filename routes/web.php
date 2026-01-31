@@ -127,12 +127,23 @@ if (app()->environment('local')) {
 
 
 Route::get('/', function (DiscoveryService $discoveryService) {
-    $trendingCreators = $discoveryService->getTrendingCreators();
-    $newVerifiedCreators = $discoveryService->getNewVerifiedCreators();
+    $getData = function() use ($discoveryService) {
+        $trendingCreators = $discoveryService->getTrendingCreators();
+        $newVerifiedCreators = $discoveryService->getNewVerifiedCreators();
 
-    $period = request()->query('top_earners_period', '');
-    $limit = (int) request()->query('top_earners_limit', 9);
-    $topEarnersData = $discoveryService->getTopEarners($period, $limit);
+        $period = request()->query('top_earners_period', '');
+        $limit = (int) request()->query('top_earners_limit', 9);
+        $topEarnersData = $discoveryService->getTopEarners($period, $limit);
+
+        return compact('trendingCreators', 'newVerifiedCreators', 'topEarnersData');
+    };
+
+    if (Auth::check()) {
+        $data = $getData();
+    } else {
+        $cacheKey = 'homepage_data_' . request()->query('top_earners_period', '') . '_' . request()->query('top_earners_limit', 9);
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, $getData);
+    }
 
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -146,10 +157,10 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
         ],
-        'trendingCreators' => $trendingCreators,
-        'newVerifiedCreators' => $newVerifiedCreators,
-        'topEarners' => $topEarnersData['data'],
-        'topEarnersLabel' => $topEarnersData['label'],
+        'trendingCreators' => $data['trendingCreators'],
+        'newVerifiedCreators' => $data['newVerifiedCreators'],
+        'topEarners' => $data['topEarnersData']['data'],
+        'topEarnersLabel' => $data['topEarnersData']['label'],
     ]);
 })->name("home");
 

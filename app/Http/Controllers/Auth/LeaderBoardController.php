@@ -39,7 +39,18 @@ class LeaderBoardController extends Controller
         if (Auth::user() && Auth::user()->suspended_account == 1) {
             return Inertia::render('Suspanded');
         }
-        $users = $this->calc($type);
+
+        $getData = function() use ($type) {
+            return $this->calc($type);
+        };
+
+        if (Auth::check()) {
+            $users = $getData();
+        } else {
+            $cacheKey = 'leaderboard_' . ($type ?? 'all') . '_' . request()->get('page', 1);
+            $users = Cache::remember($cacheKey, $this->ttlForType($type ?? 'daily'), $getData);
+        }
+
         $perPage = 50;
         $page = request()->get('page', 1);
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
