@@ -1,4 +1,5 @@
 import { Link } from "@inertiajs/react";
+import { route } from 'ziggy-js';
 import instagram from "../../assets/new/instagram.png";
 import youtube from "../../assets/new/youtube.png";
 import twitch from "../../assets/new/twitch.png";

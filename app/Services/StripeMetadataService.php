@@ -30,7 +30,8 @@ class StripeMetadataService
         array $additionalMetadata = [],
         ?string $deliverableUuid = null,
         ?string $deliveryUrl = null,
-        bool $skipDeliveryFields = false
+        bool $skipDeliveryFields = false,
+        ?string $stripeAccountId = null
     ): bool {
         try {
             \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
@@ -71,9 +72,14 @@ class StripeMetadataService
             }
             
             // Update payment intent metadata
+            $options = [];
+            if ($stripeAccountId) {
+                $options['stripe_account'] = $stripeAccountId;
+            }
+            
             \Stripe\PaymentIntent::update($paymentIntentId, [
                 'metadata' => $metadata
-            ]);
+            ], $options);
             
             Log::info('StripeMetadataService: Successfully updated payment intent metadata (NEW FORMAT)', [
                 'payment_intent_id' => $paymentIntentId,
@@ -82,7 +88,8 @@ class StripeMetadataService
                 'delivery_url' => $deliveryUrl,
                 'deliverable_uuid' => $deliverableUuid,
                 'skip_delivery_fields' => $skipDeliveryFields,
-                'additional_metadata_count' => count($additionalMetadata)
+                'additional_metadata_count' => count($additionalMetadata),
+                'stripe_account' => $stripeAccountId
             ]);
             
             return true;
@@ -95,6 +102,7 @@ class StripeMetadataService
                 'delivery_url' => $deliveryUrl,
                 'deliverable_uuid' => $deliverableUuid,
                 'skip_delivery_fields' => $skipDeliveryFields,
+                'stripe_account' => $stripeAccountId,
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e)
             ]);
@@ -120,20 +128,63 @@ class StripeMetadataService
             return false;
         }
 
+        // Determine potential connected account ID
+        $stripeAccountId = null;
+        if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
+            if ($deliverable->task && $deliverable->task->creator && $deliverable->task->creator->account_id) {
+                $stripeAccountId = $deliverable->task->creator->account_id;
+            }
+        } elseif ($deliverable->product_type === 'wish' && $deliverable->wishItem && $deliverable->wishItem->user) {
+             $stripeAccountId = $deliverable->wishItem->user->account_id;
+        } elseif ($deliverable->product_type === 'bill' && $deliverable->bill && $deliverable->bill->user) {
+             $stripeAccountId = $deliverable->bill->user->account_id;
+        } elseif ($deliverable->product_type === 'membership' && $deliverable->membership && $deliverable->membership->user) {
+             $stripeAccountId = $deliverable->membership->user->account_id;
+        }
+
         if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {
             try {
                 \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-                $pi = \Stripe\PaymentIntent::retrieve(
-                    $deliverable->payment_intent_id,
-                    ['expand' => ['latest_charge']]
-                );
+                
+                $pi = null;
+                $targetAccount = null;
+
+                // Try Platform first
+                try {
+                    $pi = \Stripe\PaymentIntent::retrieve(
+                        $deliverable->payment_intent_id,
+                        ['expand' => ['latest_charge']]
+                    );
+                } catch (\Exception $e) {
+                    // Not on Platform, try Connected Account if available
+                    if ($stripeAccountId) {
+                        try {
+                            $pi = \Stripe\PaymentIntent::retrieve(
+                                $deliverable->payment_intent_id,
+                                ['expand' => ['latest_charge']],
+                                ['stripe_account' => $stripeAccountId]
+                            );
+                            $targetAccount = $stripeAccountId;
+                        } catch (\Exception $inner) {
+                            Log::warning("PI not found on Platform or Connected Account: " . $inner->getMessage());
+                            throw $inner;
+                        }
+                    } else {
+                         throw $e;
+                    }
+                }
+
                 $chargeId = is_object($pi->latest_charge)
                     ? ($pi->latest_charge->id ?? null)
                     : ($pi->latest_charge ?? null);
 
                 if (!$chargeId) {
                     try {
-                        $charges = \Stripe\Charge::all(['payment_intent' => $deliverable->payment_intent_id, 'limit' => 1]);
+                        $opts = ['payment_intent' => $deliverable->payment_intent_id, 'limit' => 1];
+                        if ($targetAccount) {
+                            $opts['stripe_account'] = $targetAccount;
+                        }
+                        $charges = \Stripe\Charge::all($opts);
                         if (!empty($charges->data)) {
                             $chargeId = $charges->data[0]->id;
                         }
@@ -172,11 +223,19 @@ class StripeMetadataService
                     $metadata['task_uuid']
                 );
 
-                \Stripe\Charge::update($chargeId, ['metadata' => $metadata]);
+                $updateOpts = ['metadata' => $metadata];
+                if ($targetAccount) {
+                    $updateOpts = ['metadata' => $metadata, 'stripe_account' => $targetAccount];
+                    // Charge::update signature is ($id, $params, $opts)
+                    \Stripe\Charge::update($chargeId, ['metadata' => $metadata], ['stripe_account' => $targetAccount]);
+                } else {
+                    \Stripe\Charge::update($chargeId, ['metadata' => $metadata]);
+                }
 
                 Log::info('StripeMetadataService: Updated latest charge metadata for task deliverable', [
                     'charge_id' => $chargeId,
-                    'payment_intent_id' => $deliverable->payment_intent_id
+                    'payment_intent_id' => $deliverable->payment_intent_id,
+                    'target_account' => $targetAccount
                 ]);
                 return true;
             } catch (\Exception $e) {
@@ -202,6 +261,37 @@ class StripeMetadataService
                 'payment_intent_id' => $deliverable->payment_intent_id
             ]);
         }
+        
+        // Use the determined stripeAccountId (if any) to find/update the PI
+        // We need to verify if the PI is actually on that account first, 
+        // but updatePaymentIntentMetadata blindly tries.
+        // Let's refine updatePaymentIntentMetadata to handle the check or we pass the verified account.
+        
+        // For non-task items, we haven't verified the location yet.
+        // But if it's a new flow, it should be on the connected account.
+        // Let's do the same check logic here or inside updatePaymentIntentMetadata?
+        // Simpler: pass the potential account ID to updatePaymentIntentMetadata and let it handle/try?
+        // But updatePaymentIntentMetadata doesn't have the retry logic I wrote above.
+        
+        // Let's pass the stripeAccountId. If the PI is on Platform, passing stripe_account will fail.
+        // So we really need to know where it is.
+        
+        // Reuse the discovery logic?
+        $targetAccount = null;
+        if ($stripeAccountId) {
+             try {
+                 \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+                 \Stripe\PaymentIntent::retrieve(
+                    $deliverable->payment_intent_id, 
+                    [], 
+                    ['stripe_account' => $stripeAccountId]
+                 );
+                 $targetAccount = $stripeAccountId;
+             } catch (\Exception $e) {
+                 // Not on connected account, assume platform
+             }
+        }
+        
         return $this->updatePaymentIntentMetadata(
             $deliverable->payment_intent_id,
             $skipDeliveryFields ? null : $deliverable->certificate_url,
@@ -209,7 +299,8 @@ class StripeMetadataService
             $allAdditionalMetadata,
             $skipDeliveryFields ? null : $deliverable->uuid,
             $skipDeliveryFields ? null : $deliverable->deliverable_url,
-            $skipDeliveryFields
+            $skipDeliveryFields,
+            $targetAccount
         );
     }
     

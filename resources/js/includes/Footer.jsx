@@ -1,4 +1,5 @@
 import { Head, Link } from "@inertiajs/react";
+import { route } from 'ziggy-js';
 import { useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import spennypiggy from "../../assets/img/logo.png";

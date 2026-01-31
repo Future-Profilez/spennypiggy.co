@@ -28,6 +28,7 @@ use App\Jobs\ProcessWishItemDeliverable;
 use Illuminate\Support\Facades\Log;
 use App\Services\UserProfileService;
 use App\Services\StripeMetadataService;
+use Illuminate\Support\Facades\App;
 
 class TaskController extends Controller
 {
@@ -443,7 +444,7 @@ class TaskController extends Controller
 
         $appUrl = rtrim(config('app.url'), '/');
 
-        $paymentType = $task->type === 'instant' ? 'STANDARD' : 'PAID_TASK';
+        $paymentType = $task->type === 'instant' ? 'STANDARD - Direct Charge' : 'PAID_TASK - Direct Charge';
         $complianceMetadata = [
             'type' => 'task_purchase',
             'task_id' => $task->id,
@@ -499,7 +500,7 @@ class TaskController extends Controller
         $purchase = null;
 
         $isPaid = $session->payment_status === 'paid';
-        $isLocal = \App::environment('local');
+        $isLocal = App::environment('local');
 
         if ($isPaid || $isLocal) {
 
@@ -602,7 +603,7 @@ class TaskController extends Controller
             'admin_fee' => $metadata->admin_fee ?? 0,
             'platform_fee' => $metadata->platform_fee ?? 0,
             'vat_amount' => $metadata->vat_amount ?? 0,
-            'transfer_amount' => $metadata->transfer_amount ?? 0,
+            'creator_net_amount' => $metadata->creator_net_amount ?? ($metadata->transfer_amount ?? 0),
             'dispute_status' => 'none',
         ]);
 

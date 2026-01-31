@@ -49,7 +49,7 @@ export default function MorConsent(props) {
                             </p>
                             <p className="text-sm">
                                 Complete your basic profile and submit for admin
-                                approval to unlock payment setup.
+                                approval to access payment setup.
                             </p>
                         </div>
                     )}

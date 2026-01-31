@@ -1,5 +1,10 @@
 import React, { Children } from "./react-polyfill.js";
+import { route } from 'ziggy-js';
 import "./bootstrap";
+
+// Make route function available globally
+window.route = route;
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
 import "../css/app.css";

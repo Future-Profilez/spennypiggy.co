@@ -1959,8 +1959,8 @@ class StripeController extends Controller
 
             $lineItems[] = $platformFeeLineItem;
 
-            // Transfer amount = wish price + creator's VAT (what creator receives)
-            $transferAmount = round($basePrice * $multiplier) + $creatorVatAmount;
+            // Creator Net Amount = wish price + creator's VAT (what creator receives)
+            $creatorNetAmount = round($basePrice * $multiplier) + $creatorVatAmount;
 
             // Total charge amount = wish price + creator's VAT + platform fees
             $totalChargeAmount = round($basePrice * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
@@ -1989,7 +1989,7 @@ class StripeController extends Controller
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
                         'creator_vat_amount' => (string) $creatorVatAmount,
-                        'transfer_amount' => (string) $transferAmount,
+                        'creator_net_amount' => (string) $creatorNetAmount,
                         'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
                         'payment_type' => 'One-time Wish Subscription - Direct Charge',
@@ -2021,7 +2021,7 @@ class StripeController extends Controller
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
                         'creator_vat_amount' => (string) $creatorVatAmount,
-                        'transfer_amount' => (string) $transferAmount,
+                        'creator_net_amount' => (string) $creatorNetAmount,
                         'platform_fee_amount' => (string) round($platformTotal * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
                         'payment_type' => 'Recurring Wish Subscription - Direct Charge',
@@ -2953,8 +2953,8 @@ class StripeController extends Controller
                 $creatorVatAmount = round(($amount * $creator->vat_amount_percentage / 100) * $multiplier);
             }
 
-            // Transfer amount = item amount + creator's VAT (what creator receives)
-            $transferAmount = $unitAmount + $creatorVatAmount;
+            // Creator Net Amount = item amount + creator's VAT (what creator receives)
+            $creatorNetAmount = $unitAmount + $creatorVatAmount;
 
             // Total charge amount = item amount + creator's VAT + platform fees
             $totalChargeAmount = $unitAmount + $creatorVatAmount + $applicationFeeAmount;
@@ -3025,7 +3025,7 @@ class StripeController extends Controller
                     'item_amount' => (string) $unitAmount,
                     'certificate' => true,
                     'creator_vat_amount' => (string) $creatorVatAmount,
-                    'transfer_amount' => (string) $transferAmount,
+                    'creator_net_amount' => (string) $creatorNetAmount,
                     'platform_fee_amount' => (string) $applicationFeeAmount,
                     'total_charge_amount' => (string) $totalChargeAmount,
                     'payment_type' => 'Support Payment - Direct Charge',

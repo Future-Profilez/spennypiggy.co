@@ -16,12 +16,11 @@ environments:
     cache: spenny-piggy-redis-caches
     assets:
       - "public/build/**"
-      - "bootstrap/ssr/**"
     build:
-      # - "composer install --no-dev"
+      - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      # - "npm install --no-audit --no-fund"
+      - "npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
       - "rm -rf public/build" # Linux/mac/OS
       - "rm -rf bootstrap/ssr" # Linux/mac/OS
@@ -38,20 +37,6 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-    environment:
-      CACHE_DRIVER: redis
-      REDIS_CLIENT: phpredis
-      REDIS_CLUSTER: redis
-      CACHE_PREFIX: spennypiggy_dev
-      SESSION_DRIVER: redis
-      SESSION_STORE: redis
-      SESSION_CONNECTION: default
-      SESSION_DOMAIN: .spennypiggy.co
-      SESSION_SECURE_COOKIE: true
-      SESSION_SAME_SITE: lax
-      SESSION_BLOCK: false
-      SESSION_LIFETIME: 120
-      SESSION_COOKIE: spennypiggy_dev_v2_session
       # - "php artisan subscription:sync --all"
       # - "php artisan app:process-task-auto-confirmations"
       # - "php artisan app:process-sla-refunds"
@@ -75,25 +60,8 @@ environments:
     database: spennypiggy-db
     database-proxy: true
     health-checks: false 
-    environment:
-      CACHE_DRIVER: array
-      SESSION_DRIVER: cookie
-      SESSION_STORE: cookie
-      SESSION_COOKIE: spennypiggy_prod_v1
-      SESSION_DOMAIN: .spennypiggy.co
-      SESSION_SECURE_COOKIE: true
-      SESSION_SAME_SITE: lax
-      SESSION_BLOCK: false
-      SESSION_LIFETIME: 120
-      CACHE_PREFIX: spennypiggy
-      REDIS_CLIENT: phpredis
-      REDIS_CLUSTER: redis
-      APP_DEBUG: true
-      LOG_CHANNEL: stderr
-      QUEUE_CONNECTION: sqs
     assets:
       - "public/build/**"
-      - "bootstrap/ssr/**"
     build:
       # - "composer install --no-dev"
       - "php artisan event:cache"
@@ -104,7 +72,7 @@ environments:
       - "rm -rf bootstrap/ssr"
       - "npm run build"
       - "npm run clear"
-      - "rm -rf node_modules" # Linux/mac/OS
+      - "rm -rf node_modules"
       # - "rm -rf package-lock.json"   # Keep for npm ci in build process
       # - "rd /s /q node_modules" # Windows
 
@@ -117,6 +85,21 @@ environments:
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan cache:clear"
+
+    # environment:
+    #   CACHE_DRIVER: array
+    #   REDIS_CLIENT: phpredis
+    #   REDIS_CLUSTER: redis
+    #   SESSION_DRIVER: redis
+    #   SESSION_STORE: redis
+    #   SESSION_CONNECTION: default
+    #   # SESSION_DOMAIN: .spennypiggy.co
+    #   SESSION_SECURE_COOKIE: true
+    #   SESSION_SAME_SITE: lax
+    #   SESSION_BLOCK: false
+    #   SESSION_LIFETIME: 120
+    #   SESSION_COOKIE: spennypiggy_session_v4
+    #   TRUSTED_PROXIES: "*"
 
 
 # - "php artisan subscription:sync --all"

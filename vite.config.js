@@ -33,11 +33,11 @@ export default defineConfig((env) => {
             output: ssrBuild ? {
                 entryFileNames: 'ssr.js',
             } : {
-                manualChunks: {
-                    'vendor-react': ['react', 'react-dom'],
-                    'vendor-inertia': ['@inertiajs/react'],
-                    'vendor-other': ['axios', 'react-bootstrap']
-                },
+                // manualChunks: {
+                //     'vendor-react': ['react', 'react-dom'],
+                //     'vendor-inertia': ['@inertiajs/react'],
+                //     'vendor-other': ['axios', 'react-bootstrap']
+                // },
                 chunkFileNames: 'js/[name]-[hash].js',
                 entryFileNames: 'js/[name]-[hash].js',
                 assetFileNames: (assetInfo) => {

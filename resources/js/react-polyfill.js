@@ -88,71 +88,61 @@ if (typeof globalThis !== 'undefined') {
 // Now import React - this should trigger after our emergency patch
 import React, { Children } from 'react';
 
+// Diagnostic log
+console.log('React Polyfill loaded. React exists:', !!React);
+
 // Comprehensive React Children fix function
 const applyComprehensiveReactFix = () => {
+    // Safety check for React
+    if (!React) {
+        console.warn('⚠️ React is undefined in polyfill. Skipping fix.');
+        return { Children: EmergencyChildren };
+    }
+
     const originalReact = React;
     const workingChildren = Children || EmergencyChildren;
     
-    // Fix 1: Direct assignment
-    if (!originalReact.Children) {
-        originalReact.Children = workingChildren;
+    try {
+        // Fix 1: Direct assignment
+        if (originalReact && !originalReact.Children) {
+            originalReact.Children = workingChildren;
+        }
+    } catch (e) {
+        console.warn('⚠️ Failed to set React.Children directly:', e);
     }
     
     // Fix 2: Make React globally available
     if (typeof window !== 'undefined') {
-        window.React = originalReact;
-        if (!window.React.Children) {
-            window.React.Children = workingChildren;
-        }
-        
-        // Use defineProperty to lock it down
         try {
-            Object.defineProperty(window.React, 'Children', {
-                value: workingChildren,
-                writable: true, // Keep writable in case React needs to modify it
-                enumerable: true,
-                configurable: true
-            });
+            if (!window.React) {
+                window.React = originalReact;
+            }
+            
+            // Re-check existence before accessing properties
+            if (window.React && !window.React.Children) {
+                window.React.Children = workingChildren;
+            }
         } catch (e) {
-            console.warn('⚠️ Could not use defineProperty on window.React.Children:', e);
+            console.warn('⚠️ Failed to patch window.React:', e);
         }
     }
     
     // Fix 3: Also fix globalThis
     if (typeof globalThis !== 'undefined') {
-        if (!globalThis.React) {
-            globalThis.React = originalReact;
-        }
-        if (!globalThis.React.Children) {
-            globalThis.React.Children = workingChildren;
-            console.log('✅ Step 4: Fixed globalThis.React.Children');
-        }
-    }
-    
-    // Fix 4: Create a React proxy that ensures Children is always available
-    const ReactProxy = new Proxy(originalReact, {
-        get: function(target, prop) {
-            if (prop === 'Children' && !target.Children) {
-                return workingChildren;
+        try {
+            if (!globalThis.React) {
+                globalThis.React = originalReact;
             }
-            return target[prop];
-        },
-        
-        set: function(target, prop, value) {
-            target[prop] = value;
-            return true;
+            // Re-check existence before accessing properties
+            if (globalThis.React && !globalThis.React.Children) {
+                globalThis.React.Children = workingChildren;
+            }
+        } catch (e) {
+            console.warn('⚠️ Failed to patch globalThis.React:', e);
         }
-    });
-    
-    // Replace React references
-    if (typeof window !== 'undefined') {
-        window.React = ReactProxy;
-    }
-    if (typeof globalThis !== 'undefined') {
-        globalThis.React = ReactProxy;
     }
     
-    return ReactProxy;
+    return originalReact;
 };
 
 // Apply the comprehensive fix immediately

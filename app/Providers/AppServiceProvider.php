@@ -11,6 +11,7 @@ use Stripe\ApiRequestor;
 use Stripe\HttpClient\CurlClient;
 
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,10 +32,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force HTTPS in production to ensure secure cookies work correctly
-        if (app()->environment('production')) {
-            URL::forceScheme('https');
-        }
+        // Prevent Cloudflare Rocket Loader from interfering with Vite scripts
+        Vite::useScriptTagAttributes([
+            'data-cfasync' => 'false',
+        ]);
 
         // Fix Stripe connection timeout issues in local/dev environments by forcing IPv4
         if (app()->environment('local')) {
@@ -55,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
             $this->ensureLambdaStorageDirectories();
         }
     }
-    
+
     /**
      * Ensure required storage directories exist in Lambda
      */

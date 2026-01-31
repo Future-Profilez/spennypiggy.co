@@ -2,8 +2,142 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    {{-- EMERGENCY: React Children patch must load before ANY other JavaScript --}}
-    <script nonce="{{ $cspNonce ?? '' }}" src="{{ asset('react-emergency-patch.js') }}"></script>
+    <script data-cfasync="false">
+        /**
+         * EMERGENCY REACT PATCH: This script MUST run before ANY other JavaScript.
+         * It fixes the "Cannot set properties of undefined (setting 'Children')" error
+         * by providing a fallback React.Children API and protecting it from being 
+         * overwritten by late-loading bundles.
+         */
+        (function() {
+            // Comprehensive Children API implementation
+            const createEmergencyChildrenAPI = () => {
+                return {
+                    map: function(children, fn, thisArg) {
+                        if (children == null) return children;
+                        const result = [];
+                        let index = 0;
+                        const traverse = (child) => {
+                            if (child == null || typeof child === 'boolean') return;
+                            if (Array.isArray(child)) {
+                                child.forEach(traverse);
+                            } else {
+                                result.push(fn.call(thisArg, child, index++));
+                            }
+                        };
+                        traverse(children);
+                        return result;
+                    },
+                    forEach: function(children, fn, thisArg) {
+                        if (children == null) return;
+                        let index = 0;
+                        const traverse = (child) => {
+                            if (child == null || typeof child === 'boolean') return;
+                            if (Array.isArray(child)) {
+                                child.forEach(traverse);
+                            } else {
+                                fn.call(thisArg, child, index++);
+                            }
+                        };
+                        traverse(children);
+                    },
+                    count: function(children) {
+                        if (children == null) return 0;
+                        let count = 0;
+                        const traverse = (child) => {
+                            if (child == null || typeof child === 'boolean') return;
+                            if (Array.isArray(child)) {
+                                child.forEach(traverse);
+                            } else {
+                                count++;
+                            }
+                        };
+                        traverse(children);
+                        return count;
+                    },
+                    only: function(children) {
+                        if (Array.isArray(children)) {
+                            if (children.length !== 1) throw new Error('React.Children.only expected to receive a single React element child.');
+                            return children[0];
+                        }
+                        return children;
+                    },
+                    toArray: function(children) {
+                        if (children == null) return [];
+                        const result = [];
+                        const traverse = (child) => {
+                            if (child == null || typeof child === 'boolean') return;
+                            if (Array.isArray(child)) {
+                                child.forEach(traverse);
+                            } else {
+                                result.push(child);
+                            }
+                        };
+                        traverse(children);
+                        return result;
+                    }
+                };
+            };
+
+            const emergency = createEmergencyChildrenAPI();
+
+            const patch = (target) => {
+                if (!target || typeof target === 'undefined') return;
+                
+                // If React doesn't exist, create it with Children
+                if (typeof target.React === 'undefined' || target.React === null) {
+                    try {
+                        Object.defineProperty(target, 'React', {
+                            value: { Children: emergency },
+                            writable: true,
+                            configurable: true
+                        });
+                    } catch (e) {
+                        target.React = { Children: emergency };
+                    }
+                } 
+                // If React exists but Children doesn't, add Children
+                else if (typeof target.React === 'object' && target.React !== null && !target.React.Children) {
+                    try {
+                        Object.defineProperty(target.React, 'Children', {
+                            value: emergency,
+                            writable: true,
+                            configurable: true
+                        });
+                    } catch (e) {
+                        target.React.Children = emergency;
+                    }
+                }
+            };
+
+            // Run immediately
+            patch(window);
+            patch(globalThis);
+
+            // Run repeatedly for the first 10 seconds to catch late-loading bundles
+            const interval = setInterval(() => {
+                patch(window);
+                patch(globalThis);
+            }, 50);
+            setTimeout(() => clearInterval(interval), 10000);
+        })();
+
+        /**
+         * ZIGGY INITIALIZATION: Explicitly initialize Ziggy before Vite assets load.
+         * This prevents "Ziggy is not defined" errors.
+         */
+        @if(isset($ziggy))
+            window.Ziggy = @json($ziggy);
+        @elseif(function_exists('route'))
+            {{-- Fallback for cases where $ziggy is not shared but route() exists --}}
+            @php
+                try {
+                    $ziggyData = app(config('ziggy.register_component', 'Tightenco\Ziggy\Ziggy'))->toArray();
+                    echo "window.Ziggy = " . json_encode($ziggyData) . ";";
+                } catch (\Exception $e) {}
+            @endphp
+        @endif
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
     <meta name="robots" content="index, follow">
@@ -201,7 +335,6 @@
     <script nonce="{{ $cspNonce ?? '' }}" async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
     
     {{-- @laravelPWA --}}
-    @routes
     @viteReactRefresh
     
     {{-- Critical CSS - Inline above-the-fold styles --}}

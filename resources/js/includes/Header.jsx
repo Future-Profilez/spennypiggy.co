@@ -1,4 +1,5 @@
 import { Link, usePage, router } from "@inertiajs/react";
+import { route } from 'ziggy-js';
 import spennypiggy from "../../assets/img/logo.png";
 import { useState, useEffect, useCallback } from "react";
 import DeviceID from "./DeviceID";

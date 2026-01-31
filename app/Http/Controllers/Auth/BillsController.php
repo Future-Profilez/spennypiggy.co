@@ -587,8 +587,8 @@ class BillsController extends Controller
                     ],
                 ];
 
-                // Transfer amount = bill amount + creator's VAT (what creator receives)
-                $transferAmount = round($bill->price * $multiplier) + $creatorVatAmount;
+                // Creator Net Amount = bill amount + creator's VAT (what creator receives)
+                $creatorNetAmount = round($bill->price * $multiplier) + $creatorVatAmount;
 
                 // Total charge amount = bill amount + creator's VAT + platform fees
                 $totalChargeAmount = round($bill->price * $multiplier) + $creatorVatAmount + round($totalPaymentTaxAmount * $multiplier);
@@ -604,7 +604,7 @@ class BillsController extends Controller
                             'recurring_for' => $reccure,
                             'item_amount' => (string) round($bill->price * $multiplier),
                             'creator_vat_amount' => (string) $creatorVatAmount,
-                            'creator_net_amount' => (string) $transferAmount,
+                            'creator_net_amount' => (string) $creatorNetAmount,
                             'platform_fee_amount' => (string) round($totalPaymentTaxAmount * $multiplier),
                             'total_charge_amount' => (string) $totalChargeAmount,
                             'payment_type' => 'Bill Payment - Direct Charges',
