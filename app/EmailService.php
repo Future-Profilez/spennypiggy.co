@@ -198,12 +198,9 @@ class EmailService
             // Create and send the email
             try {
                 $checkoutEmail = new CheckoutToUser($data, $curr);
-                \Log::info('EmailService::checkOutToUser - CheckoutToUser email object created successfully');
-                
+
                 Mail::to($emailData['to'])->send($checkoutEmail);
                 \Log::info('EmailService::checkOutToUser - Mail::send() completed without exceptions');
-                \Log::info('EmailService::checkOutToUser - Email dispatched to mail system successfully');
-                
             } catch (\Swift_TransportException $e) {
                 \Log::error('EmailService::checkOutToUser - Swift Transport Exception', [
                     'error' => $e->getMessage(),
@@ -223,7 +220,6 @@ class EmailService
                 'to' => $emailData['to'],
                 'payment_id' => $data->id
             ]);
-
         } catch (TransportException $e) {
             \Log::error('EmailService::checkOutToUser - TransportException', [
                 'error' => $e->getMessage(),
@@ -325,7 +321,7 @@ class EmailService
                 'payment_id' => $payment->id ?? 'null',
                 'user_id' => $payment->payment->user->id ?? 'null'
             ]);
-            
+
             $emailData = [
                 'to' => $payment->payment->user->email,
                 'name' => $payment->payment->user->name,
@@ -334,19 +330,19 @@ class EmailService
                 'email' => $payment->payment->user->email,
                 'uuid' => $payment->payment->user->uuid,
             ];
-            
+
             Log::info('EmailService::thankyouUser - Email data prepared', [
                 'to' => $emailData['to'],
                 'name' => $emailData['name']
             ]);
-            
+
             Mail::to($emailData['to'])->send(new ThankyouUser($payment));
-            
+
             Log::info('EmailService::thankyouUser - Email sent successfully', [
                 'to' => $emailData['to'],
                 'payment_id' => $payment->id ?? 'null'
             ]);
-            
+
             // Create deliverable record for email tracking
             try {
                 \App\Models\Deliverable::create([
@@ -368,7 +364,7 @@ class EmailService
                     'status' => 'delivered',
                     'delivered_at' => now()
                 ]);
-                
+
                 Log::info('EmailService::thankyouUser - Deliverable record created');
             } catch (\Exception $e) {
                 Log::error('EmailService::thankyouUser - Failed to create deliverable record', [
@@ -390,7 +386,7 @@ class EmailService
         }
     }
 
- 
+
 
     public static function sendRenewMail($array, $type, $module)
     {
@@ -485,10 +481,10 @@ class EmailService
         }
     }
 
-    public static function sendTipJarToUser($pay,$symbol,$amount)
+    public static function sendTipJarToUser($pay, $symbol, $amount)
     {
         try {
-            Mail::to($pay->guest_email ?? $pay->user->email)->send(new SendTipJarMailToUser($pay,$symbol,$amount));
+            Mail::to($pay->guest_email ?? $pay->user->email)->send(new SendTipJarMailToUser($pay, $symbol, $amount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -527,14 +523,13 @@ class EmailService
                 'EUR' => '€',
             ];
             $symbol = $currencySymbols[strtoupper($currency)] ?? strtoupper($currency) . ' ';
-            
+
             Mail::to($recipientEmail)->send(new \App\Mail\SupportPaymentToUser($paymentData, $symbol));
-            
+
             Log::info('EmailService::sendSupportPaymentToUser - Email sent successfully', [
                 'to' => $recipientEmail,
                 'payment_id' => $paymentData->id
             ]);
-            
         } catch (TransportException $e) {
             Log::error('EmailService::sendSupportPaymentToUser - TransportException', [
                 'error' => $e->getMessage(),
@@ -591,7 +586,12 @@ class EmailService
     public static function sendIntroApprovingMailAdmin($intro)
     {
         try {
-            Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
+            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+                Mail::to('prem@futureprofilez.com')->send(new SendAdminIntroMail($intro));
+            } elseif ($appUrl == 'https://spennypiggy.co') {
+                Mail::to("jack@spennypiggy.co")->send(new SendAdminIntroMail($intro));
+            }
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -600,7 +600,12 @@ class EmailService
     public static function sendThankyouAdmin($pay)
     {
         try {
-            Mail::to("jack@spennypiggy.co")->send(new ThankYouMailAdmin($pay));
+            $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+            if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+                Mail::to('prem@futureprofilez.com')->send(new ThankYouMailAdmin($pay));
+            } elseif ($appUrl == 'https://spennypiggy.co') {
+                Mail::to("jack@spennypiggy.co")->send(new ThankYouMailAdmin($pay));
+            }
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -627,7 +632,7 @@ class EmailService
         try {
             // Use CheckoutToUser mail class for consistency with existing system
             Mail::to($data->guest_email)->send(new CheckoutToUser($data, $curr));
-            
+
             \Log::info('EmailService::billContentDelivery sent successfully', [
                 'bill_payment_id' => $data->id,
                 'recipient_email' => $data->guest_email
