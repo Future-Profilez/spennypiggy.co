@@ -44,7 +44,6 @@ use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use App\Models\UserCategory;
 use App\Models\WishCategory;

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\Subscription;
@@ -190,7 +189,7 @@ class CreatorSubscriptionService
     public function clearSubscriptionCache(User $creator): void
     {
         // For future caching implementation
-        Cache::forget("creator_subscription_status_{$creator->id}");
+        // Cache::forget("creator_subscription_status_{$creator->id}");
     }
 
     /**

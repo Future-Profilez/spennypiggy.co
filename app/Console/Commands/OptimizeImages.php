@@ -142,8 +142,8 @@ class OptimizeImages extends Command
         $cacheKey = 'optimized_image_' . class_basename($model) . '_' . $model->id;
         $imageData = $model->getResponsiveImageData();
         
-        // Cache the image data for 24 hours
-        cache()->put($cacheKey, $imageData, now()->addDay());
+        // Cache the image data for 24 hours - DISABLED
+        // cache()->put($cacheKey, $imageData, now()->addDay());
         
         // Update the model's updated_at timestamp to mark it as processed
         $model->touch();

@@ -6,15 +6,9 @@ use App\Models\User;
 use App\Models\WishItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 
 class DiscoveryService
 {
-    protected function getCacheTtl()
-    {
-        return now()->addMinutes(5);
-    }
-
     public function getTrendingCreators($limit = 12)
     {
         $nowUtc = Carbon::now('UTC');

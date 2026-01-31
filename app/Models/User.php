@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
-use Stripe\Stripe;
 use Stripe\Subscription;
 use Carbon\Carbon;
 use App\Models\MonthlyCharge;

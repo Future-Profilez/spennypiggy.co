@@ -196,12 +196,13 @@ class WebVitalsController extends Controller
         $key = "web_vitals_realtime_{$metric['name']}";
         $ttl = 300; // 5 minutes
 
-        Cache::put($key, [
-            'value' => $metric['value'],
-            'rating' => $metric['rating'],
-            'timestamp' => now()->toISOString(),
-            'url' => $metric['url']
-        ], $ttl);
+        // Caching disabled
+        // Cache::put($key, [
+        //    'value' => $metric['value'],
+        //    'rating' => $metric['rating'],
+        //    'timestamp' => now()->toISOString(),
+        //    'url' => $metric['url']
+        // ], $ttl);
     }
 
     /**

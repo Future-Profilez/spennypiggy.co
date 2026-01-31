@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\WishItem;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SitemapController extends Controller
@@ -168,8 +167,7 @@ class SitemapController extends Controller
      */
     public function clearCache()
     {
-        Cache::forget('sitemap.creators');
-        Cache::forget('sitemap.wishlists');
+        // Cache clearing disabled
         
         return response()->json([
             'success' => true,

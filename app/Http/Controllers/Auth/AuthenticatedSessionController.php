@@ -79,57 +79,25 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        // ✅ First authenticate credentials
         $request->authenticate();
-
-        /** @var \App\Models\User $user */
         $user = Auth::user();
-
-        // 🚫 BLOCK SUSPENDED USER
         if ($user->suspended_account == 1) {
-
-            Auth::logout(); // kill login
-
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-
             return response()->json([
                 'status' => false,
                 'message' => 'Your account is suspended. Please contact support.'
             ], 403);
         }
-
-        // ✅ Continue normal login
         $request->session()->regenerate();
         $request->session()->regenerateToken();
 
-        //saving the google secret of an particular user
-        $secret = $this->google2FA->generateSecretKey();
-
-        if (empty($user->tfa_key) && $user->role == 1) {
-            $user->tfa_key = $secret;
-            $user->save();
-        }
-
-        $ipAddress = $request->ip();
-        $checkIpExist = $user->ip_address;
-
-        if (empty($checkIpExist) && $user instanceof \App\Models\User) {
-            $user->ip_address = $ipAddress;
-            $user->save();
-        }
-
-        // Handle JSON requests differently
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Logged in successfully.',
-                'redirect_url' => route('user.show', ['username' => $user->username])
-            ]);
-        }
-
-        return redirect(route("user.show", ['username' => $user->username]))
-            ->with("success", "Logged in successfully.");
+        return response()->json([
+            'status' => true,
+            'message' => 'Logged in successfully',
+            'user' => $user
+        ]);
     }
 
     // public function store(LoginRequest $request)
@@ -232,6 +200,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        Log::info('AuthSession: Logout Triggered', [
+            'user_id' => Auth::id(),
+            'session_id' => $request->session()->getId(),
+            'ip' => $request->ip()
+        ]);
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

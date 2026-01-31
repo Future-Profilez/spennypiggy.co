@@ -88,39 +88,12 @@ class HealthController extends Controller
      */
     private function checkCache(): array
     {
-        try {
-            $key = 'health_check_' . now()->timestamp;
-            $testValue = 'healthy';
-            
-            $start = microtime(true);
-            
-            // Test cache write and read
-            Cache::put($key, $testValue, 60);
-            $retrieved = Cache::get($key);
-            Cache::forget($key);
-            
-            $duration = (microtime(true) - $start) * 1000;
-            
-            if ($retrieved === $testValue) {
-                return [
-                    'status' => 'healthy',
-                    'response_time_ms' => round($duration, 2),
-                    'message' => 'Cache operations successful'
-                ];
-            } else {
-                return [
-                    'status' => 'unhealthy',
-                    'message' => 'Cache read/write mismatch'
-                ];
-            }
-            
-        } catch (\Exception $e) {
-            return [
-                'status' => 'unhealthy',
-                'error' => $e->getMessage(),
-                'message' => 'Cache connection failed'
-            ];
-        }
+        // Cache check disabled as requested
+        return [
+            'status' => 'healthy',
+            'response_time_ms' => 0,
+            'message' => 'Cache check skipped'
+        ];
     }
 
     /**

@@ -14,41 +14,12 @@ use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\WishItemSubscription;
 use App\Models\Notification;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class UserProfileService
 {
-     
-    private function getCacheTtl(): int
-    {
-        return (int) env('CACHE_TTL', 300);
-    }
-
-    private function getLongCacheTtl(): int
-    {
-        return (int) env('LONG_CACHE_TTL', 3600);
-    }
-
-    /**
-     * Get the current cache version for a user.
-     * This allows us to invalidate all caches for a user instantly by incrementing the version.
-     */
-    public function getUserCacheVersion(int $userId): int
-    {
-        return (int) Cache::get("user_cache_version_{$userId}", 1);
-    }
-
-    /**
-     * Increment the cache version for a user, effectively invalidating all their caches.
-     */
-    public function incrementUserCacheVersion(int $userId): void
-    {
-        Cache::increment("user_cache_version_{$userId}");
-    }
-
     /**
      * Get user with optimized relationships
      */
@@ -494,25 +465,7 @@ class UserProfileService
      */
     public function clearUserCaches(string $username, int $userId): void
     {
-        // Increment version to invalidate all versioned caches
-        $this->incrementUserCacheVersion($userId);
-
-        // Clear specific non-versioned keys if any
-        $keys = [
-            "user_profile_{$username}",
-            "supporters_count_{$userId}",
-            "user_earnings_{$userId}",
-            "notifications_{$userId}"
-        ];
-
-        foreach ($keys as $key) {
-            Cache::forget($key);
-        }
-        
-        // Clear AuthenticatedSessionController specific caches
-        Cache::forget("wish_categories_{$userId}_public");
-        Cache::forget("wish_categories_{$userId}_private");
-        Cache::forget("migration_status_{$userId}");
+        // Cache clearing disabled as caching is removed
     }
 
     /**
