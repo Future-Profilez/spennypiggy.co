@@ -33,7 +33,7 @@ class SendBioSocialUpdateEmail implements ShouldQueue
         if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
             Mail::to('prem@futureprofilez.com')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
         } elseif ($appUrl == 'https://spennypiggy.co') {
-            Mail::to('jack@socialvortex.io')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
+            Mail::to('jack@spennypiggy.co')->send(new BioSocialUpdateMail($this->user, $this->updatedFields));
         }
     }
 }
