@@ -7,6 +7,7 @@ use Spatie\Image\Enums\ImageDriver;
 use Spatie\Image\Exceptions\InvalidImage;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -26,7 +27,7 @@ class ModernImageService
             try {
                 Image::useImageDriver(ImageDriver::Imagick);
             } catch (Exception $e) {
-                \Log::warning('No suitable image driver available. Please install GD or ImageMagick.');
+                Log::warning('No suitable image driver available. Please install GD or ImageMagick.');
             }
         }
     }
@@ -313,7 +314,8 @@ class ModernImageService
      */
     public function cacheImageData(string $imageKey, array $imageData, int $ttl = 86400): void
     {
-        Cache::put("modern_image_{$imageKey}", $imageData, $ttl);
+        // Caching disabled
+        // Cache::put("modern_image_{$imageKey}", $imageData, $ttl);
     }
 
     /**
@@ -321,7 +323,8 @@ class ModernImageService
      */
     public function getCachedImageData(string $imageKey): ?array
     {
-        return Cache::get("modern_image_{$imageKey}");
+        return null;
+        // return Cache::get("modern_image_{$imageKey}");
     }
 
     private function getChromeVersion(string $userAgent): int

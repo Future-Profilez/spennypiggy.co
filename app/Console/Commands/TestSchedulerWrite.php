@@ -37,32 +37,32 @@ class TestSchedulerWrite extends Command
             $key = 'scheduler_test_write_' . time();
             $value = 'test_value_' . time();
             
-            Cache::put($key, $value, 60);
-            $this->info("Written to default cache: {$key} => {$value}");
+            // Cache::put($key, $value, 60);
+            $this->info("Written to default cache (DISABLED): {$key} => {$value}");
             
-            $readBack = Cache::get($key);
-            $this->info("Read back from default cache: " . ($readBack === $value ? 'SUCCESS' : 'FAILED'));
+            $readBack = null; // Cache::get($key);
+            $this->info("Read back from default cache (DISABLED)");
 
             // 2. Write to DynamoDB specifically if configured
             if (config('cache.stores.dynamodb')) {
                 $this->info('DynamoDB store is configured. Attempting specific write...');
                 $dynamoKey = 'scheduler_test_dynamodb_' . time();
-                Cache::store('dynamodb')->put($dynamoKey, $value, 60);
-                $this->info("Written to dynamodb store: {$dynamoKey} => {$value}");
+                // Cache::store('dynamodb')->put($dynamoKey, $value, 60);
+                $this->info("Written to dynamodb store (DISABLED): {$dynamoKey} => {$value}");
                 
-                $readBackDynamo = Cache::store('dynamodb')->get($dynamoKey);
-                $this->info("Read back from dynamodb store: " . ($readBackDynamo === $value ? 'SUCCESS' : 'FAILED'));
+                $readBackDynamo = null; // Cache::store('dynamodb')->get($dynamoKey);
+                $this->info("Read back from dynamodb store (DISABLED)");
             } else {
                 $this->warn('DynamoDB store is NOT configured in config/cache.php');
             }
 
             // 3. Force write to scheduler_last_run keys
             $now = now()->toDateTimeString();
-            Cache::put('scheduler_last_run', $now, 600);
+            // Cache::put('scheduler_last_run', $now, 600);
             if (config('cache.stores.dynamodb')) {
-                Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', $now, 600);
+                // Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', $now, 600);
             }
-            $this->info("Forced update of scheduler_last_run keys to: {$now}");
+            $this->info("Forced update of scheduler_last_run keys (DISABLED)");
 
             return 0;
         } catch (\Exception $e) {

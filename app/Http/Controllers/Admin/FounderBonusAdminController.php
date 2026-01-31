@@ -186,8 +186,8 @@ class FounderBonusAdminController extends Controller
         ]);
 
         try {
-            // Store settings in cache for immediate use
-            cache()->put('founder_bonus_settings', $request->all(), now()->addDays(30));
+            // Store settings in cache for immediate use - DISABLED
+            // cache()->put('founder_bonus_settings', $request->all(), now()->addDays(30));
 
             // Log the settings update
             Log::info("Admin updated founder bonus settings", [

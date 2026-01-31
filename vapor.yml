@@ -46,7 +46,7 @@ environments:
       SESSION_DRIVER: redis
       SESSION_STORE: redis
       SESSION_CONNECTION: default
-      # SESSION_DOMAIN: .spennypiggy.co
+      SESSION_DOMAIN: .spennypiggy.co
       SESSION_SECURE_COOKIE: true
       SESSION_SAME_SITE: lax
       SESSION_BLOCK: false
@@ -70,30 +70,31 @@ environments:
     timeout: 60
     cache: spenny-piggy-redis-caches
     runtime: "php-8.2:al2"
-    ssr: true
+    # ssr: true
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
     health-checks: false 
     environment:
-      CACHE_DRIVER: redis
-      REDIS_CLIENT: phpredis
-      REDIS_CLUSTER: redis
-      CACHE_PREFIX: spennypiggy
-      SESSION_DRIVER: redis
-      SESSION_STORE: redis
-      SESSION_CONNECTION: default
+      CACHE_DRIVER: array
+      SESSION_DRIVER: cookie
+      SESSION_STORE: cookie
+      SESSION_COOKIE: spennypiggy_prod_v1
       SESSION_DOMAIN: .spennypiggy.co
       SESSION_SECURE_COOKIE: true
       SESSION_SAME_SITE: lax
       SESSION_BLOCK: false
       SESSION_LIFETIME: 120
-      SESSION_COOKIE: spennypiggy_v3_session
+      CACHE_PREFIX: spennypiggy
+      REDIS_CLIENT: phpredis
+      REDIS_CLUSTER: redis
+      APP_DEBUG: true
+      LOG_CHANNEL: stderr
+      QUEUE_CONNECTION: sqs
     assets:
       - "public/build/**"
       - "bootstrap/ssr/**"
     build:
-      - "npm run clear"
       # - "composer install --no-dev"
       - "php artisan event:cache"
       - "php artisan optimize:clear"

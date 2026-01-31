@@ -72,7 +72,7 @@ class CreatorActivityController extends Controller
         $user = Auth::user();
         
         // Clear activity cache if you implement caching
-        cache()->forget("creator_activity_{$user->id}");
+        // cache()->forget("creator_activity_{$user->id}");
         
         $activityStatus = $this->activityService->validateCreatorActivity($user);
 

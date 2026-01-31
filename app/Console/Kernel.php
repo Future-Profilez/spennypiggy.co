@@ -21,12 +21,12 @@ class Kernel extends ConsoleKernel
             try {
                 \Illuminate\Support\Facades\Log::info('Scheduler heartbeat: executing at ' . now()->toDateTimeString() . ' using driver: ' . config('cache.default'));
                 
-                // Write to default cache
-                \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), 600);
+                // Write to default cache - DISABLED for production stability
+                // \Illuminate\Support\Facades\Cache::put('scheduler_last_run', now()->toDateTimeString(), 600);
                 
-                // Explicitly write to dynamodb store if available
+                // Explicitly write to dynamodb store if available - DISABLED
                 if (config('cache.stores.dynamodb')) {
-                    \Illuminate\Support\Facades\Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', now()->toDateTimeString(), 600);
+                    // \Illuminate\Support\Facades\Cache::store('dynamodb')->put('scheduler_last_run_dynamodb', now()->toDateTimeString(), 600);
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::error('Scheduler heartbeat failed to write cache', [

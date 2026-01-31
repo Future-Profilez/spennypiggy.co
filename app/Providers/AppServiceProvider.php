@@ -23,16 +23,6 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('production')) {
             // Use temporary storage path in Lambda
             app()->useStoragePath('/tmp/storage');
-
-            // Respect Vapor environment variables for cache/session drivers
-            config([
-                'session.driver' => env('SESSION_DRIVER', 'redis'),
-                'session.store' => env('SESSION_STORE', 'redis'),
-                'cache.default' => env('CACHE_DRIVER', 'redis'),
-                'filesystems.default' => 's3',
-                'view.compiled' => '/tmp/storage/framework/views',
-                'queue.default' => 'sqs'
-            ]);
         }
     }
 

@@ -44,7 +44,7 @@ class Kernel extends HttpKernel
             // \App\Http\Middleware\CacheInertiaResponse::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             // \App\Http\Middleware\BlockWordsAndEmojis::class,
-            \App\Http\Middleware\IpTracker::class
+            \App\Http\Middleware\IpTracker::class,
         ],
 
         'api' => [

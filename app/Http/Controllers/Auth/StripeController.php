@@ -47,7 +47,6 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -927,7 +926,7 @@ class StripeController extends Controller
             }
 
             // Clear migration status cache before creating new account
-            Cache::forget("migration_status_{$user->id}");
+            // Cache::forget("migration_status_{$user->id}");
 
             // ── 2. Delete legacy + create brand‑new Express account ───────
             // (Optional) Stripe::Account::delete($user->account_id);
@@ -1138,8 +1137,8 @@ class StripeController extends Controller
                 $user->save();
             }
             // Bust cached Stripe capability and migration status so the dashboard updates immediately
-            Cache::forget("stripe_capabilities_{$user->account_id}");
-            Cache::forget("migration_status_{$user->id}");
+            // Cache::forget("stripe_capabilities_{$user->account_id}");
+            // Cache::forget("migration_status_{$user->id}");
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 
             // Log updated capability status for diagnosis

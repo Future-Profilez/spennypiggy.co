@@ -241,8 +241,8 @@ class OptimizeResources extends Command
     {
         $this->info('🧹 Clearing Resource Optimization Cache...');
         
-        // Clear critical CSS cache
-        cache()->flush();
+        // Clear critical CSS cache - DISABLED
+        // cache()->flush();
         
         // Clear any generated files if needed
         $criticalPath = storage_path('app/critical-css');

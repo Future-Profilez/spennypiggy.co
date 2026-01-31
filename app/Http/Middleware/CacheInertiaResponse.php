@@ -133,7 +133,7 @@ class CacheInertiaResponse
         // Cache for different durations based on content type
         $ttl = $this->getCacheDuration($response);
         
-        Cache::put($key, $cacheData, $ttl);
+        // Cache::put($key, $cacheData, $ttl);
     }
 
     /**
