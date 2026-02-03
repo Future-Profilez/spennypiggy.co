@@ -205,7 +205,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         $data = $getData();
     } else {
         $cacheKey = 'discover_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, $getData);
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1200, $getData);
     }
 
     return Inertia::render('discover/Discover', [

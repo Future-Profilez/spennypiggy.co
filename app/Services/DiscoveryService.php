@@ -226,7 +226,6 @@ class DiscoveryService
             ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
             ->get()
             ->map(function ($w) {
-                // dd($w);
                 return [
                     'id' => $w->id,
                     'uuid' => $w->uuid, // Needed for cart
@@ -237,7 +236,13 @@ class DiscoveryService
                     'funded_percent' => $w->fullfill_amount > 0 ? round(($w->fullfill_amount / $w->price) * 100) : 0,
                     'image_url' => $w->thumbnail,
                     'type' => $w->category,
-                    'user' => $w->user ?  : null,
+                    'user' => $w->user ? [
+                        'id' => $w->user->id,
+                        'name' => $w->user->name,
+                        'username' => $w->user->username,
+                        'avatar_url' => $w->user->avatar_url,
+                        'cover_url' => $w->user->cover_url,
+                    ] : null,
                 ];
             });
     }
