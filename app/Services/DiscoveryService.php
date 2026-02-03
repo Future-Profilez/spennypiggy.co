@@ -285,7 +285,7 @@ class DiscoveryService
                                 if ($period !== 'all_time' && $startUtc && $endUtc) {
                                     $q->whereBetween('stripe_payment_details.created_at', [$startUtc, $endUtc]);
                                 }
-                            });
+                            }); 
                     },
                     'subscriptions as total_subscriptions' => function ($query) use ($startUtc, $endUtc, $period) {
                         $query->select(DB::raw('COALESCE(SUM(amount), 0)'))

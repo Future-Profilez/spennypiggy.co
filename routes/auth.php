@@ -778,6 +778,13 @@ Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::
 Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 Route::get('/shop/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
 
+Route::get('/{username}/wish/{id}', function ($username, $id) {
+    $wish = WishItem::find($id);
+    $uuid = $wish?->uuid ?? $id;
+    request()->merge(['item' => $uuid]);
+    return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
+})->name('wish.show');
+
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
     ->name('user.show');
 

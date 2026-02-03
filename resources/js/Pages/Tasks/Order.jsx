@@ -155,7 +155,10 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                         <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             ASSIGNED: <span className="text-blue-600">{new Date(purchase.created_at).toLocaleDateString()}</span>
                         </span>
-                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'escalated', 'initiated', 'running_late'].includes(purchase.status) && task.sla_hours && (
+
+
+                        {['paid', 'assigned', 'pending_review', 'rejected_once', 'initiated', 'running_late'].includes(purchase.status) && 
+                        task.sla_hours && (
                             <span className={`px-[10px] py-[8px] border-2 border-black rounded-[14px] font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isGraceActive ? 'bg-orange-100 border-orange-500' : 'bg-gray-100'}`}>
                                 {isGraceActive ? 'GRACE PERIOD: ' : 'REMAINING: '}
                                 {isGraceActive ? (
