@@ -44,6 +44,26 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
+// Cache Check Route
+Route::get('/debug/cache-check', function () {
+    $key = 'debug_cache_test_' . time();
+    $value = 'working';
+    
+    // Put in cache for 1 minute
+    \Illuminate\Support\Facades\Cache::put($key, $value, 60);
+    
+    // Retrieve
+    $retrieved = \Illuminate\Support\Facades\Cache::get($key);
+    
+    return response()->json([
+        'status' => $retrieved === $value ? 'ok' : 'failed',
+        'driver' => config('cache.default'),
+        'timestamp' => now()->toDateTimeString(),
+        'test_key' => $key,
+        'retrieved_value' => $retrieved
+    ]);
+});
+
 // CSRF Cookie route for SPA authentication
 Route::get('/csrf-cookie', function () {
     return response()->noContent(204);
@@ -127,22 +147,29 @@ if (app()->environment('local')) {
 
 
 Route::get('/', function (DiscoveryService $discoveryService) {
-    $getData = function() use ($discoveryService) {
-        $trendingCreators = $discoveryService->getTrendingCreators();
-        $newVerifiedCreators = $discoveryService->getNewVerifiedCreators();
-
-        $period = request()->query('top_earners_period', '');
-        $limit = (int) request()->query('top_earners_limit', 9);
-        $topEarnersData = $discoveryService->getTopEarners($period, $limit);
-
-        return compact('trendingCreators', 'newVerifiedCreators', 'topEarnersData');
-    };
+    $period = request()->query('top_earners_period', '');
+    $limit = (int) request()->query('top_earners_limit', 9);
 
     if (Auth::check()) {
-        $data = $getData();
+        $trendingCreators = $discoveryService->getTrendingCreators();
+        $newVerifiedCreators = $discoveryService->getNewVerifiedCreators();
+        $topEarnersData = $discoveryService->getTopEarners($period, $limit);
     } else {
-        $cacheKey = 'homepage_data_' . request()->query('top_earners_period', '') . '_' . request()->query('top_earners_limit', 9);
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, $getData);
+        $trendingCreators = \Illuminate\Support\Facades\Cache::remember('home_trending_creators', 900, function() use ($discoveryService) {
+            return $discoveryService->getTrendingCreators();
+        });
+        $newVerifiedCreators = \Illuminate\Support\Facades\Cache::remember('home_new_verified_creators', 900, function() use ($discoveryService) {
+            return $discoveryService->getNewVerifiedCreators();
+        });
+        $ttl = match ($period) {
+            'daily' => 600,
+            'weekly' => 1200,
+            'monthly' => 1800,
+            default => 1200,
+        };
+        $topEarnersData = \Illuminate\Support\Facades\Cache::remember('home_top_earners_'.$period.'_'.$limit, $ttl, function() use ($discoveryService, $period, $limit) {
+            return $discoveryService->getTopEarners($period, $limit);
+        });
     }
 
     return Inertia::render('Welcome', [
@@ -157,10 +184,10 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             'maxFounderSeats' => config('founder_bonus.limits.max_founder_seats'),
             'currencySymbol' => config('founder_bonus.display.currency_symbol'),
         ],
-        'trendingCreators' => $data['trendingCreators'],
-        'newVerifiedCreators' => $data['newVerifiedCreators'],
-        'topEarners' => $data['topEarnersData']['data'],
-        'topEarnersLabel' => $data['topEarnersData']['label'],
+        'trendingCreators' => $trendingCreators,
+        'newVerifiedCreators' => $newVerifiedCreators,
+        'topEarners' => $topEarnersData['data'],
+        'topEarnersLabel' => $topEarnersData['label'],
     ]);
 })->name("home");
 

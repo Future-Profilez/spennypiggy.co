@@ -28,10 +28,10 @@ class LeaderBoardController extends Controller
     private function ttlForType($type)
     {
         return match ($type) {
-            'daily' => 300,
-            'weekly' => 600,
-            'monthly' => 900,
-            default => 300,
+            'daily' => 600,
+            'weekly' => 1200,
+            'monthly' => 1800,
+            default => 600,
         };
     }
     public function wishtenderWishers($type = null)
@@ -117,9 +117,9 @@ class LeaderBoardController extends Controller
         $currentWeekEndDate = Carbon::now()->endOfWeek();
         $currentDate = Carbon::today()->format('Y-m-d');
 
-        // Get both monetary and non-monetary metrics
-        $users = User::where('stripe_details_submitted', 1)->where('suspended_account', 0)->where('is_uk', 0)
-            ->with(['paymentitems', 'subscriptions', 'tip_goal_payment', 'membership_payments', 'bill_payments', 'shop_payments', 'followers', 'following', 'wishItems', 'posts'])
+        $users = User::where('stripe_details_submitted', 1)
+            ->where('suspended_account', 0)
+            ->where('is_uk', 0)
             ->withCount(['followers as followers_count', 'following as following_count'])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
@@ -194,9 +194,8 @@ class LeaderBoardController extends Controller
                     }
                 },
             ])
-            // ->havingRaw('total_payments + total_subscriptions + total_tips + total_member + total_bill > 0')
             ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
-            ->get();
+            ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency']);
 
         $users->map(function ($user) {
             // Calculate monetary metrics (for backward compatibility)

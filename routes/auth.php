@@ -205,7 +205,7 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         $data = $getData();
     } else {
         $cacheKey = 'discover_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, $getData);
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1200, $getData);
     }
 
     return Inertia::render('discover/Discover', [
@@ -777,6 +777,13 @@ Route::get('/task/{uuid}', [\App\Http\Controllers\TaskController::class, 'show']
 Route::get('/items/{username}/{category_id?}', [AuthenticatedSessionController::class, 'userItems'])->name('user.items');
 Route::get('/user/category/{username}', [AuthenticatedSessionController::class, 'user_category'])->name('user.category');
 Route::get('/shop/user_shop_category/{username}', [AuthenticatedSessionController::class, 'user_shop_category'])->name('user.shop.category');
+
+Route::get('/{username}/wish/{id}', function ($username, $id) {
+    $wish = WishItem::find($id);
+    $uuid = $wish?->uuid ?? $id;
+    request()->merge(['item' => $uuid]);
+    return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
+})->name('wish.show');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
     ->name('user.show');

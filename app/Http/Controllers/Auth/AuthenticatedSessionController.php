@@ -222,67 +222,76 @@ class AuthenticatedSessionController extends Controller
      */
     public function getUserProfile($username, $page = 'about')
     {
-        $profileData = $this->profileService->preloadUserProfileData($username);
-        if (empty($profileData)) {
+        $getData = function () use ($username, $page) {
+            $profileData = $this->profileService->preloadUserProfileData($username);
+            if (empty($profileData)) {
+                return ['__page' => 'NotFound'];
+            }
+
+            $user = $profileData['user'];
+
+            if ($user->suspended_account == 1) {
+                return ['__page' => 'Suspanded'];
+            }
+
+            $pageData = $this->getPageSpecificData($user->id, $page);
+
+            $this->setSeoMetaTags($user, $username);
+
+            $sociallinks = null;
+            $userIntro = null;
+            $isNeedToUpgrade = false;
+            $cardCapabilities = true;
+            $stripeRequirements = [];
+
+            if ($user->role == 1 && !empty($user->account_id)) {
+                [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
+            }
+            $sociallinks = SocialLinks::where('user_id', $user->id)->first();
+            if ($page == 'about') {
+                $userIntro = $user->intro;
+            }
+
+            $migrationStatus = $this->getMigrationStatus($user);
+            $founderData = $this->getFounderData($user);
+
+            return [
+                '__page' => 'Dashboard',
+                'username' => $username,
+                'user' => $user,
+                'itemid' => request()->query('item') ?? false,
+                'card_capabilities' => $cardCapabilities,
+                'isNeedToUpgrade' => $isNeedToUpgrade,
+                'stripe_requirements' => $stripeRequirements,
+                'migration_status' => $migrationStatus,
+                'sociallinks' => $sociallinks,
+                'slinks' => $sociallinks,
+                'intro' => $userIntro,
+                'supporters' => $profileData['supporters'],
+                'wish_categories' => $this->getCategoriesWithItems($user),
+                'selectedCategory' => request()->query('category') ?? false,
+                'page' => $page,
+                'first30DayEarnings' => $founderData['first30DayEarnings'],
+                ...$pageData
+            ];
+        };
+
+        if (Auth::check()) {
+            $data = $getData();
+        } else {
+            $cacheKey = 'profile_' . $username . '_' . $page . '_' . md5(json_encode(request()->all()));
+            $data = Cache::remember($cacheKey, 1200, $getData);
+        }
+
+        if (($data['__page'] ?? null) === 'NotFound') {
             return Inertia::render('NotFound');
         }
-
-        $user = $profileData['user'];
-
-        if ($user->suspended_account == 1) {
+        if (($data['__page'] ?? null) === 'Suspanded') {
             return Inertia::render('Suspanded');
         }
-
-        $pageData = $this->getPageSpecificData($user->id, $page);
-
-        $this->setSeoMetaTags($user, $username);
-
-        $sociallinks = null;
-        $userIntro = null;
-        $isNeedToUpgrade = false;
-        $cardCapabilities = true;
-        $stripeRequirements = [];
-
-        // Get Stripe capabilities if user is a creator (for all pages)
-        if ($user->role == 1 && !empty($user->account_id)) {
-            [$isNeedToUpgrade, $cardCapabilities, $stripeRequirements] = $this->getStripeCapabilities($user);
-        }
-        // Always load social links so they are available to all dashboard tabs/pages
-        $sociallinks = SocialLinks::where('user_id', $user->id)->first();
-        if ($page == 'about') {
-            $userIntro = $user->intro;
-        }
-        // Removed stray debug return that broke the page rendering
-        // return($user->intro);
-
-        // Check if account needs migration for cross-border payments
-        $migrationStatus = $this->getMigrationStatus($user);
-
-        // Get founder bonus data if user is a founder
-        $founderData = $this->getFounderData($user);
-
-        return Inertia::render('Dashboard', [
-            'username' => $username,
-            'user' => $user,
-            'itemid' => request()->query('item') ?? false,
-            // About Page Data
-            'card_capabilities' => $cardCapabilities,
-            'isNeedToUpgrade' => $isNeedToUpgrade,
-            'stripe_requirements' => $stripeRequirements,
-            'migration_status' => $migrationStatus,
-            'sociallinks' => $sociallinks,
-            'slinks' => $sociallinks,
-            'intro' => $userIntro,
-            'supporters' => $profileData['supporters'],
-            // Show only categories that have at least one wish item
-            'wish_categories' => $this->getCategoriesWithItems($user),
-            'selectedCategory' => request()->query('category') ?? false,
-            'page' => $page,
-            'first30DayEarnings' => $founderData['first30DayEarnings'],
-            // 'notification_count' => $profileData['notification_count'],
-            // 'profile_steps' => null,
-            ...$pageData
-        ]);
+        $pageName = $data['__page'] ?? 'Dashboard';
+        unset($data['__page']);
+        return Inertia::render($pageName, $data);
     }
 
 
@@ -348,18 +357,25 @@ class AuthenticatedSessionController extends Controller
      */
     private function getCategoriesWithItems($user)
     {
-        $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
-        
-        // Removed caching
-        $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
-            $q->where('user_id', $user->id);
-            if ($isPublicView) {
-                $q->where('is_approved', 1);
-            }
-        })->pluck('user_category_id')->unique()->filter();
+        $callback = function () use ($user) {
+            $isPublicView = (auth()->check() && auth()->id() !== $user->id) || !auth()->check();
+            
+            $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
+                $q->where('user_id', $user->id);
+                if ($isPublicView) {
+                    $q->where('is_approved', 1);
+                }
+            })->pluck('user_category_id')->unique()->filter();
 
-        // Return the filtered categories as a collection
-        return $user->user_categories()->whereIn('id', $categoryIds)->get();
+            // Return the filtered categories as a collection
+            return $user->user_categories()->whereIn('id', $categoryIds)->get();
+        };
+
+        if (Auth::check()) {
+            return $callback();
+        }
+
+        return Cache::remember('user_categories_with_items_' . $user->id, 1200, $callback);
     }
 
     /**

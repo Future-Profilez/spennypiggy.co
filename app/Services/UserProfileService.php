@@ -16,6 +16,7 @@ use App\Models\WishItemSubscription;
 use App\Models\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class UserProfileService
@@ -25,28 +26,36 @@ class UserProfileService
      */
     public function getUserWithRelations(string $username): ?User
     {
-        // Direct DB query - No Caching for stability
-        $userId = User::where('username', $username)->value('id');
+        $callback = function () use ($username) {
+            // Direct DB query
+            $userId = User::where('username', $username)->value('id');
 
-        if (!$userId) {
-            return null;
+            if (!$userId) {
+                return null;
+            }
+
+            return User::select([
+                    'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
+                    'avatar', 'avatar_approved', 'cover', 'suspended_account',
+                    'social_image', 'account_id', 'stripe_details_submitted',
+                    'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
+                    'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'is_uk'
+                ])
+                ->with([
+                    'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
+                    'user_categories:id,user_id,category,created_at',
+                    // Include uuid so perma_link accessor can build a playable URL
+                    'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
+                ])
+                ->where('username', $username)
+                ->first();
+        };
+
+        if (Auth::check()) {
+            return $callback();
         }
 
-        return User::select([
-                'id', 'name', 'uuid', 'username', 'email', 'role', 'bio', 'bio_approved',
-                'avatar', 'avatar_approved', 'cover', 'suspended_account',
-                'social_image', 'account_id', 'stripe_details_submitted',
-                'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
-                'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'is_uk'
-            ])
-            ->with([
-                'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
-                'user_categories:id,user_id,category,created_at',
-                // Include uuid so perma_link accessor can build a playable URL
-                'intro:id,user_id,uuid,poster,poster_token,height,width,approved,created_at'
-            ])
-            ->where('username', $username)
-            ->first();
+        return Cache::remember('user_profile_basic_' . $username, 1200, $callback);
     }
 
     /**
@@ -182,9 +191,9 @@ class UserProfileService
      */
     public function getUserWishItems(int $userId, ?int $categoryId = null, int $perPage = 20): array
     {
+        $callback = function () use ($userId, $categoryId, $perPage) {
             $isOwner = Auth::check() && Auth::id() === $userId;
             
-            // Removed caching
             $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account')
             ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
                 $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
@@ -200,6 +209,14 @@ class UserProfileService
                 ->limit($perPage)
                 ->get()
                 ->toArray();
+        };
+
+        if (Auth::check()) {
+            return $callback();
+        }
+
+        $cacheKey = 'user_wishes_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $perPage;
+        return Cache::remember($cacheKey, 1200, $callback);
     }
 
     /**
@@ -323,16 +340,20 @@ class UserProfileService
      */
     public function getUserMemberships(int $userId): array
     {
-        $isOwner = Auth::check() && Auth::id() === $userId;
-        
-        // Removed caching
-        $query = Membership::where('user_id', $userId);
+        $callback = function () use ($userId) {
+            $isOwner = Auth::check() && Auth::id() === $userId;
+            $query = Membership::where('user_id', $userId);
+            if (!$isOwner) {
+                $query->where('approved', 1);
+            }
+            return $query->latest()->get()->toArray();
+        };
 
-        if (!Auth::check() || Auth::id() !== $userId) {
-            $query->where('approved', 1);
+        if (Auth::check()) {
+            return $callback();
         }
 
-        return $query->latest()->get()->toArray();
+        return Cache::remember('user_memberships_' . $userId, 1200, $callback);
     }
 
     /**
@@ -340,16 +361,23 @@ class UserProfileService
      */
     public function getUserBills(int $userId): array
     {
-        $isOwner = Auth::check() && Auth::id() === $userId;
-        
-        // Removed caching
-        $query = Bills::where('user_id', $userId);
+        $callback = function () use ($userId) {
+            $isOwner = Auth::check() && Auth::id() === $userId;
+            
+            $query = Bills::where('user_id', $userId);
 
-        if (!Auth::check() || Auth::id() !== $userId) {
-            $query->where('approved', 1);
+            if (!$isOwner) {
+                $query->where('approved', 1);
+            }
+
+            return $query->latest()->get()->toArray();
+        };
+
+        if (Auth::check()) {
+            return $callback();
         }
 
-        return $query->latest()->get()->toArray();
+        return Cache::remember('user_bills_' . $userId, 1200, $callback);
     }
 
     /**
@@ -357,16 +385,23 @@ class UserProfileService
      */
     public function getUserShopItems(int $userId): array
     {
-        $isOwner = Auth::check() && Auth::id() === $userId;
-        
-        // Removed caching
-        $query = Shop::where('user_id', $userId)
-        ->with(['shop_varients:id,shop_id,name,price']);
+        $callback = function () use ($userId) {
+            $isOwner = Auth::check() && Auth::id() === $userId;
+            
+            $query = Shop::where('user_id', $userId)
+            ->with(['shop_varients:id,shop_id,name,price']);
 
-        if (!$isOwner) {
-            $query->where('approved', 1);
+            if (!$isOwner) {
+                $query->where('approved', 1);
+            }
+            return $query->latest()->get()->toArray();
+        };
+
+        if (Auth::check()) {
+            return $callback();
         }
-        return $query->latest()->get()->toArray();
+
+        return Cache::remember('user_shop_' . $userId, 1200, $callback);
     }
 
     /**
@@ -374,27 +409,34 @@ class UserProfileService
      */
     public function getSupportersCount(int $userId): int
     {
-        // Removed caching
-        // Use raw SQL for better performance
-        $query = "
-            SELECT COUNT(DISTINCT supporter) as count FROM (
-                SELECT user_id as supporter FROM tip_goals_payments 
-                WHERE creator_id = ? AND status = 'paid' AND user_id IS NOT NULL
-                UNION
-                SELECT id as supporter FROM users 
-                WHERE email IN (
-                    SELECT guest_email FROM tip_goals_payments 
+        $callback = function () use ($userId) {
+            // Use raw SQL for better performance
+            $query = "
+                SELECT COUNT(DISTINCT supporter) as count FROM (
+                    SELECT user_id as supporter FROM tip_goals_payments 
+                    WHERE creator_id = ? AND status = 'paid' AND user_id IS NOT NULL
+                    UNION
+                    SELECT id as supporter FROM users 
+                    WHERE email IN (
+                        SELECT guest_email FROM tip_goals_payments 
+                        WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
+                    ) AND is_uk = 0
+                    UNION
+                    SELECT CONCAT('guest_', ROW_NUMBER() OVER()) as supporter FROM tip_goals_payments 
                     WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
-                ) AND is_uk = 0
-                UNION
-                SELECT CONCAT('guest_', ROW_NUMBER() OVER()) as supporter FROM tip_goals_payments 
-                WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
-                AND guest_email NOT IN (SELECT email FROM users WHERE is_uk = 0)
-            ) supporters
-        ";
-        
-        $result = DB::select($query, [$userId, $userId, $userId]);
-        return $result[0]->count ?? 0;
+                    AND guest_email NOT IN (SELECT email FROM users WHERE is_uk = 0)
+                ) supporters
+            ";
+            
+            $result = DB::select($query, [$userId, $userId, $userId]);
+            return $result[0]->count ?? 0;
+        };
+
+        if (Auth::check()) {
+            return $callback();
+        }
+
+        return Cache::remember('user_supporters_count_' . $userId, 1200, $callback);
     }
 
     /**
