@@ -26,6 +26,7 @@ export default function SubcriptionEarnings() {
     //     setLoading(false);
     // });
   };
+  console.log("lists:", lists);
 
   useEffect(()=>{ 
     fetchingStats();
@@ -40,7 +41,8 @@ export default function SubcriptionEarnings() {
           </div>
           <div className="flex-auto my-auto">{item.title}</div>
         </div>
-        <div className="my-auto font-bold">{item.price}</div>
+        <div className="my-auto font-bold">{item.amount}</div>
+        {/* <div className="my-auto font-bold">{item.price}</div> */}
       </div>
     );
   }

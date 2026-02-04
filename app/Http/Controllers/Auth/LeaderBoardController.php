@@ -1165,7 +1165,7 @@ class LeaderBoardController extends Controller
 
         $taskQuery = TaskPurchase::whereBetween('created_at', [$start, $end])
             ->where('creator_id', $user->id)
-            ->where('status', 'paid');
+            ->where('status', 'completed');
 
         $tipGoalQuery = TipGoalsPayment::whereBetween('created_at', [$start, $end])
             ->where('creator_id', $user->id)
@@ -1556,7 +1556,7 @@ class LeaderBoardController extends Controller
         //     });
         // }
 
-        if ($type = 'task') {
+        if ($type == 'task') {
             return TaskPurchase::whereHas('task', function ($q) use ($user) {
                 $q->where('creator_id', $user->id);
             });
