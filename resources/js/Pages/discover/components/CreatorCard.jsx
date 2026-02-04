@@ -4,7 +4,7 @@ import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
 import { RiFireLine  } from 'react-icons/ri';
 
-export default function CreatorCard({item}) {
+export default function CreatorCard({auth, item}) {
    return (
        <Link href={route('user.show', item.username)} onClick={() => trackSearchClick(item.id, item.username)} 
        className="fading !rounded-[12px] !overflow-hidden  flex flex-col items-center text-start group cursor-pointer block ">
@@ -12,7 +12,9 @@ export default function CreatorCard({item}) {
                 <img src={item.cover_url || wishlistbannerimg} alt={item.name} 
                 className="w-full h-[84px] object-cover bg-black" loading="lazy" />
                 <div className='!z-2 absolute top-3 left-3 flex justify-center'>
-                    <Avatar 
+                    <Avatar
+                    auth={auth}
+                    user={item} 
                     role={item.role}
                     hidename={true}
                     profile_status_lock={item.profile_status_lock == 2 ? true : false}

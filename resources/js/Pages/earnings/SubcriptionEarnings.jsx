@@ -11,13 +11,20 @@ export default function SubcriptionEarnings() {
   const [lists, setLists] = useState([]);
   const fetchingStats = () => {
     setLoading(true);
-    axios.get(`/earnings/top-subscription`).then((resp) => {
+    axios.get(`/earnings/top-paid-task`).then((resp) => {
         setLists(resp.data.data);
         setLoading(false);
     }).catch((_err) => {
         console.error("error", _err);
         setLoading(false);
     });
+    // axios.get(`/earnings/top-subscription`).then((resp) => {
+    //     setLists(resp.data.data);
+    //     setLoading(false);
+    // }).catch((_err) => {
+    //     console.error("error", _err);
+    //     setLoading(false);
+    // });
   };
 
   useEffect(()=>{ 
