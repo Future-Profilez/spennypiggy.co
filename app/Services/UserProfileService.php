@@ -55,7 +55,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_profile_basic_' . $username, 1200, $callback);
+        return Cache::remember('user_profile_basic_' . $username, 600, $callback);
     }
 
     /**
@@ -216,7 +216,7 @@ class UserProfileService
         }
 
         $cacheKey = 'user_wishes_' . $userId . '_' . ($categoryId ?? 'all') . '_' . $perPage;
-        return Cache::remember($cacheKey, 1200, $callback);
+        return Cache::remember($cacheKey, 600, $callback);
     }
 
     /**
@@ -353,7 +353,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_memberships_' . $userId, 1200, $callback);
+        return Cache::remember('user_memberships_' . $userId, 600, $callback);
     }
 
     /**
@@ -377,7 +377,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_bills_' . $userId, 1200, $callback);
+        return Cache::remember('user_bills_' . $userId, 600, $callback);
     }
 
     /**
@@ -401,7 +401,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_shop_' . $userId, 1200, $callback);
+        return Cache::remember('user_shop_' . $userId, 600, $callback);
     }
 
     /**
@@ -436,7 +436,7 @@ class UserProfileService
             return $callback();
         }
 
-        return Cache::remember('user_supporters_count_' . $userId, 1200, $callback);
+        return Cache::remember('user_supporters_count_' . $userId, 600, $callback);
     }
 
     /**

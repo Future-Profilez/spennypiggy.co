@@ -13,6 +13,7 @@ use App\Services\IntercomService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 use Tightenco\Ziggy\Ziggy;
 
@@ -46,10 +47,18 @@ class HandleInertiaRequests extends Middleware
         if ($user) {
             $user->append(['monthly_charge_enabled']);
         }
-        $followedUser = User::where('username', $request->username)
-            ->first();
+
+        // Cache the followed user lookup if username is present
+        $followedUser = null;
+        if ($request->username) {
+            $followedUser = Cache::remember('user_basic_' . $request->username, 600, function () use ($request) {
+                return User::where('username', $request->username)->first();
+            });
+        }
+
         $follow_status = false;
         if ($followedUser) {
+            // This query depends on the logged-in user, so we keep it uncached or cache per user pair
             $follow_status = Follow::where('follower_id', $user->id ?? null)
                 ->where('followed_id', $followedUser->id ?? null)
                 ->exists();
@@ -85,9 +94,9 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'cart_count' =>  $items,
-            'symbols'   =>  Currency::symbols(),
-            'rates'     =>  Currency::rates(),
-            'currencies' => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO'),
+            'symbols'   =>  Cache::remember('currency_symbols', 86400, fn() => Currency::symbols()),
+            'rates'     =>  Cache::remember('currency_rates', 86400, fn() => Currency::rates()),
+            'currencies' => Cache::remember('all_currencies_iso', 86400, fn() => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),
             'global_currency'   =>  Cookie::get('currency'),
             'turnstileSiteKey' => config('services.turnstile.site_key') ?: env('TRUNSTILE_SITE_KEY') ?: env('TURNSTILE_SITE_KEY'),
             'intercom' => app(IntercomService::class)->buildSettings($user)
