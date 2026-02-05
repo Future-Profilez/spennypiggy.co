@@ -95,7 +95,7 @@ export default function Earnings(props) {
               <div className='row' >
                 <div className=' col-xl-8 col-lg-12 mb-4' > <MonthlyRevenue /> </div>
                 <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnWishes currency={props?.global_currency || 'gbp'}  /> </div>
-                <div className=' col-xl-4 col-lg-6 mb-4' > <SubcriptionEarnings /></div>
+                <div className=' col-xl-4 col-lg-6 mb-4' > <SubcriptionEarnings auth={auth} /></div>
                 <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnBills /> </div>
                 <div className=' col-xl-4 col-lg-6 mb-4' > <TopSupporters /> </div>
               </div>

@@ -1649,7 +1649,7 @@ class LeaderBoardController extends Controller
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
-        $pay = TaskPurchase::whereHas('task', function ($q) use ($user) {
+        $taskPurchase = TaskPurchase::whereHas('task', function ($q) use ($user) {
             $q->where('creator_id', $user->id);
             // $q->whereNotNull('stripe_product_id')->where('user_id', $user->id);
         })->groupBy('task_id')
@@ -1657,8 +1657,10 @@ class LeaderBoardController extends Controller
             ->orderBy('total_amount', 'DESC')->take(5)->get();
 
         $resp = [];
+        $default_currency = $user->default_currency ?? 'usd';
+        $task_currency = $taskPurchase->pluck('currency')->first();
 
-        foreach ($pay as $p) {
+        foreach ($taskPurchase as $p) {
             $resp[] = [
                 'uuid' => $p->task->uuid,
                 'title' => $p->task->title,
