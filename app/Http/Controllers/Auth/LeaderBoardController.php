@@ -40,7 +40,7 @@ class LeaderBoardController extends Controller
             return Inertia::render('Suspanded');
         }
 
-        $getData = function() use ($type) {
+        $getData = function () use ($type) {
             return $this->calc($type);
         };
 
@@ -195,7 +195,7 @@ class LeaderBoardController extends Controller
                 },
             ])
             ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
-            ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency']);
+            ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'default_currency']);
 
         $users->map(function ($user) {
             // Calculate monetary metrics (for backward compatibility)
@@ -1485,108 +1485,233 @@ class LeaderBoardController extends Controller
     //     return response()->json($resp, 200);
     // }
 
+    // public function graphData()
+    // {
+    //     $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
+    //     $default_currency = strtolower($user->default_currency ?? 'usd');
+    //     $currency_symbol = Helpers::getCurrency($default_currency);
+
+    //     $currentYear = Carbon::now()->year;
+
+    //     $data = [];
+
+    //     for ($month = 1; $month <= 12; $month++) {
+    //         $date = Carbon::create($currentYear, $month, 1);
+
+    //         // Clone initial queries
+    //         $single_wish_query = clone $this->initialQuery($user, "wish");
+    //         // $subscriptions_query = clone $this->initialQuery($user, "subs");
+    //         $paid_task_query = clone $this->initialQuery($user, "task");
+    //         $tip_goal_query = clone $this->initialQuery($user, "tip");
+    //         $membership_query = clone $this->initialQuery($user, "mem");
+    //         $bill_query = clone $this->initialQuery($user, "bill");
+    //         $shop_query = clone $this->initialQuery($user, "shop");
+
+    //         // Apply additional conditions for each query
+    //         $single_wish_query->whereYear('created_at', $currentYear)
+    //             ->whereMonth('created_at', $month);
+    //         // $subscriptions_query->whereYear('created_at', '=', $currentYear)
+    //         //     ->whereMonth('created_at', $month);
+    //         $paid_task_query->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $month);
+    //         $tip_goal_query->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $month);
+    //         $membership_query->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $month);
+    //         $bill_query->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $month);
+    //         $shop_query->whereYear('created_at', '=', $currentYear)
+    //             ->whereMonth('created_at', $month);
+
+    //         // Fetch sums for each category
+    //         $data[$month - 1] = [
+    //             'Wishes' => $single_wish_query->sum('amount'),
+    //             // 'Subscriptions' => $subscriptions_query->sum('amount'),
+    //             'PaidTask' => $paid_task_query->sum('amount'),
+    //             'PiggyBank' => $tip_goal_query->sum('amount'),
+    //             'Memberships' => $membership_query->sum('amount'),
+    //             'Bills' => $bill_query->sum('amount'),
+    //             'Shops' => $shop_query->sum('amount'),
+    //             'month' => $date->format('F')
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'data' => $data
+    //     ]);
+    // }
     public function graphData()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())
+            ->where('is_uk', 0)
+            ->first();
+
         $currentYear = Carbon::now()->year;
+
+        // User default currency
+        $default_currency = strtolower($user->default_currency ?? 'usd');
+        $currency_symbol = Helpers::getCurrency($default_currency);
 
         $data = [];
 
         for ($month = 1; $month <= 12; $month++) {
+
             $date = Carbon::create($currentYear, $month, 1);
 
-            // Clone initial queries
-            $single_wish_query = clone $this->initialQuery($user, "wish");
-            // $subscriptions_query = clone $this->initialQuery($user, "subs");
-            $paid_task_query = clone $this->initialQuery($user, "task");
-            $tip_goal_query = clone $this->initialQuery($user, "tip");
-            $membership_query = clone $this->initialQuery($user, "mem");
-            $bill_query = clone $this->initialQuery($user, "bill");
-            $shop_query = clone $this->initialQuery($user, "shop");
-
-            // Apply additional conditions for each query
-            $single_wish_query->whereYear('created_at', $currentYear)
-                ->whereMonth('created_at', $month);
-            // $subscriptions_query->whereYear('created_at', '=', $currentYear)
-            //     ->whereMonth('created_at', $month);
-            $paid_task_query->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $month);
-            $tip_goal_query->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $month);
-            $membership_query->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $month);
-            $bill_query->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $month);
-            $shop_query->whereYear('created_at', '=', $currentYear)
-                ->whereMonth('created_at', $month);
-
-            // Fetch sums for each category
-            $data[$month - 1] = [
-                'Wishes' => $single_wish_query->sum('amount'),
-                // 'Subscriptions' => $subscriptions_query->sum('amount'),
-                'PaidTask' => $paid_task_query->sum('amount'),
-                'PiggyBank' => $tip_goal_query->sum('amount'),
-                'Memberships' => $membership_query->sum('amount'),
-                'Bills' => $bill_query->sum('amount'),
-                'Shops' => $shop_query->sum('amount'),
-                'month' => $date->format('F')
+            $queries = [
+                'Wishes'      => clone $this->initialQuery($user, "wish"),
+                'PaidTask'    => clone $this->initialQuery($user, "task"),
+                'Piggy_Bank'   => clone $this->initialQuery($user, "tip"),
+                'Memberships' => clone $this->initialQuery($user, "mem"),
+                'Bills'       => clone $this->initialQuery($user, "bill"),
+                'Shops'       => clone $this->initialQuery($user, "shop"),
             ];
+
+            $monthData = [];
+
+            foreach ($queries as $key => $query) {
+
+                $records = $query
+                    ->whereYear('created_at', $currentYear)
+                    ->whereMonth('created_at', $month)
+                    ->get();
+
+                $total = 0;
+
+                foreach ($records as $row) {
+
+                    // Currency source per type
+                    if ($key === 'PaidTask') {
+                        $rowCurrency = $row->task?->currency ?? 'gbp';
+                    } else {
+                        $rowCurrency = $row->currency ?? 'gbp';
+                    }
+
+                    $total += Helpers::priceFormat(
+                        strtolower($rowCurrency),
+                        $row->amount,
+                        $default_currency
+                    );
+                }
+
+                $monthData[$key] = round($total, 2);
+            }
+
+            $monthData['month'] = $date->format('F');
+
+            $data[] = $monthData;
         }
+
+        Log::info('Graph Data', ['data' => $data]);
 
         return response()->json([
             'status' => true,
+            'currency' => $default_currency,
+            'currency_symbol' => $currency_symbol,
             'data' => $data
         ]);
     }
 
+
+
     public function initialQuery($user, $type)
     {
+        switch ($type) {
 
-        if ($type == 'wish') {
-            return StripePaymentItems::whereHas('wish', function ($q) {
-                $q->whereNotNull('stripe_product_id');
-            })->whereHas('payment', function ($query) use ($user) {
-                $query->where('owner_id', $user->id);
-            });
-        }
+            case 'wish':
+                return StripePaymentItems::with('wish:id,currency')
+                    ->select('amount', 'created_at', 'wish_item_id')
+                    ->whereHas('wish', function ($q) {
+                        $q->whereNotNull('stripe_product_id');
+                    })
+                    ->whereHas('payment', function ($query) use ($user) {
+                        $query->where('owner_id', $user->id);
+                    });
 
-        // if ($type = 'subs') {
-        //     return WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
-        //         $q->where('user_id', $user->id);
-        //     });
-        // }
+            case 'task':
+                return TaskPurchase::with('task:id,currency')
+                    ->select('id', 'amount', 'created_at', 'task_id')
+                    ->whereHas('task', function ($q) use ($user) {
+                        $q->where('creator_id', $user->id);
+                    });
 
-        if ($type == 'task') {
-            return TaskPurchase::whereHas('task', function ($q) use ($user) {
-                $q->where('creator_id', $user->id);
-            });
-        }
+            case 'tip':
+                return TipGoalsPayment::select('amount', 'currency', 'created_at')
+                    ->where('creator_id', $user->id);
 
-        if ($type == 'tip') {
-            return TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
-        }
+            case 'mem':
+                return MembershipPayment::select('amount', 'currency', 'created_at')
+                    ->whereHas('membership', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
 
-        if ($type == 'mem') {
-            return MembershipPayment::whereHas('membership', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
-        }
+            case 'bill':
+                return BillPayment::select('amount', 'currency', 'created_at')
+                    ->whereHas('bill', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
 
-        if ($type == 'bill') {
-            return BillPayment::whereHas('bill', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
-        }
+            case 'shop':
+                return ShopPayment::select('amount', 'currency', 'created_at')
+                    ->whereHas('shop', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
 
-
-        if ($type == 'shop') {
-            return ShopPayment::whereHas('shop', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
+            default:
+                return null;
         }
     }
+
+    // public function initialQuery($user, $type)
+    // {
+
+    //     if ($type == 'wish') {
+    //         return StripePaymentItems::whereHas('wish', function ($q) {
+    //             $q->whereNotNull('stripe_product_id');
+    //         })->whereHas('payment', function ($query) use ($user) {
+    //             $query->where('owner_id', $user->id);
+    //         });
+    //     }
+
+    //     // if ($type = 'subs') {
+    //     //     return WishItemSubscription::whereHas('wish_item', function ($q) use ($user) {
+    //     //         $q->where('user_id', $user->id);
+    //     //     });
+    //     // }
+
+    //     if ($type == 'task') {
+    //         return TaskPurchase::with('task')->whereHas('task', function ($q) use ($user) {
+    //             $q->where('creator_id', $user->id);
+    //         });
+    //     }
+
+    //     if ($type == 'tip') {
+    //         return TipGoalsPayment::whereHas('tipGoal', function ($q) use ($user) {
+    //             $q->where('user_id', $user->id);
+    //         });
+    //     }
+
+    //     if ($type == 'mem') {
+    //         return MembershipPayment::whereHas('membership', function ($q) use ($user) {
+    //             $q->where('user_id', $user->id);
+    //         });
+    //     }
+
+    //     if ($type == 'bill') {
+    //         return BillPayment::whereHas('bill', function ($q) use ($user) {
+    //             $q->where('user_id', $user->id);
+    //         });
+    //     }
+
+
+    //     if ($type == 'shop') {
+    //         return ShopPayment::whereHas('shop', function ($q) use ($user) {
+    //             $q->where('user_id', $user->id);
+    //         });
+    //     }
+    // }
 
     public function topWishes()
     {
@@ -1657,8 +1782,6 @@ class LeaderBoardController extends Controller
             ->orderBy('total_amount', 'DESC')->take(5)->get();
 
         $resp = [];
-        $default_currency = $user->default_currency ?? 'usd';
-        $task_currency = $taskPurchase->pluck('currency')->first();
 
         foreach ($taskPurchase as $p) {
             $resp[] = [
