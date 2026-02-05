@@ -280,7 +280,7 @@ class AuthenticatedSessionController extends Controller
             $data = $getData();
         } else {
             $cacheKey = 'profile_' . $username . '_' . $page . '_' . md5(json_encode(request()->all()));
-            $data = Cache::remember($cacheKey, 1200, $getData);
+            $data = Cache::remember($cacheKey, 600, $getData);
         }
 
         if (($data['__page'] ?? null) === 'NotFound') {
@@ -375,7 +375,7 @@ class AuthenticatedSessionController extends Controller
             return $callback();
         }
 
-        return Cache::remember('user_categories_with_items_' . $user->id, 1200, $callback);
+        return Cache::remember('user_categories_with_items_' . $user->id, 600, $callback);
     }
 
     /**
