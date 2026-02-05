@@ -1,11 +1,9 @@
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import Tab from 'react-bootstrap/Tab';
-import Tabs from 'react-bootstrap/Tabs';
+import { Tab, Transition } from '@headlessui/react';
 import Avatar from '@/includes/Avatar';
 import PriceFormat from '@/includes/PriceFormat';
-import Collapse from 'react-bootstrap/Collapse';
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import axios from 'axios';
 import Confetti from '@/includes/Confetti';
 import Nocontent from '@/includes/Nocontent';
@@ -67,7 +65,7 @@ export default function Wishtracker(props) {
         sender={n && n.sender}
         is_read_owner={isOwnerRead}
         onclick={controlStatus}
-        classes="w-100"
+        classes="w-full"
       >
         <div
           onClick={handleStatus}
@@ -90,7 +88,7 @@ export default function Wishtracker(props) {
             )}
 
             <div className="flex items-center justify-between">
-              <div className="text-dark">
+              <div className="text-gray-900">
                 {n.payment.anonymous == 1 && n && n.sender === false ? (
                   <Avatar
                     name={`Anonymous 11 `}
@@ -111,10 +109,10 @@ export default function Wishtracker(props) {
                   />
                 )}
               </div>
-              <div className="text-muted rightbar flex items-center ">
+              <div className="text-gray-500 rightbar flex items-center ">
                 <div>
                   {n && n.sender ? (
-                    <div className="identity text-danger text-nowrap">
+                    <div className="identity text-red-600 whitespace-nowrap">
                       -
                       {formatMultiPrice(
                         n.amount * (+n.quantity || 1),
@@ -123,7 +121,7 @@ export default function Wishtracker(props) {
                       {/* {formatMultiPrice(n.final_amount * (+n.quantity || 1), n.payment.currency)} */}
                     </div>
                   ) : (
-                    <div className="identity text-success text-nowrap">
+                    <div className="identity text-green-600 whitespace-nowrap">
                       +
                       {formatMultiPrice(
                         n.amount * (+n.quantity || 1),
@@ -146,7 +144,7 @@ export default function Wishtracker(props) {
                     <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>{' '}
                     <g
                       id="SVGRepo_tracerCarrier"
-                      stroke-linecap="round"
+                      strokeLinecap="round"
                       strokeLinejoin="round"
                     ></g>{' '}
                     <g id="SVGRepo_iconCarrier">
@@ -166,23 +164,31 @@ export default function Wishtracker(props) {
               </div>
             </div>
           </div>
-          <Collapse in={open}>
+          <div className="track-summary mt-4">
+            <Transition
+              show={open}
+              enter="transition-all duration-300 ease-out overflow-hidden"
+              enterFrom="transform opacity-0 max-h-0"
+              enterTo="transform opacity-100 max-h-[1000px]"
+              leave="transition-all duration-200 ease-in overflow-hidden"
+              leaveFrom="transform opacity-100 max-h-[1000px]"
+              leaveTo="transform opacity-0 max-h-0"
+            >
             <div id="example-collapse-text">
-              <div className="track-summary mt-4">
-                <div className="wishitem-des box border rounded-lg">
+              <div className="wishitem-des box border rounded-lg">
                   <div className="flex justify-between items-center">
                     <div className="wish-item">
                       <img
                         src={(n.wish && n.wish.perma_link) || defaultsec}
                         alt="image"
-                        className="img-fluid"
+                        className="max-w-full h-auto"
                       />
                     </div>
-                    <div className="item-dd ps-3">
-                      <p className="mb-0 pe-2">
+                    <div className="item-dd pl-3">
+                      <p className="mb-0 pr-2">
                         {(n.wish && n.wish.wishname) || 'Surprise Gift'}
                       </p>
-                      <p className="text-muted text-small">
+                      <p className="text-gray-500 text-sm">
                         QTY : {n.quantity || 1} x{' '}
                         {formatMultiPrice(
                           n.amount,
@@ -193,9 +199,9 @@ export default function Wishtracker(props) {
                     </div>
                   </div>
                   {n && n.cart_message ? (
-                    <div className="border-top pt-3 mt-3 flex justify-between items-center">
-                      <p className="mb-0 pe-2">Sender Note :</p>
-                      <p className="text-muted text-small">
+                    <div className="border-t pt-3 mt-3 flex justify-between items-center">
+                      <p className="mb-0 pr-2">Sender Note :</p>
+                      <p className="text-gray-500 text-sm">
                         {n && n.cart_message}
                       </p>
                     </div>
@@ -203,32 +209,32 @@ export default function Wishtracker(props) {
                     ''
                   )}
                   {n && n.surprise_message ? (
-                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                      <p className="mb-0 pe-2">Message</p>
-                      <p className="text-muted text-small">
+                    <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                      <p className="mb-0 pr-2">Message</p>
+                      <p className="text-gray-500 text-sm">
                         {n && n.surprise_message}
                       </p>
                     </div>
                   ) : (
                     ''
                   )}
-                  <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                    <p className="mb-0 pe-2">Paid in </p>
-                    <p className="text-muted text-small">
+                  <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                    <p className="mb-0 pr-2">Paid in </p>
+                    <p className="text-gray-500 text-sm">
                       {n && n.payment && n.payment.currency}
                     </p>
                   </div>
-                  <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                    <p className="mb-0 pe-2">Guest Email </p>
-                    <p className="text-muted text-small">
+                  <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                    <p className="mb-0 pr-2">Guest Email </p>
+                    <p className="text-gray-500 text-sm">
                       {(n && n?.payment?.user?.email) ||
                         (n && n?.payment?.guest_email) ||
                         'N/A'}
                     </p>
                   </div>
-                  <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                    <p className="mb-0 pe-2">Guest Name </p>
-                    <p className="text-muted text-small capitalize">
+                  <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                    <p className="mb-0 pr-2">Guest Name </p>
+                    <p className="text-gray-500 text-sm capitalize">
                       {n && n.payment.name}
                     </p>
                   </div>
@@ -239,52 +245,9 @@ export default function Wishtracker(props) {
                 ) : (
                   ''
                 )}
-                {/* <p className="mt-3 mb-2">Exclusive Rewards </p>
-                {n && n.message_url ? (
-                  <div className="message-media my-2">
-                    <LazyLoadImage
-                      src={n.message_url}
-                      alt="image"
-                      height={'100%'}
-
-                      effect="blur"
-                      width={'100%'}
-                    />
-                  </div>
-                ) : (
-                  ''
-                )} */}
-
-                {/* {msgSent ? <div className="msgSent my-2 p-1" >
-                                    <p className="mt-2" >Thank you note : </p>
-                                    {approved == 0 ? <div className='mt-3 alert alert-warning  rounded p-2' >
-                                        Thankyou message is waiting for approval. Currently only you can see this message.
-                                    </div> : ''}
-
-                                    <p className="text-muted">{msgSent}</p>
-                                    {message_media ? <div className="message-media my-2" >
-                                        {media_type == 'image' ?
-                                            <LazyLoadImage
-                                                src={message_url} alt="image"
-                                                height={"100%"}
-                                                 effect="blur"
-                                                width={"100%"}
-                                            />
-                                            :
-                                            <video playsInline={false} controlsList="nodownload" controls src={message_url} />
-                                        }
-                                    </div> : ''}
-                                </div> : ''}
-
-                                {n && n.sender == false && !msgSent ?
-                                    <SayThanks approvemsg={approvemsg} clearAction={open}
-                                        getMessageStatus={getMessageStatus}
-                                        name={n && n.user && n.user.name}
-                                        payment_id={n.id} />
-                                    : ''} */}
               </div>
+            </Transition>
             </div>
-          </Collapse>
         </div>
       </Confetti>
     );
@@ -317,7 +280,7 @@ export default function Wishtracker(props) {
   };
 
   function linkPlaidAccount(linkToken, id) {
-    const linkHandler = Plaid.create({
+    const linkHandler = window.Plaid.create({
       token: linkToken,
       onSuccess: function (public_token, metadata) {
         updateMetaData({
@@ -381,8 +344,25 @@ export default function Wishtracker(props) {
 
           <h2 className='font-gulfs uppercase text-white text-xl lg:text-3xl mb-6 lg:mt-6'>Wish Tracker</h2>
 
-          <Tabs defaultActiveKey="1" id="tracker-tab" >
-            <Tab className="pt-6" eventKey="1" title="Wish Payments">
+          <Tab.Group>
+            <Tab.List className="flex space-x-1 rounded-xl bg-white/10 p-1 mb-4 overflow-x-auto">
+              {['Wish Payments', 'Subscriptions', 'Piggy Bank', 'Bills', 'Memberships', 'Shop'].map((tab) => (
+                <Tab as={Fragment} key={tab}>
+                  {({ selected }) => (
+                    <button
+                      className={`
+                        min-w-fit px-4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-colors duration-200
+                        ${selected ? 'bg-pink-600 text-white shadow' : 'text-gray-400 hover:bg-white/[0.12] hover:text-white'}
+                      `}
+                    >
+                      {tab}
+                    </button>
+                  )}
+                </Tab>
+              ))}
+            </Tab.List>
+            <Tab.Panels>
+              <Tab.Panel className="pt-6">
               <div className="tracks ">
                 {tracks &&
                   tracks.map((n, i) => {
@@ -394,8 +374,8 @@ export default function Wishtracker(props) {
                   ''
                 )}
               </div>
-            </Tab>
-            <Tab className="pt-6" eventKey="2" title="Subscriptions">
+            </Tab.Panel>
+            <Tab.Panel className="pt-6">
               {paymentStarting ? (
                 <div
                   className="h-screen flex items-center justify-center w-screen fixed top-0 left-0 bg-[#0005] z-[999999999999]"
@@ -422,7 +402,7 @@ export default function Wishtracker(props) {
                 ''
               )}
 
-              <div className="row">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {all_subscriptions &&
                   all_subscriptions.map((s, i) => {
                     // Determine if this is a subscription purchased by the user or received by the user
@@ -431,15 +411,15 @@ export default function Wishtracker(props) {
                     return (
                       <div
                         key={`subscription-${i}`}
-                        className="col-sm-6 mb-4"
+                        className="mb-4"
                       >
-                        <div className={`subsbox box p-4 ${isPurchasedByUser ? 'border-primary' : 'border-success'}`}>
+                        <div className={`subsbox box p-4 border-2 ${isPurchasedByUser ? 'border-blue-600' : 'border-green-600'}`}>
                           {/* Subscription Type Badge */}
-                          <div className="mb-3 d-flex justify-content-between align-items-center">
+                          <div className="mb-3 flex justify-between items-center">
                             <h2 className="plantitle mb-0">
                               {s && s.wish_item && s.wish_item.wishname}
                             </h2>
-                            <span className={`badge ${isPurchasedByUser ? 'bg-primary' : 'bg-success'} ms-2`}>
+                            <span className={`px-2 py-1 rounded text-xs font-bold text-white ${isPurchasedByUser ? 'bg-blue-600' : 'bg-green-600'} ml-2`}>
                               {isPurchasedByUser ? '🛒 Purchased by me' : '💰 Purchased by others'}
                             </span>
                           </div>
@@ -467,17 +447,17 @@ export default function Wishtracker(props) {
                             </div>
                           )}
 
-                          <ul className="ps-0 mt-3">
+                          <ul className="pl-0 mt-3">
                             {isPurchasedByUser ? (
                               /* For subscriptions purchased by user, show creator info */
-                              <li className="mt-2 flex justify-between border-top py-2">
-                                <p className="text-muted">Creator</p>
-                                <p className="text-dark text-capitalize">
+                              <li className="mt-2 flex justify-between border-t py-2">
+                                <p className="text-gray-500">Creator</p>
+                                <p className="text-gray-900 capitalize">
                                   <Link
                                     href={`/${
                                       (s && s.wish_item && s.wish_item.user && s.wish_item.user.username) || ''
                                     }`}
-                                    className="text-voilet"
+                                    className="text-violet-600"
                                   >
                                     {(s && s.wish_item && s.wish_item.user && s.wish_item.user.name) || 'Anonymous'}
                                   </Link>
@@ -485,21 +465,21 @@ export default function Wishtracker(props) {
                               </li>
                             ) : (
                               /* For subscriptions purchased by others, show subscriber info */
-                              <li className="mt-2 flex justify-between border-top py-2">
-                                <p className="text-muted">Subscriber</p>
-                                <p className="text-dark text-capitalize">
+                              <li className="mt-2 flex justify-between border-t py-2">
+                                <p className="text-gray-500">Subscriber</p>
+                                <p className="text-gray-900 capitalize">
                                   {s.anonymous ? 'Anonymous' : (s && s.user && s.user.name) || 'Anonymous'}
                                 </p>
                               </li>
                             )}
                             
-                            <li className="mt-2 flex justify-between border-top py-2">
-                              <p className="text-muted">Subscription Type</p>
-                              <p className="text-dark text-capitalize">
+                            <li className="mt-2 flex justify-between border-t py-2">
+                              <p className="text-gray-500">Subscription Type</p>
+                              <p className="text-gray-900 capitalize">
                                 {s?.recurring_for == 'onetime' ? (
-                                  <span className="badge bg-info">One-time</span>
+                                  <span className="inline-block px-2 py-1 rounded text-xs font-bold bg-blue-500 text-white">One-time</span>
                                 ) : (
-                                  <span className="badge bg-primary">
+                                  <span className="inline-block px-2 py-1 rounded text-xs font-bold bg-blue-600 text-white">
                                     {s?.recurring_type === 'weekly' ? 'Weekly' :
                                      s?.recurring_type === 'monthly' ? 'Monthly' :
                                      s?.recurring_type === 'yearly' ? 'Yearly' :
@@ -509,46 +489,46 @@ export default function Wishtracker(props) {
                               </p>
                             </li>
                             
-                            <li className="mt-2 flex justify-between border-top py-2">
-                              <p className="text-muted">Price</p>
-                              <p className="text-dark text-capitalize">
+                            <li className="mt-2 flex justify-between border-t py-2">
+                              <p className="text-gray-500">Price</p>
+                              <p className="text-gray-900 capitalize">
                                 {formatMultiPrice(s && s.amount, s.currency)}
                               </p>
                             </li>
                             
-                            <li className="mt-2 flex justify-between border-top py-2">
-                              <p className="text-muted">Start Date</p>
-                              <p className="text-dark text-capitalize">
+                            <li className="mt-2 flex justify-between border-t py-2">
+                              <p className="text-gray-500">Start Date</p>
+                              <p className="text-gray-900 capitalize">
                                 {s && s.start_date}
                               </p>
                             </li>
                             
                             {s?.recurring_for !== 'onetime' && (
-                              <li className="mt-2 flex justify-between border-top py-2">
-                                <p className="text-muted">Next Payment</p>
-                                <p className="text-dark text-capitalize">
+                              <li className="mt-2 flex justify-between border-t py-2">
+                                <p className="text-gray-500">Next Payment</p>
+                                <p className="text-gray-900 capitalize">
                                   {s && s.payment_upcoming}
                                 </p>
                               </li>
                             )}
                             
-                            <li className="mt-2 flex justify-between border-top py-2">
-                              <p className="text-muted">Status</p>
-                              <p className="text-dark text-capitalize">
+                            <li className="mt-2 flex justify-between border-t py-2">
+                              <p className="text-gray-500">Status</p>
+                              <p className="text-gray-900 capitalize">
                                 {s && s.status == 'paid' ? (
-                                  <span className="badge bg-success">Active</span>
+                                  <span className="inline-block px-2 py-1 rounded text-xs font-bold bg-green-600 text-white">Active</span>
                                 ) : (
-                                  <span className="badge bg-warning">{s && s.status}</span>
+                                  <span className="inline-block px-2 py-1 rounded text-xs font-bold bg-yellow-500 text-white">{s && s.status}</span>
                                 )}
                               </p>
                             </li>
                             
                             {/* Subscription Access Benefits - show for active paid subscriptions */}
                             {isPurchasedByUser && s.status === 'paid' && (
-                              <li className="mt-2 flex justify-between border-top py-2">
-                                <p className="text-muted">Access Status</p>
-                                <p className="text-dark">
-                                  <span className="badge bg-success">
+                              <li className="mt-2 flex justify-between border-t py-2">
+                                <p className="text-gray-500">Access Status</p>
+                                <p className="text-gray-900">
+                                  <span className="inline-block px-2 py-1 rounded text-xs font-bold bg-green-600 text-white">
                                     ✅ {s.recurring_for === 'onetime' ? '30-Day' : 'Ongoing'} Post Access
                                   </span>
                                 </p>
@@ -561,7 +541,7 @@ export default function Wishtracker(props) {
                             <div className="mt-3">
                               <Link
                                 href={`/${s.wish_item.user.username}?tab=feed`}
-                                className="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                                className="w-full flex justify-center items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none gap-2"
                               >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M12 2L3 7L12 12L21 7L12 2Z" />
@@ -581,19 +561,19 @@ export default function Wishtracker(props) {
                                   {s.is_subscription_active === 0 || s.stripe_status !== 'active' ? (
                                     <GlobalCheckout
                                       action={close}
-                                      classes={`btn-pink !bg-red-600 !text-white !border-red-900 sm w-100 px-2 mt-3`}
+                                      classes={`btn-pink !bg-red-600 !text-white !border-red-900 sm w-full px-2 mt-3`}
                                       text={`RENEW`}
                                       finalsubmit={() => handleSubmit(s.uuid)}
                                       getVariables={getVariables}
                                     />
                                   ) : (
-                                    <button className={`btn-pink disabled sm w-100 px-2 mt-3`}>
+                                    <button className={`btn-pink disabled sm w-full px-2 mt-3`}>
                                       Active
                                     </button>
                                   )}
                                 </>
                               ) : (
-                                <button className={`opacity-0 btn-pink disabled sm w-100 px-2 mt-3`}>
+                                <button className={`opacity-0 btn-pink disabled sm w-full px-2 mt-3`}>
                                   One Time Payment
                                 </button>
                               )}
@@ -615,20 +595,21 @@ export default function Wishtracker(props) {
               ) : (
                 ''
               )}
-            </Tab>
-            <Tab className="pt-6" eventKey="3" title="Piggy Bank">
+            </Tab.Panel>
+            <Tab.Panel className="pt-6">
               <Tiplisting />
-            </Tab>
-            <Tab className="pt-6" eventKey="4" title="Bills">
+            </Tab.Panel>
+            <Tab.Panel className="pt-6">
               <BillsTracker auth={auth} />
-            </Tab>
-            <Tab className="pt-6" eventKey="5" title="Memberships">
+            </Tab.Panel>
+            <Tab.Panel className="pt-6">
               <MembershipTracker auth={auth} />
-            </Tab>
-            <Tab className="pt-6" eventKey="6" title="Shop">
+            </Tab.Panel>
+            <Tab.Panel className="pt-6">
               <ShopTracker shop_payment={shop_payment} />
-            </Tab>
-          </Tabs>
+            </Tab.Panel>
+          </Tab.Panels>
+        </Tab.Group>
         </div>
       </div>
     </Authenticated>

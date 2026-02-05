@@ -11,6 +11,31 @@
 div{animation:load 0.4s linear;} */
 
 @layer components{
+  .text-gradient-wishlist{
+    display: inline-block;
+    background-image: linear-gradient(to right, rgb(253 224 71), rgb(236 72 153), rgb(168 85 247));
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+  @supports (-webkit-background-clip: text) {
+    .text-gradient-wishlist{ color: transparent; -webkit-text-fill-color: transparent; }
+  }
+  @supports not (-webkit-background-clip: text) {
+    .text-gradient-wishlist{ color: #111; }
+  }
+
+  .text-gradient-founder{
+    display: inline-block;
+    background-image: linear-gradient(to right, rgb(253 224 71), rgb(250 204 21));
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+  @supports (-webkit-background-clip: text) {
+    .text-gradient-founder{ color: transparent; -webkit-text-fill-color: transparent; }
+  }
+  @supports not (-webkit-background-clip: text) {
+    .text-gradient-founder{ color: #facc15; }
+  }
   .shadow-pink{box-shadow:7px 7px 0 0 var(--pink); 
   }
   .border-pink{

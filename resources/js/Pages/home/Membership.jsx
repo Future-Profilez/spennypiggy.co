@@ -83,7 +83,7 @@ export default function Membership() {
 
        <div className='container relative  px-4 mx-auto' >
         <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-tight">
-            Premium <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Membership</span>
+            Premium <span className="text-gradient-wishlist">Membership</span>
         </h2>
         <p className='fading max-w-4xl text-gray-300 m-auto text-center text-lg md:text-xl font-poppins leading-relaxed mb-12' >Discover a hassle-free way to enhance your earnings potential. Enjoy zero fees for fans, with creators keeping 100% of their earnings. Access premium features, including enhanced chargeback protection. Cancel anytime. Join us today!</p>
       </div>
@@ -119,7 +119,7 @@ export default function Membership() {
 
           <h2 className="text-2xl md:text-3xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-none tracking-[2px] max-w-6xl mx-auto drop-shadow-2xl">
               <span className="fading block mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Supporting Creators!</span>
-              <span className="fading block mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500 animate-pulse drop-shadow-none">Empowering Gifters!</span>
+              <span className="fading block mb-2 text-gradient-wishlist animate-pulse drop-shadow-none">Empowering Gifters!</span>
               <span className="fading block text-yellow-400 drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{WebkitTextStroke: '1px #000'}}>Made for Everyone!</span>
           </h2>
           
@@ -134,7 +134,7 @@ export default function Membership() {
                   }}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative z-1 transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 drop-shadow-lg">
+                <div className="relative z-10 transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 drop-shadow-lg">
                   <item.icon size={60} color={item.color} />
                 </div>
               </div>

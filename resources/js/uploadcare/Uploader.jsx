@@ -1,7 +1,7 @@
 import * as LR from "@uploadcare/blocks";
 import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
-import ProgressBar from 'react-bootstrap/ProgressBar';
+import CustomProgressBar from "@/Components/CustomProgressBar";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios"; 
 LR.registerBlocks(LR);

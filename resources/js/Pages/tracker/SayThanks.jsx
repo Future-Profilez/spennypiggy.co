@@ -63,12 +63,12 @@ export default function SayThanks(props) {
 
    return (
       <>   
-      <div className="form-field mb-4 border-top pt-4 mt-4">
+      <div className="mb-4 border-t border-gray-200 pt-4 mt-4">
          <h2 className='heading'>Send a thankyou note : </h2>
-         <p className='text-danger mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
+         <p className='text-red-500 mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
 
          <textarea rows={5} placeholder="Say Something..."
-            className="form-input w-100 rounded"
+            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
             onChange={(e) => setMessage(e.target.value)} type="text"
          />
          <p className='mb-2 mt-3' >Choose Video or Picture</p>

@@ -33,7 +33,7 @@ export default function TopSupporters() {
     return (
       <div className="flex gap-5 justify-between py-3  max-w-full border-b border-gray-150 ">
         <Link href={`/${item.username}`} className="flex">
-          <div className="image-w pe-3" >
+          <div className="image-w pr-3" >
             <img src={item.media || userphoto} alt={`Image of ${item.title}`} className=" object-cover shrink-0 w-12 h-12 rounded-[50%] aspect-square min-w-12" />
           </div>
           <div className="flex-auto my-auto">

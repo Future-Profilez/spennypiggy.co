@@ -36,7 +36,7 @@ export default defineConfig((env) => {
                 // manualChunks: {
                 //     'vendor-react': ['react', 'react-dom'],
                 //     'vendor-inertia': ['@inertiajs/react'],
-                //     'vendor-other': ['axios', 'react-bootstrap']
+                //     'vendor-other': ['axios']
                 // },
                 chunkFileNames: 'js/[name]-[hash].js',
                 entryFileNames: 'js/[name]-[hash].js',
@@ -79,6 +79,7 @@ export default defineConfig((env) => {
                 '^html2canvas$': path.resolve(process.cwd(), 'resources/js/ssr-html2canvas-mock.js') 
             } : {}),
         },
+        dedupe: ['react', 'react-dom'],
     },
     
     // Dependency pre-bundling optimizations

@@ -14,15 +14,15 @@ import Membership from './../membership/Membership';
 
     const ITEM = ({itm}) => { 
       return <>
-          <div className=' position-relative membership-box shadow-voilet p-0 box overflow-hidden rounded-lg' >
+          <div className=' relative membership-box shadow-violet p-0 box overflow-hidden rounded-lg' >
             <div className='membership-head p-0' >
               
 
               <div className='m-imag rounded-lg ' >
                 { handleTab == 'memberships' ?  
-                  <img src={itm?.membership?.perma_link || '' } alt='image' className='img-fluid w-100' />
+                  <img src={itm?.membership?.perma_link || '' } alt='image' className='max-w-full h-auto w-full' />
                   : 
-                  <img src={itm?.wish_item?.perma_link || '' } alt='image' className='img-fluid w-100' />
+                  <img src={itm?.wish_item?.perma_link || '' } alt='image' className='max-w-full h-auto w-full' />
                 }
               </div>
 
@@ -30,21 +30,21 @@ import Membership from './../membership/Membership';
             </div>
             <div className='p-4' >
               <Link href={`${itm?.owner?.username || ''}`} className="flex items-center w-auto" >
-                  <img className="author-img h-[50px] w-[50px] rounded-lg me-2 border border-grey" src={`${itm?.owner?.avatar || ''}`} />
+                  <img className="author-img h-[50px] w-[50px] rounded-lg mr-2 border border-gray-200" src={`${itm?.owner?.avatar || ''}`} />
                 <div>
-                  <p className="authors text-dark mb-0"> <b> {itm?.owner?.name || ''} </b> </p>
-                  <p className="authors text-muted text-small">@{itm?.owner?.username || ''}</p>
+                  <p className="authors text-gray-900 mb-0"> <b> {itm?.owner?.name || ''} </b> </p>
+                  <p className="authors text-gray-500 text-sm">@{itm?.owner?.username || ''}</p>
                 </div>
               </Link>
                 <p className='pb-1 pt-3 flex justify-between' >
-                { handleTab == 'memberships' ? <strong className='text-capitalize' >{itm.membership?.level || ''} Membership</strong> 
+                { handleTab == 'memberships' ? <strong className='capitalize' >{itm.membership?.level || ''} Membership</strong> 
                   : 
-                  <strong className='text-capitalize'  >{itm.wish_item?.name || ''}</strong>
+                  <strong className='capitalize'  >{itm.wish_item?.name || ''}</strong>
                 }
                </p>
               <ul className='mt-3' >
-                <li className='border-top pt-2 pb-2 flex justify-between' ><span>Price</span> <strong>{formatMultiPrice(parseInt((itm && itm.amount)+(itm && itm.tax)), itm && itm.currency)}</strong> </li>
-                <li className='border-top pt-2 pb-2 flex justify-between' ><span>Duration</span> <strong>Monthly</strong> </li>
+                <li className='border-t pt-2 pb-2 flex justify-between' ><span>Price</span> <strong>{formatMultiPrice(parseInt((itm && itm.amount)+(itm && itm.tax)), itm && itm.currency)}</strong> </li>
+                <li className='border-t pt-2 pb-2 flex justify-between' ><span>Duration</span> <strong>Monthly</strong> </li>
               </ul>
             </div>
           </div>
@@ -79,9 +79,9 @@ import Membership from './../membership/Membership';
 
         return <>
           {loading ? <LoadingScreen /> :
-          <div className='row pt-8 '>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-8 '>
             {subs && subs.length ? subs.map((item, i)=>{ 
-              return <div className='col-xl-3 col-lg-4 col-sm-6 mb-4' >
+              return <div className='mb-4' >
                 <ITEM key={`memberships-${i}`} itm={item} />
               </div> 
             }) : <Nocontent text="Nothing to see" /> }
@@ -93,9 +93,9 @@ import Membership from './../membership/Membership';
     return (
       <>
           <div className='m-auto'>
-          <div className='flex justify-content-start items-center' >
-            <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] text-uppercase `} >Memberships</button>
-            <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] text-uppercase `} >Subscriptions</button>
+          <div className='flex justify-start items-center' >
+            <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
+            <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
           </div>
             {handleTab == 'memberships' ? <CATITEM type={handleTab} /> : <CATITEM type={handleTab} /> }
           </div>

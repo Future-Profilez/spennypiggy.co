@@ -35,7 +35,7 @@ export default function NotForBusiness() {
 
             <div className="containerbox relative  ">
                 <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-16 uppercase leading-tight">
-                    How It <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Works</span>
+                    How It <span className="text-gradient-wishlist">Works</span>
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">

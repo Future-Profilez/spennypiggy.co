@@ -34,7 +34,7 @@ export default function ComingNext() {
                </div>
                <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-8 uppercase leading-tight"> 
                     Get ready for <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500">Next Level</span>
+                    <span className="text-gradient-wishlist">Next Level</span>
                </h2>
                
                 <ul className="space-y-6">

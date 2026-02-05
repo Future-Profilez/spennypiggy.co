@@ -13,7 +13,7 @@ export default function ForCreators() {
 
        <div className='mt-2 mt-sm-5  pt-5 text-center' >
             <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 uppercase leading-tight'  data-aos="zoom-in" >
-                Publish your <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">best Work</span>
+                Publish your <span className="text-gradient-wishlist">best Work</span>
             </h2>
             <p className='max-w-4xl mx-auto text-gray-300 text-xl md:text-2xl font-medium leading-relaxed mb-12'  data-aos="zoom-in" >
                 Spenny Piggy makes it super easy to receive financial support, offer bespoke memberships & publish free and exclusive content!

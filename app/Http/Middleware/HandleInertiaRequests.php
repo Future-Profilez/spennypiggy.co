@@ -66,6 +66,7 @@ class HandleInertiaRequests extends Middleware
         $userBioStatus = UserVerificationStatus::where('user_id', $user->id ?? null)->first();
         $items = UserCart::where('user_id', $user->id ?? null)->where('status', 1)->count();
         $notification_count = Notification::where('notifiable_id', $user->id ?? null)->where('is_read', 0)->count();
+        
         return [
             ...parent::share($request),
             'auth' => [

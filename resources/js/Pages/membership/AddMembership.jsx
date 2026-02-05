@@ -175,7 +175,7 @@ export default function AddMembership({updateState, item, text, classes}) {
           <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
-          <div className="ps-3 text-start">
+          <div className="pl-3 text-left">
               <h2 className="text-md font-normal font-GillSans uppercase">Add Membership Tier</h2>
               <p className="text-sm font-poppins">Let fans support you monthly</p>
           </div>
@@ -184,28 +184,28 @@ export default function AddMembership({updateState, item, text, classes}) {
 
     return (
         <Popup
-            modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
+            modalclassName="pinkmodal full sendSurprize-modal shadow-pink pl-0"
             space="4" size="md"
             action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`}
             text={text ? text : <AddItem />} >
               <div className="addgoal" >
-                <h2 className="text-uppercase font-GillSans pb-4 font-large">Add Membership</h2>
+                <h2 className="uppercase font-GillSans pb-4 font-large">Add Membership</h2>
 
-                    <div className="row  " >
+                    <div className="flex flex-wrap" >
 
-                      <div className="col-md-12 form-field mb-4">
-                          <label className="d-block text-start mb-2">Choose Membership Level</label>
-                          <ul className="ps-0 flex flex-wrap tiers" >
+                      <div className="w-full mb-4">
+                          <label className="block text-left mb-2">Choose Membership Level</label>
+                          <ul className="pl-0 flex flex-wrap tiers" >
                               {memberships && memberships.map((m, i)=>{
-                                return <li key={`membership-${i}`} className="mb-2 me-2" >
+                                return <li key={`membership-${i}`} className="mb-2 mr-2" >
                                   {/* <button
                                     onClick={()=>setData('level', m.value)}  >
                                     {m.title}
                                   </button> */}
-                                  <input className="cursor-pointer d-none"
+                                  <input className="cursor-pointer hidden"
                                   type="checkbox" id={m.value} value={m.value} name="level"
                                   onChange={handleInput} />
-                                  <label className={`cursor-pointer text-capitalize ${data && data.level == m.value ? "active" : ''}`} htmlFor={m.value}>
+                                  <label className={`cursor-pointer capitalize ${data && data.level == m.value ? "active" : ''}`} htmlFor={m.value}>
                                       {m.title}
                                   </label>
                                 </li>
@@ -213,11 +213,11 @@ export default function AddMembership({updateState, item, text, classes}) {
                           </ul>
                       </div>
 
-                      <div className="col-md-12 form-field mb-4">
-                          <label className="d-block text-start mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
-                          <div className="position-relative  currency-wrapper dollar-simbols" >
+                      <div className="w-full mb-4">
+                          <label className="block text-left mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
+                          <div className="relative  currency-wrapper dollar-simbols" >
                             <span className="currency-tag">{defaultCurrency}</span>
-                            <input className="form-input w-100 rounded"
+                            <input className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                 onChange={handleInput} defaultValue={item && item.price || ''}
                                 type="number" name="month_price"
                                 placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
@@ -231,18 +231,18 @@ export default function AddMembership({updateState, item, text, classes}) {
                           </p>}
                       </div>
 
-                      <div className="col-md-12 form-field mb-4">
-                      <label className="d-block text-start mb-1">Thumbnail</label>
-                        <p className="text-muted mb-3" >This is not required, but it can be a nice way to build your brand or make the offering more attractive.</p>
+                      <div className="w-full mb-4">
+                      <label className="block text-left mb-1">Thumbnail</label>
+                        <p className="text-gray-500 mb-3" >This is not required, but it can be a nice way to build your brand or make the offering more attractive.</p>
 
-                        <div className={`${!isEditable ? '' : 'd-none'} editable`} >
+                        <div className={`${!isEditable ? '' : 'hidden'} editable`} >
                           <GlobalUploader type='minimal'
                             ref={uploaderRef} ctxName='add-membership-context'
                             sendFile={getFileUID}
                             options={st.membership}
                           />
                         </div>
-                        <div className={`${isEditable ? '' : 'd-none'} editable`} >
+                        <div className={`${isEditable ? '' : 'hidden'} editable`} >
                             <UploadcareEditor setIsEditable={setIsEditable} uuid={thumb} updateFile={imageEdited}  />
                         </div>
 
@@ -251,11 +251,11 @@ export default function AddMembership({updateState, item, text, classes}) {
                       <p className="font-bold mb-3 " >Choose membership Rewards</p>
                       <div className="flex memberships-lists flex-wrap mb-4 ">
                         {membershipBenifits && membershipBenifits.map((m, i)=>{
-                          return <div className="member-reward me-2 mb-2 text-start">
-                              <input className="cursor-pointer d-none"
+                          return <div className="member-reward mr-2 mb-2 text-left">
+                              <input className="cursor-pointer hidden"
                               type="checkbox" id={m.value} value={m.value} name="rewards"
                               onChange={selectRewards} />
-                              <label className="cursor-pointer text-capitalize" htmlFor={m.value}>
+                              <label className="cursor-pointer capitalize" htmlFor={m.value}>
                                   {m.title}
                               </label>
                             </div>
@@ -263,7 +263,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                       </div>
 
                       <button onClick={AddMembership} disabled={loading}
-                          className="flex w-100 btn-pink lg mx-auto !text-center justify-center sm"  >
+                          className="flex w-full btn-pink mx-auto !text-center justify-center py-3 text-lg"  >
                         {loading ? "Processing" : "Create"}
                       </button>
 

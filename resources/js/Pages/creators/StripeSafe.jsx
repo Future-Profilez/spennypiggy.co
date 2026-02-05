@@ -92,7 +92,7 @@ export default function StripeSafe() {
                               <Check size={16} /> The Solution
                            </div>
                            <h2 className="text-3xl md:text-4xl xl:text-5xl font-gulfs uppercase mb-2 md:mb-6 leading-tight text-gray-900">
-                              How Spenny Piggy <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-green-500">Prevents This</span>
+                              How Spenny Piggy <br/> <span className="text-gradient-wishlist">Prevents This</span>
                            </h2>
                         </div>
 

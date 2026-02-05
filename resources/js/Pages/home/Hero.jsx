@@ -107,11 +107,11 @@ export default function Hero({auth}) {
 
         <div className="containerbox relative w-full">
           <div className="welcome" data-aos="zoom-out" >
-              <div className="welcomeLeft m-auto d-table w-full text-center">
-                  <h2 className="headingSm shadow-none uppercase text-light font-gulfs stroke-none text-xl md:text-5xl xl:text-6xl max-w-4xl mx-auto text-center leading-tight">
+              <div className="welcomeLeft mx-auto w-full text-center">
+                  <h2 className="headingSm shadow-none uppercase text-white font-gulfs stroke-none text-xl md:text-5xl xl:text-6xl max-w-4xl mx-auto text-center leading-tight">
                     The everything {" "}
                     <div className='block mt-2 text-3xl md:text-6xl xl:text-7xl'>
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500 animate-pulse">
+                      <span className="text-gradient-wishlist animate-pulse">
                                 wishlist
                             </span>
                             </div>
@@ -122,7 +122,7 @@ export default function Hero({auth}) {
                   <h3 className="text-center text-xl md:text-2xl text-gray-300 font-medium mb-8 max-w-2xl mx-auto leading-relaxed">
                   Want gifts without TMI? Build your privacy-first Wishlist and let your fans spoil you!
                   </h3>
-                  <div className="pt-4 wishlistbtn wishlistbtnFixed m-auto d-table">
+                  <div className="pt-4 wishlistbtn wishlistbtnFixed mx-auto relative inline-block">
                     
                     
                     <div>

@@ -1,5 +1,5 @@
 import { Link } from "@inertiajs/react";
-import { FaBolt, FaMagic, FaShieldAlt, FaRocket, FaStar, FaHeart } from 'react-icons/fa';
+import { FaBolt, FaMagic, FaShieldAlt, FaRocket } from 'react-icons/fa';
 
 export default function PaidTasksAnnouncement() {
     return (
@@ -47,7 +47,7 @@ export default function PaidTasksAnnouncement() {
                     <div className="absolute -bottom-10 left-1/2 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div>
                 </div>
 
-                <div className="max-w-7xl mx-auto relative z-1">
+                <div className="max-w-7xl mx-auto relative z-10">
                     <div className="text-center mb-8 md:mb-16">
                         <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300">
                             <span className="bg-yellow-400 text-black font-black px-4 py-1 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] mb-4 inline-block">
@@ -57,7 +57,7 @@ export default function PaidTasksAnnouncement() {
                         
                         <h2 className="uppercase fading text-4xl md:text-5xl lg:text-6xl font-gulfs tracking-[2px] text-white mb-6 leading-none tracking-tight drop-shadow-2xl">
                             Get Paid for Requests <br/>
-                            <span className="uppercase text-transparent bg-clip-text bg-gradient-to-r tracking-[2px] from-yellow-300 via-pink-500 to-purple-500 animate-pulse">
+                            <span className="uppercase text-gradient-wishlist tracking-[2px] animate-pulse">
                                 On Your Terms 
                             </span> 💸
                         </h2>
@@ -138,7 +138,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
                     <div className="mt-8 md:mt-12 lg:mt-20 text-center relative">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-32 bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-500 rounded-full blur-3xl opacity-20"></div>
                         <Link  href="/task/dashboard" 
-                            className="relative inline-flex items-center gap-4 bg-white text-black font-black text-normal md:text-xl py-3 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
+                            className="relative inline-flex items-center gap-4 bg-white text-black font-black text-base md:text-xl py-3 px-12 rounded-full shadow-[0_20px_50px_rgba(255,255,255,0.3)] hover:scale-105 hover:rotate-1 transition-all duration-300 uppercase tracking-wide group overflow-hidden" >
                             <span className="relative z-10">Turn Requests Into Income</span>
                             <FaRocket className="relative z-10 text-2xl group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />
                             <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

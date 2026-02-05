@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import Collapse from "react-bootstrap/Collapse";
+import { Transition } from "@headlessui/react";
 import PriceFormat from "@/includes/PriceFormat";
-import ProgressBar from "react-bootstrap/ProgressBar";
 import Nocontent from "@/includes/Nocontent";
 import Avatar from "@/includes/Avatar";
 import userphoto from "../../../assets/siteicon.png";
@@ -96,10 +95,10 @@ export default function BillsTracker({ auth }) {
                                     />
                                 )}
                             </div>
-                            <div className="text-muted rightbar flex items-center ">
+                            <div className="text-gray-500 rightbar flex items-center ">
                                 <div>
                                     {n && n.sender ? (
-                                        <div className="identity text-danger text-nowrap">
+                                        <div className="identity text-red-600 text-nowrap">
                                             -
                                             {formatMultiPrice(
                                                 n.amount,
@@ -107,7 +106,7 @@ export default function BillsTracker({ auth }) {
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="identity text-success text-nowrap">
+                                        <div className="identity text-green-600 text-nowrap">
                                             +
                                             {formatMultiPrice(
                                                 n.amount,
@@ -150,7 +149,15 @@ export default function BillsTracker({ auth }) {
                             </div>
                         </div>
                     </div>
-                    <Collapse in={open}>
+                    <Transition
+                        show={open}
+                        enter="transition-all duration-300 ease-out overflow-hidden"
+                        enterFrom="transform opacity-0 max-h-0"
+                        enterTo="transform opacity-100 max-h-[1000px]"
+                        leave="transition-all duration-200 ease-in overflow-hidden"
+                        leaveFrom="transform opacity-100 max-h-[1000px]"
+                        leaveTo="transform opacity-0 max-h-0"
+                    >
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
                                 <div className="wishitem-des box border rounded-lg">
@@ -163,15 +170,15 @@ export default function BillsTracker({ auth }) {
                                                     defaultsec
                                                 }
                                                 alt="image"
-                                                className="img-fluid"
+                                                className="max-w-full h-auto"
                                             />
                                         </div>
-                                        <div className="item-dd ps-3">
-                                            <p className="mb-0 pe-2">
+                                        <div className="item-dd pl-3">
+                                            <p className="mb-0 pr-2">
                                                 {(n.bill && n.bill.name) ||
                                                     "Surprise Gift"}
                                             </p>
-                                            <p className="text-muted text-small">
+                                            <p className="text-gray-500 text-sm">
                                                 QTY : {n.quantity || 1} x{" "}
                                                 {formatMultiPrice(
                                                     n.amount,
@@ -184,11 +191,11 @@ export default function BillsTracker({ auth }) {
                                         </div>
                                     </div>
                                     {n && n.message ? (
-                                        <div className="border-top pt-3 mt-3 flex justify-between items-center">
-                                            <p className="mb-0 pe-2">
+                                        <div className="border-t pt-3 mt-3 flex justify-between items-center">
+                                            <p className="mb-0 pr-2">
                                                 Message :
                                             </p>
-                                            <p className="text-muted text-small">
+                                            <p className="text-gray-500 text-sm">
                                                 {n && n.message}
                                             </p>
                                         </div>
@@ -196,23 +203,23 @@ export default function BillsTracker({ auth }) {
                                         ""
                                     )}
 
-                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                                        <p className="mb-0 pe-2">Paid in </p>
-                                        <p className="text-muted text-small">
+                                    <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                                        <p className="mb-0 pr-2">Paid in </p>
+                                        <p className="text-gray-500 text-sm">
                                             {n && n && n.currency}
                                         </p>
                                     </div>
-                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                                        <p className="mb-0 pe-2">
+                                    <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                                        <p className="mb-0 pr-2">
                                             Guest Email{" "}
                                         </p>
-                                        <p className="text-muted text-small">
+                                        <p className="text-gray-500 text-sm">
                                             {n && n.guest_email}
                                         </p>
                                     </div>
-                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                                        <p className="mb-0 pe-2">Guest Name </p>
-                                        <p className="text-muted text-small capitalize">
+                                    <div className="border-t pt-3 mt-3  flex justify-between items-center">
+                                        <p className="mb-0 pr-2">Guest Name </p>
+                                        <p className="text-gray-500 text-sm capitalize">
                                             {n && n.guest_name}
                                         </p>
                                     </div>
@@ -243,16 +250,16 @@ export default function BillsTracker({ auth }) {
                                 )} */}
                             </div>
                         </div>
-                    </Collapse>
+                    </Transition>
                 </div>
             </>
         );
     };
     if (loading) {
         return (
-            <div className="tips d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+            <div className="tips flex justify-center items-center" style={{minHeight: '200px'}}>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" role="status">
+                    <span className="sr-only">Loading...</span>
                 </div>
             </div>
         );
@@ -261,10 +268,10 @@ export default function BillsTracker({ auth }) {
     if (error) {
         return (
             <div className="tips text-center" style={{minHeight: '200px'}}>
-                <div className="alert alert-danger" role="alert">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
-                        className="btn btn-sm btn-outline-danger ms-2" 
+                        className="bg-transparent hover:bg-red-500 text-red-700 font-semibold hover:text-white py-1 px-2 border border-red-500 hover:border-transparent rounded ml-2" 
                         onClick={fetchBills}
                     >
                         Retry

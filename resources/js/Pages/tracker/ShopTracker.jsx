@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import Collapse from "react-bootstrap/Collapse";
+import { Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import PriceFormat from "@/includes/PriceFormat";
-import ProgressBar from "react-bootstrap/ProgressBar";
 import Nocontent from "@/includes/Nocontent";
 import userphoto from "../../../assets/siteicon.png";
 import Avatar from "@/includes/Avatar";
@@ -56,7 +56,7 @@ export default function ShopTracker() {
                         className=" cursor-pointer trackbar "
                     >
                         <div className="flex items-center justify-between">
-                            <div className="text-dark">
+                            <div className="text-gray-900">
                                 {g.anonymous == 1 && g && g.sender == false ? (
                                     <Avatar
                                         name={`From : Anonymous`}
@@ -101,10 +101,10 @@ export default function ShopTracker() {
                                     </>
                                 )}
                             </div>
-                            <div className="text-muted rightbar flex items-center ">
+                            <div className="text-gray-500 rightbar flex items-center ">
                                 <div>
                                     {g && g.sender ? (
-                                        <div className="identity text-danger text-nowrap">
+                                        <div className="identity text-red-500 text-nowrap">
                                             -
                                             {formatMultiPrice(
                                                 g.amount,
@@ -112,7 +112,7 @@ export default function ShopTracker() {
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="identity text-success text-nowrap">
+                                        <div className="identity text-green-500 text-nowrap">
                                             +
                                             {formatMultiPrice(
                                                 g.amount + g.vat_tax_amount,
@@ -155,7 +155,15 @@ export default function ShopTracker() {
                             </div>
                         </div>
                     </div>
-                    <Collapse in={open}>
+                    <Transition
+                        show={open}
+                        enter="transition-all duration-300 ease-in-out"
+                        enterFrom="max-h-0 opacity-0 overflow-hidden"
+                        enterTo="max-h-[1000px] opacity-100 overflow-visible"
+                        leave="transition-all duration-300 ease-in-out"
+                        leaveFrom="max-h-[1000px] opacity-100 overflow-visible"
+                        leaveTo="max-h-0 opacity-0 overflow-hidden"
+                    >
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
                                 <div className="wishitem-des box border rounded-lg">
@@ -169,16 +177,16 @@ export default function ShopTracker() {
                                                     defaultsec
                                                 }
                                                 alt="image"
-                                                className="img-fluid"
+                                                className="max-w-full h-auto"
                                             />
                                         </div>
-                                        <div className="item-dd ps-3">
-                                            <p className="mb-0 pe-2">
+                                        <div className="item-dd pl-3">
+                                            <p className="mb-0 pr-2">
                                                 {(g?.shop &&
                                                     g?.shop.name) ||
                                                     "Surprise Gift"}
                                             </p>
-                                            <p className="text-muted text-small">
+                                            <p className="text-gray-500 text-sm">
                                                 QTY : {g.quantity || 1} x{" "}
                                                 {formatMultiPrice(
                                                     g.amount,
@@ -191,11 +199,11 @@ export default function ShopTracker() {
                                         </div>
                                     </div>
                                     {g && g.message ? (
-                                        <div className="border-top pt-3 mt-3 flex justify-between items-center">
-                                            <p className="mb-0 pe-2">
+                                        <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
+                                            <p className="mb-0 pr-2">
                                                 Message :
                                             </p>
-                                            <p className="text-muted text-small">
+                                            <p className="text-gray-500 text-sm">
                                                 {g && g.message}
                                             </p>
                                         </div>
@@ -203,23 +211,23 @@ export default function ShopTracker() {
                                         ""
                                     )}
 
-                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                                        <p className="mb-0 pe-2">Paid in </p>
-                                        <p className="text-muted text-small">
+                                    <div className="border-t border-gray-200 pt-3 mt-3  flex justify-between items-center">
+                                        <p className="mb-0 pr-2">Paid in </p>
+                                        <p className="text-gray-500 text-sm">
                                             {g && g && g.currency}
                                         </p>
                                     </div>
-                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                                        <p className="mb-0 pe-2">
+                                    <div className="border-t border-gray-200 pt-3 mt-3  flex justify-between items-center">
+                                        <p className="mb-0 pr-2">
                                             Guest Email{" "}
                                         </p>
-                                        <p className="text-muted text-small">
+                                        <p className="text-gray-500 text-sm">
                                             {g && g.email}
                                         </p>
                                     </div>
-                                    <div className="border-top pt-3 mt-3  flex justify-between items-center">
-                                        <p className="mb-0 pe-2">Guest Name </p>
-                                        <p className="text-muted text-small capitalize">
+                                    <div className="border-t border-gray-200 pt-3 mt-3  flex justify-between items-center">
+                                        <p className="mb-0 pr-2">Guest Name </p>
+                                        <p className="text-gray-500 text-sm capitalize">
                                             {g && g.name}
                                         </p>
                                     </div>
@@ -231,8 +239,8 @@ export default function ShopTracker() {
                                       id={g && g.uuid}
                                   /> */}
                                 {/* // ) : (
-                              //     ""
-                              // )} */}
+                                //     ""
+                                // )} */}
                                 {/* <p className="mt-3 mb-2">Exclusive Rewards </p>
                               {g && g.message_url ? (
                                   <div className="message-media my-2">
@@ -250,16 +258,16 @@ export default function ShopTracker() {
                               )} */}
                             </div>
                         </div>
-                    </Collapse>
+                    </Transition>
                 </div>
             </>
         );
     };
     if (loading) {
         return (
-            <div className="tips d-flex justify-content-center align-items-center" style={{minHeight: '200px'}}>
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+            <div className="tips flex justify-center items-center" style={{minHeight: '200px'}}>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" role="status">
+                    <span className="sr-only">Loading...</span>
                 </div>
             </div>
         );
@@ -268,10 +276,10 @@ export default function ShopTracker() {
     if (error) {
         return (
             <div className="tips text-center" style={{minHeight: '200px'}}>
-                <div className="alert alert-danger" role="alert">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
-                        className="btn btn-sm btn-outline-danger ms-2" 
+                        className="ml-2 px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 text-sm" 
                         onClick={fetchgoals}
                     >
                         Retry

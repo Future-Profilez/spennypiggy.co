@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, Fragment } from "react";
 import { useState } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
 import { Link, router, usePage } from "@inertiajs/react";
 import dummy from '../../../assets/img/uploadedimg.png';
 import EditMembership from './EditMembership';
-import DropdownButton from 'react-bootstrap/DropdownButton';
+import { Menu, Transition } from '@headlessui/react';
 import RemoveMembership from './RemoveMembership';
 import { useAlerts } from '@/Components/Alerts';
 
@@ -91,30 +91,48 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   return (
     <>
           <div className={`bg-opacity-90 relative rounded-[30px] 
-            border-3 md:border-4 ${borderclasses[item?.level || 'default']} 
+            border-[3px] md:border-4 ${borderclasses[item?.level || 'default']} 
             h-full bg-white `}>
                   {IsloggedIn && item && item?.approved === 0 ?
-                    <div className='absolute top-8 z-1 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
+                    <div className='absolute top-8 z-10 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>
                   : ''}
                   
                     {IsloggedIn ?  
-                      <DropdownButton
-                        className='edit-post pe-0 absolute top-2 m-1 right-2 z-1 ' id="dropdown-basic-button"
-                        title={
-                        <div className='dots' >
-                        <span className='bg-white' ></span>
-                        <span className='bg-white' ></span>
-                        <span className='bg-white' ></span>
-                      </div>}>
-                      <div> 
-                      </div>
-                        <RemoveMembership classes={`px-[18px] py-2 text-start w-full`}   uuid={item?.uuid} text="Remove" />
-                      </DropdownButton> 
+                      <Menu as="div" className="absolute top-2 right-2 z-10 m-1">
+                        <Menu.Button className="edit-post pr-0 flex items-center justify-center p-2 rounded-full hover:bg-black/10 transition-colors focus:outline-none">
+                          <div className='dots flex flex-col gap-[3px]' >
+                            <span className='bg-white w-1 h-1 rounded-full' ></span>
+                            <span className='bg-white w-1 h-1 rounded-full' ></span>
+                            <span className='bg-white w-1 h-1 rounded-full' ></span>
+                          </div>
+                        </Menu.Button>
+                        <Transition
+                          as={Fragment}
+                          enter="transition ease-out duration-100"
+                          enterFrom="transform opacity-0 scale-95"
+                          enterTo="transform opacity-100 scale-100"
+                          leave="transition ease-in duration-75"
+                          leaveFrom="transform opacity-100 scale-100"
+                          leaveTo="transform opacity-0 scale-95"
+                        >
+                          <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div className="px-1 py-1">
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <div className={`${active ? 'bg-gray-100' : ''}`}>
+                                    <RemoveMembership classes={`px-4 py-2 text-left w-full text-sm text-gray-900`} uuid={item?.uuid} text="Remove" />
+                                  </div>
+                                )}
+                              </Menu.Item>
+                            </div>
+                          </Menu.Items>
+                        </Transition>
+                      </Menu>
                     : ''}
                     <div className={`${membershipclasses[item?.level || 'default']} rounded-[26px]  text-white pt-6`}>
                         <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
                         relative' >
-                          <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-[30px]  w-full h-full img-fluid object-cover  ' />
+                          <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-[30px]  w-full h-full object-cover  ' />
                         </div>
                         <div className="flex justify-center ">
                           <h2 className={`${btnclasses[item?.level || 'default']} 
@@ -127,7 +145,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                           <h2 className={`font-bold text-xl`}>
                             {formatMultiPrice(item && item?.price, item && item?.currency)}
                           </h2>
-                          <div className="ps-1">
+                          <div className="pl-1">
                             <p className="text-[17px]">/month</p>
                           </div>
                         </div>
@@ -166,7 +184,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                 <div className="flex px-2 mb-3 justify-center">
                   {item?.user ? (
                     <>
-                      <p className="text-xs font-semibold text-black me-1">
+                      <p className="text-xs font-semibold text-black mr-1">
                         By
                       </p>
                       <Link method="get" as="button"
@@ -177,7 +195,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                     </>
                   ) : (
                     <>
-                      <p className="text-xs font-semibold text-black me-1">
+                      <p className="text-xs font-semibold text-black mr-1">
                         By @Unavailable
                       </p>
                     </>

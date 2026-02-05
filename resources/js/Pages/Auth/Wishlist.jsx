@@ -7,7 +7,7 @@ import { router, useForm, usePage } from "@inertiajs/react";
 import { useAlerts } from "@/Components/Alerts";
 import GlobalUploader from "@/uploadcare/Uploader";
 import st from "../../../css/uploader.module.css";
-import Accordion from "react-bootstrap/Accordion";
+import { Disclosure, Transition } from "@headlessui/react";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import Popup from "@/Components/Popup";
 import { Pagination, Navigation } from "swiper/modules";
@@ -15,7 +15,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
-import { FaRegHeart } from "react-icons/fa";
+import { FaRegHeart, FaChevronUp } from "react-icons/fa";
 import ContentFilePreview from "@/Components/ContentFilePreview";
 const imageLinks = [
     "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
@@ -363,7 +363,7 @@ export default function Wishlist(props) {
             <div className="editprofileModal  wishlistModal  ">
                 <div className="editprofileModalInner ">
                     <div className="wishinfo border-top p-4  ">
-                        <h2 className="mb-4 text-pink text-start font-GillSans uppercase text-large black-stroke font-semibold mb-1 pe-5">
+                        <h2 className="mb-4 text-pink text-left font-GillSans uppercase text-large black-stroke font-semibold mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
                         <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
@@ -375,9 +375,9 @@ export default function Wishlist(props) {
                             support for further clarification.
                         </p>
                         <form onSubmit={createWishList}>
-                            <ul className="ps-0">
+                            <ul className="pl-0">
                                 <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         Wish Name
                                     </label>
                                     <input
@@ -386,7 +386,7 @@ export default function Wishlist(props) {
                                         type="text"
                                         placeholder="Eg. Buy me a coffee"
                                         value={data.wishname}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
+                                        className="w-full border-gray-300 focus:border-pink focus:ring-pink rounded-md shadow-sm px-2 py-2"
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -395,10 +395,10 @@ export default function Wishlist(props) {
                                     />
                                 </li>
                                 <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         Price
                                     </label>
-                                    <div className="currency-wrapper position-relative">
+                                    <div className="currency-wrapper relative">
                                         <span className="currency-tag">
                                             {defaultCurrency}
                                         </span>
@@ -409,7 +409,7 @@ export default function Wishlist(props) {
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step={`0.01`}
-                                            className="form-input px-2 py-2 border w-full rounded-md"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -426,7 +426,7 @@ export default function Wishlist(props) {
                                     </p>}
                                 </li>
                                 {/* <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         URL (Optional)
                                     </label>
                                     <input
@@ -438,7 +438,7 @@ export default function Wishlist(props) {
                                             data.item_url ||
                                             (item && item.item_url)
                                         }
-                                        className="form-input px-2 py-2 border w-full rounded-md"
+                                        className="w-full border-gray-300 border px-4 py-2 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                         autoComplete="item_url"
                                         onChange={(e) =>
                                             setData("item_url", e.target.value)
@@ -447,7 +447,7 @@ export default function Wishlist(props) {
                                 </li> */}
 
                                 <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         Choose Image or Upload
                                     </label>
 
@@ -496,11 +496,11 @@ export default function Wishlist(props) {
                                                         );
                                                     })}
                                             </Swiper>
-                                        <h4 className="mt-2 mb-2 w-100 text-center"> {" "}
+                                        <h4 className="mt-2 mb-2 w-full text-center"> {" "}
                                             OR{" "}
                                         </h4>
 
-                                        <div className={`${ !isEditable ? "" : "d-none" } editable`} >
+                                        <div className={`${ !isEditable ? "" : "hidden" } editable`} >
                                             <GlobalUploader
                                                 type="minimal" ctxName="wish-thumbnail"
                                                 ref={uploaderRef}
@@ -517,125 +517,152 @@ export default function Wishlist(props) {
 
                             <p className="mt-8 pt-6 hidden   !border-t ">Choose Wish Type</p>
                             <div className=" hidden wishlistAccordian  mt-3 mb-6">
-                                <Accordion defaultActiveKey={defaultKey}>
-                                    <Accordion.Item eventKey={0}>
-                                        <Accordion.Header
-                                            onClick={(e) => setSubs(0)}
-                                        >
-                                            <span className="activedote"></span>{" "}
-                                            Single Wish
-                                        </Accordion.Header>
-                                        <Accordion.Body>
-                                            <div className="singlewishbox">
-                                                <div className="repeatpurchase text-start">
-                                                    <label htmlFor="allow">
-                                                        <input
-                                                            checked={repeat}
-                                                            type="checkbox"
-                                                            id="allow"
-                                                            name="repeat_purchase"
-                                                            onChange={rpValue}
-                                                        />
-                                                        Allow Repeat Purchases
-                                                    </label>
-                                                </div>
-                                                <p className="text-start">
-                                                    Check if you want repeat
-                                                    purchases of this gift. If
-                                                    unchecked, the item will
-                                                    automatically delete from
-                                                    your wishlist after the
-                                                    first purchase.
-                                                </p>
-                                            </div>
-                                        </Accordion.Body>
-                                    </Accordion.Item>
-                                    <Accordion.Item eventKey={1}>
-                                        <Accordion.Header
-                                            onClick={(e) => setSubs(1)}
-                                        >
-                                            <span className="activedote"></span>{" "}
-                                            Subscription
-                                        </Accordion.Header>
-                                        <Accordion.Body>
-                                            <div className="singlewishbox rounded ">
-                                                <strong className="mb-2 text-start d-block ">
-                                                    {" "}
-                                                    Allows gifter to purchase
-                                                    this item on a recurring
-                                                    basis.{" "}
-                                                </strong>
-                                                <div className="repeatpurchase text-start">
-                                                    <label htmlFor="daily">
-                                                        <input
-                                                            checked={
-                                                                period ==
-                                                                "daily"
-                                                            }
-                                                            type="radio"
-                                                            id="daily"
-                                                            value={"daily"}
-                                                            name="subscription_period"
-                                                            onChange={spValue}
-                                                        />
-                                                        Daily
-                                                    </label>
-                                                </div>
-                                                <div className="repeatpurchase mt-2 text-start">
-                                                    <label htmlFor="weekly">
-                                                        <input
-                                                            checked={
-                                                                period ==
-                                                                "weekly"
-                                                            }
-                                                            type="radio"
-                                                            id="weekly"
-                                                            value={"weekly"}
-                                                            name="subscription_period"
-                                                            onChange={spValue}
-                                                        />{" "}
-                                                        Weekly
-                                                    </label>
-                                                </div>
-                                                <div className="repeatpurchase mt-2 text-start">
-                                                    <label htmlFor="monthly">
-                                                        <input
-                                                            checked={
-                                                                period ==
-                                                                "monthly"
-                                                            }
-                                                            type="radio"
-                                                            id="monthly"
-                                                            value={"monthly"}
-                                                            name="subscription_period"
-                                                            onChange={spValue}
-                                                        />
-                                                        Monthly
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </Accordion.Body>
-                                    </Accordion.Item>
-                                    {/* <Accordion.Item eventKey={2}>
-                                                <Accordion.Header
-                                                    onClick={(e) => setSubs(2)}
+                                <div className="w-full rounded-2xl bg-white p-2">
+                                    <Disclosure defaultOpen={defaultKey === 0}>
+                                        {({ open }) => (
+                                            <>
+                                                <Disclosure.Button 
+                                                    onClick={(e) => setSubs(0)}
+                                                    className="flex w-full justify-between rounded-lg bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75 mb-2"
                                                 >
-                                                    <span className="activedote"></span>{" "}
-                                                    Crowdfund
-                                                </Accordion.Header>
-                                                <Accordion.Body>
-                                                    <p className="text-start d-block">
-                                                        Allows multiple gifters
-                                                        to contribute to your
-                                                        wish item.
-                                                    </p>
-                                                </Accordion.Body>
-                                            </Accordion.Item> */}
-                                </Accordion>
+                                                    <span className="flex items-center">
+                                                        <span className="activedote mr-2"></span>
+                                                        Single Wish
+                                                    </span>
+                                                    <FaChevronUp
+                                                        className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-pink-500`}
+                                                    />
+                                                </Disclosure.Button>
+                                                <Transition
+                                                    enter="transition duration-100 ease-out"
+                                                    enterFrom="transform scale-95 opacity-0"
+                                                    enterTo="transform scale-100 opacity-100"
+                                                    leave="transition duration-75 ease-out"
+                                                    leaveFrom="transform scale-100 opacity-100"
+                                                    leaveTo="transform scale-95 opacity-0"
+                                                >
+                                                    <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-500">
+                                                        <div className="singlewishbox">
+                                                            <div className="repeatpurchase text-left">
+                                                                <label htmlFor="allow">
+                                                                    <input
+                                                                        checked={repeat}
+                                                                        type="checkbox"
+                                                                        id="allow"
+                                                                        name="repeat_purchase"
+                                                                        onChange={rpValue}
+                                                                        className="mr-2"
+                                                                    />
+                                                                    Allow Repeat Purchases
+                                                                </label>
+                                                            </div>
+                                                            <p className="text-left mt-2">
+                                                                Check if you want repeat
+                                                                purchases of this gift. If
+                                                                unchecked, the item will
+                                                                automatically delete from
+                                                                your wishlist after the
+                                                                first purchase.
+                                                            </p>
+                                                        </div>
+                                                    </Disclosure.Panel>
+                                                </Transition>
+                                            </>
+                                        )}
+                                    </Disclosure>
+                                    <Disclosure defaultOpen={defaultKey === 1}>
+                                        {({ open }) => (
+                                            <>
+                                                <Disclosure.Button 
+                                                    onClick={(e) => setSubs(1)}
+                                                    className="flex w-full justify-between rounded-lg bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75"
+                                                >
+                                                    <span className="flex items-center">
+                                                        <span className="activedote mr-2"></span>
+                                                        Subscription
+                                                    </span>
+                                                    <FaChevronUp
+                                                        className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-pink-500`}
+                                                    />
+                                                </Disclosure.Button>
+                                                <Transition
+                                                    enter="transition duration-100 ease-out"
+                                                    enterFrom="transform scale-95 opacity-0"
+                                                    enterTo="transform scale-100 opacity-100"
+                                                    leave="transition duration-75 ease-out"
+                                                    leaveFrom="transform scale-100 opacity-100"
+                                                    leaveTo="transform scale-95 opacity-0"
+                                                >
+                                                    <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-500">
+                                                        <div className="singlewishbox rounded ">
+                                                            <strong className="mb-2 text-left block ">
+                                                                {" "}
+                                                                Allows gifter to purchase
+                                                                this item on a recurring
+                                                                basis.{" "}
+                                                            </strong>
+                                                            <div className="repeatpurchase text-left">
+                                                                <label htmlFor="daily">
+                                                                    <input
+                                                                        checked={
+                                                                            period ==
+                                                                            "daily"
+                                                                        }
+                                                                        type="radio"
+                                                                        id="daily"
+                                                                        value={"daily"}
+                                                                        name="subscription_period"
+                                                                        onChange={spValue}
+                                                                        className="mr-2"
+                                                                    />
+                                                                    Daily
+                                                                </label>
+                                                            </div>
+                                                            <div className="repeatpurchase mt-2 text-left">
+                                                                <label htmlFor="weekly">
+                                                                    <input
+                                                                        checked={
+                                                                            period ==
+                                                                            "weekly"
+                                                                        }
+                                                                        type="radio"
+                                                                        id="weekly"
+                                                                        value={"weekly"}
+                                                                        name="subscription_period"
+                                                                        onChange={spValue}
+                                                                        className="mr-2"
+                                                                    />{" "}
+                                                                    Weekly
+                                                                </label>
+                                                            </div>
+                                                            <div className="repeatpurchase mt-2 text-left">
+                                                                <label htmlFor="monthly">
+                                                                    <input
+                                                                        checked={
+                                                                            period ==
+                                                                            "monthly"
+                                                                        }
+                                                                        type="radio"
+                                                                        id="monthly"
+                                                                        value={"monthly"}
+                                                                        name="subscription_period"
+                                                                        onChange={spValue}
+                                                                        className="mr-2"
+                                                                    />
+                                                                    Monthly
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </Disclosure.Panel>
+                                                </Transition>
+                                            </>
+                                        )}
+                                    </Disclosure>
+                                </div>
                             </div>
 
                             <div className="pt-4 pb-3">
-                                <strong className="text-start d-block pt-4 !border-t ">
+                                <strong className="text-left block pt-4 !border-t ">
                                     Content File 
                                 </strong>
                                 <p className="text-small mb-3">
@@ -688,7 +715,7 @@ export default function Wishlist(props) {
                                 />
 
                             {/* <div className="pt-4 pb-3">
-                                <strong className="text-start d-block">
+                                <strong className="text-left block">
                                     Exclusive Reward or Art commission *
                                 </strong>
                                 <p className="text-small mb-3">

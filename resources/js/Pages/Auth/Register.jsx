@@ -902,7 +902,7 @@ export default function Register(props) {
                     <div className="text-center mb-10">
                         <h2 className="px-4 text-4xl md:text-5xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Create{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
+                            <span className="text-gradient-wishlist">
                                 Account
                             </span>
                         </h2>

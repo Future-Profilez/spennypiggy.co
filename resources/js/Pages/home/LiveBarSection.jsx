@@ -25,7 +25,7 @@ export default function LiveBarSection() {
       <div className=' livebarsections pt-0 pt-md-5 mt-12 '>
         <div className='container px-4 w-100' >
           <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-4 uppercase leading-none' >
-            What is <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Spenny Piggy</span> ? 🐷
+            What is <span className="text-gradient-wishlist">Spenny Piggy</span> ? 🐷
           </h2>
 
            <Lightbox classes="m-auto d-table" text={<>

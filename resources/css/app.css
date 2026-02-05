@@ -16,7 +16,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    .fading {
+    .animate-fading {
       animation: fading-effect both;
       animation-timeline: view();
       animation-range: contain 0% contain 30%;
@@ -264,6 +264,6 @@ lr-config {
     display: none;
 }
 
-.pl-8 { 
+/* .pl-8 { 
     padding-left: 2rem !important;
-}
+} */

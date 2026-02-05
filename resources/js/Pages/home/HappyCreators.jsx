@@ -57,7 +57,7 @@ export default function HappyCreators() {
 
             <div className="containerbox relative ">
                 <h2 className="fading text-2xl md:text-3xl lg:text-4xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
-                    Happy <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Creators</span>
+                    Happy <span className="text-gradient-wishlist">Creators</span>
                 </h2>
 
                 <div className="creatorslider">

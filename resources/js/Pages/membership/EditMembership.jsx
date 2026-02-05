@@ -215,32 +215,32 @@ export default function EditMembership({ item }) {
 
     return (
         <Popup
-            modalclassName="pinkmodal full sendSurprize-modal shadow-pink ps-0"
+            modalclassName="pinkmodal full sendSurprize-modal shadow-pink pl-0"
             space="4"
             size="md"
             action={close}
-            classes={`btn-pink w-100 sm mt-3`}
+            classes={`btn-pink w-full sm mt-3`}
             text={`Edit`}
         >
             <div className="addgoal">
-                <h2 className="text-uppercase font-GillSans pb-4 font-large">
+                <h2 className="uppercase font-GillSans pb-4 font-large">
                     Update Membership
                 </h2>
-                <div className="row">
-                    <div className="col-md-12 form-field mb-4">
-                        <label className="d-block text-start mb-2">
+                <div className="flex flex-wrap">
+                    <div className="w-full mb-4">
+                        <label className="block text-left mb-2">
                             Choose Membership Level
                         </label>
-                        <ul className="ps-0 flex flex-wrap tiers">
+                        <ul className="pl-0 flex flex-wrap tiers">
                             {memberships &&
                                 memberships.map((m, i) => {
                                     return (
                                         <li
                                             key={`membership-${i}`}
-                                            className="mb-2 me-2"
+                                            className="mb-2 mr-2"
                                         >
                                             <input
-                                                className="cursor-pointer d-none"
+                                                className="cursor-pointer hidden"
                                                 type="checkbox"
                                                 id={m.value}
                                                 value={m.value}
@@ -249,7 +249,7 @@ export default function EditMembership({ item }) {
                                                 checked={data.level === m.value}
                                             />
                                             <label
-                                                className={`cursor-pointer text-capitalize ${
+                                                className={`cursor-pointer capitalize ${
                                                     data &&
                                                     data.level == m.value
                                                         ? "active"
@@ -265,17 +265,17 @@ export default function EditMembership({ item }) {
                         </ul>
                     </div>
 
-                    <div className="col-md-12 form-field mb-4">
-                        <label className="d-block text-start mb-2">
+                    <div className="w-full mb-4">
+                        <label className="block text-left mb-2">
                             {data && data.level === "lifetime"
                                 ? "Lifetime membership price"
                                 : "Monthly Price"}
                         </label>
-                        <div className="position-relative  currency-wrapper">
+                        <div className="relative  currency-wrapper">
                             <span className="currency-tag">{"GBP"}</span>
                             <input
-                                className="form-input w-100 rounded"
-                                onChange={handleInput}
+                                        className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                        onChange={handleInput}
                                 defaultValue={(item && item.price) || ""}
                                 type="number"
                                 name="month_price"
@@ -288,11 +288,11 @@ export default function EditMembership({ item }) {
                         </div>
                     </div>
 
-                    <div className="col-md-12 form-field mb-4">
-                        <label className="d-block text-start mb-1">
+                    <div className="w-full mb-4">
+                        <label className="block text-left mb-1">
                             Thumbnail
                         </label>
-                        <p className="text-muted mb-3">
+                        <p className="text-gray-500 mb-3">
                             This is not required, but it can be a nice way to
                             build your brand or make the offering more
                             attractive.
@@ -300,7 +300,7 @@ export default function EditMembership({ item }) {
 
                         <div
                             className={`${
-                                !isEditable ? "" : "d-none"
+                                !isEditable ? "" : "hidden"
                             } editable`}
                         >
                             <GlobalUploader ctxName='add-edit-membership-context'
@@ -311,7 +311,7 @@ export default function EditMembership({ item }) {
                             />
                         </div>
                         <div
-                            className={`${isEditable ? "" : "d-none"} editable`}
+                            className={`${isEditable ? "" : "hidden"} editable`}
                         >
                             <UploadcareEditor
                                 setIsEditable={setIsEditable}
@@ -327,11 +327,11 @@ export default function EditMembership({ item }) {
                             membershipBenifits.map((m, i) => {
                                 return (
                                     <div
-                                        className="member-reward me-2 mb-2 text-start"
+                                        className="member-reward mr-2 mb-2 text-left"
                                         key={`reward-${i}`}
                                     >
                                         <input
-                                            className="cursor-pointer d-none"
+                                            className="cursor-pointer hidden"
                                             type="checkbox"
                                             id={m.value}
                                             value={m.value}
@@ -343,7 +343,7 @@ export default function EditMembership({ item }) {
                                             }
                                         />
                                         <label
-                                            className="cursor-pointer text-capitalize"
+                                            className="cursor-pointer capitalize"
                                             htmlFor={m.value}
                                         >
                                             {m.title}
@@ -356,7 +356,7 @@ export default function EditMembership({ item }) {
                     <button
                         onClick={updateMembership}
                         // disabled={loading}
-                        className="flex w-100 btn-pink lg mx-auto"
+                        className="flex w-full btn-pink lg mx-auto"
                     >
                         {loading ? "Processing" : "Update"}
                     </button>

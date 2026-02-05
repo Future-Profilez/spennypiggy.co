@@ -3,11 +3,10 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import GiftAddCart from "./GiftAddCart";
 import GiftEdit from "./GiftEdit";
-import Dropdown from "react-bootstrap/Dropdown";
-import DropdownButton from "react-bootstrap/DropdownButton";
+import { Menu, Transition } from '@headlessui/react';
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 
@@ -45,35 +44,49 @@ export default function GiftListing({
 
     return (
         <div
-            className={`wishlistcntbox mb-3 mb-sm-4 whbg relative
+            className={`wishlistcntbox mb-3 sm:mb-4 whbg relative
                 ${gift?.deleted_at !== null ? "opacity-50" : ""}
                  shadow-voilet`}
         >
             {IsloggedIn && (
                 <div className="absolute top-2 right-2 z-10 opacity-100">
-                    <DropdownButton
-                        className="wishedit"
-                        id="dropdown-basic-button"
-                        title={
-                            <div className="flex flex-col items-center gap-1">
-                                <span className="w-1.5 h-1.5 bg-dark rounded-full"></span>
-                                <span className="w-1.5 h-1.5 bg-dark rounded-full"></span>
-                                <span className="w-1.5 h-1.5 bg-dark rounded-full"></span>
-                            </div>
-                        }
-                    >
-                        <Dropdown.Item>
-                            <button
-                                onClick={() => {
-                                    DeleteItem(gift?.uuid);
-                                }}
-                            >
-                                {gift?.deleted_at === null
-                                    ? "Disable Item"
-                                    : "Enable Item"}
-                            </button>
-                        </Dropdown.Item>
-                    </DropdownButton>
+                    <Menu as="div" className="relative inline-block text-left">
+                        <Menu.Button className="wishedit flex flex-col items-center gap-1 p-2 hover:bg-gray-100 rounded-full focus:outline-none">
+                            <span className="w-1.5 h-1.5 bg-gray-900 rounded-full"></span>
+                            <span className="w-1.5 h-1.5 bg-gray-900 rounded-full"></span>
+                            <span className="w-1.5 h-1.5 bg-gray-900 rounded-full"></span>
+                        </Menu.Button>
+                        <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
+                        >
+                            <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <div className="px-1 py-1">
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <button
+                                                className={`${
+                                                    active ? 'bg-pink-500 text-white' : 'text-gray-900'
+                                                } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                                                onClick={() => {
+                                                    DeleteItem(gift?.uuid);
+                                                }}
+                                            >
+                                                {gift?.deleted_at === null
+                                                    ? "Disable Item"
+                                                    : "Enable Item"}
+                                            </button>
+                                        )}
+                                    </Menu.Item>
+                                </div>
+                            </Menu.Items>
+                        </Transition>
+                    </Menu>
                 </div>
             )}
             {IsloggedIn ? (
@@ -137,7 +150,7 @@ export default function GiftListing({
             >
                 <div>
                     <h4
-                        className={`fon-bold text-dark capitalize line-clamp-2`}
+                        className={`font-bold text-dark capitalize line-clamp-2`}
                     >
                         {details.title}
                     </h4>

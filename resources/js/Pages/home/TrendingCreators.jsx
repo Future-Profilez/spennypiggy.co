@@ -14,7 +14,7 @@ export default function TrendingCreators({ creators }) {
 
         <div className="containerbox relative">
           <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
-            Trending <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Creators</span>
+            Trending <span className="text-gradient-wishlist">Creators</span>
           </h2>
           <p className="fading text-center text-gray-300 max-w-[500px] m-auto mb-8 md:!mb-12 text-lg">Top clicked search results from the past 24 hours.
 Shows what users are actively exploring right now.</p>
@@ -40,4 +40,3 @@ Shows what users are actively exploring right now.</p>
     </section>
   );
 }
-

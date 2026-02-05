@@ -422,8 +422,8 @@ export default function AddItem(props) {
                     <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                         <AiOutlineShop color="var(--pink)" size="1.5rem" />
                     </div>
-                    <div className="ps-3 text-start">
-                        <h2 className="text-md font-normal font-GillSans uppercase ">Sell Something</h2>
+                    <div className="pl-3 text-left">
+                            <h2 className="text-base font-normal font-GillSans uppercase ">Sell Something</h2>
                         <p className="text-sm font-poppins">
                             Sell digital or physical items from your page
                         </p>
@@ -497,13 +497,13 @@ export default function AddItem(props) {
 
                         <div className="shop-forms-field mb-4">
                             <label className="w-full mb-2">Price*</label>
-                            <div className="position-relative  currency-wrapper dollar" >
+                            <div className="relative  currency-wrapper dollar" >
                                 <span className="currency-tag">$</span>
                                 <input
                                     name="price"
                                     defaultValue={pre_price}
                                     onChange={handelInputs}
-                                    className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-3 px-3.5"
+                                    className="shop-forms-input pl-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
                                     type="number"
                                     placeholder="Enter the price of your item"
                                 />
@@ -511,7 +511,7 @@ export default function AddItem(props) {
                         </div>
 
                         <h2 className="text-md font-normal mb-3 mt-3">Item image</h2>
-                        {isEdit ? <img alt="image-profile" className="w-full max-h-[500px] object-cover h-auto rounded-4" src={item && item.perma_link} /> : ""}
+                        {isEdit ? <img alt="image-profile" className="w-full max-h-[500px] object-cover h-auto rounded-xl" src={item && item.perma_link} /> : ""}
                         <div className={`uploader mb-4 mt-2 overflow-hidden`}>
                             <GlobalUploader ctxName='add-shop1-context'
                                 type="minimal"
@@ -519,7 +519,7 @@ export default function AddItem(props) {
                                 sendFile={getFileUID}
                                 options={st.shop}
                             />
-                            <div className={`${thumbEditable ? "":"d-none"} editable`}>
+                            <div className={`${thumbEditable ? "":"hidden"} editable`}>
                                 <UploadcareEditor
                                     setIsEditable={setIsThumbEditable}
                                     uuid={thumb}
@@ -535,14 +535,14 @@ export default function AddItem(props) {
                             <div className="add-form">
                                 {variants.map((variant, index) => (
                                     <div className="flex items-center justify-between my-2">
-                                        <input type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] me-2" name={`variantName${index}`}
+                                        <input type="text" className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] mr-2" name={`variantName${index}`}
                                         placeholder="Variant Name"
                                         onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
                                         />
-                                        <div className="relative me-2">
+                                        <div className="relative mr-2">
                                          <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                                         <input
-                                        type="text" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
+                                        type="text" className="shop-forms-input pl-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
                                         name={`variantValue${index}`}
                                         placeholder="Variant Price"
                                         onChange={(e) => handleVariantChange(index, 'value', e.target.value)}
@@ -566,7 +566,7 @@ export default function AddItem(props) {
                             <div className="shop-forms-field mb-4">
                                 <label className="w-full mb-2">Success page * </label>
                                 <div className="success-page-types flex items-center flex-wrap">
-                                    <div className="flex items-center mb-2 pe-3">
+                                    <div className="flex items-center mb-2 pr-3">
                                         <input
                                             onChange={handleSuccessPageType}
                                             defaultChecked={item && item.success_page_type == "text" ? true:false}
@@ -578,7 +578,7 @@ export default function AddItem(props) {
                                         />
                                         <label
                                             htmlFor="success-option-1"
-                                            className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block"
+                                            className=" cursor-pointer text-base font-medium text-gray-900 ml-2 block"
                                         >
                                             Confirmation message
                                         </label>
@@ -724,7 +724,7 @@ export default function AddItem(props) {
                                                     value={c.uuid}
                                                     className="h-5 w-5 rounded-1 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
                                                 />
-                                                <label htmlFor={`category-item-${c.uuid}`} className=" cursor-pointer text-md font-medium text-gray-900 ml-2 block" >{c.category}</label>
+                                                <label htmlFor={`category-item-${c.uuid}`} className=" cursor-pointer text-base font-medium text-gray-900 ml-2 block" >{c.category}</label>
                                             </div>
                                         );
                                     })}
@@ -739,7 +739,7 @@ export default function AddItem(props) {
                                 />
                                 <button
                                     onClick={addCategory}
-                                    className="bg-gray-200 rounded-xl ms-3 p-[13px] px-4 text-nowrap"
+                                    className="bg-gray-200 rounded-xl ml-3 p-[13px] px-4 whitespace-nowrap"
                                 >
                                     {" "}
                                     + Add
@@ -764,7 +764,7 @@ export default function AddItem(props) {
                                     ${haveVat == "1" ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200"}`}
 
                                 ></div>
-                                <span className="ms-3 text-md font-medium text-gray-900">
+                                <span className="ml-3 text-base font-medium text-gray-900">
                                     Vat Applicable
                                     <button className="tooltipbtn">
                                         ?
@@ -798,7 +798,7 @@ export default function AddItem(props) {
                                     ${haveQuestion ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200"}
                                     `}
                                 ></div>
-                                <span className="ms-3 text-md font-medium text-gray-900">
+                                <span className="ml-3 text-base font-medium text-gray-900">
                                     Ask a question (optional)
                                     <button className="tooltipbtn">
                                         ?
@@ -850,21 +850,23 @@ export default function AddItem(props) {
                         {shopItem && shopItem.type !== "physical" ? (
                             <>
                                 <div className="ad-setting my-2">
-                                    <div className="inline-flex items-centercursor-pointer">
-                                        <div onClick={handleSpPrice}
-                                        className={` cursor-pointer relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${haveSpPrice ? "after:transition-all after:translate-x-full bg-blue-600":"bg-gray-200 "}
-                                        `}></div>
-                                        <span className="ms-3 text-md font-medium text-gray-900">
-                                            Special price for members (optional){" "}
-                                            <button className="tooltipbtn">
-                                                ?
-                                                <p>
-                                                    Offer a discounted extra
-                                                    price to attract new members
-                                                    and to keep your current
-                                                    members engaged.
-                                                </p>
-                                            </button>
+                                    <div className="inline-flex items-center cursor-pointer">
+                                        <label className="relative flex items-center p-3 rounded-full cursor-pointer" htmlFor="check3">
+                                            <input type="checkbox"
+                                                className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                                                id="check3" onChange={handleSpPrice} checked={haveSpPrice} />
+                                            <span
+                                                className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"
+                                                    stroke="currentColor" strokeWidth="1">
+                                                    <path fillRule="evenodd"
+                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                        clipRule="evenodd"></path>
+                                                </svg>
+                                            </span>
+                                        </label>
+                                        <span className="ml-3 text-base font-medium text-gray-900">
+                                            Special Price for Members
                                         </span>
                                     </div>
                                     {haveSpPrice ? (
@@ -915,7 +917,7 @@ export default function AddItem(props) {
                         </details>
 
                         <div className="isCheckedRefernce py-4">
-                            <label htmlFor="agreeterm" className="text-start">
+                            <label htmlFor="agreeterm" className="text-left">
                                 <input
                                     onChange={(e) =>
                                         setIsChecked(e.target.checked)
@@ -923,7 +925,7 @@ export default function AddItem(props) {
                                     type="checkbox"
                                     id="agreeterm"
                                     name="agreeterm"
-                                    className="me-2 rounded-1 cursor-pointer"
+                                    className="mr-2 rounded-1 cursor-pointer"
                                     value="agreeterm"
                                 ></input>
                                 By adding shop item you agree to our{" "}

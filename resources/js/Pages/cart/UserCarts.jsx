@@ -160,17 +160,17 @@ export default function UserCarts(props) {
 
 
     return (
-        <div className={`${cartCleared ? "d-none" : ""} px-2 containerbox`}>
+        <div className={`${cartCleared ? "hidden" : ""} px-2 containerbox`}>
             <div className="my-4 pb-12 mb-16 border-b border-[#000] cartPage overflow-hidden bg-white md:shadow-black md:border md:border-black md:rounded-[35px]">
-                    <div className='hidden md:flex p-3 md:p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
-                        <span className=' border-black border-2 bg-red-700 me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-yellow-400 me-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
-                        <span className=' border-black border-2 bg-mint me-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
+                    <div className='hidden md:flex p-3 md:p-4 pinkbg !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+                        <span className=' border-black border-2 bg-red-700 mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-yellow-400 mr-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
+                        <span className=' border-black border-2 bg-mint mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                     </div>
                     <div className="cartMain md:p-4 m-2 md:p-12">
                         <h2 className="pb-1 wishtitle fading">
                             Your Basket for {datas?.user?.name || ""}
-                            <Link className="text-voilet" href={`/${datas?.user?.username || ""}`}>
+                            <Link className="text-violet-600" href={`/${datas?.user?.username || ""}`}>
                                 (@{datas?.user?.username || ""})
                             </Link>
                         </h2>
@@ -196,14 +196,14 @@ export default function UserCarts(props) {
                         <div className="cartTotal pt-3 pb-6">
                             <div className="fading cartSubTotal text-right mt-1">
                                 <span>Subtotal :</span>
-                                <strong className="text-end text-black">
+                                <strong className="text-right text-black">
                                     {formatMultiPrice(subtotal || "", datas?.user && currency)}
                                     {/* {formatMultiPrice(subtotal || "", datas?.user && datas?.user?.default_currency)} */}
                                 </strong>
                             </div>
                             <div className="fading cartSubTotal whitespace-nowrap text-right mt-1">
-                                <span className="sm:ps-[5px]">Platform Fee :</span>{" "}
-                                <strong className="text-end text-black">  
+                                <span className="sm:pl-[5px]">Platform Fee :</span>{" "}
+                                <strong className="text-right text-black">  
                                     {formatMultiPrice(fee || "",datas?.user && currency, 'adminfee')}
                                     {/* {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')} */}
                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
@@ -216,18 +216,17 @@ export default function UserCarts(props) {
                             </div>
 
                             <div className="fading cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>
-                                <strong className="text-end text-black">
+                                <strong className="text-gray-900">Total :</strong>
+                                <strong className="text-right text-black">
                                     {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
-                                    {/* {formatMultiPrice((fee + subtotal) || "",datas?.user && datas?.user?.default_currency, 'adminfees')} */}
                                 </strong>
                             </div>
                         </div>
 
                         <div className="addMessage">
                             <form onSubmit={(e) => e.preventDefault()}>
-                                <ul className="row">
-                                    <li className="fading">
+                                <ul className="flex flex-wrap">
+                                    <li className="fading w-full">
                                         <label>Add Message </label>
                                         <textarea rows={2}
                                             onChange={(e) =>
@@ -236,13 +235,13 @@ export default function UserCarts(props) {
                                             placeholder="Send some words of support..."
                                         ></textarea>
                                     </li>
-                                    <li className="w-100 mt-3 fading">
-                                        <li className="row">
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">
+                                    <li className="w-full mt-3 fading">
+                                        <div className="flex flex-wrap">
+                                            <div className="w-full mb-4">
+                                                <label className="block text-left">
                                                     Email{" "}
                                                 </label>
-                                                <p className="text-small text-muted mb-1">
+                                                <p className="text-sm text-gray-500 mb-1">
                                                     Your e-mail remains private.
                                                 </p>
                                                 <input
@@ -251,7 +250,7 @@ export default function UserCarts(props) {
                                                         auth && auth.email
                                                             ? "disabled"
                                                             : ""
-                                                    } form-input w-100 rounded`}
+                                                    } border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md`}
                                                     value={auth && auth.email}
                                                     disabled={
                                                         auth && auth.email
@@ -265,12 +264,12 @@ export default function UserCarts(props) {
                                                     placeholder="Enter Your Email..."
                                                 />
                                             </div>
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">
+                                            <div className="w-full mb-4">
+                                                <label className="block text-left">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="form-input w-100 rounded"
+                                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                                     onChange={(e) =>
                                                         setName(e.target.value)
                                                     }
@@ -279,12 +278,12 @@ export default function UserCarts(props) {
                                                     placeholder="Enter Your Name..."
                                                 />
                                             </div>
-                                        </li>
+                                        </div>
                                     </li>
                                     <li className="cheklistbox fading">
                                         <label
                                             htmlFor="anonymous"
-                                            className="text-start"
+                                            className="text-left"
                                         >
                                             <input
                                                 onChange={(e) =>
@@ -295,19 +294,19 @@ export default function UserCarts(props) {
                                                 type="checkbox"
                                                 id="anonymous"
                                                 name="anonymous"
-                                                className="me-2"
+                                                className="mr-2"
                                                 value="anonymous"
                                             ></input>
                                             Keep anonymous
                                         </label>
-                                        <p className="text-muted text-small mb-3">
+                                        <p className="text-gray-500 text-sm mb-3">
                                             Your personal email and name will be
                                             private.
                                         </p>
 
                                         <label
                                             htmlFor="agreeterm"
-                                            className="text-start fading"
+                                            className="text-left fading"
                                         >
                                             <input
                                                 onChange={(e) =>
@@ -316,21 +315,21 @@ export default function UserCarts(props) {
                                                 type="checkbox"
                                                 id="agreeterm"
                                                 name="agreeterm"
-                                                className="me-2"
+                                                className="mr-2"
                                                 value="agreeterm"
                                             ></input>
                                             I understand I am paying the creator
                                             directly and I agree to the{" "}
                                             <Link
                                                 target="_blank"
-                                                className="text-voilet"
+                                                className="text-violet-600"
                                                 href={route("terms-and-conditions")}
                                             >
                                                 Terms of Service
                                             </Link>{" "}
                                             and{" "}
                                             <a
-                                                className="text-voilet"
+                                                className="text-violet-600"
                                                 target="_blank"
                                                 href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
                                             >
@@ -339,8 +338,8 @@ export default function UserCarts(props) {
                                             </a>{" "}
                                             and the following statements:
                                         </label>
-                                        <div className="tearmlist ps-3">
-                                            <ul className="ps-0  ">
+                                        <div className="tearmlist pl-3">
+                                            <ul className="pl-0  ">
                                                 <li> 
                                                     For Memberships and
                                                     subscriptions, I understand I am

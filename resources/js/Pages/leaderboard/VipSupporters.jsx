@@ -120,7 +120,7 @@ export default function VipSupporters() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 d-flex justify-content-center align-items-center" style={{minHeight: '400px'}}>
+            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading VIP Supporters...</span>
                 </div>

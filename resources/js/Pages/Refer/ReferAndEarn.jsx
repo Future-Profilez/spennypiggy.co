@@ -55,7 +55,7 @@ export default function ReferAndEarn({
                 </div>
 
                 {/* Percentage text */}
-                <div className="text-[11px] text-muted mt-1 text-center">
+                <div className="text-[11px] text-gray-500 mt-1 text-center">
                     {Math.floor(percent)}% completed
                 </div>
 
@@ -93,20 +93,20 @@ export default function ReferAndEarn({
                 <div className="containerbox">
                     {/* ================= HEADER ================= */}
                     {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
-                    <div className="mb-6 border-3 border-black shadow-pink rounded-[40px] overflow-hidden">
+                    <div className="mb-6 border-[3px] border-black shadow-pink rounded-[40px] overflow-hidden">
                         {/* Mac style bar */}
                         <div className="p-4 pinkbg flex items-center border-b-[3px] border-black">
-                            <span className="border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
-                            <span className="border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
-                            <span className="border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block"></span>
+                            <span className="border-black border-2 bg-red-700 mr-2 w-5 h-5 rounded-full block"></span>
+                            <span className="border-black border-2 bg-yellow-400 mr-2 w-5 h-5 rounded-full block"></span>
+                            <span className="border-black border-2 bg-mint mr-2 w-5 h-5 rounded-full block"></span>
 
-                            <h1 className="text-white font-gulfs uppercase ms-4">
+                            <h1 className="text-white font-gulfs uppercase ml-4">
                                 Refer & Earn
                             </h1>
 
                             <Link
                                 href={`/${auth?.user?.username}`}
-                                className="ms-auto text-white text-sm hover:underline"
+                                className="ml-auto text-white text-sm hover:underline"
                             >
                                 ← Back to Profile
                             </Link>
@@ -115,7 +115,7 @@ export default function ReferAndEarn({
                         {/* Content */}
                         <div className="whbg p-6">
                             {/* Intro text */}
-                            <p className="text-muted max-w-3xl mb-6">
+                            <p className="text-gray-500 max-w-3xl mb-6">
                                 Invite creators to Spenny Piggy and earn{" "}
                                 <strong>£50</strong> for every creator who
                                 reaches <strong>£1,000 lifetime GMV</strong>.
@@ -203,10 +203,10 @@ export default function ReferAndEarn({
                                     </div>
                                 </div>
 
-                                <p className="text-xs text-muted mt-3">
-                                    Share this link with creators. You’ll earn
-                                    £50 once they reach £1,000 lifetime GMV.
-                                </p>
+                                <p className="text-xs text-gray-500 mt-3">
+                    Share this link with creators. You’ll earn
+                    £50 once they reach £1,000 lifetime GMV.
+                </p>
                             </div>
                         </div>
                     </div>
@@ -249,14 +249,14 @@ export default function ReferAndEarn({
                             <h3 className="text-lg font-GillSans uppercase mb-1">
                                 Redeem Referral Earnings
                             </h3>
-                            <p className="text-sm text-muted">
-                                Redemption requests are reviewed before payout.
-                            </p>
+                            <p className="text-sm text-gray-500">
+                            Redemption requests are reviewed before payout.
+                        </p>
                         </div>
 
                         <div className="flex flex-col items-end gap-2">
                             <div className="text-sm">
-                                <span className="text-muted">
+                                <span className="text-gray-500">
                                     Available balance:
                                 </span>{" "}
                                 <strong>
@@ -290,14 +290,14 @@ export default function ReferAndEarn({
                             </button>
 
                             {!canRedeem && (
-                                <p className="text-xs text-muted text-right max-w-xs">
+                                <p className="text-xs text-gray-500 text-right max-w-xs">
                                     You can redeem once you have at least £50
                                     available.
                                 </p>
                             )}
 
                             {canRedeem && (
-                                <p className="text-xs text-muted text-right max-w-xs">
+                                <p className="text-xs text-gray-500 text-right max-w-xs">
                                     Your request will be reviewed and paid to
                                     your Stripe account.
                                 </p>
@@ -312,7 +312,7 @@ export default function ReferAndEarn({
                         </h2>
 
                         {referrals.length === 0 ? (
-                            <p className="text-muted text-sm">
+                            <p className="text-gray-500 text-sm">
                                 No creators have signed up using your referral
                                 link yet.
                             </p>
@@ -340,7 +340,7 @@ export default function ReferAndEarn({
                                             <tr key={r.id} className="border-b">
                                                 <td className="py-3">
                                                     <strong>{r.name}</strong>
-                                                    <div className="text-xs text-muted">
+                                                    <div className="text-xs text-gray-500">
                                                         @{r.username}
                                                     </div>
                                                 </td>

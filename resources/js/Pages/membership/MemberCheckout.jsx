@@ -136,8 +136,8 @@ export default function SubCheckout(props) {
         <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${membership?.level} membership`} />
-                <div className={`px-0 mb-3 px-lg-2`}>
-                    <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-[20px] md:rounded-[40px]">
+                <div className={`px-0 mb-3 lg:px-2`}>
+                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-[20px] md:rounded-[40px]">
                         <div className="cartMain">
                             <div className="md:flex w-full gap-5">
                                 <div className="w-full md:max-w-[40%]">
@@ -148,7 +148,7 @@ export default function SubCheckout(props) {
                                         Membership Basket for{" "}
                                         {membership?.user?.name || " "}
                                         <Link
-                                            className="text-voilet"
+                                            className="text-violet-600"
                                             target="_blank"
                                             href={`/${
                                                 membership?.user?.username || ""
@@ -163,11 +163,11 @@ export default function SubCheckout(props) {
                                     </p>
                                     <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            <li className="flex justify-content-between  border p-2">
+                                            <li className="flex justify-between  border p-2">
                                                 <span className="min-w-[100px] block">Subtotal :</span>
                                                 <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
                                             </li>
-                                            <li className="flex justify-content-between   border p-2">
+                                            <li className="flex justify-between   border p-2">
                                                 <span className="min-w-[100px] block">Platform Fee :</span>
                                                 <div>
                                                     <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
@@ -181,7 +181,7 @@ export default function SubCheckout(props) {
                                                 </div>
                                             </li>
                                             {vat_amount && vat_amount > 0 ? (
-                                                <li className="flex justify-content-between   border p-2">
+                                                <li className="flex justify-between   border p-2">
                                                     <span className="min-w-[100px] block">VAT :</span>
                                                     <strong>{formatMultiPrice(
                                                             vat_amount || "",
@@ -192,7 +192,7 @@ export default function SubCheckout(props) {
                                             ) : (
                                                 ""
                                             )}
-                                            <li className="flex justify-content-between border p-2">
+                                            <li className="flex justify-between border p-2">
                                                 <span className="min-w-[100px] block">Total :</span>
                                                 <strong>{formatMultiPrice(
                                                     membership?.tax_amount +
@@ -208,10 +208,11 @@ export default function SubCheckout(props) {
                             </div>
 
                             <div className="addMessage mt-5">
-                                <ul className="row">
-                                    <li>
-                                        <label>Add Message </label>
+                                <ul className="flex flex-wrap">
+                                    <li className="w-full">
+                                        <label className="block mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
+                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             onKeyUp={(e) =>
                                                 setData(
                                                     "message",
@@ -225,24 +226,24 @@ export default function SubCheckout(props) {
                                             {errors.message}
                                         </span>
                                     </li>
-                                    <li className="w-100 mt-3">
-                                        <div className="row">
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">
+                                    <li className="w-full mt-3">
+                                        <div className="flex flex-wrap">
+                                            <div className="w-full mb-4">
+                                                <label className="block text-left">
                                                     Email{" "}
                                                 </label>
-                                                <p className="text-small text-muted mb-1">
+                                                <p className="text-sm text-gray-500 mb-1">
                                                     Your e-mail remains
                                                     private.
                                                 </p>
                                                 <input
-                                                    className={`${
-                                                        auth &&
-                                                        auth?.user &&
-                                                        auth?.user?.email
-                                                            ? "disabled"
-                                                            : ""
-                                                    } form-input w-100 rounded`}
+                                        className={`${
+                                            auth &&
+                                            auth?.user &&
+                                            auth?.user?.email
+                                                ? "disabled"
+                                                : ""
+                                        } border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -264,12 +265,12 @@ export default function SubCheckout(props) {
                                                     {errors.email}
                                                 </span>
                                             </div>
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">
+                                            <div className="w-full mb-4">
+                                                <label className="block text-left">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="form-input w-100 rounded"
+                                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -289,25 +290,25 @@ export default function SubCheckout(props) {
                                     <li className="cheklistbox">
                                         <label
                                             htmlFor="anonymous"
-                                            className="text-start"
+                                            className="text-left"
                                         >
                                             <input
                                                 onChange={checkanonymous}
                                                 type="checkbox"
                                                 id="anonymous"
                                                 name="anonymous"
-                                                className="me-2"
+                                                className="mr-2"
                                                 value="anonymous"
                                             ></input>
                                             Keep anonymous
                                         </label>
-                                        <p className="text-muted text-small mb-3">
+                                        <p className="text-gray-500 text-sm mb-3">
                                             Your personal email and name
                                             will be private.
                                         </p>
                                         <label
                                             htmlFor="agreeterm"
-                                            className="text-start"
+                                            className="text-left"
                                         >
                                             <input
                                                 onChange={(e) =>
@@ -319,7 +320,7 @@ export default function SubCheckout(props) {
                                                 type="checkbox"
                                                 id="agreeterm"
                                                 name="agreeterm"
-                                                className="me-2"
+                                                className="mr-2"
                                                 value="agreeterm"
                                             ></input>
                                             I understand I am paying the
@@ -327,7 +328,7 @@ export default function SubCheckout(props) {
                                             the{" "}
                                             <Link
                                                 target="_blank"
-                                                className="text-voilet"
+                                                className="text-violet-600"
                                                 href={route(
                                                     "terms-and-conditions"
                                                 )}
@@ -336,7 +337,7 @@ export default function SubCheckout(props) {
                                             </Link>{" "}
                                             and{" "}
                                             <a
-                                                className="text-voilet"
+                                                className="text-violet-600"
                                                 target="_blank"
                                                 href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
                                             >
@@ -345,8 +346,8 @@ export default function SubCheckout(props) {
                                             </a>{" "}
                                             and the following statements:
                                         </label>
-                                        <div className="tearmlist ps-3">
-                                            <ul className="ps-0">
+                                        <div className="tearmlist pl-3">
+                                            <ul className="pl-0">
                                                 <li>
                                                     {" "}
                                                     This payment will be

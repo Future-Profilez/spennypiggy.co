@@ -36,7 +36,7 @@ export default function FounderBonus() {
                </div>
                <h1 className="text-4xl md:!text-5xl lg:!text-6xl font-gulfs uppercase leading-[0.9] tracking-wide mb-8 text-black">
                   Founder Bonuses <br/>
-                  For <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">Early Creators.</span>
+                  For <span className="text-gradient-wishlist">Early Creators.</span>
                </h1>
                
                <div className="flex flex-col items-center justify-center gap-4 mb-16">

@@ -125,7 +125,7 @@ export default function PlatformAnalytics() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 d-flex justify-content-center align-items-center" style={{minHeight: '400px'}}>
+            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 flex justify-center items-center" style={{minHeight: '400px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -136,10 +136,10 @@ export default function PlatformAnalytics() {
     if (error) {
         return (
             <div className="bg-gray-100 rounded-[25px] p-4 mb-6 text-center">
-                <div className="alert alert-danger" role="alert">
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
-                        className="btn btn-sm btn-outline-danger ms-2" 
+                        className="px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition-colors ml-2 text-sm" 
                         onClick={fetchAnalytics}
                     >
                         Retry
@@ -151,7 +151,7 @@ export default function PlatformAnalytics() {
 
     return (
         <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
-            <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-4">📊 Platform Analytics</h2>
+            <h2 className="font-GillSans text-2xl uppercase text-dark text-left mb-4">📊 Platform Analytics</h2>
             <p className="text-gray-500 mb-6">Insights into platform performance and growth</p>
 
             {/* Overview Stats */}

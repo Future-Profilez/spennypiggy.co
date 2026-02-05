@@ -30,7 +30,7 @@ export default function Index() {
               <div className=" pt-12 pb-16 md:pt-24 md:pb-24">
                 <div className="max-w-6xl">
                   <h1 className="text-3xl md:text-5xl lg:text-6xl  font-gulfs uppercase leading-[0.9] tracking-wide mb-8 text-black">
-                    Creators Keep <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600">100%.</span> <br/>
+                    Creators Keep <span className="text-gradient-wishlist">100%.</span> <br/>
                     <span className="text-gray-600">We Protect Your Payouts.</span>
                   </h1>
                   <p className="text-lg sm:text-xl md:text-2xl font-medium text-gray-600 max-w-2xl leading-relaxed mb-8">

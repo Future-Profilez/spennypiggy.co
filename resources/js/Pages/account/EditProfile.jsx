@@ -74,15 +74,15 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                             <div class="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden shadow-lg">
                                 <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
                             </div>
-                            <div class="ps-3"> 
-                                <h1 class="${`image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-start whitespace-normal ${!hasFullName(user?.name) ? 'break-all' : 'break-words'} `}">
+                            <div class="pl-3"> 
+                                <h1 class="${`image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-left whitespace-normal ${!hasFullName(user?.name) ? 'break-all' : 'break-words'} `}">
                                     ${user?.name}
                                 </h1>
                             </div>
                         </div>
 
-                        <p class="  text-white text-xl font-bold me-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
-                        <img src="${spennypiggy}" alt="Logo" class="me-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
+                        <p class="  text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
+                        <img src="${spennypiggy}" alt="Logo" class="mr-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
 
                         <div class="  bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
                             px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
@@ -200,12 +200,12 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     return (
         <Popup modalclassName='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
-            classes={`${classes ? classes : "button bg-pink d-table d-sm-flex m-auto m-sm-0"}`} >
+            classes={`${classes ? classes : "button bg-pink block sm:flex m-auto sm:m-0"}`} >
             <div className='editForm  mt-4'>
                         {UploadingStart ? <div className='p-4 '>
                             <div className='flex items-center justify-between mb-3'>
                                 <h2 className='pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
-                                <button onClick={()=>setUploadingStart(false)} className='me-4  bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
+                                <button onClick={()=>setUploadingStart(false)} className='mr-4  bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
                             </div>
                            {user?.role == 1 && <p className=' text-yellow-600'>Your Profile picture must match the person in the ID verification which is the next step, if it doesn’t your account will be blocked and the user banned.</p>}
                             <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
@@ -214,7 +214,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         {CoverUploadingStart ? <div className=''>
                             <div className='flex items-center justify-between'>
                                 <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
-                                <button onClick={()=>setCoverUploadingStart(false)} className='me-4 mt-4 bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
+                                <button onClick={()=>setCoverUploadingStart(false)} className='mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-lg'>Exit</button>
                             </div>
                             
                              <UpdateAvatar type="cover" getImageUID={getCoverUID}
@@ -224,7 +224,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         {UploadingStart || CoverUploadingStart ? ''
                             :
                             <>
-                                <div className='mainprofile mb-5 position-relative w-100 '>
+                                <div className='mainprofile mb-5 relative w-full '>
                                     <div className='profilePhotoImg cover'>
                                         <img src={coverImage ? coverImage : (user?.cover_url || coverimage)} alt='img' />
                                         <button onClick={()=>setCoverUploadingStart(true)} className='editbtn'><img src={editicon} alt="img" /></button>
@@ -242,21 +242,21 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                             <label className="mb-1">Display Name</label>
                                             <input onBlur={IsProfileChannged} type="text" name="name" defaultValue={user?.name || ''}
                                                 onChange={(e) => setData('name', e.target.value)}
-                                                className="form-input px-2 py-2 border w-full rounded-md" />
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md" />
                                         </li>
                                         <li className="mb-2">
                                             <label className="mb-1">Username</label>
                                             <input onBlur={IsProfileChannged} defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
-                                                type="text" name="username" className="form-input px-2 py-2 border w-full rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
+                                                type="text" name="username" className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md" placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                                         </li>
 
-                                        <li><strong className='d-block text-start mb-4' >Profile URL : {typeof window !== 'undefined' ? window.location.href : ''}</strong></li>
+                                        <li><strong className='block text-left mb-4' >Profile URL : {typeof window !== 'undefined' ? window.location.href : ''}</strong></li>
 
                                         <li className="mb-3">
                                             <label className="mb-1">Bio</label>
                                             <textarea onBlur={IsProfileChannged} defaultValue={user?.bio || ''}
                                                 onChange={(e) => setData("bio", e.target.value)}
-                                                name="bio" className="form-input px-2 py-2 border w-full rounded-md"
+                                                name="bio" className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                                 placeholder='Bio' />
                                         </li>
 
@@ -266,7 +266,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                                                 <input type="text" name="name" defaultValue={user?.min_surprise_amount || ''}
                                                 onChange={(e) => setData('min_surprise_amount', e.target.value)}
-                                                className="form-input px-2 py-2 border w-full rounded-md" />
+                                                className="w-full border-gray-300 border px-4 py-2 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" />
                                             </div>
                                             <p className="mt-1">
                                                 The Minimum amount is set
