@@ -5,7 +5,7 @@ import axios from 'axios';
 import Avatar from '../../../includes/Avatar';
 import { trackSearchClick } from "@/includes/Analytics";
 
-export default function TopBar({ auth, onSearch, onFilterToggle, activeFilters, onQuickFilter, initialSearch = '' }) {
+export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuickFilter, initialSearch = '' }) {
     const [query, setQuery] = useState(initialSearch || '');
     const [isFocused, setIsFocused] = useState(false);
     const [recentSearches, setRecentSearches] = useState([]);
@@ -141,7 +141,7 @@ export default function TopBar({ auth, onSearch, onFilterToggle, activeFilters, 
                                                         <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wider">Creators</div>
                                                         {suggestions.creators.map((item, i) => (
                                                             <Link href={`/${item?.username}`} onClick={() => trackSearchClick(item.id, item.username)} className='w-full block px-3 py-2 hover:bg-gray-200'>
-                                                                <Avatar auth={auth} user={item} role={item.role}
+                                                                <Avatar role={item.role}
                                                                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
                                                                     name={item.name} link={item.username || null} src={item.avatar_url}
                                                                     subhead={`@${item.username || "anonymous"}`} username={item.username || ""}

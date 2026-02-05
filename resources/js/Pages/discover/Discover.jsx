@@ -226,7 +226,6 @@ export default function Discover(props) {
             <div className="min-h-screen bg-gray-50 ">
                 
                 <TopBar 
-                auth={auth}
                     onSearch={handleSearch}
                     initialSearch={searchQuery}
                     activeFilters={activeQuickFilters}

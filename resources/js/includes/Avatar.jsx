@@ -1,36 +1,14 @@
 import { Link } from "@inertiajs/react";
-import ModernImage from "../Components/ModernImage";
+import ModernImage from '../Components/ModernImage';
 import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
-import { useState } from "react";
 
-export default function Avatar({
-    user,
-    auth,
-    hidename,
-    src,
-    role,
-    profile_status_lock,
-    imageSrc,
-    name,
-    username,
-    subhead,
-    url,
-    link,
-    is_founder,
-    onClick,
-}) {
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth?.user && auth?.user?.username) == (user && user.username),
-    );
-    console.log("user IsloggedIn:", IsloggedIn);
-    console.log("imageSrc IsloggedIn:", imageSrc);
-    console.log("userphoto IsloggedIn:", userphoto);
-    console.log("src IsloggedIn:", src);
-    return (
-        <>
-            <style>{`
+export default function Avatar({ hidename, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
+
+  return (
+    <>
+      <style>{`
       .avatar { 
         border: 1px solid #fff;
         width: 60px;
@@ -87,107 +65,88 @@ export default function Avatar({
       }
       `}</style>
 
-            {username ? (
-                <div className="avatar-wrap">
-                    <Link
-                        href={url || `/${link || username}`}
-                        className="useravatar"
-                        onClick={onClick}
-                    >
-                        <div className="avatar !overflow-visible relative ">
-                            <img
-                                src={
-                                    src &&
-                                    (IsloggedIn || user?.cover_approved === 1)
-                                        ? src
-                                        : imageSrc || userphoto
-                                }
-                                alt="image-avatar"
-                                className="img-fluid rounded-[12px] bg-gray-200"
-                                loading="lazy"
-                                decoding="async"
-                                style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                }}
-                                onError={(e) => {
-                                    console.warn(
-                                        "Avatar image failed to load:",
-                                        imageSrc || src,
-                                    );
-                                    e.target.src = userphoto;
-                                }}
-                            />
-                            {role &&
-                                profile_status_lock &&
-                                (is_founder ? (
-                                    <FounderBadge
-                                        classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]"
-                                        icon
-                                    />
-                                ) : (
-                                    <RiVerifiedBadgeFill
-                                        size="1.5rem"
-                                        className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]"
-                                    />
-                                ))}
-                        </div>
-                        {hidename ? (
-                            ""
-                        ) : (
-                            <>
-                                <div className="avatar-content">
-                                    <h2 className="flex items-center gap-1 capitalize">
-                                        <span className="line-clamp-1 ">
-                                            {name}
-                                        </span>
-                                    </h2>
-                                    <p className="text-gray-500">
-                                        {subhead || username}
-                                    </p>
-                                </div>
-                            </>
-                        )}
-                    </Link>
-                </div>
-            ) : (
-                <div className="avatar-wrap">
-                    <div className="useravatar">
-                        <div className="avatar">
-                            <img
-                                src={imageSrc || src || userphoto}
-                                alt="image-avatar"
-                                className="img-fluid"
-                                loading="lazy"
-                                decoding="async"
-                                style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                }}
-                                onError={(e) => {
-                                    console.warn(
-                                        "Avatar image failed to load:",
-                                        imageSrc || src,
-                                    );
-                                    e.target.src = userphoto;
-                                }}
-                            />
-                        </div>
-                        <div className="avatar-content">
-                            <h2>{name}</h2>
-                            {subhead && <p className="">{subhead}</p>}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+      {username ? (
+        <div className="avatar-wrap">
+          <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
+          >
+            <div className="avatar !overflow-visible relative ">
+              <img
+                src={imageSrc || src || userphoto}
+                alt="image-avatar"
+                className="img-fluid rounded-[12px] bg-gray-200" 
+                loading="lazy"
+                decoding="async"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+                onError={(e) => {
+                  console.warn('Avatar image failed to load:', imageSrc || src);
+                  e.target.src = userphoto;
+                }}
+              />
+              {role && profile_status_lock && (
+                is_founder ? (
+                  <FounderBadge classes="w-6 h-6 absolute top-[-5px] right-[-5px] bg-white !shadow-xl border border-2 !border-[#eab308] rounded-full p-[2px]" icon />
+                ) : (
+                  <RiVerifiedBadgeFill
+                    size="1.5rem"
+                    className="text-pink absolute top-[-5px] right-[-5px] bg-gray-100 !shadow-xl rounded-full border border-2 !border-pink-500 rounded-full p-[1px]"
+                  />
+                )
+              )}
+            </div>
+            {hidename ? "" : 
+            <>
+              <div className="avatar-content">
+                  <h2 className="flex items-center gap-1 capitalize">
+                    <span className="line-clamp-1 ">
+                      {name}
+                    </span>
+                  </h2>
+                  <p className="text-gray-500">
+                    {subhead || username}
+                  </p>
+              </div>
+            </>}
+
+          </Link>
+        </div>
+      ) : (
+        <div className="avatar-wrap">
+          <div className="useravatar">
+            <div className="avatar">
+              <img
+                src={imageSrc || src || userphoto}
+                alt="image-avatar"
+                className="img-fluid"
+                loading="lazy"
+                decoding="async"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+                onError={(e) => {
+                  console.warn('Avatar image failed to load:', imageSrc || src);
+                  e.target.src = userphoto;
+                }}
+              />
+            </div>
+            <div className="avatar-content">
+              <h2>{name}</h2>
+              {subhead && <p className=''>{subhead}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
