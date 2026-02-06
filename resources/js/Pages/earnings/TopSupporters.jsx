@@ -47,7 +47,7 @@ export default function TopSupporters() {
   }
 
   return (
-    <section className="bg-white rounded-3xl shadow lg:min-h-[510px]">
+    <section className="bg-white rounded-xl  shadow lg:min-h-[510px]">
       <h2 className="w-full uppercase p-4 border-b border-gray-200 font-bold">Top Piggy Bank Payments</h2>
       <div className="p-4 pt-2" >
         {lists && lists.length ? lists.map((item, index) => <>

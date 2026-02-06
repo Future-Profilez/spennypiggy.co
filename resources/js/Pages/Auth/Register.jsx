@@ -917,7 +917,7 @@ export default function Register(props) {
                         </p>
                     </div>
 
-                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-3xl p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="md:!bg-gray-900/40 md:!backdrop-blur-xl md:border md:border-white/10 md:rounded-xl  p-0 md:p-1 md:shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div className="hidden md:flex md:bg-black/20 md:border-b border-white/5 flex items-center !p-5 space-x-2 rounded-t-[20px]">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -933,7 +933,7 @@ export default function Register(props) {
                                             onClick={() =>
                                                 handleBecomeCreator(1)
                                             }
-                                            className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
+                                            className={`cursor-pointer rounded-xl  p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 1
                                                     ? "border-pink-500 bg-pink-500/10"
                                                     : "border-white/10 bg-white/5 hover:border-pink-500/50 hover:bg-white/10"
@@ -954,7 +954,7 @@ export default function Register(props) {
                                             onClick={() =>
                                                 handleBecomeCreator(0)
                                             }
-                                            className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
+                                            className={`cursor-pointer rounded-xl  p-6 border-2 transition-all duration-300 transform hover:-translate-y-2 group ${
                                                 role == 0
                                                     ? "border-blue-500 bg-blue-500/10"
                                                     : "border-white/10 bg-white/5 hover:border-blue-500/50 hover:bg-white/10"
@@ -1805,7 +1805,7 @@ export default function Register(props) {
                                         <div className="">
                                             <Popup
                                                 action={hasPop}
-                                                modalclassName="bg-gray-900 border border-white/10 shadow-2xl rounded-2xl p-6 max-w-lg w-full"
+                                                modalclassName="bg-gray-900 border border-white/10 shadow-2xl rounded-xl  p-6 max-w-lg w-full"
                                                 space="4"
                                                 size="md"
                                                 classes={`hidden`}

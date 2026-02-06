@@ -55,7 +55,7 @@ export default function AddComment({post_uuid, update, is_reply, comment_uuid, u
     return <>
       <div className="headerpost mt-3 flex items-center">
         <form onSubmit={addCommmnt} className='flex w-full relative' >
-          <input id="user-comment" onChange={(e)=>setReply(e.target.value)} value={reply} className='border text-dark rounded-3 me-3 ' type="text" placeholder="Add comment..." />
+          <input id="user-comment" onChange={(e)=>setReply(e.target.value)} value={reply} className='border text-dark rounded-xl me-3 ' type="text" placeholder="Add comment..." />
           <div disabled={reply == ''} className='absolute top-3 right-2' onClick={addCommmnt}>
             {loading ?
               <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" > <path d="M 12 2 A 10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="4" fill="none" /> </svg>

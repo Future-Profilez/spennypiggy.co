@@ -175,7 +175,7 @@ export default function Wishtracker(props) {
               leaveTo="transform opacity-0 max-h-0"
             >
             <div id="example-collapse-text">
-              <div className="wishitem-des box border rounded-lg">
+              <div className="wishitem-des box border rounded-xl ">
                   <div className="flex justify-between items-center">
                     <div className="wish-item">
                       <img
@@ -351,7 +351,7 @@ export default function Wishtracker(props) {
                   {({ selected }) => (
                     <button
                       className={`
-                        min-w-fit px-4 rounded-lg py-2.5 text-sm font-medium leading-5 transition-colors duration-200
+                        min-w-fit px-4 rounded-xl  py-2.5 text-sm font-medium leading-5 transition-colors duration-200
                         ${selected ? 'bg-pink-600 text-white shadow' : 'text-gray-400 hover:bg-white/[0.12] hover:text-white'}
                       `}
                     >

@@ -34,6 +34,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
 
   const AboutScreen = () => {
     return <>
+<<<<<<< HEAD
         <div className="about-sec m-auto max-w-4xl" >
               <div className={`${user && !user.bio ? "hidden":""} p-10 rounded-[40px] bg-white/5 backdrop-blur-2xl border border-white/5 shadow-2xl mb-10 transition-all hover:border-white/10`} >
                   <h3 className="text-sm font-black text-white/40 tracking-[0.25em] uppercase mb-8 flex items-center gap-4">
@@ -43,6 +44,12 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                   <p className="text-white text-xl md:text-2xl font-medium leading-relaxed whitespace-pre-wrap tracking-tight">
                       {(user && user.bio) || "I believe in good vibes and great creators. Supporting one smile at a time 😊"}
                   </p>
+=======
+        <div className=" about-sec  m-auto " >
+              <div className={`${user && !user.bio ? "hidden":""}  p-3 rounded-xl  dark2     mb-4`} >
+                  <p className=" text-white text-lg" >About me</p>
+                  <p className={`  text-left mt-2 font-light text-gray-200`}>{(user && user.bio) || "I believe in good vibes and great creators. Supporting one smile at a time 😊"}</p>
+>>>>>>> 4286dab852d4241f6daa5a78c59cae76d8347e63
                   
                   {IsloggedIn && user?.edit_bio_reason  ?
                     <div className="mt-8 p-6 rounded-3xl bg-red-500/5 border border-red-500/10">
@@ -83,7 +90,12 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                 {({ selected }) => (
                                     <button
                                         className={`
+<<<<<<< HEAD
                                             relative py-4 text-sm font-black tracking-[0.2em] uppercase transition-all duration-300 whitespace-nowrap
+=======
+                                            w-full rounded-xl  py-2.5 text-sm font-medium leading-5 text-pink-700
+                                            ring-white ring-opacity-60 ring-offset-2 ring-offset-pink-400 focus:outline-none focus:ring-2
+>>>>>>> 4286dab852d4241f6daa5a78c59cae76d8347e63
                                             ${selected
                                                 ? 'text-white'
                                                 : 'text-white/40 hover:text-white/70'}

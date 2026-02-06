@@ -73,7 +73,7 @@ export default function OrdersLists() {
       </div>
 
       <h2 className='font-GillSans text-uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
-      <div  className="bg-white rounded-2xl px-0">
+      <div  className="bg-white rounded-xl  px-0">
          <div className="p-3 py-1 relative ">
             {orders &&  orders.map((item, index) =>
                <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>

@@ -79,7 +79,7 @@ export default function ActionRequired({ requirements = [] }) {
                 return (
                     <div 
                         key={index}
-                        className={`w-full overflow-hidden mb-4 rounded-3xl bg-white border-2 ${reqColors.border} shadow-lg`}
+                        className={`w-full overflow-hidden mb-4 rounded-xl  bg-white border-2 ${reqColors.border} shadow-lg`}
                     >
                         <div className={`border-bottom ${reqColors.border} ${reqColors.bg}`}>
                             <div className="p-3 flex items-center">
@@ -102,7 +102,7 @@ export default function ActionRequired({ requirements = [] }) {
                             
                             {/* Show required fields if available */}
                             {requirement.fields_needed && requirement.fields_needed.length > 0 && (
-                                <div className={`mb-4 p-3 ${reqColors.bg} border ${reqColors.border} rounded-lg`}>
+                                <div className={`mb-4 p-3 ${reqColors.bg} border ${reqColors.border} rounded-xl `}>
                                     <p className={`text-sm font-medium ${reqColors.text} mb-2`}>
                                         Required Information:
                                     </p>
@@ -126,7 +126,7 @@ export default function ActionRequired({ requirements = [] }) {
                                     {loading ? "Loading..." : "Resolve Issue"}
                                 </Link>
                             ) : (
-                                <div className={`w-full block text-center bg-gray-400 text-white font-medium px-4 py-3 rounded-lg cursor-not-allowed`}>
+                                <div className={`w-full block text-center bg-gray-400 text-white font-medium px-4 py-3 rounded-xl  cursor-not-allowed`}>
                                     Please Wait or Contact Support
                                 </div>
                             )}

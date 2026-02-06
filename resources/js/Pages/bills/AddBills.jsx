@@ -121,7 +121,7 @@ export default function AddBills(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="pl-3 text-left">
@@ -336,7 +336,7 @@ export default function AddBills(props) {
                                 </li>
                             </ul>
 
-                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300" role="alert">
+                            <p className="p-3 mb-4 text-sm text-yellow-800 rounded-xl  bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300" role="alert">
                                 When adding items please ensure they are specific
                                 i.e Holiday Clothes or New Gym Equipment. Items that
                                 are non specific will be rejected and removed. Our

@@ -419,7 +419,7 @@ export default function AddItem(props) {
         const AddItem = () => {
             return (
                 <div className=" flex items-center">
-                    <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                    <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                         <AiOutlineShop color="var(--pink)" size="1.5rem" />
                     </div>
                     <div className="pl-3 text-left">
@@ -458,7 +458,7 @@ export default function AddItem(props) {
                     </div>
                     <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[20px]">
                         {/* Basic Information Section */}
-                        <div className="bg-white p-6 rounded-lg mb-6 shadow-sm">
+                        <div className="bg-white p-6 rounded-xl  mb-6 shadow-sm">
                             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Basic Information</h3>
                             <div className="shop-forms-field mb-4">
                                 <label className="w-full mb-1.5"> Select what you're offering </label>
@@ -628,7 +628,7 @@ export default function AddItem(props) {
                                             {item && item.reward_file_type == "image" ? (
                                                 <img
                                                     alt="image-profile"
-                                                    className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                    className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-xl"
                                                     src={
                                                         item &&
                                                         item.reward_file_url
@@ -641,7 +641,7 @@ export default function AddItem(props) {
                                                 <video
                                                     controls
                                                     playsInline
-                                                    className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                    className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-xl"
                                                     src={
                                                         item &&
                                                         item.reward_file_url
@@ -654,7 +654,7 @@ export default function AddItem(props) {
                                                     <audio
                                                         controls
                                                         playsInline
-                                                        className=" mb-4 w-full object-cover h-[50px] rounded-4"
+                                                        className=" mb-4 w-full object-cover h-[50px] rounded-xl"
                                                         src={
                                                             item &&
                                                             item.reward_file_url
@@ -664,7 +664,7 @@ export default function AddItem(props) {
                                             {/* video */}
                                             {item && item.reward_file_type =="application" ?
                                                 <iframe
-                                                    className=" mb-4 w-full  max-h-[500px] object-cover h-full rounded-4"
+                                                    className=" mb-4 w-full  max-h-[500px] object-cover h-full rounded-xl"
                                                     src={item &&item.reward_file_url}
                                                 /> : ''
                                             }
@@ -672,7 +672,7 @@ export default function AddItem(props) {
                                             {IsAiImage ?
                                                 <img
                                                 alt="image-profile"
-                                                className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-4"
+                                                className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-xl"
                                                 src={IsAiImage} />
                                             : ""}
                                             <GlobalUploader ctxName='add-shop2-context'
@@ -722,7 +722,7 @@ export default function AddItem(props) {
                                                     type="checkbox"
                                                     name="categories-items"
                                                     value={c.uuid}
-                                                    className="h-5 w-5 rounded-1 border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                                    className="h-5 w-5 rounded-xl  border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
                                                 />
                                                 <label htmlFor={`category-item-${c.uuid}`} className=" cursor-pointer text-base font-medium text-gray-900 ml-2 block" >{c.category}</label>
                                             </div>
@@ -925,7 +925,7 @@ export default function AddItem(props) {
                                     type="checkbox"
                                     id="agreeterm"
                                     name="agreeterm"
-                                    className="mr-2 rounded-1 cursor-pointer"
+                                    className="mr-2 rounded-xl  cursor-pointer"
                                     value="agreeterm"
                                 ></input>
                                 By adding shop item you agree to our{" "}

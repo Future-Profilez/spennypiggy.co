@@ -52,14 +52,14 @@ export default function PlatformAnalytics() {
     }, []);
 
     const StatCard = ({ title, value, subtitle, icon: Icon, trend, color = 'text-blue-600' }) => (
-        <div className="stat-card bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="stat-card bg-white rounded-xl  p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                     <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">{title}</h3>
                     <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
                     {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
                 </div>
-                <div className={`p-3 rounded-lg bg-gray-100`}>
+                <div className={`p-3 rounded-xl  bg-gray-100`}>
                     <Icon size={24} className={color} />
                 </div>
             </div>
@@ -75,7 +75,7 @@ export default function PlatformAnalytics() {
     );
 
     const MilestoneCard = ({ milestone, isCompleted }) => (
-        <div className={`milestone-card p-4 rounded-lg border-2 ${isCompleted ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+        <div className={`milestone-card p-4 rounded-xl  border-2 ${isCompleted ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
             <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold text-gray-900">{milestone.title}</h4>
                 {isCompleted && (
@@ -103,7 +103,7 @@ export default function PlatformAnalytics() {
     );
 
     const CountryCard = ({ country, rank }) => (
-        <div className="country-card bg-white rounded-lg p-4 shadow-sm">
+        <div className="country-card bg-white rounded-xl  p-4 shadow-sm">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="rank-badge bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
@@ -224,7 +224,7 @@ export default function PlatformAnalytics() {
                     </div>
                     <div className="space-y-3">
                         {data.achievements.map((achievement, index) => (
-                            <div key={index} className="achievement-card bg-white rounded-lg p-4 shadow-sm">
+                            <div key={index} className="achievement-card bg-white rounded-xl  p-4 shadow-sm">
                                 <div className="flex items-start space-x-3">
                                     <div className="text-2xl">{achievement.icon}</div>
                                     <div>

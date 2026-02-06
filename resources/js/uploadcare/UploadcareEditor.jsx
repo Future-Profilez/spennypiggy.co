@@ -48,7 +48,7 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable, heigh
         `}
       </style>
 
-      {uuid ? <div className='image-editor border rounded-4 overflow-hidden' >
+      {uuid ? <div className='image-editor border rounded-xl overflow-hidden' >
         <lr-config  
         ctx-name={ctxName}
         ></lr-config>

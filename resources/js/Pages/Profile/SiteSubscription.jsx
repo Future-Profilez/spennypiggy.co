@@ -9,7 +9,7 @@ export default function SiteSubscription({ charges, user }) {
         user?.bio_approved === 1;
 
     return (
-        <div className="w-full finishs mb-4 rounded-3xl bg-white !border-voilet shadow-voilet">
+        <div className="w-full finishs mb-4 rounded-xl  bg-white !border-voilet shadow-voilet">
 
             <div className="border-bottom border-voilet !border-0">
                 <h2 className="text-large font-GillSans text-uppercase p-3 goaltitle text-white btn-shadow pinkbg">

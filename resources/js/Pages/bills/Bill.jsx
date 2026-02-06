@@ -90,7 +90,7 @@ function Bill(props) {
             >
                 <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[23px] shadow-[7px_7px_0_0_var(--pink)] overflow-hidden w-full">
                     {IsloggedIn && itm && itm.approved === 0 ? (
-                        <div className="approvalmessge membership m-3 rounded-lg p-3 py-2 mb-2 ">
+                        <div className="approvalmessge membership m-3 rounded-xl  p-3 py-2 mb-2 ">
                             Bill item waiting for approval. Currently only you
                             can see this bill.
                         </div>

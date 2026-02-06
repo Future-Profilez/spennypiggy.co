@@ -144,7 +144,7 @@ export default function CategoryLeaders() {
                             <button
                                 key={category.key}
                                 onClick={() => setActiveTab(category.key)}
-                                className={`animate-fading category-tab flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                className={`animate-fading category-tab flex items-center space-x-2 px-4 py-2 rounded-xl  font-medium transition-all ${
                                     activeTab === category.key
                                         ? 'bg-white shadow-md text-gray-900'
                                         : 'text-gray-600 hover:bg-white/50'

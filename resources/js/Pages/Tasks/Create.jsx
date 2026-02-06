@@ -263,7 +263,7 @@ export default function Create({ auth, currencySymbol }) {
                                                 imgonly={false}
                                             />
                                             {data.deliverable_file && (
-                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-lg border-2 border-black flex items-center gap-2">
+                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-xl  border-2 border-black flex items-center gap-2">
                                                     <span>✅</span> File
                                                     selected:{" "}
                                                     {data.deliverable_file.name}
@@ -289,7 +289,7 @@ export default function Create({ auth, currencySymbol }) {
                                             imgonly={true}
                                         />
                                         {data.media_file && (
-                                            <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-lg border-2 border-black flex items-center gap-2">
+                                            <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-xl  border-2 border-black flex items-center gap-2">
                                                 <span>✅</span> Image selected: {data.media_file.name}
                                             </div>
                                         )}

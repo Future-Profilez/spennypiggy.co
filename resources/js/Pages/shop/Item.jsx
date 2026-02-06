@@ -150,7 +150,7 @@ export default function ShopDetailItem(props) {
                            <li>
                               <a
                               href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
-                               className=" break-words text-gray-500 inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                               className=" break-words text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Twitter" ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-7 w-7">
@@ -163,7 +163,7 @@ export default function ShopDetailItem(props) {
 
                            <li>
                               <div onClick={instashare}
-                               className="cursor-pointer text-gray-500 inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                               className="cursor-pointer text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Instagram"  ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-7 w-7">
@@ -175,7 +175,7 @@ export default function ShopDetailItem(props) {
                            </li>
 
                            <li>
-                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                     aria-label="Facebook"
                                      onClick={fbShare}
                                      ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -187,7 +187,7 @@ export default function ShopDetailItem(props) {
                            </li>
 
                            <li>
-                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="RSS" onClick={rssShare}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-7 w-7">

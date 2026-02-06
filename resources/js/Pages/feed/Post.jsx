@@ -126,7 +126,7 @@ export default function Post({item}) {
                 </Menu>
             ) : ''}
         </div>
-        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-lg mb-2 border !border-yellow-500' >
+        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-xl  mb-2 border !border-yellow-500' >
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
 

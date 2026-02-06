@@ -96,18 +96,18 @@ const FastTabRenderer = forwardRef(({
         tabContent.about = (
             <div className="tab-content-about">
                 {user?.bio ? (
-                    <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <div className="bg-white rounded-xl  p-4 shadow-sm mb-4">
                         <h3 className="font-semibold text-lg mb-2">About</h3>
                         <p className="text-gray-700 leading-relaxed">{user.bio}</p>
                     </div>
                 ) : (
-                    <div className="bg-gray-50 rounded-lg p-6 text-center mb-4">
+                    <div className="bg-gray-50 rounded-xl  p-6 text-center mb-4">
                         <p className="text-gray-500">No bio added yet.</p>
                     </div>
                 )}
                 
                 {sLinks && sLinks.length > 0 && (
-                    <div className="bg-white rounded-lg p-4 shadow-sm">
+                    <div className="bg-white rounded-xl  p-4 shadow-sm">
                         <h3 className="font-semibold text-lg mb-3">Social Links</h3>
                         <div className="flex flex-wrap gap-2">
                             {sLinks.map((link, index) => (
@@ -127,7 +127,7 @@ const FastTabRenderer = forwardRef(({
                 
                 {/* Show recent posts */}
                 {posts && posts.length > 0 && (
-                    <div className="bg-white rounded-lg p-4 shadow-sm mt-4">
+                    <div className="bg-white rounded-xl  p-4 shadow-sm mt-4">
                         <h3 className="font-semibold text-lg mb-3">Recent Posts</h3>
                         <div className="space-y-3">
                             {posts.slice(0, 3).map((post, index) => (

@@ -78,7 +78,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="profileSteps bg-white border border-gray-400 rounded-3xl mb-4 p-3 lg:!p-6">
+            <div className="profileSteps bg-white border border-gray-400 rounded-xl  mb-4 p-3 lg:!p-6">
                 <h2 className="mb-1 text-[20px] font-bold">
                     Profile Verification
                 </h2>
@@ -90,7 +90,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 user?.profile_reject_reason != null &&
                 user?.profile_status_lock == 0 ? (
                     <>
-                        <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-lg mt-3">
+                        <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-xl  mt-3">
                             <strong className="text-red-800">
                                 Profile Verification Rejected
                             </strong>
@@ -388,7 +388,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 auth?.user?.bio &&
                 auth?.user?.avatar &&
                 auth?.user?.profile_status_lock == 1 ? (
-                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-3 rounded-lg mt-3">
+                    <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-3 rounded-xl  mt-3">
                         <strong className="text-yellow-800">
                             Profile Under Review
                         </strong>
@@ -411,7 +411,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                 {auth?.user?.profile_status_lock == 0 &&
                 auth?.user?.profile_reject_reason ? (
-                    <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-lg mt-3">
+                    <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-xl  mt-3">
                         <strong className="text-red-800">
                             Profile Verification Rejected
                         </strong>
@@ -430,7 +430,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 )}
 
                 {auth?.user?.profile_status_lock == 2 ? (
-                    <div className="text-green-700 bg-green-50 border !border-green-700 p-3 rounded-lg mt-3">
+                    <div className="text-green-700 bg-green-50 border !border-green-700 p-3 rounded-xl  mt-3">
                         <strong className="text-green-700">
                             Profile Verification Completed
                         </strong>
@@ -512,7 +512,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         )} */}
 
                         {auth?.user?.identity_verification_error && (
-                            <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-start">
+                            <div className="mt-3 mb-2 text-red-700 bg-red-100 p-3 rounded-xl  border border-red-200 text-start">
                                 <p className="font-semibold mb-2">
                                     Why are you seeing this error?
                                 </p>
@@ -525,7 +525,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         )}
 
                         {auth?.user?.identity_verification_error && (
-                            <div className="text-red-700 bg-red-100 p-3 rounded-lg border border-red-200 text-red-600 text-start flex flex-col gap-1 capitalize">
+                            <div className="text-red-700 bg-red-100 p-3 rounded-xl  border border-red-200 text-red-600 text-start flex flex-col gap-1 capitalize">
                                 <p>
                                     Error:{" "}
                                     {error?.code?.replaceAll("_", " ") ||
@@ -539,7 +539,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         {/* {auth?.user?.identity_admin_status == 2 && (
                             <div className="mt-2">
                                 {auth?.user?.identity_admin_notes && (
-                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-lg text-sm">
+                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-xl  text-sm">
                                         <h2 className="mb-1 text-normal font-bold">Your Identity Is Rejected By Admin</h2>
                                         <p>Reason : {auth?.user?.identity_admin_notes}</p>
                                     </div>

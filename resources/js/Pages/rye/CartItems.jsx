@@ -255,7 +255,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
     return (
         <div className={`px-2`}>
-            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-3xl">
+            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-xl ">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Your Basket for {cartsItems?.creator?.name || ""}

@@ -172,7 +172,7 @@ export default function AddMembership({updateState, item, text, classes}) {
     };
     const AddItem = () => {
       return <div className=" flex items-center">
-          <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+          <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
           <div className="pl-3 text-left">

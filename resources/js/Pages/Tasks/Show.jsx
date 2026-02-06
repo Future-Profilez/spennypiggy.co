@@ -200,7 +200,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                                  </a>
                                                              </div>
                                                              {historyItem.gifter_message && (
-                                                                 <div className="bg-gray-50 p-3 rounded-lg text-sm italic text-gray-600 border border-gray-100">
+                                                                 <div className="bg-gray-50 p-3 rounded-xl  text-sm italic text-gray-600 border border-gray-100">
                                                                      "{historyItem.gifter_message}"
                                                                  </div>
                                                              )}

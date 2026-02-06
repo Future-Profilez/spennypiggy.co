@@ -204,7 +204,7 @@ export default function PwaInstallPrompt() {
   if (showChromeHelp) {
     return (
       <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40">
-        <div className="w-full sm:max-w-md sm:rounded-2xl sm:shadow-xl sm:mx-auto bg-white  border-t sm:border border-neutral-200 ">
+        <div className="w-full sm:max-w-md sm:rounded-xl  sm:shadow-xl sm:mx-auto bg-white  border-t sm:border border-neutral-200 ">
           <div className="p-4 sm:p-6">
             <div className="text-center mb-4">
               <div className="text-4xl mb-2">💻</div>

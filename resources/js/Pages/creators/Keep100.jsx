@@ -53,7 +53,7 @@ export default function Keep100() {
               <div className="grid md:grid-cols-2 gap-6 md:gap-10">
                  
                  <div className="bg-white p-4 sm:!p-8 md:!p-10 lg:!p-14 rounded-[2rem] md:rounded-[3rem] shadow-xl border border-gray-100 hover:border-pink-500 transition-all group">
-                    <div className="bg-pink-100 w-16 h-16 md:w-20 md:h-20  rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <div className="bg-pink-100 w-16 h-16 md:w-20 md:h-20  rounded-xl  flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
                        <DollarSign className="text-pink-600" size={40} />
                     </div>
                     <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 text-black">What This Means</h2>
@@ -76,7 +76,7 @@ export default function Keep100() {
                        <ShieldCheck size={180} className="text-white" />
                     </div>
                     
-                    <div className="bg-white/10 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center mb-8 relative z-10 group-hover:scale-110 transition-transform">
+                    <div className="bg-white/10 w-16 h-16 md:w-20 md:h-20 rounded-xl  flex items-center justify-center mb-8 relative z-10 group-hover:scale-110 transition-transform">
                        <ShieldCheck className="text-yellow-400" size={40} />
                     </div>
                     <h2 className="text-xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-3 md:mb-8 relative z-10 text-white">Why This Is Safe</h2>

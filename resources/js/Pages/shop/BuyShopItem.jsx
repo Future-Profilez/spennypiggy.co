@@ -230,7 +230,7 @@ export default function BuyShopItem({
                             </h2>
                             <div className="border border-gray-200 p-3 rounded-[20px] mt-4">
                                 <div className="mb-3 shop-item flex justify-between w-full items-center bg-white rounded-xl">
-                                    <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-4 items-center">
+                                    <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-xl items-center">
                                         <Link
                                             href={`/shop/item/${slug(s.name)}/${
                                                 s.uuid
@@ -238,7 +238,7 @@ export default function BuyShopItem({
                                             className="shop-img w-12 h-12 min-w-12"
                                         >
                                             <img
-                                                className="w-full h-full object-cover rounded-lg"
+                                                className="w-full h-full object-cover rounded-xl "
                                                 src={s.perma_link}
                                                 alt=""
                                             />
@@ -281,7 +281,7 @@ export default function BuyShopItem({
                                             onChange={(e) =>
                                                 setReply(e.target.value)
                                             }
-                                            className="text-black bg-gray-100 rounded-lg w-full mt-2 px-3 py-2 border border-gray-200"
+                                            className="text-black bg-gray-100 rounded-xl  w-full mt-2 px-3 py-2 border border-gray-200"
                                             type="text"
                                             placeholder="Ask your question ??"
                                         />
@@ -352,7 +352,7 @@ export default function BuyShopItem({
                                 )}
                             </div>
                             <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-xl">
-                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-4 items-center">
+                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-xl items-center">
                                     <Link
                                         href={`/shop/item/${slug(s.name)}/${
                                             s.uuid
@@ -360,7 +360,7 @@ export default function BuyShopItem({
                                         className="shop-img w-12 h-12 min-w-12"
                                     >
                                         <img
-                                            className="w-full h-full object-cover rounded-lg"
+                                            className="w-full h-full object-cover rounded-xl "
                                             src={s.perma_link}
                                             alt=""
                                         />

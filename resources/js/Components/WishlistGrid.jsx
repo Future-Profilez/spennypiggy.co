@@ -32,7 +32,7 @@ export default function WishlistGrid({
         <div className="wishes-container">
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                 {wishitems.map((item, index) => (
-                    <Suspense key={`wish-${item.id || item.uuid || index}`} fallback={<div className="animate-pulse bg-gray-200 h-40 rounded-lg" />}>
+                    <Suspense key={`wish-${item.id || item.uuid || index}`} fallback={<div className="animate-pulse bg-gray-200 h-40 rounded-xl " />}>
                         <Wishlistbox
                             // Use stable key based on item.id or uuid, fallback to index
                             key={`wish-item-${item.id || item.uuid || index}`}

@@ -97,7 +97,7 @@ export default function BillCheckout(props) {
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${bill?.name} bill`} />
                 <div className={`px-0 pb-3 lg:px-2`}>
-                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink rounded-3xl">
+                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink rounded-xl ">
                         <div className="cartMain">
                             <h2 className="pb-1 wishtitle">
                                 Bill Basket for {bill?.user?.name || " "}

@@ -73,7 +73,7 @@ export default function FollowersBulkNotification() {
                     value={formData.title}
                     onChange={handleInputChange}
                     maxLength={maxTitleLength}
-                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
+                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-xl  w-full"
                     placeholder="Notification Title"
                 />
                 <div className="text-right text-xs text-gray-500">
@@ -90,7 +90,7 @@ export default function FollowersBulkNotification() {
                     value={formData.body}
                     onChange={handleInputChange}
                     maxLength={maxBodyLength}
-                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-lg w-full"
+                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-xl  w-full"
                     placeholder="Enter something..."
                 ></textarea>
                 <div className="text-right text-xs text-gray-500">
@@ -126,7 +126,7 @@ export default function FollowersBulkNotification() {
                         Notification History
                     </h3>
 
-                    <div className=" rounded-lg ">
+                    <div className=" rounded-xl  ">
                         {pwa_notification_details &&
                             pwa_notification_details?.map((value, key) => {
                                 return (

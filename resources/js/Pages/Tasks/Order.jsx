@@ -127,7 +127,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
             paid_out: 'bg-green-100 text-green-800',
         };
         return (
-            <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${colors[status] || 'bg-gray-100'}`}>
+            <span className={`px-3 py-1 rounded-xl  text-xs font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${colors[status] || 'bg-gray-100'}`}>
                 {status === 'running_late' ? 'GRACE PERIOD' : status.replace('_', ' ')}
             </span>
         );
@@ -297,7 +297,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                             View Proof File {purchase.proof_content.name ? `(${purchase.proof_content.name})` : ''}
                                                         </a>
                                                         {purchase.proof_content.notes && (
-                                                            <div className="mt-4 p-3 bg-white border border-gray-300 rounded-lg">
+                                                            <div className="mt-4 p-3 bg-white border border-gray-300 rounded-xl ">
                                                                 <p className="text-sm text-gray-500 uppercase font-bold text-xs mb-1">Notes you added:</p>
                                                                 <p className="text-gray-800">{purchase.proof_content.notes}</p>
                                                             </div>
@@ -336,7 +336,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                     View Proof File {purchase.proof_content.name ? `(${purchase.proof_content.name})` : ''}
                                                 </a>
                                                 {purchase.proof_content.notes && (
-                                                    <div className="mt-4 p-3 bg-white border border-gray-300 rounded-lg">
+                                                    <div className="mt-4 p-3 bg-white border border-gray-300 rounded-xl ">
                                                         <p className="text-sm text-gray-500 uppercase font-bold text-xs mb-1">Notes from Creator:</p>
                                                         <p className="text-gray-800">{purchase.proof_content.notes}</p>
                                                     </div>

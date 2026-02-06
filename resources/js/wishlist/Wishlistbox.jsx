@@ -86,9 +86,13 @@ export default function Wishlistbox(props) {
                 isDragging ? "dragging" : ""
             }`}
         >
+<<<<<<< HEAD
             <div className=" rounded-3xl shadow-pink overflow-hidden   relative border-[3px] md:border-4 border-[#F94F97] w-full ">
+=======
+            <div className=" rounded-xl  shadow-pink overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
+>>>>>>> 4286dab852d4241f6daa5a78c59cae76d8347e63
                 {IsloggedIn && itm && itm.is_approved === 0 && (
-                    <div className="approvalmessge membership m-2 mt-5 rounded-lg p-3 py-2 mb-2">
+                    <div className="approvalmessge membership m-2 mt-5 rounded-xl  p-3 py-2 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
                             <>
                                 <p className="font-semibold text-sm mb-1">Edit requested by admin reason : </p>
@@ -289,7 +293,7 @@ export default function Wishlistbox(props) {
     );
 }
 
-// <div className="bg-white rounded-3xl shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
+// <div className="bg-white rounded-xl  shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
 
 //                                                 <div className="flex justify-center ">
 //                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[20px]" />

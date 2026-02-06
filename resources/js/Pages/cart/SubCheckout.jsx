@@ -62,7 +62,7 @@ export default function SubCheckout(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title={`Subscribe -${wish?.wishname}`}/>
             <div className={`px-0 pb-3 lg:px-2`}>
-                <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-3xl">
+                <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-xl ">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
                             Wish Basket for {wish?.user?.name || " "}
