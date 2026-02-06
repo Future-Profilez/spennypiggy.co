@@ -2,9 +2,6 @@
 @import "./retro-bottombar.css";
 @import "./retro-enhancements.css";
 
-
-
-
 @keyframes fading-effect {
   from {
     opacity: 0;
