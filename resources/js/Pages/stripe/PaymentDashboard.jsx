@@ -1,25 +1,26 @@
 import LoaderButton from "@/Components/LoaderButton";
-import { useForm } from "@inertiajs/react";
 
-export default function PaymentDashboard({auth, classes, text}){
-    const {data, post, processing} = useForm();
+export default function PaymentDashboard({ classes, text }) {
+    return (
+        <form
+            action={route("stripe.login")}
+            method="POST"
+            target="_blank"
+        >
+            {/* CSRF token for Laravel */}
+            <input
+                type="hidden"
+                name="_token"
+                value={
+                    document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content")
+                }
+            />
 
-    const handleStripeLogin = (e) => {
-        e.preventDefault();
-        post(route("stripe.login"),{
-            preserveScroll:true,
-        });
-    }
-
-    return(
-
-        <LoaderButton onClick={handleStripeLogin}
-            disabled={processing}
-            className={classes}
-            spinnerClassName="fill-red-600" >
-            {processing
-                ? "Connecting"
-                : text}
-        </LoaderButton>
-    )
+            <LoaderButton className={classes}>
+                {text}
+            </LoaderButton>
+        </form>
+    );
 }

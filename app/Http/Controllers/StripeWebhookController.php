@@ -1399,7 +1399,7 @@ class StripeWebhookController extends Controller
 
         /* -------------------------------
        PERIOD DATES
-    --------------------------------*/
+        --------------------------------*/
 
         $currentStart = $subscription->current_period_start
             ? Carbon::createFromTimestamp($subscription->current_period_start)
@@ -1425,7 +1425,7 @@ class StripeWebhookController extends Controller
 
         /* -------------------------------
        AMOUNT + CURRENCY (FIXED)
-    --------------------------------*/
+        --------------------------------*/
 
         if ($eventType === 'invoice.payment_succeeded') {
 
@@ -1457,7 +1457,7 @@ class StripeWebhookController extends Controller
 
         /* -------------------------------
        USER STATUS
-    --------------------------------*/
+        --------------------------------*/
 
         $user = $subs->user;
 
@@ -1521,7 +1521,7 @@ class StripeWebhookController extends Controller
 
         /* -------------------------------
        FAILED PAYMENT
-    --------------------------------*/
+     --------------------------------*/
 
         if ($eventType === 'invoice.payment_failed') {
 
@@ -1550,7 +1550,7 @@ class StripeWebhookController extends Controller
 
         /* -------------------------------
        CANCELLED
-    --------------------------------*/
+        --------------------------------*/
 
         if ($eventType === 'customer.subscription.deleted') {
 
