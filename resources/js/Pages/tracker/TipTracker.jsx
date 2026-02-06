@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
-import Collapse from "react-bootstrap/Collapse";
+import { Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import PriceFormat from '@/includes/PriceFormat';
-import ProgressBar from 'react-bootstrap/ProgressBar';
+import CustomProgressBar from '@/Components/CustomProgressBar';
 import Nocontent from '@/includes/Nocontent';
 
 export default function TipTracker({auth}) {
@@ -52,55 +53,62 @@ export default function TipTracker({auth}) {
                <div className='goal-stats  flex items-center justify-between' >
                      <h2 className='' >Goal Target : {formatMultiPrice(g && g.target, g.currency)}</h2>
                      {g && g.completed == 1 ?
-                        <span className='badge bg-success mt-2 ' >Completed</span>
+                        <span className='badge bg-green-500 mt-2 text-white px-2 py-1 rounded' >Completed</span>
                      :
-                        <p className='text-success mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
+                        <p className='text-green-500 mt-2 text-mint font-bold' >{ getPercentage(g.target, g.fullfilled)}% fullfilled</p>
                      }
-
                </div>
             </div>
-            <Collapse in={open} >
+            <Transition
+                show={open}
+                enter="transition-all duration-300 ease-in-out"
+                enterFrom="max-h-0 opacity-0 overflow-hidden"
+                enterTo="max-h-[1000px] opacity-100 overflow-visible"
+                leave="transition-all duration-300 ease-in-out"
+                leaveFrom="max-h-[1000px] opacity-100 overflow-visible"
+                leaveTo="max-h-0 opacity-0 overflow-hidden"
+            >
                   <div id="example-collapse-text" className=''>
-                     <div className='mt-3 pt-3 border-top'>
-                     <ProgressBar now={g?.fullfilled} max={g?.target} />
-                     <p className='text-muted text-small mt-1 mb-4' >{getPercentage(g?.target, g?.fullfilled)}% of {formatMultiPrice(g?.target, g?.currency)} goal.</p>
+                     <div className='mt-3 pt-3 border-t border-gray-200'>
+                     <CustomProgressBar now={g?.fullfilled} max={g?.target} />
+                     <p className='text-gray-500 text-sm mt-1 mb-4' >{getPercentage(g?.target, g?.fullfilled)}% of {formatMultiPrice(g?.target, g?.currency)} goal.</p>
 
-                     <div  className='flex justify-between border-top pt-3 mt-3' >
-                        <p className='text-muted  ' >Goal target amount</p>
+                     <div  className='flex justify-between border-t border-gray-200 pt-3 mt-3' >
+                        <p className='text-gray-500  ' >Goal target amount</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.target, g.currency)}</p>
                      </div>
 
-                     <div  className='flex justify-between border-top pt-3 mt-3' >
-                        <p className='text-muted  ' >Minimum price to pay</p>
+                     <div  className='flex justify-between border-t border-gray-200 pt-3 mt-3' >
+                        <p className='text-gray-500  ' >Minimum price to pay</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.default_price, g.currency)}</p>
                      </div>
 
-                     <div  className='flex justify-between border-top pt-3 mt-3' >
-                        <p className='text-muted ' >Total paid</p>
+                     <div  className='flex justify-between border-t border-gray-200 pt-3 mt-3' >
+                        <p className='text-gray-500 ' >Total paid</p>
                         <p className='mb-0' >{formatMultiPrice(g && g.fullfilled, g.currency)}</p>
                      </div>
 
-                     <div  className='flex justify-between border-top pt-3 mt-3' >
-                        <p className='text-muted ' >Goal End</p>
+                     <div  className='flex justify-between border-t border-gray-200 pt-3 mt-3' >
+                        <p className='text-gray-500 ' >Goal End</p>
                         <p className='mb-0' >{g?.status == 0 ? "Open Until Acheived" : g?.status == 1 ? `30 Days Period` : "Until marked as completed" }</p>
                      </div>
-                     {g && g.complete_at ? <div  className='flex justify-between border-top pt-3 mt-3' >
-                        <p className='text-muted ' >Completed On</p>
+                     {g && g.complete_at ? <div  className='flex justify-between border-t border-gray-200 pt-3 mt-3' >
+                        <p className='text-gray-500 ' >Completed On</p>
                         <p className='mb-0' >{g && g.complete_at}</p>
                      </div> : ''}
-                     <p className='text-muted mb-1 mt-3 border-top pt-3 text-small' >Description</p>
+                     <p className='text-gray-500 mb-1 mt-3 border-t border-gray-200 pt-3 text-sm' >Description</p>
                      <p className='mb-2' >{g && g.description}</p>
                      </div>
                   </div>
-            </Collapse>
+            </Transition>
          </div>
       </>
    }
    if (loading) {
       return (
-         <div className="tips d-flex justify-content-center align-items-center mt-4" style={{minHeight: '200px'}}>
-            <div className="spinner-border text-primary" role="status">
-               <span className="visually-hidden">Loading...</span>
+         <div className="tips flex justify-center items-center mt-4" style={{minHeight: '200px'}}>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" role="status">
+               <span className="sr-only">Loading...</span>
             </div>
          </div>
       );
@@ -109,10 +117,10 @@ export default function TipTracker({auth}) {
    if (error) {
       return (
          <div className="tips text-center mt-4" style={{minHeight: '200px'}}>
-            <div className="alert alert-danger" role="alert">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                {error}
                <button 
-                  className="btn btn-sm btn-outline-danger ms-2" 
+                  className="ml-2 px-2 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 text-sm" 
                   onClick={fetchgoals}
                >
                   Retry

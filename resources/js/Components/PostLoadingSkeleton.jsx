@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function PostLoadingSkeleton({ count = 3 }) {
     const skeletonItems = Array.from({ length: count }, (_, index) => (
-        <div key={index} className="post-wrap bg-light rounded-[20px] md:rounded-[35px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pinks animate-pulse">
+        <div key={index} className="post-wrap bg-light rounded-[20px] md:rounded-[35px] p-[15px] xl:p-6 mb-3 mb-md-4 shadow-pink animate-pulse">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">

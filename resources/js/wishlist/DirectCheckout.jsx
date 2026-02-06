@@ -19,6 +19,6 @@ export default function DirectCheckout({ item, amount, classes }) {
     };
 
     return (
-        <button className={`btn-pink lg w-100 ${classes}`} onClick={checkout}> Pay Now</button>
+        <button className={`btn-pink lg w-full ${classes}`} onClick={checkout}> Pay Now</button>
     );
 }

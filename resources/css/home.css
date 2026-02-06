@@ -1,3 +1,4 @@
+
 /* home.css */
 @keyframes menu{0%{opacity:0;transition:0.6s;}
 to{opacity:1;transition:0.6s;}
@@ -174,7 +175,6 @@ button.editProfile{border-radius:10px;border:1px solid var(--voilet);background:
 .wishlistModal .nav.nav-tabs .nav-link.active:before{content:"";position:absolute;left:-6px;right:0;bottom:-1px;width:84px;height:6px;background:var(--pink);border-radius:5px 5px 0 0;margin:auto;}
 .wishlistModal .nav.nav-tabs .nav-link{color:#8c8c8c;font-size:20px;font-style:normal;font-weight:400;line-height:120%;letter-spacing:-1.8px;padding:3px 5px 10px;margin:0 20px;text-align:center;border:0;}
 .wishlistModal .nav.nav-tabs .nav-link:focus,.wishlistModal .nav.nav-tabs .nav-link:hover{outline:0;border:0;}
-.wishinfo::-webkit-scrollbar{width:6px;}
 .wishinfo::-webkit-scrollbar{width:6px;}
 .wishinfo::-webkit-scrollbar-track{background:#e0e0e0;-webkit-border-radius:20px;border-radius:20px;}
 .wishinfo::-webkit-scrollbar-thumb{background:#2abb9b;-webkit-border-radius:20px;border-radius:20px;}
@@ -538,7 +538,6 @@ ul.socialmedia li svg{width:25px !important;height:24px !important;}
 .approvalmessge{background:#fff1d2;color:#f7ab00;border:1px solid #ffdd90;}
 .approvalmessge.membership{position:absolute;left:0;font-size:13px;top:0;z-index:1;text-align:center;}
 .creator-tags input:checked +label{background:var(--voilet);color:#fff;}
-.headermain{position:sticky;top:0;z-index:2;}
 .wishManage .rts___tabs___container .rts___nav___btn___container:first-child{display:none !important;}
 .wishManage .rts___nav___btn___container{position:absolute;right:0;background:linear-gradient(90deg,rgb(0 0 0 / 0%) -84%,rgb(0 0 0) 100%) !important;top:5px;width:60px !important;}
 .wishManage .rts___btn.rts___nav___btn{border:0 !important;width:41px;height:40px !important;margin-left:auto !important;margin-right:5px !important;background:transparent;}

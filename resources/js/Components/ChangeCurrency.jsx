@@ -4,7 +4,8 @@ import { useForm } from "@inertiajs/react";
 import Select from 'react-select';
 import { useState } from "react";
 import { usePage, Link } from '@inertiajs/react';
-import Dropdown from 'react-bootstrap/Dropdown';
+import { Menu, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 
 export default function ChangeCurrency({defaultvalue, changer, currencyaction}) {
 
@@ -77,16 +78,43 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
    return <>
       {changer ?
          <>
-         <Dropdown>
-            <Dropdown.Toggle variant="info" id="pricebasic">
-               <span className="mb-0 px-2 text-white display-inline" > {selectedCurrency ? selectedCurrency : "N/A"}</span>
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-               {currencies && currencies.map((c, i)=>{
-                  return <Link className="dropdown-item" href={route('change.currency', {c:c.value})} key={`currency-selector-${c.value}`}>{c.label}</Link>
-               })}
-            </Dropdown.Menu>
-            </Dropdown>
+         <Menu as="div" className="relative inline-block text-left">
+            <div>
+               <Menu.Button className="inline-flex justify-center w-full rounded-md border border-transparent px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+                  {selectedCurrency ? selectedCurrency : "N/A"}
+               </Menu.Button>
+            </div>
+            <Transition
+               as={Fragment}
+               enter="transition ease-out duration-100"
+               enterFrom="transform opacity-0 scale-95"
+               enterTo="transform opacity-100 scale-100"
+               leave="transition ease-in duration-75"
+               leaveFrom="transform opacity-100 scale-100"
+               leaveTo="transform opacity-0 scale-95"
+            >
+               <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-[300px] overflow-y-auto">
+                  <div className="px-1 py-1 ">
+                     {currencies && currencies.map((c, i)=>{
+                        return (
+                           <Menu.Item key={`currency-selector-${c.value}`}>
+                              {({ active }) => (
+                                 <Link
+                                    href={route('change.currency', {c:c.value})}
+                                    className={`${
+                                       active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                                 >
+                                    {c.label}
+                                 </Link>
+                              )}
+                           </Menu.Item>
+                        )
+                     })}
+                  </div>
+               </Menu.Items>
+            </Transition>
+         </Menu>
          </>
          :
          <div className=" ">
@@ -98,7 +126,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                      defaultValue={data.currency}
                      onChange={(e) => handleSelect(e)}
                   />
-                  <label className="d-block text-start">Please choose as your default display currency.</label>
+                  <label className="block text-left">Please choose as your default display currency.</label>
             </div>
             <LoaderButton onClick={()=>changeCurrency(data.currency)}
                disabled={processing}

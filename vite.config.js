@@ -79,6 +79,7 @@ export default defineConfig((env) => {
                 '^html2canvas$': path.resolve(process.cwd(), 'resources/js/ssr-html2canvas-mock.js') 
             } : {}),
         },
+        dedupe: ['react', 'react-dom'],
     },
     
     // Dependency pre-bundling optimizations

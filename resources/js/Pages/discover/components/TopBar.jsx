@@ -79,7 +79,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="sticky top-[100px] z-1 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
+        <div className="sticky top-[100px] z-10 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
                 <div className="relative mb-3">
@@ -101,7 +101,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
                     {isFocused && (recentSearches.length > 0 || query) && (
-                        <div className="!z-10 absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
                                 {recentSearches.length > 0 && !query && (
                                     <>

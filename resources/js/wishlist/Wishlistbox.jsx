@@ -1,14 +1,13 @@
 import { lazy } from "react";
 import ShareProfile from "./ShareProfile";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import uploadedimg from "../../assets/img/uploadedimg.png";
 import { useEffect } from "react";
-import ProgressBar from "react-bootstrap/ProgressBar";
+import CustomProgressBar from "@/Components/CustomProgressBar";
 import Wishlist from "@/Pages/Auth/Wishlist";
 import PriceFormat from "@/includes/PriceFormat";
 const AddCart = lazy(() => import("./AddCart"));
-import Dropdown from "react-bootstrap/Dropdown";
-import DropdownButton from "react-bootstrap/DropdownButton";
+import { Menu, Transition } from "@headlessui/react";
 import PinWish from "@/includes/PinWish";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
@@ -87,9 +86,9 @@ export default function Wishlistbox(props) {
                 isDragging ? "dragging" : ""
             }`}
         >
-            <div className=" rounded-3xl shadow-pinks overflow-hidden   relative border-3 md:border-4 border-[#F94F97] w-full ">
+            <div className=" rounded-3xl shadow-pink overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
-                    <div className="approvalmessge membership m-2 mt-5 rounded-3 p-3 py-2 mb-2">
+                    <div className="approvalmessge membership m-2 mt-5 rounded-lg p-3 py-2 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
                             <>
                                 <p className="font-semibold text-sm mb-1">Edit requested by admin reason : </p>
@@ -140,21 +139,36 @@ export default function Wishlistbox(props) {
                     />
                 )}
                 {IsloggedIn ? (
-                    <DropdownButton
-                        className="wishedit"
-                        id="dropdown-basic-button"
-                        title={
-                            <div className="dots">
-                                <span className="bg-white"></span>
-                                <span className="bg-white"></span>
-                                <span className="bg-white"></span>
-                            </div>
-                        }
-                    >
-                        <Dropdown.Item>
-                            <RemoveWish uuid={itm.uuid} text="Remove Wish" />
-                        </Dropdown.Item>
-                    </DropdownButton>
+                    <Menu as="div" className="absolute top-2 right-2 z-10 inline-block text-left">
+                        <div>
+                            <Menu.Button className="flex flex-col gap-1 p-2 bg-transparent border-0 cursor-pointer focus:outline-none">
+                                <span className="bg-white block w-1 h-1 rounded-full"></span>
+                                <span className="bg-white block w-1 h-1 rounded-full"></span>
+                                <span className="bg-white block w-1 h-1 rounded-full"></span>
+                            </Menu.Button>
+                        </div>
+                        <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
+                        >
+                            <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <div className="px-1 py-1">
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}>
+                                                <RemoveWish uuid={itm.uuid} text="Remove Wish" />
+                                            </div>
+                                        )}
+                                    </Menu.Item>
+                                </div>
+                            </Menu.Items>
+                        </Transition>
+                    </Menu>
                 ) : (
                     ""
                 )}
@@ -208,11 +222,11 @@ export default function Wishlistbox(props) {
                     </div>
                     {itm.subscription == "2" ? (
                         <div className="crowd pt-2">
-                            <ProgressBar
+                            <CustomProgressBar
                                 now={itm.fullfill_amount}
                                 max={itm.price}
                             />
-                            <p className="mt-1 mb-0 text-small text-center">
+                            <p className="mt-1 mb-0 text-sm text-center">
                                 {getPercentage(itm.price, itm.fullfill_amount)}%
                                 granted
                             </p>
@@ -244,7 +258,7 @@ export default function Wishlistbox(props) {
                         <div className="flex px-2 mt-3 justify-center">
                             {itm?.user ? (
                                 <>
-                                    <p className="text-xs font-semibold text-black me-1">
+                                    <p className="text-xs font-semibold text-black mr-1">
                                         By
                                     </p>
                                     <Link
@@ -260,7 +274,7 @@ export default function Wishlistbox(props) {
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-xs font-semibold text-black me-1">
+                                    <p className="text-xs font-semibold text-black mr-1">
                                         By @Unavailable
                                     </p>
                                 </>

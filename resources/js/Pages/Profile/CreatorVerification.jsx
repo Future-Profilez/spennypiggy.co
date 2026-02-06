@@ -1,7 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { ProgressBar, Collapse } from "react-bootstrap";
 import AddIntro from "../intros/AddIntro";
 import EditProfile from "../account/EditProfile";
 import AddPost from "../feed/AddPost";
@@ -15,6 +14,15 @@ import ActivateSubscription from "./ActivateSubscription";
 import SiteSubscription from "./SiteSubscription";
 import { BsStopwatch } from "react-icons/bs";
 import { FaLock } from "react-icons/fa";
+
+const CustomProgressBar = ({ now, max }) => {
+    const percentage = Math.round((now / max) * 100);
+    return (
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4 overflow-hidden">
+            <div className="bg-pink-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+        </div>
+    );
+};
 
 export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const { auth, user, global_currency, slinks } = usePage().props;
@@ -70,14 +78,14 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="profileSteps bg-white border border-gray-400 rounded-5 mb-4 p-3 lg:!p-6">
+            <div className="profileSteps bg-white border border-gray-400 rounded-3xl mb-4 p-3 lg:!p-6">
                 <h2 className="mb-1 text-[20px] font-bold">
                     Profile Verification
                 </h2>
                 <p className="text-gray-500 mb-3">
                     Complete these steps and let your fans fund your lifestyle.
                 </p>
-                <ProgressBar now={filledSteps} max={6} />
+                <CustomProgressBar now={filledSteps} max={6} />
                 {IsloggedIn &&
                 user?.profile_reject_reason != null &&
                 user?.profile_status_lock == 0 ? (
@@ -104,10 +112,10 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 {/* Step 1: Social Handles */}
                 <div className="profile-steps border border-gray-200 rounded-xl p-3 mt-3">
                     <div className="flex items-center   justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
+                        <div className="step-title flex max-w-[390px] pr-3">
                             <div
-                                // className={`check-icon me-2 pt-1 ${ hasAnySocialMedia && slinks?.status !== 2 ? "checked" : "" }`} >
-                                className={`check-icon me-2 pt-1 ${slinks?.status == 1 ? "checked" : ""}`}
+                                // className={`check-icon mr-2 pt-1 ${ hasAnySocialMedia && slinks?.status !== 2 ? "checked" : "" }`} >
+                                className={`check-icon mr-2 pt-1 ${slinks?.status == 1 ? "checked" : ""}`}
                             >
                                 <div
                                     dangerouslySetInnerHTML={{
@@ -116,7 +124,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 />
                             </div>
                             <div>
-                                <h2 className="text-dark font-bold">
+                                <h2 className="text-gray-900 font-bold">
                                     Add Social Handles
                                 </h2>
                                 <p className="text-gray-500 text-[14px]">
@@ -148,8 +156,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 {auth?.user?.avatar ? (
                     auth?.user?.avatar_approved == 0 ? (
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon me-2 pt-1`}>
+                            <div className="step-title flex max-w-[390px] pr-3">
+                                <div className={`check-icon mr-2 pt-1`}>
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -157,7 +165,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="text-dark font-bold">
+                                    <h2 className="text-gray-900 font-bold">
                                         Avatar Approval Pending
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
@@ -170,8 +178,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     ) : (
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className={`check-icon checked me-2 pt-1`}>
+                            <div className="step-title flex max-w-[390px] pr-3">
+                                <div className={`check-icon checked mr-2 pt-1`}>
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -179,7 +187,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="text-dark font-bold">
+                                    <h2 className="text-gray-900 font-bold">
                                         Profile Avatar Approved
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
@@ -191,9 +199,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     )
                 ) : (
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
+                        <div className="step-title flex max-w-[390px] pr-3">
                             <div
-                                className={`check-icon me-2 pt-1 ${
+                                className={`check-icon mr-2 pt-1 ${
                                     auth?.user?.avatar_approved == 1
                                         ? "checked"
                                         : ""
@@ -206,7 +214,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 />
                             </div>
                             <div>
-                                <h2 className="text-dark font-bold">
+                                <h2 className="text-gray-900 font-bold">
                                     Update Profile Picture
                                 </h2>
                                 <p className="text-gray-500 text-[14px]">
@@ -229,8 +237,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     auth?.user?.bio_approved === 0 ? (
                         /* 🔄 UNDER REVIEW */
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className="check-icon me-2 pt-1">
+                            <div className="step-title flex max-w-[390px] pr-3">
+                                <div className="check-icon mr-2 pt-1">
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -238,7 +246,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="text-dark font-bold">
+                                    <h2 className="text-gray-900 font-bold">
                                         Bio Approval Pending
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
@@ -252,8 +260,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ) : auth?.user?.bio_approved === 1 ? (
                         /* ✅ APPROVED */
                         <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className="check-icon checked me-2 pt-1">
+                            <div className="step-title flex max-w-[390px] pr-3">
+                                <div className="check-icon checked mr-2 pt-1">
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -261,7 +269,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="text-dark font-bold">
+                                    <h2 className="text-gray-900 font-bold">
                                         Profile Bio Approved
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
@@ -273,8 +281,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ) : (
                         /* ❌ REJECTED */
                         <div className="profile-steps border border-red-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                            <div className="step-title flex max-w-[390px] pe-3">
-                                <div className="check-icon me-2 pt-1">
+                            <div className="step-title flex max-w-[390px] pr-3">
+                                <div className="check-icon mr-2 pt-1">
                                     <div
                                         dangerouslySetInnerHTML={{
                                             __html: checkedItem,
@@ -303,8 +311,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 ) : (
                     /* 📝 NO BIO */
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
-                            <div className="check-icon me-2 pt-1">
+                        <div className="step-title flex max-w-[390px] pr-3">
+                            <div className="check-icon mr-2 pt-1">
                                 <div
                                     dangerouslySetInnerHTML={{
                                         __html: checkedItem,
@@ -312,7 +320,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 />
                             </div>
                             <div>
-                                <h2 className="text-dark font-bold">
+                                <h2 className="text-gray-900 font-bold">
                                     Update Profile Bio
                                 </h2>
                                 <p className="text-gray-500 text-[14px]">
@@ -332,9 +340,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                 {/* Step 4: Subscription */}
                 <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                    <div className="step-title flex max-w-[390px] pe-3">
+                    <div className="step-title flex max-w-[390px] pr-3">
                         <div
-                            className={`check-icon me-2 pt-1 ${
+                            className={`check-icon mr-2 pt-1 ${
                                 auth?.user?.is_subscribed == 1 ? "checked" : ""
                             }`}
                         >
@@ -345,7 +353,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             />
                         </div>
                         <div>
-                            <h2 className="text-dark font-bold">
+                            <h2 className="text-gray-900 font-bold">
                                 Start 3-Days Free Trial
                             </h2>
                             <p className="text-gray-500 text-[14px]">
@@ -440,7 +448,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 ) : (
                     <div className="mt-6 relative">
                         <h2 className="flex">
-                            <FaLock className="me-2" /> Final setup requires
+                            <FaLock className="mr-2" /> Final setup requires
                             verification
                         </h2>
                     </div>
@@ -448,9 +456,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 <div>
                     <div className="profile-steps border border-gray-200 rounded-xl p-3 mt-3 ">
                         <div className=" flex items-center justify-between ">
-                            <div className="step-title flex max-w-[390px] pe-3">
+                            <div className="step-title flex max-w-[390px] pr-3">
                                 <div
-                                    className={`check-icon me-2 pt-1 ${
+                                    className={`check-icon mr-2 pt-1 ${
                                         auth?.user?.identity_status == 1
                                             ? "checked"
                                             : ""
@@ -463,7 +471,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="text-dark font-bold">
+                                    <h2 className="text-gray-900 font-bold">
                                         Identity Verification
                                     </h2>
                                     <p className="text-gray-500 text-[14px]">
@@ -541,9 +549,9 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     </div>
 
                     <div className="profile-steps border border-gray-200 rounded-xl flex items-center p-3 mt-3 justify-between">
-                        <div className="step-title flex max-w-[390px] pe-3">
+                        <div className="step-title flex max-w-[390px] pr-3">
                             <div
-                                className={`check-icon me-2 pt-1 ${
+                                className={`check-icon mr-2 pt-1 ${
                                     auth?.user?.stripe_details_submitted == 1
                                         ? "checked"
                                         : ""
@@ -556,7 +564,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 />
                             </div>
                             <div>
-                                <h2 className="text-dark font-bold">
+                                <h2 className="text-gray-900 font-bold">
                                     Connect Stripe Account
                                 </h2>
                                 <p className="text-gray-500 text-[14px]">

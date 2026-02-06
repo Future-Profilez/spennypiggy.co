@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useForm } from '@inertiajs/react';
 import LoaderButton from '@/Components/LoaderButton';
 import twitter from '../../../assets/img/twitterpost.png';
-import Form from 'react-bootstrap/Form';
+import { Switch } from '@headlessui/react';
 import { useAlerts } from '@/Components/Alerts';
 import { useState } from 'react';
 import Avatar from '@/includes/Avatar';
@@ -43,8 +43,7 @@ export default function LinkTwitter(props) {
     };
   };
 
-  const enableTweet = (e) => {
-    e.preventDefault();
+  const enableTweet = () => {
     get(route('auto-tweet-setting')),{
       preserveScroll: true,
       onSuccess: (resp) => {
@@ -61,7 +60,7 @@ export default function LinkTwitter(props) {
   const Name = auth && auth.user && auth.user.name.replace(' ', '%20');
 
   const TwitterCard = () => {
-    return <div className='t-card bg-light box p-3 rounded-lg shadow-md'>
+    return <div className='t-card bg-gray-50 box p-3 rounded-lg shadow-md'>
             <Avatar 
             role={auth && auth.user && auth.user.role}
               profile_status_lock={auth && auth.user && auth.user.profile_status_lock == 2 ? true : false}
@@ -70,12 +69,12 @@ export default function LinkTwitter(props) {
               username={auth && auth.user && auth.user.username}
               src={auth && auth.user && auth.user.avatar_url || userphoto}
             />
-            <div className='twitter-content mt-2 ps-5 ms-4 ' >
+            <div className='twitter-content mt-2 pl-5 ml-4 ' >
               <p>
               Someone just made a wishlist dream come true, funding a gift worth $50.00! Feel like joining in the fun?
               </p>
               <p className='mt-2' > 
-              Check out my wishlist and send me a little surprise 🎁 via <a className='text-primary ms-2 d-inline-block' 
+              Check out my wishlist and send me a little surprise 🎁 via <a className='text-blue-600 ml-2 inline-block' 
                 href={`${window.location.host}/${auth && auth.user && auth.user.username}`} > 
                 {`${window.location.host}/${auth && auth.user && auth.user.username}`} 
                 </a> using @SpennyPiggy! 🐷
@@ -89,7 +88,7 @@ export default function LinkTwitter(props) {
 
   return (
     <>
-    <h2 className="text-uppercase font-GillSans pb-4 font-large text-center px-5"> Twitter Integration </h2>
+    <h2 className="uppercase font-GillSans pb-4 font-large text-center px-5"> Twitter Integration </h2>
     <div className='twitter-steps' >
       <div className='step-t active'>
         <div className='step-no ' >1</div>
@@ -107,22 +106,33 @@ export default function LinkTwitter(props) {
     {username ? 
     <div className='step2' >
       <p className='text-center' >Linked Account : @{username}</p>
-      <div className='flex justify-content-center  my-3' >
-        <Form>
-          <Form.Check checked={is_linked}
-            type="switch" onChange={enableTweet}
-            id="custom-switch"
-            label="Enable auto tweets for gifts." />
-        </Form>
+      <div className='flex justify-center my-3' >
+        <div className="flex items-center">
+          <Switch
+            checked={is_linked}
+            onChange={enableTweet}
+            className={`${
+              is_linked ? 'bg-pink-600' : 'bg-gray-200'
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
+          >
+            <span className="sr-only">Enable auto tweets for gifts.</span>
+            <span
+              className={`${
+                is_linked ? 'translate-x-6' : 'translate-x-1'
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            />
+          </Switch>
+          <span className="ml-3 cursor-pointer" onClick={enableTweet}>Enable auto tweets for gifts.</span>
+        </div>
       </div>
 
-      <button onClick={unlinkTwitter} className='btn-pink bg-danger sm px-5 m-auto d-table mt-4 mb-3' >Unlink Twitter</button>
+      <button onClick={unlinkTwitter} className='btn-pink bg-red-600 sm px-5 mx-auto block mt-4 mb-3' >Unlink Twitter</button>
 
     </div> : 
     <div className='step1' >
       <p className='text-large text-center px-5 mb-4' >Set up Twitter to auto tweet when you receive a gift.</p>
       {/* <div className='twitter-img' >
-        <img src={twitter} alt='twitter' className='w-100 rounded-lg mt-3' />
+        <img src={twitter} alt='twitter' className='w-full rounded-lg mt-3' />
       </div> */}
 
       <TwitterCard />

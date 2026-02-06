@@ -21,14 +21,14 @@ export default function Thankyou(props) {
             }
             `}</style>
 
-             <div className='p-4 text-center text-mint thankyou-wrap flex justify-content-center items-center'>
+             <div className='p-4 text-center text-mint thankyou-wrap flex justify-center items-center'>
               <div className='max-w-[500px]'>
                 <h2 className='text-[25px] ' >Your gift has been sent.</h2>
                 <p className='pt-2 pb-4' >Check your email for a receipt.</p>
                 <div className='giftthank p-4' >
                   <p>Thank you from Spenny Piggy on behalf of {owner && owner.name}.</p>
 
-                    <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden m-auto d-table mt-4 " >
+                    <div className="avatar rounded-[50%] w-20 h-20 overflow-hidden mx-auto block mt-4 " >
                           <LazyLoadImage
                           src={owner.avatar_url || userphoto}
                           alt="image-avatar" className="img-fluid rounded w-full h-full object-cover"  effect="blur"
@@ -60,4 +60,3 @@ export default function Thankyou(props) {
         </Authenticated>
     )
 }
-

@@ -16,7 +16,7 @@ export default function TopEarners({ creators, periodLabel }) {
 
       <div className="containerbox relative">
         <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-2 uppercase leading-tight">
-          Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Earners</span>{periodLabel ? ` — ${periodLabel}` : ''}
+          Top <span className="text-gradient-wishlist">Earners</span>{periodLabel ? ` — ${periodLabel}` : ''}
         </h2>
         {periodLabel === 'Week' ? (
           <p className="text-center text-gray-300 mb-12 text-lgfading ">From Monday 00:00 to Sunday 23:59 (UK time). Covers the full current week.</p>

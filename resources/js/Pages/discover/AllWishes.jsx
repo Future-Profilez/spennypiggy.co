@@ -86,7 +86,7 @@ export default function Allwishes(props) {
         return (
             <>
                 {pageArray && pageArray.length > 1 ? (
-                    <ul className="mt-4 pagination flex flex-wrap justify-content-center">
+                    <ul className="mt-4 pagination flex flex-wrap justify-center">
                         {pageArray &&
                             pageArray.map((p, i) => {
                                 return (
@@ -109,7 +109,7 @@ export default function Allwishes(props) {
 
         return (
             <>
-                <div className="filters d-block d-sm-flex items-center justify-between w-100 mb-4">
+                <div className="filters block sm:flex items-center justify-between w-full mb-4">
                     <Switch />
                     <div className="flex items-center">
                         <div className="filter-select-wrap">
@@ -129,7 +129,7 @@ export default function Allwishes(props) {
                                 <option value="sing le">Single</option>
                             </select>
                         </div>
-                        <div className="filter-select-wrap ps-3">
+                        <div className="filter-select-wrap pl-3">
                             <select
                                 onChange={(e) => setprice(e.target.value)}
                                 id="prices"
@@ -169,7 +169,7 @@ export default function Allwishes(props) {
 
                 <div className="d">
                     {loading ? (
-                        <div className="w-100 flex justify-content-center">
+                        <div className="w-full flex justify-center">
                             <LoadingScreen />
                         </div>
                     ) : (

@@ -1,7 +1,7 @@
 import * as LR from "@uploadcare/blocks";
 import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
-import ProgressBar from 'react-bootstrap/ProgressBar';
+import CustomProgressBar from "@/Components/CustomProgressBar";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios"; 
 LR.registerBlocks(LR);
@@ -245,7 +245,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
           <ProgressBar animated now={uploadProgress} />
           <p className='text-center mt-2'>
             Uploading... {Math.round(uploadProgress)}%
-            {timeRemaining && <span className="ms-2">{timeRemaining}</span>}
+            {timeRemaining && <span className="ml-2">{timeRemaining}</span>}
           </p>
         </div>
       )}

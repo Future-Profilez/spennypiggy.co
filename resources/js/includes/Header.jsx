@@ -31,6 +31,20 @@ import MagicBellNotification from "@/Pages/webpush/MagicBellNotification";
 
 export default function Header({ classMagicword }) {
     const { global_currency, auth } = usePage().props;
+    const { url } = usePage();
+
+    const getNavLinkClass = (path) => {
+        let pathName = path;
+        if (typeof path === 'string' && path.startsWith('http')) {
+            try { pathName = new URL(path).pathname; } catch(e) {}
+        }
+        const isActive = url === pathName || (typeof pathName === 'string' && pathName !== '/' && url.startsWith(pathName));
+        return `relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] pr-6 border-l-4 transition-all duration-200 ${
+            isActive 
+            ? "border-indigo-500 text-white bg-white/10" 
+            : "border-transparent hover:border-indigo-500 text-white/90 hover:text-white"
+        }`;
+    };
 
     const deviceid = DeviceID();
     const [isActive, setActive] = useState(false);
@@ -81,16 +95,15 @@ export default function Header({ classMagicword }) {
             );
         };
     }, [fetchCounter, dispatch]);
-
     return (
         <>
             {/* <ReactDebugTest /> */}
-            <div className="blackbg headermain py-6 ">
-                <div className="containerbox">
+            <div className="blackbg headermain fixed top-0 left-0 w-full z-40 py-4 ">
+                <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center  justify-between ">
-                        <div className="md:flex hidden leftspaces items-center justify-content-start">
+                        <div className="md:flex hidden leftspaces items-center justify-start">
                             <div
-                                className=" menu-toggle cursor-pointer cartLink position-relative"
+                                className=" menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -110,13 +123,13 @@ export default function Header({ classMagicword }) {
                                 </svg>
                             </div>
                             <Link
-                                className="d-none d-md-block focus:border-0 ms-3 text-[30px]"
+                                className="hidden md:block focus:border-0 ml-3 text-[30px]"
                                 href={"/leaderboard"}
                             >
                                 🌟
                             </Link>
                             <Link
-                                className="d-none d-md-block ms-3"
+                                className="hidden md:block ml-3"
                                 href={"/giftstore"}
                             >
                                 <span className="flex items-center text-xl !font-light tracking-wider uppercase text-white font-gulfs">
@@ -147,7 +160,7 @@ export default function Header({ classMagicword }) {
 
                             {/* {auth && auth.user ? <Notifications /> : ""} */}
                             {auth && auth.user ? (
-                                <div className="mr-2">
+                                <div className="ms-3">
                                     <MagicBellNotification
                                         word={classMagicword}
                                     />
@@ -159,7 +172,7 @@ export default function Header({ classMagicword }) {
                             <Link
                                 title="Discover"
                                 href={route("discover")}
-                                className="me-2 md:me-3 discover-icon  "
+                                className="ms-2 md:ms-3 discover-icon  "
                             >
                                 <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <svg
@@ -194,7 +207,7 @@ export default function Header({ classMagicword }) {
                                 title="cart page"
                                 href={route("cart")}
                                 as="button"
-                                className={`cartLink me-3 relative flex ${
+                                className={`cartLink ms-3 relative flex ${
                                     auth?.user && window?.innerWidth < 768
                                         ? "hidden"
                                         : ""
@@ -207,7 +220,7 @@ export default function Header({ classMagicword }) {
                                     />
                                 </div>
                                 {count > 0 ? (
-                                    <span className="site-counter d-block">
+                                    <span className="site-counter block">
                                         {count}
                                     </span>
                                 ) : (
@@ -218,12 +231,12 @@ export default function Header({ classMagicword }) {
                             {auth?.user?.username || false ? (
                                 ""
                             ) : (
-                                <div className="hidden lg:flex gap-2">
+                                <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
                                         className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
                                     >
-                                        Login
+                                        Login 
                                     </Link>
                                     <Link
                                         href={route("register")}
@@ -234,7 +247,7 @@ export default function Header({ classMagicword }) {
                                 </div>
                             )}
                             <div
-                                className="block md:hidden menu-toggle cursor-pointer cartLink position-relative"
+                                className="block md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -257,6 +270,7 @@ export default function Header({ classMagicword }) {
                     </div>
                 </div>
             </div>
+            <div className="h-[88px] md:h-[96px]"></div>
 
             {isActive ? (
                 <div
@@ -294,7 +308,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={"/account"}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass("/account")}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <IoSettingsOutline
@@ -316,7 +330,7 @@ export default function Header({ classMagicword }) {
                                                                 ?.username) ||
                                                         ""
                                                     }`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass(`/${(auth && auth?.user?.username) || ""}`)}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <FaHeart
@@ -334,7 +348,7 @@ export default function Header({ classMagicword }) {
                                     <li>
                                         <a
                                             href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className={getNavLinkClass("https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk")}
                                         >
                                             <span className="inline-flex justify-center items-center ml-4">
                                                 <SlCalender
@@ -361,7 +375,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/shop`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass('/shop')}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <FaBasketShopping
@@ -378,7 +392,7 @@ export default function Header({ classMagicword }) {
                                                         <Link
                                                             onClick={toggleClass}
                                                             href={"giftstore"}
-                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-white/90 hover:text-white border-l-4 border-transparent hover:border-indigo-500 pr-6"
                                                         >
                                                             <span className="inline-flex justify-center items-center ml-4">
                                                                 <FiGift
@@ -395,7 +409,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/earnings`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass('/earnings')}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <GiTwoCoins
@@ -412,7 +426,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/membership-dashboard`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass('/membership-dashboard')}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <FaHouseChimneyUser
@@ -435,7 +449,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/purchases`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass('/purchases')}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <SiBuymeacoffee
@@ -452,7 +466,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/task/dashboard`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass('/task/dashboard')}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <BiTask
@@ -469,7 +483,7 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/wish-tracker`}
-                                                    className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                    className={getNavLinkClass('/wish-tracker')}
                                                 >
                                                     <span className="inline-flex justify-center items-center ml-4">
                                                         <SlCalculator
@@ -496,7 +510,7 @@ export default function Header({ classMagicword }) {
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("register")}
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className={getNavLinkClass(route("register"))}
                                             >
                                                 <span className="inline-flex justify-center items-center ml-4">
                                                     <FaUserAlt
@@ -513,7 +527,7 @@ export default function Header({ classMagicword }) {
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("login")}
-                                                className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                                className={getNavLinkClass(route("login"))}
                                             >
                                                 <span className="inline-flex justify-center items-center ml-4">
                                                     <IoIosUnlock
@@ -533,7 +547,7 @@ export default function Header({ classMagicword }) {
                                     <Link
                                         onClick={toggleClass}
                                         href={route("leaderboard")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className={getNavLinkClass(route("leaderboard"))}
                                     >
                                         <span className="inline-flex justify-center items-center ml-4">
                                             <FaRegStar
@@ -549,8 +563,8 @@ export default function Header({ classMagicword }) {
                                 <li>
                                     <Link
                                         onClick={toggleClass}
-                                        href={"giftstore"}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        href={"/giftstore"}
+                                        className={getNavLinkClass('/giftstore')}
                                     >
                                         <span className="inline-flex justify-center items-center ml-4">
                                             <FiGift
@@ -568,10 +582,7 @@ export default function Header({ classMagicword }) {
                                         <Link
                                             onClick={toggleClass}
                                             href={`/refer-and-earn`}
-                                            className="relative flex flex-row items-center h-11 
-                                                focus:outline-none hover:opacity-[0.8] 
-                                                text-gray-600 hover:text-gray-800 
-                                                border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className={getNavLinkClass('/refer-and-earn')}
                                         >
                                             <span className="inline-flex justify-center items-center ml-4">
                                                 <GiTwoCoins
@@ -590,7 +601,7 @@ export default function Header({ classMagicword }) {
                                     <Link
                                         onClick={toggleClass}
                                         href={route("how-it-works")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className={getNavLinkClass(route("how-it-works"))}
                                     >
                                         <span className="inline-flex justify-center items-center ml-4">
                                             <TbSettingsCog
@@ -607,7 +618,7 @@ export default function Header({ classMagicword }) {
                                 <li>
                                     <Link
                                         onClick={toggleClass}
-                                        className="livechat relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className={`livechat ${getNavLinkClass()}`}
                                     >
                                         <span className="inline-flex justify-center items-center ml-4">
                                             <MdOutlineSupportAgent
@@ -628,7 +639,7 @@ export default function Header({ classMagicword }) {
                                         target="_blank"
                                         onClick={toggleClass}
                                         href="https://blog.spennypiggy.co"
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className={getNavLinkClass("https://blog.spennypiggy.co")}
                                     >
                                         <span className="inline-flex justify-center items-center ml-4">
                                             <ImBlog
@@ -746,7 +757,7 @@ export default function Header({ classMagicword }) {
                                 </li>
 
                                 {auth && auth?.user?.username ? (
-                                    <li className="d-block">
+                                    <li className="block">
                                         <Link
                                             onClick={toggleClass}
                                             method="post"

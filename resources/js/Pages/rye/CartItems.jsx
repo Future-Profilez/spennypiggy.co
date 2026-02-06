@@ -255,12 +255,12 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
 
     return (
         <div className={`px-2`}>
-            <div className="my-4 cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
+            <div className="my-4 cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-3xl">
                 <div className="cartMain">
                     <h2 className="pb-1 wishtitle">
                         Your Basket for {cartsItems?.creator?.name || ""}
                         <Link
-                            className="text-voilet"
+                            className="text-violet-600"
                             href={`/${cartsItems?.creator?.username || ""}`}
                         >
                             @{cartsItems?.creator?.username || ""}
@@ -277,8 +277,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                             datatoMap?.map((c, i) => {
                                 return (
                                     <div
-                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-purple shadow-purple rounded-xl
-                                        mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}
+                                        className={`border cartlist flex flex-wrap justify-between content-between items-center border-violet-600 shadow-violet rounded-xl
+                                        mb-3 md:mb-4 md:ml-5 p-3 md:p-4`}
                                     >
                                         <div className="prodcartbox items-center">
                                             <div className="productimg">
@@ -291,12 +291,12 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                                 />
                                             </div>
                                             <div>
-                                                <div className="cartProdTitle ps-3 line-clamp-2">
+                                                <div className="cartProdTitle pl-3 line-clamp-2">
                                                     {c?.product?.title?.length >
                                                     30
                                                         ? c.product.title.slice(
                                                               0,
-                                                              30
+                                                              29
                                                           ) + "..."
                                                         : c?.product?.title}
                                                 </div>
@@ -304,7 +304,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         </div>
 
                                         <div className="cartProRtbox mt-3 items-center">
-                                            <div className="quty flex items-center me-4 ">
+                                            <div className="quty flex items-center mr-4 ">
                                                 {/* Decrement Button */}
                                                 <button
                                                     type="button"
@@ -357,7 +357,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                                     </svg>
                                                 </button>
                                             </div>
-                                            <div className="cartPric pe-4">
+                                            <div className="cartPric pr-4">
                                                 {formatMultiPrice(
                                                     c?.product?.price?.value /
                                                         100,
@@ -401,7 +401,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                     <div className="cartTotal px-0 py-3">
                         {/* <div className="cartSubTotal text-right mt-1">
                             <span>Platform Fee :</span>{" "}
-                            <strong className="text-end">
+                            <strong className="text-right">
                                 {formatMultiPrice(
                                     fee || "",
                                     datas?.user && datas?.user?.default_currency
@@ -445,8 +445,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                         </div> */}
                         {datatoMap?.length > 0 && (
                             <div className="cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>{" "}
-                                <strong className="text-end">
+                                <strong className="text-gray-900">Total :</strong>{" "}
+                                <strong className="text-right">
                                     {formatMultiPrice(
                                         totalPrice || 0,
                                         datatoMap[0]?.product?.price?.currency
@@ -457,94 +457,17 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                     </div>
 
                     <div className="addMessage">
-                        {/* <form onSubmit={(e) => e.preventDefault()}> */}
-                            <ul className="row">
-                                {/* <li>
-                                    <label>Add Message </label>
-                                    <textarea
-                                        onChange={(e) =>
-                                            setMessage(e.target.value)
-                                        }
-                                        placeholder="Send some words of support..."
-                                    ></textarea>
-                                </li> */}
-                                {/* <li className="w-100 mt-3">
-                                    <li className="row">
-                                        <div className="col-md-12 mb-4">
-                                            <label className="d-block text-start">
-                                                Email{" "}
-                                            </label>
-                                            <p className="text-small text-muted mb-1">
-                                                Your e-mail remains private.
-                                            </p>
-                                            <input
-                                                required
-                                                className={`${
-                                                    auth && auth.email
-                                                        ? "disabled"
-                                                        : ""
-                                                } form-input w-100 rounded`}
-                                                value={auth && auth.email}
-                                                disabled={
-                                                    auth && auth.email
-                                                        ? true
-                                                        : false
-                                                }
-                                                onChange={(e) =>
-                                                    setEmail(e.target.value)
-                                                }
-                                                type="email"
-                                                placeholder="Enter Your Email..."
-                                            />
-                                        </div>
-                                        <div className="col-md-12 mb-4">
-                                            <label className="d-block text-start">
-                                                From
-                                            </label>
-                                            <input
-                                                className="form-input w-100 rounded"
-                                                onChange={(e) =>
-                                                    setName(e.target.value)
-                                                }
-                                                value={name}
-                                                type="text"
-                                                placeholder="Enter Your Name..."
-                                            />
-                                        </div>
-                                    </li>
-                                </li> */}
+                            <ul className="flex flex-wrap">
                                 <li className="cheklistbox">
-                                    {/* <label
-                                        htmlFor="anonymous"
-                                        className="text-start"
-                                    >
-                                        <input
-                                            onChange={(e) =>
-                                                setKeepAnonmyous(
-                                                    e.target.checked
-                                                )
-                                            }
-                                            type="checkbox"
-                                            id="anonymous"
-                                            name="anonymous"
-                                            className="me-2"
-                                            value="anonymous"
-                                        ></input>
-                                        Keep anonymous
-                                    </label> */}
-                                    {/* <p className="text-muted text-small mb-3">
-                                        Your personal email and name will be
-                                        private.
-                                    </p> */}
                                     {/* Form fields starts here */}
                                     <p className="py-2">
                                      The below information will be used while
                                     sending your gift to <strong> {cartsItems?.creator?.name || ""} </strong>.
                                     </p>
-                                    <div className="form-field mb-3">
+                                    <div className="mb-3">
                                         <p className='mb-1'>Name</p>
                                         <input required disabled={auth && auth.user?.name ? true : false}
-                                            className="form-input w-100 rounded"
+                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             defaultValue={auth && auth.user?.name}
                                             // onChange={(e) => setName(e.target.value)}
                                             type="text" placeholder="Enter name.. " />
@@ -552,11 +475,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     <div className="form-field mb-3 ">
                                         <p className='mb-1'>Email</p>
                                         <input required  disabled={auth && auth.user?.email ? true : false}
-                                            className="form-input w-100 rounded"
+                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             defaultValue={auth && auth.user?.email}
                                             // onChange={(e) => setEmail(e.target.value)}
                                             type="email" placeholder="Enter email.. " />
-                                        <p className='text-[12px] text-muted mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
+                                        <p className='text-[12px] text-gray-500 mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
                                     </div>
                                     
                                     <div className="form-field mb-3">
@@ -570,11 +493,11 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                             />
                                             <span>Send anonymously</span>
                                         </label>
-                                        <p className='text-[12px] text-muted mt-1'>Your name will not be shown to the recipient if checked.</p>
+                                        <p className='text-[12px] text-gray-500 mt-1'>Your name will not be shown to the recipient if checked.</p>
                                     </div>
                                     {/* <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
-                                        <select required className="form-input w-100 rounded" name="country"
+                                        <select required className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md" name="country"
                                         onChange={handleChange}
                                         >
                                             <option value={''} >Choose Country</option>
@@ -614,7 +537,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                     {/* Form fields ends here */}
                                     <label
                                         htmlFor="agreeterms"
-                                        className="text-start"
+                                        className="text-left"
                                     >
                                         <input
                                             onChange={(e) =>
@@ -623,7 +546,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                             type="checkbox"
                                             id="agreeterms"
                                             name="agreeterm"
-                                            className="me-2"
+                                            className="mr-2"
                                             value="agreeterm"
                                         ></input>
                                         I understand I am paying the creator
@@ -646,8 +569,8 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         </a>{" "}
                                         and the following statements:
                                     </label>
-                                    <div className="tearmlist ps-3">
-                                        <ul className="ps-0">
+                                    <div className="tearmlist pl-3">
+                                        <ul className="pl-0">
                                             <li>
                                                 {" "}
                                                 For gift items, I understand I am

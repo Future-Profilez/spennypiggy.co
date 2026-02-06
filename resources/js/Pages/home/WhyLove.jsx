@@ -52,7 +52,7 @@ export default function WhyLove() {
 
                 <div className="container relative px-4 mx-auto">
                     <h2 className="fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-6 uppercase leading-none drop-shadow-lg">
-                        Add Gifts From <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 drop-shadow-none">Any Brand</span>
+                        Add Gifts From <span className="text-gradient-wishlist drop-shadow-none">Any Brand</span>
                     </h2>
                     <p className="fading text-gray-300 text-lg md:text-xl max-w-3xl mx-auto font-poppins leading-relaxed mb-12 text-center">
                         With Spenny Piggy, you can seamlessly add gifts from any

@@ -124,7 +124,7 @@ export default function AddBills(props) {
                 <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <SlCalender color="var(--pink)" size="1.5rem" />
                 </div>
-                <div className="ps-3 text-start">
+                <div className="pl-3 text-left">
                     <h2 className="text-md font-normal font-GillSans uppercase">Add Bills</h2>
                     <p className="text-sm font-poppins">
                         Get those pesky bills paid with exclusive content
@@ -144,14 +144,14 @@ export default function AddBills(props) {
             text={text ? text : <AddItem />} >
             <div className="editprofileModal  wishlistModal ">
                 <div className="editprofileModalInner">
-                    <h2 className="p-4 !pb-0 text-black text-start !border-0 font-GillSans uppercase text-large mb-1 pe-5">
+                    <h2 className="p-4 !pb-0 text-black text-left !border-0 font-GillSans uppercase text-large mb-1 pr-5">
                         {isEdit ? "Update Bill" : "Add A Bill"}
                     </h2>
                     <div className="wishinfo  p-4  ">
                         <form onSubmit={createBills}>
-                            <ul className="ps-0">
+                            <ul className="pl-0">
                                 <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         {" "}
                                         Bill Name{" "}
                                     </label>
@@ -161,7 +161,7 @@ export default function AddBills(props) {
                                         type="text"
                                         placeholder="Eg. Netflix subscription"
                                         value={data.name}
-                                        className="form-input px-2 py-2 border w-full rounded-md"
+                                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("name", e.target.value)
@@ -170,10 +170,10 @@ export default function AddBills(props) {
                                     />
                                 </li>
                                 <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         Price{" "}
                                     </label>
-                                    <div className="currency-wrapper dollar-symbols position-relative">
+                                    <div className="currency-wrapper dollar-symbols relative">
                                         <span className="currency-tag "> 
                                             {defaultCurrency}
                                         </span>
@@ -186,7 +186,7 @@ export default function AddBills(props) {
                                                 (item && item.price) ||
                                                 data.price
                                             }
-                                            className="form-input px-2 py-2 pl-8 border w-full rounded-md"
+                                            className="border-gray-300 border px-4 py-2 pl-8 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -206,12 +206,12 @@ export default function AddBills(props) {
 
                                 <li className="mb-4">
                                     <div className="singlewishbox rounded ">
-                                        <strong className="mb-2 text-start d-block ">
+                                        <strong className="mb-2 text-left block ">
                                             {" "}
                                             Allows gifter to purchase this item
                                             on a recurring basis.{" "}
                                         </strong>
-                                        <div className="repeatpurchase mt-2 text-start">
+                                        <div className="repeatpurchase mt-2 text-left">
                                             <label
                                                 htmlFor="weekly"
                                                 className="w-auto"
@@ -227,7 +227,7 @@ export default function AddBills(props) {
                                                 Weekly
                                             </label>
                                         </div>
-                                        <div className="repeatpurchase mt-2 text-start">
+                                        <div className="repeatpurchase mt-2 text-left">
                                             <label
                                                 htmlFor="monthly"
                                                 className="w-auto"
@@ -245,7 +245,7 @@ export default function AddBills(props) {
                                                 Monthly
                                             </label>
                                         </div>
-                                        <div className="repeatpurchase text-start">
+                                        <div className="repeatpurchase text-left">
                                             <label
                                                 htmlFor="yearly"
                                                 className="w-auto"
@@ -265,7 +265,7 @@ export default function AddBills(props) {
                                 </li>
 
                                 <li className="mb-4">
-                                    <label className="mb-2 text-start d-block">
+                                    <label className="mb-2 text-left block">
                                         Choose Image or Upload
                                     </label>
 
@@ -276,7 +276,7 @@ export default function AddBills(props) {
                                                     (item && item.perma_link) ||
                                                     uploadedimg
                                                 }
-                                                className="img-fluid"
+                                                className="w-full h-auto"
                                             />
                                         </div>
                                     ) : (
@@ -297,7 +297,7 @@ export default function AddBills(props) {
                                                             <div className="default-wish-img mb-1">
                                                                 <img
                                                                     src={`https://ucarecdn.com/${image}/`}
-                                                                    className="img-fluid"
+                                                                    className="w-full h-auto"
                                                                 />
                                                             </div>
                                                         </SwiperSlide>
@@ -306,7 +306,7 @@ export default function AddBills(props) {
                                         </Swiper>
                                     )}
 
-                                    <h4 className="mt-2 mb-2 w-100 text-center">
+                                    <h4 className="mt-2 mb-2 w-full text-center">
                                         OR
                                     </h4>
 

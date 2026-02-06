@@ -46,7 +46,7 @@ export default function VerifyEmail({auth}) {
         <div>
             <Head title="Email Verification" />
             <div  >
-                <div className="mailicon m-auto d-table" >
+                <div className="mailicon mx-auto block" >
                     <svg width="341" height="287" viewBox="0 0 341 287" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M54.1393 241.814V237.535H49.8604H31.1628C16.3152 237.535 4.27889 225.499 4.27889 210.651V79.7678C4.27889 64.9202 16.3152 52.8839 31.1628 52.8839H261.767C276.615 52.8839 288.651 64.9202 288.651 79.7677V210.651C288.651 225.499 276.615 237.535 261.767 237.535H102.837H101.26L100.06 238.559L54.1393 277.727V241.814Z" fill="#F94F97" stroke="#E6EA7B" strokeWidth="8.55778" />
                         <rect x="266.941" width="4.62903" height="33.9462" rx="2.31452" fill="#E6EA7B" />
@@ -101,7 +101,7 @@ export default function VerifyEmail({auth}) {
                     </svg>
                 </div>
                 <h3 className="headingSm !text-3xl md:!text-5xl tracking-wider mb-3 text-center" >Verification Email Sent !!</h3>
-                <h5 className="text-xl  text-center text-mint w-75 m-auto d-table" >Thanks for signing up! Before getting started, please verify your email.</h5> 
+                <h5 className="text-xl  text-center text-mint w-3/4 mx-auto block" >Thanks for signing up! Before getting started, please verify your email.</h5> 
                 <div className="flex justify-center mt-6 mb-2">
                     <button  onClick={()=>{setSent(true);sendMail()}} className="text-pink m-auto">{loading ? 'Sending..' : 
                     <>

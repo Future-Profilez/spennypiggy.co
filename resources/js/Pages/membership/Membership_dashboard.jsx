@@ -34,20 +34,20 @@ export default function Membership_dashboard(props) {
                     <LoadingScreen />
                 </>
             ) : (
-                <div className="container">
+                <div className="container mx-auto px-4">
                     <div className="membershipdashboard pb-4">
                         <h2 className="heading text-white mb-4 mt-4">
                             Membership Dashboard
                         </h2>
-                        <div className="dashboard-memeber row">
-                            <div className="col-md-4 mb-4">
-                                <div className="box dash-stat-block bg-white-l br-r-8 p-relative xs-w-100 ">
-                                    <div className="text-large font-bold color-dark tw-font-cr-medium text-fs-30 ln-h-40 membership-animate-number xs-flex xs-flex-both-center">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-black">
+                            <div className="w-full">
+                                <div className="box dash-stat-block bg-white border border-gray-100 shadow-sm rounded-lg relative w-full ">
+                                    <div className="text-lg font-bold text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] membership-animate-number flex items-center justify-center">
                                         {data.members}
                                     </div>
-                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 flex items-center gap-2 m-2">
+                                    <div className="justify-center text-center text-gray-500 tw-font-cr-regular text-base leading-[25px] mt-4 flex items-center gap-2 m-2">
                                         <svg
-                                            className="mg-r-4 vert-align-sub"
+                                            className="mr-4 align-sub"
                                             width="18"
                                             height="18"
                                             viewBox="0 0 16 16"
@@ -80,9 +80,9 @@ export default function Membership_dashboard(props) {
                                 </div>
                             </div>
 
-                            <div className="col-md-4 mb-4">
-                                <div className="box dash-stat-block bg-dark-l br-r-8 p-relative xs-w-100">
-                                    <div className="text-large font-bold  color-dark tw-font-cr-medium text-fs-30 ln-h-40 xs-flex xs-flex-both-center">
+                            <div className="w-full">
+                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-lg relative w-full">
+                                    <div className="text-lg font-bold  text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] flex items-center justify-center">
                                         <span className="tw-font-cr-bold">
                                             £
                                         </span>
@@ -90,9 +90,9 @@ export default function Membership_dashboard(props) {
                                             {data.per_month}
                                         </span>
                                     </div>
-                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 flex items-center gap-2 m-2">
+                                    <div className="justify-center text-center text-gray-500 tw-font-cr-regular text-base leading-[25px] mt-4 flex items-center gap-2 m-2">
                                         <svg
-                                            className="mg-r-4 vert-align-sub"
+                                            className="mr-4 align-sub"
                                             width="14"
                                             height="16"
                                             viewBox="0 0 14 16"
@@ -135,9 +135,9 @@ export default function Membership_dashboard(props) {
                                 </div>
                             </div>
 
-                            <div className="col-md-4 mb-4">
-                                <div className="box dash-stat-block bg-dark-l br-r-8 p-relative xs-w-100 ">
-                                    <div className="text-large font-bold color-dark tw-font-cr-medium text-fs-30 ln-h-40 xs-flex xs-flex-both-center">
+                            <div className="w-full">
+                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-lg relative w-full ">
+                                    <div className="text-lg font-bold text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] flex items-center justify-center">
                                         <span className="tw-font-cr-bold">
                                             £
                                         </span>
@@ -145,9 +145,9 @@ export default function Membership_dashboard(props) {
                                             {data.all_time}
                                         </span>
                                     </div>
-                                    <div className="justify-center text-center color-grey tw-font-cr-regular text-fs-16 ln-h-25 mg-t-4 flex items-center gap-2 m-2">
+                                    <div className="justify-center text-center text-gray-500 tw-font-cr-regular text-base leading-[25px] mt-4 flex items-center gap-2 m-2">
                                         <svg
-                                            className="mg-r-4 vert-align-sub"
+                                            className="mr-4 align-sub"
                                             width="16"
                                             height="16"
                                             viewBox="0 0 13 13"

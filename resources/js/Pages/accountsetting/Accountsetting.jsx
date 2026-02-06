@@ -111,7 +111,7 @@ export default function Accountsetting(props) {
                             auth.user.stripe_details_submitted == 1 ? (
                                 <li>
                                     <PaymentDashboard
-                                        classes="w-100 !bg-white !py-0 !mt-0 !text-black hover:!text-black"
+                                        classes="w-full !bg-white !py-0 !mt-0 !text-black hover:!text-black"
                                         text={
                                             <>
                                                 PAYMENT DASHBOARD
