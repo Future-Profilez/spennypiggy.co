@@ -106,7 +106,7 @@ export default function AddGift({
             <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] min-w-[50px] h-[50px]">
                 <CiGift color="var(--pink)" size="1.5rem" />
             </div>
-            <div className="ps-3 text-start">
+            <div className="pl-3 text-left">
                 <h2 className="text-md font-normal font-GillSans uppercase">{text ? text :'Add Surprise Gift'}</h2>
                 <p className="text-sm font-poppins">
                 Add a gift link or URL from Amazon
@@ -128,7 +128,7 @@ export default function AddGift({
                 <form onSubmit={submitPost}>
                     <div className="flex items-center">
                         <div
-                            className={`gift-icon me-2 voilet`}
+                            className={`gift-icon mr-2 voilet`}
                             dangerouslySetInnerHTML={{ __html: piggy }}
                         />
                         <h2 className="text-xl font-bold text-dark-500">
@@ -144,7 +144,7 @@ export default function AddGift({
                         name="title"
                         required
                         placeholder="Example - https://www.amazon.com/Gaming-Headphone-Controller-Holder-Organizer-Black/dp/B0BPSP3BQH"
-                        className="text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                        className="text-normal border-gray-300 border px-3 py-3 text-gray-900 rounded-xl w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                     />
                     <LoaderButton
                         type="submit"

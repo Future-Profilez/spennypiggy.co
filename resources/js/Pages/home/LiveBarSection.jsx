@@ -21,18 +21,18 @@ export default function LiveBarSection() {
       </div>
      
 
-    <div className='w-100 livebarsections-hidden relative'>
+    <div className='w-full livebarsections-hidden relative'>
       <div className=' livebarsections pt-0 pt-md-5 mt-12 '>
-        <div className='container px-4 w-100' >
+        <div className='container px-4 w-full' >
           <h2 className='text-2xl md:text-4xl lg:text-5xl font-gulfs text-white text-center mb-4 uppercase leading-none' >
-            What is <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Spenny Piggy</span> ? 🐷
+            What is <span className="text-gradient-wishlist">Spenny Piggy</span> ? 🐷
           </h2>
 
-           <Lightbox classes="m-auto d-table" text={<>
-              <div className="videoBg !h-auto w-100 mt-3 rounded-[40px] border-4 border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.3)] overflow-hidden group cursor-pointer hover:scale-[1.01] transition-transform duration-300" >
+           <Lightbox classes="mx-auto block" text={<>
+              <div className="videoBg !h-auto w-full mt-3 rounded-[40px] border-2 border-pink-500 shadow-[0_0_30px_rgba(236,72,153,0.3)] overflow-hidden group cursor-pointer hover:scale-[1.01] transition-transform duration-300" >
                 <div className="relative">
                     <img alt={"image"}  className='w-full h-full' src={spennys} />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
+                    <div className="absolute  inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
                         <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white/50 group-hover:scale-110 transition-transform duration-300">
                             <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[20px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
                         </div>

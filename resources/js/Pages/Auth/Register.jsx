@@ -902,7 +902,7 @@ export default function Register(props) {
                     <div className="text-center mb-10">
                         <h2 className="px-4 text-4xl md:text-5xl font-gulfs text-white uppercase tracking-wider mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Create{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
+                            <span className="text-gradient-wishlist">
                                 Account
                             </span>
                         </h2>
@@ -910,7 +910,7 @@ export default function Register(props) {
                             Already registered ?
                             <Link
                                 href={route("login")}
-                                className="ms-1 text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
+                                className="ml-1 text-pink-500 hover:text-pink-400 font-bold transition-all duration-300 hover:underline decoration-2 underline-offset-4"
                             >
                                 Log In
                             </Link>

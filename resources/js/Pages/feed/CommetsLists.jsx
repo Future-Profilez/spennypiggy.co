@@ -26,7 +26,7 @@ export default function CommentList({post_uuid, updateComments}){
         <AddComment updateComments={updateComments} update={listComments} post_uuid={post_uuid}/>
         
         {loading ? 
-        <div className='w-100 flex justify-content-center m-auto d-table' >
+        <div className='w-full flex justify-center mx-auto' >
           <svg className="h-8 w-8 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" > <path d="M 12 2 A 10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="4" fill="none" /> </svg> 
         </div>
         : ''}

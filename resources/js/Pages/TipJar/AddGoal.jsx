@@ -5,7 +5,7 @@ import { useForm, usePage } from "@inertiajs/react";
 const Popup = lazy(() => import('@/Components/Popup'));
 import PriceFormat from "@/includes/PriceFormat";
 import { useState } from "react";
-import ProgressBar from 'react-bootstrap/ProgressBar';
+import CustomProgressBar from '@/Components/CustomProgressBar';
 
 export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
    
@@ -95,16 +95,16 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
         <Popup
             modalclassName="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
-            action={close} classes={`btn-pink  text-xs lg px-4 my-2 w-100`}
+            action={close} classes={`btn-pink  text-xs lg px-4 my-2 w-full`}
             text={goal ? `My Goal` : `Add Goal`} >
             {goal ? 
                <div className="updategoal py-2" >
                 <div className="activegoal text-center" >
-                  <h2 className='text-large font-semibold mb-2'>{goal?.name}</h2>
+                  <h2 className='text-lg font-semibold mb-2'>{goal?.name}</h2>
                   <p className='mb-3 '>{goal?.description || ''}</p>
-                  {goal?.days ? <p className='mb-3 text-voilet '>{goal?.days > 1 ? `${goal?.days} Days` : `${goal?.days} Day`} left to goal ends.</p> : ''}
-                  <ProgressBar now={goal?.fullfilled} max={goal?.target} />
-                  <p className='text-muted mt-2' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
+                  {goal?.days ? <p className='mb-3 text-violet-600 '>{goal?.days > 1 ? `${goal?.days} Days` : `${goal?.days} Day`} left to goal ends.</p> : ''}
+                  <CustomProgressBar now={goal?.fullfilled} max={goal?.target} />
+                  <p className='text-gray-500 mt-2' >{getPercentage(goal?.target, goal?.fullfilled)}% of {formatMultiPrice(goal?.target, goal?.currency)} goal.</p>
                   <LoaderButton 
                   onClick={markcomplete} 
                   disabled={processing}
@@ -116,24 +116,24 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                </div> 
                : 
                <div className="addgoal" >
-                  <h2 className="text-uppercase font-GillSans pb-4 font-large">
+                  <h2 className="uppercase font-GillSans pb-4 text-lg">
                   Add Piggy Bank Goal
                   </h2>
-                  <div className="form-field mb-4">
-                     <label className="d-block text-start mb-2">Target Amount</label>
-                     <div className="position-relative  currency-wrapper" >
+                  <div className="mb-4">
+                     <label className="block text-left mb-2">Target Amount</label>
+                     <div className="relative  currency-wrapper" >
                         <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
-                        <input className="form-input w-100 rounded"
+                        <input className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-md shadow-sm"
                            onChange={(e)=>setaprice(e.target.value)}
                            type="number" placeholder="Enter amount.. " />
                      </div>
                            <p className="mt-1">The wish item amount is set to {formatMultiPrice(aprice, defaultCurrency)}.</p>
                   </div>
                  
-                  <div className="form-field mb-4">
-                        <label className="d-block text-start mb-2">Goal Description</label>
+                  <div className="mb-4">
+                        <label className="block text-left mb-2">Goal Description</label>
                         <textarea placeholder="Description..."
-                        className="form-input w-100 rounded"
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                         onChange={(e) => setData('description',e.target.value)}
                         type="text" />
                   </div>

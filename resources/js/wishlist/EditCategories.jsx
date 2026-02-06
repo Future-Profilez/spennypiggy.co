@@ -59,7 +59,7 @@ export default function EditCategories({username, fetch_categories}) {
 
             {isRename ? 
                <div className=" border-top pt-3 flex justify-between items-center mt-2" >
-                  <input className="w-100" onChange={(e)=>setChangeValue(e.target.value)} defaultValue={item?.category || ""} disabled={!isRename} />
+                  <input className="w-full" onChange={(e)=>setChangeValue(e.target.value)} defaultValue={item?.category || ""} disabled={!isRename} />
                   <button className="button esm ms-3" onClick={renameCategory} >Save</button>       
                </div>
                : ''

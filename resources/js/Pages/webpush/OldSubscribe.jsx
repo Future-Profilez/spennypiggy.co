@@ -68,10 +68,10 @@ export default function OldSubscribe() {
          <div className=" w-screen h-screen flex justify-center items-center z-[6000] bg-[#0009] fixed top-0 left-0">
                <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[40px] shadow" role="alert">
                   <div className="block">
-                     <div className=" m-auto table items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg mb-4">
+                     <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg mb-4">
                            <RiNotificationBadgeFill />
                      </div>
-                     <div className="ms-3 text-sm font-normal text-center">
+                     <div className="ml-3 text-sm font-normal text-center">
                            <span className="mb-1 text-sm font-semibold mt-6 text-center w-full text-gray-900">Push Notifications</span>
                            <div className="mb-2 text-sm font-normal mb-4 text-center w-full">Get notifications direct to your phone.</div>
                            <div className="flex justify-center">

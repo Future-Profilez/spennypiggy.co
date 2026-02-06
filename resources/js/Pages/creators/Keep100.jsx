@@ -34,7 +34,7 @@ export default function Keep100() {
               <div className="text-center mb-16 md:mb-24">
                  <h1 className="text-4xl md:!text-5xl lg:!text-6xl xl:!text-7xl font-gulfs uppercase leading-[0.85] tracking-wide mb-8 text-black">
                     You Keep <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600 text-shadow-sm">100%</span> Of What <br/>
+                    <span className="text-gradient-wishlist text-shadow-sm">100%</span> Of What <br/>
                     You Earn.
                  </h1>
                  <div className="flex justify-center mb-8">

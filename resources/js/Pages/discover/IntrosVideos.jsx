@@ -46,15 +46,15 @@ export default function IntroVideos(props) {
     },[order, gender]);
 
     const Switch = () => {
-        return <div className='flex mb-3 mb-sm-0 items-center toggleswitch' >
-        <button onClick={()=>setorder('new')} className={`${order == 'new' ? 'active' : ''}`} >Newest</button>
-        <button onClick={()=>setorder('old')} className={`${order == 'old' ? 'active' : ''}`} >Oldest</button>
+        return <div className='flex mb-3 sm:mb-0 items-center gap-2' >
+        <button onClick={()=>setorder('new')} className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${order == 'new' ? 'bg-pink text-white' : 'bg-white text-gray-700 border border-gray-200'}`} >Newest</button>
+        <button onClick={()=>setorder('old')} className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${order == 'old' ? 'bg-pink text-white' : 'bg-white text-gray-700 border border-gray-200'}`} >Oldest</button>
     </div>
     }
 
     const ProfileIntro = ({ data, text}) => {
     return <>
-      <Popup space="0" size="md"  classes={`w-100 h-full`}
+      <Popup space="0" size="md"  classes={`w-full h-full`}
         text={text} >
             <div className='video-payer-pop' >
               <video playsInline='false'  controlsList='nodownload' autoPlay   controls src={data && data.perma_link} />
@@ -96,16 +96,16 @@ export default function IntroVideos(props) {
         <div className="absolute bottom-0 left-0 w-full p-3 md:p-4 z-[99] text-white">
           {w && w.user && w.user.username ? (
             <Link href={`/${w.user.username}`} onClick={() => trackSearchClick(w.user.id, w.user.username)} className="block">
-              <p className="text-normal !line-clamp-1 md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
+              <p className="text-base !line-clamp-1 md:text-lg font-GillSans uppercase mb-0 flex items-center gap-2">
                 {w.user.name}
                 {/* {verified ? <RiVerifiedBadgeFill size={'1rem'} className="text-pink" /> : ''} */}
               </p>
-              <p className="text-normal mt-0 opacity-90">@{w.user.username}</p>
+              <p className="text-base mt-0 opacity-90">@{w.user.username}</p>
             </Link>
           ) : (
             <div>
               <p className="text-lg font-GillSans uppercase mb-0">{(w && w.user && w.user.name) || 'Unknown User'}</p>
-              <p className="text-normal mt-0 text-gray-300">@unavailable</p>
+              <p className="text-base mt-0 text-gray-300">@unavailable</p>
             </div>
           )}
         </div>
@@ -113,7 +113,7 @@ export default function IntroVideos(props) {
     }
 
     return <>
-        <div className={`filters d-block  items-center justify-between w-100 mb-4 ${intros && intros.length < 1 ? '!hidden' : ''}`} >
+        <div className={`filters flex flex-wrap items-center justify-between w-full mb-4 ${intros && intros.length < 1 ? '!hidden' : ''}`} >
             <h2 className='text-2xl text-gray-900 font-gulfs uppercase'>Intro Videos</h2>
             {/* <div className='flex gap-1 mt-3 items-center' >
               <button onClick={()=>setorder('new')} className={` flex-shrink-0 px-3 py-[5px] rounded-full text-[14px] font-medium transition-all whitespace-nowrap bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 ${order == 'new' ? '!bg-blue-600 text-white' : ''}`} >Newest</button>
@@ -127,7 +127,7 @@ export default function IntroVideos(props) {
 
         <div className='' >
           {loading ?
-          <div className='w-100 flex justify-content-center' ><LoadingScreen /></div>
+          <div className='w-full flex justify-center' ><LoadingScreen /></div>
           :
           <>
             {intros && intros.length ?

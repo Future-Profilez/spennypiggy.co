@@ -207,7 +207,7 @@ export default function BuyShopItem({
                 text={text}
             >
                 <div className={`${loading ? "item-purchasing" : ""}`}>
-                    <div className="mx-auto w-32 h-32 relative -mt-16 border-4 border-white rounded-full overflow-hidden">
+                    <div className="mx-auto w-32 h-32 relative -mt-16 border-2 border-white rounded-full overflow-hidden">
                         <img
                             className="object-cover object-center h-32 w-full"
                             src={s.user.avatar_url || userdefaultphoto}
@@ -247,7 +247,7 @@ export default function BuyShopItem({
                                             href={`/shop/item/${slug(s.name)}/${
                                                 s.uuid
                                             }`}
-                                            className="shop-text ps-3 "
+                                            className="shop-text pl-3 "
                                         >
                                             <h2 className="text-md font-bold">
                                                 {s.name}
@@ -264,7 +264,7 @@ export default function BuyShopItem({
                                 ) : (
                                     <a
                                         target="_blank"
-                                        className="text-blue-800 text-break"
+                                        className="text-blue-800 break-all"
                                         href={s && s.success_page_value}
                                     >
                                         {s && s.success_page_value}
@@ -288,7 +288,7 @@ export default function BuyShopItem({
                                         {reply ? (
                                             <button
                                                 onClick={sendReply}
-                                                className="pinkbg text-center text-white px-3 py-1 mt-3 m-auto d-table rounded-[20px]"
+                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[20px]"
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -311,7 +311,7 @@ export default function BuyShopItem({
                                 </p>
                                 <button
                                     onClick={handleCopy}
-                                    className="bg-gray-200 rounded-[30px] px-4 py-2 m-auto d-table mt-3 text-sm"
+                                    className="bg-gray-200 rounded-[30px] px-4 py-2 mx-auto block mt-3 text-sm"
                                 >
                                     Copy Link
                                 </button>
@@ -338,7 +338,7 @@ export default function BuyShopItem({
                                         </strong>
                                         <button className="tooltipbtn flex justify-center items-center !font-normal">
                                             ?
-                                            <p className="!text-start">
+                                            <p className="!text-left">
                                                 {window.platformFeePercentage || 20}% Card Fees and £1
                                                 administrative fee applies to
                                                 all transactions.
@@ -369,7 +369,7 @@ export default function BuyShopItem({
                                         href={`/shop/item/${slug(s.name)}/${
                                             s.uuid
                                         }`}
-                                        className="shop-text ps-3 "
+                                        className="shop-text pl-3 "
                                     >
                                         <h2 className="text-md font-bold">
                                             {s.name}
@@ -382,7 +382,7 @@ export default function BuyShopItem({
                             </div>
                             {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
-               className="form-input w-100 rounded mb-3" placeholder={`+${s.price}`} type="number" /> */}
+               className="w-full border-gray-300 border px-4 py-2 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
 
                             <div className="form-field mb-3">
                                 <p className="mb-1">Name</p>
@@ -391,7 +391,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="form-input w-100 rounded"
+                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded"
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -405,26 +405,26 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="form-input w-100 rounded"
+                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
                                     placeholder="Enter email.. "
                                 />
-                                <p className="text-[12px] text-muted mt-1 ">
+                                <p className="text-[12px] text-gray-500 mt-1 ">
                                     Your email address is kept private and will
                                     not be shown to anyone.
                                 </p>
                             </div>
 
                             {shop.type === "physical" ? (
-                                <div className="shippingdetails mt-3">
-                                    <div className="form-field mb-3 ">
+                                <>
+                                    <div className="mb-3">
                                         <p className="mb-2">
                                             Shipping Information
                                         </p>
                                         <select
-                                            className="form-input w-100 rounded"
+                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -442,20 +442,20 @@ export default function BuyShopItem({
                                                 ))}
                                         </select>
                                     </div>
-                                    <div className="form-field mb-3 ">
+                                    <div className="mb-3">
                                         <input
                                             required
-                                            className="form-input w-100 rounded"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
                                             placeholder="Street Address"
                                         />
                                     </div>
-                                    <div className="form-field mb-3 ">
+                                    <div className="mb-3">
                                         <input
                                             required
-                                            className="form-input w-100 rounded"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
@@ -463,20 +463,20 @@ export default function BuyShopItem({
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className="form-field mb-3 ">
+                                        <div className="mb-3">
                                             <input
                                                 required
-                                                className="form-input w-100 rounded"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
                                                 placeholder="State"
                                             />
                                         </div>
-                                        <div className="form-field mb-3 ">
+                                        <div className="mb-3">
                                             <input
                                                 required
-                                                className="form-input w-100 rounded"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="email"
@@ -484,7 +484,7 @@ export default function BuyShopItem({
                                             />
                                         </div>
                                     </div>
-                                </div>
+                                </>
                             ) : (
                                 ""
                             )}
@@ -507,9 +507,9 @@ export default function BuyShopItem({
                             >
                                 {checking ? "Buying.." : "Pay"}
                             </button>
-                            {/* <div className='securestripe text-center mt-3' >
-                  🔒 Secured via <b>Stripe</b>
-               </div> */}
+                            <div className='securestripe text-center mt-3' >
+                                🔒 Secured via <b>Stripe</b>
+                            </div>
                         </>
                     )}
                 </div>

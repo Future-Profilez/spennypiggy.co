@@ -1,4 +1,4 @@
-import { lazy, memo, useMemo } from "react";
+import { lazy, memo, useMemo, Fragment } from "react";
 import { useState } from "react";
 import uploadedimg from "../../../assets/img/uploadedimg.png";
 import { useEffect } from "react";
@@ -8,7 +8,7 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 const AddBills = lazy(() => import("./AddBills"));
-import DropdownButton from "react-bootstrap/DropdownButton";
+import { Menu, Transition } from "@headlessui/react";
 import RemoveBill from "./RemoveBill";
 import { useAlerts } from "@/Components/Alerts";
 
@@ -86,11 +86,11 @@ function Bill(props) {
             <div
                 key={key}
                 style={IsloggedIn ? style : stylenone}
-                className={` position-relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""}`}
+                className={` relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""}`}
             >
-                <div className="wishlistcntbox  mb-3 mb-sm-4 whbg relative !rounded-[23px] shadow-pinks overflow-hidden    border-3 md:border-4 !border-[#F94F97] w-full">
+                <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[23px] shadow-[7px_7px_0_0_var(--pink)] overflow-hidden w-full">
                     {IsloggedIn && itm && itm.approved === 0 ? (
-                        <div className="approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2 ">
+                        <div className="approvalmessge membership m-3 rounded-lg p-3 py-2 mb-2 ">
                             Bill item waiting for approval. Currently only you
                             can see this bill.
                         </div>
@@ -122,23 +122,42 @@ function Bill(props) {
                         </div>
 
                         {IsloggedIn && (
-                            <DropdownButton
-                                className="edit-post pe-0 absolute top-2 right-3 z-10"
-                                id="dropdown-basic-button"
-                                title={
-                                    <div className="dots">
-                                        <span className="bg-white"></span>
-                                        <span className="bg-white"></span>
-                                        <span className="bg-white"></span>
-                                    </div>
-                                }
-                            >
-                                <RemoveBill
-                                    classes="px-[18px] py-2 text-start w-full"
-                                    uuid={itm.uuid}
-                                    text="Remove Bill"
-                                />
-                            </DropdownButton>
+                            <Menu as="div" className="absolute top-2 right-3 z-10 inline-block text-left">
+                                <div>
+                                    <Menu.Button className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
+                                        <div className="dots">
+                                            <span className="bg-white"></span>
+                                            <span className="bg-white"></span>
+                                            <span className="bg-white"></span>
+                                        </div>
+                                    </Menu.Button>
+                                </div>
+                                <Transition
+                                    as={Fragment}
+                                    enter="transition ease-out duration-100"
+                                    enterFrom="transform opacity-0 scale-95"
+                                    enterTo="transform opacity-100 scale-100"
+                                    leave="transition ease-in duration-75"
+                                    leaveFrom="transform opacity-100 scale-100"
+                                    leaveTo="transform opacity-0 scale-95"
+                                >
+                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                        <div className="px-1 py-1">
+                                            <Menu.Item>
+                                                {({ active }) => (
+                                                    <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-md px-2 py-2 text-sm`}>
+                                                        <RemoveBill
+                                                            classes="w-full text-left"
+                                                            uuid={itm.uuid}
+                                                            text="Remove Bill"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </Menu.Item>
+                                        </div>
+                                    </Menu.Items>
+                                </Transition>
+                            </Menu>
                         )}
                     </div>
 
@@ -166,7 +185,7 @@ function Bill(props) {
                         <div className="flex justify-center mt-2">
                             {IsloggedIn ? (
                                 <AddBills
-                                    classes="pinkbg hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow"
+                                    classes="bg-[var(--pink)] hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow"
                                     text="Update Bill"
                                     item={itm}
                                     isEdit={true}
@@ -178,7 +197,7 @@ function Bill(props) {
                                     href={route("bill.checkout", {
                                         uuid: itm.uuid,
                                     })}
-                                    className="pinkbg hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow"
+                                    className="bg-[var(--pink)] hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow"
                                 >
                                     Pay Bill
                                 </Link>

@@ -47,7 +47,7 @@ export default function CountriesShipping({handleShipping, handlewws}) {
                   ${haveQty? "after:transition-all after:translate-x-full  bg-blue-600": "bg-gray-200"
                   } `}
                ></div>
-               <span className="ms-3 text-md font-medium text-gray-900">
+               <span className="ml-3 text-md font-medium text-gray-900">
                Enable worldwide shipping
                </span>
             </div>

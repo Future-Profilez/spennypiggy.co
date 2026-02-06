@@ -1,8 +1,5 @@
 import { useState, lazy, useEffect } from "react";
 import giftimg from "../../../assets/img/giftimg.jpg";
-// import ToCart from "./ToCart";
-// import uploadedimg from "../../assets/img/uploadedimg.png";
-// import ProgressBar from "react-bootstrap/ProgressBar";
 
 // Lazy-loaded components
 const Popup = lazy(() => import("@/Components/Popup"));
@@ -151,10 +148,10 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
             size="md"
             action={close}
             modalclassName="pinkmodal"
-            classes="d-none"
+            classes="hidden"
         >
             <div className="addCartModalHead rounded-3xl relative ">
-                <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-1 px-3 text-center">
+                <h2 className="font-GillSans text-bl uppercase pt-8 text-lg relative z-10 px-3 text-center">
                     {" "}
                     Add to Cart{" "}
                 </h2>

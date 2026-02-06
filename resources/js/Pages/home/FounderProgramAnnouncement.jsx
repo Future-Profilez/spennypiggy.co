@@ -26,16 +26,20 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                 <div className="max-w-6xl mx-auto px-4 relative ">
                     <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
                         <div className="flex-1 text-center lg:text-left">
-                            <div className="mb-8">
-                                <div className="fading inline-flex items-center bg-gray-900/80 backdrop-blur-sm rounded-full px-6 py-2 mb-6 border border-yellow-400/30 shadow-[0_0_15px_rgba(250,204,21,0.2)] wiggle">
-                                    <FaCrown className="text-yellow-400 mr-2 text-xl" />
-                                    <span className=" text-white font-gulfs uppercase tracking-wider text-sm md:text-base">
-                                        New Program Launch
-                                </span>
-                            </div>
+                            <div className="mb-8 text-center">
+                                <div className="flex items-center justify-center">
+                                    <div className="fading flex items-center justify-center w-fit bg-gray-900/80 backdrop-blur-sm rounded-full px-6 py-2 mb-6 border border-yellow-400/30 shadow-[0_0_15px_rgba(250,204,21,0.2)] wiggle">
+                                        <FaCrown className="text-yellow-400 mr-2 text-xl" />
+                                        <span className=" text-white font-gulfs uppercase tracking-wider text-sm md:text-base">
+                                                New Program Launch
+                                        </span>
+                                    </div>
+                                </div>
                             <h2 className="fading m-auto text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-6 leading-none uppercase">
-                                Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">Founder</span> Program!
+                                Join the <span className="text-gradient-founder">Founder</span> Program!
                             </h2>
+
+
                             <p className="fading m-auto pt-6 text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl leading-relaxed font-poppins">
                                     Earn <span className="text-yellow-400 font-bold">{config.currencySymbol}{config.minMonthlyEarnings}</span> in your first 30 days from joining and automatically qualify for a <span className="text-pink-500 font-bold">{config.bonusPercentage}% bonus</span> up to {config.currencySymbol}{config.maxBonusPerMonth}! 
                                     <br/><br/>

@@ -1,10 +1,9 @@
-/* app.css */
-/* @import "https://unpkg.com/open-props" layer(design.system);
-@import "https://unpkg.com/open-props/normalize.light.min.css" layer(reset); */
-
 @import "react-lazy-load-image-component/src/effects/blur.css";
 @import "./retro-bottombar.css";
 @import "./retro-enhancements.css";
+
+
+
 
 @keyframes fading-effect {
   from {
@@ -16,7 +15,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    .fading {
+    .animate-fading {
       animation: fading-effect both;
       animation-timeline: view();
       animation-range: contain 0% contain 30%;
@@ -249,10 +248,11 @@ a.css-1j56y57{width:30px !important;height:30px !important}
 .giftersocials svg path{fill:#fff !important}
 .wishbox span{width:100% !important;height:100% !important;display:block !important}
 .wish-item-box span.lazy-load-image-background{background:#f94f96 !important}
-/* .infinite-scroll-component > div > div:first-child{display:none !important}
-*/
-.dropdown-toggle::after{display:none !important}
-.introvideobox .lazy-load-image-background{display:block !important;width:100% !important;height:100% !important}
+/*  .infinite-scroll-component > div > div:first-child { display:none !important } */
+.dropdown-toggle::after{ display:none !important }
+.introvideobox .lazy-load-image-background {
+  display:block !important;width:100% !important;height:100% !important
+}
 
 .lazywrap  span.lazy-load-image-background {
     display: block !important;
@@ -264,6 +264,12 @@ lr-config {
     display: none;
 }
 
+/* 
 .pl-8 { 
     padding-left: 2rem !important;
+} 
+*/
+
+.container  {
+    margin: 0 auto !important ;
 }

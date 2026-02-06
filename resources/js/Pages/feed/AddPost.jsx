@@ -122,23 +122,23 @@ export default function AddPost({item, text, classes, isEdit, title}) {
 
             <div className="mt-1 ">
                 <input onChange={handleInput} defaultValue={item?.title || ''} name="title" placeholder="Post Title ..."
-                className="text-normal form-input text-lg border px-3 py-3 text-dark rounded-4 mt-4 text-post-content form-control"/>
-                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border form-input h-[150px] mt-4 text-post-content form-control" ></textarea>
+                className="text-normal border-gray-300 border px-3 py-3 text-lg text-gray-900 rounded-xl mt-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"/>
+                <textarea onChange={handleInput} defaultValue={item?.content || ''}  name="content" placeholder="Say Something..." className="text-lg border-gray-300 border h-[150px] mt-4 w-full rounded-xl px-3 py-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" ></textarea>
                 <div className="chhoseimage mt-4 pt-2" >
                     <p className="text-grey-400 mb-2" >Choose a image file to attached with your post.</p>
                     {item && item.image_url ?
                         <>
                             <div className="default-wish-img border relative mb-1 ">
                                 <img src={item && item.image_url}
-                                className="img-fluid" />
+                                className="max-w-full h-auto" />
                             </div>
-                            <h2 className="w-100 my-2 text-center" >Or</h2>
+                            <h2 className="w-full my-2 text-center" >Or</h2>
                         </>
                     : ''}
                     {isAiImage ?
                         <div className="default-wish-img border relative mb-2 ">
                             <img src={isAiImage}
-                            className="img-fluid" />
+                            className="max-w-full h-auto" />
                         </div>
                     : ""}
 
@@ -150,15 +150,14 @@ export default function AddPost({item, text, classes, isEdit, title}) {
                         accept="image/*"
                         sendFile={getfile} options={st.post} />
                         <div className="absolute top-[14px] right-12">
-                            <ImageGenerationWithAI classes={`button bg-pink d-table text-[10px] d-sm-flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
+                            <ImageGenerationWithAI classes={`button bg-pink table text-[10px] sm:flex m-auto m-sm-0 hover:opacity-80`} update={getAIImage} />
                         </div>
                     </div>
                 </div>
 
                 <p className="text-grey-500 mb-1 mt-4" >Choose Audience</p>
-                <div className="flex align-center justify-content-center flex-wrap" >
-                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="form-input
-                    text-md w-full focus:ring-green-50 block ">
+                <div className="flex items-center justify-center flex-wrap" >
+                    <select id="countries" defaultValue={item?.for_module} onChange={handleInput} name="for_module" className="border-gray-300 border px-4 py-2 text-md w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md block ">
                         <option value="membership">Memberships</option>
                         <option value="subscription">Subscription</option>
                         <option value="support">Supporters</option>

@@ -55,12 +55,12 @@ export default function Board(props) {
 
     const Rank = ({ r }) => {
         return (
-            <div className="fading rank py-3 border-bottom flex items-center justify-between">
-                <div className="flex items-center justify-between">
-                    <div className="sno me-2 me-md-4 ps-2">
-                        <p className="font-gulfs">#{r && r.rank}</p>
-                    </div>
-                    <div className="wisher">
+            <div className="fading rank py-3 border-b flex items-center justify-between">
+            <div className="flex items-center justify-between">
+                <div className="sno mr-2 md:mr-4 pl-2">
+                    <p className="font-gulfs">#{r && r.rank}</p>
+                </div>
+                <div className="wisher">
                         <Avatar
                             role={r && r.role}
                             profile_status_lock={r && r.profile_status_lock === 2 ? true : false}
@@ -74,14 +74,14 @@ export default function Board(props) {
                     </div>
                 </div>
                 <div className="rank-stats">
-                    <p className="toppercentage md:pe-4">{r && r.top}%</p>
-                    {/* Display engagement metrics if available */}
-                    {r?.supporters > 0 ? (
-                        <p className="text-xs text-gray-500 md:pe-4">
-                            👥 {r.supporters} Supporters
-                        </p>
-                    ):''}
-                </div>
+                <p className="toppercentage md:pr-4">{r && r.top}%</p>
+                {/* Display engagement metrics if available */}
+                {r?.supporters > 0 ? (
+                    <p className="text-xs text-gray-500 md:pr-4">
+                        👥 {r.supporters} Supporters
+                    </p>
+                ):''}
+            </div>
             </div>
         );
     };
@@ -94,10 +94,10 @@ export default function Board(props) {
                         href={`/${p.username}`}
                         onClick={() => trackSearchClick(p?.id, p?.username)}
                         className={` position-${position} position text-center rounded-[20px] md:rounded-[30px]  
-                              border-[#F94F97] !shadow-none shadow-pinks bg-white m-0`}
+                              border-[#F94F97] !shadow-none shadow-pink bg-white m-0`}
                     > {p.id}
                         <div className="profile p-2 sm:p-3 pb-0">
-                            <div className="position-relative">
+                            <div className="relative">
                                 {position == 1 ? (
                                     <div
                                         className="crown-wings"
@@ -111,7 +111,7 @@ export default function Board(props) {
                                 <div className="profile-image ">
                                     <img
                                         src={(p && p.avatar) || userphoto}
-                                        className="img-fluid"
+                                        className="max-w-full h-auto"
                                         alt="image"
                                     />
                                 </div>
@@ -120,7 +120,7 @@ export default function Board(props) {
                                 <h2 className="!text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
-                                        <RiVerifiedBadgeFill  size={'1.2rem'} className="ms-1 inline-block text-pink" />
+                                        <RiVerifiedBadgeFill  size={'1.2rem'} className="ml-1 inline-block text-pink" />
                                         : ''}
                                 </h2>
                                 <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
@@ -161,7 +161,7 @@ export default function Board(props) {
                         className={`position-${position} position text-center rounded-lg shadow-pink bg-white`}
                     >
                         <div className="profile p-3 pb-0">
-                            <div className=" position-relative">
+                            <div className=" relative">
                                 {position == 1 ? (
                                     <div className="crown-wings" dangerouslySetInnerHTML={{__html: crown}} />
                                 ) : (
@@ -170,7 +170,7 @@ export default function Board(props) {
                                 <div className="profile-image ">
                                     <img
                                         src={(p && p.avatar) || userphoto}
-                                        className="img-fluid"
+                                        className="max-w-full h-auto"
                                         alt="image"
                                     />
                                 </div>
@@ -198,17 +198,17 @@ export default function Board(props) {
             <Head title={"Leaderboard"} />
             <div className="bg-white pt-4">
                 <div className="containerbox pb-5 pt-2 ">
-                    <h1 className="text-bl font-GillSans text-center xl:!text-start text-3xl lg:text-4xl my-6 uppercase text-black ">
-                        Leaderboard
-                    </h1>
-                    <div className="row">
-                        <div className="col-xl-8 mb-4">
-                            <div className=" ">
-                                <div className="p-2  md:!p-6 pinkbg rounded-[30px] mb-6">
-                                    <div className="pt-4 pt-md-0  mt-6   mb-4 pb-4">
-                                        <h1 className="text-bl btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
-                                            Top Creators Getting <br></br> the Most Love
-                                        </h1>
+                    <h1 className="text-bl font-GillSans text-center xl:!text-left text-3xl lg:text-4xl my-6 uppercase text-black ">
+                    Leaderboard
+                </h1>
+                <div className="flex flex-wrap -mx-4">
+                    <div className="w-full xl:w-2/3 px-4 mb-4">
+                        <div className=" ">
+                            <div className="p-2  md:!p-6 pinkbg rounded-[30px] mb-6">
+                                <div className="pt-4 md:pt-0  mt-6   mb-4 pb-4">
+                                    <h1 className="btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
+                                        Top Creators Getting <br></br> the Most Love
+                                    </h1>
                                         <p className="text-center text-white text-sm opacity-90 mb-4">
                                             Ranked by community support and engagement
                                         </p>
@@ -228,22 +228,22 @@ export default function Board(props) {
 
                                         </div>
                                         {error && (
-                                            <div className="alert alert-danger mx-4 mb-3" role="alert">
-                                                <div className="d-flex justify-content-between align-items-center">
-                                                    <span>{error}</span>
-                                                    <button 
-                                                        className="btn btn-sm btn-outline-light ms-2" 
-                                                        onClick={() => setError(null)}
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
+                                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-4 mb-3" role="alert">
+                                            <div className="flex justify-between items-center">
+                                                <span>{error}</span>
+                                                <button 
+                                                    className="ml-2 font-bold" 
+                                                    onClick={() => setError(null)}
+                                                >
+                                                    ✕
+                                                </button>
                                             </div>
-                                        )}
+                                        </div>
+                                    )}
                                     </div>
                                     <div
                                         className={`${
-                                            loading ? "loading-state" : ""
+                                            loading ? "opacity-50 pointer-events-none" : ""
                                         }  postions grid grid-cols-3 !gap-2 md:!gap-4 pt-[10px] md:pt-[50px] `}
                                     >
                                         {positions && positions[1] ? (
@@ -276,10 +276,10 @@ export default function Board(props) {
                                 {ranks && ranks.length ? (
                                     <div
                                     className={`${
-                                        loading ? "loading-state" : ""
+                                        loading ? "opacity-50 pointer-events-none" : ""
                                         }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[25px] `}
                                         >
-                                        <h2 className=" font-GillSans text-start text-2xl uppercase text-dark ">🔥 Rising Creators</h2>
+                                        <h2 className=" font-GillSans text-left text-2xl uppercase text-gray-900 ">🔥 Rising Creators</h2>
                                         <p className="mb-6">New creators gaining support fast</p>
                                         {ranks.map((r, i) => {
                                             return <Rank r={r} key={i} />;
@@ -290,14 +290,14 @@ export default function Board(props) {
                                 )}
                             </div>
                             <CategoryLeaders />
-                        </div>
-                        <div className="col-xl-4">
-                            <RecentSupporters />
-                            <VipSupporters />
-                            {/* <TopSupporters /> */}
-                            <LeaderboardStars />
-                        </div>
                     </div>
+                    <div className="w-full xl:w-1/3 px-4">
+                        <RecentSupporters />
+                        <VipSupporters />
+                        {/* <TopSupporters /> */}
+                        <LeaderboardStars />
+                    </div>
+                </div>
                     
                     
                 </div>

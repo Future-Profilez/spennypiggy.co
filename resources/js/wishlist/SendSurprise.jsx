@@ -73,22 +73,22 @@ export default function SendSurprise({auth, owner}) {
             space="4" size="md"
             action={close} classes={`btn-pink sm lg px-4  `}
             text={`Support with 3 gold coins`} >
-            <h2 className="text-uppercase font-GillSans pb-4 font-large">Send a Surprise Gift</h2>
-            <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Amount</label>
+            <h2 className="uppercase font-GillSans pb-4 text-lg">Send a Surprise Gift</h2>
+            <div className="mb-4">
+                  <label className="block text-left mb-2">Amount</label>
                   <input
-                     className="form-input w-100 rounded"
+                     className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                      onChange={(e) => setData('amount', e.target.value)}
                      type="number"
                      placeholder="Enter amount.. "
                   />
                   <p className="mt-1">The Minimum amount is set to {formatMultiPrice(owner && owner.min_surprise_amount, defaultCurrency)} in the wisher’s currency.</p>
             </div>
-            <div className="form-field mb-4">
-                  <label className="d-block text-start mb-2">Suggested use (Required)</label>
+            <div className="mb-4">
+                  <label className="block text-left mb-2">Suggested use (Required)</label>
                   <textarea
                      placeholder="Message..."
-                     className="form-input w-100 rounded"
+                     className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                      onChange={(e) => setData('message',e.target.value)}
                      type="text"
                   />

@@ -469,33 +469,33 @@ export default function AddressForm({
                 <div>
                     {/* First Name */}
                     <div className="flex items-center mb-3">
-                        <label className="w-28 text-grey-500">First Name</label>
+                        <label className="w-28 text-gray-500">First Name</label>
                         <input
                             onChange={handleChange}
                             value={formData.first_name}
                             name="first_name"
                             placeholder="First Name"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
 
                     {/* Last Name */}
                     <div className="flex items-center mb-3">
-                        <label className="w-28 text-grey-500">Last Name</label>
+                        <label className="w-28 text-gray-500">Last Name</label>
                         <input
                             onChange={handleChange}
                             value={formData.last_name}
                             name="last_name"
                             placeholder="Last Name"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
 
                     {/* Phone */}
                     <div className="flex items-center mb-3">
-                        <label className="w-28 text-grey-500">Phone</label>
+                        <label className="w-28 text-gray-500">Phone</label>
                         <input
                             onChange={(e) => {
                                 if (
@@ -510,46 +510,46 @@ export default function AddressForm({
                             type="text"
                             maxLength="10"
                             placeholder="Phone"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
 
                     {/* Address 1 */}
                     <div className="flex items-center mb-3">
-                        <label className="w-28 text-grey-500">Address 1</label>
+                        <label className="w-28 text-gray-500">Address 1</label>
                         <input
                             onChange={handleChange}
                             value={formData.address_1}
                             name="address_1"
                             placeholder="Address 1"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
 
                     {/* Address 2 */}
                     <div className="flex items-center mb-3">
-                        <label className="w-28 text-grey-500">Address 2</label>
+                        <label className="w-28 text-gray-500">Address 2</label>
                         <input
                             onChange={handleChange}
                             value={formData.address_2}
                             name="address_2"
                             placeholder="Address 2"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
 
                     {/* City */}
                     <div className="flex items-center mb-3">
-                        <label className="w-28 text-grey-500">City</label>
+                        <label className="w-28 text-gray-500">City</label>
                         <input
                             onChange={handleChange}
                             value={formData.city}
                             name="city"
                             placeholder="City"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -566,7 +566,7 @@ export default function AddressForm({
                             value={formData.province_code}
                             name="province_code"
                             placeholder="Province Code"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -578,7 +578,7 @@ export default function AddressForm({
                             onChange={getCountry}
                             name="country_code"
                             value={formData.country_code}
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         >
                             <option value="" disabled>
@@ -603,7 +603,7 @@ export default function AddressForm({
                             value={formData.postal_code}
                             name="postal_code"
                             placeholder="Postal Code"
-                            className="flex-1 text-normal form-input border px-3 py-3 text-dark rounded-4 text-post-content form-control"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>

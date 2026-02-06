@@ -17,7 +17,7 @@ export default function ComingNext() {
             <div className='w-full lg:w-1/2' >
                <div className='nextimage-wrap relative group wiggle' >
                   <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-3xl transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
-                  <div className="relative rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-colors duration-300">
+                  <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-colors duration-300">
                     <LazyLoadImage
                     alt={"image"}  effect="blur"
                     className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500"
@@ -34,7 +34,7 @@ export default function ComingNext() {
                </div>
                <h2 className="text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-8 uppercase leading-tight"> 
                     Get ready for <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 to-purple-500">Next Level</span>
+                    <span className="text-gradient-wishlist">Next Level</span>
                </h2>
                
                 <ul className="space-y-6">

@@ -81,7 +81,7 @@ export default function OrdersLists() {
                         <div className="p-relative flex-shrink-0">
                               <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[50px] object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
                         </div>
-                        <div className=" ml-3 w-100 w-[40%] flex-vert-center">
+                        <div className=" ml-3 w-full w-[40%] flex-vert-center">
                            <div>
                                  <div className="text-sm text-dark font-cr-medium flex bmc-pp bmc-pp-sm grey-pp-color">
                                     <span className="limit-text-line-2">

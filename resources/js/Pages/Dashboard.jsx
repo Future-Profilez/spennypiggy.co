@@ -299,11 +299,11 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action absolute top-[-3px] right-0 cursor-pointer ps-3 bg-black p-2 "
+                            className="addoption-action absolute top-[-3px] right-0 cursor-pointer pl-3 bg-black p-2 "
                             dangerouslySetInnerHTML={{ __html: addicon }}
                         ></div>
                         {showAdd ? (
-                            <div className="bg-[#0001] rounded-xl position-fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
+                            <div className="bg-[#0001] rounded-xl fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
                                         <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
@@ -339,7 +339,7 @@ export default function Dashboard(props) {
                                                                         size="1.5rem"
                                                                     />
                                                                 </div>
-                                                                <div className="ps-3 text-start">
+                                                                <div className="pl-3 text-left">
                                                                     <h2 className="text-md font-normal font-GillSans uppercase">
                                                                         Add
                                                                         Surprise
@@ -386,7 +386,7 @@ export default function Dashboard(props) {
                                                                             size="1.5rem"
                                                                         />
                                                                     </div>
-                                                                    <div className="ps-3 text-start">
+                                                                    <div className="pl-3 text-left">
                                                                         <h2 className="text-md font-normal font-GillSans uppercase">
                                                                             Add
                                                                             Wish
@@ -416,7 +416,7 @@ export default function Dashboard(props) {
                                                                             size="1.5rem"
                                                                         />
                                                                     </div>
-                                                                    <div className="ps-3 text-start">
+                                                                    <div className="pl-3 text-left">
                                                                         <h2 className="text-md font-normal font-GillSans uppercase">
                                                                             Create
                                                                             Task
@@ -460,7 +460,7 @@ export default function Dashboard(props) {
                                                     setShowAdd(false);
                                                     setWishOptions(false);
                                                 }}
-                                                className="m-auto table p-2 mt-3"
+                                                className="mx-auto block p-2 mt-3"
                                             >
                                                 Cancel
                                             </button>
@@ -494,7 +494,7 @@ export default function Dashboard(props) {
                     title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
                 />
 
-                <div className="wishlistPage blackbg pt-6 pb-0 pb-sm-5 ">
+                <div className="wishlistPage blackbg pt-6 pb-0 sm:pb-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
                         <OfferAnnouncement variant="default" />
@@ -609,8 +609,8 @@ export default function Dashboard(props) {
                                                             <LoadingScreen />
                                                         }
                                                     >
-                                                        <div className="row about-sec align-self-start">
-                                                            <div className="col-lg-6  h-auto">
+                                                        <div className="flex flex-wrap about-sec self-start">
+                                                            <div className="w-full lg:w-1/2  h-auto">
                                                                 <div className="about-sticky">
                                                                     <DashboardStripeMigrationWarning
                                                                         migrationStatus={
@@ -686,10 +686,10 @@ export default function Dashboard(props) {
                                                                         </h2>
                                                                         <div className="p-4">
                                                                             <p
-                                                                                className={`text-muted text-start mt-2 ${
+                                                                                className={`text-gray-500 text-left mt-2 ${
                                                                                     user &&
                                                                                     !user.bio
-                                                                                        ? "d-none"
+                                                                                        ? "hidden"
                                                                                         : ""
                                                                                 }`}
                                                                             >
@@ -763,7 +763,7 @@ export default function Dashboard(props) {
                                                                                 )}
 
                                                                             {IsloggedIn ? (
-                                                                                <div className="userProfileDate pt-0 pt-md-3">
+                                                                                <div className="userProfileDate pt-0 md:pt-3">
                                                                                     {auth.user &&
                                                                                     auth
                                                                                         .user
@@ -778,7 +778,7 @@ export default function Dashboard(props) {
                                                                                     ) : (
                                                                                         <>
                                                                                             {/* {auth?.user?.identity_status == 1 ? 
-                                                                                            <div className="finish mt-4 d-block">
+                                                                                            <div className="finish mt-4 block">
                                                                                                 <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
                                                                                                 <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
                                                                                                 </Link>
@@ -812,7 +812,7 @@ export default function Dashboard(props) {
                                                                                                         user.username
                                                                                                     }
                                                                                                     classes={
-                                                                                                        "flex ms-auto"
+                                                                                                        "flex ml-auto"
                                                                                                     }
                                                                                                     custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
@@ -846,7 +846,7 @@ export default function Dashboard(props) {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            <div className="ps-lg-4 col-lg-6">
+                                                            <div className="lg:pl-4 w-full lg:w-1/2">
                                                                 {IsloggedIn &&
                                                                     auth?.user &&
                                                                     auth?.user
@@ -954,7 +954,7 @@ export default function Dashboard(props) {
                                                                                             ""
                                                                                                 ? "active"
                                                                                                 : ""
-                                                                                        } me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                        } mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
                                                                                     >
                                                                                         All
                                                                                     </Link>
@@ -977,7 +977,7 @@ export default function Dashboard(props) {
                                                                                                                     c.id,
                                                                                                             },
                                                                                                         )}
-                                                                                                        className={`${selectedCategory == c.id ? "active" : ""} me-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                                        className={`${selectedCategory == c.id ? "active" : ""} mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
                                                                                                         key={`cats-${i}`}
                                                                                                     >
                                                                                                         {
@@ -1080,7 +1080,7 @@ export default function Dashboard(props) {
                                                                                 </div>
                                                                             </>
                                                                         ) : (
-                                                                            <div className="col-md-12">
+                                                                            <div className="w-full">
                                                                                 <Nocontent text="Nothing to see." />
                                                                             </div>
                                                                         )}
@@ -1241,7 +1241,7 @@ export default function Dashboard(props) {
                                                                         )}
                                                                     </div>
                                                                 ) : (
-                                                                    <div className="col-md-12">
+                                                                    <div className="w-full">
                                                                         <Nocontent text="Nothing to see." />
                                                                     </div>
                                                                 )}

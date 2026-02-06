@@ -1,9 +1,7 @@
-import { useState } from "react";
-import Accordion from "react-bootstrap/Accordion";
+import { Disclosure, Transition } from '@headlessui/react';
+import { ChevronUpIcon } from '@heroicons/react/20/solid';
 
 export default function FAQ() {
-  const [open, setOpen] = useState(false);
-
   const faqs =[
     {
       "title": "What is Spenny Piggy?",
@@ -25,40 +23,6 @@ export default function FAQ() {
 
   return (
     <>
-    <style jsx>{`
-    .faq-custom .accordion-button {
-        background-color: transparent !important;
-        color: white !important;
-        font-family: 'Gulfs Display', sans-serif !important;
-        font-size: 1.25rem;
-        text-transform: uppercase;
-        box-shadow: none !important;
-        padding: 1.5rem;
-    }
-    .faq-custom .accordion-button:not(.collapsed) {
-        color: #FACC15 !important; /* Yellow-400 */
-    }
-    .faq-custom .accordion-button::after {
-        filter: invert(1);
-    }
-    .faq-custom .accordion-button:not(.collapsed)::after {
-        filter: invert(1) sepia(1) saturate(5) hue-rotate(0deg); /* Yellow-ish */
-    }
-    .faq-custom .accordion-item {
-        background-color: #111827; /* gray-900 */
-        border: 4px solid #EC4899; /* pink-500 */
-        border-radius: 1.5rem !important;
-        margin-bottom: 1.5rem;
-        box-shadow: 4px 4px 0px 0px #EC4899;
-        overflow: hidden;
-    }
-    .faq-custom .accordion-body {
-        color: #D1D5DB; /* gray-300 */
-        font-size: 1.125rem;
-        line-height: 1.625;
-        padding: 0 1.5rem 1.5rem 1.5rem;
-    }
-  `}</style>
     <div id={`faq`} className='bg-black pt-24 pb-24 relative ' >
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
@@ -68,22 +32,40 @@ export default function FAQ() {
 
       <div className='containerbox relative  ' >
           <h2 className='fading text-2xl md:text-4xl lg:text-5xl font-gulfs text-white mb-12 uppercase leading-tight text-center' >
-            Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-500">Questions</span>
+            Frequently Asked <span className="text-gradient-wishlist">Questions</span>
           </h2>
           <div className='max-w-4xl mx-auto' >
-              <div className='faq-custom' >
-                  <Accordion defaultActiveKey={0}>
-                    {faqs && faqs.map((f, i)=>{
-                      return <Accordion.Item eventKey={i} key={i} className='fading' >
-                          <Accordion.Header onClick={(e) => setOpen(i)}>
-                              {f.title}
-                          </Accordion.Header>
-                          <Accordion.Body>
-                          {f.description}
-                          </Accordion.Body>
-                      </Accordion.Item>
-                    })}
-                  </Accordion>
+              <div className='flex flex-col gap-6' >
+                  {faqs && faqs.map((f, i)=>{
+                    return (
+                      <Disclosure key={i} defaultOpen={i === 0}>
+                        {({ open }) => (
+                          <div className={`fading bg-gray-900 border-2 border-pink-500 rounded-3xl shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] overflow-hidden`}>
+                            <Disclosure.Button className={`flex w-full justify-between px-6 py-6 text-left text-xl font-gulfs uppercase focus:outline-none ${open ? 'text-yellow-400' : 'text-white'}`}>
+                              <span>{f.title}</span>
+                              <ChevronUpIcon
+                                className={`${
+                                  open ? 'rotate-180 transform' : ''
+                                } h-6 w-6 text-pink-500 transition-transform duration-200`}
+                              />
+                            </Disclosure.Button>
+                            <Transition
+                                enter="transition duration-100 ease-out"
+                                enterFrom="transform scale-95 opacity-0"
+                                enterTo="transform scale-100 opacity-100"
+                                leave="transition duration-75 ease-out"
+                                leaveFrom="transform scale-100 opacity-100"
+                                leaveTo="transform scale-95 opacity-0"
+                            >
+                              <Disclosure.Panel className="px-6 pb-6 text-lg text-gray-300 leading-relaxed">
+                                {f.description}
+                              </Disclosure.Panel>
+                            </Transition>
+                          </div>
+                        )}
+                      </Disclosure>
+                    )
+                  })}
               </div>
           </div>
       </div>

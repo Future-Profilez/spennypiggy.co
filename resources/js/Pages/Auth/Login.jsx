@@ -202,7 +202,7 @@ export default function Login({ status, canResetPassword }) {
                     <div className="text-center mb-10">
                         <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
+                            <span className="text-gradient-wishlist">
                                 Back!
                             </span>
                         </h2>

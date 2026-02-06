@@ -1,3 +1,5 @@
+
+
 .confettiHerePlease{position:fixed;z-index:99;max-width:80%;height:100%;top:50%;left:5%;}
 body{background-color:var(--main-bg-color,#111);margin:0;padding:0;overflow:hidden;}
 [class|=confetti],[class|=coin],[class|=dollar]{position:absolute;}

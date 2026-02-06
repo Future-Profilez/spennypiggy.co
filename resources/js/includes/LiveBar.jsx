@@ -13,7 +13,7 @@ const LiveBar = (props) => {
   }, []);
 
   return (
-    <div data-aos="fade-up" className={props.classes}>
+    <div className={props.classes}>
       <div className={`livebar livebar-wrapper ${props.color ? props.color : "mintbg"} py-3 pb-3 px-2`}>
         <div className="scrolling-container">
           <div className="scrolling-content">

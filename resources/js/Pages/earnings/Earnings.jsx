@@ -68,8 +68,8 @@ export default function Earnings(props) {
         <div className='py-10 md:py-20 bg-black'>
             <div className='containerbox'>
                 <div className='flex flex-wrap justify-between items-center' >
-                  <div className='max-w-[500px] pe-3' >
-                    <h2 className='text-yellow text-uppercase font-GillSans text-[30px] pe-2' >Explore Earnings 💰</h2>
+                  <div className='max-w-[500px] pr-3' >
+                    <h2 className='text-yellow uppercase font-GillSans text-[30px] pr-2' >Explore Earnings 💰</h2>
                     <p className='text-white' >This is the earnings section where you can dive into the detail of everything from wishes, bills, subscriptions, memberships, shop sales and the Piggy Bank 🏦.</p>
                   </div>
                   <div>
@@ -92,12 +92,12 @@ export default function Earnings(props) {
                     </div> 
                   })}
                 </div>
-              <div className='row' >
-                <div className=' col-xl-8 col-lg-12 mb-4' > <MonthlyRevenue /> </div>
-                <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnWishes currency={props?.global_currency || 'gbp'}  /> </div>
-                <div className=' col-xl-4 col-lg-6 mb-4' > <SubcriptionEarnings auth={auth} /></div>
-                <div className=' col-xl-4 col-lg-6 mb-4' > <TopEarnBills /> </div>
-                <div className=' col-xl-4 col-lg-6 mb-4' > <TopSupporters /> </div>
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4' >
+                <div className='lg:col-span-12 xl:col-span-8 mb-4' > <MonthlyRevenue /> </div>
+                <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopEarnWishes currency={props?.global_currency || 'gbp'}  /> </div>
+                <div className='lg:col-span-6 xl:col-span-4 mb-4' > <SubcriptionEarnings /></div>
+                <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopEarnBills /> </div>
+                <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopSupporters /> </div>
               </div>
             </div>  
         </div>

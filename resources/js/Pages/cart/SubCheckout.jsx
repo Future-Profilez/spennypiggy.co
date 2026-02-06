@@ -61,12 +61,12 @@ export default function SubCheckout(props) {
         <>
         <Authenticated auth={auth.user} user={user}>
             <Head title={`Subscribe -${wish?.wishname}`}/>
-            <div className={`px-0 pb-3 px-lg-2`}>
-                <div className="my-4 cartsub cartPage bg-white p-4 p-md-5 border-pink shadow-pink border-pink rounded-3xl">
+            <div className={`px-0 pb-3 lg:px-2`}>
+                <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-3xl">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
                             Wish Basket for {wish?.user?.name || " "}
-                            <Link className="text-voilet" target="_blank"
+                            <Link className="text-violet-600" target="_blank"
                                 href={`/${wish?.user?.username || ""}`} >
                                 @{wish?.user?.username || ""}
                             </Link>
@@ -77,22 +77,22 @@ export default function SubCheckout(props) {
                             wishes.
                         </p>
                         <div className="CartItemBox">
-                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-purple shadow-purple rounded-xl mb-3 mb-md-4 mb-ml-5 p-3 p-md-4`}>
+                            <div className={`border cartlist flex flex-wrap justify-between items-center content-between items-center border-voilet shadow-voilet rounded-xl mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}>
                                 <div className='prodcartbox items-center'>
                                     <div className='productimg'>
                                         <img src={wish.perma_link || cartproductimg} alt='img' />
                                     </div>
                                     <div>
-                                        <div className='cartProdTitle ps-3'>{wish.wishname}</div>
+                                        <div className='cartProdTitle pl-3'>{wish.wishname}</div>
                                         {/* {data.message ? <div className='surprise-message ps-3'>Surprise Message : {data.message}</div> : ''} */}
-                                        <div className="badge bg-info text-dark me-4 ms-3 ">
+                                        <div className="inline-block px-2 py-1 bg-blue-100 text-gray-800 rounded mr-4 ml-3">
                                         Pay {reccure == 'onetime' ? `Onetime` : wish.subscription_period}
                                     </div>
                                     </div>
                                 </div>
                                 <div className='cartProRtbox mt-3 items-center'>
 
-                                    <div className='cartPric pe-4'>
+                                    <div className='cartPric pr-4'>
                                         {formatMultiPrice(wish.price, wish && wish.currency)}
                                     </div>
                                 </div>
@@ -102,25 +102,25 @@ export default function SubCheckout(props) {
                         <div className="cartTotal px-0 py-3">
                             <div className="cartSubTotal text-right mt-1 !text-sm">
                                 <span> Amount :</span>
-                                <strong className="text-end">
+                                <strong className="text-right">
                                     {formatMultiPrice(wish.price || "", wish && wish.currency)}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1 !text-sm">
                                 <span>VAT Applicable : </span>
-                                <strong className="text-end">
+                                <strong className="text-right">
                                     {formatMultiPrice(vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1 !text-sm">
                                 <span>Platform Fee :</span>
-                                <strong className="text-end">
+                                <strong className="text-right">
                                     {formatMultiPrice(wish.tax_amount || "", wish && wish.currency, 'adminFee')}
                                 </strong>
                             </div>
                             <div className="cartSubTotal text-right mt-1">
-                                <strong className="text-dark">Total :</strong>
-                                <strong className="text-end text-black">
+                                <strong className="text-gray-900">Total :</strong>
+                                <strong className="text-right text-black">
                                     {formatMultiPrice(wish.tax_amount + wish.price + vat_amount || "", wish && wish.currency, 'adminFee')}
                                 </strong>
                             </div>
@@ -128,10 +128,11 @@ export default function SubCheckout(props) {
 
                         <div className="addMessage">
                             <form onSubmit={handleSubmit}>
-                                <ul className="row">
+                                <ul className="flex flex-wrap">
                                     <li>
                                         <label>Add Message </label>
                                         <textarea
+                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
                                             onKeyUp={(e) =>
                                                 setData('message',e.target.value)
                                             }
@@ -140,14 +141,14 @@ export default function SubCheckout(props) {
                                         ></textarea>
                                         <span className="text-xs text-red-600">{errors.message}</span>
                                     </li>
-                                    <li className="w-100 mt-3">
-                                        <div className="row">
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">
+                                    <li className="w-full mt-3">
+                                        <div className="flex flex-wrap">
+                                            <div className="w-full mb-4">
+                                                <label className="block text-left">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="form-input w-100 rounded"
+                                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                                     onChange={(e) =>
                                                         setData('name',e.target.value)
                                                     } value={data.name}
@@ -156,10 +157,10 @@ export default function SubCheckout(props) {
                                                 />
                                                 <span className="text-xs text-red-600">{errors.name}</span>
                                             </div>
-                                            <div className="col-md-12 mb-4">
-                                                <label className="d-block text-start">Email </label>
-                                                <p className="text-small text-muted mb-1">Your e-mail remains private.</p>
-                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} form-input w-100 rounded`}
+                                            <div className="w-full mb-4">
+                                                <label className="block text-left">Email </label>
+                                                <p className="text-sm text-gray-500 mb-1">Your e-mail remains private.</p>
+                                                <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={auth && auth.user && auth.user.email ? true : false}
                                                     onChange={(e) => setData('email',e.target.value)}
@@ -173,30 +174,30 @@ export default function SubCheckout(props) {
 
                                     <label
                                         htmlFor="anonymous"
-                                        className="text-start" >
+                                        className="text-left" >
                                         <input
                                             onChange={checkanonymous}
                                             type="checkbox"
                                             id="anonymous"
                                             name="anonymous"
-                                            className="me-2"
+                                            className="mr-2"
                                             value="anonymous" ></input> Keep anonymous
                                     </label>
-                                    <p className="text-muted text-small mb-3" >Your personal email and name will be private.</p>
+                                    <p className="text-gray-500 text-sm mb-3" >Your personal email and name will be private.</p>
                                         <label
                                             htmlFor="agreeterm"
-                                            className="text-start" >
+                                            className="text-left" >
                                             <input
                                             onChange={(e) => setData('agree', e.target.checked)}
                                             type="checkbox"
                                             id="agreeterm"
                                             name="agreeterm"
-                                            className="me-2"
+                                            className="mr-2"
                                             value="agreeterm" ></input>
-                                           I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-voilet" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-voilet" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                           I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-violet-600" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-violet-600" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
                                         </label>
-                                        <div className="tearmlist ps-3">
-                                            <ul className="ps-0">
+                                        <div className="tearmlist pl-3">
+                                            <ul className="pl-0">
                                                 <li> This payment will be automatically taken on a daily,weekly,monthly or yearly basis depending on yourchoice and can be cancelled anytime. </li>
                                                 <li> For Memberships and subscriptions, I understand I am making a non-refundable purchase that provides access to exclusive posts. This payment will be automatically taken on a daily, weekly, monthly or yearly basis depending on the subscription type. Can be cancelled anytime. </li>
                                                 <li> I understand that for wishes or support payments I am making a non-refundable donation of support and understand I will recieve a thank you message as a reward. </li>
@@ -209,7 +210,7 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                 </ul>
-                                <div className="mt-4 flex items-center justify-content-center" >
+                                <div className="mt-4 flex items-center justify-center" >
                                     <button type="submit"
                                         className={`${!data.agree || processing ? "disabled" : ""} main-button p`}
                                         disabled={!data.agree || processing}>
