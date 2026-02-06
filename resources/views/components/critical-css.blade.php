@@ -17,7 +17,7 @@
     margin-bottom: 2rem;
 }
 
-.wishbanner img {
+.wishbanner img:not(.banner) {
     width: 100%;
     height: 400px;
     object-fit: cover;
@@ -163,7 +163,7 @@
         padding: 0 0.5rem;
     }
     
-    .wishbanner img {
+    .wishbanner img:not(.banner) {
         height: 250px;
         border-radius: 20px;
     }

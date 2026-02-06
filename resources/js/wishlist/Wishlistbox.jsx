@@ -86,7 +86,7 @@ export default function Wishlistbox(props) {
                 isDragging ? "dragging" : ""
             }`}
         >
-            <div className=" rounded-3xl shadow-pink overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
+            <div className=" rounded-3xl shadow-pink overflow-hidden   relative border-[3px] md:border-4 border-[#F94F97] w-full ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-2 mt-5 rounded-lg p-3 py-2 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (

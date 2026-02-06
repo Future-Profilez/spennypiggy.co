@@ -30,13 +30,11 @@ function InstantTabSystem({
     });
 
     const tabs = [
-        { id: 'about', label: 'About', icon: '👤' },
-        { id: 'wishes', label: 'Wishes', icon: '💝' },
-        { id: 'tasks', label: 'Tasks', icon: '📋' },
-        { id: 'memberships', label: 'Memberships', icon: '⭐' },
-        { id: 'bills', label: 'Bills', icon: '💳' },
-        // { id: 'shop', label: 'Shop', icon: '🛍️' },
-        // { id: 'gifts', label: 'Gifts', icon: '🎁' }
+        { id: 'about', label: 'About' },
+        { id: 'wishes', label: 'Wishes' },
+        { id: 'tasks', label: 'Tasks' },
+        { id: 'memberships', label: 'Memberships' },
+        { id: 'bills', label: 'Bills' },
     ];
 
     // Get effective active tab (including pending state)
@@ -189,15 +187,14 @@ function InstantTabSystem({
                 style={buttonStyles}
                 disabled={isTransitioning && isPending}
                 className={`
-                    relative py-2 px-0 border-b-2 text-normal md:text-lg uppercase 
-                    transition-all duration-200 min-w-max whitespace-nowrap
-                    select-none touch-manipulation
+                    relative py-4 px-0 text-sm font-black uppercase 
+                    transition-all duration-300 min-w-max whitespace-nowrap
+                    select-none touch-manipulation tracking-[0.2em]
                     ${isEffectivelyActive 
-                        ? 'border-pink-500 text-pink-600 font-semibold' 
-                        : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                        ? 'text-white' 
+                        : 'text-white/40 hover:text-white/70'
                     }
                     ${shouldShowLoading ? 'opacity-90' : ''}
-                    ${isClicked ? 'text-pink-700' : ''}
                     disabled:pointer-events-none
                 `}
                 aria-pressed={isEffectivelyActive}
@@ -205,32 +202,22 @@ function InstantTabSystem({
             >
                 {/* Tab content */}
                 <span className="flex items-center gap-2">
-                    {/* <span className="text-lg" role="img" aria-hidden="true">
-                        {tab.icon}
-                    </span> */}
                     <span>{tab.label}</span>
                 </span>
                 
-                {/* Loading indicator for pending tab */}
-                {/* {shouldShowLoading && (
-                    <div className="absolute -top-1 -right-1">
-                        <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse"></div>
-                    </div>
-                )} */}
-                
-                {/* Click ripple effect */}
-                {/* {isClicked && (
-                    <div className="absolute inset-0 bg-pink-200 rounded opacity-30 animate-ping"></div>
-                )} */}
+                {/* Gradient active indicator */}
+                {isEffectivelyActive && (
+                    <div className="absolute bottom-[2px] left-0 right-0 h-[3px] bg-gradient-to-r from-[#05EFB8] via-[#8C52FF] to-[#F94F97] rounded-t-full shadow-[0_-2px_10px_rgba(140,82,255,0.5)]"></div>
+                )}
             </button>
         );
     });
 
     return (
         <div className='relative'>
-            <div className="newnav-tabs hideScroll mb-4 pe-[100px] overflow-x-auto  flex items-center justify-between py-2 relative">
+            <div className="newnav-tabs hideScroll mb-8 pe-[100px] overflow-x-auto flex items-center justify-between py-0 relative px-4">
                 {/* Tab buttons container */}
-                <div className="flex   ps-1 scrollbar-hide space-x-8 min-w-max">
+                <div className="flex ps-1 scrollbar-hide space-x-8 min-w-max">
                     {tabs.map((tab) => (
                         <TabButton
                             key={tab.id}
@@ -242,10 +229,6 @@ function InstantTabSystem({
                         />
                     ))}
                 </div>
-                
-                
-               
-                
                 {isTransitioning && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-transparent opacity-20 animate-pulse pointer-events-none"></div>
                 )}
