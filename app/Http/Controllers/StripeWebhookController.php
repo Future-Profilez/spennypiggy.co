@@ -1366,7 +1366,6 @@ class StripeWebhookController extends Controller
                 $endpoint_secret
             );
         } catch (\Exception $e) {
-            Log::error("Webhook verification failed: " . $e->getMessage());
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
@@ -1374,257 +1373,244 @@ class StripeWebhookController extends Controller
         $object = $event->data->object;
 
         $subscriptionId = $object->subscription ?? $object->id ?? null;
+        if (!$subscriptionId) return response()->json(['ignored']);
 
-        if (!$subscriptionId) {
-            return response()->json(['status' => 'ignored']);
+        // Fetch subscription from Stripe FIRST to get customer info
+        $subscription = $stripe->subscriptions->retrieve($subscriptionId, [
+            'expand' => ['customer']
+        ]);
+
+        // Get customer details from Stripe
+        $customer = $subscription->customer;
+        if (is_string($customer)) {
+            $customer = $stripe->customers->retrieve($customer);
         }
 
-        // Latest entry for this subscription
+        // Latest DB row for this subscription
         $subs = MonthlyCharge::where('stripe_id', $subscriptionId)
             ->latest()
             ->first();
 
-        if (!$subs) {
-            return response()->json(['status' => 'no_record']);
-        }
+        /* ================= Stripe billing period ================= */
+        $stripeStart = Carbon::createFromTimestamp($subscription->current_period_start);
+        $stripeEnd   = Carbon::createFromTimestamp($subscription->current_period_end);
 
-        // Fetch subscription from Stripe
-        try {
-            $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
-        } catch (\Exception $e) {
-            Log::error("Stripe fetch failed: " . $e->getMessage());
-            return response()->json(['error' => 'subscription fetch failed']);
-        }
+        /* ================= Handle different event types ================= */
 
-        $today = Carbon::today();
-
-        /* -------------------------------STRIPE PERIOD--------------------------------*/
-
-        $stripeStart = $subscription->current_period_start
-            ? Carbon::createFromTimestamp($subscription->current_period_start)
-            : null;
-
-        $stripeEnd = $subscription->current_period_end
-            ? Carbon::createFromTimestamp($subscription->current_period_end)
-            : null;
-
-        /* -------------------------------TRIAL PERIOD (DB)--------------------------------*/
-
-        $trialStart = $subs->current_start_trial_date
-            ? Carbon::parse($subs->current_start_trial_date)
-            : null;
-
-        $trialEnd = $subs->current_end_trial_date
-            ? Carbon::parse($subs->current_end_trial_date)
-            : null;
-
-        /* -------------------------------STATUS--------------------------------*/
-
-        $subs->status = $subscription->status ?? 'incomplete';
-
+        // TRIAL STARTED
         if (
-            in_array($subscription->status, ['active', 'trialing']) &&
-            !$subscription->cancel_at_period_end
-        ) {
-            $subs->upcoming_payment = $stripeEnd;
-        } else {
-            $subs->upcoming_payment = null;
-        }
-
-        /* =====================================================DATE LOGIC (FIXED)===================================================== */
-
-        // CASE 1 → Still in trial (DO NOTHING)
-
-        if ($trialStart && $trialEnd && $today->between($trialStart, $trialEnd)) {
-
-            // Keep subscription dates empty
-            // No update here
-
-        }
-
-        // CASE 2 → Trial finished → Fill first paid cycle
-
-        elseif (
-            $trialEnd &&
-            $today->greaterThanOrEqualTo($trialEnd) &&
-            empty($subs->current_start_subscription_date) &&
-            empty($subs->current_end_subscription_date)
+            $eventType === 'customer.subscription.trial_will_end' ||
+            ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')
         ) {
 
-            $subs->current_start_subscription_date = $stripeStart;
-            $subs->current_end_subscription_date = $stripeEnd;
+            // Create new record for trial
+            MonthlyCharge::create([
+                'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                'name' => $customer->name ?? 'Creator',
+                'email' => $customer->email,
+                'stripe_id' => $subscriptionId,
+                'current_start_trial_date' => $stripeStart,
+                'current_end_trial_date' => $stripeEnd,
+                'current_start_subscription_date' => null,
+                'current_end_subscription_date' => null,
+                'status' => 'trialing',
+                'upcoming_payment' => $stripeEnd,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['success' => 'trial_started']);
         }
 
-        // CASE 3 → Renewal → create new entry only after old ends
+        // TRIAL ENDED / SUBSCRIPTION STARTED (First Payment)
+        if ($eventType === 'invoice.payment_succeeded' && $subscription->status === 'active') {
 
-        elseif (
-            $subs->current_end_subscription_date &&
-            $today->greaterThanOrEqualTo(
-                Carbon::parse($subs->current_end_subscription_date)
-            )
-        ) {
+            $invoice = $object;
+            $amount = ($invoice->amount_paid ?? 0) / 100;
+            $currency = strtoupper($invoice->currency ?? 'GBP');
 
+            $tax = 0;
+            if (!empty($invoice->total_tax_amounts)) {
+                foreach ($invoice->total_tax_amounts as $t) {
+                    $tax += ($t->amount ?? 0) / 100;
+                }
+            }
+
+            // Check if this is the first payment after trial
+            $isFirstPayment = false;
+            if ($subs) {
+                $isFirstPayment = !empty($subs->current_start_trial_date) &&
+                    empty($subs->current_start_subscription_date);
+            } else {
+                // No record exists, create first one
+                $isFirstPayment = true;
+            }
+
+            if ($isFirstPayment) {
+                if ($subs) {
+                    // Update existing trial record with subscription dates
+                    $subs->current_start_subscription_date = $stripeStart;
+                    $subs->current_end_subscription_date = $stripeEnd;
+                    $subs->amount = $amount;
+                    $subs->currency = $currency;
+                    $subs->tax = $tax;
+                    $subs->status = 'active';
+                    $subs->upcoming_payment = $stripeEnd;
+                    $subs->save();
+                } else {
+                    // Create new record for first payment (if trial wasn't tracked)
+                    MonthlyCharge::create([
+                        'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                        'name' => $customer->name ?? 'Creator',
+                        'email' => $customer->email,
+                        'stripe_id' => $subscriptionId,
+                        'current_start_trial_date' => null, // No trial for this subscription
+                        'current_end_trial_date' => null,
+                        'current_start_subscription_date' => $stripeStart,
+                        'current_end_subscription_date' => $stripeEnd,
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'tax' => $tax,
+                        'status' => 'active',
+                        'upcoming_payment' => $stripeEnd,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                return response()->json(['success' => 'first_payment_completed']);
+            }
+        }
+
+        // SUBSCRIPTION RENEWAL (Existing subscription, new billing period)
+        if ($eventType === 'invoice.payment_succeeded' && $subs && $subs->status === 'active') {
+
+            $invoice = $object;
+            $amount = ($invoice->amount_paid ?? 0) / 100;
+            $currency = strtoupper($invoice->currency ?? 'GBP');
+
+            $tax = 0;
+            if (!empty($invoice->total_tax_amounts)) {
+                foreach ($invoice->total_tax_amounts as $t) {
+                    $tax += ($t->amount ?? 0) / 100;
+                }
+            }
+
+            // Check if this billing period already exists
             $exists = MonthlyCharge::where('stripe_id', $subscriptionId)
-                ->where('current_start_subscription_date', $stripeStart)
-                ->where('current_end_subscription_date', $stripeEnd)
+                ->where('current_start_subscription_date', $stripeStart->toDateString())
+                ->where('current_end_subscription_date', $stripeEnd->toDateString())
                 ->exists();
 
             if (!$exists) {
+                // End previous cycle
+                $subs->status = 'ended';
+                $subs->save();
 
+                // Create new active cycle WITHOUT trial dates
                 MonthlyCharge::create([
                     'user_id' => $subs->user_id,
+                    'name' => $subs->name ?? $customer->name ?? 'Creator',
+                    'email' => $subs->email ?? $customer->email,
                     'stripe_id' => $subscriptionId,
+
+                    // DO NOT copy trial dates for renewals
+                    'current_start_trial_date' => null,
+                    'current_end_trial_date' => null,
+
+                    // New subscription period
                     'current_start_subscription_date' => $stripeStart,
                     'current_end_subscription_date' => $stripeEnd,
-                    'amount' => $subs->amount,
-                    'currency' => $subs->currency,
-                    'tax' => $subs->tax ?? 0,
+
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'tax' => $tax,
                     'status' => 'active',
                     'upcoming_payment' => $stripeEnd,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
+
+                // Update user subscription status
+                if ($subs->user) {
+                    $subs->user->is_subscribed = 1;
+                    $subs->user->save();
+                }
+
+                return response()->json(['success' => 'renewal_completed']);
             }
         }
 
-        /* =====================================================PAYMENT SUCCESS===================================================== */
-
-        if ($eventType === 'invoice.payment_succeeded') {
-
-            $invoice = $object;
-
-            $amountPaid = ($invoice->amount_paid ?? 0) / 100;
-
-            $currency = strtoupper($invoice->currency ?? 'GBP');
-
-            $taxAmount = 0;
-
-            if (!empty($invoice->total_tax_amounts)) {
-                foreach ($invoice->total_tax_amounts as $tax) {
-                    $taxAmount += ($tax->amount ?? 0) / 100;
-                }
-            }
-
-            $subs->amount = $amountPaid;
-            $subs->currency = $currency;
-            $subs->tax = $taxAmount;
-
-            $user = $subs->user;
-
-            if ($user) {
-                $user->is_subscribed = 1;
-                $user->save();
-            }
-
-            // Email logic (your original - kept)
-
-            $trialEndTs = $subscription->trial_end ?? 0;
-            $prevStart = optional(
-                $subs->getOriginal('current_start_subscription_date')
-            )?->timestamp ?? 0;
-
-            $nowStart = $subscription->current_period_start ?? 0;
-
-            if (
-                $subscription->status === 'active' &&
-                $trialEndTs > 0 &&
-                $nowStart > $trialEndTs &&
-                $prevStart < $trialEndTs
-            ) {
-                $type = 'start';
-            } else {
-                $type = 'renew';
-            }
-
-            if ($subs->last_email_type !== $type) {
-
-                if ($type === 'renew') {
-                    Helpers::sendNotification(
-                        'Subscription renewed 🎉',
-                        'Your subscription was renewed successfully!',
-                        $user?->email
-                    );
-                } else {
-                    Helpers::sendNotification(
-                        'Subscription started 🎉',
-                        'Welcome to premium subscription!',
-                        $user?->email
-                    );
-                }
-
-                SendRenewMail::dispatch([
-                    'email' => $user?->email,
-                    'name' => $user?->name,
-                    'uuid' => $subs->uuid,
-                    'amount' => $subs->amount,
-                    'currency' => $subs->currency,
-                    'renew_on' => $stripeStart,
-                    'trial_end' => $subs->current_end_trial_date,
-                    'notification' => $user?->notification_send ?? 0,
-                ], $type, 'site');
-
-                $subs->last_email_type = $type;
-            }
-        }
-
-        /* =====================================================PAYMENT FAILED===================================================== */
-
+        // PAYMENT FAILED
         if ($eventType === 'invoice.payment_failed') {
+            if ($subs) {
+                $subs->status = 'failed';
+                $subs->upcoming_payment = null;
+                $subs->save();
 
-            $subs->status = 'failed';
-
-            $user = $subs->user;
-
-            if ($user) {
-                $user->is_subscribed = 0;
-                $user->save();
+                if ($subs->user) {
+                    $subs->user->is_subscribed = 0;
+                    $subs->user->save();
+                }
             }
 
-            Helpers::sendNotification(
-                'Payment failed ❌',
-                'Please update your payment method.',
-                $user?->email
-            );
-
-            SendRenewMail::dispatch([
-                'email' => $user?->email,
-                'name' => $user?->name,
-                'uuid' => $subs->uuid,
-                'amount' => $subs->amount,
-                'currency' => $subs->currency
-            ], 'failed', 'site');
+            return response()->json(['success' => 'payment_failed']);
         }
 
-        /* =====================================================CANCELLED===================================================== */
-
+        // SUBSCRIPTION CANCELLED
         if ($eventType === 'customer.subscription.deleted') {
+            if ($subs) {
+                $subs->status = 'cancelled';
+                $subs->upcoming_payment = null;
+                $subs->save();
 
-            $subs->status = 'cancelled';
-            $subs->cancelled_at = now();
-            $subs->upcoming_payment = null;
-
-            $user = $subs->user;
-
-            if ($user) {
-                $user->is_subscribed = 0;
-                $user->save();
+                if ($subs->user) {
+                    $subs->user->is_subscribed = 0;
+                    $subs->user->save();
+                }
             }
 
-            Helpers::sendNotification(
-                'Subscription cancelled 🛑',
-                'Your subscription has been cancelled.',
-                $user?->email
-            );
-
-            SendRenewMail::dispatch([
-                'email' => $user?->email,
-                'name' => $user?->name,
-                'uuid' => $subs->uuid,
-            ], 'cancelled', 'site');
+            return response()->json(['success' => 'subscription_cancelled']);
         }
 
-        $subs->save();
+        // UPDATE STATUS FOR OTHER EVENTS
+        if ($subs && $subs->status !== $subscription->status) {
+            $subs->status = $subscription->status;
 
-        return response()->json(['status' => 'success']);
+            if (in_array($subscription->status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
+                $subs->upcoming_payment = $stripeEnd;
+            } else {
+                $subs->upcoming_payment = null;
+            }
+
+            $subs->save();
+        }
+
+        // Handle customer details update
+        if (in_array($eventType, ['customer.updated', 'customer.subscription.updated']) && $subs) {
+            // Update name and email if they changed in Stripe
+            if ($customer) {
+                $updates = [];
+                if ($customer->name && $customer->name !== $subs->name) {
+                    $updates['name'] = $customer->name;
+                }
+                if ($customer->email && $customer->email !== $subs->email) {
+                    $updates['email'] = $customer->email;
+                }
+
+                if (!empty($updates)) {
+                    // Update all records for this subscription to keep consistency
+                    MonthlyCharge::where('stripe_id', $subscriptionId)
+                        ->update($updates);
+                }
+            }
+        }
+
+        return response()->json(['success' => 'status_updated']);
     }
+
+
+
 
     // public function mandatorySubscriptionStatus(Request $request)
     // {
