@@ -340,7 +340,7 @@ export default function Wishlist(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
@@ -366,7 +366,7 @@ export default function Wishlist(props) {
                         <h2 className="mb-4 text-pink text-left font-GillSans uppercase text-large black-stroke font-semibold mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
-                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
+                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-xl  bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
                             When adding items please ensure they are specific
                             i.e Holiday Clothes or New Gym Equipment. Items that
                             are non specific will be rejected and removed. Our
@@ -517,13 +517,13 @@ export default function Wishlist(props) {
 
                             <p className="mt-8 pt-6 hidden   !border-t ">Choose Wish Type</p>
                             <div className=" hidden wishlistAccordian  mt-3 mb-6">
-                                <div className="w-full rounded-2xl bg-white p-2">
+                                <div className="w-full rounded-xl  bg-white p-2">
                                     <Disclosure defaultOpen={defaultKey === 0}>
                                         {({ open }) => (
                                             <>
                                                 <Disclosure.Button 
                                                     onClick={(e) => setSubs(0)}
-                                                    className="flex w-full justify-between rounded-lg bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75 mb-2"
+                                                    className="flex w-full justify-between rounded-xl  bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75 mb-2"
                                                 >
                                                     <span className="flex items-center">
                                                         <span className="activedote mr-2"></span>
@@ -575,7 +575,7 @@ export default function Wishlist(props) {
                                             <>
                                                 <Disclosure.Button 
                                                     onClick={(e) => setSubs(1)}
-                                                    className="flex w-full justify-between rounded-lg bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75"
+                                                    className="flex w-full justify-between rounded-xl  bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75"
                                                 >
                                                     <span className="flex items-center">
                                                         <span className="activedote mr-2"></span>

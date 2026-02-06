@@ -377,7 +377,7 @@ export default function AddSocial({
                     {/* Information Banner */}
                     <div
                         className={clsx(
-                            "mb-6 p-4 rounded-lg border-l-4 flex items-start",
+                            "mb-6 p-4 rounded-xl  border-l-4 flex items-start",
                             {
                                 "bg-yellow-50 border-yellow-500":
                                     !formValidation.hasValidFields,

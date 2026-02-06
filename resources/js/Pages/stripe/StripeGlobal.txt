@@ -41,7 +41,7 @@ export default function Stripe(props) {
         <Authenticated auth={auth.user} user={user} >
             <Head title={""} />
             <div className='blackbg py-4 py-md-5  '>
-                <div className='stripbox mb-2  mb-md-4 mx-auto border-mint whbg shadow-mint rounded-3xl '>
+                <div className='stripbox mb-2  mb-md-4 mx-auto border-mint whbg shadow-mint rounded-xl  '>
 
                     <div className='loginheadbox pinkbg'>
                         <span className='mintbg'></span>

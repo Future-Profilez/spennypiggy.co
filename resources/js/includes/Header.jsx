@@ -95,7 +95,6 @@ export default function Header({ classMagicword }) {
             );
         };
     }, [fetchCounter, dispatch]);
-
     return (
         <>
             {/* <ReactDebugTest /> */}

@@ -40,7 +40,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-xl  p-6">
                             <div className="flex items-center">
                                 <FiPackage className="w-8 h-8 text-blue-500 mr-3" />
                                 <div>
@@ -50,7 +50,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-xl  p-6">
                             <div className="flex items-center">
                                 <FiCheckCircle className="w-8 h-8 text-green-500 mr-3" />
                                 <div>
@@ -60,7 +60,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-xl  p-6">
                             <div className="flex items-center">
                                 <FiClock className="w-8 h-8 text-yellow-500 mr-3" />
                                 <div>
@@ -70,7 +70,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-xl  p-6">
                             <div className="flex items-center">
                                 <FiXCircle className="w-8 h-8 text-red-500 mr-3" />
                                 <div>
@@ -82,7 +82,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                     </div>
 
                     {/* Deliveries Table */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-xl ">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Deliveries</h3>
                             

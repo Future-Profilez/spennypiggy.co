@@ -158,7 +158,7 @@ export default function Board(props) {
                     </Link>
                 ) : (
                     <div
-                        className={`position-${position} position text-center rounded-lg shadow-pink bg-white`}
+                        className={`position-${position} position text-center rounded-xl  shadow-pink bg-white`}
                     >
                         <div className="profile p-3 pb-0">
                             <div className=" relative">

@@ -101,7 +101,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                         onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     />
                     {isFocused && (recentSearches.length > 0 || query) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl  shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                             <div className="p-2">
                                 {recentSearches.length > 0 && !query && (
                                     <>
@@ -116,7 +116,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                     setQuery(term);
                                                     handleSearchSubmit(term);
                                                 }}
-                                                className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 group"
+                                                className="hover:bg-gray-50 px-3 py-2 rounded-xl  cursor-pointer flex items-center gap-2 group"
                                             >
                                                 <RiTimeLine className="text-gray-400 group-hover:text-pink-500 transition-colors" />
                                                 <span className="text-gray-700 group-hover:text-gray-900">{term}</span>
@@ -129,7 +129,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                     <>
                                         <div 
                                             onClick={() => handleSearchSubmit(query)}
-                                            className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 text-pink-600 font-medium border-t border-gray-100 mt-1"
+                                            className="hover:bg-gray-50 px-3 py-2 rounded-xl  cursor-pointer flex items-center gap-2 text-pink-600 font-medium border-t border-gray-100 mt-1"
                                         >
                                             <RiSearchLine />
                                             Search for "{query}"
@@ -152,7 +152,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                             // <Link 
                                                             //     key={`c-${i}`} 
                                                             //     href={s.url}
-                                                            //     className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3"
+                                                            //     className="hover:bg-gray-50 px-3 py-2 rounded-xl  cursor-pointer flex items-center gap-3"
                                                             // >
                                                             //     <img src={s.image || userphoto} className="w-8 h-8 rounded-full object-cover" />
                                                             //     <div>
@@ -177,7 +177,7 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                                                                     setQuery(s.search_term);
                                                                     handleSearchSubmit(s.search_term);
                                                                 }}
-                                                                className="hover:bg-gray-50 px-3 py-2 rounded-lg cursor-pointer flex items-center gap-3"
+                                                                className="hover:bg-gray-50 px-3 py-2 rounded-xl  cursor-pointer flex items-center gap-3"
                                                             >
                                                                 <img src={s.image || 'https://via.placeholder.com/30'} className="w-8 h-8 rounded-md object-cover" />
                                                                 <div>

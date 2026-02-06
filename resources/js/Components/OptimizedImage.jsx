@@ -255,7 +255,7 @@ export const ProductImage = memo(({ src, alt, className = '', ...props }) => (
         alt={alt}
         width={300}
         height={300}
-        className={`rounded-lg ${className}`}
+        className={`rounded-xl  ${className}`}
         priority={false}
         quality={80}
         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 300px"

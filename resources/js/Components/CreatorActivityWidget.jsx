@@ -9,7 +9,7 @@ const CreatorActivityWidget = (props) => {
     }
     if (activityStatus.status === 'not_fully_verified') {
         return (
-            <div className={`rounded-lg border-2 p-4 bg-yellow-100 border-yellow-300 text-yellow-800 ${className}`}>
+            <div className={`rounded-xl  border-2 p-4 bg-yellow-100 border-yellow-300 text-yellow-800 ${className}`}>
                 <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
                         <span className="text-2xl" role="img" aria-label="status">
@@ -94,7 +94,7 @@ const CreatorActivityWidget = (props) => {
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
     return (
         <>
-        <div className={`rounded-2xl shadow-pink border-2 p-3 ${getStatusColor(activityStatus.status)} ${className}`}>
+        <div className={`rounded-xl  shadow-pink border-2 p-3 ${getStatusColor(activityStatus.status)} ${className}`}>
             <div className="lg:flex items-center justify-between">
                 <div className="md:flex items-center gap-3 lg:max-w-[70%] me-3">
                     <div>

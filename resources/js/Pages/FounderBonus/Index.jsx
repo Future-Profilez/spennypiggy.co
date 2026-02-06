@@ -196,7 +196,7 @@ export default function FounderBonusIndex() {
                             }
                         </p>
                                     </div>
-                                    <div className="mt-3 text-right bg-white/10 rounded-2xl p-3 md:p-2 backdrop-blur-sm flex items-center">
+                                    <div className="mt-3 text-right bg-white/10 rounded-xl  p-3 md:p-2 backdrop-blur-sm flex items-center">
                                         <p className="text-lg opacity-90 me-2">⏰ Time Left : </p>
                                         <div className='flex items-center'>
                                             <p className="text-3xl font-bold">
@@ -208,7 +208,7 @@ export default function FounderBonusIndex() {
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                                    <div className="bg-black/5 fading rounded-2xl p-4 backdrop-blur-sm">
+                                    <div className="bg-black/5 fading rounded-xl  p-4 backdrop-blur-sm">
                                         <div className="flex items-center mb-2">
                                             <BiDollarCircle className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Current Earnings</p>
@@ -222,7 +222,7 @@ export default function FounderBonusIndex() {
                                         </p>
                                     </div>
                                     
-                                    <div className="bg-black/5 fading rounded-2xl p-4 backdrop-blur-sm">
+                                    <div className="bg-black/5 fading rounded-xl  p-4 backdrop-blur-sm">
                                         <div className="flex items-center mb-2">
                                             <FaChartLine className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Progress to Goal</p>
@@ -248,7 +248,7 @@ export default function FounderBonusIndex() {
                                         </p>
                                     </div>
                                     
-                                    <div className="bg-black/5 fading rounded-2xl p-4 backdrop-blur-sm">
+                                    <div className="bg-black/5 fading rounded-xl  p-4 backdrop-blur-sm">
                                         <div className="flex items-center mb-2">
                                             <FaCrown className="w-6 h-6 mr-2" />
                                             <p className="text-normal opacity-90">Status</p>
@@ -266,7 +266,7 @@ export default function FounderBonusIndex() {
                                 </div>
                                 
                                 {!userProgress?.is_qualified && (
-                                    <div className="mt-6 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                                    <div className="mt-6 bg-white/10 rounded-xl  p-4 backdrop-blur-sm">
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="text-lg font-bold mb-1">💡 Quick Tips to Boost Your Earnings:</p>

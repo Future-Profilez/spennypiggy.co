@@ -111,7 +111,7 @@ export default function TFA({text}) {
                                         {backupCodes && backupCodes.map((code, index) => (
                                             <p key={index} className="mb-2 text-lg">{code}</p>
                                         ))}
-                                        <button className="absolute top-2 right-3 text-[14px] bg-gray-200 px-3 py-1 rounded-lg" onClick={()=>copyCodes(backupCodes)} >Copy</button>
+                                        <button className="absolute top-2 right-3 text-[14px] bg-gray-200 px-3 py-1 rounded-xl " onClick={()=>copyCodes(backupCodes)} >Copy</button>
                                     </div>
                                 </div>
                                 </>
@@ -175,7 +175,7 @@ export default function TFA({text}) {
                                             </div>
 
                                             <button onClick={verify}
-                                                className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white mx-auto block w-full mt-4 ">{verifying ? "VERIFYING..." : "VERIFY"}
+                                                className="border-0 pinkbg rounded-xl  px-3 py-2 text-lg text-white mx-auto block w-full mt-4 ">{verifying ? "VERIFYING..." : "VERIFY"}
                                             </button>
                                             {/* <button className="text-center text-primary my-3 cursor-pointer w-75 m-auto d-table font-normal">Verify with backup code.</button> */}
                                         </div>
@@ -187,7 +187,7 @@ export default function TFA({text}) {
                     <div className="backcodes">
                         <h2 className="font-bold text-xl mb-1">Two Factor Authentication</h2>
                         <p className="text-gray-700 mb-4"> Two-step verification adds an extra layer of protection to your account. After you've turned it on,we'll ask you to enter an additional security code when you sign in. We'll provide this security code only to you. </p>
-                            <button onClick={disable2fa} className="bg-red-600 text-white m-auto px-3 py-2 rounded-4" >Disable 2FA</button>
+                            <button onClick={disable2fa} className="bg-red-600 text-white m-auto px-3 py-2 rounded-xl" >Disable 2FA</button>
                      </div>
                 }
             </Popup>

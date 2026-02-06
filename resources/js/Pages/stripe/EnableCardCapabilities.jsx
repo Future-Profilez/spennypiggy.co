@@ -6,7 +6,7 @@ export default function EnableCardCapabilities({charges}) {
     const [loading, setLoading] = useState(false);
   return (
     <>
-        <div className="w-full finishs  mb-4 rounded-3xl bg-white !border-voilet  shadow-voilet  ">
+        <div className="w-full finishs  mb-4 rounded-xl  bg-white !border-voilet  shadow-voilet  ">
             <div className='border-bottom border-voilet' >
                 <h2 className='text-large font-GillSans text-uppercase lightpink p-3 goaltitle'>Action Required</h2>
             </div>

@@ -5,7 +5,7 @@
 const DataTable = ({ data = [], columns = [], className = '' }) => {
     return (
         <div className={`data-table-container ${className}`}>
-            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+            <div className="bg-white shadow-sm rounded-xl  overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>

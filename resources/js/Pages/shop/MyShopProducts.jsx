@@ -45,7 +45,7 @@ export default function MyShopProducts({lists, loading, update}) {
                      <div className='shop-item-user flex  items-center max-w-[40%] min-w-[40%] ' >
                         <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-img w-12 h-12 min-w-12' >
                            <img 
-                             className='w-full h-full object-cover rounded-lg' 
+                             className='w-full h-full object-cover rounded-xl ' 
                              src={s.perma_link} 
                              alt={s.name || 'Shop item'}
                              onError={(e) => {

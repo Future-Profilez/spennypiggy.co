@@ -125,7 +125,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
           <p className="text-red-600 mb-4">Error: {error}</p>
           <button 
             onClick={() => fetchPosts(filter, 1, false)}
-            className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
+            className="bg-pink-600 text-white px-4 py-2 rounded-xl  hover:bg-pink-700"
           >
             Try Again
           </button>
@@ -157,7 +157,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
               ) : (
                 <button
                   onClick={handleLoadMore}
-                  className="bg-pink-600 text-white px-6 py-3 rounded-lg hover:bg-pink-700 font-medium transition-colors duration-200"
+                  className="bg-pink-600 text-white px-6 py-3 rounded-xl  hover:bg-pink-700 font-medium transition-colors duration-200"
                   disabled={isLoadingMore}
                 >
                   Load More Posts

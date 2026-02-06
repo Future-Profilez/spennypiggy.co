@@ -210,7 +210,7 @@ export default function Stripe(props) {
                         )}
 
                         {/* Merchant of Record Agreement Card */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+                        <div className="bg-white rounded-xl  shadow-lg border border-gray-200 overflow-hidden mb-8">
                             <div className="p-8">
                                 {/* Agreement Header */}
                                 <div className="text-center mb-8">
@@ -604,7 +604,7 @@ export default function Stripe(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 mb-6">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl  p-6 mb-6">
                                     <p className="text-gray-700 leading-relaxed">
                                         <strong className="text-voilet">
                                             Stripe supports adult creators
@@ -684,7 +684,7 @@ export default function Stripe(props) {
 
                             {/* Country Selection */}
                             <div className="mb-2">
-                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-2xl p-6">
+                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-xl  p-6">
                                     <h3 className="text-normal text-center font-bold text-gray-800 mb-2 capitalize">
                                         Select Your Country
                                     </h3>

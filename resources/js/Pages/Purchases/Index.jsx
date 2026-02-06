@@ -129,7 +129,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         }
       
         return (
-            <div key={deliverable.id} className={`bg-white rounded-3xl
+            <div key={deliverable.id} className={`bg-white rounded-xl 
              shadow-md overflow-hidden hover:shadow-lg transition-shadow 
              duration-200 mb-2 md:mb-4 border border-2  ${type === 'sent' ? "!border-pink-400" : "border-mint"} `}>
                 <div className="flex">
@@ -389,7 +389,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         const nextPaymentDate = getFormattedDate(subscription.current_period_end || subscription.next_payment);
         
         return (
-            <div key={subscription.id} className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
+            <div key={subscription.id} className="bg-white rounded-xl  shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
                     <div className="relative w-full h-[100px] lg:h-auto lg:min-w-[130px] lg:max-w-[130px] bg-purple-50 flex items-center justify-center p-4">
@@ -607,7 +607,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                 <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
                     showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
                 }`}>
-                    <div className={`rounded-lg p-4 shadow-lg ${
+                    <div className={`rounded-xl  p-4 shadow-lg ${
                         toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                     }`}>
                         <div className="flex items-center">

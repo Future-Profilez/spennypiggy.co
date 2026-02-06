@@ -14,11 +14,11 @@ import Membership from './../membership/Membership';
 
     const ITEM = ({itm}) => { 
       return <>
-          <div className=' relative membership-box shadow-violet p-0 box overflow-hidden rounded-lg' >
+          <div className=' relative membership-box shadow-violet p-0 box overflow-hidden rounded-xl ' >
             <div className='membership-head p-0' >
               
 
-              <div className='m-imag rounded-lg ' >
+              <div className='m-imag rounded-xl  ' >
                 { handleTab == 'memberships' ?  
                   <img src={itm?.membership?.perma_link || '' } alt='image' className='max-w-full h-auto w-full' />
                   : 
@@ -30,7 +30,7 @@ import Membership from './../membership/Membership';
             </div>
             <div className='p-4' >
               <Link href={`${itm?.owner?.username || ''}`} className="flex items-center w-auto" >
-                  <img className="author-img h-[50px] w-[50px] rounded-lg mr-2 border border-gray-200" src={`${itm?.owner?.avatar || ''}`} />
+                  <img className="author-img h-[50px] w-[50px] rounded-xl  mr-2 border border-gray-200" src={`${itm?.owner?.avatar || ''}`} />
                 <div>
                   <p className="authors text-gray-900 mb-0"> <b> {itm?.owner?.name || ''} </b> </p>
                   <p className="authors text-gray-500 text-sm">@{itm?.owner?.username || ''}</p>
