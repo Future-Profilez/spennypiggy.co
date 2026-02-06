@@ -27,29 +27,11 @@ export default function MyGoal({  IsloggedIn}) {
   const percentage = goal?.target ? Math.min(100, Math.round((goal.fullfilled / goal.target) * 100)) : 0;
 
   return (
-<<<<<<< HEAD
     <div className='mb-8 bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[40px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group'>
         <div className="bg-[#F94F97] p-5">
             <h2 className='text-normal font-black font-gulfs tracking-[0.15em] uppercase text-white flex items-center gap-3'>
                 {goal?.name || 'MY PIGGY BANK'}
             </h2>
-=======
-    <>
-    <div className='mb-4 pink-round p-0'>
-        <h2 className='text-lg  font-GillSans uppercase pinkbg p-3 text-white btn-shadow'>{goal?.name || 'MY PIGGY BANK'}</h2>
-      <div className='p-3' >
-        <p className='mb-3 '>Total Support</p>
-        <div className="relative w-full h-[9px] bg-[#eccedb] rounded-xl  overflow-visible mb-4">
-             <div 
-                className="h-full bg-pink-600 rounded-xl  relative" 
-                style={{ width: `${percentage}%` }}
-             >
-                 <div 
-                    className="absolute top-[-7px] right-[-27px] w-[50px] h-[50px] bg-contain bg-no-repeat pointer-events-none"
-                    style={{ backgroundImage: `url('${mouse}')` }}
-                 ></div>
-             </div>
->>>>>>> 4286dab852d4241f6daa5a78c59cae76d8347e63
         </div>
         <div className='p-6 bg-white' >
             <p className='mb-6 text-black/40 font-black text-[10px] tracking-[0.2em] uppercase'>Total Support</p>
