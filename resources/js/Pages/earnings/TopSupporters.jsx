@@ -41,7 +41,7 @@ export default function TopSupporters() {
               <p className="text-xs text-gray-500" >@{item.username}</p>
             </div>
         </Link>
-        <div className="my-auto font-bold"> {formatMultiPrice((item && item.amount), (auth && auth.user && auth.user.currency || 'gbp'))}</div>
+        <div className="my-auto font-bold"> {formatMultiPrice((item && item.amount), (auth && auth?.user && auth?.user?.default_currency || 'gbp'))}</div>
       </div>
     );
   }

@@ -108,7 +108,7 @@ export default function Index() {
                 <div className="grid lg:grid-cols-2 gap-20">
                   <div className='lg:pt-12'>
                     <h2 className="text-3xl md:text-5xl font-gulfs uppercase mb-8 leading-tight text-black">
-                      Built to Drive <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 decoration-4 underline-offset-4">Higher-Value</span> Spending
+                      Built to Drive <br/> <span className="text-gradient-wishlist decoration-4 underline-offset-4">Higher-Value</span> Spending
                     </h2>
                     <ul className="space-y-4 md:space-y-6">
                       {[

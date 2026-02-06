@@ -119,9 +119,7 @@ export default function Dashboard(props) {
     }, [items, selectedCategory]);
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) == (user && user.username),
-    );
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);

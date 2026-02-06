@@ -73,7 +73,7 @@ class StripeWebhookController extends Controller
                     break;
 
                 default:
-            Log::warning('Unhandled event type', ['type' => $event->type]);
+                    Log::warning('Unhandled event type', ['type' => $event->type]);
                     break;
             }
 
@@ -528,10 +528,10 @@ class StripeWebhookController extends Controller
 
         // Clear user cache for the creator
         if ($metadata->creator_id) {
-             $creator = \App\Models\User::find($metadata->creator_id);
-             if ($creator) {
-                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-             }
+            $creator = \App\Models\User::find($metadata->creator_id);
+            if ($creator) {
+                $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+            }
         }
 
         // Send thank you email to the purchaser
@@ -574,7 +574,7 @@ class StripeWebhookController extends Controller
         $taskId = $metadata->task_id ?? null;
         $buyerId = $metadata->buyer_id ?? null;
         $creatorId = $metadata->creator_id ?? null;
-        
+
         if (!$taskId || !$buyerId) {
             Log::error("Missing task_id or buyer_id in metadata for task purchase");
             return;
@@ -588,13 +588,13 @@ class StripeWebhookController extends Controller
 
         $task = Task::find($taskId);
         if (!$task) {
-             Log::error("Task not found for purchase", ['task_id' => $taskId]);
-             return;
+            Log::error("Task not found for purchase", ['task_id' => $taskId]);
+            return;
         }
 
         // Calculate amount from session amount_total (in cents/smallest unit)
         $amount = ($session->amount_total ?? 0) / 100;
-        
+
         // Try to get charge_id from payment intent if available
         $chargeId = null;
         if (!empty($session->payment_intent)) {
@@ -608,7 +608,7 @@ class StripeWebhookController extends Controller
                 Log::warning('Failed to retrieve charge_id for task purchase (webhook)', ['pi' => $session->payment_intent]);
             }
         }
-        
+
         // Determine initial status based on payment_status
         // 'paid' -> 'paid', 'unpaid'/'no_payment_required' -> 'pending'
         $initialStatus = ($session->payment_status === 'paid') ? 'paid' : 'pending';
@@ -635,15 +635,15 @@ class StripeWebhookController extends Controller
         // SLA logic
         $slaHours = (int) ($metadata->sla_hours ?? 0);
         if ($slaHours > 0) {
-             $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
-             $purchase->save();
+            $purchase->sla_deadline = Carbon::now()->addHours($slaHours);
+            $purchase->save();
         }
 
         // Create Deliverable
         $deliverable = Deliverable::create([
             'uuid' => (string) Str::uuid(),
             'product_id' => (string) $taskId,
-            'item_id' => $taskId, 
+            'item_id' => $taskId,
             'order_id' => $purchase->id,
             'creator_id' => $creatorId ?? $task->creator_id,
             'gifter_id' => $buyerId,
@@ -655,7 +655,7 @@ class StripeWebhookController extends Controller
             'status' => 'pending',
             'sla_hours' => $slaHours,
             'due_at' => $slaHours > 0 ? Carbon::now()->addHours($slaHours) : null,
-            'refund_eligible' => $slaHours > 0, 
+            'refund_eligible' => $slaHours > 0,
             'payment_status' => 'paid',
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'payment_currency' => strtoupper($session->currency ?? 'GBP'),
@@ -663,10 +663,10 @@ class StripeWebhookController extends Controller
             'customer_name' => $session->customer_details->name ?? null,
             'metadata' => json_encode($metadata),
         ]);
-        
+
         // Dispatch job to process the deliverable (certificate generation)
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
-        
+
         // Initial Metadata Sync (ensure payment_status is 'paid' on Stripe)
         try {
             app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable);
@@ -679,7 +679,7 @@ class StripeWebhookController extends Controller
             $purchase->status = 'completed';
             $purchase->completed_at = Carbon::now();
             $purchase->save();
-            
+
             $deliverable->status = 'delivered';
             $deliverable->delivered_at = Carbon::now();
             $deliverable->save();
@@ -694,7 +694,7 @@ class StripeWebhookController extends Controller
             } catch (\Exception $e) {
                 Log::error("Failed to update metadata on instant task completion (webhook): " . $e->getMessage());
             }
-            
+
             Log::info("Instant task purchase completed", ['purchase_id' => $purchase->id]);
         } else {
             Log::info("Timed task purchase created", ['purchase_id' => $purchase->id]);
@@ -703,14 +703,14 @@ class StripeWebhookController extends Controller
         try {
             $creator = User::find($creatorId ?? $task->creator_id);
             $supporter = $buyerId ? User::find($buyerId) : null;
-            
+
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
                 Mail::to($creator->email)->send(new TaskPurchasedMail($purchase, $task, $supporter));
-                
+
                 Helpers::sendNotification(
-                    "New Task Order! 💰", 
-                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title, 
+                    "New Task Order! 💰",
+                    ($supporter ? $supporter->name : "A Guest") . " purchased your task: " . $task->title,
                     $creator->email
                 );
                 Log::info("Task purchase email sent", ['creator_email' => $creator->email]);
@@ -726,9 +726,9 @@ class StripeWebhookController extends Controller
     private function handleChargeDisputeCreated($dispute)
     {
         $paymentIntentId = $dispute->payment_intent ?? null;
-        
+
         if (!$paymentIntentId) {
-             return;
+            return;
         }
 
         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
@@ -745,64 +745,64 @@ class StripeWebhookController extends Controller
     private function handleChargeDisputeClosed($dispute)
     {
         $paymentIntentId = $dispute->payment_intent ?? null;
-        
+
         if (!$paymentIntentId) {
-             return;
+            return;
         }
 
         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
         if ($purchase) {
             $status = $dispute->status; // won, lost, warning_closed
-            
+
             // Map Stripe status to our enum ['none', 'open', 'won', 'lost']
             if ($status === 'won') {
                 $purchase->dispute_status = 'won';
             } elseif ($status === 'lost') {
                 $purchase->dispute_status = 'lost';
-                
+
                 // If lost, it means the customer got a refund.
                 $purchase->status = 'refunded';
                 $purchase->refunded_at = now();
-                
+
                 // Update Deliverable Status
                 try {
                     $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
                     if ($deliverable) {
                         $deliverable->status = 'refunded';
                         $deliverable->save();
-                        
+
                         // Update Stripe Metadata using Service
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'status' => 'refunded',
                             'dispute_result' => 'lost',
                             'refund_reason' => 'dispute_lost'
                         ]);
-                        
+
                         Log::info("Updated deliverable status to refunded for lost dispute", ['deliverable_id' => $deliverable->id]);
                     }
                 } catch (\Exception $e) {
                     Log::error("Failed to update deliverable status on dispute lost: " . $e->getMessage());
                 }
 
-                 // Notify Creator (Loser)
-                 try {
+                // Notify Creator (Loser)
+                try {
                     $creator = $purchase->creator;
                     if ($creator) {
                         Helpers::sendNotification(
-                            "Dispute Lost ⚠️", 
-                            "The dispute for '{$purchase->task->title}' was decided in favor of the customer. Funds have been returned.", 
+                            "Dispute Lost ⚠️",
+                            "The dispute for '{$purchase->task->title}' was decided in favor of the customer. Funds have been returned.",
                             $creator->email
                         );
                     }
-                } catch (\Exception $e) {}
-
+                } catch (\Exception $e) {
+                }
             } else {
                 // Keep open or set to none if it was just a warning
                 if (str_contains($status, 'warning')) {
-                     $purchase->dispute_status = 'none';
+                    $purchase->dispute_status = 'none';
                 }
             }
-            
+
             $purchase->save();
             Log::info("Dispute closed for TaskPurchase", ['id' => $purchase->id, 'status' => $status]);
         }
@@ -863,10 +863,10 @@ class StripeWebhookController extends Controller
 
         // Clear user cache
         if ($metadata->creator_id) {
-             $creator = \App\Models\User::find($metadata->creator_id);
-             if ($creator) {
-                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-             }
+            $creator = \App\Models\User::find($metadata->creator_id);
+            if ($creator) {
+                $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+            }
         }
 
         // Create deliverable entry for bill subscription renewal (like wish subscriptions)
@@ -950,10 +950,10 @@ class StripeWebhookController extends Controller
 
         // Clear user cache
         if ($metadata->creator_id) {
-             $creator = \App\Models\User::find($metadata->creator_id);
-             if ($creator) {
-                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-             }
+            $creator = \App\Models\User::find($metadata->creator_id);
+            if ($creator) {
+                $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+            }
         }
 
         SendRenewMail::dispatch($array, 'renew', 'membership');
@@ -1021,10 +1021,10 @@ class StripeWebhookController extends Controller
 
             // Clear cache
             if ($wishSubscription->wish_item) {
-                 $creator = \App\Models\User::find($wishSubscription->wish_item->user_id);
-                 if ($creator) {
-                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-                 }
+                $creator = \App\Models\User::find($wishSubscription->wish_item->user_id);
+                if ($creator) {
+                    $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                }
             }
 
             Log::info('Wish subscription updated with new period', [
@@ -1215,10 +1215,10 @@ class StripeWebhookController extends Controller
 
                 // Clear user cache
                 if ($wishSubscription->wish_item) {
-                     $creator = \App\Models\User::find($wishSubscription->wish_item->user_id);
-                     if ($creator) {
-                         $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-                     }
+                    $creator = \App\Models\User::find($wishSubscription->wish_item->user_id);
+                    if ($creator) {
+                        $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                    }
                 }
 
                 Log::info('Wish subscription content delivery job dispatched', [
@@ -1324,10 +1324,10 @@ class StripeWebhookController extends Controller
 
         // Clear user cache
         if ($wish_subscription->wish_item) {
-             $creator = \App\Models\User::find($wish_subscription->wish_item->user_id);
-             if ($creator) {
-                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-             }
+            $creator = \App\Models\User::find($wish_subscription->wish_item->user_id);
+            if ($creator) {
+                $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+            }
         }
 
         SendRenewMail::dispatch($array, 'renew', 'main');
@@ -1355,196 +1355,420 @@ class StripeWebhookController extends Controller
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
         $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
 
         try {
-            $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-        } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
-            Log::error("Webhook signature verification failed: " . $e->getMessage());
+            $event = \Stripe\Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            );
+        } catch (\Exception $e) {
+            Log::error("Webhook verification failed: " . $e->getMessage());
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
         $eventType = $event->type;
         $object = $event->data->object;
-        $subscriptionId = data_get($object, 'subscription') ?? data_get($object, 'id');
-        $customerId = data_get($object, 'customer');
 
-        try {
-            $customer = $stripe->customers->retrieve($customerId, []);
-        } catch (\Exception $e) {
-            Log::error("Failed to retrieve customer: " . $e->getMessage());
-            return response()->json(['error' => 'Customer not found'], 404);
-        }
+        // Subscription & customer IDs
+        $subscriptionId = $object->subscription ?? $object->id ?? null;
+        $customerId = $object->customer ?? null;
 
-        $subscription = null;
-        try {
-            $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
-        } catch (\Exception $e) {
-            Log::error("Failed to retrieve subscription: " . $e->getMessage());
+        if (!$subscriptionId) {
+            Log::info("No subscription id in event");
+            return response()->json(['status' => 'ignored']);
         }
 
         $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
 
         if (!$subs) {
-            Log::info("Subscription record not found for Stripe ID: {$subscriptionId}");
-            return response()->json(['message' => 'No record to update'], 200);
+            Log::info("No DB record for subscription {$subscriptionId}");
+            return response()->json(['status' => 'no_record']);
         }
 
-        $currentPeriodStart = optional($subscription)->current_period_start ? Carbon::createFromTimestamp($subscription->current_period_start) : null;
-        $currentPeriodEnd = optional($subscription)->current_period_end ? Carbon::createFromTimestamp($subscription->current_period_end) : null;
-        $status = $subscription->status ?? 'incomplete';
+        // Fetch subscription fresh from Stripe
+        try {
+            $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
+        } catch (\Exception $e) {
+            Log::error("Failed to retrieve subscription: " . $e->getMessage());
+            return response()->json(['error' => 'subscription fetch failed']);
+        }
 
-        $subs->current_start_subscription_date = $currentPeriodStart;
-        $subs->current_end_subscription_date = $currentPeriodEnd;
-        $subs->status = $status;
+        /* -------------------------------
+       PERIOD DATES
+    --------------------------------*/
 
-        if (in_array($status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
-            $subs->upcoming_payment = Carbon::createFromTimestamp($subscription->current_period_end);
+        $currentStart = $subscription->current_period_start
+            ? Carbon::createFromTimestamp($subscription->current_period_start)
+            : null;
+
+        $currentEnd = $subscription->current_period_end
+            ? Carbon::createFromTimestamp($subscription->current_period_end)
+            : null;
+
+        $subs->current_start_subscription_date = $currentStart;
+        $subs->current_end_subscription_date = $currentEnd;
+
+        if (
+            in_array($subscription->status, ['active', 'trialing'])
+            && !$subscription->cancel_at_period_end
+        ) {
+            $subs->upcoming_payment = $currentEnd;
         } else {
             $subs->upcoming_payment = null;
         }
 
-        $subs->save();
-        // $subscriptionId = data_get($object, 'subscription');
-        $customerName = data_get($object, 'customer_name');
-        $invoicePdf = data_get($object, 'invoice_pdf');
-        $customerEmail = $customer->email ?? null;
+        $subs->status = $subscription->status ?? 'incomplete';
 
-        $array = [
-            'email' => $customerEmail ?? null,
-            'name' => $customerName ?? null,
-            'uuid' => $subs->uuid,
-            'invoice_pdf' => $invoicePdf,
-            'notification' => $subs->user->notification_send ?? 0,
-            'renew_on' => $currentPeriodStart,
-            'trial_end' => $subs->current_end_trial_date,
-            'amount' => $subs->amount ?? null,
-            'currency' => $subs->currency ?? 'GBP',
-        ];
+        /* -------------------------------
+       AMOUNT + CURRENCY (FIXED)
+    --------------------------------*/
+
+        if ($eventType === 'invoice.payment_succeeded') {
+
+            // Stripe invoice object
+            $invoice = $object;
+
+            // Amount paid in cents → convert
+            $amountPaid = ($invoice->amount_paid ?? 0) / 100;
+
+            // Currency
+            $currency = strtoupper($invoice->currency ?? 'GBP');
+
+            // Tax (if exists)
+            $taxAmount = 0;
+
+            if (!empty($invoice->total_tax_amounts)) {
+                foreach ($invoice->total_tax_amounts as $tax) {
+                    $taxAmount += ($tax->amount ?? 0) / 100;
+                }
+            }
+
+            // Update DB properly
+            $subs->amount = $amountPaid;
+            $subs->currency = $currency;
+            $subs->tax = $taxAmount;
+        }
+
+        $subs->save();
+
+        /* -------------------------------
+       USER STATUS
+    --------------------------------*/
 
         $user = $subs->user;
 
-        switch ($eventType) {
-            case 'customer.subscription.trial_will_end':
-                Helpers::sendNotification('Free Trial Ending Soon ⏳.', 'Your free trial is about to end.', $customerEmail ?? null);
-                SendRenewMail::dispatch($array, 'trial', 'site');
-                break;
+        if ($eventType === 'invoice.payment_succeeded') {
 
-            case 'invoice.payment_succeeded':
-                if ($user) {
-                    $user->is_subscribed = 1;
-                    $user->save();
-                }
+            if ($user) {
+                $user->is_subscribed = 1;
+                $user->save();
+            }
 
-                $nowStart = optional($subscription)->current_period_start;
-                $previousStart = optional($subs->getOriginal('current_start_subscription_date'))?->timestamp ?? 0;
-                $trialEnd = optional($subscription)->trial_end ?? 0;
+            $trialEnd = $subscription->trial_end ?? 0;
+            $previousStart = optional(
+                $subs->getOriginal('current_start_subscription_date')
+            )?->timestamp ?? 0;
 
-                // Determine if this is first payment after trial
-                if (
-                    $status === 'active' &&
-                    $trialEnd > 0 &&
-                    $nowStart > $trialEnd &&
-                    $previousStart < $trialEnd
-                ) {
-                    $type = 'start';
+            $nowStart = $subscription->current_period_start ?? 0;
+
+            if (
+                $subscription->status === 'active'
+                && $trialEnd > 0
+                && $nowStart > $trialEnd
+                && $previousStart < $trialEnd
+            ) {
+
+                $type = 'start';
+            } else {
+                $type = 'renew';
+            }
+
+            if ($subs->last_email_type !== $type) {
+
+                if ($type === 'renew') {
+                    Helpers::sendNotification(
+                        'Subscription renewed 🎉',
+                        'Your subscription was renewed successfully!',
+                        $user?->email
+                    );
                 } else {
-                    $type = 'renew';
+                    Helpers::sendNotification(
+                        'Subscription started 🎉',
+                        'Welcome to premium subscription!',
+                        $user?->email
+                    );
                 }
 
-                // Ensure we don't send the same type twice for the same cycle
-                if ($subs->last_email_type !== $type) {
-                    if ($type === 'renew') {
-                        Helpers::sendNotification(
-                            'Subscription renewed 🎉',
-                            '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!',
-                            $customerEmail ?? null
-                        );
-                    } else {
-                        Helpers::sendNotification(
-                            '🎉 You’ve successfully started your subscription!',
-                            'Get ready to unlock all premium features 🚀 — no limits, no restrictions!',
-                            $customerEmail ?? null
-                        );
-                    }
-                    SendRenewMail::dispatch($array, $type, 'site');
+                SendRenewMail::dispatch([
+                    'email' => $user?->email,
+                    'name' => $user?->name,
+                    'uuid' => $subs->uuid,
+                    'amount' => $subs->amount,
+                    'currency' => $subs->currency,
+                    'renew_on' => $currentStart,
+                    'trial_end' => $subs->current_end_trial_date,
+                    'notification' => $user?->notification_send ?? 0,
+                ], $type, 'site');
 
-                    // Update record so next webhook won't send same email again
-                    $subs->last_email_type = $type;
-                    $subs->save();
-                } else {
-                    Log::info("Skipping duplicate {$type} email for subscription {$subscriptionId}");
-                }
-                break;
-
-            case 'review.closed':
-                $review = $event->data->object;
-
-                if ($review->reason === 'approved') {
-                    $paymentIntentId = $review->payment_intent;
-
-                    if ($paymentIntentId) {
-                        try {
-                            $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
-
-                            // Only capture if it's still requires_capture
-                            if ($paymentIntent->status === 'requires_capture') {
-                                $stripe->paymentIntents->capture($paymentIntentId);
-                                Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
-                            }
-                        } catch (\Exception $e) {
-                            Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
-                        }
-                    }
-                }
-                break;
-
-            case 'invoice.payment_failed':
-                $subs->status = 'failed';
+                $subs->last_email_type = $type;
                 $subs->save();
-                if ($user) {
-                    $user->is_subscribed = 0;
-                    $user->save();
-                }
-                Helpers::sendNotification('Spenny PiggySubscription could not be processed ❌', 'There was a problem processing your payment. Please update your payment method to continue enjoying premium access.', $customerEmail ?? null);
-                SendRenewMail::dispatch($array, 'failed', 'site');
-                break;
+            }
+        }
 
-            case 'customer.subscription.deleted':
-                Log::info("Subscription deleted: {$subscriptionId}");
-                $subs->status = 'cancelled';
-                $subs->cancelled_at = now();
-                $subs->save();
-                if ($user) {
-                    $user->is_subscribed = 0;
-                    $user->save();
-                }
-                Helpers::sendNotification('Subscription has been cancelled 🛑', 'We’re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
-                SendRenewMail::dispatch($array, 'cancelled', 'site');
-                break;
+        /* -------------------------------
+       FAILED PAYMENT
+    --------------------------------*/
 
-            case 'customer.subscription.deleted':
-                Log::info("Subscription deleted: {$subscriptionId}");
-                $subs->status = 'cancelled';
-                $subs->cancelled_at = now();
-                $subs->upcoming_payment = null;
-                $subs->save();
-                if ($user) {
-                    $user->is_subscribed = 0;
-                    $user->save();
-                }
-                Helpers::sendNotification('Subscription has been cancelled 🛑', 'We\'re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
-                SendRenewMail::dispatch($array, 'cancelled', 'site');
-                break;
+        if ($eventType === 'invoice.payment_failed') {
 
-            default:
-                Log::info("Unhandled event type: {$eventType}");
-                break;
+            $subs->status = 'failed';
+            $subs->save();
+
+            if ($user) {
+                $user->is_subscribed = 0;
+                $user->save();
+            }
+
+            Helpers::sendNotification(
+                'Payment failed ❌',
+                'Please update your payment method.',
+                $user?->email
+            );
+
+            SendRenewMail::dispatch([
+                'email' => $user?->email,
+                'name' => $user?->name,
+                'uuid' => $subs->uuid,
+                'amount' => $subs->amount,
+                'currency' => $subs->currency
+            ], 'failed', 'site');
+        }
+
+        /* -------------------------------
+       CANCELLED
+    --------------------------------*/
+
+        if ($eventType === 'customer.subscription.deleted') {
+
+            $subs->status = 'cancelled';
+            $subs->cancelled_at = now();
+            $subs->upcoming_payment = null;
+            $subs->save();
+
+            if ($user) {
+                $user->is_subscribed = 0;
+                $user->save();
+            }
+
+            Helpers::sendNotification(
+                'Subscription cancelled 🛑',
+                'Your subscription has been cancelled.',
+                $user?->email
+            );
+
+            SendRenewMail::dispatch([
+                'email' => $user?->email,
+                'name' => $user?->name,
+                'uuid' => $subs->uuid,
+            ], 'cancelled', 'site');
         }
 
         return response()->json(['status' => 'success']);
     }
+
+    // public function mandatorySubscriptionStatus(Request $request)
+    // {
+    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+    //     $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
+    //     $payload = $request->getContent();
+    //     $sig_header = $request->header('Stripe-Signature');
+
+    //     try {
+    //         $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+    //     } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
+    //         Log::error("Webhook signature verification failed: " . $e->getMessage());
+    //         return response()->json(['error' => 'Invalid signature'], 400);
+    //     }
+
+    //     $eventType = $event->type;
+    //     $object = $event->data->object;
+    //     $subscriptionId = data_get($object, 'subscription') ?? data_get($object, 'id');
+    //     $customerId = data_get($object, 'customer');
+
+    //     try {
+    //         $customer = $stripe->customers->retrieve($customerId, []);
+    //     } catch (\Exception $e) {
+    //         Log::error("Failed to retrieve customer: " . $e->getMessage());
+    //         return response()->json(['error' => 'Customer not found'], 404);
+    //     }
+
+    //     $subscription = null;
+    //     try {
+    //         $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
+    //     } catch (\Exception $e) {
+    //         Log::error("Failed to retrieve subscription: " . $e->getMessage());
+    //     }
+
+    //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
+
+    //     if (!$subs) {
+    //         Log::info("Subscription record not found for Stripe ID: {$subscriptionId}");
+    //         return response()->json(['message' => 'No record to update'], 200);
+    //     }
+
+    //     $currentPeriodStart = optional($subscription)->current_period_start ? Carbon::createFromTimestamp($subscription->current_period_start) : null;
+    //     $currentPeriodEnd = optional($subscription)->current_period_end ? Carbon::createFromTimestamp($subscription->current_period_end) : null;
+    //     $status = $subscription->status ?? 'incomplete';
+
+    //     $subs->current_start_subscription_date = $currentPeriodStart;
+    //     $subs->current_end_subscription_date = $currentPeriodEnd;
+    //     $subs->status = $status;
+
+    //     if (in_array($status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
+    //         $subs->upcoming_payment = Carbon::createFromTimestamp($subscription->current_period_end);
+    //     } else {
+    //         $subs->upcoming_payment = null;
+    //     }
+
+    //     $subs->save();
+    //     // $subscriptionId = data_get($object, 'subscription');
+    //     $customerName = data_get($object, 'customer_name');
+    //     $invoicePdf = data_get($object, 'invoice_pdf');
+    //     $customerEmail = $customer->email ?? null;
+
+    //     $array = [
+    //         'email' => $customerEmail ?? null,
+    //         'name' => $customerName ?? null,
+    //         'uuid' => $subs->uuid,
+    //         'invoice_pdf' => $invoicePdf,
+    //         'notification' => $subs->user->notification_send ?? 0,
+    //         'renew_on' => $currentPeriodStart,
+    //         'trial_end' => $subs->current_end_trial_date,
+    //         'amount' => $subs->amount ?? null,
+    //         'currency' => $subs->currency ?? 'GBP',
+    //     ];
+
+    //     $user = $subs->user;
+
+    //     switch ($eventType) {
+    //         case 'customer.subscription.trial_will_end':
+    //             Helpers::sendNotification('Free Trial Ending Soon ⏳.', 'Your free trial is about to end.', $customerEmail ?? null);
+    //             SendRenewMail::dispatch($array, 'trial', 'site');
+    //             break;
+
+    //         case 'invoice.payment_succeeded':
+    //             if ($user) {
+    //                 $user->is_subscribed = 1;
+    //                 $user->save();
+    //             }
+
+    //             $nowStart = optional($subscription)->current_period_start;
+    //             $previousStart = optional($subs->getOriginal('current_start_subscription_date'))?->timestamp ?? 0;
+    //             $trialEnd = optional($subscription)->trial_end ?? 0;
+
+    //             // Determine if this is first payment after trial
+    //             if ($status === 'active' && $trialEnd > 0 && $nowStart > $trialEnd && $previousStart < $trialEnd) {
+    //                 $type = 'start';
+    //             } else {
+    //                 $type = 'renew';
+    //             }
+
+    //             // Ensure we don't send the same type twice for the same cycle
+    //             if ($subs->last_email_type !== $type) {
+    //                 if ($type === 'renew') {
+    //                     Helpers::sendNotification(
+    //                         'Subscription renewed 🎉',
+    //                         '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!',
+    //                         $customerEmail ?? null
+    //                     );
+    //                 } else {
+    //                     Helpers::sendNotification(
+    //                         '🎉 You’ve successfully started your subscription!',
+    //                         'Get ready to unlock all premium features 🚀 — no limits, no restrictions!',
+    //                         $customerEmail ?? null
+    //                     );
+    //                 }
+    //                 SendRenewMail::dispatch($array, $type, 'site');
+
+    //                 // Update record so next webhook won't send same email again
+    //                 $subs->last_email_type = $type;
+    //                 $subs->save();
+    //             } else {
+    //                 Log::info("Skipping duplicate {$type} email for subscription {$subscriptionId}");
+    //             }
+    //             break;
+
+    //         case 'review.closed':
+    //             $review = $event->data->object;
+
+    //             if ($review->reason === 'approved') {
+    //                 $paymentIntentId = $review->payment_intent;
+
+    //                 if ($paymentIntentId) {
+    //                     try {
+    //                         $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+
+    //                         // Only capture if it's still requires_capture
+    //                         if ($paymentIntent->status === 'requires_capture') {
+    //                             $stripe->paymentIntents->capture($paymentIntentId);
+    //                             Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
+    //                         }
+    //                     } catch (\Exception $e) {
+    //                         Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+    //                     }
+    //                 }
+    //             }
+    //             break;
+
+    //         case 'invoice.payment_failed':
+    //             $subs->status = 'failed';
+    //             $subs->save();
+    //             if ($user) {
+    //                 $user->is_subscribed = 0;
+    //                 $user->save();
+    //             }
+    //             Helpers::sendNotification('Spenny PiggySubscription could not be processed ❌', 'There was a problem processing your payment. Please update your payment method to continue enjoying premium access.', $customerEmail ?? null);
+    //             SendRenewMail::dispatch($array, 'failed', 'site');
+    //             break;
+
+    //         case 'customer.subscription.deleted':
+    //             Log::info("Subscription deleted: {$subscriptionId}");
+    //             $subs->status = 'cancelled';
+    //             $subs->cancelled_at = now();
+    //             $subs->save();
+    //             if ($user) {
+    //                 $user->is_subscribed = 0;
+    //                 $user->save();
+    //             }
+    //             Helpers::sendNotification('Subscription has been cancelled 🛑', 'We’re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
+    //             SendRenewMail::dispatch($array, 'cancelled', 'site');
+    //             break;
+
+    //         case 'customer.subscription.deleted':
+    //             Log::info("Subscription deleted: {$subscriptionId}");
+    //             $subs->status = 'cancelled';
+    //             $subs->cancelled_at = now();
+    //             $subs->upcoming_payment = null;
+    //             $subs->save();
+    //             if ($user) {
+    //                 $user->is_subscribed = 0;
+    //                 $user->save();
+    //             }
+    //             Helpers::sendNotification('Subscription has been cancelled 🛑', 'We\'re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
+    //             SendRenewMail::dispatch($array, 'cancelled', 'site');
+    //             break;
+
+    //         default:
+    //             Log::info("Unhandled event type: {$eventType}");
+    //             break;
+    //     }
+
+    //     return response()->json(['status' => 'success']);
+    // }
 
 
 
@@ -1652,7 +1876,7 @@ class StripeWebhookController extends Controller
     private function handleAsyncPaymentSucceeded($session)
     {
         Log::info("Processing async payment succeeded", ['session_id' => $session->id]);
-        
+
         $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
         if ($purchase) {
             // Only update if currently pending or unpaid
@@ -1662,7 +1886,7 @@ class StripeWebhookController extends Controller
                 Log::info("Updated TaskPurchase status to paid", ['id' => $purchase->id]);
             }
         }
-        
+
         // Also update Deliverable
         $deliverable = \App\Models\Deliverable::where('session_id', $session->id)->first();
         if ($deliverable && $deliverable->payment_status !== 'paid') {
@@ -1682,7 +1906,7 @@ class StripeWebhookController extends Controller
     private function handleAsyncPaymentFailed($session)
     {
         Log::info("Processing async payment failed", ['session_id' => $session->id]);
-        
+
         $purchase = TaskPurchase::where('stripe_session_id', $session->id)->first();
         if ($purchase) {
             $purchase->status = 'failed';
@@ -1697,7 +1921,7 @@ class StripeWebhookController extends Controller
                 $this->userProfileService->clearUserCaches($purchase->supporter->username, $purchase->supporter->id);
             }
         }
-        
+
         // Also update Deliverable
         $deliverable = \App\Models\Deliverable::where('session_id', $session->id)->first();
         if ($deliverable) {
@@ -1793,71 +2017,72 @@ class StripeWebhookController extends Controller
     /**
      * Handle Charge Refunded
      */
-     private function handleChargeRefunded($charge)
-     {
-         $paymentIntentId = $charge->payment_intent ?? null;
-         
-         if (!$paymentIntentId) {
-              return;
-         }
+    private function handleChargeRefunded($charge)
+    {
+        $paymentIntentId = $charge->payment_intent ?? null;
 
-         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+        if (!$paymentIntentId) {
+            return;
+        }
+
+        $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
         if ($purchase) {
             $purchase->status = 'refunded';
             $purchase->refunded_at = now();
-            
+
             // Try to get refund ID from charge
             if (isset($charge->refunds->data) && !empty($charge->refunds->data)) {
                 // Assuming the latest refund is the one relevant to this event
-                $latestRefund = $charge->refunds->data[0] ?? null; 
+                $latestRefund = $charge->refunds->data[0] ?? null;
                 if ($latestRefund) {
                     $purchase->refund_id = $latestRefund->id;
                 }
             }
-            
+
             $purchase->save();
-            
+
             Log::info("TaskPurchase refunded via webhook", ['id' => $purchase->id]);
 
-             // Update Deliverable
-             try {
-                 $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
-                 if ($deliverable) {
-                     $deliverable->status = 'refunded';
-                     $deliverable->save();
+            // Update Deliverable
+            try {
+                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                if ($deliverable) {
+                    $deliverable->status = 'refunded';
+                    $deliverable->save();
 
-                     try {
-                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
-                             'status' => 'refunded',
-                             'refunded_by' => 'stripe',
-                             'refund_reason' => 'charge_refunded'
-                         ]);
-                     } catch (\Exception $e) {
-                         Log::error("Failed to update metadata on charge refunded webhook: " . $e->getMessage());
-                     }
-                 }
-             } catch (\Exception $e) {}
+                    try {
+                        app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
+                            'status' => 'refunded',
+                            'refunded_by' => 'stripe',
+                            'refund_reason' => 'charge_refunded'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error("Failed to update metadata on charge refunded webhook: " . $e->getMessage());
+                    }
+                }
+            } catch (\Exception $e) {
+            }
 
-             // Notify Supporter and Creator via email and push
-             try {
-                 $task = $purchase->task;
-                 $supporter = $purchase->supporter;
-                 $creator = $purchase->creator;
+            // Notify Supporter and Creator via email and push
+            try {
+                $task = $purchase->task;
+                $supporter = $purchase->supporter;
+                $creator = $purchase->creator;
 
-                 // Clear caches
-                 if ($creator) {
-                     $this->userProfileService->clearUserCaches($creator->username, $creator->id);
-                 }
-                 if ($supporter) {
-                     $this->userProfileService->clearUserCaches($supporter->username, $supporter->id);
-                 }
+                // Clear caches
+                if ($creator) {
+                    $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                }
+                if ($supporter) {
+                    $this->userProfileService->clearUserCaches($supporter->username, $supporter->id);
+                }
 
-                 if ($supporter) {
-                     Helpers::sendNotification(
-                         "Task Refunded 💸",
-                         "The task '{$task->title}' has been refunded.",
-                         $supporter->email
-                     );
+                if ($supporter) {
+                    Helpers::sendNotification(
+                        "Task Refunded 💸",
+                        "The task '{$task->title}' has been refunded.",
+                        $supporter->email
+                    );
                     Mail::to($supporter->email)->send(new TaskRefunded([
                         'title' => $task->title,
                         'amount' => $purchase->amount,
@@ -1879,11 +2104,11 @@ class StripeWebhookController extends Controller
                         'message' => "The task was refunded to the supporter."
                     ]));
                 }
-             } catch (\Exception $e) {
-                 Log::error("Failed to send refund notifications (webhook): " . $e->getMessage());
-             }
-         }
-     }
+            } catch (\Exception $e) {
+                Log::error("Failed to send refund notifications (webhook): " . $e->getMessage());
+            }
+        }
+    }
 
     /**
      * Handle Payment Intent Failed
@@ -1892,10 +2117,10 @@ class StripeWebhookController extends Controller
     {
         $paymentIntentId = $paymentIntent->id;
         $purchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
-        
+
         if ($purchase) {
-             Log::info("Payment Intent Failed for TaskPurchase", ['id' => $purchase->id]);
-             // Optional: Update status if needed, but 'failed' isn't in enum yet.
+            Log::info("Payment Intent Failed for TaskPurchase", ['id' => $purchase->id]);
+            // Optional: Update status if needed, but 'failed' isn't in enum yet.
         }
     }
 }

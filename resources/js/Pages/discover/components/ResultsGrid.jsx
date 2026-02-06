@@ -17,7 +17,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
             let card;
             switch(mode) {
                 case 'creator':
-                    card = <CreatorCard item={item} />;
+                    card = <CreatorCard  item={item} auth={auth} />;
                     break;
                 case 'wish':
                     card =  <Wishlistbox
