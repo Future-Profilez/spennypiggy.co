@@ -91,7 +91,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   return (
     <>
           <div className={`bg-opacity-90 relative rounded-[30px] 
-            border-[3px] md:border-4 ${borderclasses[item?.level || 'default']} 
+            border-[3px] md:border-2 ${borderclasses[item?.level || 'default']} 
             h-full bg-white `}>
                   {IsloggedIn && item && item?.approved === 0 ?
                     <div className='absolute top-8 z-10 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[20px]' >Membership waiting for approval. Currently only you can see this membership.</div>

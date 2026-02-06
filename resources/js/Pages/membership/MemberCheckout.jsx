@@ -443,7 +443,7 @@ export default function SubCheckout(props) {
                                         />
                                     </div>
                                     ) : null}
-                                <div className="mt-4 flex items-center justify-content-center">
+                                <div className="mt-4 flex items-center justify-center">
                                     <button
                                          onClick={handleSubmit}
                                         className={`${

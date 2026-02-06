@@ -433,7 +433,7 @@ export default function BillCheckout(props) {
                                         </li>
                                     </ul>
                                     {turnstileSiteKey ? (
-                                        <div className="mt-4 flex items-center justify-content-center">
+                                        <div className="mt-4 flex items-center justify-center">
                                             <Turnstile
                                                 ref={turnstileRef}
                                                 size="normal"
@@ -442,7 +442,7 @@ export default function BillCheckout(props) {
                                             />
                                         </div>
                                     ) : null}
-                                    <div className="mt-4 flex items-center justify-content-center">
+                                    <div className="mt-4 flex items-center justify-center">
                                         <button
                                             type="button"
                                             className={`${

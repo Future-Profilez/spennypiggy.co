@@ -202,7 +202,7 @@ export default function FounderBonusIndex() {
                                             <p className="text-3xl font-bold">
                                                 {userProgress?.days_remaining}
                                             </p>
-                                            <p className="text-lg opacity-90 ms-1">Days</p>
+                                            <p className="text-lg opacity-90 ml-1">Days</p>
                                         </div>
                                     </div>
                                 </div>

@@ -8,7 +8,7 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
-        './resources/js/**/*.jsx',
+        './resources/js/**/*.{js,jsx,ts,tsx}',
     ],
 
     safelist: [
@@ -21,6 +21,12 @@ export default {
         'from-yellow-300',
         'via-pink-300',
         'to-purple-300',
+        // Common palette utilities to ensure availability
+        'bg-pink-500',
+        'text-pink-500',
+        'bg-yellow-400',
+        'bg-purple-600',
+        'text-yellow-400',
     ],
 
     theme: {

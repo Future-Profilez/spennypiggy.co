@@ -154,7 +154,7 @@ export default function TFA({text}) {
                                                 <span> Download google authenticator or other similar app to scan the QR code to get security codes.</span>
                                             </p>
                                             <div
-                                                className="rounded-xl max-w-[200px] m-auto table my-3"
+                                                className="rounded-xl max-w-[200px] mx-auto block my-3"
                                                 dangerouslySetInnerHTML={{ __html: qr }}
                                             ></div>
                                             <div className="flex justify-center">
@@ -175,7 +175,7 @@ export default function TFA({text}) {
                                             </div>
 
                                             <button onClick={verify}
-                                                className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white m-auto table w-full mt-4 ">{verifying ? "VERIFYING..." : "VERIFY"}
+                                                className="border-0 pinkbg rounded-2xl px-3 py-2 text-lg text-white mx-auto block w-full mt-4 ">{verifying ? "VERIFYING..." : "VERIFY"}
                                             </button>
                                             {/* <button className="text-center text-primary my-3 cursor-pointer w-75 m-auto d-table font-normal">Verify with backup code.</button> */}
                                         </div>

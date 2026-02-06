@@ -213,14 +213,14 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                 <ul>
                                                     <li className='flex items-center flex-wrap'>
                                                         {/* <Popup space="2 md:p-4"  
-                                                            classes="text-[15px] text-pink ms-2"
+                                                            classes="text-[15px] text-pink ml-2"
                                                             text={<>🎉 View Exclusive Content</>} >
                                                                 <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
                                                         </Popup> */}
                                                         {deliverable?.product_type != 'support_payment' && deliverable?.product_type != 'membership' && deliverable.deliverable_url  ?
                                                             <li className='flex items-center flex-wrap'>
                                                                 <a target='_blank' href={`${deliverable.deliverable_url}`} 
-                                                                className="ms-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
+                                                                className="ml-2 text-[15px] text-pink" >🎉 View Exclusive Content</a>
                                                             </li> 
                                                         : ''}
                                                     </li>
@@ -229,21 +229,21 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                     {deliverable?.product_type == 'support_payment' ?
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 
-                                                            className="ms-2 text-[15px] text-pink" >🎉 Get Supportors Only Post Access</Link>
+                                                            className="ml-2 text-[15px] text-pink" >🎉 Get Supportors Only Post Access</Link>
                                                         </li>
                                                     : ''}
 
                                                     {deliverable?.product_type == 'bill'   ?
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 
-                                                            className="ms-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
+                                                            className="ml-2 text-[15px] text-pink" >🎉 Get Subscribers Only Post Access</Link>
                                                         </li>
                                                     : ''}
                                                     
                                                     {deliverable?.product_type == 'membership'   ?
                                                         <li className='flex items-center flex-wrap'>
                                                             <Link href={`/${deliverable?.creator?.username}`} 
-                                                            className="ms-2 text-[15px] text-pink" >🎉 Get Members Only Post Access</Link>
+                                                            className="ml-2 text-[15px] text-pink" >🎉 Get Members Only Post Access</Link>
                                                         </li>
                                                     : ''}
 
@@ -257,7 +257,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                     {deliverable.certificate_url && (
                                                         <li className='flex items-center flex-wrap'>
                                                             <a target='_blank' href={deliverable.certificate_url} 
-                                                            className="ms-2 text-[15px] text-green-600 hover:underline" >📜 Download Certificate</a>
+                                                            className="ml-2 text-[15px] text-green-600 hover:underline" >📜 Download Certificate</a>
                                                         </li>
                                                     )}
                                                 </ul>

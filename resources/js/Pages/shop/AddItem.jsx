@@ -828,7 +828,7 @@ export default function AddItem(props) {
                                     className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${haveSlots
                                     ? "after:transition-all after:translate-x-full  bg-blue-600"
                                     : "bg-gray-200"}`} ></div>
-                                    <span className="ms-3 text-md font-medium text-gray-900">
+                                    <span className="ml-3 text-md font-medium text-gray-900">
                                     Limit slots (optional)
                                     <button className="tooltipbtn"> ?
                                         <p>
@@ -898,7 +898,7 @@ export default function AddItem(props) {
                                             : "bg-gray-200"
                                     } `}
                                 ></div>
-                                <span className="ms-3 text-md font-medium text-gray-900">
+                                <span className="ml-3 text-md font-medium text-gray-900">
                                     Allow buyer to choose a quantity (optional){" "}
                                     <button className="tooltipbtn">
                                         ?

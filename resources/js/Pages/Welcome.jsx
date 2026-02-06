@@ -20,8 +20,6 @@ import lockprofile from "../../assets/img/lockprofile.png";
 import Membership from "./home/Membership";
 import NotForBusiness from "./home/NotForBusiness";
 import FAQ from "./home/FAQ";
-import AOS from "aos";
-import "aos/dist/aos.css";
 import SitelinksSearchBox from "@/global/SiteLink";
 import PaymentSlider from "./home/PaymentSlider";
 import FounderProgramAnnouncement from "./home/FounderProgramAnnouncement";
@@ -31,14 +29,7 @@ import NewVerified from './home/NewVerified';
 import TopEarners from './home/TopEarners';
 export default function Home({ auth, user, founderBonus, trendingCreators, newVerifiedCreators, topEarners, topEarnersLabel }) {
 
-    useEffect(()=>{
-        AOS && AOS.init({
-            offset:100, // offset (in px) from the original trigger point
-            // delay: 1000, // values from 0 to 3000, with step 50ms
-            duration: 400,
-            once: false,
-        });
-    },[]);
+    useEffect(()=>{},[]);
 
 
     // https://ucarecdn.com/b8140316-a9b0-4833-af41-3bc5841a0ce6/-/preview/900x300/-/text_align/center/center/-/font/11/000000/-/text/80px90p/100p,100p/spennypiggy.co~sNAVEENFP/-/text_align/center/center/-/font/19/000000/-/text/100px100p/100p,100p/NAVEEN/-/overlay/50ee2983-6aa8-4f34-9ee4-f28b2930d82b/30px30p/20p,50p/

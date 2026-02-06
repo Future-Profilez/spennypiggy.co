@@ -72,7 +72,7 @@ export default function RecentSupporters() {
         <div className="alert alert-danger" role="alert">
           {error}
           <button 
-            className="btn btn-sm btn-outline-danger ms-2" 
+            className="button esm border-red-600 text-red-600 ml-2" 
             onClick={() => fetchSupport(period)}
           >
             Retry

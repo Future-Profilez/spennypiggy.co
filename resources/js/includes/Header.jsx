@@ -99,7 +99,7 @@ export default function Header({ classMagicword }) {
     return (
         <>
             {/* <ReactDebugTest /> */}
-            <div className="blackbg headermain py-6 ">
+            <div className="blackbg headermain fixed top-0 left-0 w-full z-40 py-4 ">
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center  justify-between ">
                         <div className="md:flex hidden leftspaces items-center justify-start">
@@ -161,7 +161,7 @@ export default function Header({ classMagicword }) {
 
                             {/* {auth && auth.user ? <Notifications /> : ""} */}
                             {auth && auth.user ? (
-                                <div className="mr-2">
+                                <div className="ms-3">
                                     <MagicBellNotification
                                         word={classMagicword}
                                     />
@@ -173,7 +173,7 @@ export default function Header({ classMagicword }) {
                             <Link
                                 title="Discover"
                                 href={route("discover")}
-                                className="mr-2 md:mr-3 discover-icon  "
+                                className="ms-2 md:ms-3 discover-icon  "
                             >
                                 <div className="bg-[#F94F96] rounded-full p-2 md:p-1 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
                                     <svg
@@ -208,7 +208,7 @@ export default function Header({ classMagicword }) {
                                 title="cart page"
                                 href={route("cart")}
                                 as="button"
-                                className={`cartLink mr-3 relative flex ${
+                                className={`cartLink ms-3 relative flex ${
                                     auth?.user && window?.innerWidth < 768
                                         ? "hidden"
                                         : ""
@@ -232,12 +232,12 @@ export default function Header({ classMagicword }) {
                             {auth?.user?.username || false ? (
                                 ""
                             ) : (
-                                <div className="hidden lg:flex gap-2">
+                                <div className="hidden lg:flex gap-2 ms-3 ">
                                     <Link
                                         href={route("login")}
                                         className="bg-white uppercase text-lg  font-gulfs rounded-full px-4 py-2"
                                     >
-                                        Login
+                                        Login 
                                     </Link>
                                     <Link
                                         href={route("register")}
@@ -271,6 +271,7 @@ export default function Header({ classMagicword }) {
                     </div>
                 </div>
             </div>
+            <div className="h-[88px] md:h-[96px]"></div>
 
             {isActive ? (
                 <div

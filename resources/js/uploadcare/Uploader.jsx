@@ -245,7 +245,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
           <ProgressBar animated now={uploadProgress} />
           <p className='text-center mt-2'>
             Uploading... {Math.round(uploadProgress)}%
-            {timeRemaining && <span className="ms-2">{timeRemaining}</span>}
+            {timeRemaining && <span className="ml-2">{timeRemaining}</span>}
           </p>
         </div>
       )}

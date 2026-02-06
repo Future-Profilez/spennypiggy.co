@@ -106,7 +106,7 @@ export default function Hero({auth}) {
         </div>
 
         <div className="containerbox relative w-full">
-          <div className="welcome" data-aos="zoom-out" >
+          <div className="welcome" >
               <div className="welcomeLeft mx-auto w-full text-center">
                   <h2 className="headingSm shadow-none uppercase text-white font-gulfs stroke-none text-xl md:text-5xl xl:text-6xl max-w-4xl mx-auto text-center leading-tight">
                     The everything {" "}

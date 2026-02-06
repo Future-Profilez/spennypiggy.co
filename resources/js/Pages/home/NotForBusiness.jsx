@@ -44,7 +44,7 @@ export default function NotForBusiness() {
                         <div key={index} className="mb-6 flex flex-col items-center text-center relative group">
                             {/* Step Number Badge */}
                             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-1 transition-transform duration-300 group-hover:-translate-y-2">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] border-4 border-black text-white font-gulfs text-xl">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-yellow-500 flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.5)] border-2 border-black text-white font-gulfs text-xl">
                                     {index + 1}
                                 </div>
                             </div>

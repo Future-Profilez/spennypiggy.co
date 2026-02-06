@@ -458,7 +458,7 @@ export default function Dashboard(props) {
                                                     setShowAdd(false);
                                                     setWishOptions(false);
                                                 }}
-                                                className="m-auto table p-2 mt-3"
+                                                className="mx-auto block p-2 mt-3"
                                             >
                                                 Cancel
                                             </button>

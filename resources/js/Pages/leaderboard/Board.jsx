@@ -206,7 +206,7 @@ export default function Board(props) {
                         <div className=" ">
                             <div className="p-2  md:!p-6 pinkbg rounded-[30px] mb-6">
                                 <div className="pt-4 md:pt-0  mt-6   mb-4 pb-4">
-                                    <h1 className="text-bl btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
+                                    <h1 className="btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
                                         Top Creators Getting <br></br> the Most Love
                                     </h1>
                                         <p className="text-center text-white text-sm opacity-90 mb-4">

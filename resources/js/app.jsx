@@ -5,11 +5,15 @@ import "./bootstrap";
 // Make route function available globally
 window.route = route;
 
+import "../css/fonts-optimized.css";
 import "../css/theme.css";
-import "../css/app.css";
 import "../css/core-web-vitals.css";
 import "../css/index.css";
 import "../css/home.css";
+// Load app.css last so its styles win in the cascade
+import "../css/app.css";
+// Include confetti animations styles
+import "../css/confetti.css";
 
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
@@ -26,23 +30,20 @@ import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
 import Maintaince from "./Components/Maintaince.jsx";
 
-if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co' || window.location.hostname === 'https://www.spennypiggy.co') {
+if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
         dsn: "https://14cda094324469c174a7e04a2298502d@o4509650305679360.ingest.us.sentry.io/4509650314526720",
-        sendDefaultPii: true,
+        sendDefaultPii: false,
+        // Keep feedback, disable replays to reduce bandwidth
         integrations: [
-            Sentry.replayIntegration({
-                networkDetailAllowUrls: [window.location.origin],
-                networkRequestHeaders: ["Cache-Control"],
-                networkResponseHeaders: ["Referrer-Policy"],
-            }),
             Sentry.feedbackIntegration({
                 colorScheme: "system",
                 autoInject: false,
             }),
         ],
-        replaysSessionSampleRate: 0.1,
-        replaysOnErrorSampleRate: 1.0
+        // Disable session replays completely and reduce on-error sampling
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 0.05,
     });
 } 
 function setupGlobalCartFunctions(props) {

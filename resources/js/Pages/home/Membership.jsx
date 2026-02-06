@@ -93,8 +93,8 @@ export default function Membership() {
             <LiveBar reps={20} color={`yellowbg`} classes={''} text={"  Coming Soon      "} />
          </div>
 
-              <div data-aos="zoom-in-up" className='membership-image py-2 px-4 mx-auto flex justify-center max-w-4xl mt-3 relative  ' >
-                <div className="rounded-[30px] overflow-hidden border-4 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
+              <div className='membership-image py-2 px-4 mx-auto flex justify-center max-w-4xl mt-3 relative  ' >
+                <div className="rounded-[30px] overflow-hidden border-2 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
                     <LazyLoadImage
                     alt={"image"}
                     effect="blur"
@@ -113,7 +113,7 @@ export default function Membership() {
         </div>
 
         <div className="containerbox relative  ">
-          <div className="flex justify-center mb-6" data-aos="fade-down">
+          <div className="flex justify-center mb-6">
             <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" />
           </div>
 
@@ -127,7 +127,7 @@ export default function Membership() {
             {supportData.map((item, index) => (
               <div key={index} className=" group flex flex-col items-center text-center mb-6 hover:-translate-y-2 transition-transform duration-300">
               <div 
-                  className="relative w-full max-w-[220px] aspect-[4/3] bg-gray-900 rounded-[30px] flex items-center justify-center border-4 transition-all duration-300 overflow-hidden group-hover:shadow-lg"
+                  className="relative w-full max-w-[220px] aspect-[4/3] bg-gray-900 rounded-[30px] flex items-center justify-center border-2 transition-all duration-300 overflow-hidden group-hover:shadow-lg"
                   style={{
                       borderColor: item.color,
                       // boxShadow: `6px 6px 0 0 ${item.color}`

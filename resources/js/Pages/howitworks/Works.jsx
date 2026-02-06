@@ -55,7 +55,7 @@ export default function Works(props) {
                         <Tab.Panels>
                             <Tab.Panel>
                                 <div className='funboxs mintbg shadow-black border-black mb-10'>
-                                    <div className='funboximg' data-aos="fade-up" >
+                                    <div className='funboximg' >
                                             <img src={vishitimg01} alt='img' />
                                     </div>
                                     <div className='funcnt'>
@@ -67,7 +67,7 @@ export default function Works(props) {
                                 </div>
                                 
                                 <div className='funboxs pinkbg shadow-black border-black mb-10'>
-                                    <div className='funcnt' data-aos="fade-up">
+                                    <div className='funcnt'>
                                         <h5 className='text-voilet text-black mb-2'>STEP 2</h5>
                                         <h3 className='headingSm text-shadow-black mb-3 text-purple'>Send Some<br/> Support</h3>
                                         <p className='text-CeraGR text-wh'>Join a membership, purchase a wish or shop item, and maybe just send
@@ -79,9 +79,9 @@ export default function Works(props) {
                                 </div>
                                 <div className='funboxs bluebg shadow-black border-black mb-10'>
                                     <div className='funboximg md:pr-4' >
-                                        <img src={fundbasketimg01} className='max-h-[400px]' data-aos="fade-up" alt='img' />
+                                        <img src={fundbasketimg01} className='max-h-[400px]' alt='img' />
                                     </div>
-                                    <div className='funcnt' data-aos="fade-up" >
+                                    <div className='funcnt' >
                                         <h5 className='text-mint mb-2'>STEP 3</h5>
                                         <h3 className='headingSm text-shadow-black mb-3 text-pink'>Create an <br></br> Account </h3>
                                         <p className='text-CeraGR text-wh'>Sign up for your supporter account. At the end of checkout, you’ll be
@@ -94,9 +94,9 @@ export default function Works(props) {
                             <Tab.Panel>
                             <div className='funboxs mintbg shadow-black border-black mb-10'>
                                     <div className='funboximg pr-4'>
-                                            <img src={yourwishlist01}  data-aos="fade-up" alt='img' />
+                                            <img src={yourwishlist01} alt='img' />
                                         </div>
-                                        <div className='funcnt' data-aos="fade-up" >
+                                        <div className='funcnt' >
                                         <h5 className='text-voilet mb-2'>STEP 1</h5>
                                         <h3 className='headingSm text-shadow-black mb-3'>Set Up Your Page</h3>
                                         <p className='text-CeraGR'>Craft your unique space to sell exclusive content and custom products. <br></br>
@@ -106,7 +106,7 @@ export default function Works(props) {
                                 </div>
                                 
                                 <div className='funboxs pinkbg shadow-black border-black mb-10'>
-                                    <div className='funcnt' data-aos="fade-up">
+                                    <div className='funcnt'>
                                         <h5 className='text-voilet text-black mb-2'>STEP 2</h5>
                                         <h3 className='headingSm text-shadow-black mb-3 text-purple'>Set up your <br/> payments</h3>
                                         <p className='text-CeraGR text-wh'>Using our secure third-party payment processor, set up your payments to
@@ -114,16 +114,16 @@ export default function Works(props) {
                                         lifestyle!</p>
                                     </div>
                                     <div className='funboximg'>
-                                        <img src={setuppaymentimg01} data-aos="fade-up" alt='img' />
+                                        <img src={setuppaymentimg01} alt='img' />
                                     </div>
                                 </div>
 
                                 <div className='funboxs bluebg shadow-black border-black mb-10'>
                                     <div className='funboximg'>
-                                        <img src={sharlinkimg} alt='img' data-aos="fade-up" />
+                                        <img src={sharlinkimg} alt='img' />
                                     </div>
                                         
-                                    <div className='funcnt' data-aos="fade-up">
+                                    <div className='funcnt'>
                                         <h5 className='text-mint mb-2'>STEP 3</h5>
                                         <h3 className='headingSm text-shadow-black mb-3 text-pink'> 
                                         Don’t Be Shy…</h3>

@@ -71,7 +71,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
 
                     <div class="inner-image w-full">
                         <div class="flex items-center justify-center  mb-4">
-                            <div class="w-28 h-28 rounded-full border-4 border-[#00ff5e] overflow-hidden shadow-lg">
+                            <div class="w-28 h-28 rounded-full border-2 border-[#00ff5e] overflow-hidden shadow-lg">
                                 <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
                             </div>
                             <div class="pl-3"> 

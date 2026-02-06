@@ -240,7 +240,7 @@ export default function AddCart(props) {
                     <Link 
                         onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
                         href={`/${item.user && item.user.username}`}
-                        className="m-auto table text-blue-600"
+                        className="mx-auto block text-blue-600"
                     >
                         See All {item.user && item.user.name}'s Wishes
                     </Link>

@@ -207,7 +207,7 @@ export default function BuyShopItem({
                 text={text}
             >
                 <div className={`${loading ? "item-purchasing" : ""}`}>
-                    <div className="mx-auto w-32 h-32 relative -mt-16 border-4 border-white rounded-full overflow-hidden">
+                    <div className="mx-auto w-32 h-32 relative -mt-16 border-2 border-white rounded-full overflow-hidden">
                         <img
                             className="object-cover object-center h-32 w-full"
                             src={s.user.avatar_url || userdefaultphoto}
@@ -288,7 +288,7 @@ export default function BuyShopItem({
                                         {reply ? (
                                             <button
                                                 onClick={sendReply}
-                                                className="pinkbg text-center text-white px-3 py-1 mt-3 m-auto d-table rounded-[20px]"
+                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[20px]"
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -311,7 +311,7 @@ export default function BuyShopItem({
                                 </p>
                                 <button
                                     onClick={handleCopy}
-                                    className="bg-gray-200 rounded-[30px] px-4 py-2 m-auto table mt-3 text-sm"
+                                    className="bg-gray-200 rounded-[30px] px-4 py-2 mx-auto block mt-3 text-sm"
                                 >
                                     Copy Link
                                 </button>
@@ -418,7 +418,8 @@ export default function BuyShopItem({
                             </div>
 
                             {shop.type === "physical" ? (
-                                <div className="mb-3">
+                                <>
+                                    <div className="mb-3">
                                         <p className="mb-2">
                                             Shipping Information
                                         </p>
@@ -483,7 +484,7 @@ export default function BuyShopItem({
                                             />
                                         </div>
                                     </div>
-                                </div>
+                                </>
                             ) : (
                                 ""
                             )}
@@ -506,9 +507,9 @@ export default function BuyShopItem({
                             >
                                 {checking ? "Buying.." : "Pay"}
                             </button>
-                            {/* <div className='securestripe text-center mt-3' >
-                  🔒 Secured via <b>Stripe</b>
-               </div> */}
+                            <div className='securestripe text-center mt-3' >
+                                🔒 Secured via <b>Stripe</b>
+                            </div>
                         </>
                     )}
                 </div>
