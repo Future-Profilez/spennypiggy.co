@@ -5,7 +5,6 @@ import "./bootstrap";
 // Make route function available globally
 window.route = route;
 
-import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/theme.css";
 import "../css/app.css";
 import "../css/core-web-vitals.css";
