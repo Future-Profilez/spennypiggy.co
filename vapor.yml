@@ -10,24 +10,23 @@ environments:
     cli-memory: 512
     timeout: 120
     runtime: "php-8.2:al2"
-    ssr: true
     domain: dev.spennypiggy.co
     database: spennypiggy-db-dev
     cache: spenny-piggy-redis-caches
     assets:
       - "public/build/**"
     build:
-      - "composer install --no-dev"
+      - "composer install"
       - "php artisan event:cache"
       - "php artisan optimize:clear"
-      - "npm install --no-audit --no-fund"
+      # - "npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
-      - "rm -rf public/build" # Linux/mac/OS
-      - "rm -rf bootstrap/ssr" # Linux/mac/OS
+      - "rm -rf public/build"
+      - "rm -rf bootstrap/ssr"
       - "npm run build"
       - "npm run clear"
-      - "rm -rf node_modules" # Linux/mac/OS
-      # - "rm -rf package-lock.json"   # Keep for npm ci in build process
+      - "rm -rf node_modules"
+      - "rm -rf package-lock.json"
       # - "rd /s /q node_modules" # Windows
     deploy:
       - "php artisan migrations:fix-state"
@@ -45,7 +44,6 @@ environments:
     memory: 1024
     queue-memory: 512
     cli-memory: 1024
-    ssr-memory: 1024
     nodejs: 18
     scheduler: true
     cli-timeout: 120
@@ -55,7 +53,6 @@ environments:
     timeout: 60
     cache: spenny-piggy-redis-caches
     runtime: "php-8.2:al2"
-    # ssr: true
     domain: spennypiggy.co
     database: spennypiggy-db
     database-proxy: true
@@ -85,22 +82,6 @@ environments:
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan cache:clear"
-
-    # environment:
-    #   CACHE_DRIVER: array
-    #   REDIS_CLIENT: phpredis
-    #   REDIS_CLUSTER: redis
-    #   SESSION_DRIVER: redis
-    #   SESSION_STORE: redis
-    #   SESSION_CONNECTION: default
-    #   # SESSION_DOMAIN: .spennypiggy.co
-    #   SESSION_SECURE_COOKIE: true
-    #   SESSION_SAME_SITE: lax
-    #   SESSION_BLOCK: false
-    #   SESSION_LIFETIME: 120
-    #   SESSION_COOKIE: spennypiggy_session_v4
-    #   TRUSTED_PROXIES: "*"
-
 
 # - "php artisan subscription:sync --all"
 # - "php artisan sitemap:generate --force"
