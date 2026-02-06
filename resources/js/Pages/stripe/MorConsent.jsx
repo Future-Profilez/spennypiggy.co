@@ -55,7 +55,7 @@ export default function MorConsent(props) {
                     )}
 
                     {/* Merchant of Record Agreement Card */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8">
+                    <div className="bg-white rounded-xl  shadow-lg border border-gray-200 overflow-hidden mb-8">
                         <div className="p-8">
                             {/* Agreement Header */}
                             <div className="text-center mb-8">

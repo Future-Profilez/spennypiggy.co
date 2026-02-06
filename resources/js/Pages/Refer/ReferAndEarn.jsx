@@ -122,7 +122,7 @@ export default function ReferAndEarn({
                             </p>
 
                             {/* Referral Link Box */}
-                            <div className="border-2 border-black rounded-2xl p-4 md:p-5">
+                            <div className="border-2 border-black rounded-xl  p-4 md:p-5">
                                 <h2 className="text-lg font-GillSans uppercase mb-3">
                                     Your Referral Link
                                 </h2>

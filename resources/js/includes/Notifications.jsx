@@ -134,7 +134,7 @@ export default function Notifications() {
                     </div>
                     <div className="relative inline-block shrink-0">
                       <Link href={n && n.user && n.user.username || '/'} >
-                        <img className="w-12 h-12 rounded-4 object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
+                        <img className="w-12 h-12 rounded-xl object-cover" src={ n && n?.user && n?.user?.avatar_url || userphoto } alt="spenny piggy user"/>
                       </Link>
                     </div>
                 </div>

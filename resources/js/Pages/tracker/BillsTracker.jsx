@@ -160,7 +160,7 @@ export default function BillsTracker({ auth }) {
                     >
                         <div id="example-collapse-text">
                             <div className="track-summary mt-4">
-                                <div className="wishitem-des box border rounded-lg">
+                                <div className="wishitem-des box border rounded-xl ">
                                     <div className="flex justify-between items-center">
                                         <div className="wish-item">
                                             <img

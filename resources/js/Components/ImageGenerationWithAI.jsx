@@ -106,14 +106,14 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                                         alt="image"
                                     />
                                     <button
-                                        className="btn bg-gray-300 text-black py-2 px-3 hover:border-gray-300 uppercase mx-auto block rounded-2xl mt-4"
+                                        className="btn bg-gray-300 text-black py-2 px-3 hover:border-gray-300 uppercase mx-auto block rounded-xl  mt-4"
                                         onClick={ReDesign}
                                     >
                                         Re-Generate
                                     </button>
                                     <button
                                         className="btn pinkbg py-2 px-3 text-white hover:border-gray-300 hover:bg-black
-                                 uppercase mx-auto block rounded-2xl mt-2"
+                                 uppercase mx-auto block rounded-xl  mt-2"
                                         onClick={useThis}
                                     >
                                         {updating
@@ -134,7 +134,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                                         />
                                     </div>
                                     <button
-                                        className="btn pinkbg py-2 px-3 text-white uppercase hover:border-gray-300 hover:bg-black mx-auto block rounded-2xl mt-3"
+                                        className="btn pinkbg py-2 px-3 text-white uppercase hover:border-gray-300 hover:bg-black mx-auto block rounded-xl  mt-3"
                                         onClick={renerate}
                                     >
                                         Generate

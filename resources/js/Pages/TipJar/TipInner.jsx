@@ -122,9 +122,9 @@ export default function TipInner({classes, idd}) {
                   <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
                 {defaultAmount} &nbsp;Each</p>
                 <div className='incresecounter flex items-center' >
-                      <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-4 ' onClick={decresevalue} >-</button>
-                      <div className='border px-3 py-2 rounded-5 mx-1' >{tipQuantity}</div>
-                      <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-4 ' onClick={incresevalue} >+</button>
+                      <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-xl ' onClick={decresevalue} >-</button>
+                      <div className='border px-3 py-2 rounded-xl  mx-1' >{tipQuantity}</div>
+                      <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-xl ' onClick={incresevalue} >+</button>
                 </div>
             </div> */}
 

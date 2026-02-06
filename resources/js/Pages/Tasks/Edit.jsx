@@ -113,7 +113,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             for review.
                                         </p>
                                         {task.reason && (
-                                            <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-lg">
+                                            <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-xl ">
                                                 <p className="text-red-800 font-bold text-sm mb-1">
                                                     Rejection Feedback:
                                                 </p>
@@ -355,7 +355,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                                             {task.deliverable_content &&
                                                 !data.deliverable_file && (
-                                                    <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-3 rounded-lg border-2 border-black flex flex-col gap-2">
+                                                    <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-3 rounded-xl  border-2 border-black flex flex-col gap-2">
                                                         <div className="flex items-center gap-2">
                                                             <span>📁</span>
                                                             <span>
@@ -400,7 +400,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 imgonly={false}
                                             />
                                             {data.deliverable_file && (
-                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-lg border-2 border-black flex items-center gap-2">
+                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-xl  border-2 border-black flex items-center gap-2">
                                                     <span>✅</span> New File
                                                     selected:{" "}
                                                     {data.deliverable_file.name}
@@ -474,7 +474,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                                 {/* Additional info for rejected tasks */}
                                 {isRejected && (
-                                    <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded-lg text-center">
+                                    <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded-xl  text-center">
                                         <p className="text-gray-700 text-sm font-medium">
                                             <span className="font-bold">
                                                 Note:

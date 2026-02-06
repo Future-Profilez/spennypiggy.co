@@ -193,7 +193,7 @@ export default function Login({ status, canResetPassword }) {
                 </div>
 
                 {status && (
-                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-lg border border-green-500/30 backdrop-blur-sm relative z-20">
+                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-xl  border border-green-500/30 backdrop-blur-sm relative z-20">
                         {status}
                     </div>
                 )}
@@ -229,7 +229,7 @@ export default function Login({ status, canResetPassword }) {
                         <div className="p-6 sm:p-8 bg-black/20 rounded-b-[20px]">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
-                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-lg border border-red-500/20 animate-pulse">
+                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-xl  border border-red-500/20 animate-pulse">
                                         {redirectmessage}
                                     </p>
                                 )}
@@ -241,11 +241,11 @@ export default function Login({ status, canResetPassword }) {
                                     >
                                         Email Address
                                     </label>
-                                    <div className="relative group relative">
+                                    <div className="relative group  ">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <HiOutlineMail
-                                            size="24"
-                                            className="absolute top-[15px] left-3 z-1"
+                                            size="24" color="#000000"
+                                            className="absolute top-[15px] left-3 z-1 login-icon"
                                         />
                                         <input
                                             id="email"
@@ -276,9 +276,9 @@ export default function Login({ status, canResetPassword }) {
                                     </label>
                                     <div className="relative group relative">
                                         <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                        <RiLockPasswordLine
+                                        <RiLockPasswordLine color="#000000"
                                             size="24"
-                                            className="absolute top-[14px] left-3 z-1"
+                                            className="absolute top-[14px] left-3 z-1 login-icon"
                                         />
                                         <input
                                             id="password"

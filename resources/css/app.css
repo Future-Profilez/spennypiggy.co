@@ -146,7 +146,7 @@ body{position:relative;font-family:var(--para-font)}
 .rightbar{justify-content:space-between !important}
 .bills_lists.row{margin-left:-7px !important;margin-right:-7px !important}
 }
-.rounded-lg{border-radius:20px}
+.rounded-xl {border-radius:20px}
 .sno p{font-size:25px}
 .toppercentage{font-size:21px;color:var(--voilet)}
 .toppercentage.income{color:green;font-size:16px;background:#05efb83b;padding:5px 15px;border-radius:10px}
@@ -251,7 +251,7 @@ a.css-1j56y57{width:30px !important;height:30px !important}
   display:block !important;width:100% !important;height:100% !important
 }
 
-.lazywrap  span.lazy-load-image-background {
+.lazy-load-image-background {
     display: block !important;
     width: 100% !important;
 }
@@ -269,4 +269,17 @@ lr-config {
 
 .container  {
     margin: 0 auto !important ;
+}
+
+.trustpilot-widget a { 
+  display: flex !important;
+}
+
+@media(max-width:480px){
+  .trustpilot-widget a {  font-weight: 400 !important;
+     font-size: 16px !important;
+  }
+}
+.login-icon path {
+  fill: #000000 !important;
 }

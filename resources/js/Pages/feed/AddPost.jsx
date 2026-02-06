@@ -101,7 +101,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
     }
     const AddItem = () => {
         return <div className=" flex items-center">
-            <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+            <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
                 <FaPenNib color="var(--pink)"  size="1.5rem" />
             </div>
             <div className="ps-3 text-start">

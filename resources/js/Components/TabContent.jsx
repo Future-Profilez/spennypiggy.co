@@ -12,18 +12,18 @@ const GiftListing = React.lazy(() => import('@/Pages/rye/GiftListing'));
 const AboutTab = ({ user, sLinks }) => (
     <div className="p-4 space-y-4">
         {user?.bio ? (
-            <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="bg-white rounded-xl  p-4 shadow-sm">
                 <h3 className="font-semibold text-lg mb-2">About</h3>
                 <p className="text-gray-700 leading-relaxed">{user.bio}</p>
             </div>
         ) : (
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
+            <div className="bg-gray-50 rounded-xl  p-6 text-center">
                 <p className="text-gray-500">No bio added yet.</p>
             </div>
         )}
         
         {sLinks && sLinks.length > 0 && (
-            <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="bg-white rounded-xl  p-4 shadow-sm">
                 <h3 className="font-semibold text-lg mb-3">Social Links</h3>
                 <div className="flex flex-wrap gap-2">
                     {sLinks.map((link, index) => (

@@ -26,7 +26,7 @@ export default function ChartDashboard() {
     return (
         <>
             {content && content.length ? 
-                <div className="box rounded-lg mb-3 border p-3">
+                <div className="box rounded-xl  mb-3 border p-3">
                     <h2 className="text-large font-bold mb-4 pt-2" >Earnings</h2>
                     <ResponsiveContainer width="100%" height={500}>
                     <LineChart

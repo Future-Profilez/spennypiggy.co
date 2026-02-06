@@ -68,9 +68,9 @@ export default function Index() {
                       ].map((item, i) => {
                         const [title, desc] = item.split("—");
                         return (
-                          <div key={i} className="bg-white p-3 md:p-6 rounded-2xl border border-gray-100 shadow-lg hover:border-pink-500 transition-colors group">
+                          <div key={i} className="bg-white p-3 md:p-6 rounded-xl  border border-gray-100 shadow-lg hover:border-pink-500 transition-colors group">
                             <div className="flex gap-2 md:!gap-4">
-                              <div className="bg-pink-100 text-pink-600 p-2 rounded-lg h-fit shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
+                              <div className="bg-pink-100 text-pink-600 p-2 rounded-xl  h-fit shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                                 <Check size={20} strokeWidth={3} />
                               </div>
                               <div>
@@ -172,7 +172,7 @@ export default function Index() {
                             "Sends monthly reminders to creators",
                             "Keeps transaction records Stripe expects"
                           ].map((item, i) => (
-                            <div key={i} className="bg-gray-100 p-4 md:p-6 rounded-2xl text-center flex flex-col items-center justify-center border border-gray-100 hover:border-pink-500 transition-colors hover:shadow-lg">
+                            <div key={i} className="bg-gray-100 p-4 md:p-6 rounded-xl  text-center flex flex-col items-center justify-center border border-gray-100 hover:border-pink-500 transition-colors hover:shadow-lg">
                                 <p className="font-bold text-gray-80 text-lg">{item}</p>
                             </div>
                           ))}

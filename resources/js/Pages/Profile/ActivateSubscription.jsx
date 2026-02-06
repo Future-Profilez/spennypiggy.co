@@ -55,7 +55,7 @@ export default function ActivateSubscription(props) {
                                 </div>
                             </div>
                             <div className='lg:ps-[30px]'>
-                                <div className="border border-black rounded-2xl !p-4 md:!p-6">
+                                <div className="border border-black rounded-xl  !p-4 md:!p-6">
                                     <div className="flex items-baseline font-poppins justify-between">
                                         <div>
                                             {/* <p className="text-sm text-black/60">Billing</p> */}

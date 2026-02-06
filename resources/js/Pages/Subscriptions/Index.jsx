@@ -93,7 +93,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
         const nextPaymentDate = getFormattedDate(subscription.next_payment || subscription.current_period_end);
 
         return (
-            <div key={subscription.id} className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
+            <div key={subscription.id} className="bg-white rounded-xl  shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
                     <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-purple-50 flex items-center justify-center p-4">
@@ -209,7 +209,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
 
     const renderSubscriberCard = (subscription) => {
         return (
-            <div key={subscription.id} className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-green-400">
+            <div key={subscription.id} className="bg-white rounded-xl  shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-green-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Subscriber info */}
                     <div className="relative w-full h-[200px] lg:h-auto lg:max-w-[200px] bg-green-50 flex items-center justify-center p-4">
@@ -291,7 +291,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
     };
 
     const StatCard = ({ icon, title, value, subtitle, color = "blue" }) => (
-        <div className={`bg-white rounded-lg shadow-md p-6 border-t-4 border-${color}-500`}>
+        <div className={`bg-white rounded-xl  shadow-md p-6 border-t-4 border-${color}-500`}>
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm font-medium text-gray-500">{title}</p>
@@ -355,7 +355,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                         <div className="flex space-x-4 mb-6">
                             <button
                                 onClick={() => setActiveTab('my-subscriptions')}
-                                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                                className={`px-6 py-3 rounded-xl  font-medium transition-colors ${
                                     activeTab === 'my-subscriptions' 
                                         ? 'bg-purple-600 text-white' 
                                         : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -365,7 +365,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                             </button>
                             <button
                                 onClick={() => setActiveTab('subscribers')}
-                                className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                                className={`px-6 py-3 rounded-xl  font-medium transition-colors ${
                                     activeTab === 'subscribers' 
                                         ? 'bg-green-600 text-white' 
                                         : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -387,7 +387,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                         {mySubscriptions.map(subscription => renderSubscriptionCard(subscription))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 bg-white rounded-lg">
+                                    <div className="text-center py-12 bg-white rounded-xl ">
                                         <FiRefreshCw className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                                         <h3 className="text-lg font-medium text-gray-900 mb-2">No subscriptions yet</h3>
                                         <p className="text-gray-600 mb-4">Start supporting your favorite creators by subscribing to their content.</p>
@@ -413,7 +413,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                         {subscribersToMe.map(subscription => renderSubscriberCard(subscription))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12 bg-white rounded-lg">
+                                    <div className="text-center py-12 bg-white rounded-xl ">
                                         <FiUsers className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                                         <h3 className="text-lg font-medium text-gray-900 mb-2">No subscribers yet</h3>
                                         <p className="text-gray-600 mb-4">Create subscription wish items to start getting subscribers and earning recurring revenue.</p>
@@ -436,7 +436,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                 <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
                     showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
                 }`}>
-                    <div className={`rounded-lg p-4 shadow-lg ${
+                    <div className={`rounded-xl  p-4 shadow-lg ${
                         toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                     }`}>
                         <div className="flex items-center">

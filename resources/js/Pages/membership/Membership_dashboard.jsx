@@ -41,7 +41,7 @@ export default function Membership_dashboard(props) {
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-black">
                             <div className="w-full">
-                                <div className="box dash-stat-block bg-white border border-gray-100 shadow-sm rounded-lg relative w-full ">
+                                <div className="box dash-stat-block bg-white border border-gray-100 shadow-sm rounded-xl  relative w-full ">
                                     <div className="text-lg font-bold text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] membership-animate-number flex items-center justify-center">
                                         {data.members}
                                     </div>
@@ -81,7 +81,7 @@ export default function Membership_dashboard(props) {
                             </div>
 
                             <div className="w-full">
-                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-lg relative w-full">
+                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-xl  relative w-full">
                                     <div className="text-lg font-bold  text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] flex items-center justify-center">
                                         <span className="tw-font-cr-bold">
                                             £
@@ -136,7 +136,7 @@ export default function Membership_dashboard(props) {
                             </div>
 
                             <div className="w-full">
-                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-lg relative w-full ">
+                                <div className="box dash-stat-block bg-gray-50 border border-gray-100 shadow-sm rounded-xl  relative w-full ">
                                     <div className="text-lg font-bold text-gray-900 tw-font-cr-medium text-[30px] leading-[40px] flex items-center justify-center">
                                         <span className="tw-font-cr-bold">
                                             £

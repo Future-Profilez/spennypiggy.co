@@ -20,7 +20,7 @@ export default function TrendingCreators({ creators }) {
 Shows what users are actively exploring right now.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {creators.map((c) => (
-              <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-3xl p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
+              <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-xl  p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
                 <Avatar 
                   name={c.name}
                   username={c.username}

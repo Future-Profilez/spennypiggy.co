@@ -58,7 +58,7 @@ export default function FounderBonus() {
                         <Award size={150} />
                      </div>
                      <div className="relative z-10 text-left">
-                        <div className="bg-yellow-100 w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-6 text-yellow-600">
+                        <div className="bg-yellow-100 w-12 h-12 md:w-16 md:h-16 rounded-xl  flex items-center justify-center mb-6 text-yellow-600">
                            <Award size={32} />
                         </div>
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-gulfs uppercase mb-2 md:mb-6 text-black">What Founders Get</h2>
@@ -80,7 +80,7 @@ export default function FounderBonus() {
                         <Clock size={150} />
                      </div>
                      <div className="relative z-10 text-left">
-                        <div className="bg-white/10 w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-6 text-pink-500">
+                        <div className="bg-white/10 w-12 h-12 md:w-16 md:h-16 rounded-xl  flex items-center justify-center mb-6 text-pink-500">
                            <AlertCircle size={32} />
                         </div>
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-gulfs uppercase mb-2 md:mb-6">Key Rules</h2>

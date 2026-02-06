@@ -71,7 +71,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
         
         if (items.length === 0) {
              return (
-                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl  border border-dashed border-gray-200">
                      <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mb-6">
                         <RiSearchLine className="text-4xl text-pink-500" />
                      </div>
@@ -144,7 +144,7 @@ function SpotlightSection({ index }) {
     const spot = spotlights[index % spotlights.length];
 
     return (
-        <div className={`rounded-2xl border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
+        <div className={`rounded-xl  border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
             <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-1">{spot.title}</h3>
                 <p className="text-gray-600">{spot.subtitle}</p>

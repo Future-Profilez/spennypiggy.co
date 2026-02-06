@@ -40,7 +40,7 @@ export default function GifterBills({ username }) {
   const BillItem = ({ b, i }) => {
     const totalAmount = (+b.amount) + (+b.tax || 0) + (+b.vat_tax_amount || 0);
     return (
-      <div key={`bill-${i}`} className="bg-white rounded-3xl shadow-md p-4 mb-3 border border-2 border-pink-300">
+      <div key={`bill-${i}`} className="bg-white rounded-xl  shadow-md p-4 mb-3 border border-2 border-pink-300">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-xl font-gulfs uppercase text-black">{b.bill?.name || 'Bill Payment'}</h3>
@@ -77,7 +77,7 @@ export default function GifterBills({ username }) {
 
         {b.bill?.perma_link && (
           <div className="mt-3">
-            <img src={b.bill.perma_link} alt={b.bill?.name} className="w-full h-40 object-cover rounded-lg" />
+            <img src={b.bill.perma_link} alt={b.bill?.name} className="w-full h-40 object-cover rounded-xl " />
           </div>
         )}
 

@@ -304,7 +304,7 @@ export default function Dashboard(props) {
                             <div className="bg-[#0001] rounded-xl fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-3xl shadow-lg z-10">
+                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-xl  shadow-lg z-10">
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
@@ -331,7 +331,7 @@ export default function Dashboard(props) {
                                                         />
                                                         <div className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
                                                             <div className=" flex items-center">
-                                                                <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                     <CiGift
                                                                         color="var(--pink)"
                                                                         size="1.5rem"
@@ -378,7 +378,7 @@ export default function Dashboard(props) {
                                                                 className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer"
                                                             >
                                                                 <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                    <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                         <FaRegHeart
                                                                             color="var(--pink)"
                                                                             size="1.5rem"
@@ -408,7 +408,7 @@ export default function Dashboard(props) {
                                                                 href="/task/create"
                                                             >
                                                                 <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-lg bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                    <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                         <BiTask
                                                                             color="var(--pink)"
                                                                             size="1.5rem"
@@ -550,7 +550,7 @@ export default function Dashboard(props) {
                         {/* Stripe Account Migration Warning */}
 
                         {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-lg">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-xl ">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.

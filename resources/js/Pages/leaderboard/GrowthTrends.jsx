@@ -68,7 +68,7 @@ export default function GrowthTrends() {
     }, []);
 
     const TrendCard = ({ title, value, change, icon: Icon, type = 'positive' }) => (
-        <div className="trend-card bg-white rounded-lg p-4 shadow-sm">
+        <div className="trend-card bg-white rounded-xl  p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
                 <Icon size={24} className={`${type === 'positive' ? 'text-green-500' : 'text-red-500'}`} />
                 <span className={`text-sm font-medium ${type === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
@@ -81,7 +81,7 @@ export default function GrowthTrends() {
     );
 
     const CreatorCard = ({ creator, rank, badge }) => (
-        <div className="creator-growth-card bg-white rounded-lg p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="creator-growth-card bg-white rounded-xl  p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="relative">

@@ -13,7 +13,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
     const { current_agreement, required_agreement, country, reason } = migrationStatus;
 
     return (
-        <div className="w-full finishs mb-4 rounded-3xl bg-white !border-voilet shadow-voilet">
+        <div className="w-full finishs mb-4 rounded-xl  bg-white !border-voilet shadow-voilet">
             <div className='border-bottom border-voilet'>
                 <h2 className='text-large font-GillSans text-uppercase lightpink p-3 goaltitle'>Action Required</h2>
             </div>

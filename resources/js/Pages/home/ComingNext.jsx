@@ -16,8 +16,8 @@ export default function ComingNext() {
          <div className="flex flex-col lg:flex-row items-center gap-12" >
             <div className='w-full lg:w-1/2' >
                <div className='nextimage-wrap relative group wiggle' >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-3xl transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
-                  <div className="relative rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-colors duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-xl  transform rotate-3 scale-105 opacity-70 blur-lg group-hover:rotate-6 transition-all duration-500"></div>
+                  <div className="relative rounded-xl  overflow-hidden border-2 border-white/10 shadow-2xl group-hover:border-pink-500/50 transition-colors duration-300">
                     <LazyLoadImage
                     alt={"image"}  effect="blur"
                     className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500"

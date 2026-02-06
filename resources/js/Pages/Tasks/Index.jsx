@@ -540,7 +540,7 @@ export default function Index({
                                                                             "task.edit",
                                                                             task.uuid
                                                                         )}
-                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-lg font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-xl  font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
                                                                     >
                                                                         Edit
                                                                     </Link>
@@ -552,7 +552,7 @@ export default function Index({
 
                                                 {/* Creator Note Section - Properly structured container */}
                                                 {creatorNote && (
-                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-lg`} >
+                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-xl `} >
                                                         <div className="flex items-start gap-3">
                                                             
                                                             <div className="flex-1">

@@ -36,7 +36,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
         <article className="max-w-sm w-full bg-white rounded-[22px] overflow-hidden">
             <div className="relative">
                 {IsloggedIn && item?.approved === 0 && (
-                    <div className="approvalmessge membership m-3 rounded-3 p-3 py-2 mb-2">
+                    <div className="approvalmessge membership m-3 rounded-xl p-3 py-2 mb-2">
                         Shop item waiting for approval. Currently only you can
                         see this.
                     </div>

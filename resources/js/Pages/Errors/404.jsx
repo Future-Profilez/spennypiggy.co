@@ -55,7 +55,7 @@ export default function Error404({ popularCreators = [], helpLinks = [], searchS
 
                         {/* Current URL display for debugging (only in non-production) */}
                         {process.env.NODE_ENV !== 'production' && currentUrl && (
-                            <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg max-w-2xl mx-auto">
+                            <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-xl  max-w-2xl mx-auto">
                                 <p className="text-sm text-yellow-800">
                                     <strong>Requested URL:</strong> {currentUrl}
                                 </p>
@@ -112,7 +112,7 @@ export default function Error404({ popularCreators = [], helpLinks = [], searchS
                                         <Link
                                             key={creator.id}
                                             href={`/${creator.username}`}
-                                            className="block p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 text-center group"
+                                            className="block p-3 border border-gray-200 rounded-xl  hover:border-blue-300 hover:shadow-md transition-all duration-200 text-center group"
                                         >
                                             <img
                                                 src={getCreatorAvatarUrl(creator)}
@@ -142,7 +142,7 @@ export default function Error404({ popularCreators = [], helpLinks = [], searchS
                                     <Link
                                         key={index}
                                         href={link.url}
-                                        className="block p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                                        className="block p-3 border border-gray-200 rounded-xl  hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
                                         target={link.url.startsWith('http') ? '_blank' : '_self'}
                                         rel={link.url.startsWith('http') ? 'noopener noreferrer' : undefined}
                                     >
@@ -170,13 +170,13 @@ export default function Error404({ popularCreators = [], helpLinks = [], searchS
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
                                 href="/"
-                                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg"
+                                className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl  font-medium hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-lg"
                             >
                                 🏠 Back to Home
                             </Link>
                             <Link
                                 href="/discover"
-                                className="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+                                className="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl  font-medium hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
                             >
                                 🔍 Discover Creators
                             </Link>

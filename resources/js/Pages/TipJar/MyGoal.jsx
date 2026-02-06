@@ -31,9 +31,9 @@ export default function MyGoal({  IsloggedIn}) {
         <h2 className='text-lg  font-GillSans uppercase pinkbg p-3 text-white btn-shadow'>{goal?.name || 'MY PIGGY BANK'}</h2>
       <div className='p-3' >
         <p className='mb-3 '>Total Support</p>
-        <div className="relative w-full h-[9px] bg-[#eccedb] rounded-lg overflow-visible mb-4">
+        <div className="relative w-full h-[9px] bg-[#eccedb] rounded-xl  overflow-visible mb-4">
              <div 
-                className="h-full bg-pink-600 rounded-lg relative" 
+                className="h-full bg-pink-600 rounded-xl  relative" 
                 style={{ width: `${percentage}%` }}
              >
                  <div 

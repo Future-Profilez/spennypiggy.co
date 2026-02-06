@@ -34,7 +34,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
   const AboutScreen = () => {
     return <>
         <div className=" about-sec  m-auto " >
-              <div className={`${user && !user.bio ? "hidden":""}  p-3 rounded-2xl dark2     mb-4`} >
+              <div className={`${user && !user.bio ? "hidden":""}  p-3 rounded-xl  dark2     mb-4`} >
                   <p className=" text-white text-lg" >About me</p>
                   <p className={`  text-left mt-2 font-light text-gray-200`}>{(user && user.bio) || "I believe in good vibes and great creators. Supporting one smile at a time 😊"}</p>
                   
@@ -91,7 +91,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                 {({ selected }) => (
                                     <button
                                         className={`
-                                            w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-pink-700
+                                            w-full rounded-xl  py-2.5 text-sm font-medium leading-5 text-pink-700
                                             ring-white ring-opacity-60 ring-offset-2 ring-offset-pink-400 focus:outline-none focus:ring-2
                                             ${selected
                                                 ? 'bg-white shadow'
