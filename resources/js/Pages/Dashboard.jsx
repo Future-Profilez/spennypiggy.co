@@ -650,8 +650,8 @@ export default function Dashboard(props) {
                                                                     ) : (
                                                                         ""
                                                                     )}
-    {console.log('subscription check', auth)}
-                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed == 0 ? (
+ 
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed !== 1 ? (
                                                                         <SiteSubscription
                                                                             charges={
                                                                                 auth
