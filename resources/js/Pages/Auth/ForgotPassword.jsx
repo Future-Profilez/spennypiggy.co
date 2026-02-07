@@ -99,7 +99,7 @@ export default function ForgotPassword(props) {
                                             <LoaderButton
                                                 disabled={loading}
                                                 className="p w-full"
-                                                spinnerClassName="fill-red-600"
+                                                spinnerclass="fill-red-600"
                                             >
                                                 {loading
                                                     ? "Sending..."

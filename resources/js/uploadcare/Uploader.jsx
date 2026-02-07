@@ -180,7 +180,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
         ref={dataOutputRef}
         hidden
         use-template
-        class={options}
+        className={options}
       />
     );
 
@@ -235,14 +235,14 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
 
       {scanning && (
         <div className={`scanning rounded bg-light shadow-sm border p-3 my-2 mb-4`}>
-          <ProgressBar animated now={100} />
+          <CustomProgressBar animated now={100} />
           <p className='text-center mt-2'>Adult content scanning...</p>
         </div>
       )}
 
       {checkIsUploading && uploadProgress > 0 && (
         <div className={`upload-progress rounded bg-light shadow-sm border p-3 my-2 mb-4`}>
-          <ProgressBar animated now={uploadProgress} />
+          <CustomProgressBar animated now={uploadProgress} />
           <p className='text-center mt-2'>
             Uploading... {Math.round(uploadProgress)}%
             {timeRemaining && <span className="ml-2">{timeRemaining}</span>}

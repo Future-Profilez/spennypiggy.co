@@ -362,7 +362,7 @@ export default function AddSocial({
         <Popup
             action={close}
             space="4"
-            modalclassName="pinkmodal full"
+            modalclass="pinkmodal full"
             size="md"
             classes=""
             text={removetext ? "" : "Add Social Links"}

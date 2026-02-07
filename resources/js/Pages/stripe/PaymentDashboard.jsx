@@ -16,7 +16,7 @@ export default function PaymentDashboard({auth, classes, text}){
         <LoaderButton onClick={handleStripeLogin}
             disabled={processing}
             className={classes}
-            spinnerClassName="fill-red-600" >
+            spinnerclass="fill-red-600" >
             {processing
                 ? "Connecting"
                 : text}

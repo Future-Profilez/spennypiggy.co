@@ -67,7 +67,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
     return (
         <div>
             <Popup
-                modalclassName="editprofile full"
+                modalclass="editprofile full"
                 size="md"
                 action={close}
                 text={<> USE AI 🤖</>}

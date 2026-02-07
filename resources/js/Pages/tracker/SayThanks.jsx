@@ -85,7 +85,7 @@ export default function SayThanks(props) {
             <LoaderButton 
                disabled={loading}
                className="p w-auto"
-               spinnerClassName="fill-red-600" >
+               spinnerclass="fill-red-600" >
                {loading ? "Sending..." : "Say Thanks"}
             </LoaderButton>
          </>} 

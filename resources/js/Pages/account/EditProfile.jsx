@@ -198,7 +198,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     }
 
     return (
-        <Popup modalclassName='pinkmodal editprofile full' size='md' action={close}
+        <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink block sm:flex m-auto sm:m-0"}`} >
             <div className='editForm  mt-4'>
@@ -320,7 +320,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
 
                                     <div className=" text-center mb-7">
                                         <LoaderButton type='submit' disabled={processing} className='p '
-                                        spinnerClassName='fill-red-600'>
+                                        spinnerclass='fill-red-600'>
                                             {processing ? "Updating" : "Update"}
                                         </LoaderButton>
                                     </div>

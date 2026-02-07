@@ -93,7 +93,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
 
     return (
         <Popup
-            modalclassName="pinkmodal sendSurprize-modal shadow-pink"
+            modalclass="pinkmodal sendSurprize-modal shadow-pink"
             space="4" size="md"
             action={close} classes={`btn-pink  text-xs lg px-4 my-2 w-full`}
             text={goal ? `My Goal` : `Add Goal`} >
@@ -109,7 +109,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   onClick={markcomplete} 
                   disabled={processing}
                      type='submit' className="p w-full "
-                     spinnerClassName="fill-red-600" >
+                     spinnerclass="fill-red-600" >
                      {processing ? "Processing" : "Mark as completed"}
                   </LoaderButton>
                 </div>
@@ -140,7 +140,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   
                   <LoaderButton onClick={addgoal} disabled={processing}
                      type='submit' className="p w-full"
-                     spinnerClassName="fill-red-600" >
+                     spinnerclass="fill-red-600" >
                      {processing ? "Processing" : "Add Goal"}
                   </LoaderButton>
                </div> 

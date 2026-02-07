@@ -12,7 +12,7 @@ export default function GiftEdit({action, IsloggedIn}) {
         <Popup
             size="md"
             action={close}
-            modalclassName="pinkmodal"
+            modalclass="pinkmodal"
             classes="d-none"
         >
             GiftEdit

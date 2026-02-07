@@ -1273,7 +1273,7 @@ export default function Dashboard(props) {
                     <Popup
                         action={openCurrency}
                         space="4"
-                        modalclassName="pinkmodal"
+                        modalclass="pinkmodal"
                     >
                         <ChangeCurrency
                             currencyaction={currencyaction}

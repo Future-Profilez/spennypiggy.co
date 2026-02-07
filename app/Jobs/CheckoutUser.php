@@ -44,15 +44,15 @@ class CheckoutUser implements ShouldQueue
      * @param bool $social = false
      * @return void
      */
-    public function __construct($payment, $anon, $surprise, $message, $anonname = null, $symbol, $vat_amount)
+    public function __construct($payment, $anon, $surprise, $message, $symbol, $vat_amount, $anonname = null)
     {
         $this->payment = $payment;
         $this->anon = $anon;
         $this->surprise = $surprise;
         $this->message = $message;
-        $this->anonname = $anonname;
         $this->symbol = $symbol;
         $this->vat_amount = $vat_amount;
+        $this->anonname = $anonname;
     }
 
     /**

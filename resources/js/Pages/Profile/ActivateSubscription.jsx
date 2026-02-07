@@ -65,7 +65,7 @@ export default function ActivateSubscription(props) {
                                     </div>
                                     <div className="mt-4 text-sm text-black/70">Includes £2 Stripe service fee and £2 admin charge</div>
                                     <div className="mt-6">
-                                        <LoaderButton onClick={checkTerms} disabled={loading} className={"button p w-full size-lg"} spinnerClassName="fill-red-600">
+                                        <LoaderButton onClick={checkTerms} disabled={loading} className={"button p w-full size-lg"} spinnerclass="fill-red-600">
                                             {loading ? "Activating.." : "Activate Subscription"}
                                         </LoaderButton>
                                     </div>
