@@ -92,7 +92,7 @@ export default function GifterMedia({ username }) {
         )}
       </div>
       {viewerItem && (
-        <Popup action={viewerOpen} size="xl" bodyclass="!p-0" space={0} hidecontrols={true} fullscreen={true} classes="hidden" text="">
+        <Popup action={viewerOpen} size="xl" bodyclassName="!p-0" space={0} hidecontrols={true} fullscreen={true} classes="hidden" text="">
           <div className="w-screen max-w-[90vw] h-screen max-h-[85vh] bg-black flex items-center justify-center">
             {viewerItem.type === 'image' ? (
               <img src={viewerItem.url} alt={viewerItem.title || ''} className="max-w-full max-h-full object-contain" />

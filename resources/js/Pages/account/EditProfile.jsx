@@ -61,30 +61,30 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         container.style.zIndex = '-1';
         document.body.appendChild(container);
         container.innerHTML = `
-            <div id="card-to-capture"  class="dot-pattern relative my-[300px] flex items-center  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
-                    <img src="${socialbg}" alt="Background" class="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
+            <div id="card-to-capture"  className="dot-pattern relative my-[300px] flex items-center  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
+                    <img src="${socialbg}" alt="Background" className="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
 
-                    <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
-                    <div class="absolute top-18 left-6 text-yellow-300 text-4xl">✨</div>
-                    <div class="absolute bottom-4 right-28 text-cyan-300 text-2xl">⭐</div>
-                    <div class="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
+                    <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
+                    <div className="absolute top-18 left-6 text-yellow-300 text-4xl">✨</div>
+                    <div className="absolute bottom-4 right-28 text-cyan-300 text-2xl">⭐</div>
+                    <div className="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
 
-                    <div class="inner-image w-full">
-                        <div class="flex items-center justify-center  mb-4">
-                            <div class="w-28 h-28 rounded-full border-2 border-[#00ff5e] overflow-hidden shadow-lg">
-                                <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" class="w-full h-full object-cover" crossorigin="anonymous" />
+                    <div className="inner-image w-full">
+                        <div className="flex items-center justify-center  mb-4">
+                            <div className="w-28 h-28 rounded-full border-2 border-[#00ff5e] overflow-hidden shadow-lg">
+                                <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" className="w-full h-full object-cover" crossorigin="anonymous" />
                             </div>
-                            <div class="pl-3"> 
-                                <h1 class="${`image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-left whitespace-normal ${!hasFullName(user?.name) ? 'break-all' : 'break-words'} `}">
+                            <div className="pl-3"> 
+                                <h1 className="${`image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-left whitespace-normal ${!hasFullName(user?.name) ? 'break-all' : 'break-words'} `}">
                                     ${user?.name}
                                 </h1>
                             </div>
                         </div>
 
-                        <p class="  text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
-                        <img src="${spennypiggy}" alt="Logo" class="mr-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
+                        <p className="  text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
+                        <img src="${spennypiggy}" alt="Logo" className="mr-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
 
-                        <div class="  bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
+                        <div className="  bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
                             px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
                         </div>
                     </div>

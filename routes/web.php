@@ -137,7 +137,7 @@ if (app()->environment('local')) {
 
     // seeding command
     Route::get('seed/{seeder}', function ($seeder) {
-        Artisan::call("db:seed --className=$seeder");
+        Artisan::call("db:seed --class=$seeder");
         return response()->json([
             'seed completed'
         ]);

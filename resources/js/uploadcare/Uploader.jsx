@@ -180,7 +180,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
         ref={dataOutputRef}
         hidden
         use-template
-        class={options}
+        className={options}
       />
     );
 
