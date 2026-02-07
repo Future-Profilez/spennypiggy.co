@@ -132,7 +132,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                disabled={processing}
                type='submit'
                   className="p w-full"
-                  spinnerClassName="fill-red-600" >
+                  spinnerclass="fill-red-600" >
                   {processing ? "Updating.." : "Update"}
             </LoaderButton>
          </div>

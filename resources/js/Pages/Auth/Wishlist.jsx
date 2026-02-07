@@ -355,7 +355,7 @@ export default function Wishlist(props) {
 
     return (
         <Popup
-            modalclassName="pinkmodal full"
+            modalclass="pinkmodal full"
             action={close}
             classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center" }`}
             text={customtext || <AddItem />}
@@ -867,7 +867,7 @@ export default function Wishlist(props) {
                                             disabled={processing}
                                             type="submit"
                                             className="b w-full"
-                                            spinnerClassName="fill-red-600"
+                                            spinnerclass="fill-red-600"
                                         >
                                             {processing
                                                 ? "Updating.."
@@ -878,7 +878,7 @@ export default function Wishlist(props) {
                                             disabled={processing}
                                             type="submit"
                                             className="b w-full"
-                                            spinnerClassName="fill-red-600"
+                                            spinnerclass="fill-red-600"
                                         >
                                             {processing
                                                 ? "Processing"

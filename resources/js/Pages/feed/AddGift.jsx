@@ -117,7 +117,7 @@ export default function AddGift({
 
     return (
         <Popup
-            modalclassName=""
+            modalclass=""
             space="4"
             size={hasAdded ? "md" : "lg"}
             action={close}
@@ -150,7 +150,7 @@ export default function AddGift({
                         type="submit"
                         disabled={loading}
                         className="p w-full "
-                        spinnerClassName="fill-red-600"
+                        spinnerclass="fill-red-600"
                     >
                         {loading ? "Adding..." : "Add Item"}
                     </LoaderButton>

@@ -136,7 +136,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
         :
         <>
         { IsloggedIn ?
-              <Popup modalclassName="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-full`}
+              <Popup modalclass="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-full`}
                 text={text ? text :
                   <div className='cursor-pointer box shadow-voilet rounded-xl  p-3 py-4 flex items-center justify-content-center' >
                     <div>
@@ -162,7 +162,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                 <LoaderButton onClick={addVideo}
                     disabled={loading}
                     className={`${!msgMedia ? 'disabled' : ''} p w-full`}
-                    spinnerClassName="fill-red-600" >
+                    spinnerclass="fill-red-600" >
                     {loading ? "Adding..." : " Add Video "}
                 </LoaderButton>
               </div>

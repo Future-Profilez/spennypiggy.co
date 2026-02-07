@@ -137,7 +137,7 @@ export default function AddBills(props) {
     const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
     return (
         <Popup
-            modalclassName="pinkmodal full"
+            modalclass="pinkmodal full"
             size="md"
             action={close}
             classes={classes ? classes : `  ${editpop? "editpop": "addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center"}`}
@@ -351,7 +351,7 @@ export default function AddBills(props) {
                                         disabled={loading}
                                         type="submit"
                                         className="p w-full"
-                                        spinnerClassName="fill-red-600"
+                                        spinnerclass="fill-red-600"
                                     >
                                         {loading ? "Updating.." : "Update Bill"}
                                     </LoaderButton>
@@ -361,7 +361,7 @@ export default function AddBills(props) {
                                             disabled={loading}
                                             type="submit"
                                             className="p w-full"
-                                            spinnerClassName="fill-red-600"
+                                            spinnerclass="fill-red-600"
                                         >
                                             {loading
                                                 ? "Processing"

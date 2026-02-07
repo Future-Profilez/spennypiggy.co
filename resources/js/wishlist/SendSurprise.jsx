@@ -69,7 +69,7 @@ export default function SendSurprise({auth, owner}) {
    
     return (
         <Popup
-            modalclassName="pinkmodal sendSurprize-modal"
+            modalclass="pinkmodal sendSurprize-modal"
             space="4" size="md"
             action={close} classes={`btn-pink sm lg px-4  `}
             text={`Support with 3 gold coins`} >
@@ -97,7 +97,7 @@ export default function SendSurprise({auth, owner}) {
                disabled={processing} 
                type='submit' 
                className="p w-full" 
-               spinnerClassName="fill-red-600" >
+               spinnerclass="fill-red-600" >
                {processing ? "Processing" : auth && auth.name ? "Add to cart" : "Send Gift"}
             </LoaderButton>
         </Popup>

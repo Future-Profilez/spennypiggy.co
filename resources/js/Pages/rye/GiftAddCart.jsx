@@ -147,7 +147,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
         <Popup
             size="md"
             action={close}
-            modalclassName="pinkmodal"
+            modalclass="pinkmodal"
             classes="hidden"
         >
             <div className="addCartModalHead rounded-xl  relative ">
@@ -174,7 +174,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                         disabled={loading}
                         onClick={() => addtocart(false)}
                         className={`p w-full`}
-                        spinnerClassName="fill-red-600"
+                        spinnerclass="fill-red-600"
                     >
                         {loading ? "Processing..." : "Add to Cart"}
                     </LoaderButton>
@@ -182,7 +182,7 @@ export default function GiftAddCart({ data, action, user, IsloggedIn, auth }) {
                         disabled={checkoutloading}
                          onClick={() => addtocart(true)}
                         className={`p w-full`}
-                        spinnerClassName="fill-red-600"
+                        spinnerclass="fill-red-600"
                     >
                         {checkoutloading
                             ? "Processing..."

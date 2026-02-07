@@ -318,7 +318,7 @@ export default function Login({ status, canResetPassword }) {
                                     <LoaderButton
                                         disabled={loading}
                                         className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full"
-                                        spinnerClassName="fill-white"
+                                        spinnerclass="fill-white"
                                     >
                                         {loading ? "Logging In..." : "Log In"}
                                     </LoaderButton>

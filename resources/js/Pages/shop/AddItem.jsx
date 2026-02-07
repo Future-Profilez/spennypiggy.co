@@ -447,7 +447,7 @@ export default function AddItem(props) {
         };
         return (
             <Popup
-            modalclassName="addShopItems modals full"
+            modalclass="addShopItems modals full"
             // size="lg"
             action={open}
             text={title || <AddItem />}
@@ -779,7 +779,7 @@ export default function AddItem(props) {
                             <Popup
                                 action={passClose}
                                 space="4"
-                                modalclassName="pinkmodal"
+                                modalclass="pinkmodal"
                             >
                                 <div className="addvat">
                                     <ChangeVat

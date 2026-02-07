@@ -111,7 +111,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
         </div>
     }
     return (
-    <Popup modalclassName='' space="4" size='md' action={close}
+    <Popup modalclass='' space="4" size='md' action={close}
     classes={` w-full addop bg-white rounded-xl py-2 px-3 ${classes}`}
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
@@ -169,7 +169,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
             <LoaderButton onClick={submitPost}
                 disabled={loading}
                 className={`${rewardImage == '' || rewardImage == null ? 'opacity-50 cursor-not-allowed' : ''}  b mt-4 w-full `}
-                spinnerClassName="fill-red-600">
+                spinnerclass="fill-red-600">
                 {isEdit ?
                     loading ? "Updating.." :"Update Post"
                 :

@@ -215,7 +215,7 @@ export default function EditMembership({ item }) {
 
     return (
         <Popup
-            modalclassName="pinkmodal full sendSurprize-modal shadow-pink pl-0"
+            modalclass="pinkmodal full sendSurprize-modal shadow-pink pl-0"
             space="4"
             size="md"
             action={close}

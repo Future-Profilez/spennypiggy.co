@@ -17,30 +17,30 @@ export default function Promotions(props) {
                             Founder Bonus — We’ll Pay You to Get Spoiled
                         </h1>
 
-                        <header class="bg-white rounded-xl   shadow-sm">
-                            <div class="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-6 md:flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                        <header className="bg-white rounded-xl   shadow-sm">
+                            <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-6 md:flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-semibold">
                                         SP
                                     </div>
                                     <div>
-                                        <h1 class="text-lg font-semibold">
+                                        <h1 className="text-lg font-semibold">
                                             Spenny Piggy
                                         </h1>
-                                        <p class="text-sm text-gray-500">
+                                        <p className="text-sm text-gray-500">
                                             Founder Bonus — Promotion Terms
                                             &amp; Conditions
                                         </p>
                                     </div>
                                 </div>
-                                <div class="mt-4 md:mt-0 md:text-right text-sm text-gray-500">
+                                <div className="mt-4 md:mt-0 md:text-right text-sm text-gray-500">
                                     <div>
                                         Last updated:{" "}
                                         <strong>18 October 2025</strong>
                                     </div>
-                                    <div class="mt-1 no-print">
+                                    <div className="mt-1 no-print">
                                         <button onClick={print}
-                                            class="inline-block px-3 py-1 border rounded-md text-sm"
+                                            className="inline-block px-3 py-1 border rounded-md text-sm"
                                         >
                                             Print / Download
                                         </button>
@@ -49,13 +49,13 @@ export default function Promotions(props) {
                             </div>
                         </header>
 
-                        <main class="max-w-6xl mx-auto">
-                            <section class="accent mt-12 ">
-                                <h2 class="text-lg md:text-2xl font-bold">
+                        <main className="max-w-6xl mx-auto">
+                            <section className="accent mt-12 ">
+                                <h2 className="text-lg md:text-2xl font-bold">
                                     🐷 Founder Bonus — We’ll Pay You to Get
                                     Spoiled
                                 </h2>
-                                <p class="mt-2 text-gray-600">
+                                <p className="mt-2 text-gray-600">
                                     Be among the first{" "}
                                     <strong>150 verified creators</strong> to
                                     join Spenny Piggy and hit{" "}
@@ -64,12 +64,12 @@ export default function Promotions(props) {
                                     a <strong>12‑month Founder Bonus</strong>.
                                 </p>
 
-                                <div class="mt-6 grid grid-cols-1 md:grid-cols-1 gap-2">
-                                    <div class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
-                                        <h3 class="font-bold text-black">
+                                <div className="mt-6 grid grid-cols-1 md:grid-cols-1 gap-2">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
+                                        <h3 className="font-bold text-black">
                                             How the Bonus Works
                                         </h3>
-                                        <ul class="mt-3 space-y-2 text-sm text-gray-700">
+                                        <ul className="mt-3 space-y-2 text-sm text-gray-700">
                                             <li>
                                                 Each month for 12 months you
                                                 receive an extra{" "}
@@ -97,11 +97,11 @@ export default function Promotions(props) {
                                         </ul>
                                     </div>
 
-                                    <div class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
-                                        <h3 class="font-bold text-black">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
+                                        <h3 className="font-bold text-black">
                                             Quick Facts
                                         </h3>
-                                        <ul class="mt-3 space-y-2 text-sm text-gray-700">
+                                        <ul className="mt-3 space-y-2 text-sm text-gray-700">
                                             <li>
                                                 Limited to the first{" "}
                                                 <strong>
@@ -121,11 +121,11 @@ export default function Promotions(props) {
                                     </div>
                                 </div>
 
-                                <div class="mt-8">
-                                    <h3 class="font-bold text-lg pt-6">
+                                <div className="mt-8">
+                                    <h3 className="font-bold text-lg pt-6">
                                         Eligibility &amp; Promotion Period
                                     </h3>
-                                    <p class="mt-3 text-sm text-gray-700">
+                                    <p className="mt-3 text-sm text-gray-700">
                                         Open to verified Spenny Piggy creators,
                                         18+, legally resident in the United
                                         Kingdom or the United States. Business
@@ -139,12 +139,12 @@ export default function Promotions(props) {
                                     </p>
                                 </div>
 
-                                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
-                                    <article class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
-                                        <h4 class="font-semibold">
+                                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6">
+                                    <article className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
+                                        <h4 className="font-semibold">
                                             How to Qualify
                                         </h4>
-                                        <ol class="mt-3 ml-4 list-decimal text-sm text-gray-700 space-y-2">
+                                        <ol className="mt-3 ml-4 list-decimal text-sm text-gray-700 space-y-2">
                                             <li>
                                                 Register and complete full KYC
                                                 verification during the
@@ -164,11 +164,11 @@ export default function Promotions(props) {
                                         </ol>
                                     </article>
 
-                                    <article class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
-                                        <h4 class="font-semibold">
+                                    <article className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border">
+                                        <h4 className="font-semibold">
                                             Bonus Award Details
                                         </h4>
-                                        <ul class="mt-3 text-sm text-gray-700 space-y-2">
+                                        <ul className="mt-3 text-sm text-gray-700 space-y-2">
                                             <li>
                                                 Qualified creators receive a
                                                 12-month Founder Bonus equal to
@@ -192,11 +192,11 @@ export default function Promotions(props) {
                                     </article>
                                 </div>
 
-                                <div class="mt-6">
-                                    <h4 class="font-bold text-lg pt-6">
+                                <div className="mt-6">
+                                    <h4 className="font-bold text-lg pt-6">
                                         Limits, Verification &amp; Taxes
                                     </h4>
-                                    <p class="mt-3 text-sm text-gray-700">
+                                    <p className="mt-3 text-sm text-gray-700">
                                         Each creator account may qualify once.
                                         Fraud, chargebacks, or breaches void
                                         eligibility. All amounts are subject to
@@ -207,19 +207,19 @@ export default function Promotions(props) {
                                     </p>
                                 </div>
 
-                                <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-2  lg:gap-4">
-                                    <div class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border text-sm">
+                                <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-2  lg:gap-4">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border text-sm">
                                         <strong>Currency &amp; Payments</strong>
-                                        <p class="mt-2 text-gray-600">
+                                        <p className="mt-2 text-gray-600">
                                             Qualifying amounts &amp; bonuses are
                                             in GBP or USD at the prevailing
                                             exchange rate on the payment date.
                                             Payments via Stripe.
                                         </p>
                                     </div>
-                                    <div class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border  text-sm">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border  text-sm">
                                         <strong>Modification</strong>
-                                        <p class="mt-2 text-gray-600">
+                                        <p className="mt-2 text-gray-600">
                                             Spenny Piggy may modify or cancel
                                             the Promotion for legal, technical,
                                             or operational reasons. Changes
@@ -227,9 +227,9 @@ export default function Promotions(props) {
                                             qualified prior to the change.
                                         </p>
                                     </div>
-                                    <div class="bg-gray-50 p-3 sm:p-4 rounded-[20px] border text-sm">
+                                    <div className="bg-gray-50 p-3 sm:p-4 rounded-[20px] border text-sm">
                                         <strong>Liability</strong>
-                                        <p class="mt-2 text-gray-600">
+                                        <p className="mt-2 text-gray-600">
                                             Spenny Piggy accepts no
                                             responsibility for technical errors
                                             or delays beyond reasonable control.
@@ -239,7 +239,7 @@ export default function Promotions(props) {
                                     </div>
                                 </div>
 
-                                <div class="text-sm text-gray-700">
+                                <div className="text-sm text-gray-700">
                                     <p className="mt-6">
                                         For questions about the Promotion, email <a className="text-voilet" href="mailto:support@spennypiggy.co" >support@spennypiggy.co</a> or write to:
                                         Social Vortex Ltd, 55 Colmore Row, Birmingham, England, B3 2AA (UK)

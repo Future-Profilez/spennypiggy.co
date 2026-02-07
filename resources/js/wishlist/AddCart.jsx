@@ -53,7 +53,7 @@ export default function AddCart(props) {
         <Popup
             size="md"
             action={close} space='p-0'
-            modalclassName="pinkmodal"
+            modalclass="pinkmodal"
             classes="hidden" >
            
             <div className="!rounded-none p-4">

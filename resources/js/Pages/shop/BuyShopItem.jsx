@@ -199,7 +199,7 @@ export default function BuyShopItem({
     return (
         <>
             <Popup
-                modalclassName="pinkmodal sendSurprize-modal"
+                modalclass="pinkmodal sendSurprize-modal"
                 space="4"
                 size="md"
                 action={close}
