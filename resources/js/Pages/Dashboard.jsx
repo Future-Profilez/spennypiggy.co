@@ -686,11 +686,8 @@ export default function Dashboard(props) {
                                                                             <p
                                                                                 className={`text-muted text-start mt-2 ${
                                                                                     user &&
-                                                                                    !user.bio
-                                                                                        ? "d-none"
-                                                                                        : ""
-                                                                                }`}
-                                                                            >
+                                                                                    !user.bio ? "d-none" : ""
+                                                                                }`} >
                                                                                 {(user &&
                                                                                     user.bio) ||
                                                                                     "Hy, I am a creator on SpennyPiggy."}
