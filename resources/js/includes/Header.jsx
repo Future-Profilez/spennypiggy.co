@@ -291,14 +291,14 @@ export default function Header({ classMagicword }) {
                     ${isActive ? "translate-x-0" : "-translate-x-full"}
                     flex flex-col p-8 select-none${isActive ? "Open" : null}`}
             >
-                <div className="fixed menu p-2 z-10 top-0 left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
+                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
                     <button
                         onClick={toggleClass}
                         className="absolute top-3 right-4"
                     >
                         <MdClose color="#fff" size={"2rem"} />
                     </button>
-                    <div className="overflow-y-auto overflow-x-hidden flex-grow">
+                    <div className="overflow-y-auto overflow-x-hidden   flex-grow">
                         <div className="pb-[100px]">
                             <ul className=" flex flex-col pt-8 space-y-1 ">
                                 <>

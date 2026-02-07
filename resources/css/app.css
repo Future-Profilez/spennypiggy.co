@@ -74,7 +74,9 @@ body{position:relative;font-family:var(--para-font)}
 .global-currency-wrap .global-currency{position:absolute;left:16px;display:none;top:12px;font-size:18px}
 .global-currency-wrap{position:relative}
 .subsctabs{max-width:575px}
-.button{background:var(--pink);padding:9px 20px;border-radius:30px;color:#fff}
+
+
+.button{background:var(--pink);padding:9px 20px;border-radius:30px;color:#fff !important;}
 .button.esm{font-size:13px;padding:5px 10px;border-radius:10px !important}
 .max-width-400{max-width:400px;width:100%}
 .max-width-500{max-width:500px;width:100%}

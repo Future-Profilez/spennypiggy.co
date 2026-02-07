@@ -21,10 +21,10 @@ export default function ProfileTask({ task, IsloggedIn }) {
         <li className="bg-white rounded-[25px] mb-3 p-4 hover:bg-gray-100 transition-colors border-b-2 border-gray-100 last:border-0">
                 <div className="md:flex justify-between items-center hover:!text-pink-500">
                     <div className="">
-                        <Link href={url} className="text-xl font-[500] text-gray-900 line-clamp-1 font-anton tracking-wide">
+                        <Link href={url} className="text-xl text-gray-900 line-clamp-1 font-bold font-poppins">
                             {task.title}
                         </Link>
-                        <p className="text-sm text-gray-600 my-1 line-clamp-2">
+                        <p className="text-sm text-gray-600 !my-3 line-clamp-2">
                             {task.description}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -50,7 +50,7 @@ export default function ProfileTask({ task, IsloggedIn }) {
                     </div>
                     <div className="text-start ps-0 md:!ps-6">
                         <div className="mt-4 md:mt-0  min-w-[100px] gap-4 flex flex-wrap md:!flex-nowrap items-center">
-                            <p className="text-xl sm:text-2xl font-black text-pink-500 font-anton">
+                            <p className="text-xl sm:text-2xl font-black text-pink-500 font-poppins">
                                 {formatMultiPrice(task.price, task.currency || 'USD')}
                             </p> 
                             {!IsloggedIn ? 
