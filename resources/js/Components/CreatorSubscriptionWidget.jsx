@@ -12,7 +12,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
             setLoading(true);
             const response = await axios.get('/creator/subscription/status');
             setStatus(response.data);
-            console.log('🔔 Subscription Status Response:', response.data);
+            // console.log('🔔 Subscription Status Response:', response.data);
             
             // Notify parent component if callback provided
             if (onStatusChange) {
@@ -30,7 +30,7 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
         fetchSubscriptionStatus();
     }, []);
 
-    console.log('🔔 CreatorSubscriptionWidget render - Status:', status, 'Loading:', loading, 'Error:', error);
+    // console.log('🔔 CreatorSubscriptionWidget render - Status:', status, 'Loading:', loading, 'Error:', error);
 
     if (loading) {
         return (

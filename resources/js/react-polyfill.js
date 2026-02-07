@@ -89,7 +89,7 @@ if (typeof globalThis !== 'undefined') {
 import React, { Children } from 'react';
 
 // Diagnostic log
-console.log('React Polyfill loaded. React exists:', !!React);
+// console.log('React Polyfill loaded. React exists:', !!React);
 
 // Comprehensive React Children fix function
 const applyComprehensiveReactFix = () => {

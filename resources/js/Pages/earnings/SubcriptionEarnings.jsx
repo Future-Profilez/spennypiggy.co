@@ -30,7 +30,7 @@ export default function SubcriptionEarnings({ auth }) {
         //     setLoading(false);
         // });
     };
-    console.log("lists:", lists);
+    // console.log("lists:", lists);
 
     useEffect(() => {
         fetchingStats();

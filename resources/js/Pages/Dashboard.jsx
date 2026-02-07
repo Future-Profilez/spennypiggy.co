@@ -80,7 +80,6 @@ const CreatorSubscriptionWidget = lazy(
 );
 export default function Dashboard(props) {
     const { ziggy } = usePage().props;
-    console.log("Dashboard props:", ziggy);
     const w = useWidthCount();
     const {
         auth,
@@ -650,7 +649,6 @@ export default function Dashboard(props) {
                                                                     ) : (
                                                                         ""
                                                                     )}
-    {console.log('subscription check', auth)}
                                                                     {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed == 0 ? (
                                                                         <SiteSubscription
                                                                             charges={

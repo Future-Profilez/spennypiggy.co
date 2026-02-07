@@ -6,7 +6,6 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
     const [refreshing, setRefreshing] = useState(false);
 
     const pge = usePage().props;
-    console.log("Rendering CreatorActivityWidget with props:", pge);
 
     const getStatusBadge = (status) => {
         const badges = {

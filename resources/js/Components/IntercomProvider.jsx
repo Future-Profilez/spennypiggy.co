@@ -30,7 +30,7 @@ export default function IntercomProvider() {
         const initializeIntercom = () => {
             // Set global settings
             window.intercomSettings = boot;
-            console.log('Set window.intercomSettings:', window.intercomSettings);
+            // console.log('Set window.intercomSettings:', window.intercomSettings);
             
             // Initialize Intercom function if not exists
             if (typeof window.Intercom !== 'function') {

@@ -6,8 +6,6 @@ export default function ShareProfile(props) {
      * @param {Event} e 
      */
     function shareTo(e) {
-        console.log("share profile");
-        console.log(props);
         e.stopPropagation();
         const width = window && window.innerWidth;
         const currentURL = custom ? custom : window.location.href;
