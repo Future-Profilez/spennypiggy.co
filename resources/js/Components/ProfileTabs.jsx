@@ -17,40 +17,40 @@ export default function ProfileTabs({
     ];
 
     return (
-        <div className="w-full bg-[#0B0C10] sticky top-[88px] md:top-[96px] z-40 border-b border-white/5 backdrop-blur-xl bg-opacity-90">
-            <div className="max-w-[1400px] mx-auto flex items-center justify-between px-6 py-2 md:py-4">
+        <div className="w-full bg-black sticky top-0 z-40">
+            <div className="flex items-center justify-between px-4 py-3 profile-tabs">
                 {/* Tabs Container */}
-                <div className="flex items-center gap-6 md:gap-10 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide flex-1">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
                             onClick={() => onTabChange && onTabChange(tab.key)}
                             className={`
-                                relative py-4 text-[10px] md:text-xs font-black tracking-[0.2em] transition-all duration-300 whitespace-nowrap uppercase
+                                px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 tab-button
                                 ${activeTab === tab.key 
-                                    ? 'text-white' 
-                                    : 'text-white/30 hover:text-white/60'
+                                    ? 'text-white tab-button-active' 
+                                    : 'text-gray-400 hover:text-gray-200'
                                 }
                             `}
                         >
                             {tab.label}
-                            {activeTab === tab.key && (
-                                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#F94F96] to-[#8C52FF] rounded-t-full shadow-[0_-2px_15px_rgba(249,79,150,0.5)]"></div>
-                            )}
                         </button>
                     ))}
                 </div>
 
-                {/* Add Button with Premium Gradient */}
+                {/* Add Button */}
                 {showAddButton && (
                     <button
                         onClick={onAddClick}
-                        className="ml-6 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#05EFB8] via-[#05EFB8] to-[#00b67a] text-black hover:scale-110 active:scale-95 transition-all duration-300 shadow-xl shadow-[#05EFB8]/20 group"
+                        className="ml-4 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-[#05EFB8] text-[#05EFB8] hover:bg-[#05EFB8] hover:text-black transition-all duration-200 flex-shrink-0 add-button-pulse"
                     >
-                        <HiPlus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
+                        <HiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                 )}
             </div>
+            
+            {/* Bottom border line */}
+            <div className="h-px bg-gray-800"></div>
         </div>
     );
 }
