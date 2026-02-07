@@ -467,7 +467,7 @@ export default function Accountsetting(props) {
                                             onChange={switchNotification}
                                         />
                                         <span
-                                            for="notification_handle"
+                                            htmlFor="notification_handle"
                                             className="slider"
                                         ></span>
                                     </label>
@@ -487,7 +487,7 @@ export default function Accountsetting(props) {
                                                     onChange={swicthEarning}
                                                 />
                                                 <span
-                                                    for="showbankearning"
+                                                    htmlFor="showbankearning"
                                                     className="slider"
                                                 ></span>
                                             </label>
