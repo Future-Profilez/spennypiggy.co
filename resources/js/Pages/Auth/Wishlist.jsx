@@ -356,7 +356,7 @@ export default function Wishlist(props) {
     return (
         <Popup
             modalclass="pinkmodal full"
-            action={close}
+            action={close} space="4" size="lg"
             classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center" }`}
             text={customtext || <AddItem />}
         >
@@ -386,7 +386,7 @@ export default function Wishlist(props) {
                                         type="text"
                                         placeholder="Eg. Buy me a coffee"
                                         value={data.wishname}
-                                        className="w-full border-gray-300 focus:border-pink focus:ring-pink rounded-md shadow-sm px-2 py-2"
+                                        className="w-full border-gray-300 focus:border-pink focus:ring-pink rounded-[12px] shadow-sm px-3 py-3"
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -409,7 +409,7 @@ export default function Wishlist(props) {
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step={`0.01`}
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                            className="border-gray-300 border !px-6 py-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[12px]"
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -438,7 +438,7 @@ export default function Wishlist(props) {
                                             data.item_url ||
                                             (item && item.item_url)
                                         }
-                                        className="w-full border-gray-300 border px-4 py-2 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                        className="w-full border-gray-300 border !px-6 py-3 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                         autoComplete="item_url"
                                         onChange={(e) =>
                                             setData("item_url", e.target.value)

@@ -85,6 +85,7 @@ export default function Login({ status, canResetPassword }) {
                     router.visit(paramValue);
                 } else if (response.data && response.data.redirect_url) {
                     router.visit(response.data.redirect_url);
+                    // window.location.href = response.data.redirect_url;
                 } else {
                     window.location.reload();
                 }
