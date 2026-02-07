@@ -185,7 +185,7 @@ export default function AddMembership({updateState, item, text, classes}) {
     return (
         <Popup
             modalclass="pinkmodal full sendSurprize-modal shadow-pink pl-0"
-            space="4" size="md"
+            space="6" size="md"
             action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`}
             text={text ? text : <AddItem />} >
               <div className="addgoal" >
@@ -195,9 +195,9 @@ export default function AddMembership({updateState, item, text, classes}) {
 
                       <div className="w-full mb-4">
                           <label className="block text-left mb-2">Choose Membership Level</label>
-                          <ul className="pl-0 flex flex-wrap tiers" >
+                          <ul className="pl-0 flex flex-wrap !gap-2 tiers" >
                               {memberships && memberships.map((m, i)=>{
-                                return <li key={`membership-${i}`} className="mb-2 mr-2" >
+                                return <li key={`membership-${i} `} className="mr-1 mb-2" >
                                   {/* <button
                                     onClick={()=>setData('level', m.value)}  >
                                     {m.title}
@@ -249,7 +249,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                       </div>
 
                       <p className="font-bold mb-3 " >Choose membership Rewards</p>
-                      <div className="flex memberships-lists flex-wrap mb-4 ">
+                      <div className="flex memberships-lists flex-wrap gap-2 mb-4 ">
                         {membershipBenifits && membershipBenifits.map((m, i)=>{
                           return <div className="member-reward mr-2 mb-2 text-left">
                               <input className="cursor-pointer hidden"
