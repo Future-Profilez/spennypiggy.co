@@ -17,7 +17,7 @@ export default function Promotions(props) {
                             Founder Bonus — We’ll Pay You to Get Spoiled
                         </h1>
 
-                        <header className="bg-white rounded-2xl  shadow-sm">
+                        <header className="bg-white rounded-xl   shadow-sm">
                             <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-6 md:flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-semibold">

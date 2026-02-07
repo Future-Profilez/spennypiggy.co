@@ -80,7 +80,7 @@ export default function EnterOTP({user, action}) {
     return (
         <>
          <Popup space="2 md:p-4" action={open}
-         modalclassName=""
+         modalclass=""
          text={<></>} >
             <div className=" text-center py-10">
                <header className="mb-8">

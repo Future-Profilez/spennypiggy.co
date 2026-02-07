@@ -54,7 +54,7 @@ export default function FollowersBulkNotification() {
         <Popup
             space="4"
             classes="uppercase"
-            modalclassName="pinkmodal"
+            modalclass="pinkmodal"
             text={<>Notification Campaign</>}
         >
             <h2 className="text-uppercase font-GillSans text-lg">

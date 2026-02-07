@@ -51,7 +51,7 @@ export default function ThankyouMessages(props) {
     const MessageMedia = () => {
       return <>
         <Popup
-          modalclassName="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`button sm`}
+          modalclass="pinkmodal shadow-pink" space="0" size="md" action={close} classes={`button sm`}
           text={<>
             View 
           </>} > 

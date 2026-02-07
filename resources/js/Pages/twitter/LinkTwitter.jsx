@@ -142,7 +142,7 @@ export default function LinkTwitter(props) {
           disabled={processing}
           type='submit'
             className="p w-full"
-            spinnerClassName="fill-red-600" >
+            spinnerclass="fill-red-600" >
             {processing ? "Processing.." : "Link Twitter"}
         </LoaderButton>
     </div>

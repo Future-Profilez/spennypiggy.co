@@ -50,9 +50,9 @@ class CheckoutUser implements ShouldQueue
         $this->anon = $anon;
         $this->surprise = $surprise;
         $this->message = $message;
-        $this->anonname = $anonname;
         $this->symbol = $symbol;
         $this->vat_amount = $vat_amount;
+        $this->anonname = $anonname;
     }
 
     /**

@@ -184,7 +184,7 @@ export default function AddMembership({updateState, item, text, classes}) {
 
     return (
         <Popup
-            modalclassName="pinkmodal full sendSurprize-modal shadow-pink pl-0"
+            modalclass="pinkmodal full sendSurprize-modal shadow-pink pl-0"
             space="4" size="md"
             action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-xl p-3 mb-2 text-center`}
             text={text ? text : <AddItem />} >

@@ -81,7 +81,7 @@ export default function StripeIdentity({ auth }) {
                             disabled={loading || (auth?.user?.identity_status == 1)}
                             onClick={handleVerification}
                             className="p  px-6 py-[13px]"
-                            spinnerClassName="fill-white" >
+                            spinnerclass="fill-white" >
                             {loading ? "Processing..." :auth?.user?.identity_status === 2 ? "Reverify Now" : auth?.user?.identity_status == 1 ? "Verification Submitted" : "Verify Now"}
                         </LoaderButton>
                     </div>

@@ -6,7 +6,7 @@ export default function ContentPrefrences(props){
   const [loader, setUpdateLoader] = useState(true);
 
   return <>
-    <Popup space='0' modalclassName="pinkmodal" size="md"
+    <Popup space='0' modalclass="pinkmodal" size="md"
     text={'Consent Preferences'} classes={`${props.classes} content-pre `} >
           {/* {loader ?
             <LoadingScreen />  :

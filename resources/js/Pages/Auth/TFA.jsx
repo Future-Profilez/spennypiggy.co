@@ -98,7 +98,7 @@ export default function TFA({text}) {
     return (
         <>
             <Popup space="4" action={open}
-                modalclassName="full pinkmodal"
+                modalclass="full pinkmodal"
                 text={text ||<>TWO FACTOR AUTHENTICATION</>} >
                 {isTFA == 0 ?
                         <>

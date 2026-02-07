@@ -58,7 +58,6 @@ import AddGift from "./feed/AddGift";
 import GiftListing from "./rye/GiftListing";
 import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
-import { RiUserLine } from "react-icons/ri";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
 // import CreatorVerification from "./Profile/CreatorVerificationNew";
@@ -80,8 +79,7 @@ const CreatorSubscriptionWidget = lazy(
     () => import("@/Components/CreatorSubscriptionWidget"),
 );
 export default function Dashboard(props) {
-    const pageProps = usePage().props || {};
-    const { ziggy } = pageProps;
+    const { ziggy } = usePage().props;
     console.log("Dashboard props:", ziggy);
     const w = useWidthCount();
     const {
@@ -121,9 +119,7 @@ export default function Dashboard(props) {
     }, [items, selectedCategory]);
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
-    const [IsloggedIn, setIsLoggedIn] = useState(
-        (auth && auth.user && auth.user.username) == (user && user.username),
-    );
+    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
@@ -496,25 +492,59 @@ export default function Dashboard(props) {
                     title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
                 />
 
-                <div className="wishlistPage blackbg pb-0 sm:pb-5 ">
-                    <div className="">
-                        <div className="containerbox mx-auto">
-                            <VersionUpdate />
-                            <OfferAnnouncement variant="default" />
-                        </div>
-
-                        {/* User Profile Banner */}
-                        <div className="containerbox !mt-[30px] !p-0 mx-auto">
-                            <div className="wishbanner relative rounded-[40px] border-2 border-pink-600 overflow-hidden  ">
+                <div className="wishlistPage blackbg pt-6 pb-0 sm:pb-5 ">
+                    <div className="containerbox">
+                        <VersionUpdate />
+                        <OfferAnnouncement variant="default" />
+                        {/* <Side /> */}
+                        <div className="wishbanner relative ">
+                            <div className="relative">
                                 {user?.is_founder ? (
-                                    <div className="absolute top-4 left-4 flex justify-center shadow-xl lg:justify-start mb-2 z-30">
+                                    <div className="absolute top-4 left-4 flex justify-center shadow-xl lg:justify-start mb-2">
                                         <FounderBadge size="md" />
                                     </div>
                                 ) : (
                                     ""
                                 )}
-                                <Userprofile IsloggedIn={IsloggedIn} />
+                                <img
+                                    alt={`${user?.name} - Cover Image`}
+                                    height={400}
+                                    width={1200}
+                                    className="w-full border-black border-2 shadow-mint rounded-[30px]"
+                                    src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
+                                    loading="eager"
+                                    fetchPriority="high"
+                                />
+                                {IsloggedIn &&
+                                auth &&
+                                auth?.user.cover_url &&
+                                auth?.user?.cover_approved == 0 ? (
+                                    <div className="absolute right-8 bottom-4 mx-auto">
+                                        <button className="tooltipbtn">
+                                            <svg
+                                                width="20"
+                                                height="20"
+                                                viewBox="0 0 20 20"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    d="M9 15H11V9H9V15ZM10 7C10.2833 7 10.521 6.904 10.713 6.712C10.905 6.52 11.0007 6.28267 11 6C11 5.71667 10.904 5.47933 10.712 5.288C10.52 5.09667 10.2827 5.00067 10 5C9.71667 5 9.47933 5.096 9.288 5.288C9.09667 5.48 9.00067 5.71733 9 6C9 6.28333 9.096 6.521 9.288 6.713C9.48 6.905 9.71733 7.00067 10 7ZM10 20C8.61667 20 7.31667 19.7373 6.1 19.212C4.88333 18.6867 3.825 17.9743 2.925 17.075C2.025 16.175 1.31267 15.1167 0.788 13.9C0.263333 12.6833 0.000666667 11.3833 0 10C0 8.61667 0.262667 7.31667 0.788 6.1C1.31333 4.88333 2.02567 3.825 2.925 2.925C3.825 2.025 4.88333 1.31267 6.1 0.788C7.31667 0.263333 8.61667 0.000666667 10 0C11.3833 0 12.6833 0.262667 13.9 0.788C15.1167 1.31333 16.175 2.02567 17.075 2.925C17.975 3.825 18.6877 4.88333 19.213 6.1C19.7383 7.31667 20.0007 8.61667 20 10C20 11.3833 19.7373 12.6833 19.212 13.9C18.6867 15.1167 17.9743 16.175 17.075 17.075C16.175 17.975 15.1167 18.6877 13.9 19.213C12.6833 19.7383 11.3833 20.0007 10 20Z"
+                                                    fill="#FF8E25"
+                                                />
+                                            </svg>
+                                            <p>
+                                                Cover image is waiting for
+                                                approval. Currently only you can
+                                                see this.
+                                            </p>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    ""
+                                )}
                             </div>
+                            <Userprofile IsloggedIn={IsloggedIn} />
                         </div>
 
                         {/* Stripe Account Migration Warning */}
@@ -533,704 +563,709 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             : ''} */}
-                        <div className="containerbox mx-auto">
-                            <div className="max-w-[1000px] mx-auto">
-                                {user && user.role == 1 ? (
-                                    <div className="wishManage sticky top-8 ">
-                                        {/* Creator Subscription Widget - Show on all tabs for creators */}
-                                        {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
-                                                <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
-                                                    <CreatorSubscriptionWidget 
-                                                        className="mb-4"
-                                                    />
-                                                </Suspense>
-                                            )} */}
 
-                                        <div className="userManageRt mt-4 ">
-                                            <div
-                                                className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
-                                            >
-                                                <div className="inlinetab ">
-                                                    {/* Show rejection message if profile is rejected */}
-                                                    {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
-                                                            <div className="text-red-600 text-xl">
-                                                                This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
-                                                            </div>
-                                                        )} */}
+                        {user && user.role == 1 ? (
+                            <div className="wishManage sticky top-8 ">
+                                {/* Creator Subscription Widget - Show on all tabs for creators */}
+                                {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
+                                        <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
+                                            <CreatorSubscriptionWidget 
+                                                className="mb-4"
+                                            />
+                                        </Suspense>
+                                    )} */}
 
-                                                    {/* Instant Tab System with immediate feedback */}
-                                                    <InstantTabSystem
-                                                        Toggle={Toggle}
-                                                        activeTab={
-                                                            page || "about"
+                                <div className="userManageRt mt-4 ">
+                                    <div
+                                        className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
+                                    >
+                                        <div className="inlinetab ">
+                                            {/* Show rejection message if profile is rejected */}
+                                            {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
+                                                    <div className="text-red-600 text-xl">
+                                                        This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                                    </div>
+                                                )} */}
+
+                                            {/* Instant Tab System with immediate feedback */}
+                                            <InstantTabSystem
+                                                Toggle={Toggle}
+                                                activeTab={page || "about"}
+                                                user={user}
+                                                username={user.username}
+                                                IsloggedIn={IsloggedIn}
+                                                onTabChange={(tabId) => {
+                                                    // Handle tab change if needed
+                                                }}
+                                            />
+
+                                            <div className="tabs-containers min-height">
+                                                {page === "about" ||
+                                                page === false ? (
+                                                    <Suspense
+                                                        fallback={
+                                                            <LoadingScreen />
                                                         }
-                                                        user={user}
-                                                        username={user.username}
-                                                        IsloggedIn={IsloggedIn}
-                                                        onTabChange={(
-                                                            tabId,
-                                                        ) => {
-                                                            // Handle tab change if needed
-                                                        }}
-                                                    />
+                                                    >
+                                                        <div className="flex flex-wrap about-sec self-start">
+                                                            <div className="w-full lg:w-1/2  h-auto">
+                                                                <div className="about-sticky">
+                                                                    <DashboardStripeMigrationWarning
+                                                                        migrationStatus={
+                                                                            migration_status
+                                                                        }
+                                                                    />
 
-                                                    <div className="tabs-containers min-height">
-                                                        {page === "about" ||
-                                                        page === false ? (
-                                                            <Suspense
-                                                                fallback={
-                                                                    <LoadingScreen />
-                                                                }
-                                                            >
-                                                                <div className="flex flex-wrap about-sec self-start">
-                                                                    <div className="w-full lg:w-1/2  h-auto">
-                                                                        <div className="about-sticky">
-                                                                            <DashboardStripeMigrationWarning
-                                                                                migrationStatus={
-                                                                                    migration_status
+                                                                    {IsloggedIn &&
+                                                                    auth?.user &&
+                                                                    auth?.user
+                                                                        ?.role ==
+                                                                        1 &&
+                                                                    stripe_requirements &&
+                                                                    stripe_requirements.has_requirements &&
+                                                                    stripe_requirements.requirements &&
+                                                                    stripe_requirements
+                                                                        .requirements
+                                                                        .length >
+                                                                        0 &&
+                                                                    AuthUserStripeConnected ? (
+                                                                        <ActionRequired
+                                                                            requirements={
+                                                                                stripe_requirements.requirements
+                                                                            }
+                                                                        />
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
+
+                                                                    {IsloggedIn &&
+                                                                    auth?.user &&
+                                                                    auth?.user
+                                                                        ?.role ==
+                                                                        1 &&
+                                                                    !card_capabilities &&
+                                                                    !isNeedToUpgrade &&
+                                                                    AuthUserStripeConnected ? (
+                                                                        <EnableCardCapabilities />
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
+    {console.log('subscription check', auth)}
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed == 0 ? (
+                                                                        <SiteSubscription
+                                                                            charges={
+                                                                                auth
+                                                                                    ?.user
+                                                                                    ?.monthly_charge_enabled
+                                                                            }
+                                                                            user={
+                                                                                auth?.user
+                                                                            }
+                                                                        />
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
+
+                                                                    {UserStripeConnected ==
+                                                                    1 ? (
+                                                                        <MyGoal
+                                                                            IsloggedIn={
+                                                                                IsloggedIn
+                                                                            }
+                                                                        />
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
+
+                                                                    <div className="pink-round mb-4">
+                                                                        <h2 className="text-large  font-GillSans text-uppercase pinkbg p-3 text-white btn-shadow">
+                                                                            About
+                                                                            Me
+                                                                        </h2>
+                                                                        <div className="p-4">
+                                                                            <p
+                                                                                className={`text-gray-500 text-left mt-2 ${
+                                                                                    user &&
+                                                                                    !user.bio
+                                                                                        ? "hidden"
+                                                                                        : ""
+                                                                                }`}
+                                                                            >
+                                                                                {(user &&
+                                                                                    user.bio) ||
+                                                                                    "Hy, I am a creator on SpennyPiggy."}
+                                                                            </p>
+
+                                                                            {IsloggedIn &&
+                                                                            user?.edit_bio_reason &&
+                                                                            user?.bio_approved ==
+                                                                                2 ? (
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700">
+                                                                                        Bio
+                                                                                        Edit
+                                                                                        Request
+                                                                                    </p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                        Reason
+                                                                                        :{" "}
+                                                                                        {
+                                                                                            user?.edit_bio_reason
+                                                                                        }{" "}
+                                                                                        Please
+                                                                                        update
+                                                                                        your
+                                                                                        bio
+                                                                                        as
+                                                                                        per
+                                                                                        requested.
+                                                                                    </p>
+                                                                                </div>
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+
+                                                                            <SocialLinks
+                                                                                links={
+                                                                                    sLinks
                                                                                 }
                                                                             />
 
-                                                                            {IsloggedIn &&
-                                                                            auth?.user &&
-                                                                            auth
-                                                                                ?.user
-                                                                                ?.role ==
-                                                                                1 &&
-                                                                            stripe_requirements &&
-                                                                            stripe_requirements.has_requirements &&
-                                                                            stripe_requirements.requirements &&
-                                                                            stripe_requirements
-                                                                                .requirements
-                                                                                .length >
-                                                                                0 &&
-                                                                            AuthUserStripeConnected ? (
-                                                                                <ActionRequired
-                                                                                    requirements={
-                                                                                        stripe_requirements.requirements
-                                                                                    }
-                                                                                />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
+                                                                            {/* SOCIAL MEDIA REJECT REASON */}
+                                                                            {IsloggedIn && slinks?.reason && (
+                                                                                    <div className="mt-3">
+                                                                                        <p className="text-red-700 font-semibold">
+                                                                                            Social
+                                                                                            Media
+                                                                                            Edit
+                                                                                            Request
+                                                                                        </p>
+                                                                                        <p className="text-red-500 text-sm">
+                                                                                            Reason:{" "}
+                                                                                            {
+                                                                                                slinks.reason
+                                                                                            }{" "}
+                                                                                            <br />
+                                                                                            Please
+                                                                                            update
+                                                                                            your
+                                                                                            social
+                                                                                            links
+                                                                                            as
+                                                                                            per
+                                                                                            the
+                                                                                            requested
+                                                                                            changes.
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
 
-                                                                            {IsloggedIn &&
-                                                                            auth?.user &&
-                                                                            auth
-                                                                                ?.user
-                                                                                ?.role ==
-                                                                                1 &&
-                                                                            !card_capabilities &&
-                                                                            !isNeedToUpgrade &&
-                                                                            AuthUserStripeConnected ? (
-                                                                                <EnableCardCapabilities />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-                                                                            {console.log(
-                                                                                "subscription check",
-                                                                                auth,
-                                                                            )}
-                                                                            {IsloggedIn &&
-                                                                            auth?.user &&
-                                                                            auth
-                                                                                ?.user
-                                                                                ?.role ==
-                                                                                1 &&
-                                                                            auth
-                                                                                ?.user
-                                                                                ?.is_subscribed ==
-                                                                                0 ? (
-                                                                                <SiteSubscription
-                                                                                    charges={
-                                                                                        auth
-                                                                                            ?.user
-                                                                                            ?.monthly_charge_enabled
-                                                                                    }
-                                                                                    user={
-                                                                                        auth?.user
-                                                                                    }
-                                                                                />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-
-                                                                            {UserStripeConnected ==
-                                                                            1 ? (
-                                                                                <MyGoal
-                                                                                    IsloggedIn={
-                                                                                        IsloggedIn
-                                                                                    }
-                                                                                />
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-
-                                                                            <div className="bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[40px] p-0 mb-8 shadow-2xl transition-all hover:border-white/10 group overflow-hidden">
-                                                                                <div className="bg-[#05EFB8] p-5">
-                                                                                    <h2 className="text-sm font-black text-black tracking-[0.25em] uppercase flex items-center gap-3">
-                                                                                        <div className="w-6 h-6 rounded-lg bg-black/10 flex items-center justify-center">
-                                                                                            <RiUserLine className="w-3.5 h-3.5" />
-                                                                                        </div>
-                                                                                        About
-                                                                                        Me
-                                                                                    </h2>
-                                                                                </div>
-                                                                                <div className="p-8 bg-white">
-                                                                                    <p
-                                                                                        className={`text-black text-lg md:text-xl font-medium leading-relaxed tracking-tight ${
-                                                                                            user &&
-                                                                                            !user.bio
-                                                                                                ? "hidden"
-                                                                                                : ""
-                                                                                        }`}
-                                                                                    >
-                                                                                        {(user &&
-                                                                                            user.bio) ||
-                                                                                            "I believe in good vibes and great creators. Supporting one smile at a time 😊"}
-                                                                                    </p>
-
-                                                                                    {IsloggedIn &&
-                                                                                    user?.edit_bio_reason &&
-                                                                                    user?.bio_approved ==
-                                                                                        2 ? (
-                                                                                        <div className="mt-6 p-6 rounded-3xl bg-red-500 border border-red-500/10">
-                                                                                            <p className="text-white font-black text-xs tracking-widest uppercase mb-2">
-                                                                                                Review
-                                                                                                Required
-                                                                                            </p>
-                                                                                            <p className="text-white/70 text-sm leading-relaxed">
-                                                                                                Reason:{" "}
-                                                                                                {
-                                                                                                    user?.edit_bio_reason
-                                                                                                }
-                                                                                            </p>
-                                                                                        </div>
+                                                                            {IsloggedIn ? (
+                                                                                <div className="userProfileDate pt-0 md:pt-3">
+                                                                                    {auth.user &&
+                                                                                    auth
+                                                                                        .user
+                                                                                        .role ==
+                                                                                        1 &&
+                                                                                    AuthUserStripeConnected ==
+                                                                                        1 ? (
+                                                                                        <PaymentDashboard
+                                                                                            classes="b w-full"
+                                                                                            text="Payment Dashboard"
+                                                                                        />
                                                                                     ) : (
-                                                                                        ""
+                                                                                        <>
+                                                                                            {/* {auth?.user?.identity_status == 1 ? 
+                                                                                            <div className="finish mt-4 block">
+                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                                </Link>
+                                                                                            </div> 
+                                                                                            : ''} */}
+                                                                                        </>
                                                                                     )}
 
-                                                                                    <div className="pt-8 mt-8 border-t border-gray-100">
-                                                                                        <SocialLinks
-                                                                                            textcolor="text-black/30 hover:text-black transition-all duration-300"
-                                                                                            links={
-                                                                                                sLinks
-                                                                                            }
-                                                                                        />
-                                                                                    </div>
+                                                                                    {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
+                                                                                            <AddGoal
+                                                                                            stripe_enabled={auth.user && auth.user.stripe_details_submitted}
+                                                                                            fetch_goal={fetch_goal}
+                                                                                            activegoal={goal}
+                                                                                            />
+                                                                                        : ''} */}
 
-                                                                                    {IsloggedIn &&
-                                                                                        slinks?.reason && (
-                                                                                            <div className="mt-6 p-6 rounded-3xl bg-red-500/5 border border-red-500/10">
-                                                                                                <p className="text-red-400 font-black text-xs tracking-widest uppercase mb-2">
-                                                                                                    Social
-                                                                                                    Links
-                                                                                                    Review
-                                                                                                </p>
-                                                                                                <p className="text-red-400/70 text-sm leading-relaxed">
-                                                                                                    Reason:{" "}
-                                                                                                    {
-                                                                                                        slinks.reason
-                                                                                                    }
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        )}
-
-                                                                                    {IsloggedIn ? (
-                                                                                        <div className="userProfileDate pt-8 flex flex-wrap items-center gap-4">
-                                                                                            {auth.user &&
-                                                                                            auth
-                                                                                                .user
-                                                                                                .role ==
-                                                                                                1 &&
-                                                                                            AuthUserStripeConnected ==
-                                                                                                1 ? (
-                                                                                                <PaymentDashboard
-                                                                                                    classes="px-8 py-3 bg-black/5 hover:bg-black/10 text-black font-black text-[11px] tracking-[0.2em] uppercase rounded-2xl transition-all border border-black/5 backdrop-blur-xl"
-                                                                                                    text="Payment Dashboard"
-                                                                                                />
-                                                                                            ) : null}
-
-                                                                                            <div className="addsocial flex items-center gap-4 ml-auto">
+                                                                                    <div className="addsocial flex">
+                                                                                        <ul>
+                                                                                            <li>
                                                                                                 <AddSocial
                                                                                                     sLinks={
                                                                                                         sLinks
                                                                                                     }
                                                                                                 />
+                                                                                            </li>
+
+                                                                                            <li>
                                                                                                 <ShareProfile
                                                                                                     username={
                                                                                                         user &&
                                                                                                         user.username
                                                                                                     }
-                                                                                                    classes="px-8 py-3 bg-black text-white font-black text-[11px] tracking-[0.2em] uppercase rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/5"
-                                                                                                    custom={`${ziggy?.location}/${user?.username ?? "creator_test"}/wishes?item=${wishitems[0]?.uuid}`}
+                                                                                                    classes={
+                                                                                                        "flex ml-auto"
+                                                                                                    }
+                                                                                                    custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
                                                                                                     Share
                                                                                                     Profile
                                                                                                 </ShareProfile>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ) : (
-                                                                                        ""
-                                                                                    )}
+                                                                                            </li>
+                                                                                        </ul>
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                            {IsloggedIn ||
-                                                                            user
-                                                                                ?.intro
-                                                                                ?.approved ==
-                                                                                1 ? (
-                                                                                <AddIntro
-                                                                                    uuid={
-                                                                                        user?.id ||
-                                                                                        null
-                                                                                    }
-                                                                                    IsloggedIn={
-                                                                                        IsloggedIn
-                                                                                    }
-                                                                                />
                                                                             ) : (
                                                                                 ""
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                    <div className="lg:pl-4 w-full lg:w-1/2">
-                                                                        {IsloggedIn &&
-                                                                            auth?.user &&
-                                                                            auth
-                                                                                ?.user
-                                                                                ?.role ==
-                                                                                1 &&
-                                                                            UserStripeConnected ==
-                                                                                1 && (
-                                                                                <Suspense
-                                                                                    fallback={
-                                                                                        <div className="mb-4">
-                                                                                            Loading
-                                                                                            activity
-                                                                                            status...
-                                                                                        </div>
-                                                                                    }
-                                                                                >
-                                                                                    <CreatorActivityWidget
-                                                                                        activityStatus={
-                                                                                            activityStatus
-                                                                                        }
-                                                                                        className="mb-4"
-                                                                                    />
-                                                                                </Suspense>
-                                                                            )}
-
-                                                                        {IsloggedIn &&
-                                                                        UserStripeConnected !==
-                                                                            1 ? (
-                                                                            <CreatorVerification
-                                                                                IsloggedIn={
-                                                                                    IsloggedIn
-                                                                                }
-                                                                            />
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
-                                                                        {IsloggedIn &&
-                                                                        UserStripeConnected ==
-                                                                            1 ? (
-                                                                            <ProfileSteps
-                                                                                sLinks={
-                                                                                    sLinks
-                                                                                }
-                                                                                user={
-                                                                                    user
-                                                                                }
-                                                                                IsloggedIn={
-                                                                                    IsloggedIn
-                                                                                }
-                                                                            />
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
-                                                                        {!IsloggedIn &&
-                                                                        UserStripeConnected ==
-                                                                            1 &&
-                                                                        w >
-                                                                            767 ? (
-                                                                            <TipInner
-                                                                                classes={`mb-4`}
-                                                                            />
-                                                                        ) : (
-                                                                            ""
-                                                                        )}
-                                                                        <FeedList
-                                                                            user={
-                                                                                user
+                                                                    {IsloggedIn ||
+                                                                    user?.intro
+                                                                        ?.approved ==
+                                                                        1 ? (
+                                                                        <AddIntro
+                                                                            uuid={
+                                                                                user?.id ||
+                                                                                null
                                                                             }
                                                                             IsloggedIn={
                                                                                 IsloggedIn
                                                                             }
-                                                                            initialFilter="all"
                                                                         />
-                                                                    </div>
+                                                                    ) : (
+                                                                        ""
+                                                                    )}
                                                                 </div>
-                                                            </Suspense>
-                                                        ) : (
-                                                            ""
-                                                        )}
-
-                                                        {IsloggedIn ||
-                                                        UserStripeConnected ==
-                                                            1 ? (
-                                                            <>
-                                                                {page ===
-                                                                "wishes" ? (
-                                                                    <ErrorBoundary>
+                                                            </div>
+                                                            <div className="lg:pl-4 w-full lg:w-1/2">
+                                                                {IsloggedIn &&
+                                                                    auth?.user &&
+                                                                    auth?.user
+                                                                        ?.role ==
+                                                                        1 &&
+                                                                    UserStripeConnected ==
+                                                                        1 && (
                                                                         <Suspense
                                                                             fallback={
-                                                                                <LoadingScreen />
+                                                                                <div className="mb-4">
+                                                                                    Loading
+                                                                                    activity
+                                                                                    status...
+                                                                                </div>
                                                                             }
                                                                         >
-                                                                            <div className="wishes-items pb-6 ">
-                                                                                {wish_categories &&
-                                                                                wish_categories.length ? (
-                                                                                    <>
-                                                                                        <div className="new-wish-cats flex mb-2">
-                                                                                            <Link
-                                                                                                preserveScroll
-                                                                                                href={route(
-                                                                                                    "user.show",
-                                                                                                    {
-                                                                                                        username:
-                                                                                                            user.username,
-                                                                                                        page: "wishes",
-                                                                                                    },
-                                                                                                )}
-                                                                                                className={`${
-                                                                                                    selectedCategory ==
-                                                                                                    ""
-                                                                                                        ? "active"
-                                                                                                        : ""
-                                                                                                } mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
-                                                                                            >
-                                                                                                All
-                                                                                            </Link>
-                                                                                            {wish_categories.map(
+                                                                            <CreatorActivityWidget
+                                                                                activityStatus={
+                                                                                    activityStatus
+                                                                                }
+                                                                                className="mb-4"
+                                                                            />
+                                                                        </Suspense>
+                                                                    )}
+
+                                                                {IsloggedIn &&
+                                                                UserStripeConnected !==
+                                                                    1 ? (
+                                                                    <CreatorVerification
+                                                                        IsloggedIn={
+                                                                            IsloggedIn
+                                                                        }
+                                                                    />
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                                {IsloggedIn &&
+                                                                UserStripeConnected ==
+                                                                    1 ? (
+                                                                    <ProfileSteps
+                                                                        sLinks={
+                                                                            sLinks
+                                                                        }
+                                                                        user={
+                                                                            user
+                                                                        }
+                                                                        IsloggedIn={
+                                                                            IsloggedIn
+                                                                        }
+                                                                    />
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                                {!IsloggedIn &&
+                                                                UserStripeConnected ==
+                                                                    1 &&
+                                                                w > 767 ? (
+                                                                    <TipInner
+                                                                        classes={`mb-4`}
+                                                                    />
+                                                                ) : (
+                                                                    ""
+                                                                )}
+                                                                <FeedList
+                                                                    user={user}
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                    initialFilter="all"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </Suspense>
+                                                ) : (
+                                                    ""
+                                                )}
+
+                                                {IsloggedIn ||
+                                                UserStripeConnected == 1 ? (
+                                                    <>
+                                                        {page === "wishes" ? (
+                                                            <ErrorBoundary>
+                                                                <Suspense
+                                                                    fallback={
+                                                                        <LoadingScreen />
+                                                                    }
+                                                                >
+                                                                    <div className="wishes-items pb-6 ">
+                                                                        {wish_categories &&
+                                                                        wish_categories.length ? (
+                                                                            <>
+                                                                                <div className="new-wish-cats flex mb-2">
+                                                                                    <Link
+                                                                                        preserveScroll
+                                                                                        href={route(
+                                                                                            "user.show",
+                                                                                            {
+                                                                                                username:
+                                                                                                    user.username,
+                                                                                                page: "wishes",
+                                                                                            },
+                                                                                        )}
+                                                                                        className={`${
+                                                                                            selectedCategory ==
+                                                                                            ""
+                                                                                                ? "active"
+                                                                                                : ""
+                                                                                        } mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                    >
+                                                                                        All
+                                                                                    </Link>
+                                                                                    {wish_categories.map(
+                                                                                        (
+                                                                                            c,
+                                                                                            i,
+                                                                                        ) => {
+                                                                                            return (
+                                                                                                <>
+                                                                                                    <Link
+                                                                                                        preserveScroll
+                                                                                                        href={route(
+                                                                                                            "user.show",
+                                                                                                            {
+                                                                                                                username:
+                                                                                                                    user.username,
+                                                                                                                page: "wishes",
+                                                                                                                category:
+                                                                                                                    c.id,
+                                                                                                            },
+                                                                                                        )}
+                                                                                                        className={`${selectedCategory == c.id ? "active" : ""} mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                                        key={`cats-${i}`}
+                                                                                                    >
+                                                                                                        {
+                                                                                                            c.category
+                                                                                                        }
+                                                                                                    </Link>
+                                                                                                </>
+                                                                                            );
+                                                                                        },
+                                                                                    )}
+                                                                                    {IsloggedIn ? (
+                                                                                        <EditCategories
+                                                                                            username={
+                                                                                                (auth &&
+                                                                                                    auth
+                                                                                                        ?.user
+                                                                                                        ?.username) ||
+                                                                                                null
+                                                                                            }
+                                                                                        />
+                                                                                    ) : (
+                                                                                        ""
+                                                                                    )}
+                                                                                </div>
+                                                                            </>
+                                                                        ) : (
+                                                                            ""
+                                                                        )}
+
+                                                                        {loading ||
+                                                                        (isInitialLoad &&
+                                                                            (!wishitems ||
+                                                                                wishitems.length ===
+                                                                                    0)) ? (
+                                                                            <LoadingScreen />
+                                                                        ) : wishitems &&
+                                                                          wishitems.length >
+                                                                              0 ? (
+                                                                            <>
+                                                                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
+                                                                                    <DndContext
+                                                                                        sensors={
+                                                                                            sensors
+                                                                                        }
+                                                                                        collisionDetection={
+                                                                                            closestCenter
+                                                                                        }
+                                                                                        onDragEnd={
+                                                                                            handleDragEnd
+                                                                                        }
+                                                                                    >
+                                                                                        <SortableContext
+                                                                                            strategy={
+                                                                                                rectSortingStrategy
+                                                                                            }
+                                                                                            items={
+                                                                                                wishitems
+                                                                                            }
+                                                                                        >
+                                                                                            {wishitems.map(
                                                                                                 (
                                                                                                     c,
                                                                                                     i,
                                                                                                 ) => {
                                                                                                     return (
-                                                                                                        <>
-                                                                                                            <Link
-                                                                                                                preserveScroll
-                                                                                                                href={route(
-                                                                                                                    "user.show",
-                                                                                                                    {
-                                                                                                                        username:
-                                                                                                                            user.username,
-                                                                                                                        page: "wishes",
-                                                                                                                        category:
-                                                                                                                            c.id,
-                                                                                                                    },
-                                                                                                                )}
-                                                                                                                className={`${selectedCategory == c.id ? "active" : ""} mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
-                                                                                                                key={`cats-${i}`}
-                                                                                                            >
-                                                                                                                {
-                                                                                                                    c.category
-                                                                                                                }
-                                                                                                            </Link>
-                                                                                                        </>
+                                                                                                        <Wishlistbox
+                                                                                                            key={`wish-item-${
+                                                                                                                c.id ||
+                                                                                                                c.uuid ||
+                                                                                                                i
+                                                                                                            }`}
+                                                                                                            classes=" "
+                                                                                                            currency={
+                                                                                                                global_currency
+                                                                                                            }
+                                                                                                            IsloggedIn={
+                                                                                                                IsloggedIn
+                                                                                                            }
+                                                                                                            auth={
+                                                                                                                auth.user
+                                                                                                            }
+                                                                                                            itemid={
+                                                                                                                itemid
+                                                                                                            }
+                                                                                                            setuped={
+                                                                                                                AuthUserStripeConnected ==
+                                                                                                                1
+                                                                                                                    ? true
+                                                                                                                    : false
+                                                                                                            }
+                                                                                                            itm={
+                                                                                                                c
+                                                                                                            }
+                                                                                                        />
                                                                                                     );
                                                                                                 },
                                                                                             )}
-                                                                                            {IsloggedIn ? (
-                                                                                                <EditCategories
-                                                                                                    username={
-                                                                                                        (auth &&
-                                                                                                            auth
-                                                                                                                ?.user
-                                                                                                                ?.username) ||
-                                                                                                        null
-                                                                                                    }
-                                                                                                />
-                                                                                            ) : (
-                                                                                                ""
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    ""
-                                                                                )}
-
-                                                                                {loading ||
-                                                                                (isInitialLoad &&
-                                                                                    (!wishitems ||
-                                                                                        wishitems.length ===
-                                                                                            0)) ? (
-                                                                                    <LoadingScreen />
-                                                                                ) : wishitems &&
-                                                                                  wishitems.length >
-                                                                                      0 ? (
-                                                                                    <>
-                                                                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
-                                                                                            <DndContext
-                                                                                                sensors={
-                                                                                                    sensors
-                                                                                                }
-                                                                                                collisionDetection={
-                                                                                                    closestCenter
-                                                                                                }
-                                                                                                onDragEnd={
-                                                                                                    handleDragEnd
-                                                                                                }
-                                                                                            >
-                                                                                                <SortableContext
-                                                                                                    strategy={
-                                                                                                        rectSortingStrategy
-                                                                                                    }
-                                                                                                    items={
-                                                                                                        wishitems
-                                                                                                    }
-                                                                                                >
-                                                                                                    {wishitems.map(
-                                                                                                        (
-                                                                                                            c,
-                                                                                                            i,
-                                                                                                        ) => {
-                                                                                                            return (
-                                                                                                                <Wishlistbox
-                                                                                                                    key={`wish-item-${
-                                                                                                                        c.id ||
-                                                                                                                        c.uuid ||
-                                                                                                                        i
-                                                                                                                    }`}
-                                                                                                                    classes=" "
-                                                                                                                    currency={
-                                                                                                                        global_currency
-                                                                                                                    }
-                                                                                                                    IsloggedIn={
-                                                                                                                        IsloggedIn
-                                                                                                                    }
-                                                                                                                    auth={
-                                                                                                                        auth.user
-                                                                                                                    }
-                                                                                                                    itemid={
-                                                                                                                        itemid
-                                                                                                                    }
-                                                                                                                    setuped={
-                                                                                                                        AuthUserStripeConnected ==
-                                                                                                                        1
-                                                                                                                            ? true
-                                                                                                                            : false
-                                                                                                                    }
-                                                                                                                    itm={
-                                                                                                                        c
-                                                                                                                    }
-                                                                                                                />
-                                                                                                            );
-                                                                                                        },
-                                                                                                    )}
-                                                                                                </SortableContext>
-                                                                                            </DndContext>
-                                                                                        </div>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <div className="w-full">
-                                                                                        <Nocontent text="Nothing to see." />
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </Suspense>
-                                                                    </ErrorBoundary>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-
-                                                                {page ===
-                                                                "feed" ? (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <LoadingScreen />
-                                                                        }
-                                                                    >
-                                                                        <FeedList
-                                                                            user={
-                                                                                user
-                                                                            }
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                            initialFilter="all"
-                                                                        />
-                                                                    </Suspense>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-
-                                                                {page ===
-                                                                "tasks" ? (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <LoadingScreen />
-                                                                        }
-                                                                    >
-                                                                        <ProfileTaskLists
-                                                                            tasks={
-                                                                                tasks
-                                                                            }
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    </Suspense>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-
-                                                                {page ===
-                                                                "memberships" ? (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <LoadingScreen />
-                                                                        }
-                                                                    >
-                                                                        <MembershipsLists
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                            username={
-                                                                                user?.username ||
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.username
-                                                                            }
-                                                                        />
-                                                                    </Suspense>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-
-                                                                {page ===
-                                                                "bills" ? (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <LoadingScreen />
-                                                                        }
-                                                                    >
-                                                                        <Billslist
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    </Suspense>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-
-                                                                {page ===
-                                                                "shop" ? (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <LoadingScreen />
-                                                                        }
-                                                                    >
-                                                                        <ProfileProductLists
-                                                                            profileuser={
-                                                                                user
-                                                                            }
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    </Suspense>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-
-                                                                {page ===
-                                                                "gifts" ? (
-                                                                    <Suspense
-                                                                        fallback={
-                                                                            <LoadingScreen />
-                                                                        }
-                                                                    >
-                                                                        {giftsloading ? (
-                                                                            <LoadingScreen />
-                                                                        ) : gifts &&
-                                                                          gifts.length >
-                                                                              0 ? (
-                                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                                                                {gifts.map(
-                                                                                    (
-                                                                                        gift,
-                                                                                    ) => {
-                                                                                        const details =
-                                                                                            JSON.parse(
-                                                                                                gift.details,
-                                                                                            ); // Parse the details JSON
-                                                                                        return (
-                                                                                            <>
-                                                                                                {(IsloggedIn ||
-                                                                                                    gift?.deleted_at ===
-                                                                                                        null) && (
-                                                                                                    <GiftListing
-                                                                                                        key={
-                                                                                                            gift.id
-                                                                                                        }
-                                                                                                        gift={
-                                                                                                            gift
-                                                                                                        }
-                                                                                                        details={
-                                                                                                            details
-                                                                                                        }
-                                                                                                        user={
-                                                                                                            user
-                                                                                                        }
-                                                                                                        IsloggedIn={
-                                                                                                            IsloggedIn
-                                                                                                        }
-                                                                                                        fetch_gifts={
-                                                                                                            fetch_gifts
-                                                                                                        }
-                                                                                                        auth={
-                                                                                                            auth
-                                                                                                        }
-                                                                                                    />
-                                                                                                )}
-                                                                                            </>
-                                                                                        );
-                                                                                    },
-                                                                                )}
-                                                                            </div>
+                                                                                        </SortableContext>
+                                                                                    </DndContext>
+                                                                                </div>
+                                                                            </>
                                                                         ) : (
                                                                             <div className="w-full">
                                                                                 <Nocontent text="Nothing to see." />
                                                                             </div>
                                                                         )}
-                                                                    </Suspense>
-                                                                ) : (
-                                                                    ""
-                                                                )}
-                                                            </>
+                                                                    </div>
+                                                                </Suspense>
+                                                            </ErrorBoundary>
                                                         ) : (
-                                                            <PaymentUnActivated
-                                                                heading={`WishList not activated yet. `}
-                                                                subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`}
-                                                            />
+                                                            ""
                                                         )}
-                                                    </div>
-                                                </div>
+
+                                                        {page === "feed" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <FeedList
+                                                                    user={user}
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                    initialFilter="all"
+                                                                />
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page === "tasks" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <ProfileTaskLists
+                                                                    tasks={
+                                                                        tasks
+                                                                    }
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                />
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page ===
+                                                        "memberships" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <MembershipsLists
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                    username={
+                                                                        user?.username ||
+                                                                        auth
+                                                                            ?.user
+                                                                            ?.username
+                                                                    }
+                                                                />
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page === "bills" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <Billslist
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                />
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page === "shop" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                <ProfileProductLists
+                                                                    profileuser={
+                                                                        user
+                                                                    }
+                                                                    IsloggedIn={
+                                                                        IsloggedIn
+                                                                    }
+                                                                />
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+
+                                                        {page === "gifts" ? (
+                                                            <Suspense
+                                                                fallback={
+                                                                    <LoadingScreen />
+                                                                }
+                                                            >
+                                                                {giftsloading ? (
+                                                                    <LoadingScreen />
+                                                                ) : gifts &&
+                                                                  gifts.length >
+                                                                      0 ? (
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                                                        {gifts.map(
+                                                                            (
+                                                                                gift,
+                                                                            ) => {
+                                                                                const details =
+                                                                                    JSON.parse(
+                                                                                        gift.details,
+                                                                                    ); // Parse the details JSON
+                                                                                return (
+                                                                                    <>
+                                                                                        {(IsloggedIn ||
+                                                                                            gift?.deleted_at ===
+                                                                                                null) && (
+                                                                                            <GiftListing
+                                                                                                key={
+                                                                                                    gift.id
+                                                                                                }
+                                                                                                gift={
+                                                                                                    gift
+                                                                                                }
+                                                                                                details={
+                                                                                                    details
+                                                                                                }
+                                                                                                user={
+                                                                                                    user
+                                                                                                }
+                                                                                                IsloggedIn={
+                                                                                                    IsloggedIn
+                                                                                                }
+                                                                                                fetch_gifts={
+                                                                                                    fetch_gifts
+                                                                                                }
+                                                                                                auth={
+                                                                                                    auth
+                                                                                                }
+                                                                                            />
+                                                                                        )}
+                                                                                    </>
+                                                                                );
+                                                                            },
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="w-full">
+                                                                        <Nocontent text="Nothing to see." />
+                                                                    </div>
+                                                                )}
+                                                            </Suspense>
+                                                        ) : (
+                                                            ""
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <PaymentUnActivated
+                                                        heading={`WishList not activated yet. `}
+                                                        subheading={`Until they activate their wishlist, this user won't be able to receive gifts.`}
+                                                    />
+                                                )}
                                             </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    <Gifter
-                                        auth={auth}
-                                        sLinks={sLinks}
-                                        IsloggedIn={IsloggedIn}
-                                    />
-                                )}
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <Gifter
+                                auth={auth}
+                                sLinks={sLinks}
+                                IsloggedIn={IsloggedIn}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -1238,7 +1273,7 @@ export default function Dashboard(props) {
                     <Popup
                         action={openCurrency}
                         space="4"
-                        modalclassName="pinkmodal"
+                        modalclass="pinkmodal"
                     >
                         <ChangeCurrency
                             currencyaction={currencyaction}

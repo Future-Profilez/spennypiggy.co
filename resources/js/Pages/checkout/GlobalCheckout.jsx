@@ -165,7 +165,7 @@ export default function GlobalCheckout({
           `}</style>
 
             <Popup
-                modalclassName={`pinkmodal full stripe-terms shadow-pink ps-0`}
+                modalclass={`pinkmodal full stripe-terms shadow-pink ps-0`}
                 space="4"
                 size="md"
                 action={close}

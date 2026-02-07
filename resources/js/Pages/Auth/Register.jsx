@@ -1805,7 +1805,7 @@ export default function Register(props) {
                                         <div className="">
                                             <Popup
                                                 action={hasPop}
-                                                modalclassName="bg-gray-900 border border-white/10 shadow-2xl rounded-xl  p-6 max-w-lg w-full"
+                                                modalclass="bg-gray-900 border border-white/10 shadow-2xl rounded-xl  p-6 max-w-lg w-full"
                                                 space="4"
                                                 size="md"
                                                 classes={`hidden`}
@@ -1879,7 +1879,7 @@ export default function Register(props) {
                                                         className={`
                                                             ${hasNotifiedRef && !hasNotifiedRef?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
                                                             w-full justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-gulfs uppercase tracking-widest text-normal py-3 rounded-[30px]   `}
-                                                        spinnerClassName="fill-white"
+                                                        spinnerclass="fill-white"
                                                     >
                                                         {processing
                                                             ? "Processing"
@@ -1897,7 +1897,7 @@ export default function Register(props) {
                                                     ${!checkRef?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
                                                     ${role == 0 && !addressCheck?.current?.checked ? 'opacity-50 cursor-not-allowed disabled' : ''}
                                                 ]`}
-                                                spinnerClassName="fill-white" >
+                                                spinnerclass="fill-white" >
                                                 {processing
                                                     ? "Processing"
                                                     : "Create Account"}

@@ -130,7 +130,7 @@ export default function Accountsetting(props) {
                                 <li>
                                     <Popup
                                         space="4"
-                                        modalclassName="pinkmodal"
+                                        modalclass="pinkmodal"
                                         text={
                                             <div className="flex items-center justify-between w-full">
                                                 <p className="text-start">
@@ -278,7 +278,7 @@ export default function Accountsetting(props) {
                                 <li>
                                     <Popup
                                         space="4"
-                                        modalclassName="pinkmodal"
+                                        modalclass="pinkmodal"
                                         text={
                                             <div className="flex w-full justify-between items-center">
                                                 <p className="text-start">
@@ -311,7 +311,7 @@ export default function Accountsetting(props) {
                                 <Popup
                                     action={emailPopupAction}
                                     space="4"
-                                    modalclassName="pinkmodal"
+                                    modalclass="pinkmodal"
                                     text={
                                         <>
                                             EMAIL{" "}
@@ -331,7 +331,7 @@ export default function Accountsetting(props) {
                                 <Popup
                                     action={passClose}
                                     space="4"
-                                    modalclassName="pinkmodal"
+                                    modalclass="pinkmodal"
                                     text={<>PASSWORD</>}
                                 >
                                     <UpdatePasswordForm
@@ -343,7 +343,7 @@ export default function Accountsetting(props) {
                                 <Popup
                                     action={passClose}
                                     space="4"
-                                    modalclassName="pinkmodal"
+                                    modalclass="pinkmodal"
                                     text={
                                         <>
                                             DISPLAY CURRENCY{" "}
@@ -366,7 +366,7 @@ export default function Accountsetting(props) {
                                             size={"lg"}
                                             action={passClose}
                                             space="4"
-                                            modalclassName="pinkmodal"
+                                            modalclass="pinkmodal"
                                             text={"ADDRESS"}
                                         >
                                             <AddressForm
@@ -386,7 +386,7 @@ export default function Accountsetting(props) {
                                         <Popup
                                             action={passClose}
                                             space="4"
-                                            modalclassName="pinkmodal"
+                                            modalclass="pinkmodal"
                                             text={
                                                 <>
                                                     VAT{" "}
@@ -413,7 +413,7 @@ export default function Accountsetting(props) {
                                         <Popup
                                             action={passClose}
                                             space="4"
-                                            modalclassName="pinkmodal"
+                                            modalclass="pinkmodal"
                                             text={
                                                 <>
                                                     {auth &&
@@ -517,7 +517,7 @@ export default function Accountsetting(props) {
                             <li>
                                 <Popup
                                     space="4"
-                                    modalclassName="pinkmodal"
+                                    modalclass="pinkmodal"
                                     text={<>DELETE ACCOUNT </>}
                                 >
                                     <DeleteUserForm />
@@ -526,7 +526,7 @@ export default function Accountsetting(props) {
 
                             {/* {auth && auth?.user?.stripe_details_submitted == 1 ?
                              <li>
-                                <Popup space='4' modalclassName="pinkmodal"
+                                <Popup space='4' modalclass="pinkmodal"
                                 text={<>DELETE STRIPE ACCOUNT  </>} >
                                     <DeleteStripeAccount />
                                 </Popup >

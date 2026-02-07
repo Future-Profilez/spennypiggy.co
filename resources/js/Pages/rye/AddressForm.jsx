@@ -612,7 +612,7 @@ export default function AddressForm({
                         type="submit"
                         disabled={loading}
                         className="button p mt-2 "
-                        spinnerClassName="fill-red-600"
+                        spinnerclass="fill-red-600"
                     >
                         {loading && isEditPopup
                             ? "Updating..."
