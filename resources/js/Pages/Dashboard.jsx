@@ -503,10 +503,8 @@ export default function Dashboard(props) {
                             <OfferAnnouncement variant="default" />
                         </div>
 
-
                         {/* User Profile Banner */}
-                        <div className="containerbox !mt-[30px] !p-0 mx-auto" >
-
+                        <div className="containerbox !mt-[30px] !p-0 mx-auto">
                             <div className="wishbanner relative rounded-[40px] border-2 border-pink-600 overflow-hidden  ">
                                 {user?.is_founder ? (
                                     <div className="absolute top-4 left-4 flex justify-center shadow-xl lg:justify-start mb-2 z-30">
@@ -535,9 +533,8 @@ export default function Dashboard(props) {
                                     </div>
                                 </div>
                             : ''} */}
-                         <div className="containerbox mx-auto">
+                        <div className="containerbox mx-auto">
                             <div className="max-w-[1000px] mx-auto">
-
                                 {user && user.role == 1 ? (
                                     <div className="wishManage sticky top-8 ">
                                         {/* Creator Subscription Widget - Show on all tabs for creators */}
@@ -564,11 +561,15 @@ export default function Dashboard(props) {
                                                     {/* Instant Tab System with immediate feedback */}
                                                     <InstantTabSystem
                                                         Toggle={Toggle}
-                                                        activeTab={page || "about"}
+                                                        activeTab={
+                                                            page || "about"
+                                                        }
                                                         user={user}
                                                         username={user.username}
                                                         IsloggedIn={IsloggedIn}
-                                                        onTabChange={(tabId) => {
+                                                        onTabChange={(
+                                                            tabId,
+                                                        ) => {
                                                             // Handle tab change if needed
                                                         }}
                                                     />
@@ -592,7 +593,8 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn &&
                                                                             auth?.user &&
-                                                                            auth?.user
+                                                                            auth
+                                                                                ?.user
                                                                                 ?.role ==
                                                                                 1 &&
                                                                             stripe_requirements &&
@@ -614,7 +616,8 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn &&
                                                                             auth?.user &&
-                                                                            auth?.user
+                                                                            auth
+                                                                                ?.user
                                                                                 ?.role ==
                                                                                 1 &&
                                                                             !card_capabilities &&
@@ -624,8 +627,20 @@ export default function Dashboard(props) {
                                                                             ) : (
                                                                                 ""
                                                                             )}
-            {console.log('subscription check', auth)}
-                                                                            {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed == 0 ? (
+                                                                            {console.log(
+                                                                                "subscription check",
+                                                                                auth,
+                                                                            )}
+                                                                            {IsloggedIn &&
+                                                                            auth?.user &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.role ==
+                                                                                1 &&
+                                                                            auth
+                                                                                ?.user
+                                                                                ?.is_subscribed ==
+                                                                                0 ? (
                                                                                 <SiteSubscription
                                                                                     charges={
                                                                                         auth
@@ -657,7 +672,8 @@ export default function Dashboard(props) {
                                                                                         <div className="w-6 h-6 rounded-lg bg-black/10 flex items-center justify-center">
                                                                                             <RiUserLine className="w-3.5 h-3.5" />
                                                                                         </div>
-                                                                                        About Me
+                                                                                        About
+                                                                                        Me
                                                                                     </h2>
                                                                                 </div>
                                                                                 <div className="p-8 bg-white">
@@ -679,9 +695,15 @@ export default function Dashboard(props) {
                                                                                     user?.bio_approved ==
                                                                                         2 ? (
                                                                                         <div className="mt-6 p-6 rounded-3xl bg-red-500 border border-red-500/10">
-                                                                                            <p className="text-white font-black text-xs tracking-widest uppercase mb-2">Review Required</p>
+                                                                                            <p className="text-white font-black text-xs tracking-widest uppercase mb-2">
+                                                                                                Review
+                                                                                                Required
+                                                                                            </p>
                                                                                             <p className="text-white/70 text-sm leading-relaxed">
-                                                                                                Reason: {user?.edit_bio_reason}
+                                                                                                Reason:{" "}
+                                                                                                {
+                                                                                                    user?.edit_bio_reason
+                                                                                                }
                                                                                             </p>
                                                                                         </div>
                                                                                     ) : (
@@ -691,15 +713,25 @@ export default function Dashboard(props) {
                                                                                     <div className="pt-8 mt-8 border-t border-gray-100">
                                                                                         <SocialLinks
                                                                                             textcolor="text-black/30 hover:text-black transition-all duration-300"
-                                                                                            links={sLinks}
+                                                                                            links={
+                                                                                                sLinks
+                                                                                            }
                                                                                         />
                                                                                     </div>
 
-                                                                                    {IsloggedIn && slinks?.reason && (
+                                                                                    {IsloggedIn &&
+                                                                                        slinks?.reason && (
                                                                                             <div className="mt-6 p-6 rounded-3xl bg-red-500/5 border border-red-500/10">
-                                                                                                <p className="text-red-400 font-black text-xs tracking-widest uppercase mb-2">Social Links Review</p>
+                                                                                                <p className="text-red-400 font-black text-xs tracking-widest uppercase mb-2">
+                                                                                                    Social
+                                                                                                    Links
+                                                                                                    Review
+                                                                                                </p>
                                                                                                 <p className="text-red-400/70 text-sm leading-relaxed">
-                                                                                                    Reason: {slinks.reason}
+                                                                                                    Reason:{" "}
+                                                                                                    {
+                                                                                                        slinks.reason
+                                                                                                    }
                                                                                                 </p>
                                                                                             </div>
                                                                                         )}
@@ -707,8 +739,12 @@ export default function Dashboard(props) {
                                                                                     {IsloggedIn ? (
                                                                                         <div className="userProfileDate pt-8 flex flex-wrap items-center gap-4">
                                                                                             {auth.user &&
-                                                                                            auth.user.role == 1 &&
-                                                                                            AuthUserStripeConnected == 1 ? (
+                                                                                            auth
+                                                                                                .user
+                                                                                                .role ==
+                                                                                                1 &&
+                                                                                            AuthUserStripeConnected ==
+                                                                                                1 ? (
                                                                                                 <PaymentDashboard
                                                                                                     classes="px-8 py-3 bg-black/5 hover:bg-black/10 text-black font-black text-[11px] tracking-[0.2em] uppercase rounded-2xl transition-all border border-black/5 backdrop-blur-xl"
                                                                                                     text="Payment Dashboard"
@@ -717,14 +753,20 @@ export default function Dashboard(props) {
 
                                                                                             <div className="addsocial flex items-center gap-4 ml-auto">
                                                                                                 <AddSocial
-                                                                                                    sLinks={sLinks}
+                                                                                                    sLinks={
+                                                                                                        sLinks
+                                                                                                    }
                                                                                                 />
                                                                                                 <ShareProfile
-                                                                                                    username={user && user.username}
+                                                                                                    username={
+                                                                                                        user &&
+                                                                                                        user.username
+                                                                                                    }
                                                                                                     classes="px-8 py-3 bg-black text-white font-black text-[11px] tracking-[0.2em] uppercase rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/5"
-                                                                                                    custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
+                                                                                                    custom={`${ziggy?.location}/${user?.username ?? "creator_test"}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
-                                                                                                    Share Profile
+                                                                                                    Share
+                                                                                                    Profile
                                                                                                 </ShareProfile>
                                                                                             </div>
                                                                                         </div>
@@ -734,7 +776,8 @@ export default function Dashboard(props) {
                                                                                 </div>
                                                                             </div>
                                                                             {IsloggedIn ||
-                                                                            user?.intro
+                                                                            user
+                                                                                ?.intro
                                                                                 ?.approved ==
                                                                                 1 ? (
                                                                                 <AddIntro
@@ -754,7 +797,8 @@ export default function Dashboard(props) {
                                                                     <div className="lg:pl-4 w-full lg:w-1/2">
                                                                         {IsloggedIn &&
                                                                             auth?.user &&
-                                                                            auth?.user
+                                                                            auth
+                                                                                ?.user
                                                                                 ?.role ==
                                                                                 1 &&
                                                                             UserStripeConnected ==
@@ -808,7 +852,8 @@ export default function Dashboard(props) {
                                                                         {!IsloggedIn &&
                                                                         UserStripeConnected ==
                                                                             1 &&
-                                                                        w > 767 ? (
+                                                                        w >
+                                                                            767 ? (
                                                                             <TipInner
                                                                                 classes={`mb-4`}
                                                                             />
@@ -816,7 +861,9 @@ export default function Dashboard(props) {
                                                                             ""
                                                                         )}
                                                                         <FeedList
-                                                                            user={user}
+                                                                            user={
+                                                                                user
+                                                                            }
                                                                             IsloggedIn={
                                                                                 IsloggedIn
                                                                             }
@@ -830,9 +877,11 @@ export default function Dashboard(props) {
                                                         )}
 
                                                         {IsloggedIn ||
-                                                        UserStripeConnected == 1 ? (
+                                                        UserStripeConnected ==
+                                                            1 ? (
                                                             <>
-                                                                {page === "wishes" ? (
+                                                                {page ===
+                                                                "wishes" ? (
                                                                     <ErrorBoundary>
                                                                         <Suspense
                                                                             fallback={
@@ -919,8 +968,8 @@ export default function Dashboard(props) {
                                                                                             0)) ? (
                                                                                     <LoadingScreen />
                                                                                 ) : wishitems &&
-                                                                                wishitems.length >
-                                                                                    0 ? (
+                                                                                  wishitems.length >
+                                                                                      0 ? (
                                                                                     <>
                                                                                         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                             <DndContext
@@ -996,14 +1045,17 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
 
-                                                                {page === "feed" ? (
+                                                                {page ===
+                                                                "feed" ? (
                                                                     <Suspense
                                                                         fallback={
                                                                             <LoadingScreen />
                                                                         }
                                                                     >
                                                                         <FeedList
-                                                                            user={user}
+                                                                            user={
+                                                                                user
+                                                                            }
                                                                             IsloggedIn={
                                                                                 IsloggedIn
                                                                             }
@@ -1014,7 +1066,8 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
 
-                                                                {page === "tasks" ? (
+                                                                {page ===
+                                                                "tasks" ? (
                                                                     <Suspense
                                                                         fallback={
                                                                             <LoadingScreen />
@@ -1056,7 +1109,8 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
 
-                                                                {page === "bills" ? (
+                                                                {page ===
+                                                                "bills" ? (
                                                                     <Suspense
                                                                         fallback={
                                                                             <LoadingScreen />
@@ -1072,7 +1126,8 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
 
-                                                                {page === "shop" ? (
+                                                                {page ===
+                                                                "shop" ? (
                                                                     <Suspense
                                                                         fallback={
                                                                             <LoadingScreen />
@@ -1091,7 +1146,8 @@ export default function Dashboard(props) {
                                                                     ""
                                                                 )}
 
-                                                                {page === "gifts" ? (
+                                                                {page ===
+                                                                "gifts" ? (
                                                                     <Suspense
                                                                         fallback={
                                                                             <LoadingScreen />
@@ -1100,8 +1156,8 @@ export default function Dashboard(props) {
                                                                         {giftsloading ? (
                                                                             <LoadingScreen />
                                                                         ) : gifts &&
-                                                                        gifts.length >
-                                                                            0 ? (
+                                                                          gifts.length >
+                                                                              0 ? (
                                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
                                                                                 {gifts.map(
                                                                                     (
@@ -1174,7 +1230,7 @@ export default function Dashboard(props) {
                                     />
                                 )}
                             </div>
-                         </div>
+                        </div>
                     </div>
                 </div>
 
