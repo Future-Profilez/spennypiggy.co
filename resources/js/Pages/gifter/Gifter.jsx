@@ -12,12 +12,13 @@ import GifterFeed from './GifterFeed';
 import MembershipLists from './MembershipLists';
 import GifterMedia from './GifterMedia';
 import ActivateCard from './ActivateCard';
+import ThankyouMessages from './ThankyouMessages';
 
 
 export default function Gifter({ IsloggedIn,  sLinks }){
   const pageProps = usePage().props || {};
   const { auth, user, itemid  } = pageProps;
-  const categories = ['about', 'feed', 'memberships', 'gifts', 'tips'];
+  const categories = ['about', 'feed', 'memberships', 'gifts', 'tips', 'media', 'thanks'];
   const [selectedIndex, setSelectedIndex] = useState(0);
   
   // Check for tab parameter in URL
@@ -115,7 +116,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
             <div className="inlinetab">
                 <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
                     <Tab.List className="flex items-center gap-8 mb-12 border-b border-white/5 px-4 overflow-x-auto scrollbar-hide">
-                        {['About', 'Feed', 'Memberships', 'Gifts', 'Tips'].map((category, idx) => (
+                        {['About', 'Feed', 'Memberships', 'Gifts', 'Tips', 'Media'].map((category, idx) => (
                             <Tab
                                 key={category}
                                 as={Fragment}
@@ -163,6 +164,11 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                         <Tab.Panel className="focus:outline-none">
                             <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
                                 <GifterTips username={user && user.username || ''}/>
+                            </div>
+                        </Tab.Panel>
+                        <Tab.Panel className="focus:outline-none">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                                <GifterMedia username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
                     </Tab.Panels>

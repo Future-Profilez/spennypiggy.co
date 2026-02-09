@@ -1260,11 +1260,13 @@ export default function Dashboard(props) {
                                 </div>
                             </div>
                         ) : (
-                            <Gifter
-                                auth={auth}
-                                sLinks={sLinks}
-                                IsloggedIn={IsloggedIn}
-                            />
+                            <Suspense fallback={<LoadingScreen />}>
+                                <Gifter
+                                    auth={auth}
+                                    sLinks={sLinks}
+                                    IsloggedIn={IsloggedIn}
+                                />
+                            </Suspense>
                         )}
                     </div>
                 </div>
