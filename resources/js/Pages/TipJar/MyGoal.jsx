@@ -50,17 +50,19 @@ export default function MyGoal({  IsloggedIn}) {
                 </span>
             </div> */}
             
-            {!IsloggedIn ?
+            {console.log("goal", user)}
+            {IsloggedIn && user && user?.show_piggy_bank ?
                 <p className='text-black/50 text-sm font-medium mt-4' >
                     <span className="text-black font-black">{formatMultiPrice(goal?.fullfilled, goal?.currency)}</span> earned of {formatMultiPrice(goal?.target, goal?.currency)}
                 </p> 
                 : 
                 <>
+                {console.log("goal", user)}
                     {user && user?.show_piggy_bank ? 
                         <p className='text-black/50 text-sm font-medium mt-4' >
                             <span className="text-black font-black">{formatMultiPrice(goal?.fullfilled, goal?.currency)}</span> earned.
                         </p> 
-                    : '' }
+                    : 'TExt' }
                 </>
             }
         </div>

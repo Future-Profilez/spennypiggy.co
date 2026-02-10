@@ -152,7 +152,7 @@ export default function Dashboard(props) {
         const controller = new AbortController();
         const { signal } = controller;
         fetch_gifts(signal);
-        return () => controller.abort();
+        // return () => controller.abort();
     }, [tab]);
 
     // Fetch creator activity status
