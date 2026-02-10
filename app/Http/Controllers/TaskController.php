@@ -906,8 +906,14 @@ class TaskController extends Controller
 
                 // Notify Admin (via email)
                 try {
+                    $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+
+                    if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+                        Mail::to('prem@futureprofilez.com')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    } elseif ($appUrl == 'https://spennypiggy.co') {
+                        Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    }
                     // Send to admin support email
-                    Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify admin about escalation: " . $e->getMessage());
                 }
