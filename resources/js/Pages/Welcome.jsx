@@ -45,7 +45,6 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
 
 
     const appEnv = import.meta.env.VITE_APP_ENV;
-    console.log("Sentry enabled in ENV:", appEnv);
 
     return <>
         <Head title="Spenny Piggy — Exclusive Content, Memberships & More!">

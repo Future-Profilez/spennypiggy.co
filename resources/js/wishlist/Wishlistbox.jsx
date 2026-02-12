@@ -35,7 +35,6 @@ export default function Wishlistbox(props) {
         trackClick,
     } = props;
 
-    console.log("itm",itm)
     const {
         attributes,
         listeners,

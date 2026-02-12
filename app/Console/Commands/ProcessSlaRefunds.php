@@ -41,14 +41,14 @@ class ProcessSlaRefunds extends Command
     public function handle()
     {
         $this->info('Starting SLA check...');
-        Log::info('Starting SLA check...');
+        // Log::info('Starting SLA check...');
 
         $this->processGracePeriodEntry();
         $this->processGracePeriodReminders();
         $this->processGracePeriodExpirations();
 
         $this->info('SLA check completed.');
-        Log::info('SLA check completed.');
+        // Log::info('SLA check completed.');
     }
 
     private function processGracePeriodEntry()
@@ -256,7 +256,7 @@ class ProcessSlaRefunds extends Command
             // 4. Notify Users
             $this->notifyRefundUsers($purchase);
 
-            Log::info("Successfully refunded purchase {$purchase->uuid}");
+            // Log::info("Successfully refunded purchase {$purchase->uuid}");
 
         } catch (\Exception $e) {
             Log::error("Failed to refund purchase {$purchase->uuid}: " . $e->getMessage());

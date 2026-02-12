@@ -42,7 +42,7 @@ export default function FollowersBulkNotification() {
                 errorAlert(response?.data?.msg);
             }
         } catch (error) {
-            console.log("error", error);
+            // console.log("error", error);
             errorAlert(error?.response?.data?.msg || "An error occurred");
             setError(error?.response?.data?.errors || {});
         } finally {

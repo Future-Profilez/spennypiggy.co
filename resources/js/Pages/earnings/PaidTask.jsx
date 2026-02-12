@@ -6,7 +6,7 @@ import { useState } from "react";
 import PriceFormat from '@/includes/PriceFormat';
 import userphoto from "../../../assets/siteicon.png";
 
-export default function SubcriptionEarnings({ auth }) {
+export default function PaidTask({ auth }) {
     const [loading, setLoading] = useState(false);
     const { formatMultiPrice } = PriceFormat();
     const [lists, setLists] = useState([]);
@@ -62,7 +62,7 @@ export default function SubcriptionEarnings({ auth }) {
     }
 
     return (
-        <section className="bg-white rounded-[40px]   shadow lg:min-h-[510px]">
+        <section className="bg-white rounded-xl  shadow lg:min-h-[510px]">
             {/* <h2 className="w-full uppercase p-4 border-b border-gray-200 font-bold">Top Wishes Subscription </h2> */}
             <h2 className="w-full uppercase p-4 border-b border-gray-200 font-bold">
                 Top Paid Task{" "}

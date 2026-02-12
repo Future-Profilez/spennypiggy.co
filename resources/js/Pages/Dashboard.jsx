@@ -61,7 +61,6 @@ const CreatorActivityWidget = lazy(
 export default function Dashboard(props) {
 
     const { ziggy } = usePage().props;
-    console.log("Dashboard props:", ziggy);
     const w = useWidthCount();
     const {
         auth,
@@ -134,7 +133,7 @@ export default function Dashboard(props) {
         const controller = new AbortController();
         const { signal } = controller;
         fetch_gifts(signal);
-        return () => controller.abort();
+        // return () => controller.abort();
     }, [tab]);
 
     // Fetch creator activity status
