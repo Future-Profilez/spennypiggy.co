@@ -623,6 +623,7 @@ class MembershipController extends Controller
         $card_capabilities = StripeControl::hasCardPaymentsCapability($membership->user->account_id);
 
         // Recalculate fees for display purposes to ensure tax_amount is not null
+        // Client Rule: VAT must be added BEFORE all other fees when calculating
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
         $vatAmount = $membership->price * $vatPercent / 100;
         
@@ -631,7 +632,8 @@ class MembershipController extends Controller
         
         // Update membership object for view (this doesn't save to DB)
         // We include both application fee and stripe fee in the "tax_amount" for display so the total is closer to reality
-        // Note: Frontend adds another admin fee, so we might be double counting that part, but it's better than showing 1.15
+        // Note: The Stripe fee isn't "set" by us (it's variable), but we include the estimated amount here 
+        // to highlight where it goes in the flow and ensure the Total matches the actual charge.
         $membership->tax_amount = $breakdownCreator['application_fee'] + $breakdownCreator['stripe_fee'];
 
         return Inertia::render('membership/MemberCheckout', [

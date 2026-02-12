@@ -374,7 +374,11 @@ class TaskController extends Controller
         }
 
         // Use gross-up flow helper
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatAmount = $price * $vatPercent / 100;
+        $priceWithVat = $price + $vatAmount;
+
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
         
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];

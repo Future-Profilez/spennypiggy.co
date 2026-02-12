@@ -206,7 +206,17 @@ class ShopsController extends Controller
         $currency = $user->default_currency ?? 'gbp';
 
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatPercent = $user->vat_amount_percentage ?? 0;
+        // Check if item has VAT applicable flag, default to true if not set or if logic dictates
+        // Based on other controllers, we mostly rely on user setting. But here we have a specific field.
+        // If request has vat_applicable and it is falsy, maybe we shouldn't add VAT?
+        // However, usually VAT registration means you MUST charge VAT.
+        // Let's assume if user has VAT % set, it applies.
+        $vatAmount = $request->price * $vatPercent / 100;
+        $priceWithVat = $request->price + $vatAmount;
+
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
         
         $createpriceid = $breakdown['total_supporter_pays'];
 

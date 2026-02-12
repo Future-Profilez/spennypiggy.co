@@ -495,8 +495,13 @@ class BillsController extends Controller
                 $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
+                // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+                $vatPercent = $bill->user->vat_amount_percentage ?? 0;
+                $vatAmountCalc = $bill->price * $vatPercent / 100;
+                $priceWithVat = $bill->price + $vatAmountCalc;
+
                 // Use new gross-up flow helper
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill->price, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
                 
                 $finalTotalAmount = $breakdown['total_supporter_pays'];
                 $applicationFeeAmount = $breakdown['application_fee'];

@@ -1906,8 +1906,13 @@ class StripeController extends Controller
 
             $basePrice = Helpers::priceFormat($wish->currency, $wish->price, $currency);
         
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatPercent = $wish->user->vat_amount_percentage ?? 0;
+        $vatAmount = $basePrice * $vatPercent / 100;
+        $priceWithVat = $basePrice + $vatAmount;
+
         // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
         
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
