@@ -5,26 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\AutoTweetWishAdd;
-use App\Jobs\CheckoutTweet;
-use App\Jobs\CrowdfundTweet;
-use App\Jobs\SendThankYouMailAdmin;
-use App\Jobs\SubscribeAutoTweet;
-use App\Jobs\SurpriseTweet;
-use App\Jobs\TipJarTweet;
-use App\Models\BillPayment;
-use App\Models\CreatorShippingAddress;
 use App\Models\Logs;
-use App\Models\MembershipPayment;
-use App\Models\ProductOrderDetail;
-use App\Models\RyeCart;
-use App\Models\RyeProduct;
-use App\Models\RyeProductPayment;
-use App\Models\ShopPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
-use App\Models\Subscription;
-use App\Models\TipGoal;
-use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserCategory;
@@ -32,41 +15,42 @@ use App\Models\UserIntro;
 use App\Models\WishCategory;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
+use App\Models\RyeProduct;
+use App\Models\RyeCart;
+use App\Models\RyeProductPayment;
+use App\Models\ProductOrderDetail;
+use App\Models\CreatorShippingAddress;
+use App\Models\Subscription;
+use App\Models\TipGoal;
+use App\Models\TipGoalsPayment;
+use App\Models\BillPayment;
+use App\Models\MembershipPayment;
+use App\Models\ShopPayment;
+use App\Jobs\SendThankYouMailAdmin;
+use App\Jobs\SurpriseTweet;
+use App\Jobs\CrowdfundTweet;
+use App\Jobs\CheckoutTweet;
+use App\Jobs\SubscribeAutoTweet;
+use App\Jobs\TipJarTweet;
+use App\Services\CreatorActivityService;
+use App\Services\CreatorSubscriptionService;
+use App\Notifications\SubscriptionBlockedNotification;
 use App\Rules\ValidSubscriptionPeriod;
-use App\Services\CacheService;
 use App\Services\UserProfileService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 use Stripe\StripeClient;
 use App\StripeControl;
 use Ramsey\Uuid\Uuid;
 use Inertia\Inertia;
-use Carbon\Carbon;
 use Exception;
-use App\Helpers\JwtHelper;
-use App\Jobs\CheckAdultContent;
-use App\Jobs\MakeAutoTweets;
-use App\Jobs\SaveWishlist;
-use App\Jobs\SendUserGiftMail;
-use App\Jobs\ThankyouMailToUser;
-use App\Jobs\WelcomeUser;
-use App\Mail\CheckError;
-use App\Mail\CommandFailed;
-use App\Models\GifterCardVerification;
-use App\Models\TwitterToken;
-use App\TwitterAuthService;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Session;
-use Ramsey\Uuid\Nonstandard\Uuid as NonstandardUuid;
 
 class WishitemController extends Controller
 {
@@ -127,12 +111,16 @@ class WishitemController extends Controller
              😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
             $user = User::find(Auth::id());
-            $taxamount = $request->price * config('app.platform_fee_percentage') / 100;
-            $adminFee = config('app.administration_fee');
-            $adminFees = Helpers::priceFormat('GBP', $adminFee, $user->default_currency);
-            // $taxamount = $request->price * env('TAX_PERCENTAGE', 20) / 100; // commented old code which written by saurav sir
-            $createpriceid = ceil($request->price) + ceil($taxamount) + ceil($adminFees);
-            $totalTax = ceil($taxamount) + ceil($adminFees);
+            $currency = $user->default_currency ?? 'gbp';
+
+            // Use new gross-up flow for consistent fee calculation
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            
+            $finalTotalAmount = $breakdown['total_supporter_pays'];
+            $applicationFeeAmount = $breakdown['application_fee'];
+            $createpriceid = $finalTotalAmount;
+            $totalTax = $applicationFeeAmount;
+
             $wish = WishItem::create([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname,
@@ -150,7 +138,7 @@ class WishitemController extends Controller
             $wish->refresh();
 
             if (!empty($request->category)) {
-                foreach ($request->category as $key => $value) {
+                foreach ($request->category as $value) {
                     $wish_cat = new WishCategory();
                     $wish_cat->uuid = Uuid::uuid4();
                     $wish_cat->wish_item_id = $wish->id;
@@ -161,10 +149,8 @@ class WishitemController extends Controller
 
 
             if ($request->subscription != 2) {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-
                 $productPayload = [
-                    'name' => $request->wishname ?? 'Untitled Wish',
+                    'name' => 'Total value of item including all fees',
                     'images' => [$wish->perma_link],
                     'default_price_data' => [
                         'currency' => 'gbp',
@@ -173,6 +159,7 @@ class WishitemController extends Controller
                     'metadata' => [
                         'creator_id' => $user->id,
                         'wish_id' => $wish->id,
+                        'wish_name' => $request->wishname ?? 'Untitled Wish',
                         'deliverable_type' => 'media_bundle',
                         'certificate' => 'true',
                         'product_type' => 'wish_onetime',
@@ -295,18 +282,15 @@ class WishitemController extends Controller
 
         $user = User::find(Auth::id());
         $price = $request->price;
+        $currency = $user->default_currency ?? 'gbp';
 
-        // $price = round($request->price, 2, PHP_ROUND_HALF_UP);
-        if ($request->subscription == 0) {
-            $tax_percent = config('app.platform_fee_percentage');
-        } elseif ($request->subscription == 1) {
-            $tax_percent = config('app.platform_fee_percentage');
-        } elseif ($request->subscription == 2) {
-            $tax_percent = config('app.crowd_tax');
-        }
-
-        $taxamount = round(($price * $tax_percent / 100), 2, PHP_ROUND_HALF_UP);
-        $createpriceid = $price + $taxamount;
+        // Use new gross-up flow for consistent fee calculation
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        $applicationFeeAmount = $breakdown['application_fee'];
+        $taxamount = $applicationFeeAmount;
+        $createpriceid = $finalTotalAmount;
 
         // Handle content file UUID from Uploadcare
         $contentFile = $request->content_file; // Uploadcare UUID
@@ -338,7 +322,7 @@ class WishitemController extends Controller
         $wish->refresh();
 
         if (!empty($request->category)) {
-            foreach ($request->category as $key => $value) {
+            foreach ($request->category as $value) {
                 $wish_cat = new WishCategory();
                 $wish_cat->uuid = Uuid::uuid4();
                 $wish_cat->wish_item_id = $wish->id;
@@ -352,13 +336,16 @@ class WishitemController extends Controller
 
         if (in_array($request->subscription, [0, 1])) {
             $productPayload = [
-                "name"  =>  $wish->wishname . "(Custom Content Purchase)",
+                "name"  =>  "Total value of item including all fees",
                 "images" => [$wish->perma_link],
                 "default_price_data"    =>  [
                     "currency"  =>  $user->default_currency,
                     "unit_amount_decimal"   => round($createpriceid, 2, PHP_ROUND_HALF_UP) * 100,
                 ],
-                "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
+                "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/",
+                'metadata' => [
+                    'wish_name' => $wish->wishname,
+                ]
             ];
 
             if ($request->subscription == 1) {
@@ -369,9 +356,8 @@ class WishitemController extends Controller
             }
 
             try {
-                $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $productPayload = [
-                    'name' => $request->wishname ?? 'Untitled Wish',
+                    'name' => 'Total value of item including all fees',
                     'images' => [$wish->perma_link],
                     'default_price_data' => [
                         'currency' => 'gbp',
@@ -380,6 +366,7 @@ class WishitemController extends Controller
                     'metadata' => [
                         'creator_id' => $user->id,
                         'wish_id' => $wish->id,
+                        'wish_name' => $request->wishname ?? 'Untitled Wish',
                         'deliverable_type' => $request->subscription == 1 ? 'access' : 'media_bundle',
                         'certificate' => 'true',
                         'product_type' => $request->subscription == 1 ? 'wish_subscription' : 'wish_onetime',
@@ -411,7 +398,7 @@ class WishitemController extends Controller
         }
 
         // Clear activity cache to ensure real-time updates
-        app(\App\Services\CreatorActivityService::class)->clearActivityCache(Auth::user());
+        app(CreatorActivityService::class)->clearActivityCache(Auth::user());
 
         return redirect(route("user.show", ["username" => Auth::user()->username, "page" => "wishes"]))->with('success', "Wish Item has been added, your upload will be approved shortly.");
     }
@@ -431,21 +418,24 @@ class WishitemController extends Controller
 
         $old_price = $wish->price;
         $new_price = $request->price;
+        $user = User::find(Auth::id());
+        $currency = $user->default_currency ?? 'gbp';
+
         if (!empty($request->price)) {
-            if ($request->subscription == 0) {
-                $tax_percent = config('app.platform_fee_percentage');
-            } elseif ($request->subscription == 1) {
-                $tax_percent = config('app.platform_fee_percentage');
-            } elseif ($request->subscription == 2) {
-                $tax_percent = config('app.crowd_tax');
-            }
-            $taxamount = $request->price * $tax_percent / 100;
+            // Use new gross-up flow for consistent fee calculation
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            
+            $finalTotalAmount = $breakdown['total_supporter_pays'];
+            $applicationFeeAmount = $breakdown['application_fee'];
+            $taxamount = $applicationFeeAmount;
             $price = $request->price;
-            $createpriceid = $taxamount + $price;
+            $createpriceid = $finalTotalAmount;
         } else {
-            $taxamount = $wish->tax_amount;
+            // Re-calculate with current price to ensure gross-up logic is applied if it wasn't before
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($wish->price, $currency);
+            $taxamount = $breakdown['application_fee'];
             $price = $wish->price;
-            $createpriceid = $taxamount + $price;
+            $createpriceid = $breakdown['total_supporter_pays'];
         }
         if (!empty($wish)) {
             // Handle content file UUID from Uploadcare for update
@@ -462,7 +452,7 @@ class WishitemController extends Controller
                 $contentFileSize = $request->content_file_size;
             }
             
-            $updatedata = WishItem::where('uuid', $uuid)->update([
+            WishItem::where('uuid', $uuid)->update([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname ?? $wish->wishname,
                 'price' => $price,
@@ -486,9 +476,8 @@ class WishitemController extends Controller
 
             $wish->refresh();
             if (!empty($request->category)) {
-
                 WishCategory::where('wish_item_id', $wish->id)->delete();
-                foreach ($request->category as $key => $value) {
+                foreach ($request->category as $value) {
                     $wish_cat = new WishCategory();
                     $wish_cat->uuid = Uuid::uuid4();
                     $wish_cat->wish_item_id = $wish->id;
@@ -507,13 +496,16 @@ class WishitemController extends Controller
             if (in_array($request->subscription, [0, 1])) {
 
                 $productPayload = [
-                    "name"  =>  $wish->wishname . "(Custom Content Purchase)",
+                    "name"  =>  "Total value of item including all fees",
                     "images" => [$wish->perma_link],
                     "default_price_data"    =>  [
                         "currency"  =>  $user->default_currency,
                         "unit_amount_decimal"   => $unit_amount_decimal,
                     ],
-                    "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/"
+                    "url"   =>  $request->item_url ?? env('APP_URL') . '/' . $user->username . "?item=$wish->uuid/",
+                    'metadata' => [
+                        'wish_name' => $wish->wishname,
+                    ]
                 ];
 
                 if ($request->subscription == 1) {
@@ -579,9 +571,12 @@ class WishitemController extends Controller
 
                             // Update product details
                             $productUpdatePayload = [
-                                'name' => !empty($request->wishname) ? $request->wishname . "(Custom Content Purchase)" : $wish->wishname . "(Custom Content Purchase)",
+                                'name' => "Total value of item including all fees",
                                 'images' => [$wish->perma_link],
-                                'default_price' => $newPrice->id
+                                'default_price' => $newPrice->id,
+                                'metadata' => [
+                                    'wish_name' => !empty($request->wishname) ? $request->wishname : $wish->wishname,
+                                ]
                             ];
                             
                             $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
@@ -642,7 +637,7 @@ class WishitemController extends Controller
             
             $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
             
-            foreach ($si as $key => $value) {
+            foreach ($si as $value) {
                 StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
                 $value->delete();
             }
@@ -724,7 +719,7 @@ class WishitemController extends Controller
         }
 
         $categories = UserCategory::where('user_id', Auth::id())->get();
-        foreach ($categories as $key => $value) {
+        foreach ($categories as $value) {
             if (strtolower($request->category) == strtolower($value->category)) {
                 return back()->with('error', 'Category is already exists.');
             }
@@ -880,7 +875,6 @@ class WishitemController extends Controller
 
     public function wishItems(Request $request): RedirectResponse
     {
-        $categories = UserCategory::where('user_id', Auth::id())->get();
         UserCategory::create([
             "user_id" => Auth::id(),
             'category' => $request->category ?? null,
@@ -894,7 +888,7 @@ class WishitemController extends Controller
         if ($category != 'all') {
             $query->where('user_category_id', $category);
         }
-        $itemId = $query->whereHas('wish', function ($q) use ($user_id) {
+        $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
         $user = User::where('id', $user_id)->where('suspended_account', 0)->where(
@@ -902,9 +896,6 @@ class WishitemController extends Controller
             0
             // $q->whereNot('country', 'GB')->orWhereNull('country');
         )->first();
-        $items = Wishitem::whereIn('id', $itemId)->latest()->get();
-        // $items = WishItem::whereUserId($user->id)->latest()->get();
-        $categories = UserCategory::whereUserId($user->id)->latest()->get();
         return redirect(route('user.show', ['username', $user->username, 'filter' => true]));
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
     }
@@ -958,26 +949,40 @@ class WishitemController extends Controller
 
         // ✅ Calculate product details (refactored block)
         $calculateProduct = function($wishitem, $currency, $amount, $accountId = null) {
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishitem->price, $wishitem->user->default_currency);
+            
             if ($wishitem->subscription == 2) {
+                // For crowdfunding, we need to calculate the gross-up total for the requested amount
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
-                $tax   = round(($price * config('app.crowd_tax', 10) / 100), 2, PHP_ROUND_HALF_UP);
-                $total = $price + $tax;
+                
+                // Use new gross-up flow for consistent fee calculation
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $wishitem->user->default_currency);
+                
+                $total = $breakdown['total_supporter_pays'];
+                $tax = $breakdown['application_fee'];
 
                 $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
                 $stripeProduct = $stripe->products->create([
-                    'name'               => $wishitem->wishname,
+                    'name'               => 'Total value of item including all fees',
                     'images'             => [$wishitem->perma_link],
                     "default_price_data" => [
                         "currency"           => "gbp",
                         "unit_amount_decimal"=> round($total * 100, 0)
                     ],
+                    'metadata' => [
+                        'wish_name' => $wishitem->wishname,
+                        'product_type' => 'wish_crowdfund',
+                        'creator_id' => $wishitem->user->id,
+                        'wish_id' => $wishitem->id,
+                        'creator_net_amount' => $breakdown['net_to_creator'],
+                    ]
                 ], $accountId ? ['stripe_account' => $accountId] : []);
 
                 return [$price, $tax, $stripeProduct->id];
             } elseif ($wishitem->subscription == 0) {
-                return [$wishitem->price, $wishitem->tax_amount, $wishitem->stripe_product_id];
+                return [$wishitem->price, $breakdown['application_fee'], $wishitem->stripe_product_id];
             } else {
-                return [$wishitem->price, $wishitem->tax_amount, null];
+                return [$wishitem->price, $breakdown['application_fee'], null];
             }
         };
 
@@ -999,8 +1004,7 @@ class WishitemController extends Controller
             $cart->country       = 'global';
             $cart->updated_at    = now();
             
-            $saveResult = $cart->save();
-            $dbVerification = DB::table('user_carts')->where('id', $cart->id)->first();
+            $cart->save();
         } else {
             $cartData = [
                 "user_id"      => Auth::check() ? Auth::id() : null,
@@ -1017,18 +1021,6 @@ class WishitemController extends Controller
             ];
             try {
                 $cart = UserCart::create($cartData);
-                
-                $dbVerification = DB::table('user_carts')->where('id', $cart->id)->first();
-                Log::info('Database verification after create', [
-                    'cart_id' => $cart->id,
-                    'found_in_db' => $dbVerification ? true : false,
-                    'db_user_id' => $dbVerification->user_id ?? 'N/A',
-                    'db_status' => $dbVerification->status ?? 'N/A',
-                    'db_created_at' => $dbVerification->created_at ?? 'N/A'
-                ]);
-                
-                $modelVerification = UserCart::find($cart->id);
-               
             } catch (\Exception $e) {
                 Log::error('Cart creation failed', [
                     'error' => $e->getMessage(),
@@ -1386,7 +1378,7 @@ class WishitemController extends Controller
             ]);
 
             $user->stripe_id = $stripeCustomer->id;
-            if ($user instanceof \App\Models\User) {
+            if ($user instanceof User) {
                 $user->save();
             }
         }
@@ -1420,11 +1412,11 @@ class WishitemController extends Controller
             }
 
             // Check creator subscription eligibility
-            $subscriptionCheck = app(\App\Services\CreatorSubscriptionService::class)->validateCreatorSubscription($orderDetails->creator);
+            $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($orderDetails->creator);
             
             if (!$subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
-                $orderDetails->creator->notify(new \App\Notifications\SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
+                $orderDetails->creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
                 
                 // Log the blocked payment for subscription issues
                 Log::warning('Rye product payment blocked due to subscription issue', [
@@ -1444,7 +1436,6 @@ class WishitemController extends Controller
 
             $currency = 'usd';
             $totalAmount = 0;
-            $lineItems = [];
             $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
             $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
 
@@ -1457,7 +1448,7 @@ class WishitemController extends Controller
 
             foreach ($cartLines as $cartLine) {
                 $quantity = data_get($cartLine, 'quantity', 1);
-                $unitPrice = data_get($cartLine, 'product.price.value', 0); // Convert to cents
+                $unitPrice = data_get($cartLine, 'product.price.value', 0); // Price in cents
                 $productId = data_get($cartLine, 'product.id', '');
 
                 if (!$productId || $unitPrice <= 0) {
@@ -1468,17 +1459,6 @@ class WishitemController extends Controller
                 }
 
                 $totalAmount += ($unitPrice * $quantity);
-
-                $lineItems[] = [
-                    'quantity' => $quantity,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'unit_amount' => $unitPrice,
-                        'product_data' => [
-                            'name' => data_get($cartLine, 'product.title', 'Product'),
-                        ],
-                    ],
-                ];
             }
 
             if ($totalAmount <= 0) {
@@ -1496,23 +1476,46 @@ class WishitemController extends Controller
             }
             
             // Check if creator has card_payments capability to determine payment flow
-            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($orderDetails->creator->account_id);
+            $hasCardPayments = StripeControl::hasCardPaymentsCapability($orderDetails->creator->account_id);
 
-            // $addressData = [
-            //     'country' => $request->country,
-            //     'street_address' => $request->street_address,
-            //     'city' => $request->city,
-            //     'state' => $request->state,
-            //     'postal_code' => $request->postal_code,
-            // ];
-            // Convert to JSON format
+            if (!$hasCardPayments) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "This creator cannot accept payments at the moment (Card Payments capability missing)."
+                ], 422);
+            }
+
+            // Use gross-up flow helper
+            $basePrice = $totalAmount / 100; // Convert cents to major unit
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $currency);
+            
+            $finalTotalAmount = $breakdown['total_supporter_pays'];
+            $applicationFeeAmount = $breakdown['application_fee'];
+            $creatorNetAmount = $breakdown['net_to_creator'];
+
+            // Handle zero-decimal currencies
+            $multiplier = Helpers::isZeroDecimalCurrency($currency) ? 1 : 100;
+
+            // Single line item hiding all fees
+            $lineItems = [
+                [
+                    'quantity' => 1,
+                    'price_data' => [
+                        'currency' => $currency,
+                        'product_data' => [
+                            'name' => "Total value of item including all fees",
+                        ],
+                        'unit_amount' => round($finalTotalAmount * $multiplier),
+                    ]
+                ]
+            ];
+
             $addressJson = null;
-            // $addressJson = json_encode($addressData, true);
 
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();
             $ryeProductPayment->currency = $currency;
-            $ryeProductPayment->amount = $totalAmount / 100;
+            $ryeProductPayment->amount = $finalTotalAmount; // Store total paid by supporter
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
@@ -1529,12 +1532,17 @@ class WishitemController extends Controller
             
             // Build payment_intent_data for Direct Charges
             $paymentIntentData = [
+                'application_fee_amount' => round($applicationFeeAmount * $multiplier),
                 'metadata' => [
                     'order_id' => $orderDetails->id,
                     'user_id' => $orderDetails->user->id,
                     'creator_id' => $orderDetails->creator->id,
                     'payment_type' => 'product_purchase',
                     'has_card_payments' => (string) $hasCardPayments,
+                    'item_amount' => (string) round($basePrice * $multiplier),
+                    'creator_net_amount' => (string) $creatorNetAmount,
+                    'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
+                    'total_charge_amount' => (string) $finalTotalAmount,
                 ],
             ];
             
@@ -1727,7 +1735,7 @@ class WishitemController extends Controller
      *
      * @return Response
      */
-    public function ryeSuccessPayment($uuid, $orderUuid)
+    public function ryeSuccessPayment($uuid)
     {
         $orderDetails = RyeProductPayment::with('user')->where('uuid', $uuid)->first();
 
@@ -1811,16 +1819,16 @@ class WishitemController extends Controller
                 return $this->handlePaymentRefunded($payload);
 
             case 'ORDER_SUBMISSION_STARTED':
-                return $this->handleOrderSubmissionStarted($payload);
+                return $this->handleOrderSubmissionStarted();
 
             case 'ORDER_SUBMISSION_SUCCEEDED':
-                return $this->handleOrderSubmissionSucceeded($payload);
+                return $this->handleOrderSubmissionSucceeded();
 
             case 'ORDER_PLACED':
                 return $this->handleOrderPlaced($payload);
 
             case 'ORDER_FAILED':
-                return $this->handleOrderFailed($payload);
+                return $this->handleOrderFailed();
 
             case 'ORDER_CANCEL_REQUESTED':
                 return $this->handleOrderCancelRequested($payload);
@@ -1915,13 +1923,13 @@ class WishitemController extends Controller
         return response()->json(['message' => 'Payment refunded processed']);
     }
 
-    protected function handleOrderSubmissionStarted($payload)
+    protected function handleOrderSubmissionStarted()
     {
         // Log::info("Handling OrderSubmissionStarted", $payload);
         return response()->json(['message' => 'Order submission started processed']);
     }
 
-    protected function handleOrderSubmissionSucceeded($payload)
+    protected function handleOrderSubmissionSucceeded()
     {
         // Log::info("Handling OrderSubmissionSucceeded", $payload);
         return response()->json(['message' => 'Order submission succeeded processed']);
@@ -1947,7 +1955,7 @@ class WishitemController extends Controller
         return response()->json(['message' => 'Order placed processed']);
     }
 
-    protected function handleOrderFailed($payload)
+    protected function handleOrderFailed()
     {
         // Log::info("Handling OrderFailed", $payload);
         return response()->json(['message' => 'Order failed processed']);
@@ -2173,7 +2181,7 @@ class WishitemController extends Controller
      * rye update buyer identity functionality
      *
      */
-    public function updateCartBuyerIdentity($cart_id, $address)
+    public function updateCartBuyerIdentity($cart_id, $creatorShipping)
     {
         $url = 'https://staging.graphql.api.rye.com/v1/query';
         $authToken = 'Basic UllFL3N0YWdpbmctYTlmYjk0YjhmYTM1NGE4MTg5NWI6'; // Replace with your actual token
@@ -2471,6 +2479,7 @@ class WishitemController extends Controller
                 'user' => $wish->user ? $wish->user->toArray() : [], // Check if user is not null
                 'wish' => $wish->wish ? $wish->wish->toArray() : [],
                 'owner' => $wish->owner ? $wish->owner->toArray() : [],
+                'owner_account_id' => $wish->owner ? $wish->owner->account_id : null,
                 'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
                 'amount' => $wish->amount,
                 'priceid' => $wish->priceid,
@@ -2491,6 +2500,7 @@ class WishitemController extends Controller
                     'uuid' => $value[0]['owner']['uuid'] ?? null,
                     'default_currency' => $value[0]['owner']['default_currency']
                 ],
+                'card_capabilities' => StripeControl::hasCardPaymentsCapability($value[0]['owner_account_id'] ?? null),
             ];
 
             $total = 0;
@@ -2651,6 +2661,7 @@ class WishitemController extends Controller
                     'user' => $wish->user->toArray(),
                     'wish' => $wish->wish ? $wish->wish->toArray() : [],
                     'owner' => $wish->owner->toArray(),
+                    'owner_account_id' => $wish->owner->account_id,
                     'url' => $wish->wish ? $wish->wish->perma_link : 'https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/',
                     'amount' => $wish->amount,
                     'priceid' => $wish->priceid,
@@ -2676,6 +2687,7 @@ class WishitemController extends Controller
                         'uuid' => $value[0]['owner']['uuid'],
                         'default_currency' => $value[0]['owner']['default_currency'],
                     ],
+                    'card_capabilities' => StripeControl::hasCardPaymentsCapability($value[0]['owner_account_id'] ?? null),
                 ];
 
                 $total = 0;
@@ -2840,7 +2852,7 @@ class WishitemController extends Controller
                     "message" => 'Unable to update quantity',
                 ]);
             }
-        } catch (\Throwable $th) {
+        } catch (\Throwable) {
             //throw $th;
         }
     }
@@ -2986,7 +2998,7 @@ class WishitemController extends Controller
     {
         $subs = Subscription::where('owner_id', Auth::id())->orderBy('updated_at', 'DESC')->get();
         $data = [];
-        foreach ($subs as $key => $value) {
+        foreach ($subs as $value) {
             $data[] = [
                 'user' => [
                     'name' => $value->user->name,
@@ -3015,7 +3027,7 @@ class WishitemController extends Controller
     {
         $subs = Subscription::where('user_id', Auth::id())->get();
         $data = [];
-        foreach ($subs as $key => $value) {
+        foreach ($subs as $value) {
             $data[] = [
                 'owner' => [
                     'name' => $value->owner->name,
@@ -3078,7 +3090,6 @@ class WishitemController extends Controller
      */
     public function addTipGoal(Request $request)
     {
-        $currency = !empty($request->cookie('currency')) ? $request->cookie('currency') : "gbp";
         $request->validate(
             [
                 "name" => [
@@ -3102,7 +3113,6 @@ class WishitemController extends Controller
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
         $target = $request->target;
-        $price = $request->default_price;
 
         $goal = TipGoal::create([
             'user_id' => $user->id,
@@ -3315,7 +3325,7 @@ class WishitemController extends Controller
     {
         $wish_cat = WishCategory::where('user_category_id', $id)->get();
 
-        foreach ($wish_cat as $key => $value) {
+        foreach ($wish_cat as $value) {
             $value->user_category_id = NULL;
             $value->save();
         }

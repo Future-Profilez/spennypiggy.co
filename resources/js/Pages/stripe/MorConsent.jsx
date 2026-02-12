@@ -43,7 +43,7 @@ export default function MorConsent(props) {
 
                     {/* Gating Banner */}
                     {!finalStepsUnlocked && (
-                        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg text-yellow-800">
+                        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-yellow-800">
                             <p className="font-semibold">
                                 Admin Profile Approval Required
                             </p>
@@ -55,7 +55,7 @@ export default function MorConsent(props) {
                     )}
 
                     {/* Merchant of Record Agreement Card */}
-                    <div className="bg-white rounded-xl  shadow-lg border border-gray-200 overflow-hidden mb-8">
+                    <div className="bg-white rounded-[40px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
                         <div className="p-8">
                             {/* Agreement Header */}
                             <div className="text-center mb-8">
@@ -72,7 +72,7 @@ export default function MorConsent(props) {
 
                             {/* Agreement Content */}
                             <div className="space-y-6 mb-8">
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[40px]  p-6">
                                     <p className="text-gray-700 text-lg text-center font-semibold">
                                         I confirm that I understand and agree
                                         that I am the Merchant of Record (MoR)
@@ -225,7 +225,7 @@ export default function MorConsent(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-xl p-6">
+                                <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-[40px]  p-6">
                                     <p className="text-gray-700 text-center font-semibold">
                                         By continuing, I confirm that I have
                                         read, understood, and agree to this
@@ -235,7 +235,7 @@ export default function MorConsent(props) {
                             </div>
 
                             {/* Confirmation Checkbox */}
-                            <div className="bg-gray-50 rounded-xl p-6 mb-8">
+                            <div className="bg-gray-50 rounded-[40px]  p-6 mb-8">
                                 <label
                                     htmlFor="mor_agreement"
                                     className="flex items-start space-x-3 cursor-pointer"
@@ -271,7 +271,7 @@ export default function MorConsent(props) {
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    className="btn-pink sm flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-voilet transition-all duration-300"
+                                    className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={!data.mor_agreed || processing}
                                 >
                                     {processing ? (

@@ -14,7 +14,7 @@ import Membership from './../membership/Membership';
 
     const ITEM = ({itm}) => { 
       return <>
-          <div className='relative group overflow-hidden rounded-[32px] bg-[#1A1B23]/40 border border-white/5 transition-all duration-500 hover:border-white/20 hover:bg-[#1A1B23]/60 hover:-translate-y-1' >
+          <div className='relative group overflow-hidden rounded-[40px]  bg-[#1A1B23]/40 border border-white/5 transition-all duration-500 hover:border-white/20 hover:bg-[#1A1B23]/60 hover:-translate-y-1' >
             <div className='aspect-[16/9] overflow-hidden' >
               { handleTab == 'memberships' ?  
                 <img src={itm?.membership?.perma_link || '' } alt='image' className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-110' />
@@ -27,8 +27,8 @@ import Membership from './../membership/Membership';
             <div className='p-6 relative' >
               <Link href={`${itm?.owner?.username || ''}`} className="flex items-center gap-3 mb-6 group/author" >
                   <div className="relative">
-                      <div className="absolute -inset-1 bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] rounded-xl blur opacity-0 group-hover/author:opacity-40 transition duration-500"></div>
-                      <img className="relative h-12 w-12 rounded-xl object-cover border border-white/10" src={`${itm?.owner?.avatar || ''}`} />
+                      <div className="absolute -inset-1 bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] rounded-[40px]  blur opacity-0 group-hover/author:opacity-40 transition duration-500"></div>
+                      <img className="relative h-12 w-12 rounded-[40px]  object-cover border border-white/10" src={`${itm?.owner?.avatar || ''}`} />
                   </div>
                 <div>
                   <p className="text-white font-bold text-sm mb-0 group-hover/author:text-[#05EFB8] transition-colors"> {itm?.owner?.name || ''} </p>
@@ -105,8 +105,8 @@ import Membership from './../membership/Membership';
       <>
           <div className='m-auto'>
           <div className='flex justify-start items-center' >
-            <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
-            <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[20px] mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
+            <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
+            <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
           </div>
             {handleTab == 'memberships' ? <CATITEM type={handleTab} /> : <CATITEM type={handleTab} /> }
           </div>

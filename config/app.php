@@ -204,7 +204,8 @@ return [
 
 
     'administration_fee' => 1,
-    'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 20),
+    'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 15),
+    'transaction_fee_percentage' => env('TRANSACTION_FEE_PERCENTAGE', 2),
     
     /*
     |--------------------------------------------------------------------------

@@ -31,27 +31,11 @@ import Guest from "@/Layouts/GuestLayout";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
 
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    rectSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
-    closestCenter,
-    DndContext,
-    KeyboardSensor,
-    MouseSensor,
-    TouchSensor,
-    useSensor,
-    useSensors,
-} from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
+import { closestCenter, DndContext, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import PaymentUnActivated from "@/Components/PaymentUnActivated";
 import ProfileSteps from "./Profile/ProfileSteps";
-const ProfileProductLists = lazy(
-    () => import("./shop/profile/ProfileProductLists"),
-);
+const ProfileProductLists = lazy(() => import("./shop/profile/ProfileProductLists"),);
 const ProfileTaskLists = lazy(() => import("./Tasks/Profile/ProfileTaskLists"));
 const AddItem = lazy(() => import("./shop/AddItem"));
 import AddGift from "./feed/AddGift";
@@ -60,7 +44,6 @@ import { FaRegHeart } from "react-icons/fa";
 import { CiGift } from "react-icons/ci";
 import OldSubscribe from "./webpush/OldSubscribe";
 import AddSocial from "./Auth/Social";
-// import CreatorVerification from "./Profile/CreatorVerificationNew";
 import CreatorVerification from "./Profile/CreatorVerification";
 import SiteSubscription from "./Profile/SiteSubscription";
 import EnableCardCapabilities from "./stripe/EnableCardCapabilities";
@@ -71,14 +54,12 @@ import InstantTabSystem from "@/Components/InstantTabSystem";
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
 
-// Creator Activity and Subscription Components
 const CreatorActivityWidget = lazy(
     () => import("@/Components/CreatorActivityWidget"),
 );
-const CreatorSubscriptionWidget = lazy(
-    () => import("@/Components/CreatorSubscriptionWidget"),
-);
+
 export default function Dashboard(props) {
+
     const { ziggy } = usePage().props;
     console.log("Dashboard props:", ziggy);
     const w = useWidthCount();
@@ -98,16 +79,12 @@ export default function Dashboard(props) {
         selectedCategory,
         stripe_requirements,
         migration_status,
+        has_stripe_account,
     } = props;
 
     const [wishitems, setWishitems] = useState(items || []);
     const [tab, setTab] = useState(0);
 
-    const memoizedWishItems = useMemo(() => {
-        return items && Array.isArray(items) ? items : [];
-    }, [items]);
-
-    // Update wishitems when items prop changes (e.g., on category change or page refresh)
     useEffect(() => {
         if (items && Array.isArray(items)) {
             setWishitems(items);
@@ -120,6 +97,11 @@ export default function Dashboard(props) {
 
     const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+
+    const hasPendingCardPayments = useMemo(() => {
+        return stripe_requirements?.requirements?.some(r => r.type === 'card_payments_pending') || false;
+    }, [stripe_requirements]);
+
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
@@ -133,7 +115,6 @@ export default function Dashboard(props) {
     const [activityStatus, setActivityStatus] = useState(null);
     const [activityLoading, setActivityLoading] = useState(false);
 
-    const tabRendererRef = useRef(null);
 
     const fetch_gifts = async (signal) => {
         setGiftsLoading(true);
@@ -252,10 +233,6 @@ export default function Dashboard(props) {
         }
     }, []);
 
-    const handleDismiss = () => {
-        localStorage.setItem("stripeAlertDismissedAt", Date.now().toString());
-        setShowAlert(false);
-    };
 
     useEffect(() => {
         if (auth?.user?.email && typeof twq !== "undefined") {
@@ -301,10 +278,10 @@ export default function Dashboard(props) {
                             dangerouslySetInnerHTML={{ __html: addicon }}
                         ></div>
                         {showAdd ? (
-                            <div className="bg-[#0001] rounded-xl fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
+                            <div className="bg-[#0001] rounded-[40px]  fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-xl  shadow-lg z-10">
+                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-[40px]   shadow-lg z-10">
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
@@ -329,9 +306,9 @@ export default function Dashboard(props) {
                                                                     : false
                                                             }
                                                         />
-                                                        <div className="w-full font-bold disabled addop bg-white rounded-xl p-3 mb-2 text-center">
+                                                        <div className="w-full font-bold disabled addop bg-white rounded-[40px]  p-3 mb-2 text-center">
                                                             <div className=" flex items-center">
-                                                                <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                     <CiGift
                                                                         color="var(--pink)"
                                                                         size="1.5rem"
@@ -375,10 +352,10 @@ export default function Dashboard(props) {
                                                                         true,
                                                                     )
                                                                 }
-                                                                className="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer"
+                                                                className="w-full font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
                                                             >
                                                                 <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                    <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                         <FaRegHeart
                                                                             color="var(--pink)"
                                                                             size="1.5rem"
@@ -404,11 +381,11 @@ export default function Dashboard(props) {
                                                             </div>
 
                                                             <Link
-                                                                className="w-full block font-bold addop bg-white rounded-xl p-3 mb-2 text-center cursor-pointer"
+                                                                className="w-full block font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
                                                                 href="/task/create"
                                                             >
                                                                 <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-xl  bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                    <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                         <BiTask
                                                                             color="var(--pink)"
                                                                             size="1.5rem"
@@ -432,7 +409,7 @@ export default function Dashboard(props) {
                                                             </Link>
 
                                                             {/* <AddItem
-                                                                classes="w-full font-bold addop bg-white rounded-xl p-3 mb-2 text-center"
+                                                                classes="w-full font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center"
                                                                 product_type="digital_products"
                                                             /> */}
                                                             <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
@@ -478,25 +455,30 @@ export default function Dashboard(props) {
     };
 
     const [UserStripeConnected, setUserStripeConnected] = useState(
-        parseInt(user && user?.stripe_details_submitted) || 0,
+        (user && user?.stripe_details_submitted == 1) ? 1 : 0,
     );
     const [AuthUserStripeConnected, setAuthUserStripeConnected] = useState(
-        parseInt(auth && auth?.user && auth?.user?.stripe_details_submitted) ||
-            0,
+        (auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0,
     );
+
+    useEffect(() => {
+        setUserStripeConnected((user && user?.stripe_details_submitted == 1) ? 1 : 0);
+    }, [user?.stripe_details_submitted]);
+
+    useEffect(() => {
+        setAuthUserStripeConnected((auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0);
+    }, [auth?.user?.stripe_details_submitted]);
+ 
 
     return (
         <>
             <Guest auth={auth.user} user={user}>
-                <Head
-                    title={`${user?.name || auth?.user?.name} - Spenny Piggy`}
-                />
+                <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
 
                 <div className="wishlistPage blackbg pt-6 pb-0 sm:pb-5 ">
                     <div className="containerbox">
                         <VersionUpdate />
                         <OfferAnnouncement variant="default" />
-                        {/* <Side /> */}
                         <div className="wishbanner relative ">
                             <div className="relative">
                                 {user?.is_founder ? (
@@ -510,7 +492,7 @@ export default function Dashboard(props) {
                                     alt={`${user?.name} - Cover Image`}
                                     height={400}
                                     width={1200}
-                                    className="w-full border-black border-2 shadow-mint rounded-[30px]"
+                                    className="w-full border-black border-2 shadow-mints rounded-[40px] "
                                     src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
                                     loading="eager"
                                     fetchPriority="high"
@@ -550,7 +532,7 @@ export default function Dashboard(props) {
                         {/* Stripe Account Migration Warning */}
 
                         {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-xl ">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[40px]  ">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
@@ -607,9 +589,9 @@ export default function Dashboard(props) {
                                                             <LoadingScreen />
                                                         }
                                                     >
-                                                        <div className="flex flex-wrap about-sec self-start">
-                                                            <div className="w-full lg:w-1/2  h-auto">
-                                                                <div className="about-sticky">
+                                                        <div className="flex flex-wrap about-sec self-start ">
+                                                            <div className="w-full lg:w-1/2 h-auto ">
+                                                                <div className="!sticky !top-[100px]">
                                                                     <DashboardStripeMigrationWarning
                                                                         migrationStatus={
                                                                             migration_status
@@ -628,7 +610,7 @@ export default function Dashboard(props) {
                                                                         .requirements
                                                                         .length >
                                                                         0 &&
-                                                                    AuthUserStripeConnected ? (
+                                                                    (AuthUserStripeConnected || has_stripe_account) ? (
                                                                         <ActionRequired
                                                                             requirements={
                                                                                 stripe_requirements.requirements
@@ -645,22 +627,20 @@ export default function Dashboard(props) {
                                                                         1 &&
                                                                     !card_capabilities &&
                                                                     !isNeedToUpgrade &&
-                                                                    AuthUserStripeConnected ? (
+                                                                    !hasPendingCardPayments &&
+                                                                    (AuthUserStripeConnected || has_stripe_account) ? (
                                                                         <EnableCardCapabilities />
                                                                     ) : (
                                                                         ""
                                                                     )}
-    {console.log('subscription check', auth)}
-                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && auth?.user?.is_subscribed == 0 ? (
-                                                                        <SiteSubscription
-                                                                            charges={
-                                                                                auth
-                                                                                    ?.user
-                                                                                    ?.monthly_charge_enabled
-                                                                            }
-                                                                            user={
-                                                                                auth?.user
-                                                                            }
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && 
+                                                                    auth?.user?.subscription_status == 0 && auth?.user?.profile_status_lock == 1 ? (
+                                                                        <SiteSubscription 
+                                                                            auth={auth}
+                                                                            subscription_status={auth?.user?.subscription_status}
+                                                                            charges={auth?.user?.monthly_charge_enabled }
+                                                                            user={auth?.user }
+                                                                            card_capabilities={card_capabilities}
                                                                         />
                                                                     ) : (
                                                                         ""
@@ -844,7 +824,7 @@ export default function Dashboard(props) {
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            <div className="lg:pl-4 w-full lg:w-1/2">
+                                                            <div className="lg:pl-6 w-full lg:w-1/2">
                                                                 {IsloggedIn &&
                                                                     auth?.user &&
                                                                     auth?.user

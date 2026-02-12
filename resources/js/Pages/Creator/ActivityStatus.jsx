@@ -63,7 +63,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                 
                 {/* Activity Chart */}
                 <div className="relative">
-                    <div className="space-y-2 p-4 bg-gray-50 rounded-xl  max-h-96 overflow-y-auto">
+                    <div className="space-y-2 p-4 bg-gray-50 rounded-[40px]   max-h-96 overflow-y-auto">
                         {timeline.map((day, index) => {
                             const width = maxContent > 0 ? Math.max((day.content_count / maxContent) * 100, 5) : 5;
                             const hasContent = day.content_count > 0;
@@ -131,7 +131,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                                     </div>
                                     
                                     {/* Enhanced Tooltip */}
-                                    <div className="absolute left-full ml-4 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-xs rounded-xl  opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                                    <div className="absolute left-full ml-4 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900 text-white text-xs rounded-[40px]   opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                                         <div className="font-semibold">{dateStr} ({dayName})</div>
                                         <div className={hasContent ? 'text-green-300' : 'text-gray-400'}>
                                             {hasContent ? `${day.content_count} item${day.content_count !== 1 ? 's' : ''} created` : 'No activity'}
@@ -155,7 +155,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                 
                 {/* Activity Insights */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div className="bg-blue-50 rounded-xl  p-3">
+                    <div className="bg-blue-50 rounded-[40px]   p-3">
                         <div className="text-blue-600 text-sm font-medium">Most Active Day</div>
                         <div className="text-blue-900 font-semibold">
                             {(() => {
@@ -170,7 +170,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         </div>
                     </div>
                     
-                    <div className="bg-green-50 rounded-xl  p-3">
+                    <div className="bg-green-50 rounded-[40px]   p-3">
                         <div className="text-green-600 text-sm font-medium">Consistency Score</div>
                         <div className="text-green-900 font-semibold">
                             {Math.round((totalDaysWithContent / 30) * 100)}%
@@ -180,7 +180,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         </div>
                     </div>
                     
-                    <div className="bg-purple-50 rounded-xl  p-3">
+                    <div className="bg-purple-50 rounded-[40px]   p-3">
                         <div className="text-purple-600 text-sm font-medium">Content Velocity</div>
                         <div className="text-purple-900 font-semibold">
                             {(() => {
@@ -215,7 +215,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                 </div>
 
                 {/* Current Status Card */}
-                <div className="bg-white rounded-xl  shadow-lg p-6 mb-8">
+                <div className="bg-white rounded-[40px]   shadow-lg p-6 mb-8">
                     <div className="flex items-start justify-between">
                         <div>
                             <div className="flex items-center space-x-3 mb-3">
@@ -224,7 +224,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                             </div>
                             
                             {activityStatus.status === 'grace_period' && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl  p-4">
+                                <div className="bg-blue-50 border border-blue-200 rounded-[40px]   p-4">
                                     <p className="text-blue-800">
                                         🎉 Welcome to SpennypPiggy! You're in your <strong>{activityStatus.days_remaining} day grace period</strong>. 
                                         During this time, you can receive payments regardless of your activity level. 
@@ -234,7 +234,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                             )}
 
                             {activityStatus.status === 'active' && (
-                                <div className="bg-green-50 border border-green-200 rounded-xl  p-4">
+                                <div className="bg-green-50 border border-green-200 rounded-[20px]   p-4">
                                     <p className="text-green-800">
                                         ✨ Great job! You have <strong>{activityStatus.current_content} approved content items</strong> in the last 28 days. 
                                         Your payments are active and you're meeting all requirements.
@@ -244,7 +244,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
 
                             
                             {activityStatus.status === 'insufficient_content' && (
-                                <div className="bg-red-50 border border-red-200 rounded-xl  p-4">
+                                <div className="bg-red-50 border border-red-200 rounded-[40px]   p-4">
                                     <p className="text-red-800">
                                         ⚠️ <strong>Payments are currently paused.</strong> You have {activityStatus.current_content || 0} approved content items, 
                                         but need at least 3 in the last 28 days to receive payments.
@@ -253,7 +253,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                             )}
 
                             {activityStatus.status === 'grace_period_ending' && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl  p-4">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-[40px]   p-4">
                                     <p className="text-yellow-800">
                                         ⏰ Your grace period ends in <strong>{activityStatus.days_remaining} days</strong>. 
                                         You currently have {activityStatus.current_content || 0} approved content items. 
@@ -270,7 +270,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
 
                 {/* Content Breakdown */}
                 <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div className="bg-white rounded-xl  shadow p-6">
+                    <div className="bg-white rounded-[40px]   shadow p-6">
                         <h3 className="text-lg font-gulfs uppercase mb-4">Content Breakdown (Last 28 Days)</h3>
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
@@ -307,7 +307,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-xl  shadow p-6">
+                    <div className="bg-white rounded-[40px]   shadow p-6">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-gulfs uppercase">Payment Impact</h3>
                             <button 
@@ -317,7 +317,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                                     setTimeout(() => setRefreshing(false), 1000);
                                 }}
                                 disabled={refreshing}
-                                className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-xl  transition-colors"
+                                className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-[40px]   transition-colors"
                             >
                                 {refreshing ? '🔄' : '↻'} Refresh
                             </button>
@@ -351,7 +351,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                                     </div>
                                     
                                     {blockedPayments.recent_attempts && blockedPayments.recent_attempts.length > 0 && (
-                                        <div className="bg-gray-50 rounded-xl  p-3">
+                                        <div className="bg-gray-50 rounded-[40px]   p-3">
                                             <div className="text-xs text-gray-600 mb-2">Most Recent Blocked Payment:</div>
                                             <div className="flex justify-between items-center text-sm">
                                                 <span className="text-gray-700">
@@ -375,7 +375,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         </div>
                         
                         {blockedPayments.count > 0 && (
-                            <div className="mt-4 p-3 bg-red-50 rounded-xl ">
+                            <div className="mt-4 p-3 bg-red-50 rounded-[40px]  ">
                                 <p className="text-red-700 text-sm">
                                     💡 <strong>Tip:</strong> Once you add enough content to meet requirements, payments will resume automatically within a few minutes!
                                 </p>
@@ -399,7 +399,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         )}
                         
                         {blockedPayments.count === 0 && (
-                            <div className="mt-4 p-3 bg-green-50 rounded-xl ">
+                            <div className="mt-4 p-3 bg-green-50 rounded-[40px]  ">
                                 <p className="text-green-700 text-sm">
                                     ✅ <strong>Great!</strong> No payments have been blocked in the last 30 days.
                                 </p>
@@ -409,7 +409,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                 </div>
 
                 {/* Activity Timeline */}
-                <div className="bg-white rounded-xl  shadow p-6">
+                <div className="bg-white rounded-[40px]   shadow p-6">
                     <ActivityChart timeline={activityTimeline} />
                     <div className="mt-4 text-sm text-gray-600">
                         <p>Each bar represents content created on that day. Weekend activity is shown with reduced opacity.</p>

@@ -21,6 +21,10 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                if ($user && isset($user->username)) {
+                    return redirect(route('user.show', ['username' => $user->username]));
+                }
                 return redirect(RouteServiceProvider::HOME);
             }
         }

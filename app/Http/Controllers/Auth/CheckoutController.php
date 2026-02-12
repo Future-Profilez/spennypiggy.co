@@ -6,11 +6,8 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
 use App\Jobs\CheckoutTweet;
-use App\Jobs\CheckoutUser;
 use App\Jobs\CrowdfundTweet;
 use App\Jobs\SurpriseTweet;
-use App\Mail\CommandFailed;
-use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
@@ -18,11 +15,12 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserCart;
 use App\Models\UserPayment;
+use App\Models\Deliverable;
+use App\Services\StripeMetadataService;
 use App\StripeControl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Ramsey\Uuid\Uuid;
@@ -32,6 +30,7 @@ use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\UserProfileService;
+use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
@@ -171,6 +170,11 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Unable to process payment. Please check your cart and try again.');
             }
 
+            // Check if creator has card_payments capability
+            if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+                return redirect()->back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+            }
+
             // Log the connected account ID for debugging
             Log::info('Connected account ID found for checkout', [
                 'connected_account_id' => $connectedAccountId,
@@ -180,9 +184,9 @@ class CheckoutController extends Controller
 
             $lineItems = [];
             $subtotal = 0;
-            $transfer_amount = 0;
-            $totalShowTaxWithQuantity = 0;
-            $totalStoreTax = 0; // Add this to accumulate store tax
+            $totalApplicationFee = 0;
+            $totalCreatorNet = 0;
+
             foreach ($getdata as $dd) {
                 // Skip cart items without valid wish relationship
                 if (!$dd->wish_item_id || !$dd->wish) {
@@ -201,90 +205,32 @@ class CheckoutController extends Controller
                         $user = null;
                     }
                 }
-                $subtotals = 0;
-                $totalAmount = $dd->amount;
-                $ConvertedToGBpAmount = Helpers::priceFormat($dd->owner->default_currency, $totalAmount, 'gbp');
-                $subtotals += $ConvertedToGBpAmount * $dd->quantity;
-                if (!Auth::check() && $subtotals > 50) {
-                    return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
-                }
 
-                $adminFee = config('app.administration_fee');
-                $showAdminsFees = Helpers::priceFormat('GBP', $adminFee, $currency);
-                $StoreAdminsFees = Helpers::priceFormat('GBP', $adminFee, $dd->owner->default_currency);
-                $taxPercentage = config('app.platform_fee_percentage');
+                $itemAmount = $dd->amount;
+                // Calculate breakdown using gross-up logic for this item
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmount, $currency);
 
-                // Step 1: Check if customer already exists in connected account
-                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $dd->owner->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_type', 'wish item')
-                    ->first();
+                $finalTotalAmount = $breakdown['total_supporter_pays'];
+                $applicationFeeAmount = $breakdown['application_fee'];
+                $creatorNet = $breakdown['net_to_creator'];
 
-                // Step 3: Create customer in connected account if not exists
-                $customer = null;
-                if (!$storeCustomer) {
-                    $customer = StripeControl::createCustomer([
-                        'email' => $user->email ?? $dd->email,
-                        'name' => $user->name ?? $dd->name,
-                    ], $connectedAccountId);
-                }
-
-                $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
-
-                // Step 5: Store customer & price if not already stored
-                if (!$storeCustomer && $user) {
-                    ConnectedAccountCustomer::create([
-                        'user_id' => Auth::id() ?? $user->id,
-                        'creator_id' => $dd->owner->id,
-                        'connected_account_id' => $connectedAccountId,
-                        'stripe_customer_id' => $customer_id,
-                        'product_type' => 'wish item',
-                        'product_id' => $dd->wish->stripe_product_id,
-                        // 'price_id' => $priceId,
-                    ]);
-                }
-
-                $ConvertedAmount = Helpers::priceFormat($dd->wish->currency, $totalAmount, $currency);
-                $platformFeeAmount = $ConvertedAmount * $taxPercentage / 100;
-                $showTax = $platformFeeAmount + $showAdminsFees;
-                $showTaxWithQuantity = $showTax * $dd->quantity;
-                $storeTax = $platformFeeAmount + $StoreAdminsFees * $dd->quantity;
-                $storeTaxWithQuantity = $storeTax * $dd->quantity;
-
-                // Create product data dynamically for platform account (products exist in connected accounts)
                 $productName = $dd->wish->wishname ?? 'Wish Item';
                 $lineItems[] = [
                     'quantity' => $dd->quantity,
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => $productName,
-                            'description' => 'Content from ' . ($dd->owner->name ?? 'Creator'),
+                            'name' => "Total value of item including all fees",
+                            'description' => $productName . ' from ' . ($dd->owner->name ?? 'Creator'),
                         ],
-                        'unit_amount' => (int) round($ConvertedAmount * $multiplier),
+                        'unit_amount' => (int) round($finalTotalAmount * $multiplier),
                     ]
                 ];
 
-                // Add platform fee as separate line item for each product
-                $lineItems[] = [
-                    'quantity' => 1,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - ' . ($dd->wish->wishname ?? 'Content'),
-                        ],
-                        'unit_amount' => (int) round($showTaxWithQuantity * $multiplier),
-                        'tax_behavior' => 'exclusive',
-                    ],
-                ];
-
-                // this amount will be transfer to the creators account
-                $transfer_amount += $ConvertedAmount * $dd->quantity;
-                $subtotal += $ConvertedAmount * $dd->quantity; // Add this line to properly calculate subtotal
-                $showTaxWithQuantity = $showTax * $dd->quantity;
-                $totalShowTaxWithQuantity += $showTaxWithQuantity;
-                $totalStoreTax += $storeTaxWithQuantity; // Accumulate store tax properly
+                // Accumulate totals
+                $subtotal += $itemAmount * $dd->quantity;
+                $totalApplicationFee += $applicationFeeAmount * $dd->quantity;
+                $totalCreatorNet += $creatorNet * $dd->quantity;
             }
 
             // Check if we have any valid line items after processing
@@ -297,40 +243,18 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
-            // Calculate transfer amount (what creator receives = item amount only, no platform fees)
-            // Total charge = item amount + platform fees
-            // Transfer amount = item amount (what creator gets)
-            // Platform keeps = platform fees
-            $creatorVatAmount = 0;
-            if (isset($owner->vat_amount_percentage) && $owner->vat_amount_percentage > 0) {
-                $creatorVatAmount = round(($subtotal * $owner->vat_amount_percentage / 100) * $multiplier);
-            }
-
-            // Transfer amount = only the item amount (subtotal) + creator's VAT
-            $transferAmount = round($subtotal * $multiplier) + $creatorVatAmount;
-
-            // Total charged to customer = item amount + platform fees
-            $totalChargeAmount = round($subtotal * $multiplier) + $creatorVatAmount + round($totalShowTaxWithQuantity * $multiplier);
-
-            if ($transferAmount > $totalChargeAmount) {
-                $transferAmount = $totalChargeAmount - round($totalShowTaxWithQuantity * $multiplier);
-            }
-
-            // Check if creator has card_payments capability to determine payment flow
-            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
-
             // Build payment_intent_data based on creator's capabilities
             $paymentIntentData = [
-                'description' => "Spenny Piggy - Content purchase with platform fee",
-                'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalChargeAmount),
-                'application_fee_amount' => (int) round($totalShowTaxWithQuantity * $multiplier),
+                'description' => "Spenny Piggy - Content purchase",
+                'metadata' => $this->buildSafeMetadata($owner, $getdata, $totalCreatorNet),
+                'application_fee_amount' => (int) round($totalApplicationFee * $multiplier),
             ];
 
             Log::info('Using Direct Charge flow for creator', [
                 'creator_id' => $creator_id,
                 'connected_account_id' => $connectedAccountId,
                 'application_fee_amount' => $paymentIntentData['application_fee_amount'],
-                'total_charge' => $totalChargeAmount
+                'total_charge' => $totalCreatorNet
             ]);
 
             $payload = [
@@ -405,7 +329,7 @@ class CheckoutController extends Controller
                 'session_id' => $sessionCreate->id,
                 'amount_subtotal' => $subtotal,
                 'amount_total' => $sessionCreate->amount_total / $multiplier,
-                'tax' => $totalStoreTax, // Use the accumulated store tax
+                'tax' => $totalApplicationFee, // Use the total application fee as tax/fee
                 'currency' => $getdata[0]->owner->default_currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
@@ -575,12 +499,12 @@ class CheckoutController extends Controller
 
                 // Priority: content_file → reward
                 if (!empty($wish->content_file)) {
-                    $contentUrl = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
+                    $contentUrl = $this->generateContentUrl($wish->content_file);
                     $contentType = $wish->content_file_type ?? 'file';
                     $source = 'content_file';
                     $hasContent = true;
                 } elseif (!empty($wish->reward)) {
-                    $contentUrl = $this->generateContentUrl($wish->reward, 'image');
+                    $contentUrl = $this->generateContentUrl($wish->reward);
                     $contentType = 'image';
                     $source = 'reward';
                     $hasContent = true;
@@ -731,13 +655,13 @@ class CheckoutController extends Controller
             // Priority: content_file → reward → message_media (for future thank-you messages)
             if (!empty($wish->content_file)) {
                 $wishContentData['has_content'] = true;
-                $wishContentData['content_url'] = $this->generateContentUrl($wish->content_file, $wish->content_file_type);
+                $wishContentData['content_url'] = $this->generateContentUrl($wish->content_file);
                 $wishContentData['content_type'] = $wish->content_file_type ?? 'file';
                 $wishContentData['delivery_status'] = 'ready'; // Content files are immediately available
                 $wishContentData['source'] = 'content_file';
             } elseif (!empty($wish->reward)) {
                 $wishContentData['has_content'] = true;
-                $wishContentData['content_url'] = $this->generateContentUrl($wish->reward, 'image');
+                $wishContentData['content_url'] = $this->generateContentUrl($wish->reward);
                 $wishContentData['content_type'] = 'image';
                 $wishContentData['delivery_status'] = 'ready'; // Rewards are immediately available
                 $wishContentData['source'] = 'reward';
@@ -808,7 +732,7 @@ class CheckoutController extends Controller
     /**
      * Generate content URL from file path/identifier
      */
-    private function generateContentUrl($fileIdentifier, $fileType)
+    private function generateContentUrl($fileIdentifier)
     {
         if (empty($fileIdentifier)) {
             return null;
@@ -852,18 +776,15 @@ class CheckoutController extends Controller
             if (!$wish) continue;
 
             $hasContent = false;
-            $deliveryStatus = 'no_content';
             $contentType = null;
 
             // Check for content and determine delivery status
             if (!empty($wish->content_file)) {
                 $hasContent = true;
-                $deliveryStatus = 'ready';
                 $contentType = $wish->content_file_type ?? 'file';
                 $summary['items_ready_for_delivery']++;
             } elseif (!empty($wish->reward)) {
                 $hasContent = true;
-                $deliveryStatus = 'ready';
                 $contentType = 'image';
                 $summary['items_ready_for_delivery']++;
             }
@@ -1005,7 +926,7 @@ class CheckoutController extends Controller
             $sessionId = session('session_id');
             // Log::info("Updating payment status", ['session_id' => $sessionId]);
 
-            $updateResult = StripePaymentDetail::where('session_id', $sessionId)->update([
+            StripePaymentDetail::where('session_id', $sessionId)->update([
                 'payment_status' => 'paid',
                 'updated_at' => Carbon::now(),
             ]);
@@ -1163,6 +1084,48 @@ class CheckoutController extends Controller
                 $dd->quantity = 0;
                 $dd->save();
                 Log::info("Cart item status updated successfully");
+
+                // NEW: Synchronous Deliverable creation for paid wish items
+                // This ensures content is tracked even if CheckoutMailToUser job fails
+                try {
+                    $deliverable = Deliverable::create([
+                        'uuid' => (string) Str::uuid(),
+                        'product_id' => 'wish_item_' . ($dd->wish_item_id ?? 'direct'),
+                        'item_id' => $dd->wish_item_id,
+                        'creator_id' => $dd->owner_id,
+                        'gifter_id' => $dd->user_id ?? null,
+                        'session_id' => $sessionId,
+                        'payment_intent_id' => $stripeid->stripe_payment_intent_id ?? null,
+                        'deliverable_type' => 'wish_content',
+                        'product_type' => 'wish_one_off',
+                        'transaction_amount' => $dd->amount,
+                        'customer_email' => $stripeid->guest_email ?? ($dd->user->email ?? null),
+                        'customer_name' => $stripeid->name ?? ($dd->user->name ?? 'A Fan'),
+                        'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
+                        'metadata' => json_encode([
+                            'wish_item_id' => $dd->wish_item_id,
+                            'quantity' => $dd->quantity,
+                            'creator_net_amount' => $dd->amount - $dd->tax, // Simple calculation as tax is stored per item
+                            'message' => $dd->message,
+                            'anonymous' => $dd->anonymous ?? false,
+                        ])
+                    ]);
+
+                    // Update Stripe payment intent metadata
+                    if ($stripeid->stripe_payment_intent_id) {
+                        try {
+                            $stripeMetadataService = app(StripeMetadataService::class);
+                            $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                                'wish_processed_at' => now()->toISOString(),
+                                'sync_processed' => 'true'
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error("Failed to update Stripe metadata in successCheckout", ['error' => $e->getMessage()]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to create Deliverable in successCheckout", ['error' => $e->getMessage()]);
+                }
             }
 
 

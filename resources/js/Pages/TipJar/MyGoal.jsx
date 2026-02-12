@@ -27,7 +27,7 @@ export default function MyGoal({  IsloggedIn}) {
   const percentage = goal?.target ? Math.min(100, Math.round((goal.fullfilled / goal.target) * 100)) : 0;
 
   return (
-    <div className='mb-8 bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[40px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group'>
+    <div className='mb-8 bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[40px]  overflow-hidden shadow-2xl transition-all hover:border-white/10 group'>
         <div className="bg-[#F94F97] p-5">
             <h2 className='text-normal font-black font-gulfs tracking-[0.15em] uppercase text-white flex items-center gap-3'>
                 {goal?.name || 'MY PIGGY BANK'}

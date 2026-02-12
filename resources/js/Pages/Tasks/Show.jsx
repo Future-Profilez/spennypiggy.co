@@ -6,7 +6,7 @@ import Turnstile from "@/Components/Turnstile";
 import toast from "react-hot-toast";
 import userphoto from "../../../assets/siteicon.png";
 
-export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol }) {
+export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
     const { data, setData, post, processing } = useForm({
@@ -144,7 +144,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             
                             <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
                                 {isCreator ? (
-                                    <div className="text-center  rounded-xl py-6">
+                                    <div className="text-center  rounded-[40px]  py-6">
                                         <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
                                         <a href={route('task.dashboard')} className="button b">
                                             Manage Orders
@@ -155,19 +155,19 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         {/* Instant Delivery Section - Only if access granted */}
                                         {task.type === 'instant' && deliverableUrl && (
                                             <div className="mb-8">
-                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[20px] border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
+                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[40px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
                                                     ✓ Purchased Successfully
                                                 </div>
                                                 <div className="space-y-4">
                                                     {task.deliverable_note && (
-                                                        <div className="bg-white border-2 border-black rounded-xl p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                                        <div className="bg-white border-2 border-black rounded-[40px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                             <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
                                                             <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
                                                         </div>
                                                     )}
                                                     <a 
                                                         href={deliverableUrl} 
-                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[20px] hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[40px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                     >
@@ -183,7 +183,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                  <h3 className="text-lg font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
                                                  <div className="space-y-3">
                                                      {purchaseHistory.map((historyItem) => (
-                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-[40px]  p-4 flex flex-col gap-3">
                                                              <div className="flex justify-between items-start">
                                                                  <div>
                                                                      <p className="font-bold text-xs uppercase text-gray-500 mb-1">
@@ -200,7 +200,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                                  </a>
                                                              </div>
                                                              {historyItem.gifter_message && (
-                                                                 <div className="bg-gray-50 p-3 rounded-xl  text-sm italic text-gray-600 border border-gray-100">
+                                                                 <div className="bg-gray-50 p-3 rounded-[40px]   text-sm italic text-gray-600 border border-gray-100">
                                                                      "{historyItem.gifter_message}"
                                                                  </div>
                                                              )}
@@ -212,6 +212,12 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
 
                                         {/* Purchase Form */}
                                         <div className="mt-6">
+                                            {!card_capabilities && (
+                                                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
+                                                    <p className="font-bold">Payments Unavailable</p>
+                                                    <p>This creator cannot accept payments at the moment (Card Payments capability missing).</p>
+                                                </div>
+                                            )}
                                              <form onSubmit={(e) => e.preventDefault()}>
                                                  <div className="mb-4">
                                                      <label htmlFor="gifter_message" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
@@ -221,7 +227,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                          id="gifter_message"
                                                          value={data.gifter_message}
                                                          onChange={e => setData('gifter_message', e.target.value)}
-                                                         className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
+                                                         className="w-full border-2 border-gray-200 rounded-[40px]  p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
                                                          placeholder="Add a personal note with your purchase..."
                                                      />
                                                  </div>
@@ -272,10 +278,10 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                      onClick={handlePurchase}
                                                      disabled={
                                                          processing ||
-                                                         !data.agree || !verified
+                                                         !data.agree || !verified || !card_capabilities
                                                      }
                                                      className={`button b pinkbg !py-[16px] !text-white w-full ${(processing ||
-                                                         !data.agree || !verified) ?'disabled':'enabled'}`} >
+                                                         !data.agree || !verified || !card_capabilities) ?'disabled':'enabled'}`} >
                                                      {processing ? 'Processing...' : (
                             purchaseHistory && purchaseHistory.length > 0 ? 'Purchase Again 🔄' : (task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝')
                         )}

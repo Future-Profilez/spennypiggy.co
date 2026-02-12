@@ -66,9 +66,9 @@ export default function OldSubscribe() {
         <>
          {open &&
          <div className=" w-screen h-screen flex justify-center items-center z-[6000] bg-[#0009] fixed top-0 left-0">
-               <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[40px] shadow" role="alert">
+               <div id="toast-interactive" className="relative w-full max-w-xs p-4 text-gray-500 bg-white rounded-[40px]  shadow" role="alert">
                   <div className="block">
-                     <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-xl  mb-4">
+                     <div className=" mx-auto block items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-[40px]   mb-4">
                            <RiNotificationBadgeFill />
                      </div>
                      <div className="ml-3 text-sm font-normal text-center">
@@ -86,13 +86,13 @@ export default function OldSubscribe() {
                                  disabled={subscribing}
                                  className={`inline-flex justify-center w-full px-4 py-1.5 font-medium text-center text-white ${
                                     subscribing ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                                 } rounded-xl `}
+                                 } rounded-[40px]  `}
                               >
                                  {subscribing ? "Processing" : "Allow"}
                               </button>
                               </div>
                               {/* <div>
-                                 <button onClick={unsub} className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-xl  hover:bg-gray-100">Deny</button>
+                                 <button onClick={unsub} className="inline-flex justify-center w-full px-2 py-1.5 text-xs font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-[40px]   hover:bg-gray-100">Deny</button>
                               </div> */}
                            </div>
                      </div>

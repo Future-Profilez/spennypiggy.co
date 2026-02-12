@@ -143,7 +143,7 @@ export default function Stripe(props) {
 
                         {/* Show success message if consent was just submitted */}
                         {success && (
-                            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg text-green-800 animate-fade-in">
+                            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-xl text-green-800 animate-fade-in">
                                 <div className="flex items-center">
                                     <svg
                                         className="w-5 h-5 mr-2"
@@ -169,7 +169,7 @@ export default function Stripe(props) {
 
                         {/* Show consent details ONLY if consent was given previously (not just now) */}
                         {showConsentDetails && (
-                            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg text-blue-800">
+                            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl text-blue-800">
                                 <div className="flex items-center">
                                     <svg
                                         className="w-5 h-5 mr-2"
@@ -198,7 +198,7 @@ export default function Stripe(props) {
 
                         {/* Gating Banner */}
                         {!finalStepsUnlocked && (
-                            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg text-yellow-800">
+                            <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-yellow-800">
                                 <p className="font-semibold">
                                     Admin Profile Approval Required
                                 </p>
@@ -210,7 +210,7 @@ export default function Stripe(props) {
                         )}
 
                         {/* Merchant of Record Agreement Card */}
-                        <div className="bg-white rounded-xl  shadow-lg border border-gray-200 overflow-hidden mb-8">
+                        <div className="bg-white rounded-[40px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
                             <div className="p-8">
                                 {/* Agreement Header */}
                                 <div className="text-center mb-8">
@@ -227,7 +227,7 @@ export default function Stripe(props) {
 
                                 {/* Agreement Content */}
                                 <div className="space-y-6 mb-8">
-                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[40px]  p-6">
                                         <p className="text-gray-700 text-lg text-center font-semibold">
                                             I confirm that I understand and
                                             agree that I am the Merchant of
@@ -388,7 +388,7 @@ export default function Stripe(props) {
                                         </div>
                                     </div>
 
-                                    <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-xl p-6">
+                                    <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-[40px]  p-6">
                                         <p className="text-gray-700 text-center font-semibold">
                                             By continuing, I confirm that I have
                                             read, understood, and agree to this
@@ -398,7 +398,7 @@ export default function Stripe(props) {
                                 </div>
 
                                 {/* Confirmation Checkbox */}
-                                <div className="bg-gray-50 rounded-xl p-6 mb-8">
+                                <div className="bg-gray-50 rounded-[40px]  p-6 mb-8">
                                     <label
                                         htmlFor="mor_agreement"
                                         className="flex items-start space-x-3 cursor-pointer"
@@ -432,7 +432,7 @@ export default function Stripe(props) {
                                 {/* Action Buttons */}
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <button
-                                        className="btn-pink sm flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-voilet transition-all duration-300"
+                                        className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] flex-1 max-w-md mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                         onClick={handleMorConsent}
                                         disabled={
                                             !data.mor_agreed || processing
@@ -526,7 +526,7 @@ export default function Stripe(props) {
 
                     {/* Show success message if consent was just submitted */}
                     {success && (
-                        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg text-green-800 animate-fade-in">
+                        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-xl text-green-800 animate-fade-in">
                             <div className="flex items-center">
                                 <svg
                                     className="w-5 h-5 mr-2"
@@ -551,7 +551,7 @@ export default function Stripe(props) {
 
                     {/* Show consent details ONLY if consent was given previously (not just now) */}
                     {showConsentDetails && (
-                        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg text-blue-800">
+                        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl text-blue-800">
                             <div className="flex items-center">
                                 <svg
                                     className="w-5 h-5 mr-2"
@@ -581,14 +581,14 @@ export default function Stripe(props) {
 
                     {/* Gating Banner */}
                     {!finalStepsUnlocked && (
-                        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg text-yellow-800">
+                        <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-xl text-yellow-800">
                             <p className="font-semibold">Admin Profile Approval Required</p>
                             <p className="text-sm">Complete your basic profile and submit for admin approval to access payment setup.</p>
                         </div>
                     )}
 
                     {/* Main Content Card */}
-                    <div className="whbg overflow-hidden">
+                    <div className="whbg rounded-[40px]  overflow-hidden">
                         <div className="">
                             {/* Payment Processor Guidelines */}
                             <div className="mb-8">
@@ -604,7 +604,7 @@ export default function Stripe(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl  p-6 mb-6">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[40px]   p-6 mb-6">
                                     <p className="text-gray-700 leading-relaxed">
                                         <strong className="text-voilet">
                                             Stripe supports adult creators
@@ -662,7 +662,7 @@ export default function Stripe(props) {
                                     ].map((item, index) => (
                                         <div
                                             key={index}
-                                            className="bg-white border-2 border-red-100 rounded-xl p-3 hover:border-red-200 transition-colors"
+                                            className="bg-white border-2 border-red-100 rounded-[40px]  p-3 hover:border-red-200 transition-colors"
                                         >
                                             <div className="flex items-center  gap-2">
                                                 <span className="text-2xl">
@@ -684,7 +684,7 @@ export default function Stripe(props) {
 
                             {/* Country Selection */}
                             <div className="mb-2">
-                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-xl  p-6">
+                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-[40px]   p-6">
                                     <h3 className="text-normal text-center font-bold text-gray-800 mb-2 capitalize">
                                         Select Your Country
                                     </h3>
@@ -702,7 +702,7 @@ export default function Stripe(props) {
                                     size="md"
                                     action={handlePopupAction}
                                     onOpen={handlePopupOpen}
-                                    classes={` ${country == null || country == "" ? "disabled" : ""} ${!finalStepsUnlocked ? "disabled" : ""} btn-pink sm  hover:shadow-voilet transition-all duration-300 transform hover:scale-105`}
+                                    classes={` ${country == null || country == "" ? "disabled" : ""} ${!finalStepsUnlocked ? "disabled" : ""} block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] hover:shadow-voilet transform hover:scale-105`}
                                     text="Review Terms & Connect Stripe"
                                 >
                                     <div className="">
@@ -720,7 +720,7 @@ export default function Stripe(props) {
                                             </p>
                                         </div>
 
-                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 mb-6">
+                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-[40px]  p-6 mb-6">
                                             <p className="text-gray-700 mb-4">
                                                 To comply with Stripe's new
                                                 requirements, you must be
@@ -728,12 +728,12 @@ export default function Stripe(props) {
                                             </p>
 
                                             <div className="grid grid-cols-1 gap-2 mb-4">
-                                                <div className="bg-white rounded-[30px] p-2 text-center border-2 border-voilet">
+                                                <div className="bg-white rounded-[40px]  p-2 text-center border-2 border-voilet">
                                                     <h3 className="font-bold text-voilet text-normal">
                                                         MEMBERSHIP
                                                     </h3>
                                                 </div>
-                                                <div className="bg-white rounded-[30px] p-2 text-center border-2 border-pink">
+                                                <div className="bg-white rounded-[40px]  p-2 text-center border-2 border-pink">
                                                     <h3 className="font-bold text-pink text-normal">
                                                         BILLS
                                                     </h3>
@@ -753,7 +753,7 @@ export default function Stripe(props) {
                                             </div>
                                         </div>
 
-                                        <div className="bg-gray-50 rounded-xl p-6 mb-6">
+                                        <div className="bg-gray-50 rounded-[40px]  p-6 mb-6">
                                             <label
                                                 htmlFor="termaccept"
                                                 className="flex items-start space-x-3 cursor-pointer"
@@ -795,7 +795,7 @@ export default function Stripe(props) {
 
                                         <div className="flex justify-center">
                                             <button
-                                                className="button p transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 onClick={checkTerms}
                                                 disabled={
                                                     connecting ||

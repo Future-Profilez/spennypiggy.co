@@ -40,7 +40,7 @@ export default function VipSupporters() {
         };
 
         return (
-            <div className="vip-card bg-white rounded-xl p-4 mb-4 shadow-md hover:shadow-lg transition-all duration-300 border-l-4" 
+            <div className="vip-card bg-white rounded-[35px]  p-4 mb-4 shadow-md hover:shadow-lg transition-all duration-300 border-l-4" 
                  style={{borderLeftColor: vip_level.color}}>
                 <div className="flex relative items-center justify-between mb-3">
                     <div className="flex items-center">
@@ -120,7 +120,7 @@ export default function VipSupporters() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
+            <div className="bg-gray-100 rounded-[40px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading VIP Supporters...</span>
                 </div>
@@ -130,7 +130,7 @@ export default function VipSupporters() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[25px] p-4 mb-6 text-center">
+            <div className="bg-gray-100 rounded-[40px]  p-4 mb-6 text-center">
                 <div className="alert alert-danger" role="alert">
                     {error}
                     <button 
@@ -144,7 +144,7 @@ export default function VipSupporters() {
     }
 
     return vipSupporters.length > 0 ? (
-        <div className="bg-gray-100 rounded-[25px] p-4 mb-6">
+        <div className="bg-gray-100 rounded-[40px]  p-4 mb-6">
             <h2 className="font-GillSans text-2xl uppercase text-dark text-start mb-2">
                 💎 VIP Supporters
             </h2>

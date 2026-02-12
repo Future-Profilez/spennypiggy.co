@@ -13,25 +13,40 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
     const { current_agreement, required_agreement, country, reason } = migrationStatus;
 
     return (
-        <div className="w-full finishs mb-4 rounded-xl  bg-white !border-voilet shadow-voilet">
-            <div className='border-bottom border-voilet'>
-                <h2 className='text-large font-GillSans text-uppercase lightpink p-3 goaltitle'>Action Required</h2>
-            </div>
-            <div className='p-4'>
-                <h2 className='text-red-600 text-xl md:text-xl mb-2 font-gulfs uppercase'>Your Stripe Account Needs an Upgrade</h2>
-                <p className={`mb-2 text-md text-red-600`}>
-                    To receive card payments and access full payment features like global subscriptions and payouts, please complete your Stripe account setup.
-                </p>
-                <p className={`mb-4 text-md text-red-600`}>
-                    This is a quick one-time step required by Stripe to meet international compliance and allow you to earn on our platform.
-                </p>
-                <Link 
-                    onClick={() => setLoading(!loading)}
-                    href="/stripe/upgrade-express-account"
-                    className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200"
-                >
-                    {loading ? "Loading..." : "Upgrade Account"}
-                </Link>
+        <div className="w-full mb-6 bg-white rounded-[40px]  shadow-sm border border-red-100 overflow-hidden">
+            <div className="flex">
+                <div className="w-1.5 bg-red-600"></div>
+                <div className="flex-1 p-8">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-red-50 text-red-600">
+                                <AlertTriangle className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-xl leading-tight">Account Upgrade Needed</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-red-600">
+                                        Action Required
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                        To receive card payments and access full payment features like global subscriptions and payouts, please complete your Stripe account setup.
+                        <br className="mb-2" />
+                        This is a quick one-time step required by Stripe to meet international compliance and allow you to earn on our platform.
+                    </p>
+
+                    <Link 
+                        onClick={() => setLoading(!loading)}
+                        href="/stripe/upgrade-express-account"
+                        className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                    >
+                        {loading ? "Loading..." : "Upgrade Account"}
+                    </Link>
+                </div>
             </div>
         </div>
     );
@@ -46,7 +61,7 @@ export function CompactStripeMigrationWarning({ migrationStatus, className = '' 
     }
 
     return (
-        <div className={`bg-orange-500 text-white rounded-md p-3 mb-3 ${className}`}>
+        <div className={`bg-orange-500 text-white rounded-[40px]  p-3 mb-3 ${className}`}>
             <div className="flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <div className="flex-1 min-w-0">

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Helpers;
 use App\Jobs\SendIdentityVerificationEmail;
-use App\Jobs\SendPaymentSuccessEmail;
 use App\Mail\PaymentSuccessMail;
 use App\Models\MonthlyCharge;
 use App\Models\User;
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
-use App\Services\StripeControl;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
 use App\Models\Deliverable;
@@ -22,9 +20,7 @@ use App\Models\Task;
 use App\Models\TaskPurchase;
 use App\Models\WishItemSubscription;
 use App\StripeControl as AppStripeControl;
-// use App\StripeControl as AppStripeControl;
 use Carbon\Carbon;
-use Stripe\Customer;
 use Stripe\StripeClient;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -340,7 +336,7 @@ class StripeWebhookController extends Controller
 
             case 'invoice.paid':
                 Log::info("Handling Invoice Paid");
-                $this->handleInvoicePaid($data, $metadata);
+                $this->handleInvoicePaid($data);
                 break;
 
             case 'invoice.payment_succeeded':
@@ -525,6 +521,23 @@ class StripeWebhookController extends Controller
 
         // Dispatch job to process the deliverable (media bundle creation, etc.)
         \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+        // Update Stripe payment intent metadata (exactly like membership)
+        if ($session->payment_intent) {
+            try {
+                $stripeMetadataService = app(StripeMetadataService::class);
+                $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                    'wish_processed_at' => now()->toISOString(),
+                    'immediate_delivery' => 'true'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('StripeWebhookController: Failed to update Stripe metadata for wish', [
+                    'deliverable_id' => $deliverable->id,
+                    'payment_intent_id' => $session->payment_intent,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         // Clear user cache for the creator
         if ($metadata->creator_id) {
@@ -812,7 +825,6 @@ class StripeWebhookController extends Controller
     {
         $subscriptionId = $data->id;
         $status = $data->status;
-        $currentPeriodEnd = Carbon::createFromTimestamp($data->current_period_end);
 
         $user = User::find($metadata->creator_id ?? 0);
 
@@ -870,7 +882,23 @@ class StripeWebhookController extends Controller
         }
 
         // Create deliverable entry for bill subscription renewal (like wish subscriptions)
-        $this->createBillRenewalDeliverable($newSubs);
+        $deliverable = $this->createBillRenewalDeliverable($newSubs);
+
+        // Update Stripe payment intent metadata if possible
+        if ($deliverable) {
+            try {
+                $stripeMetadataService = app(StripeMetadataService::class);
+                $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                    'bill_renewal_processed_at' => now()->toISOString(),
+                    'immediate_delivery' => 'true'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('StripeWebhookController: Failed to update Stripe metadata for bill renewal', [
+                    'deliverable_id' => $deliverable->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         SendRenewMail::dispatch($array, 'renew', 'bill');
 
@@ -953,6 +981,25 @@ class StripeWebhookController extends Controller
             $creator = \App\Models\User::find($metadata->creator_id);
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+            }
+        }
+
+        // Create deliverable entry for membership subscription renewal
+        $deliverable = $this->createMembershipRenewalDeliverable($newSubs);
+
+        // Update Stripe payment intent metadata if possible
+        if ($deliverable) {
+            try {
+                $stripeMetadataService = app(StripeMetadataService::class);
+                $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                    'membership_renewal_processed_at' => now()->toISOString(),
+                    'immediate_delivery' => 'true'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('StripeWebhookController: Failed to update Stripe metadata for membership renewal', [
+                    'deliverable_id' => $deliverable->id,
+                    'error' => $e->getMessage()
+                ]);
             }
         }
 
@@ -1073,6 +1120,23 @@ class StripeWebhookController extends Controller
                 // Dispatch job to process renewal content delivery
                 \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
 
+                // Update Stripe payment intent metadata (exactly like membership)
+                if ($invoiceData->payment_intent) {
+                    try {
+                        $stripeMetadataService = app(StripeMetadataService::class);
+                        $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                            'wish_renewal_processed_at' => now()->toISOString(),
+                            'immediate_delivery' => 'true'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('StripeWebhookController: Failed to update Stripe metadata for wish renewal', [
+                            'deliverable_id' => $deliverable->id,
+                            'payment_intent_id' => $invoiceData->payment_intent,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
                 Log::info('Subscription renewal content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,
                     'subscription_id' => $wishSubscription->stripe_id,
@@ -1081,7 +1145,7 @@ class StripeWebhookController extends Controller
             }
 
             // Send renewal notification email if needed
-            $this->sendSubscriptionRenewalEmail($wishSubscription, $invoiceData);
+            $this->sendSubscriptionRenewalEmail($wishSubscription);
         } catch (\Exception $e) {
             Log::error('Failed to process wish subscription renewal', [
                 'subscription_id' => $wishSubscription->stripe_id ?? null,
@@ -1096,7 +1160,7 @@ class StripeWebhookController extends Controller
     /**
      * Send subscription renewal email notification
      */
-    private function sendSubscriptionRenewalEmail($wishSubscription, $invoiceData)
+    private function sendSubscriptionRenewalEmail($wishSubscription)
     {
         try {
             // Prepare renewal amount with currency formatting and subscription period
@@ -1133,7 +1197,7 @@ class StripeWebhookController extends Controller
     /**
      * Handle invoice.paid events for all subscription types
      */
-    public function handleInvoicePaid($data, $metadata)
+    public function handleInvoicePaid($data)
     {
         $subscriptionId = $data->subscription ?? null;
 
@@ -1156,9 +1220,85 @@ class StripeWebhookController extends Controller
         if ($wishSubscription && $wishSubscription->wish_item) {
             $this->handleWishSubscriptionInvoicePaid($data, $wishSubscription);
         } else {
-            Log::info("Invoice paid for non-wish subscription or subscription not found", [
-                'subscription_id' => $subscriptionId
-            ]);
+            // Check if this is a bill subscription
+            $billPayment = \App\Models\BillPayment::where('stripe_id', $subscriptionId)
+                ->where('status', 'paid')
+                ->latest()
+                ->first();
+
+            if ($billPayment && $billPayment->bill) {
+                Log::info("Invoice paid for bill subscription", [
+                    'subscription_id' => $subscriptionId,
+                    'bill_id' => $billPayment->bills_id
+                ]);
+                
+                // Create deliverable for bill renewal
+                $deliverable = $this->createBillRenewalDeliverable($billPayment);
+                
+                if ($deliverable && $data->payment_intent) {
+                    // Update payment intent ID on deliverable if it was missing
+                    if (!$deliverable->payment_intent_id) {
+                        $deliverable->payment_intent_id = $data->payment_intent;
+                        $deliverable->save();
+                    }
+
+                    try {
+                        $stripeMetadataService = app(StripeMetadataService::class);
+                        $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                            'bill_renewal_processed_at' => now()->toISOString(),
+                            'immediate_delivery' => 'true'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('StripeWebhookController: Failed to update Stripe metadata for bill renewal invoice', [
+                            'deliverable_id' => $deliverable->id,
+                            'payment_intent_id' => $data->payment_intent,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            } else {
+                // Check if this is a membership subscription
+                $membershipPayment = \App\Models\MembershipPayment::where('stripe_id', $subscriptionId)
+                    ->where('status', 'paid')
+                    ->latest()
+                    ->first();
+
+                if ($membershipPayment && $membershipPayment->membership) {
+                    Log::info("Invoice paid for membership subscription", [
+                        'subscription_id' => $subscriptionId,
+                        'membership_id' => $membershipPayment->membership_id
+                    ]);
+
+                    // Create deliverable for membership renewal
+                    $deliverable = $this->createMembershipRenewalDeliverable($membershipPayment);
+
+                    if ($deliverable && $data->payment_intent) {
+                        // Update payment intent ID on deliverable if it was missing
+                        if (!$deliverable->payment_intent_id) {
+                            $deliverable->payment_intent_id = $data->payment_intent;
+                            $deliverable->save();
+                        }
+
+                        try {
+                            $stripeMetadataService = app(StripeMetadataService::class);
+                            $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                                'membership_renewal_processed_at' => now()->toISOString(),
+                                'immediate_delivery' => 'true'
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('StripeWebhookController: Failed to update Stripe metadata for membership renewal invoice', [
+                                'deliverable_id' => $deliverable->id,
+                                'payment_intent_id' => $data->payment_intent,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                } else {
+                    Log::info("Invoice paid for non-wish/non-bill/non-membership subscription or subscription not found", [
+                        'subscription_id' => $subscriptionId
+                    ]);
+                }
+            }
         }
     }
 
@@ -1212,6 +1352,23 @@ class StripeWebhookController extends Controller
 
                 // Dispatch ProcessWishItemDeliverable job for content processing
                 \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+                // Update Stripe payment intent metadata (exactly like membership)
+                if ($invoiceData->payment_intent) {
+                    try {
+                        $stripeMetadataService = app(StripeMetadataService::class);
+                        $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                            'wish_subscription_processed_at' => now()->toISOString(),
+                            'immediate_delivery' => 'true'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('StripeWebhookController: Failed to update Stripe metadata for wish subscription invoice', [
+                            'deliverable_id' => $deliverable->id,
+                            'payment_intent_id' => $invoiceData->payment_intent,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
 
                 // Clear user cache
                 if ($wishSubscription->wish_item) {
@@ -2066,10 +2223,96 @@ class StripeWebhookController extends Controller
     /**
      * Create deliverable entry for bill subscription renewal (like wish subscriptions)
      */
+    private function createMembershipRenewalDeliverable($membershipPayment)
+    {
+        try {
+            $membership = $membershipPayment->membership;
+
+            if (!$membership) {
+                Log::error('StripeWebhookController: No membership found for renewal deliverable', [
+                    'membership_payment_id' => $membershipPayment->id
+                ]);
+                return null;
+            }
+
+            // For renewals, we don't have a session but we have the subscription info
+            $paymentIntentId = null;
+
+            // Use gross-up flow for net amount calculation
+            $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($membershipPayment->amount, $membershipPayment->currency);
+
+            // Create deliverable entry for renewed membership access
+            $deliverable = \App\Models\Deliverable::create([
+                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'product_id' => $membership->product_id ?? 'membership_' . $membership->id,
+                'price_id' => $membership->price_id,
+                'item_id' => $membership->id,
+                'creator_id' => $membership->user_id,
+                'gifter_id' => $membershipPayment->user_id,
+                'payment_intent_id' => $paymentIntentId,
+                'session_id' => $membershipPayment->session_id, // Original session
+                'deliverable_type' => 'membership_access',
+                'product_type' => 'membership',
+                'transaction_amount' => $membershipPayment->amount,
+                'customer_email' => $membershipPayment->guest_email,
+                'customer_name' => $membershipPayment->guest_name,
+                'payment_currency' => strtoupper($membershipPayment->currency ?? 'GBP'),
+                'anonymous' => $membershipPayment->anonymous ?? false,
+                'message' => $membershipPayment->message,
+                'deliverable_url' => null,
+                'metadata' => json_encode([
+                    'certificate' => 'true',
+                    'product_type' => 'membership',
+                    'membership_id' => $membership->id,
+                    'membership_level' => $membership->level,
+                    'membership_name' => $membership->level . ' Membership',
+                    'amount' => $membershipPayment->amount,
+                    'creator_net_amount' => $breakdown['net_to_creator'],
+                    'currency' => $membershipPayment->currency,
+                    'subscription_id' => $membershipPayment->stripe_id,
+                    'recurring_type' => $membershipPayment->recurring_type,
+                    'recurring_for' => $membershipPayment->recurring_for,
+                    'anonymous' => $membershipPayment->anonymous,
+                    'message' => $membershipPayment->message,
+                    'guest_email' => $membershipPayment->guest_email,
+                    'guest_name' => $membershipPayment->guest_name,
+                    'members_only_access' => true,
+                    'subscription_active' => true,
+                    'is_renewal' => true,
+                    'renewal_period_start' => now()->toISOString(),
+                    'renewal_period_end' => $membershipPayment->upcoming_payment ?? \Carbon\Carbon::now()->addMonth()->toISOString()
+                ]),
+                'status' => 'delivered',
+                'delivered_at' => now()
+            ]);
+
+            // Dispatch ProcessWishItemDeliverable job for certificate generation
+            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+
+            Log::info('Membership renewal deliverable created successfully', [
+                'deliverable_id' => $deliverable->id,
+                'membership_payment_id' => $membershipPayment->id,
+                'membership_id' => $membership->id,
+                'is_renewal' => true
+            ]);
+
+            return $deliverable;
+        } catch (\Exception $e) {
+            Log::error('Failed to create membership renewal deliverable', [
+                'error' => $e->getMessage(),
+                'membership_payment_id' => $membershipPayment->id ?? 'unknown'
+            ]);
+            return null;
+        }
+    }
+
     private function createBillRenewalDeliverable($billPayment)
     {
         try {
             $bill = $billPayment->bill;
+
+            // Use gross-up flow for net amount calculation
+            $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency);
 
             // Create deliverable entry for renewal tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
@@ -2096,6 +2339,7 @@ class StripeWebhookController extends Controller
                     'bill_id' => $bill->id,
                     'bill_name' => $bill->name,
                     'amount' => $billPayment->amount,
+                    'creator_net_amount' => $breakdown['net_to_creator'],
                     'currency' => $billPayment->currency,
                     'subscription_id' => $billPayment->stripe_id,
                     'recurring_type' => $billPayment->recurring_type,

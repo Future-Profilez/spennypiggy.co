@@ -1,24 +1,44 @@
 import { Link } from "@inertiajs/react";
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 
 export default function EnableCardCapabilities({charges}) {
 
     const [loading, setLoading] = useState(false);
   return (
-    <>
-        <div className="w-full finishs  mb-4 rounded-xl  bg-white !border-voilet  shadow-voilet  ">
-            <div className='border-bottom border-voilet' >
-                <h2 className='text-large font-GillSans text-uppercase lightpink p-3 goaltitle'>Action Required</h2>
-            </div>
-            <div className='p-4'>
-                <p className={`mb-4 text-md text-red-600`}>
-                Your Stripe account is not fully enabled. Please click below to complete the Stripe onboarding and enable payments.</p>
-                <Link onClick={() => setLoading(!loading)}
-                href="/stripe/enable_card_payments"
-                className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200"
-                >{loading ? "Loading..." : "Enable Card Payments"} </Link>
+    <div className="w-full mb-6 mt-6 bg-white rounded-[40px]  shadow-sm border border-pink-100 overflow-hidden">
+        <div className="flex">
+            <div className="w-1.5 bg-[#F94F96]"></div>
+            <div className="flex-1 p-8">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-pink-50 text-[#F94F96]">
+                            <AlertTriangle className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 text-xl leading-tight">Enable Card Payments</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs font-bold uppercase tracking-wider text-[#F94F96]">
+                                    Action Required
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                    Your Stripe account is not fully enabled. Please click below to complete the Stripe onboarding and enable payments.
+                </p>
+
+                <a 
+                    onClick={() => setLoading(!loading)}
+                    href="/stripe/enable_card_payments"
+                    className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                >
+                    {loading ? "Loading..." : "Enable Card Payments"} 
+                </a>
             </div>
         </div>
-    </>
+    </div>
   );
 }

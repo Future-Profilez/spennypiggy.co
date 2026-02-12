@@ -27,14 +27,14 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                              <Link 
                                 href={window.location.href}
-                                className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black text-sm font-black rounded-[20px] text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                                className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black text-sm font-black rounded-[40px]  text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
                             >
                                 Refresh Status
                             </Link>
 
                             <Link 
                                 href={route('task.dashboard')}
-                                className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-[20px] text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-[40px]  text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                             >
                                 Go to My Tasks
                             </Link>
@@ -61,7 +61,7 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                         Thank you for your purchase. Your order for <strong className="text-pink-600">{task.title}</strong> has been confirmed.
                     </p>
 
-                    <div className="bg-gray-50 border-2 border-black rounded-[22px]  mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                    <div className="bg-gray-50 border-2 border-black rounded-[40px]   mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
                         <h3 className="p-6 text-normal font-bold !pb-4 font-black text-black uppercase tracking-wider border-b-2 border-gray-200 pb-2">Order Details</h3>
                         <div className="space-y-4 p-6">
                             <div className="flex justify-between items-center">
@@ -91,7 +91,7 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                         </div>
                     </div>
 
-                    {/* <div className="bg-gray-50 border-2 border-black rounded-[22px]  mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                    {/* <div className="bg-gray-50 border-2 border-black rounded-[40px]   mb-8 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
                         <h3 className="p-6 text-normal font-bold !pb-4 font-black text-black uppercase tracking-wider border-b-2 border-gray-200 pb-2">Creator</h3>
                         <div className="p-6 flex items-center gap-4">
                             <img src={task.creator.avatar_url || task.creator.avatar} alt={task.creator.name} className="w-16 h-16 rounded-full border-2 border-black shadow-sm object-cover" />
@@ -107,12 +107,12 @@ export default function Success({ auth, purchase, task, currencySymbol }) {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link 
                             href={route('task.order', purchase.uuid)}
-                            className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black text-sm font-black rounded-[20px] text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase" > View Order Details
+                            className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black text-sm font-black rounded-[40px]  text-white bg-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase" > View Order Details
                         </Link>
                         
                         <Link 
                             href={route('task.dashboard')}
-                            className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-[20px] text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            className="inline-flex justify-center items-center px-6 py-[13px] border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-sm font-black rounded-[40px]  text-gray-900 bg-white hover:bg-gray-50 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                         >
                             Go to My Tasks
                         </Link>

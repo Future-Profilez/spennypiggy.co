@@ -6,7 +6,8 @@ use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\BillPayMail;
 use App\Jobs\BillPayToUser;
-use App\Jobs\MembershipMail;
+use App\Jobs\BillContentDeliveryMail;
+use App\Jobs\ProcessWishItemDeliverable;
 use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
 use App\Models\BillPayment;
@@ -16,26 +17,24 @@ use App\Models\Currency;
 use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\User;
-use App\Models\UserCart;
 use App\Models\UserPayment;
 use App\StripeControl;
+use App\Services\StripeMetadataService;
 use Carbon\Carbon;
-use App\Services\CreatorActivityService;
 use App\Services\UserProfileService;
-use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Stripe\StripeClient;
 use Stripe\Webhook;
+use Stripe\Exception\SignatureVerificationException;
 
 class BillsController extends Controller
 {
@@ -71,25 +70,18 @@ class BillsController extends Controller
         $media = $request->thumbnail;
 
         $price = $request->price;
-        // Fetch tax and administration fee from the configuration file
-        $billTax = config('app.bill_tax'); // Tax percentage
-        // $adminFeeAmount = config('app.administration_fee'); // Admin fee as a amount in gbp
+        $currency = $user->default_currency ?? 'gbp';
 
-        // $adminFee = config('app.administration_fee');
-        // $convertedCurrAmount = Helpers::priceFormat('GBP', $adminFee, strtoupper($user->default_currency));
-
-        // Calculate tax and total amount
-        $taxAmount = round(($price * $billTax / 100), 2, PHP_ROUND_HALF_UP);
-
-        $createPriceId = $price + $taxAmount; // Total price including tax and admin fee
-
-        // Combine tax and admin fee percentages
-        // $totalTaxamount = $$taxAmount;
+        // Use new gross-up flow for consistent fee calculation
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        
+        $createPriceId = $breakdown['total_supporter_pays'];
+        $taxAmount = $breakdown['application_fee'];
 
         $bill = new Bills();
         $bill->user_id = Auth::id();
         $bill->name = $request->name;
-        $bill->currency = $user->default_currency;
+        $bill->currency = $currency;
         $bill->price = $price;
         $bill->tax_amount = $taxAmount;
         $bill->thumbnail = !empty($media) ? $media : null;
@@ -99,14 +91,14 @@ class BillsController extends Controller
         $bill->save();
 
         // Get currency metadata to handle zero-decimal currencies properly
-        $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+        $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $productPayload = [
-            "name"  => $bill->name,
+            "name"  => "Bill: {$bill->name} (Total value including all fees)",
             "images" => [$bill->perma_link],
             "default_price_data"    => [
-                "currency"  => $user->default_currency,
+                "currency"  => $currency,
                 "unit_amount_decimal"   => round($createPriceId * $multiplier, 2, PHP_ROUND_HALF_UP),
                 'recurring' => [
                     'interval'  =>  StripeControl::$periods[$bill->period],
@@ -114,6 +106,12 @@ class BillsController extends Controller
                 ]
             ],
             "url"   =>  env('APP_URL') . '/' . $user->username . '/bill',
+            'metadata' => [
+                'bill_name' => $bill->name,
+                'creator_id' => $user->id,
+                'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                'total_charge_amount' => (string)($createPriceId * 100),
+            ]
         ];
 
         try {
@@ -172,13 +170,18 @@ class BillsController extends Controller
 
         $media = $request->thumbnail;
         $price = $request->price;
-        $taxamount = round(($price * config('app.bill_tax') / 100), 2, PHP_ROUND_HALF_UP);
-        $totalAmount = round($price + $taxamount, 2);
+        $currency = $user->default_currency ?? 'gbp';
+
+        // Use new gross-up flow for consistent fee calculation
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        
+        $taxamount = $breakdown['application_fee'];
+        $totalAmount = $breakdown['total_supporter_pays'];
 
         $bill->fill([
             'user_id' => $user->id,
             'name' => $request->name,
-            'currency' => $user->default_currency,
+            'currency' => $currency,
             'price' => $price,
             'tax_amount' => $taxamount,
             'thumbnail' => $media ?? null,
@@ -220,10 +223,16 @@ class BillsController extends Controller
                 Log::info(json_encode($newPrice));
 
                 $product = $stripe->products->update($bill->product_id, [
-                    'name' => $bill->name,
+                    'name' => "Bill: {$bill->name} (Total value including all fees)",
                     'images' => [$bill->perma_link],
                     'default_price' => $newPrice->id,
                     'url' => env('APP_URL') . '/' . $user->username,
+                    'metadata' => [
+                        'bill_name' => $bill->name,
+                        'creator_id' => $user->id,
+                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string)($totalAmount * 100),
+                    ]
                 ], [
                     'stripe_account' => $user->account_id
                 ]);
@@ -320,6 +329,12 @@ class BillsController extends Controller
             return redirect()->back()->with('error', 'Creator account not found or deactivated.');
         }
 
+        // Check if creator has card_payments capability
+        if (!StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
+            DB::rollBack();
+            return redirect()->back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+        }
+
         // NEW: Check creator subscription eligibility first
         $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($bill->user);
 
@@ -347,12 +362,6 @@ class BillsController extends Controller
         }
 
         // NEW: Skip creator activity eligibility for bill payments
-        $activityCheck = [
-            'eligible' => true,
-            'status' => 'bill_exempt',
-            'message' => 'Bill payments bypass activity restriction'
-        ];
-
         // Optional: Log exemption for analytics
         Log::info('Bill payment allowed - activity check exempted for bills', [
             'creator_id' => $bill->user->id,
@@ -362,7 +371,20 @@ class BillsController extends Controller
 
         $price = $bill->price;
         $currency = strtolower($request->cookie("currency", "GBP"));
-        $ConvertedAmount = Helpers::priceFormat($bill->currency, $price, 'gbp');
+        
+        // Calculate creator's desired net in supporter's currency
+        $vatPercent = $bill->user->vat_amount_percentage ?? 0;
+        $priceWithVat = $price + ($price * $vatPercent / 100);
+        $supporterPrice = Helpers::priceFormat($bill->currency, $priceWithVat, $currency);
+
+        // Use new gross-up flow
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($supporterPrice, $currency);
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        $applicationFeeAmount = $breakdown['application_fee'];
+        
+        $totalTax = $applicationFeeAmount;
+        $vatAmount = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
@@ -376,29 +398,9 @@ class BillsController extends Controller
             if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
         }
 
-
-        $adminFeeAmount = config('app.administration_fee');
-        $billTaxPercent = config('app.bill_tax');
-        $vatPercent = $bill->user->vat_amount_percentage ?? 0;
-
-
-        $taxAmount = $price * $billTaxPercent / 100;
-        $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
-        $totalTax = $adminFeeAmount + $taxAmount;
-
-        $ConvertedVatAmount = Helpers::priceFormat($bill->currency, $vatAmount, $currency);
-        $convertedAdminFeeGBP = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
-        $ConvertedTaxAmount = Helpers::priceFormat($bill->currency, $taxAmount, $currency);
-
-        $totalPaymentTaxAmount = $convertedAdminFeeGBP + $ConvertedTaxAmount;
-        $creatorTotal = $price + $vatAmount;
-        $ConvertedCreatorAmount = Helpers::priceFormat($bill->currency, $creatorTotal, $currency);
-        $finalTotalAmount = $ConvertedCreatorAmount + $totalPaymentTaxAmount;
-
-        $applicationFeePercent = round(($totalPaymentTaxAmount / $finalTotalAmount) * 100, 2);
-
         if ($request->isMethod("POST")) {
-            if (!Auth::check() && $ConvertedAmount > 50) {
+            $convertedAmountForCheck = Helpers::priceFormat($bill->currency, $price, 'gbp');
+            if (!Auth::check() && $convertedAmountForCheck > 50) {
                 return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
             }
 
@@ -493,6 +495,13 @@ class BillsController extends Controller
                 $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
+                // Use new gross-up flow helper
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill->price, $currency);
+                
+                $finalTotalAmount = $breakdown['total_supporter_pays'];
+                $applicationFeeAmount = $breakdown['application_fee'];
+                $creatorNet = $breakdown['net_to_creator'];
+
                 if (!$priceId) {
 
                     $priceData = [
@@ -507,7 +516,7 @@ class BillsController extends Controller
 
                     $stripePrice = StripeControl::createPrice($priceData, $connectedAccountId);
                     if (empty($stripePrice->id)) {
-                        throw new \Exception("Failed to create Stripe price.");
+                        throw new Exception("Failed to create Stripe price.");
                     }
 
                     $priceId = $stripePrice->id;
@@ -526,12 +535,6 @@ class BillsController extends Controller
                     ]);
                 }
 
-                // Calculate creator VAT amount if applicable
-                $creatorVatAmount = 0;
-                if (isset($bill->user->vat_amount_percentage) && $bill->user->vat_amount_percentage > 0) {
-                    $creatorVatAmount = round(($bill->price * $bill->user->vat_amount_percentage / 100) * $multiplier);
-                }
-
                 // Use destination charges pattern like cart/tip payments - create line items that sum to total charge
                 $lineItems = [
                     [
@@ -539,10 +542,10 @@ class BillsController extends Controller
                         'price_data' => [
                             'currency' => $currency,
                             'product_data' => [
-                                'name' => $bill->name,
+                                'name' => "Total value of item including all fees",
                                 'description' => "Recurring Bill from {$bill->user->name}",
                             ],
-                            'unit_amount' => round($bill->price * $multiplier),
+                            'unit_amount' => round($finalTotalAmount * $multiplier),
                             'recurring' => [
                                 'interval' => StripeControl::$periods[$bill->period],
                                 'interval_count' => 1,
@@ -551,66 +554,23 @@ class BillsController extends Controller
                     ]
                 ];
 
-                // Add creator VAT as separate line item if applicable
-                if ($creatorVatAmount > 0) {
-                    $lineItems[] = [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product_data' => [
-                                'name' => 'Creator VAT',
-                            ],
-                            'unit_amount' => $creatorVatAmount,
-                            'tax_behavior' => 'exclusive',
-                            'recurring' => [
-                                'interval' => StripeControl::$periods[$bill->period],
-                                'interval_count' => 1,
-                            ],
-                        ],
-                    ];
-                }
-
-                // Add platform fee as separate line item
-                $lineItems[] = [
-                    'quantity' => 1,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Bill Payment',
-                        ],
-                        'unit_amount' => round($totalPaymentTaxAmount * $multiplier),
-                        'tax_behavior' => 'exclusive',
-                        'recurring' => [
-                            'interval' => StripeControl::$periods[$bill->period],
-                            'interval_count' => 1,
-                        ],
-                    ],
-                ];
-
-                // Creator Net Amount = bill amount + creator's VAT (what creator receives)
-                $creatorNetAmount = round($bill->price * $multiplier) + $creatorVatAmount;
-
-                // Total charge amount = bill amount + creator's VAT + platform fees
-                $totalChargeAmount = round($bill->price * $multiplier) + $creatorVatAmount + round($totalPaymentTaxAmount * $multiplier);
-
                 $payload = [
                     'mode' => 'subscription',
                     'payment_method_types' => ['card'],
                     'line_items' => $lineItems, // Total amount determined by line items
                     'subscription_data' => [
-                        'description' => "Recurring Bill for {$bill->user->username}",
-                        'metadata' => \App\Helpers::buildStripeMetadata('bill', $sub, [
+                        'description' => "Recurring Bill for {$bill->user->username} (Total value including all fees)",
+                        'metadata' => Helpers::buildStripeMetadata('bill', $sub, [
                             'bill_id' => (string) $bill->id,
                             'recurring_for' => $reccure,
                             'item_amount' => (string) round($bill->price * $multiplier),
-                            'creator_vat_amount' => (string) $creatorVatAmount,
-                            'creator_net_amount' => (string) $creatorNetAmount,
-                            'platform_fee_amount' => (string) round($totalPaymentTaxAmount * $multiplier),
-                            'total_charge_amount' => (string) $totalChargeAmount,
+                            'creator_net_amount' => (string) ($creatorNet * $multiplier),
+                            'application_fee_amount' => (string) ($applicationFeeAmount * $multiplier),
+                            'total_charge_amount' => (string) ($finalTotalAmount * $multiplier),
                             'payment_type' => 'Bill Payment - Direct Charges',
                             'anonymous' => (string) ($sub->anonymous ?? 0),
                         ]),
-                        'application_fee_percent' => round((round($totalPaymentTaxAmount * $multiplier) / $totalChargeAmount) * 100, 2),
+                        'application_fee_amount' => (int)($applicationFeeAmount * $multiplier),
                     ],
                     'customer_email' => $user->email ?? $request->email,
                     'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
@@ -627,17 +587,20 @@ class BillsController extends Controller
                 ]);
 
                 return Inertia::location($session->url);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 Log::error("Stripe checkout session failed: " . $e->getMessage());
                 return back()->with('error', $e->getMessage());
             }
         }
 
+        $card_capabilities = StripeControl::hasCardPaymentsCapability($bill->user->account_id);
+
         return Inertia::render('bills/BillCheckout', [
             'bill' => $bill,
             'vat_amount' => $vatAmount,
             'reccure' => $reccure,
+            'card_capabilities' => $card_capabilities,
         ]);
     }
 
@@ -648,7 +611,7 @@ class BillsController extends Controller
      * @param string $status Status of Subscription
      * @return mixed
      */
-    public function handlePayment($uuid, $status)
+    public function handlePayment($uuid)
     {
         $bill_pay = BillPayment::with('bill')->whereUuid($uuid)->first();
 
@@ -720,7 +683,7 @@ class BillsController extends Controller
 
                 // Dispatch content delivery email if bill has content file
                 if (!empty($bill_pay->bill->content_file)) {
-                    \App\Jobs\BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
+                    BillContentDeliveryMail::dispatch($bill_pay, $symbol->symbol);
                     Log::info('BillsController: Content delivery email dispatched for bill payment', [
                         'bill_payment_id' => $bill_pay->id,
                         'bill_id' => $bill_pay->bill->id,
@@ -767,28 +730,32 @@ class BillsController extends Controller
         try {
             $bill = $billPayment->bill;
 
+            // Use consistent fee calculation for creator net amount
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency);
+            $creatorNet = $breakdown['net_to_creator'];
+
             // Get payment intent ID from Stripe session if available
             $paymentIntentId = null;
             if ($session && isset($session->id)) {
                 try {
-                    $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-                    $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
-                    $paymentIntentId = $retrievedSession->payment_intent ?? null;
-                    Log::info('BillsController: Retrieved payment intent from session', [
-                        'session_id' => $session->id,
-                        'payment_intent_id' => $paymentIntentId
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning('BillsController: Failed to retrieve payment intent from session', [
-                        'session_id' => $session->id ?? 'unknown',
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
+            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
+            $paymentIntentId = $retrievedSession->payment_intent ?? null;
+            Log::info('BillsController: Retrieved payment intent from session', [
+                'session_id' => $session->id,
+                'payment_intent_id' => $paymentIntentId
+            ]);
+        } catch (Exception $e) {
+            Log::warning('BillsController: Failed to retrieve payment intent from session', [
+                'session_id' => $session->id ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 
-            // Create deliverable entry for tracking (similar to wish subscriptions)
+    // Create deliverable entry for tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
-                'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
+                'uuid' => (string) Str::uuid(),
                 'product_id' => $bill->product_id ?? 'bill_' . $bill->id,
                 'price_id' => $bill->price_id,
                 'item_id' => $bill->id, // Add item_id for bill lookup
@@ -811,6 +778,7 @@ class BillsController extends Controller
                     'bill_id' => $bill->id,
                     'bill_name' => $bill->name,
                     'amount' => $billPayment->amount,
+                    'creator_net_amount' => $creatorNet,
                     'currency' => $billPayment->currency,
                     'subscription_id' => $billPayment->stripe_id,
                     'recurring_type' => $billPayment->recurring_type,
@@ -825,7 +793,24 @@ class BillsController extends Controller
             ]);
 
             // Dispatch ProcessWishItemDeliverable job for certificate generation
-            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+            ProcessWishItemDeliverable::dispatch($deliverable);
+
+            // Update Stripe payment intent metadata (exactly like membership)
+            if ($paymentIntentId) {
+                try {
+                    $stripeMetadataService = app(StripeMetadataService::class);
+                    $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                        'bill_processed_at' => now()->toISOString(),
+                        'immediate_delivery' => 'true'
+                    ]);
+                } catch (Exception $e) {
+                    Log::error('BillsController: Failed to update Stripe metadata', [
+                        'deliverable_id' => $deliverable->id,
+                        'payment_intent_id' => $paymentIntentId,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             Log::info('Bill deliverable created successfully', [
                 'deliverable_id' => $deliverable->id,
@@ -835,7 +820,7 @@ class BillsController extends Controller
             ]);
 
             return $deliverable;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to create bill deliverable', [
                 'error' => $e->getMessage(),
                 'bill_payment_id' => $billPayment->id ?? 'unknown',
@@ -848,17 +833,12 @@ class BillsController extends Controller
     public function billStatus(Request $request)
     {
         Log::info("Bill status request received");
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
-        // This is your Stripe CLI webhook secret for testing your endpoint locally.
-        // $endpoint_secret = 'whsec_tuck6Z96sSloUF7kuABTtbhvRiVaF8N8';
-        $endpoint_secret = 'whsec_5dgNdG5AVVtgC95nHMDnMJ1V8MxIlXr7';
+        $endpoint_secret = env('BILL_SUB_WEBHOOK_SECRET');
 
-        $payload = @file_get_contents('php://input');
-        $sig_header = $request->server('HTTP_STRIPE_SIGNATURE');
+        $payload = $request->getContent();
+        $sig_header = $request->header('Stripe-Signature');
 
-        // $payload = @file_get_contents('php://input');
-        // $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
         $event = null;
 
         try {
@@ -867,22 +847,18 @@ class BillsController extends Controller
                 $sig_header,
                 $endpoint_secret
             );
-        } catch (\UnexpectedValueException $e) {
+        } catch (SignatureVerificationException $e) {
+            Log::error("BillsController: Webhook signature verification failed: " . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid signature'
+            ], 400);
+        } catch (Exception $e) {
+            Log::error("BillsController: Webhook processing error: " . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()
-            ]);
-            // Invalid payload
-            http_response_code(400);
-            exit();
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ]);
-            // Invalid signature
-            http_response_code(400);
-            exit();
+            ], 400);
         }
 
         $array = [];

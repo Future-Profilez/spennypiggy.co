@@ -17,7 +17,7 @@ export default function LoaderButton({ className = '', disabled, children, spinn
 
         <button
             {...props}
-            className={ `bg-white !text-[16px] mt-2 m-auto uppercase font-gulfs rounded-[20px] text-white flex items-center text-center justify-center  h    focus:ring-offset-2 transition ease-in-out duration-150 main-button  ${disabled && 'opacity-75'} ${className ? className : 'p'} `}
+            className={ `bg-white !text-[16px] mt-2 m-auto uppercase font-gulfs rounded-[40px]  text-white flex items-center text-center justify-center  h    focus:ring-offset-2 transition ease-in-out duration-150 main-button  ${disabled && 'opacity-75'} ${className ? className : 'p'} `}
             disabled={disabled}
         >
             {disabled && <>

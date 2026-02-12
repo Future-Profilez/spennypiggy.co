@@ -348,14 +348,14 @@ export default function GlobalCheckout({
                                         setAccountNo(e.target.value)
                                     }
                                     placeholder="Enter Account number"
-                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-xl mt-2"
+                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[40px]  mt-2"
                                 />
                                 <input
                                     type="text"
                                     value={sortCode}
                                     onChange={handleSortCode}
                                     placeholder="Sort Code eg. 00-00-00"
-                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-xl mt-2"
+                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[40px]  mt-2"
                                 />
 
                                 {GBPpaymentMethods &&
@@ -380,7 +380,7 @@ export default function GlobalCheckout({
                                                 method.uuid
                                                     ? "pinkbg text-white"
                                                     : "bg-gray-200"
-                                            }  p-3 rounded-xl cursor-pointer mb-2`}
+                                            }  p-3 rounded-[40px]  cursor-pointer mb-2`}
                                             key={index}
                                         >
                                             <div className="flex justify-start items-center relative w-full">
@@ -422,7 +422,7 @@ export default function GlobalCheckout({
                                     type="text"
                                     onChange={(e) => setiban(e.target.value)}
                                     placeholder="Enter IBAN number"
-                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-xl mt-2"
+                                    className="px-3 py-[12px] text-black w-full bg-gray-200 text-normal border border-gray-300 rounded-[40px]  mt-2"
                                 />
 
                                 {EURpaymentMethods &&
@@ -448,7 +448,7 @@ export default function GlobalCheckout({
                                                 method.uuid
                                                     ? "pinkbg text-white"
                                                     : "bg-gray-200"
-                                            }  p-3 rounded-xl cursor-pointer mb-2`}
+                                            }  p-3 rounded-[40px]  cursor-pointer mb-2`}
                                             key={index}
                                         >
                                             <div className="flex justify-start items-center relative w-full">

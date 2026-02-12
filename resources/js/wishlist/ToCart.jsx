@@ -35,7 +35,7 @@ export default function ToCart({
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
     const cart = useSelector((state) => state.data.cart.cart);
-    const {auth} = usePage().props;
+    const {auth, card_capabilities} = usePage().props;
     const { usdtogbp } = PriceFormat();
     const gbpprice = usdtogbp(item.price);
     function check() {
@@ -46,6 +46,11 @@ export default function ToCart({
         
     const addtocart = async () => {
        
+        if (card_capabilities === false) {
+            errorAlert("This creator cannot receive payments at the moment.");
+            return false;
+        }
+
         // Uncomment if you want to enforce login for payments over £50 for anonymous users
         // if(!auth?.user && gbpprice > 50){
         //     router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);

@@ -44,10 +44,10 @@ export default function AddShopItem(props) {
                   <div className=" font-medium text-center text-gray-500 border-b border-gray-300 dark:text-gray-400 mt-3 mb-4  md:my-4">
                      <ul className="flex flex-wrap-mb-px ">
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
+                           <button onClick={(e)=>setTab(1)} className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 1 ? 'border-gray-600 text-black' : ""}`}>Products</button>
                         </li>
                         <li className="me-2">
-                           <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
+                           <button onClick={(e)=>setTab(2)}  className={` text-lg inline-block p-2 ps-0 pe-3 border-b-2 border-transparent rounded-t-xl hover:text-gray-600 hover:border-gray-300 ${tab == 2 ? 'border-gray-600 text-black' : ""}`}  >Orders</button>
                         </li>
                      </ul>
                   </div>

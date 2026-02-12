@@ -77,7 +77,54 @@ export default {
                 wiggle: 'wiggle 0.5s ease-in-out infinite',
                 slide: 'slide 18s linear infinite',
             },
-        },
-    },
+            zIndex: {
+                ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: i.toString() }), {}),
+                'auto': 'auto',
+            },
+            order: {
+                ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: i.toString() }), {}),
+            },
+            flexGrow: {
+                ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: i.toString() }), {}),
+            },
+            flexShrink: {
+                 ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: i.toString() }), {}),
+             },
+             opacity: {
+                 ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: (i / 100).toString() }), {}),
+             },
+             spacing: {
+                ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: `${i * 0.25}rem` }), {}),
+            },
+            borderRadius: {
+                'none': '0',
+                'sm': '0.125rem',
+                DEFAULT: '0.25rem',
+                'md': '0.375rem',
+                'lg': '1rem',
+                'xl': '3rem',
+                '2xl': '3.5rem',
+                '3xl': '4rem',
+                '4xl': '4.5rem',
+                'full': '9999px',
+                 ...Array.from({ length: 51 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: `${i}px` }), {}),
+            },
+            borderWidth: {
+                 ...Array.from({ length: 21 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: `${i}px` }), {}),
+             },
+              fontSize: {
+                  ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: `${i}px` }), {}),
+              },
+              lineHeight: {
+                  ...Array.from({ length: 101 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: `${i}px` }), {}),
+              },
+              scale: {
+                  ...Array.from({ length: 201 }, (_, i) => i).reduce((acc, i) => ({ ...acc, [i]: (i / 100).toString() }), {}),
+              },
+              rotate: {
+                  ...Array.from({ length: 361 }, (_, i) => i - 180).reduce((acc, i) => ({ ...acc, [i]: `${i}deg` }), {}),
+              },
+          },
+      },
     plugins: [forms, require('@midudev/tailwind-animations')],
 };

@@ -37,7 +37,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
     return (
         <div className="about-sec m-auto max-w-4xl">
             {/* Gifter Header Card */}
-            <div className="relative mb-10 rounded-[40px] overflow-hidden bg-[#1A1B23]/90 backdrop-blur-3xl border border-white/10 shadow-2xl group">
+            <div className="relative mb-10 rounded-[40px]  overflow-hidden bg-[#1A1B23]/90 backdrop-blur-3xl border border-white/10 shadow-2xl group">
                 {/* Cover Image Area */}
                 <div className="h-48 md:h-64 relative overflow-hidden">
                     {user?.cover ? (
@@ -75,7 +75,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
 
                         {IsloggedIn && (
                             <div className="flex items-center gap-3 mb-4">
-                                <ShareProfile username={user && user.name} classes={"px-8 py-4 bg-white text-black font-black text-[10px] tracking-[0.2em] uppercase rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"}>
+                                <ShareProfile username={user && user.name} classes={"px-8 py-4 bg-white text-black font-black text-[10px] tracking-[0.2em] uppercase rounded-[40px]  hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"}>
                                     Share Profile
                                 </ShareProfile>
                             </div>
@@ -100,7 +100,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                         </div>
 
                         {/* Impact Stats Card */}
-                        <div className="bg-white/5 rounded-[32px] p-8 border border-white/5 backdrop-blur-xl">
+                        <div className="bg-white/5 rounded-[40px]  p-8 border border-white/5 backdrop-blur-xl">
                             <h3 className="text-[10px] font-black text-white/30 tracking-[0.25em] uppercase mb-6">Impact & Achievements</h3>
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
@@ -108,8 +108,8 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                         <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mb-1">Impact Tier</p>
                                         <p className="text-white text-xl font-black">Diamond</p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#05EFB8] to-[#8C52FF] p-[1px]">
-                                        <div className="w-full h-full rounded-2xl bg-[#1A1B23] flex items-center justify-center text-xl">💎</div>
+                                    <div className="w-12 h-12 rounded-[40px]  bg-gradient-to-br from-[#05EFB8] to-[#8C52FF] p-[1px]">
+                                        <div className="w-full h-full rounded-[40px]  bg-[#1A1B23] flex items-center justify-center text-xl">💎</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -117,7 +117,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                         <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mb-1">Badges Earned</p>
                                         <p className="text-white text-xl font-black">12</p>
                                     </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-xl">🏆</div>
+                                    <div className="w-12 h-12 rounded-[40px]  bg-white/5 flex items-center justify-center text-xl">🏆</div>
                                 </div>
                                 <div className="pt-6 border-t border-white/10">
                                     <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mb-3 text-center">Next Milestone</p>
@@ -131,7 +131,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                     </div>
 
                     {IsloggedIn && user?.edit_bio_reason ? (
-                        <div className="mt-10 p-6 rounded-3xl bg-red-500/5 border border-red-500/10">
+                        <div className="mt-10 p-6 rounded-[40px]  bg-red-500/5 border border-red-500/10">
                             <p className="text-red-400 font-black text-xs tracking-widest uppercase mb-2">Review Required</p>
                             <p className="text-red-400/70 text-sm leading-relaxed">{user?.edit_bio_reason}</p>
                         </div>
@@ -141,8 +141,8 @@ export default function Gifter({ IsloggedIn,  sLinks }){
 
             {/* Supporter Offerings Card */}
             <div className="relative group mb-10">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF] to-[#F94F97] rounded-[42px] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                <div className="relative p-8 md:p-12 rounded-[40px] bg-[#1A1B23]/90 backdrop-blur-3xl border border-white/10 shadow-2xl">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF] to-[#F94F97] rounded-[40px]  blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+                <div className="relative p-8 md:p-12 rounded-[40px]  bg-[#1A1B23]/90 backdrop-blur-3xl border border-white/10 shadow-2xl">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                         <div>
                             <h3 className="text-sm font-black text-white/40 tracking-[0.25em] uppercase mb-4 flex items-center gap-4">
@@ -162,7 +162,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             { title: "Private Feed", desc: "A unified feed of all creators you support.", icon: "📱" },
                             { title: "Custom Flair", desc: "Unique visual styles for your profile and comments.", icon: "✨" },
                         ].map((benefit, i) => (
-                            <div key={i} className="p-6 rounded-[32px] bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
+                            <div key={i} className="p-6 rounded-[40px]  bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
                                 <div className="text-3xl mb-4">{benefit.icon}</div>
                                 <h4 className="text-white font-black text-sm uppercase tracking-widest mb-2">{benefit.title}</h4>
                                 <p className="text-white/50 text-xs leading-relaxed">{benefit.desc}</p>
@@ -213,32 +213,32 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px]  p-8 border border-white/10 shadow-2xl">
                                 <GifterFeed username={user && user.username || ''} />
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px]  p-8 border border-white/10 shadow-2xl">
                                 <MembershipLists username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px]  p-8 border border-white/10 shadow-2xl">
                                 <GifterItems username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px]  p-8 border border-white/10 shadow-2xl">
                                 <GifterTips username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px]  p-8 border border-white/10 shadow-2xl">
                                 <GifterMedia username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[40px]  p-8 border border-white/10 shadow-2xl">
                                 <ThankyouMessages username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>

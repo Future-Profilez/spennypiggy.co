@@ -11,7 +11,7 @@ import AllContries from '../../includes/AllCountries';
 
 export default function ShopDetailItem(props) {
 
-   const { vat_percent, auth, user, shop } = props;
+   const { vat_percent, auth, user, shop, card_capabilities } = props;
    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (shop && shop.user && shop && shop.user.username));
    const url = window.location.href;
    const [open, setOpen] = useState();
@@ -115,8 +115,8 @@ export default function ShopDetailItem(props) {
                      </nav>
 
                      <div className="w-full relative">
-                        <img className="w-full max-h-[400px] object-cover rounded-xl" alt="image of a girl posing" src={shop.perma_link}/>
-                        {shop.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-xl px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
+                        <img className="w-full max-h-[400px] object-cover rounded-[40px] " alt="image of a girl posing" src={shop.perma_link}/>
+                        {shop.ai_generated == 1 ? <div className='absolute bottom-2 left-2 z-10 bg-black shadow-sm rounded-[40px]  px-2 py-1 text-[8px] text-white'>MADE WITH AI </div> : ""}
                      </div>
 
                      <h2 className='font-GillSans uppercase text-3xl pt-4 pb-3' >{shop.name}</h2>
@@ -128,7 +128,7 @@ export default function ShopDetailItem(props) {
                         }) || 'Not Available'}</span>
                      </p>
 
-                     {shop && shop.is_member == 0 && shop.special_member_price ? <div className='special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[20px] px-1 py-2 '>
+                     {shop && shop.is_member == 0 && shop.special_member_price ? <div className='special-discount flex items-center bg-gray-100 border-gray-200 my-3 rounded-[40px]  px-1 py-2 '>
                         <div className='discount-tag w-[50px] h-[50px] mr-2' >
                            <RiDiscountPercentFill />
                         </div>
@@ -150,7 +150,7 @@ export default function ShopDetailItem(props) {
                            <li>
                               <a
                               href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
-                               className=" break-words text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                               className=" break-words text-gray-500 inline-flex items-center rounded-[40px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Twitter" ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-7 w-7">
@@ -163,7 +163,7 @@ export default function ShopDetailItem(props) {
 
                            <li>
                               <div onClick={instashare}
-                               className="cursor-pointer text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                               className="cursor-pointer text-gray-500 inline-flex items-center rounded-[40px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="Instagram"  ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-7 w-7">
@@ -175,7 +175,7 @@ export default function ShopDetailItem(props) {
                            </li>
 
                            <li>
-                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-[40px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                     aria-label="Facebook"
                                      onClick={fbShare}
                                      ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -187,7 +187,7 @@ export default function ShopDetailItem(props) {
                            </li>
 
                            <li>
-                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-xl  p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-[40px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
                                  aria-label="RSS" onClick={rssShare}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
                                     strokeLinejoin="round" className="h-7 w-7">
@@ -203,7 +203,7 @@ export default function ShopDetailItem(props) {
                      {shop.type === 'physical' ?
                         <>
                         <h2 className='text-lg mb-2'>Select Varient</h2>
-                        <select onChange={handleVarient} className='bg-white rounded-xl text-lg capitalize px-4 py-2.5 mb-3 w-full border-0'>
+                        <select onChange={handleVarient} className='bg-white rounded-[40px]  text-lg capitalize px-4 py-2.5 mb-3 w-full border-0'>
                            {shop.shop_varients && shop.shop_varients.map((varient) => <option value={varient.id}>{varient.name}</option>)}
                         </select>
                         </> : ""
@@ -232,7 +232,7 @@ export default function ShopDetailItem(props) {
                                  <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button>
                                  :
                               <>
-                                 <BuyShopItem shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" />
+                                 <BuyShopItem card_capabilities={card_capabilities} shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" />
                               </>
                               }
                            </>

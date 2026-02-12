@@ -4,15 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Jobs\MembershipAutoTweet;
 use App\Jobs\MembershipMail;
 use App\Jobs\MembershipMailToUser;
 use App\Jobs\NotificationSave;
 use App\Jobs\SendRenewMail;
-use App\Jobs\SubscribeAutoTweet;
-use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
-use App\Jobs\SubscriptionFailed;
 use App\Services\CreatorActivityService;
 use App\Services\UserProfileService;
 use App\Notifications\PaymentBlockedNotification;
@@ -20,24 +16,20 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
+use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
 use App\Models\SocialLinks;
-use App\Models\StripePaymentDetail;
-use App\Models\StripePaymentItems;
-use App\Models\TipGoalsPayment;
 use App\Models\User;
 use App\Models\UserPayment;
-use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Jobs\ProcessWishItemDeliverable;
+use App\Services\StripeMetadataService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
@@ -95,16 +87,18 @@ class MembershipController extends Controller
 
         $rewards = json_encode($request->rewards);
 
-        // Fetch tax and administration fee percentage from the configuration
-        $memberTax = config('app.member_tax'); // Membership tax percentage
-
         $price = $request->month_price;
-        $taxAmount = round(($price * $memberTax / 100), 2, PHP_ROUND_HALF_UP); // Tax based on combined percentage
-        $totalPrice = $price + $taxAmount; // Total price including tax
+        $currency = $user->default_currency ?? 'USD';
+        
+        // Use new gross-up flow
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        $totalPrice = $breakdown['total_supporter_pays'];
+        $taxAmount = $breakdown['application_fee']; // We'll store application fee as tax_amount for consistency in DB
+
         $mem = new Membership();
         $mem->user_id = Auth::id();
         $mem->level = $request->level;
-        $mem->currency = $user->default_currency;
+        $mem->currency = $currency;
         $mem->price = $price;
         $mem->tax_amount = $taxAmount;
         $mem->thumbnail = $request->thumbnail ?? null;
@@ -113,17 +107,23 @@ class MembershipController extends Controller
         $mem->save();
 
         // Get currency metadata to handle zero-decimal currencies properly
-        $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+        $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         $productPayload = [
-            "name"  =>  'Membership_' . $mem->level . '_' . $user->username,
+            "name"  => "Membership: {$mem->level} (Total value including all fees)",
             "images" => [$mem->perma_link],
             "default_price_data"    =>  [
-                "currency"  => $user->default_currency,
+                "currency"  => $currency,
                 "unit_amount_decimal"   => round($totalPrice * $multiplier, 2, PHP_ROUND_HALF_UP),
             ],
-            "url"   =>  env('APP_URL') . '/' . $user->username
+            "url"   =>  env('APP_URL') . '/' . $user->username,
+            'metadata' => [
+                'membership_level' => $mem->level,
+                'creator_id' => $user->id,
+                'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                'total_charge_amount' => (string)($totalPrice * 100),
+            ]
         ];
 
         if ($request->level != 'lifetime') {
@@ -202,10 +202,12 @@ class MembershipController extends Controller
                 $newLevel = $request->level;
 
                 $price = $request->month_price;
-                $taxamount = round(($price * config('app.member_tax') / 100), 2, PHP_ROUND_HALF_UP);
-                $adminFee = config('app.administration_fee');
-                $totalTaxAmount = $taxamount + $adminFee;
-                $createpriceid = $price + $taxamount + $adminFee;
+                $currency = $user->default_currency ?? 'USD';
+                
+                // Use new gross-up flow
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+                $totalPriceGrossedUp = $breakdown['total_supporter_pays'];
+                $totalTaxAmount = $breakdown['application_fee'];
 
                 $mem->level = $newLevel;
                 $mem->price = $price;
@@ -223,12 +225,12 @@ class MembershipController extends Controller
 
                 if ($priceChanged) {
                     // Get currency metadata to handle zero-decimal currencies properly
-                    $currencyModel = Currency::where('ISO', strtoupper($user->default_currency))->first();
+                    $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
                     $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                     $pricePayload = [
-                        'unit_amount_decimal' => (string) round($createpriceid * $multiplier),
-                        'currency' => $user->default_currency,
+                        'unit_amount_decimal' => (string) round($totalPriceGrossedUp * $multiplier),
+                        'currency' => $currency,
                         'product' => $mem->product_id,
                     ];
 
@@ -259,9 +261,15 @@ class MembershipController extends Controller
                 }
 
                 $product = $stripe->products->update($mem->product_id, [
-                    "name" => $user->username . '_' . $newLevel,
+                    "name" => "Membership: {$newLevel} (Total value including all fees)",
                     "images" => [$mem->perma_link],
                     "url" => env('APP_URL') . '/' . $user->username . '/memberships',
+                    'metadata' => [
+                        'membership_level' => $newLevel,
+                        'creator_id' => $user->id,
+                        'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
+                        'total_charge_amount' => (string)($totalPriceGrossedUp * 100),
+                    ]
                 ], [
                     'stripe_account' => $connectedAccountId
                 ]);
@@ -405,27 +413,25 @@ class MembershipController extends Controller
         $currency = strtolower($request->cookie("currency", "GBP"));
         $creatorCurrency = $membership->currency;
         $price = $membership->price;
-        $convertedAmount = Helpers::priceFormat($creatorCurrency, $price, 'gbp');
 
-
-        $memberTaxPercent = config('app.member_tax');
-        $adminFeeGBP = config('app.administration_fee');
+        // Calculate creator's desired net in supporter's currency
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
+        $priceWithVat = $price + ($price * $vatPercent / 100);
+        $supporterPrice = Helpers::priceFormat($creatorCurrency, $priceWithVat, $currency);
 
-        $taxAmount = $price * $memberTaxPercent / 100;
-        $vatAmount = ($price + $taxAmount) * $vatPercent / 100;
-
-        $convertedAdminFee = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
-        $convertedTaxAmount = Helpers::priceFormat($creatorCurrency, $taxAmount, $currency);
-        $convertedVatAmount = Helpers::priceFormat($creatorCurrency, $vatAmount, $currency);
-        $creatorTotal = $price + $vatAmount;
-        $convertedCreatorTotal = Helpers::priceFormat($creatorCurrency, $creatorTotal, $currency);
-        $platformTotal = $convertedTaxAmount + $convertedAdminFee;
-        $finalTotalAmount = round($convertedCreatorTotal + $platformTotal, 2);
-        $applicationFeePercent = round(($platformTotal / $finalTotalAmount) * 100, 2);
+        // Use new gross-up flow
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($supporterPrice, $currency);
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        $applicationFeeAmount = $breakdown['application_fee'];
+        $creatorNet = $breakdown['net_to_creator']; // This is what creator gets after Stripe fees
+        
+        // Application Fee % = (Application Fee / Total Amount) * 100
+        $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
-            if (!Auth::check() && $convertedAmount > 50) {
+            $convertedAmountForCheck = Helpers::priceFormat($creatorCurrency, $price, 'gbp');
+            if (!Auth::check() && $convertedAmountForCheck > 50) {
                 return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
             }
 
@@ -444,8 +450,8 @@ class MembershipController extends Controller
                 'guest_email' => $request->email,
                 'currency' => $currency,
                 'amount' => $price,
-                'tax' => $convertedTaxAmount + $convertedAdminFee,
-                'vat_tax_amount' => $convertedVatAmount,
+                'tax' => $applicationFeeAmount,
+                'vat_tax_amount' => $breakdown['compliance_fee'] + $breakdown['admin_fee'], // Storing other fees in vat for now
                 'recurring_for' => $reccure ?? null,
                 'recurring_type' => in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message' => $request->message,
@@ -454,6 +460,11 @@ class MembershipController extends Controller
 
             try {
                 $connectedAccountId = $membership->user->account_id;
+
+                // Check if creator has card_payments capability
+                if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
+                    return back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+                }
 
                 $customerRecord = ConnectedAccountCustomer::where([
                     'user_id' => $user->id ?? null,
@@ -526,27 +537,18 @@ class MembershipController extends Controller
                     ]);
                 }
 
-                // Calculate creator VAT amount if applicable
-                $creatorVatAmount = 0;
-                if (isset($membership->user->vat_amount_percentage) && $membership->user->vat_amount_percentage > 0) {
-                    $creatorVatAmount = round(($membership->price * $membership->user->vat_amount_percentage / 100) * $multiplier);
-                }
-
                 // Use Direct Charges pattern (Standard/Express accounts)
-                // We create the session on the connected account
-                // 1. Line items are for the product/service
-                // 2. Application fee is taken from the total
-                
+                // Single line item hiding all fees
                 $lineItems = [
                     [
                         'quantity' => 1,
                         'price_data' => [
                             'currency' => $currency,
                             'product_data' => [
-                                'name' => $membership->level . ' Membership - ' . $membership->user->name,
+                                'name' => "Total value of item including all fees",
                                 'description' => "{$membership->level} membership from {$membership->user->name}",
                             ],
-                            'unit_amount' => round($membership->price * $multiplier),
+                            'unit_amount' => round($finalTotalAmount * $multiplier),
                         ]
                     ]
                 ];
@@ -559,70 +561,10 @@ class MembershipController extends Controller
                     ];
                 }
 
-                // Add creator VAT as separate line item if applicable
-                if ($creatorVatAmount > 0) {
-                    $vatLineItem = [
-                        'quantity' => 1,
-                        'price_data' => [
-                            'currency' => $currency,
-                            'product_data' => [
-                                'name' => 'VAT',
-                            ],
-                            'unit_amount' => $creatorVatAmount,
-                            'tax_behavior' => 'exclusive',
-                        ],
-                    ];
-
-                    // Add recurring data for VAT if not lifetime
-                    if ($membership->level !== 'lifetime') {
-                        $vatLineItem['price_data']['recurring'] = [
-                            'interval' => StripeControl::$periods['monthly'],
-                            'interval_count' => 1,
-                        ];
-                    }
-
-                    $lineItems[] = $vatLineItem;
-                }
-
-                // Platform fee is calculated based on total amount
-                // Total amount user pays = Price + VAT + Platform Fees
-                // But for Direct Charges, the "amount" is what the user pays.
-                // We want the user to pay (Price + VAT + Platform Fee).
-                // So we add the Platform Fee as a line item OR we just add it to the total and take it out as app fee.
-                // Best practice for Platform Fee transparency: Add it as a line item.
-                
-                $platformFeeLineItem = [
-                    'quantity' => 1,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%)',
-                        ],
-                        'unit_amount' => round($platformTotal * $multiplier),
-                        'tax_behavior' => 'exclusive',
-                    ],
-                ];
-
-                // Add recurring data for platform fee if not lifetime
-                if ($membership->level !== 'lifetime') {
-                    $platformFeeLineItem['price_data']['recurring'] = [
-                        'interval' => StripeControl::$periods['monthly'],
-                        'interval_count' => 1,
-                    ];
-                }
-
-                $lineItems[] = $platformFeeLineItem;
-
-                // Total charge amount = membership price + creator's VAT + platform fees
-                $totalChargeAmount = round($membership->price * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
-                
-                // Application Fee = Platform Fee
-                $applicationFeeAmount = round($platformTotal * $multiplier);
-
                 $payload = [
                     'payment_method_types' => ['card'],
                     'line_items' => $lineItems,
-                    'customer_email' => $user->email ?? $request->email,
+                    'customer' => $customer_id,
                     'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                 ];
@@ -630,42 +572,33 @@ class MembershipController extends Controller
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
                     $paymentIntentData = [
-                        'description' => "Lifetime Membership for {$membership->user->username}",
-                        'metadata' => \App\Helpers::buildStripeMetadata('membership', $sub, [
+                        'description' => "Lifetime Membership for {$membership->user->username} (Total value including all fees)",
+                        'metadata' => Helpers::buildStripeMetadata('membership', $sub, [
                             'membership_level' => $membership->level,
                             'item_amount' => (string) round($membership->price * $multiplier),
-                            'creator_vat_amount' => (string) $creatorVatAmount,
-                            'creator_net_amount' => (string) ($membership->price * $multiplier + $creatorVatAmount),
-                            'platform_fee_amount' => (string) $applicationFeeAmount,
-                            'total_charge_amount' => (string) $totalChargeAmount,
+                            'creator_net_amount' => (string) ($creatorNet * $multiplier),
+                            'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
+                            'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
                             'payment_type' => 'Lifetime Membership - Direct Charge',
                             'anonymous' => (string) ($request->anonymous ?? 0),
                         ]),
-                        'application_fee_amount' => (int) $applicationFeeAmount,
+                        'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                     ];
                     
                     $payload['payment_intent_data'] = $paymentIntentData;
                 } else {
                     $payload['mode'] = 'subscription';
                     $payload['subscription_data'] = [
-                        'description' => "Monthly Membership for {$membership->user->username}",
-                        'metadata' => \App\Helpers::buildStripeMetadata('membership', $sub, [
+                        'description' => "Monthly Membership for {$membership->user->username} (Total value including all fees)",
+                        'metadata' => Helpers::buildStripeMetadata('membership', $sub, [
                             'membership_level' => $membership->level,
                             'item_amount' => (string) round($membership->price * $multiplier),
-                            'creator_vat_amount' => (string) $creatorVatAmount,
-                            'creator_net_amount' => (string) ($membership->price * $multiplier + $creatorVatAmount),
-                            'platform_fee_amount' => (string) $applicationFeeAmount,
-                            'total_charge_amount' => (string) $totalChargeAmount,
+                            'creator_net_amount' => (string) ($creatorNet * $multiplier),
+                            'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
+                            'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
                             'payment_type' => 'Monthly Membership - Direct Charge',
                             'anonymous' => (string) ($request->anonymous ?? 0),
                         ]),
-                        // For subscriptions in Direct Charges, application_fee_percent is common,
-                        // but we can also use application_fee_amount on the first invoice if needed,
-                        // but usually percent is better for recurring.
-                        // However, since we added a specific line item for the fee, we should take THAT amount.
-                        // Ideally, we want to take the exact amount of the platform fee line item.
-                        // If we use application_fee_percent, it applies to the WHOLE amount.
-                        // Application Fee % = (Platform Fee / Total Amount) * 100
                         'application_fee_percent' => $applicationFeePercent,
                     ];
                 }
@@ -687,11 +620,13 @@ class MembershipController extends Controller
             }
         }
 
+        $card_capabilities = StripeControl::hasCardPaymentsCapability($membership->user->account_id);
+
         return Inertia::render('membership/MemberCheckout', [
             'membership' => $membership,
             'isSocilAdded' => $isSocilAdded,
-            'vat_amount' => $vatAmount,
             'reccure' => $reccure,
+            'card_capabilities' => $card_capabilities,
         ]);
     }
 
@@ -702,7 +637,7 @@ class MembershipController extends Controller
      * @param string $status Status of Subscription
      * @return mixed
      */
-    public function handlePayment($uuid, $status)
+    public function handlePayment($uuid)
     {
         $mem = MembershipPayment::with('membership')->whereUuid($uuid)->first();
         if (!$mem) {
@@ -910,8 +845,6 @@ class MembershipController extends Controller
     public function membershipStatus(Request $request)
     {
 
-        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
         // $endpoint_secret = 'whsec_a5n2XAXrZTXHKcRYKGnYoIvMc9do2u6N';
 
@@ -950,7 +883,6 @@ class MembershipController extends Controller
         $array = [];
         if (!empty($event)) {
             $subs = MembershipPayment::where('stripe_id', $event->data->object->id)->latest()->first();
-            $convertedAmount = Helpers::priceFormat('GBP', $subs->amount, $subs->currency);
 
             // $ret = StripeControl::getSubscription($event->data->object->id);
             $ret = $event->data->object;
@@ -1067,7 +999,7 @@ class MembershipController extends Controller
             }
 
             // Create deliverable entry for tracking (exactly like bills)
-            $deliverable = \App\Models\Deliverable::create([
+            $deliverable = Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
                 'product_id' => $membership->product_id ?? 'membership_' . $membership->id,
                 'price_id' => $membership->price_id,
@@ -1107,18 +1039,18 @@ class MembershipController extends Controller
             ]);
 
             // Dispatch ProcessWishItemDeliverable job for certificate generation
-            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+            ProcessWishItemDeliverable::dispatch($deliverable);
 
             // Update Stripe payment intent metadata (same as bills)
             if ($paymentIntentId) {
                 try {
-                    $stripeMetadataService = app(\App\Services\StripeMetadataService::class);
+                    $stripeMetadataService = app(StripeMetadataService::class);
                     $stripeMetadataService->updateDeliverableMetadata($deliverable, [
                         'membership_processed_at' => now()->toISOString(),
                         'immediate_delivery' => 'true'
                     ]);
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('MembershipController: Failed to update Stripe metadata', [
+                    Log::error('MembershipController: Failed to update Stripe metadata', [
                         'deliverable_id' => $deliverable->id,
                         'payment_intent_id' => $paymentIntentId,
                         'error' => $e->getMessage()
@@ -1153,7 +1085,7 @@ class MembershipController extends Controller
             $membership = $membershipPayment->membership;
 
             if (!$membership) {
-                \Illuminate\Support\Facades\Log::error('MembershipController: No membership found for renewal deliverable', [
+                Log::error('MembershipController: No membership found for renewal deliverable', [
                     'membership_payment_id' => $membershipPayment->id
                 ]);
                 return null;
@@ -1163,7 +1095,7 @@ class MembershipController extends Controller
             $paymentIntentId = null; // Renewals typically don't have payment intent, just subscription invoice
 
             // Create deliverable entry for renewed membership access
-            $deliverable = \App\Models\Deliverable::create([
+            $deliverable = Deliverable::create([
                 'uuid' => \Ramsey\Uuid\Uuid::uuid4(),
                 'product_id' => $membership->product_id ?? 'membership_' . $membership->id,
                 'price_id' => $membership->price_id,
@@ -1207,7 +1139,7 @@ class MembershipController extends Controller
             ]);
 
             // Dispatch ProcessWishItemDeliverable job for certificate generation
-            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+            ProcessWishItemDeliverable::dispatch($deliverable);
 
             Log::info('Membership renewal deliverable created successfully', [
                 'deliverable_id' => $deliverable->id,

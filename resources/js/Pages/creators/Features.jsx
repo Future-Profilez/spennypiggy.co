@@ -51,7 +51,7 @@ export default function Features() {
               </div>
 
               {/* Why All-In-One Matters */}
-              <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-gray-100 mb-16">
+              <div className="bg-white p-8 md:p-12 rounded-[40px]  shadow-sm border border-gray-100 mb-16">
                  <h2 className="text-2xl md:text-3xl xl:text-4xl font-gulfs uppercase mb-6 flex items-center gap-3 text-black">
                     <Layers className="text-pink-600" size={32} /> Why All-In-One Matters
                  </h2>
@@ -79,8 +79,8 @@ export default function Features() {
                        { icon: Video, title: "Intro Video", desc: "Convert supporters faster" },
                        { icon: Trophy, title: "Leaderboards", desc: "Gamify spending and reward top supporters" }
                     ].map((feature, i) => (
-                       <div key={i} className="bg-white p-6 rounded-[2rem] hover:-translate-y-2 transition-transform duration-300 border border-gray-100 hover:border-pink-500 shadow-sm hover:shadow-xl group">
-                          <div className="bg-gray-100 w-14 h-14 rounded-xl flex items-center justify-center mb-6 group-hover:bg-pink-600 group-hover:text-white transition-colors">
+                       <div key={i} className="bg-white p-6 rounded-[40px]  hover:-translate-y-2 transition-transform duration-300 border border-gray-100 hover:border-pink-500 shadow-sm hover:shadow-xl group">
+                          <div className="bg-gray-100 w-14 h-14 rounded-[40px]  flex items-center justify-center mb-6 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                              <feature.icon size={28} className="text-gray-800 group-hover:text-white" />
                           </div>
                           <h3 className="text-xl lg:text-2xl font-bold uppercase mb-2 text-gray-900">{feature.title}</h3>
@@ -90,7 +90,7 @@ export default function Features() {
                  </div>
               </div>
 
-              <div className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 rounded-[2rem] lg:rounded-[3rem] p-10 md:p-16 text-center relative overflow-hidden shadow-2xl">
+              <div className="bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 rounded-[40px]  lg:rounded-[40px]  p-10 md:p-16 text-center relative overflow-hidden shadow-2xl">
                  <div className="relative z-1"> 
                     <h2 className="text-3xl md:text-4xl lg:text-5xl font-gulfs uppercase mb-4 md:mb-8 text-white">Safety</h2>
                     <div className="max-w-3xl mx-auto space-y-4">

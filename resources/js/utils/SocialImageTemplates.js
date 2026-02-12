@@ -34,7 +34,7 @@ export function renderProfileCard({ avatarUid, name, username }) {
                 <p class="text-white text-xl font-bold me-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
                 <img src="${spennypiggy}" alt="Logo" class="me-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
 
-                <div class="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[15px] text-center text-[20px] shadow-md">
+                <div class="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white px-4 leading-[15px] h-[40px] rounded-[40px]  text-center text-[20px] shadow-md">
                     https://spennypiggy.co/${username}
                 </div>
             </div>

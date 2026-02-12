@@ -23,7 +23,7 @@ export default function ProfileTaskLists({ tasks, IsloggedIn }) {
                     <Nocontent text="No tasks available yet." />
                     {IsloggedIn && (
                         <div className="text-center mt-4">
-                            <Link href={route('task.create')} className="btn-pink shadow-mint inline-block px-6 py-3 text-white font-bold rounded-xl  border-2 border-black uppercase">
+                            <Link href={route('task.create')} className="btn-pink shadow-mint inline-block px-6 py-3 text-white font-bold rounded-[40px]   border-2 border-black uppercase">
                                 Create Your First Task
                             </Link>
                         </div>

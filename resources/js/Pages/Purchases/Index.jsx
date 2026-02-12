@@ -129,7 +129,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         }
       
         return (
-            <div key={deliverable.id} className={`bg-white rounded-xl 
+            <div key={deliverable.id} className={`bg-white rounded-[40px]  
              shadow-md overflow-hidden hover:shadow-lg transition-shadow 
              duration-200 mb-2 md:mb-4 border border-2  ${type === 'sent' ? "!border-pink-400" : "border-mint"} `}>
                 <div className="flex">
@@ -145,10 +145,10 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         {itemImage ? (
                             <img  src={itemImage} 
                                 alt={itemName} 
-                                className="h-12 w-12 object-cover rounded-md"
+                                className="h-12 w-12 object-cover rounded-[40px] "
                             />
                         ) : (
-                            <div className="h-12 w-12 flex items-center justify-center  rounded-md">
+                            <div className="h-12 w-12 flex items-center justify-center  rounded-[40px] ">
                                 <FiPackage className="h-12 w-12 text-pink-500" />
                             </div>
                         )}
@@ -215,7 +215,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         {/* <Popup space="2 md:p-4"  
                                                             classes="text-[15px] text-pink ml-2"
                                                             text={<>🎉 View Exclusive Content</>} >
-                                                                <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-md" />
+                                                                <img src={deliverable.deliverable_url} alt={deliverable.wish_item?.wishname} className="w-full h-full max-h-[90vh] object-cover rounded-[40px] " />
                                                         </Popup> */}
                                                         {deliverable?.product_type != 'support_payment' && deliverable?.product_type != 'membership' && deliverable.deliverable_url  ?
                                                             <li className='flex items-center flex-wrap'>
@@ -290,7 +290,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         
                         <p>
                             {deliverable.message && (
-                                <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                                <div className="mt-3 p-3 bg-gray-50 rounded-[40px] ">
                                     <p className="text-sm text-gray-700 italic">"{deliverable.message}"</p>
                                 </div>
                             )}
@@ -389,7 +389,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
         const nextPaymentDate = getFormattedDate(subscription.current_period_end || subscription.next_payment);
         
         return (
-            <div key={subscription.id} className="bg-white rounded-xl  shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
+            <div key={subscription.id} className="bg-white rounded-[40px]   shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 mb-4 border-l-4 border-purple-400">
                 <div className="lg:flex flex-col md:flex-row">
                     {/* Left side - Image */}
                     <div className="relative w-full h-[100px] lg:h-auto lg:min-w-[130px] lg:max-w-[130px] bg-purple-50 flex items-center justify-center p-4">
@@ -399,10 +399,10 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                         {subscription.wish_item?.image_url ? (
                             <img src={subscription.wish_item.image_url} 
                                 alt={subscription.wish_item.wishname} 
-                                className="h-12 w-12 object-cover rounded-md"
+                                className="h-12 w-12 object-cover rounded-[40px] "
                             />
                         ) : (
-                            <div className="h-12 w-12 flex items-center justify-center bg-purple-50 rounded-md">
+                            <div className="h-12 w-12 flex items-center justify-center bg-purple-50 rounded-[40px] ">
                                 <FiGift className="h-12 w-12 text-purple-500" />
                             </div>
                         )}
@@ -474,7 +474,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                 <button
                                     onClick={() => handleCancelSubscription(subscription.id)}
                                     disabled={isCancelling}
-                                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-[40px]  hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isCancelling ? 'Cancelling...' : 'Cancel Subscription'}
                                 </button>
@@ -607,7 +607,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                 <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
                     showToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
                 }`}>
-                    <div className={`rounded-xl  p-4 shadow-lg ${
+                    <div className={`rounded-[40px]   p-4 shadow-lg ${
                         toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                     }`}>
                         <div className="flex items-center">
@@ -625,7 +625,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                 <div className="-mx-1.5 -my-1.5">
                                     <button
                                         onClick={() => setShowToast(false)}
-                                        className="inline-flex rounded-md p-1.5 hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                        className="inline-flex rounded-[40px]  p-1.5 hover:opacity-75 focus:outline-none focus:ring-2 focus:ring-offset-2"
                                     >
                                         <span className="sr-only">Dismiss</span>
                                         <FiX className="h-4 w-4" />

@@ -12,7 +12,7 @@ import axios from "axios";
 export default function SubCheckout(props) {
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
-    const { user, auth, membership, vat_amount, isSocilAdded } = props;
+    const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities } = props;
     const { formatMultiPrice } = PriceFormat();
     const [username, setUserName] = useState(
         (auth && auth.user && auth.user.username) || ""
@@ -137,7 +137,7 @@ export default function SubCheckout(props) {
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${membership?.level} membership`} />
                 <div className={`px-0 mb-3 lg:px-2`}>
-                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-[20px] md:rounded-[40px]">
+                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-[40px]  md:rounded-[40px] ">
                         <div className="cartMain">
                             <div className="md:flex w-full gap-5">
                                 <div className="w-full md:max-w-[40%]">
@@ -167,19 +167,19 @@ export default function SubCheckout(props) {
                                                 <span className="min-w-[100px] block">Subtotal :</span>
                                                 <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
                                             </li>
-                                            <li className="flex justify-between   border p-2">
+                                            {/* <li className="flex justify-between   border p-2">
                                                 <span className="min-w-[100px] block">Platform Fee :</span>
                                                 <div>
                                                     <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
                                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                                     ?
-                                                    <p className="absolute bg-[#505050] p-[10px] rounded-md top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                                    <p className="absolute bg-[#505050] p-[10px] rounded-[40px]  top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                                         {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
                                                     all transactions.
                                                     </p>
                                                     </button>
                                                 </div>
-                                            </li>
+                                            </li> */}
                                             {vat_amount && vat_amount > 0 ? (
                                                 <li className="flex justify-between   border p-2">
                                                     <span className="min-w-[100px] block">VAT :</span>
@@ -212,7 +212,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label className="block mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
-                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                            className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                             onKeyUp={(e) =>
                                                 setData(
                                                     "message",
@@ -243,7 +243,7 @@ export default function SubCheckout(props) {
                                             auth?.user?.email
                                                 ? "disabled"
                                                 : ""
-                                        } border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
+                                        } border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -270,7 +270,7 @@ export default function SubCheckout(props) {
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                                    className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -433,6 +433,12 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                 </ul>
+                                {!card_capabilities && (
+                                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-3" role="alert">
+                                        <strong className="font-bold">Payment Unavailable: </strong>
+                                        <span className="block sm:inline">This creator cannot receive payments yet.</span>
+                                    </div>
+                                )}
                                 {turnstileSiteKey ? (
                                     <div className="flex justify-center my-3">
                                         <Turnstile
@@ -450,7 +456,8 @@ export default function SubCheckout(props) {
                                             !data.agree ||
                                             processing ||
                                             checking ||
-                                            (turnstileSiteKey && !verified)
+                                            (turnstileSiteKey && !verified) ||
+                                            !card_capabilities
                                                 ? "disabled"
                                                 : ""
                                         } btn-pink md !px-8 mt-3 text-center`}
@@ -458,7 +465,8 @@ export default function SubCheckout(props) {
                                             !data.agree ||
                                             processing ||
                                             checking ||
-                                            (turnstileSiteKey && !verified)
+                                            (turnstileSiteKey && !verified) ||
+                                            !card_capabilities
                                         }
                                     >
                                         {processing || checking

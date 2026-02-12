@@ -5,8 +5,6 @@
 
 
 
-
-
 /* @keyframes load {
   0%{transition:0.3s;opacity:0;}
   50%{transition:0.3s;opacity:0.5;}
@@ -42,16 +40,16 @@ div{animation:load 0.4s linear;} */
   }
   .shadow-pink{box-shadow:7px 7px 0 0 var(--pink); }
   .main-button {
-    @apply bg-white font-gulfs uppercase px-4 py-2 border !border-[3px]  rounded-[20px] 
+    @apply bg-white font-gulfs uppercase px-6 py-2 border !border-[3px]  rounded-[40px]  
     }
-    .b { @apply main-button bg-white !text-[#003D4F] !border-[#003D4F] transition shadow-[5px_5px_0px_#003D4F] hover:shadow-[3px_3px_0px_#003D4F] focus:shadow-[3px_3px_0px_#003D4F] focus:outline    }
-    .p { @apply main-button bg-white !text-[var(--pink)] transition !border-[var(--pink)] shadow-[5px_5px_0px_var(--pink)] hover:shadow-[3px_3px_0px_var(--pink)] focus:shadow-[3px_3px_0px_var(--pink)] focus:outline    }
-    .y { @apply main-button bg-white !text-[var(--yellow)] transition !border-[var(--yellow)] shadow-[5px_5px_0px_var(--yellow)] hover:shadow-[3px_3px_0px_var(--yellow)] focus:shadow-[3px_3px_0px_var(--yellow)] focus:outline    }
-    .w { @apply main-button bg-transparent !text-white transition !border-white shadow-[5px_5px_0px_var(--mint)] hover:shadow-[3px_3px_0px_var(--mint)] focus:shadow-[3px_3px_0px_var(--mint)] focus:outline    }
-    .pure-pink { @apply main-button pinkbg !text-[#fff] transition !border-[#fff] shadow-[5px_5px_0px_white] hover:shadow-[3px_3px_0px_white] focus:shadow-[3px_3px_0px_white] focus:outline    }
-    .size-lg { @apply text-[17px] rounded-[20px]  px-[16px] py-[9px] }
-    .pink-round { @apply  overflow-hidden bg-white  rounded-[15px] md:rounded-[25px]  border-pink shadow-pink }
-    .mint-round { @apply  overflow-hidden bg-white  rounded-[15px] md:rounded-[25px]  border-mint shadow-mint }
+    .b { @apply main-button bg-white !text-[#003D4F] !border-[#003D4F] transition shadow-[3px_3px_0px_#003D4F] hover:shadow-[4px_4px_0px_#003D4F] focus:shadow-[3px_3px_0px_#003D4F] focus:outline    }
+    .p { @apply main-button bg-white !text-[var(--pink)] transition !border-[var(--pink)] shadow-[3px_3px_0px_var(--pink)] hover:shadow-[4px_4px_0px_var(--pink)] focus:shadow-[3px_3px_0px_var(--pink)] focus:outline    }
+    .y { @apply main-button bg-white !text-[var(--yellow)] transition !border-[var(--yellow)] shadow-[3px_3px_0px_var(--yellow)] hover:shadow-[4px_4px_0px_var(--yellow)] focus:shadow-[3px_3px_0px_var(--yellow)] focus:outline    }
+    .w { @apply main-button bg-transparent !text-white transition !border-white shadow-[3px_3px_0px_var(--mint)] hover:shadow-[4px_4px_0px_var(--mint)] focus:shadow-[3px_3px_0px_var(--mint)] focus:outline    }
+    .pure-pink { @apply main-button pinkbg !text-[#fff] transition !border-[#fff] shadow-[3px_3px_0px_white] hover:shadow-[4px_4px_0px_white] focus:shadow-[3px_3px_0px_white] focus:outline    }
+    .size-lg { @apply text-[17px] rounded-[40px]   px-[16px] py-[9px] }
+    .pink-round { @apply  overflow-hidden bg-white  rounded-[40px]  md:rounded-[40px]   border-pink shadow-pink }
+    .mint-round { @apply  overflow-hidden bg-white  rounded-[40px]  md:rounded-[40px]   border-mint shadow-mint }
   } 
 
 

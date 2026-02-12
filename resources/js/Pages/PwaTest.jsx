@@ -104,7 +104,7 @@ export default function PwaTest({ auth }) {
                 
                 {/* Installation Status */}
                 <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div className="bg-white dark:bg-neutral-800 rounded-xl  p-6 border">
+                    <div className="bg-white dark:bg-neutral-800 rounded-[40px]   p-6 border">
                         <h2 className="text-xl font-semibold mb-4">Installation Status</h2>
                         <div className="space-y-2">
                             <div className={`flex items-center gap-2 ${isInstalled ? 'text-green-600' : 'text-gray-600'}`}>
@@ -120,14 +120,14 @@ export default function PwaTest({ auth }) {
                         {canInstall && (
                             <button
                                 onClick={handleInstall}
-                                className="mt-4 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-md font-medium"
+                                className="mt-4 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-[40px]  font-medium"
                             >
                                 Install PWA Now 🚀
                             </button>
                         )}
                     </div>
 
-                    <div className="bg-white dark:bg-neutral-800 rounded-xl  p-6 border">
+                    <div className="bg-white dark:bg-neutral-800 rounded-[40px]   p-6 border">
                         <h2 className="text-xl font-semibold mb-4">Browser Compatibility</h2>
                         <div className="space-y-2 text-sm">
                             <div className={`flex items-center gap-2 ${browserInfo.isChrome ? 'text-green-600' : 'text-gray-500'}`}>
@@ -158,7 +158,7 @@ export default function PwaTest({ auth }) {
                 </div>
 
                 {/* Debug Information */}
-                <div className="bg-white dark:bg-neutral-800 rounded-xl  p-6 border mb-6">
+                <div className="bg-white dark:bg-neutral-800 rounded-[40px]   p-6 border mb-6">
                     <h2 className="text-xl font-semibold mb-4">Debug Information</h2>
                     <div className="grid md:grid-cols-2 gap-4 text-sm">
                         <div>
@@ -188,7 +188,7 @@ export default function PwaTest({ auth }) {
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl  p-6 border">
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-[40px]   p-6 border">
                     <h2 className="text-xl font-semibold mb-4">How to Test PWA Installation</h2>
                     
                     <div className="space-y-4">
@@ -218,7 +218,7 @@ export default function PwaTest({ auth }) {
                 </div>
 
                 {/* User Agent Info */}
-                <div className="mt-6 bg-gray-100 dark:bg-gray-800 rounded-xl  p-4">
+                <div className="mt-6 bg-gray-100 dark:bg-gray-800 rounded-[40px]   p-4">
                     <details>
                         <summary className="cursor-pointer font-medium">Show User Agent</summary>
                         <pre className="mt-2 text-xs bg-black text-green-400 p-3 rounded overflow-x-auto">

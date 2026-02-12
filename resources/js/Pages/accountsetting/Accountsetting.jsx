@@ -97,7 +97,7 @@ export default function Accountsetting(props) {
         <Authenticated user={user} auth={auth.user}>
             <Head title={"My Account"} />
             <div className="blackbg pt-4">
-                <div className="accountsetting mx-auto border-3 !border-[var(--purple)] !border-black whbg shadow-pink overflow-hidden rounded-[40px] mb-4 mb-md-5">
+                <div className="accountsetting mx-auto border-3 !border-[var(--purple)] !border-black whbg shadow-pink overflow-hidden rounded-[40px]  mb-4 mb-md-5">
                     <div className="p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center ">
                         <span className=" border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
                         <span className=" border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
