@@ -210,26 +210,19 @@ export default function SubCheckout(props) {
                             <div className="addMessage mt-5">
                                 <ul className="flex flex-wrap">
                                     <li className="w-full">
-                                        <label className="block mb-2 text-sm font-medium text-gray-900">Add Message </label>
+                                        <label className=" mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
                                             className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
-                                            onKeyUp={(e) =>
-                                                setData(
-                                                    "message",
-                                                    e.target.value
-                                                )
-                                            }
+                                            onKeyUp={(e) => setData("message",e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             defaultValue={data.message}
-                                        ></textarea>
-                                        <span className="text-xs text-red-600">
-                                            {errors.message}
-                                        </span>
+                                        ></textarea> 
+                                        <span className="text-xs text-red-600"> {errors.message}</span>
                                     </li>
                                     <li className="w-full mt-3">
                                         <div className="flex flex-wrap">
                                             <div className="w-full mb-4">
-                                                <label className="block text-left">
+                                                <label className=" text-left">
                                                     Email{" "}
                                                 </label>
                                                 <p className="text-sm text-gray-500 mb-1">
@@ -243,7 +236,7 @@ export default function SubCheckout(props) {
                                             auth?.user?.email
                                                 ? "disabled"
                                                 : ""
-                                        } border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
+                                        } border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -266,11 +259,11 @@ export default function SubCheckout(props) {
                                                 </span>
                                             </div>
                                             <div className="w-full mb-4">
-                                                <label className="block text-left">
+                                                <label className=" text-left">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                                                    className="border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -287,7 +280,7 @@ export default function SubCheckout(props) {
                                             </div>
                                         </div>
                                     </li>
-                                    <li className="cheklistbox">
+                                    <li className="cheklistbox mt-6">
                                         <label
                                             htmlFor="anonymous"
                                             className="text-left"
@@ -302,13 +295,13 @@ export default function SubCheckout(props) {
                                             ></input>
                                             Keep anonymous
                                         </label>
-                                        <p className="text-gray-500 text-sm mb-3">
+                                        <p className="text-gray-500 text-sm mb-6">
                                             Your personal email and name
                                             will be private.
                                         </p>
                                         <label
                                             htmlFor="agreeterm"
-                                            className="text-left"
+                                            className="text-left  "
                                         >
                                             <input
                                                 onChange={(e) =>

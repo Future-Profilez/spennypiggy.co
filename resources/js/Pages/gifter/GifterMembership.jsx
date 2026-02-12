@@ -55,8 +55,8 @@ export default function GifterMembership(props) {
             src={w && w.membership && w.membership.perma_link}
           /> 
           <div className='text-center'>
-            <p className='text-uppercase mb-1 text-small' >{w && w?.membership && w?.membership.level}</p>
-            <div className="badge bg-green-600 text-uppercase" > 
+            <p className='uppercase mb-1 text-small' >{w && w?.membership && w?.membership.level}</p>
+            <div className="badge bg-green-600 uppercase" > 
             {w && w?.membership && w?.membership.level == 'lifetime' ? "Life Time" : 'Monthly'}
             </div>
           </div>

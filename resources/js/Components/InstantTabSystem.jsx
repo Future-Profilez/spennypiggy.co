@@ -187,7 +187,7 @@ function InstantTabSystem({
                 style={buttonStyles}
                 disabled={isTransitioning && isPending}
                 className={`
-                    relative py-4 px-0 text-sm font-black uppercase 
+                    relative py-4 px-0 text-normal font-black uppercase 
                     transition-all duration-300 min-w-max whitespace-nowrap
                     select-none touch-manipulation tracking-[0.2em]
                     ${isEffectivelyActive 
@@ -216,7 +216,6 @@ function InstantTabSystem({
     return (
         <div className='relative'>
             <div className="newnav-tabs hideScroll mb-8 pe-[100px] overflow-x-auto flex items-center justify-between py-0 relative px-4">
-                {/* Tab buttons container */}
                 <div className="flex ps-1 scrollbar-hide space-x-8 min-w-max">
                     {tabs.map((tab) => (
                         <TabButton

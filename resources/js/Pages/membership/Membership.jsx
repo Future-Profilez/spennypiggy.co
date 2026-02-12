@@ -129,7 +129,10 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                         </Transition>
                       </Menu>
                     : ''}
-                    <div className={`${membershipclasses[item?.level || 'default']} rounded-[40px]   text-white pt-6`}>
+                    <div className={`${membershipclasses[item?.level || 'default']} 
+                      rounded-tl-[35px] 
+                      rounded-tr-[35px] 
+                      text-white pt-6`}>
                         <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
                         relative' >
                           <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-[40px]   w-full h-full object-cover  ' />

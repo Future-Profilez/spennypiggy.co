@@ -59,13 +59,13 @@ export default function AddCart(props) {
             <div className="!rounded-none p-4">
                 
                 <div className="flex items-center mb-4">
-                    <div className="h-[100px] bg-gray-200 rounded-[40px]  border !border-gray-200 overflow-hidden w-[140px]">
+                    <div className="h-[100px] bg-gray-200 rounded-[15px]  border !border-gray-200 overflow-hidden w-[100px]">
                         <img
                             src={item.perma_link ? item.perma_link : uploadedimg}
                             alt="img" className="h-full w-full object-cover"
                         />
                     </div>
-                    <div className="pl-3">
+                    <div className="ps-4">
                         <div className="text-xl font-bold line-clamp-2 ">{item.wishname}</div>
                         <div className="cartPrice font-CeraGRBold text-violet-600 mt-1">
                             {IsloggedIn ?
@@ -253,13 +253,14 @@ export default function AddCart(props) {
                 )}
 
                 {item.user ? (
-                    <Link 
-                        onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
+
+                    <div className="flex py-3 justify-center">
+                        <Link onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
                         href={`/${item.user && item.user.username}`}
-                        className="mx-auto block text-blue-600"
-                    >
-                        See All {item.user && item.user.name}'s Wishes
-                    </Link>
+                        className="mx-auto block text-blue-600" >
+                            See All {item.user && item.user.name}'s Wishes
+                        </Link>
+                    </div>
                 ) : (
                     ""
                 )}

@@ -367,9 +367,9 @@ export default function AddSocial({
             classes=""
             text={removetext ? "" : "Add Social Links"}
         >
-            <div className="editprofileModalInner  ">
+            <div className="editprofileModalInner p-3  ">
                 <div className="swishinfo">
-                    <h2 className="pb-4 font-GillSans text-xl text-uppercase flex items-center">
+                    <h2 className="pb-4 font-GillSans text-xl uppercase flex items-center">
                         <FaInfoCircle className="mr-2 text-blue-500" />
                         Social Media Links
                     </h2>
@@ -377,7 +377,7 @@ export default function AddSocial({
                     {/* Information Banner */}
                     <div
                         className={clsx(
-                            "mb-6 p-4 rounded-[40px]   border-l-4 flex items-start",
+                            "mb-6 p-4 rounded-[20px]   border-l-4 flex items-start",
                             {
                                 "bg-yellow-50 border-yellow-500":
                                     !formValidation.hasValidFields,

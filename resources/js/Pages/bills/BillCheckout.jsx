@@ -96,10 +96,11 @@ export default function BillCheckout(props) {
         <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${bill?.name} bill`} />
-                <div className={`px-0 pb-3 lg:px-2`}>
-                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink rounded-[40px]  ">
-                        <div className="cartMain">
-                            <h2 className="pb-1 wishtitle">
+                <div className={`py-4 md:py-12 px-0 pb-3 lg:px-2 bg-white`}>
+                    <div className="max-w-[800px] mx-auto">
+                        <div className="cartMain p-6 md:p-8 ">
+                    
+                                <h2 className="pb-1 wishtitle">
                                 Bill Basket for {bill?.user?.name || " "}
                                 <Link
                                     className="text-violet-600"
@@ -115,7 +116,7 @@ export default function BillCheckout(props) {
 
                             <div className="CartItemBox">
                                 <div
-                                    className={`border cartlist flex flex-wrap justify-between items-center content-between border-voilet shadow-voilet rounded-[40px]  mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}
+                                    className={`border cartlist flex flex-wrap justify-between items-center content-between border-voilet shadow-voilet rounded-[20px]  mb-3 md:mb-4 lg:mb-5 p-3 md:p-4`}
                                 >
                                     <div className="prodcartbox items-center">
                                         <div className="productimg">
@@ -147,10 +148,10 @@ export default function BillCheckout(props) {
                             <div className="cartTotal px-0 pt-4 flex justify-end">
                                 <ul className="max-w-[300px] w-full">
                                     <div className="flex justify-between items-center mb-1">
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-lg text-gray-700">
                                             Subtotal
                                         </div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-lg text-gray-700">
                                             {formatMultiPrice(
                                                 bill?.price || "",
                                                 bill && bill?.currency
@@ -180,7 +181,7 @@ export default function BillCheckout(props) {
                                         </div>
                                     </li> */}
                                     {vat_amount && vat_amount > 0 ? (
-                                        <li className="flex justify-between">
+                                        <li className="text-gray-700 flex justify-between">
                                             <span className="min-w-[100px] block text-lg">
                                                 VAT :
                                             </span>
@@ -215,9 +216,9 @@ export default function BillCheckout(props) {
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <ul className="flex flex-wrap">
                                         <li className="w-full">
-                                            <label className="block mb-2 text-sm font-medium text-gray-900">Add Message </label>
+                                            <label className=" text-sm font-medium text-gray-900">Add Message </label>
                                             <textarea
-                                                className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                                                className="mt-2 border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                                 onKeyUp={(e) =>
                                                     setData(
                                                         "message",
@@ -234,11 +235,11 @@ export default function BillCheckout(props) {
                                         <li className="w-full mt-3">
                                             <div className="flex flex-wrap">
                                                 <div className="w-full mb-4">
-                                                    <label className="block text-left">
+                                                    <label className=" text-left">
                                                         From
                                                     </label>
                                                     <input
-                                                        className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                                                        className="mt-1 border-gray-300 border !rounded-[12px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
                                                         onChange={(e) =>
                                                             setData(
                                                                 "name",
@@ -254,7 +255,7 @@ export default function BillCheckout(props) {
                                                     </span>
                                                 </div>
                                                 <div className="w-full mb-4">
-                                                    <label className="block text-left">
+                                                    <label className=" text-left">
                                                         Email{" "}
                                                     </label>
                                                     <p className="text-sm text-gray-500 mb-1">
@@ -268,7 +269,7 @@ export default function BillCheckout(props) {
                                                             auth.user.email
                                                                 ? "disabled"
                                                                 : ""
-                                                        } border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] `}
+                                                        } mt-1 border-gray-300 border !rounded-[12px] !h-[55px] !px-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 `}
                                                         value={data.email}
                                                         disabled={
                                                             auth &&
@@ -459,7 +460,7 @@ export default function BillCheckout(props) {
                                                 !card_capabilities
                                                     ? "disabled"
                                                     : ""
-                                            } button p`}
+                                            } button p w-full`}
                                             disabled={
                                                 !data.agree ||
                                                 processing ||
@@ -471,7 +472,14 @@ export default function BillCheckout(props) {
                                         >
                                             {processing || checking
                                                 ? "Processing..."
-                                                : "Pay Now"}
+                                                : `Subscribe & Pay Now - 
+                                                ${formatMultiPrice(
+                                                bill?.tax_amount +
+                                                    bill?.price +
+                                                    vat_amount || "",
+                                                bill && bill?.currency,
+                                                "adminfee"
+                                            )}`}
                                         </button>
                                     </div>
                                 </form>

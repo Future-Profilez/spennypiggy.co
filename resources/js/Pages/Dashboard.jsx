@@ -568,7 +568,6 @@ export default function Dashboard(props) {
                                                     </div>
                                                 )} */}
 
-                                            {/* Instant Tab System with immediate feedback */}
                                             <InstantTabSystem
                                                 Toggle={Toggle}
                                                 activeTab={page || "about"}
@@ -657,7 +656,7 @@ export default function Dashboard(props) {
                                                                     )}
 
                                                                     <div className="pink-round mb-4">
-                                                                        <h2 className="text-large  font-GillSans text-uppercase pinkbg p-3 text-white btn-shadow">
+                                                                        <h2 className="text-large  font-GillSans uppercase pinkbg p-3 text-white btn-shadow">
                                                                             About
                                                                             Me
                                                                         </h2>

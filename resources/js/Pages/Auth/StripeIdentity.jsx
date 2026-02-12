@@ -69,7 +69,7 @@ export default function StripeIdentity({ auth }) {
                     )}
 
 
-                    <h2 className="text-center welcomeHeading !text-3xl shadow-yellow font-GillSans text-uppercase mb-1">
+                    <h2 className="text-center welcomeHeading !text-3xl shadow-yellow font-GillSans uppercase mb-1">
                         Identity Verification Required
                     </h2>
                     <p className="mt-4 text-gray-600 text-center">

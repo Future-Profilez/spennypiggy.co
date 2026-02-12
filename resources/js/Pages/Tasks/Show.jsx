@@ -183,7 +183,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                  <h3 className="text-lg font-black font-anton uppercase mb-4 text-gray-900">Purchase History</h3>
                                                  <div className="space-y-3">
                                                      {purchaseHistory.map((historyItem) => (
-                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-[40px]  p-4 flex flex-col gap-3">
+                                                         <div key={historyItem.uuid} className="bg-white border-2 border-gray-200 rounded-[20px]  p-4 flex flex-col gap-3">
                                                              <div className="flex justify-between items-start">
                                                                  <div>
                                                                      <p className="font-bold text-xs uppercase text-gray-500 mb-1">
@@ -227,7 +227,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                          id="gifter_message"
                                                          value={data.gifter_message}
                                                          onChange={e => setData('gifter_message', e.target.value)}
-                                                         className="w-full border-2 border-gray-200 rounded-[40px]  p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
+                                                         className="w-full border-2 border-gray-200 rounded-[20px]  p-3 focus:ring-pink-500 focus:border-pink-500 min-h-[100px] resize-y"
                                                          placeholder="Add a personal note with your purchase..."
                                                      />
                                                  </div>

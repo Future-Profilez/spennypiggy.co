@@ -7,7 +7,7 @@ export default function UpgradeStripeAccount() {
     <>
         <div className="w-full finishs  mb-4 rounded-[40px]   bg-white !border-voilet  shadow-voilet  ">
             <div className='border-bottom border-voilet' >
-                <h2 className='text-large font-GillSans text-uppercase lightpink p-3 goaltitle'>Action Required</h2>
+                <h2 className='text-large font-GillSans uppercase lightpink p-3 goaltitle'>Action Required</h2>
             </div>
             <div className='p-8'>
                 <h2 className='text-red-600 text-xl md:text-xl mb-2 font-gulfs uppercase'>Your Stripe Account Needs an Upgrade</h2>

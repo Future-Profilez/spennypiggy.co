@@ -81,10 +81,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                             </div>
                         </div>
 
-                        <p className="  text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
+                        <p className="text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
                         <img src="${spennypiggy}" alt="Logo" className="mr-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
-
-                        <div class="  bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
+                        <div className="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
                             px-4 leading-[15px] h-[40px] rounded-[40px]  text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
                         </div>
                     </div>

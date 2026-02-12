@@ -174,7 +174,7 @@ export default function GlobalCheckout({
             >
                 <div className="addgoal">
                     <div className={` page1`}>
-                        <h2 className="text-uppercase font-GillSans pb-4 text-2xl">
+                        <h2 className="uppercase font-GillSans pb-4 text-2xl">
                             Choose how to pay
                         </h2>
                         <div

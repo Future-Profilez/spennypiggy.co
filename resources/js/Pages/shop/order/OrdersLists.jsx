@@ -72,7 +72,7 @@ export default function OrdersLists() {
          </div>
       </div>
 
-      <h2 className='font-GillSans text-uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
+      <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
       <div  className="bg-white rounded-[40px]   px-0">
          <div className="p-3 py-1 relative ">
             {orders &&  orders.map((item, index) =>

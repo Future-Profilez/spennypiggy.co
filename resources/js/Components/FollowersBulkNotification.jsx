@@ -57,7 +57,7 @@ export default function FollowersBulkNotification() {
             modalclass="pinkmodal"
             text={<>Notification Campaign</>}
         >
-            <h2 className="text-uppercase font-GillSans text-lg">
+            <h2 className="uppercase font-GillSans text-lg">
                 Send Push Notification
             </h2>
 

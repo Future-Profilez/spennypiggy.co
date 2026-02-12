@@ -148,7 +148,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
                   </div>
                 } >
               <div className='wrap' >
-                <h2 className="text-uppercase font-GillSans pb-1 font-large">Add Verification Video</h2>
+                <h2 className="uppercase font-GillSans pb-1 font-large">Add Verification Video</h2>
                 <p className='text-muted mb-3' >Add a 15 to 30 sec video to introduce yourself.</p>
                 <p className='text-red-600 mb-4' >All videos are reviewed against our terms before being accepted or rejected.</p>
                 <div className='my-3' >

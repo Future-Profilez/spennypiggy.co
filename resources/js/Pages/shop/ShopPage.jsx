@@ -39,7 +39,7 @@ export default function AddShopItem(props) {
             <div className='containerbox m-auto' >
                <div className='py-8 md:py-16 max-w-[900px] m-auto' >
                   <Head title={'Add Shop Item'}  />
-                  <h2 className='font-GillSans text-uppercase text-3xl' >Shop</h2>
+                  <h2 className='font-GillSans uppercase text-3xl' >Shop</h2>
 
                   <div className=" font-medium text-center text-gray-500 border-b border-gray-300 dark:text-gray-400 mt-3 mb-4  md:my-4">
                      <ul className="flex flex-wrap-mb-px ">

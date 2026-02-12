@@ -11,7 +11,7 @@ export default function SiteSubscription({ auth, subscription_status, user, card
         <div className="w-full finishs mb-4 rounded-[40px]   bg-white !border-voilet shadow-voilet">
 
             <div className="border-bottom border-voilet !border-0">
-                <h2 className="text-large font-GillSans text-uppercase p-3 goaltitle text-white btn-shadow pinkbg">
+                <h2 className="text-large font-GillSans uppercase p-3 goaltitle text-white btn-shadow pinkbg">
                     Subscription Status
                 </h2>
             </div>
