@@ -475,6 +475,14 @@ export default function Dashboard(props) {
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
 
                 <div className="wishlistPage blackbg pt-6 pb-0 sm:pb-5 ">
+
+
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                        <div className="absolute top-30 left-10 w-80 h-80 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[90px] opacity-50 floating-shape"></div>
+                        <div className="absolute top-90 right-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-[50px] opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+                        {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
+                    </div>
+
                     <div className="containerbox">
                         <VersionUpdate />
                         <OfferAnnouncement variant="default" />

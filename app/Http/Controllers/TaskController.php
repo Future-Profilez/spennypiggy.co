@@ -553,8 +553,17 @@ class TaskController extends Controller
         }
 
         // Use consistent fee calculation for creator net amount
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($amount, $session->currency ?? 'GBP');
-        $creatorNet = $breakdown['net_to_creator'];
+        $currency = $session->currency ?? 'GBP';
+        $currencyModel = \App\Models\Currency::where('ISO', strtoupper($currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
+        if (isset($metadata->creator_net_amount)) {
+             $creatorNet = $metadata->creator_net_amount / $multiplier;
+        } else {
+             // Fallback (Note: this assumes amount is base price, which might be inaccurate for total paid)
+             $breakdown = Helpers::calculateStripeDirectChargeFlow($amount, $currency);
+             $creatorNet = $breakdown['net_to_creator'];
+        }
 
         // Create TaskPurchase
         $purchase = TaskPurchase::create([

@@ -4,43 +4,7 @@ import { FaBolt, FaMagic, FaShieldAlt, FaRocket } from 'react-icons/fa';
 export default function PaidTasksAnnouncement() {
     return (
         <>
-            <style jsx>{`
-                .excited-gradient {
-                    background: linear-gradient(120deg, #FF0080, #7928CA, #FF0080);
-                    background-size: 200% 200%;
-                    animation: gradientMove 6s ease infinite;
-                }
-                @keyframes gradientMove {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                .wiggle:hover {
-                    animation: wiggle 0.5s ease-in-out infinite;
-                }
-                @keyframes wiggle {
-                    0%, 100% { transform: rotate(-3deg); }
-                    50% { transform: rotate(3deg); }
-                }
-                .pop-in {
-                    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                    opacity: 0;
-                    transform: scale(0.5);
-                }
-                @keyframes popIn {
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .floating-shape {
-                    animation: float 6s ease-in-out infinite;
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0) rotate(0deg); }
-                    50% { transform: translateY(-20px) rotate(10deg); }
-                }
-            `}</style>
-
             <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative">
-                {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
                     <div className="absolute top-10 right-10 w-32 h-32 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>

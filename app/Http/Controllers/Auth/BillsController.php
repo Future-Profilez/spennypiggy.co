@@ -72,8 +72,13 @@ class BillsController extends Controller
         $price = $request->price;
         $currency = $user->default_currency ?? 'gbp';
 
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatPercent = $user->vat_amount_percentage ?? 0;
+        $vatAmount = $price * $vatPercent / 100;
+        $priceWithVat = $price + $vatAmount;
+
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
         
         $createPriceId = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['application_fee'];
@@ -172,8 +177,13 @@ class BillsController extends Controller
         $price = $request->price;
         $currency = $user->default_currency ?? 'gbp';
 
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatPercent = $user->vat_amount_percentage ?? 0;
+        $vatAmount = $price * $vatPercent / 100;
+        $priceWithVat = $price + $vatAmount;
+
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
         
         $taxamount = $breakdown['application_fee'];
         $totalAmount = $breakdown['total_supporter_pays'];

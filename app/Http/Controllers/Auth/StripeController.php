@@ -3037,8 +3037,13 @@ class StripeController extends Controller
 
             $amount = (float) $request->amount;
             
+            // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+            $vatPercent = $creator->vat_amount_percentage ?? 0;
+            $vatAmount = $amount * $vatPercent / 100;
+            $amountWithVat = $amount + $vatAmount;
+
             // Step 1: Calculate breakdown in supporter's currency to determine what they pay
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($amount, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $currency);
             
             $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
             $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
@@ -3046,7 +3051,12 @@ class StripeController extends Controller
 
             // Step 2: Calculate equivalent values in creator's currency for DB and metadata
             $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
-            $creatorBreakdown = Helpers::calculateStripeDirectChargeFlow($price, $creator->default_currency);
+            
+            // Calculate VAT for creator side breakdown too
+            $vatAmountCreator = $price * $vatPercent / 100;
+            $priceWithVatCreator = $price + $vatAmountCreator;
+
+            $creatorBreakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCreator, $creator->default_currency);
             
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
@@ -3168,8 +3178,12 @@ class StripeController extends Controller
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
 
                 // Use consistent fee calculation for creator net amount
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($tip_pay->amount, $tip_pay->currency);
-                    $creatorNet = $breakdown['net_to_creator'];
+                $vatPercent = $tip_pay->creator->vat_amount_percentage ?? 0;
+                $vatAmount = $tip_pay->amount * $vatPercent / 100;
+                $amountWithVat = $tip_pay->amount + $vatAmount;
+
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $tip_pay->currency);
+                $creatorNet = $breakdown['net_to_creator'];
 
                     // Create deliverable record for tracking and certificate generation
                     $deliverable = Deliverable::create([

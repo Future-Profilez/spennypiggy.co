@@ -368,8 +368,13 @@ class ShopsController extends Controller
 
             $currency = $user->default_currency ?? 'gbp';
 
+            // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+            $vatPercent = $user->vat_amount_percentage ?? 0;
+            $vatAmount = $request->price * $vatPercent / 100;
+            $priceWithVat = $request->price + $vatAmount;
+
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
             
             $createpriceid = $breakdown['total_supporter_pays'];
 

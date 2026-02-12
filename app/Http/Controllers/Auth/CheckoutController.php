@@ -207,8 +207,14 @@ class CheckoutController extends Controller
                 }
 
                 $itemAmount = $dd->amount;
+
+                // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+                $vatPercent = $dd->owner->vat_amount_percentage ?? 0;
+                $vatAmount = $itemAmount * $vatPercent / 100;
+                $itemAmountWithVat = $itemAmount + $vatAmount;
+
                 // Calculate breakdown using gross-up logic for this item
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmount, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $currency);
 
                 $finalTotalAmount = $breakdown['total_supporter_pays'];
                 $applicationFeeAmount = $breakdown['application_fee'];

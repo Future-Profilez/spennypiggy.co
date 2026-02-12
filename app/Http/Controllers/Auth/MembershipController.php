@@ -90,8 +90,13 @@ class MembershipController extends Controller
         $price = $request->month_price;
         $currency = $user->default_currency ?? 'USD';
         
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatPercent = $user->vat_amount_percentage ?? 0;
+        $vatAmount = $price * $vatPercent / 100;
+        $priceWithVat = $price + $vatAmount;
+
         // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
         $totalPrice = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['application_fee']; // We'll store application fee as tax_amount for consistency in DB
 
@@ -204,8 +209,13 @@ class MembershipController extends Controller
                 $price = $request->month_price;
                 $currency = $user->default_currency ?? 'USD';
                 
+                // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+                $vatPercent = $user->vat_amount_percentage ?? 0;
+                $vatAmount = $price * $vatPercent / 100;
+                $priceWithVat = $price + $vatAmount;
+
                 // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
                 $totalPriceGrossedUp = $breakdown['total_supporter_pays'];
                 $totalTaxAmount = $breakdown['application_fee'];
 
