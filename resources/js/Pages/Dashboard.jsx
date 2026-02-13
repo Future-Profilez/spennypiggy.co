@@ -285,8 +285,7 @@ export default function Dashboard(props) {
                                                 Fund your Lifestyle
                                             </h2>
                                            
-                                                {AuthUserStripeConnected !== 1
-                                                    ?
+                                                {AuthUserStripeConnected !== 1 ?
                                                      <p className="!mb-6">
                                                      Please complete your Stripe account setup to add your wishlist.
                                                     </p>

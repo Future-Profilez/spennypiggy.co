@@ -163,7 +163,29 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     }
 
     const [username, setUsername] = useState(user?.username);
+
+
+    const generateSocialImage = async () => {
+        const avatarToUse = localAvatar || user?.avatar;
+        if (avatarToUse) {
+            setGeneratingBanner(true);
+            try {
+                await generateCardAndUpload(avatarToUse);
+            } catch (error) {
+                console.error('Error generating banner:', error);
+                alert('Failed to generate banner. Please try again.');
+            }
+            setGeneratingBanner(false);
+            return 
+        } else {
+            alert('Please upload an avatar first to generate a promotional banner.');
+            return 
+        }
+    }
+
+
     const updateProfile = async (e) => {
+        await generateSocialImage();
         e.preventDefault();
         // auth?.user?.role == 1 && await generateCardAndUpload(localAvatar || user?.avatar);
         post(route('edit-profile', {...data}), {
@@ -196,6 +218,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         // Removed automatic banner generation - users can generate banners manually
     }
 
+
+   
     return (
         <Popup modalclass='pinkmodal editprofile full' size='md' action={close}
             text={text||<> Update Profile </>}
@@ -249,13 +273,18 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 type="text" name="username" className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] " placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                                         </li>
 
-                                        <li><strong className='block text-left mb-4' >Profile URL : {typeof window !== 'undefined' ? window.location.href : ''}</strong></li>
+                                        <li>
+                                            <strong className='block text-left mb-4' >
+                                                Profile URL :  &nbsp;
+                                                {typeof window !== 'undefined' ? `https://spennypiggy.co/${username}` : ''}
+                                            </strong>
+                                        </li>         
 
                                         <li className="mb-3">
                                             <label className="mb-1">Bio</label>
                                             <textarea onBlur={IsProfileChannged} defaultValue={user?.bio || ''}
                                                 onChange={(e) => setData("bio", e.target.value)}
-                                                name="bio" className="border-gray-300 border p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl "
+                                                name="bio" className="border-gray-300 border p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[20px] "
                                                 placeholder='Bio' />
                                         </li>
 
@@ -275,7 +304,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
 
                                     </ul>
                                 {auth?.user?.role == 1 ? 
-                                    <div className="text-center mb-4">
+                                    <div className="hidden text-center mb-4">
                                         <div className="mb-2">
                                             <p className="text-sm text-gray-600 mb-2">
                                                 Generate a promotional banner to share your profile on social media platforms like Twitter, Facebook, and Instagram.
@@ -295,21 +324,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                             </div>
                                          )} 
                                        
-                                        <button  type="button" onClick={async () => {
-                                                const avatarToUse = localAvatar || user?.avatar;
-                                                if (avatarToUse) {
-                                                    setGeneratingBanner(true);
-                                                    try {
-                                                        await generateCardAndUpload(avatarToUse);
-                                                    } catch (error) {
-                                                        console.error('Error generating banner:', error);
-                                                        alert('Failed to generate banner. Please try again.');
-                                                    }
-                                                    setGeneratingBanner(false);
-                                                } else {
-                                                    alert('Please upload an avatar first to generate a promotional banner.');
-                                                }
-                                            }}
+                                        <button  type="button" onClick={generateSocialImage}
                                             disabled={generatingBanner || (!localAvatar && !user?.avatar)}
                                             className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[30px] md:rounded-[40px]  mb-3 disabled:opacity-50" >
                                             {generatingBanner ? 'Generating Banner...' : (currentSocialBanner ? 'Regenerate Social Media Banner' : 'Generate Social Media Banner')}
