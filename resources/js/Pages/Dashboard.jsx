@@ -662,14 +662,14 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    <div className="pink-round mb-4">
-                                                                        <h2 className="text-large  font-GillSans uppercase pinkbg p-3 text-white btn-shadow">
-                                                                            About
-                                                                            Me
-                                                                        </h2>
-                                                                        <div className="p-4">
+                                                                    <div className="bg-white border-2 border-pink-500 rounded-[20px] md:rounded-[40px] mb-4">
+                                                                        <div className="p-4 md:p-6">
+                                                                            <h2 className="text-xl">
+                                                                                About
+                                                                                Me
+                                                                            </h2>
                                                                             <p
-                                                                                className={`text-gray-500 text-left mt-2 ${
+                                                                                className={`text-gray-500 text-lg text-left mt-2 ${
                                                                                     user &&
                                                                                     !user.bio
                                                                                         ? "hidden"

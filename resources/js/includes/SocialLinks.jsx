@@ -17,14 +17,14 @@ export default function SocialLinks({ links }) {
     };
 
     const colors = {
-        instagram: "text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20",
-        twitter: "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20",
-        reddit: "text-red-500 bg-red-500/10 hover:bg-red-500/20",
-        twitch: "text-purple-500 bg-purple-500/10 hover:bg-purple-500/20",
-        tumblr: "text-purple-500 bg-purple-500/10 hover:bg-purple-500/20",
-        facebook: "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20",
-        youtube: "text-red-500 bg-red-500/10 hover:bg-red-500/20",
-        other: "text-white bg-white/10"
+        instagram: " border border-yellow-600 text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20",
+        twitter: "border border-blue-600  text-blue-500 bg-blue-500/10 hover:bg-blue-500/20",
+        reddit: "border border-red-600 text-red-500 bg-red-500/10 hover:bg-red-500/20",
+        twitch: "border border-purple-600 text-purple-500 bg-purple-500/10 hover:bg-purple-500/20",
+        tumblr: "border border-purple-600 text-purple-500 bg-purple-500/10 hover:bg-purple-500/20",
+        facebook: "border border-blue-600 text-blue-500 bg-blue-500/10 hover:bg-blue-500/20",
+        youtube: "border border-red-600 text-red-500 bg-red-500/10 hover:bg-red-500/20",
+        other: "border border-gray-200 text-white bg-white/10"
     };
 
     const icons = {
@@ -66,7 +66,7 @@ export default function SocialLinks({ links }) {
                                 target="_blank"
                                 title={item.label}
                                 href={href}
-                                className={`${colors[item.key]} p-1 rounded-[30px] md:rounded-[40px]   !pe-2 !text-sm flex items-center gap-1`} >
+                                className={`${colors[item.key]} p-1 rounded-[10px] md:rounded-[12px]   !pe-2 !text-sm flex items-center gap-1`} >
                                 {icons[item.key]}
                                 {item.label}
                             </a>

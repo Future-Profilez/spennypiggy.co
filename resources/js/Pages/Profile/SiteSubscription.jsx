@@ -30,7 +30,7 @@ export default function SiteSubscription({ auth, subscription_status, user, card
                     //         e.preventDefault()
                     //     }
                     // }}
-                    className={`btn-pink text-sm sm:text-normal md:text-[17px] btn-shadow w-full block text-center 
+                    className={`btn-pink !text-sm sm:!text-normal md:!text-[17px] btn-shadow w-full block text-center 
                     bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 transition-all duration-200
                     ${subscription_status == 0 || isEnabled  ? "" :
                     "cursor-not-allowed opacity-50 pointer-events-none"

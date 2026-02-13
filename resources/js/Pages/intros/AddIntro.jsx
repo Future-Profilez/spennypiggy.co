@@ -85,7 +85,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
     return <>
       <Popup space="0" size="md" action={close} classes={`w-full`}
         text={<>
-        <div className='isintro relative cursor-pointer shadow-voilet'>
+        <div className='isintro border-2 border-voilet !shadow-none relative cursor-pointer shadow-voilet !rounded-[20px] md:!rounded-[40px]'>
           <img
           alt={"image"}  effect="blur"
           height={350} src={ intro && intro.poster_url || wishlistbannerimg} className='' width={400} />
@@ -131,7 +131,7 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
       {intro ?
         <div className='relative'>
           <ProfileIntro />
-          {IsloggedIn ? <button onClick={removeVideo} className='badge bg-red-600 remove-story' >Remove</button> : ''}
+          {IsloggedIn ? <button onClick={removeVideo} className='badge bg-red-700 remove-story px-4 py-2 rounded-xl text-white !text-xs' >Remove</button> : ''}
         </div>
         :
         <>
