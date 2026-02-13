@@ -752,6 +752,8 @@ html body .intercom-lightweight-app-launcher{margin-bottom:70px !important;}
 .proud-banner{align-items:end;}
 .proud-banner p{font-size:12px;}
 }
+
+
 @media(max-width:575px){.approvalmessge{font-size:14px;}
 .approvalmessge.membership{font-size:12px;top:8px;padding:6px !important;}
 .commingsooon{top:39%;}
