@@ -16,6 +16,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import axios from "axios";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart, FaChevronUp } from "react-icons/fa";
+import { RiCloseLine, RiCheckDoubleLine } from "react-icons/ri";
 import ContentFilePreview from "@/Components/ContentFilePreview";
 const imageLinks = [
     "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
@@ -128,9 +129,50 @@ export default function Wishlist(props) {
         ai_generated: isAiImage ? 1 : 0,
     });
 
-    const [period, setPeriod] = useState(
-        data.subscription_period || (item && item.subscription_period)
-    );
+    const [step, setStep] = useState(1);
+    const totalSteps = 3;
+
+    const nextStep = () => {
+        if (step < totalSteps) {
+            // Validation for Step 1
+            if (step === 1) {
+                if (!data.wishname) {
+                    errorAlert("Please enter a wish name.");
+                    return;
+                }
+                if (!data.price) {
+                    errorAlert("Please enter a price.");
+                    return;
+                }
+                if (!data.category && !editpop && checkboxes.length === 0) {
+                     errorAlert("Please choose a category.");
+                     return;
+                }
+            }
+            // Validation for Step 2
+            if (step === 2) {
+             // Thumbnail is optional, defaults to first image if not provided
+        }
+
+            setStep(step + 1);
+        }
+    };
+
+    const prevStep = () => {
+        if (step > 1) setStep(step - 1);
+    };
+
+    const renderProgressBar = () => {
+        return (
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 dark:bg-gray-700">
+                <div 
+                    className="bg-pink-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+                    style={{ width: `${(step / totalSteps) * 100}%` }}
+                ></div>
+            </div>
+        );
+    };
+
 
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
@@ -232,7 +274,6 @@ export default function Wishlist(props) {
 
     const spValue = (e) => {
         setData("subscription_period", e.target.value);
-        setPeriod(e.target.value);
     };
 
     useEffect(() => {
@@ -240,7 +281,12 @@ export default function Wishlist(props) {
     }, [checkboxes]);
 
     useEffect(() => {
-        setData("thumbnail", thumbnail);
+        if (thumbnail) {
+            setData("thumbnail", thumbnail);
+        } else {
+            // Default to first image if thumbnail is cleared (and not editing an existing item with no thumbnail)
+            setData("thumbnail", imageLinks[0]);
+        }
     }, [thumbnail]);
 
 
@@ -272,7 +318,7 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        if ((!editpop && data && data.content_file == "") || null || undefined) {
+        if ((!editpop && (!data.content_file || data.content_file === ""))) {
             errorAlert("Please choose a exclusive reward content for this wish item.");
             return false;
         }
@@ -362,531 +408,347 @@ export default function Wishlist(props) {
         >
             <div className="editprofileModal  wishlistModal  ">
                 <div className="editprofileModalInner ">
-                    <div className="wishinfo border-top p-4  ">
-                        <h2 className="mb-4 text-pink text-left font-GillSans uppercase text-large black-stroke font-semibold mb-1 pr-5">
+                    <div className="wishinfo  p-4  ">
+                        <h2 className="mb-4 !text-start font-GillSans uppercase text-large  mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
-                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[40px]   bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
-                            When adding items please ensure they are specific
-                            i.e Holiday Clothes or New Gym Equipment. Items that
-                            are non specific will be rejected and removed. Our
-                            AI blocks adult content but any overly suggestive
-                            images will also be rejected. Please reach out to
-                            support for further clarification.
-                        </p>
-                        <form onSubmit={createWishList}>
-                            <ul className="pl-0">
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        Wish Name
-                                    </label>
+                       
+                        <form onSubmit={createWishList} className="text-left">
+                            
+
+                            {/* Step 1: Basic Info & Category */}
+                            <div className={step === 1 ? "block" : "hidden"}>
+
+                                 <p className="p-4 mb-4 text-normal text-yellow-800 rounded-[20px]   border border-yellow-500 bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
+                                    When adding items please ensure they are specific
+                                    i.e Holiday Clothes or New Gym Equipment. Items that
+                                    are non specific will be rejected and removed. Our
+                                    AI blocks adult content but any overly suggestive
+                                    images will also be rejected. Please reach out to
+                                    support for further clarification.
+                                </p>
+
+                                <div className="mb-4">
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">Wish Name</label>
                                     <input
                                         id="wishname"
                                         name="wishname"
                                         type="text"
                                         placeholder="Eg. Buy me a coffee"
                                         value={data.wishname}
-                                        className="w-full border-gray-300 focus:border-pink focus:ring-pink rounded-[40px]  shadow-sm px-3 py-3"
+                                        className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[40px] shadow-sm px-4 py-3"
                                         autoComplete="name"
-                                        onChange={(e) =>
-                                            setData("wishname", e.target.value)
-                                        }
+                                        onChange={(e) => setData("wishname", e.target.value)}
                                         required
                                     />
-                                </li>
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        Price
-                                    </label>
-                                    <div className="currency-wrapper relative">
-                                        <span className="currency-tag">
-                                            {defaultCurrency}
-                                        </span>
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">Price</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-gray-500">{defaultCurrency}</span>
                                         <input
                                             id="price"
                                             type="number"
                                             name="price"
                                             placeholder="Eg. 50"
                                             value={data.price}
-                                            step={`0.01`}
-                                            className="border-gray-300 border !px-6 py-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                                            step="0.01"
+                                            className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[40px] shadow-sm pl-16 pr-4 py-3"
                                             autoComplete="price"
-                                            onChange={(e) =>
-                                                setData("price", e.target.value)
-                                            }
+                                            onChange={(e) => setData("price", e.target.value)}
                                         />
                                     </div>
-                                    {defaultCurrency !== "USD" && <p className="mt-1">
-                                        The wish item amount is set to{" "}
-                                        {formatMultiPrice(
-                                            data.price,
-                                            defaultCurrency
-                                        )}
-                                        .
-                                    </p>}
-                                </li>
-                                {/* <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        URL (Optional)
-                                    </label>
-                                    <input
-                                        id="item_url"
-                                        type="text"
-                                        placeholder="URL"
-                                        name="item_url"
-                                        value={
-                                            data.item_url ||
-                                            (item && item.item_url)
-                                        }
-                                        className="w-full border-gray-300 border !px-6 py-3 rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
-                                        autoComplete="item_url"
-                                        onChange={(e) =>
-                                            setData("item_url", e.target.value)
-                                        }
-                                    />
-                                </li> */}
-
-                                <li className="mb-4">
-                                    <label className="mb-2 text-left block">
-                                        Choose Image or Upload
-                                    </label>
-
-                                    {thumbnail ? 
-                                        <div className="relative">
-                                            <img className="max-h-[300px] w-full object-cover rounded-[40px]  border !border-gray-300" src={`https://ucarecdn.com/${thumbnail}/`} />
-                                            <button className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 text-sm rounded-[40px] " onClick={() => setThumbnail('')}>Remove</button>
-                                        </div>
-                                    :
-                                    <>
-                                        {/* {item && item.perma_link ? (
-                                            <div className="default-wish-img mb-1">
-                                                <img
-                                                    src={
-                                                        (item && item.perma_link) ||
-                                                        uploadedimg
-                                                    }
-                                                    className="img-fluid"
-                                                />
-                                            </div>
-                                        ) : (
-                                        )} */}
-                                            <Swiper
-                                                spaceBetween={0}
-                                                pagination={{
-                                                    clickable: true,
-                                                }}
-                                                navigation={true}
-                                                onSlideChange={onSlideChange}
-                                                modules={[Pagination, Navigation]}
-                                                slidesPerView={1}
-                                            >
-                                                {imageLinks &&
-                                                    imageLinks.map((image) => {
-                                                        return (
-                                                            <SwiperSlide
-                                                                key={`swiper-item-${image}`}
-                                                            >
-                                                                <div className="default-wish-img mb-1">
-                                                                    <img
-                                                                        src={`https://ucarecdn.com/${image}/`}
-                                                                        className="img-fluid"
-                                                                    />
-                                                                </div>
-                                                            </SwiperSlide>
-                                                        );
-                                                    })}
-                                            </Swiper>
-                                        <h4 className="mt-2 mb-2 w-full text-center"> {" "}
-                                            OR{" "}
-                                        </h4>
-
-                                        <div className={`${ !isEditable ? "" : "hidden" } editable`} >
-                                            <GlobalUploader
-                                                type="minimal" ctxName="wish-thumbnail"
-                                                ref={uploaderRef}
-                                                accept="image/*"
-                                                sendFile={getFileUID}
-                                                options={st.wishitemUploader}
-                                            />
-                                        </div>
-                                    </>
-                                    }
-
-                                </li>
-                            </ul>
-
-                            <p className="mt-8 pt-6 hidden   !border-t ">Choose Wish Type</p>
-                            <div className=" hidden wishlistAccordian  mt-3 mb-6">
-                                <div className="w-full rounded-[40px]   bg-white p-2">
-                                    <Disclosure defaultOpen={defaultKey === 0}>
-                                        {({ open }) => (
-                                            <>
-                                                <Disclosure.Button 
-                                                    onClick={(e) => setSubs(0)}
-                                                    className="flex w-full justify-between rounded-[40px]   bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75 mb-2"
-                                                >
-                                                    <span className="flex items-center">
-                                                        <span className="activedote mr-2"></span>
-                                                        Single Wish
-                                                    </span>
-                                                    <FaChevronUp
-                                                        className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-pink-500`}
-                                                    />
-                                                </Disclosure.Button>
-                                                <Transition
-                                                    enter="transition duration-100 ease-out"
-                                                    enterFrom="transform scale-95 opacity-0"
-                                                    enterTo="transform scale-100 opacity-100"
-                                                    leave="transition duration-75 ease-out"
-                                                    leaveFrom="transform scale-100 opacity-100"
-                                                    leaveTo="transform scale-95 opacity-0"
-                                                >
-                                                    <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-500">
-                                                        <div className="singlewishbox">
-                                                            <div className="repeatpurchase text-left">
-                                                                <label htmlFor="allow">
-                                                                    <input
-                                                                        checked={repeat}
-                                                                        type="checkbox"
-                                                                        id="allow"
-                                                                        name="repeat_purchase"
-                                                                        onChange={rpValue}
-                                                                        className="mr-2"
-                                                                    />
-                                                                    Allow Repeat Purchases
-                                                                </label>
-                                                            </div>
-                                                            <p className="text-left mt-2">
-                                                                Check if you want repeat
-                                                                purchases of this gift. If
-                                                                unchecked, the item will
-                                                                automatically delete from
-                                                                your wishlist after the
-                                                                first purchase.
-                                                            </p>
-                                                        </div>
-                                                    </Disclosure.Panel>
-                                                </Transition>
-                                            </>
-                                        )}
-                                    </Disclosure>
-                                    <Disclosure defaultOpen={defaultKey === 1}>
-                                        {({ open }) => (
-                                            <>
-                                                <Disclosure.Button 
-                                                    onClick={(e) => setSubs(1)}
-                                                    className="flex w-full justify-between rounded-[40px]   bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75"
-                                                >
-                                                    <span className="flex items-center">
-                                                        <span className="activedote mr-2"></span>
-                                                        Subscription
-                                                    </span>
-                                                    <FaChevronUp
-                                                        className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-pink-500`}
-                                                    />
-                                                </Disclosure.Button>
-                                                <Transition
-                                                    enter="transition duration-100 ease-out"
-                                                    enterFrom="transform scale-95 opacity-0"
-                                                    enterTo="transform scale-100 opacity-100"
-                                                    leave="transition duration-75 ease-out"
-                                                    leaveFrom="transform scale-100 opacity-100"
-                                                    leaveTo="transform scale-95 opacity-0"
-                                                >
-                                                    <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-500">
-                                                        <div className="singlewishbox rounded ">
-                                                            <strong className="mb-2 text-left block ">
-                                                                {" "}
-                                                                Allows gifter to purchase
-                                                                this item on a recurring
-                                                                basis.{" "}
-                                                            </strong>
-                                                            <div className="repeatpurchase text-left">
-                                                                <label htmlFor="daily">
-                                                                    <input
-                                                                        checked={
-                                                                            period ==
-                                                                            "daily"
-                                                                        }
-                                                                        type="radio"
-                                                                        id="daily"
-                                                                        value={"daily"}
-                                                                        name="subscription_period"
-                                                                        onChange={spValue}
-                                                                        className="mr-2"
-                                                                    />
-                                                                    Daily
-                                                                </label>
-                                                            </div>
-                                                            <div className="repeatpurchase mt-2 text-left">
-                                                                <label htmlFor="weekly">
-                                                                    <input
-                                                                        checked={
-                                                                            period ==
-                                                                            "weekly"
-                                                                        }
-                                                                        type="radio"
-                                                                        id="weekly"
-                                                                        value={"weekly"}
-                                                                        name="subscription_period"
-                                                                        onChange={spValue}
-                                                                        className="mr-2"
-                                                                    />{" "}
-                                                                    Weekly
-                                                                </label>
-                                                            </div>
-                                                            <div className="repeatpurchase mt-2 text-left">
-                                                                <label htmlFor="monthly">
-                                                                    <input
-                                                                        checked={
-                                                                            period ==
-                                                                            "monthly"
-                                                                        }
-                                                                        type="radio"
-                                                                        id="monthly"
-                                                                        value={"monthly"}
-                                                                        name="subscription_period"
-                                                                        onChange={spValue}
-                                                                        className="mr-2"
-                                                                    />
-                                                                    Monthly
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    </Disclosure.Panel>
-                                                </Transition>
-                                            </>
-                                        )}
-                                    </Disclosure>
+                                    {defaultCurrency !== "USD" && (
+                                        <p className="mt-2 text-sm text-gray-500">
+                                            The wish item amount is set to {formatMultiPrice(data.price, defaultCurrency)}.
+                                        </p>
+                                    )}
                                 </div>
-                            </div>
 
-                            <div className="pt-4 pb-3">
-                                <strong className="text-left block pt-4 !border-t ">
-                                    Content File 
-                                </strong>
-                                <p className="text-small mb-3">
-                                    Upload a single file that buyers will receive after purchase. 
-                                    This can be an image, video, audio, document, or archive file.
-                                </p>
-                                <p className="text-small mb-3">
-                                    <strong>Supported formats:</strong><br/>
-                                    • <strong>Images:</strong> JPEG, PNG, GIF, WebP, BMP, TIFF<br/>
-                                    • <strong>Videos:</strong> MP4, MOV, AVI, MKV, WebM, FLV<br/>
-                                    • <strong>Audio:</strong> MP3, WAV, FLAC, AAC, OGG<br/>
-                                    • <strong>Documents:</strong> PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, RTF<br/>
-                                    • <strong>Archives:</strong> ZIP, RAR<br/>
-                                    <strong>Max file size:</strong> 100MB
-                                </p>
-                               
-                               {item && item.content_file ? (
-                                     <div className="border !border-green-600 p-3 rounded-[40px]  flex justify-between items-center">
-                                        <p className="text-green-600">Content File Added Successfully</p>
-                                        <a target="_blank" className="text-green-600" href={`https://ucarecdn.com/${item && item.content_file}/`}>View</a>
-                                     </div>
-                                ) : (
-                                    <>
-                                    {contentFile ? 
-                                        <div className="mt-4">
-                                            <ContentFilePreview 
-                                                fileUrl={`https://ucarecdn.com/${contentFile}/`}
-                                                fileType={contentFileMetadata.type}
-                                                fileName={contentFileMetadata.name}
-                                                fileSize={contentFileMetadata.size}
-                                                isImage={contentFileMetadata.isImage}
-                                                isVideo={contentFileMetadata.isVideo}
-                                                isAudio={contentFileMetadata.isAudio}
-                                                className="mb-1"
-                                            />
-                                        </div>
-                                    : '' }
-                                    </>
-                                )}
-
-
-                            </div>
-                                <GlobalUploader
-                                    type="minimal" view={false}
-                                    ctxName="wishlistcontent"
-                                    ref={contentUploaderRef} imgonly={false}
-                                    accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
-                                    sendFile={getContentFileUID}
-                                    options={st.wishlistcontent}
-                                />
-
-                            {/* <div className="pt-4 pb-3">
-                                <strong className="text-left block">
-                                    Exclusive Reward or Art commission *
-                                </strong>
-                                <p className="text-small mb-3">
-                                    Create an exclusive image as a reward “think
-                                    a custom photoshoot” or add an exclusive art
-                                    commission “Unique drawing or painting
-                                </p>
-                                <p className="text-small mb-3">
-                                    Rewards must be your own content, not stock
-                                    imagery or content that you don’t have the
-                                    ownership rights to. Wishes will be rejected
-                                    if the reward is not sufficiently classed as
-                                    unique content
-                                </p>
-                                {item && item.reward_url ? (
-                                    <div className="default-wish-img border mb-2">
-                                        <img
-                                            src={item && item.reward_url}
-                                            className="img-fluid"
-                                        />
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
-                                {isAiImage ? (
-                                    <div className="default-wish-img border mb-2">
-                                        <img
-                                            src={isAiImage}
-                                            className="img-fluid"
-                                        />
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
-                                <GlobalUploader
-                                    type="minimal"
-                                    ref={uploaderRef1}
-                                    sendFile={getrewardFile}
-                                    options={st.rewards}
-                                />
-                                <div className="flex justify-center">
-                                    <div>
-                                        <h5 className="text-center text-gray-400 text-lg py-3">
-                                            Or
-                                        </h5>
-                                        <ImageGenerationWithAI
-                                            update={getAIImage}
-                                        />
-                                    </div>
-                                </div>
-                            </div> */}
-
-                            {/* <div className="twitter-an mt-3 pt-2">
-                                            <div className="repeatpurchase mt-1 mb-2 text-start">
-                                                <label
-                                                    className="text-capitalize" htmlFor={"twitter-announcement"}>
-                                                    <input type="checkbox"
-                                                        checked={atweet}
-                                                        id={'twitter-announcement'}
+                                <div className="mb-4">
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">Category</label>
+                                    <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto custom-scrollbar ">
+                                        {categories && categories.length ? categories.map((c, i) => {
+                                            const filteritem = real_category && real_category.filter((item) => item?.category == c?.category);
+                                            const isCategory = filteritem && filteritem[0] ? true : null;
+                                            return (
+                                                <div key={i} className="relative">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={"categories" + i}
+                                                        value={c.id}
                                                         name="category"
-                                                        onChange={autoTweet}
+                                                        onChange={catValue}
+                                                        checked={isCategory}
+                                                        className="peer hidden"
                                                     />
-                                                    Auto Tweet
-                                                </label>
-                                            </div>
-                                                <p className="text-small text-muted" >
-                                                Enable auto tweet for this item.
-                                            </p>
-                                        </div> */}
-
-                            <div className="publish text-start pt-6  !border-t ">
-                                <>
-                                    <strong >Categorize this wish *</strong>
-                                    <p>
-                                        {" "}
-                                        Organize your wishes to help gifters
-                                        find what they're looking for while on
-                                        your wishlist.
-                                    </p>
-
-                                    <div className="catslists">
-                                        {categories && categories.length
-                                            ? categories.map((c, i) => {
-                                                  const filteritem =
-                                                      real_category &&
-                                                      real_category.filter(
-                                                          (item) =>
-                                                              item?.category ==
-                                                              c?.category
-                                                      );
-                                                  const isCategory =
-                                                      filteritem &&
-                                                      filteritem[0]
-                                                          ? true
-                                                          : null;
-                                                  return (
-                                                      <>
-                                                          <div className="repeatpurchase mb-2 text-start">
-                                                              <label
-                                                                  className="text-capitalize"
-                                                                  htmlFor={
-                                                                      "categories" +
-                                                                      i
-                                                                  }
-                                                              >
-                                                                  <input
-                                                                      type="checkbox"
-                                                                      id={
-                                                                          "categories" +
-                                                                          i
-                                                                      }
-                                                                      value={
-                                                                          c.id
-                                                                      }
-                                                                      name="category"
-                                                                      onChange={
-                                                                          catValue
-                                                                      }
-                                                                      checked={
-                                                                          isCategory
-                                                                      }
-                                                                  />
-                                                                  {c.category}
-                                                              </label>
-                                                          </div>
-                                                      </>
-                                                  );
-                                              })
-                                            : ""}
+                                                    <label 
+                                                        htmlFor={"categories" + i}
+                                                        className="block cursor-pointer select-none rounded-[15px] border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 hover:bg-gray-50"
+                                                    >
+                                                        {c.category}
+                                                    </label>
+                                                </div>
+                                            );
+                                        }) : <p className="text-gray-500 text-sm">No categories found.</p>}
                                     </div>
-
-                                    <div className="cate-items mb-3 mt-4 flex ">
+                                    
+                                    <div className="flex items-center gap-2">
                                         <input
                                             id="cats"
                                             type="text"
                                             ref={inputRef}
-                                            className="form-input px-2 py-2 border w-full rounded-[40px] "
+                                            placeholder="New Category"
+                                            className="flex-1 border-gray-300 focus:border-pink-500 focus:ring-pink-500 !rounded-[10px] shadow-sm p-3 text-sm"
                                         />
-                                        <div
-                                            className="p-2 border cursor-pointer"
+                                        <button
+                                            type="button"
+                                            className="bg-gray-900 text-white p-3 px-6 !rounded-[10px] text-sm font-medium hover:bg-gray-800 transition-colors"
                                             onClick={AddCategory}
                                         >
-                                            {adding ? "Adding.." : "Add"}
+                                            {adding ? "Adding..." : "Add"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Step 2: Visuals */}
+                            <div className={step === 2 ? "block" : "hidden"}>
+                                <div className="mb-6">
+                                    <label className="mb-4 text-left block font-semibold text-gray-700">
+                                        Choose Image or Upload
+                                    </label>
+
+                                    {thumbnail ? (
+                                        <div className="relative mb-4 group">
+                                            <img 
+                                                className="w-full h-64 object-cover rounded-[40px] border border-gray-200 shadow-sm" 
+                                                src={`https://ucarecdn.com/${thumbnail}/`} 
+                                                alt="Wish Thumbnail"
+                                            />
+                                            <button 
+                                                type="button"
+                                                className="absolute top-4 right-4 bg-white/90 text-red-600 p-2 rounded-full shadow-lg hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" 
+                                                onClick={() => setThumbnail('')}
+                                            >
+                                                <RiCloseLine size={20} />
+                                            </button>
                                         </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            <div className="bg-gray-50 p-4 rounded-[40px]">
+                                                <h4 className="text-sm font-medium text-gray-500 mb-3 text-center">Select from Default</h4>
+                                                <Swiper
+                                                    spaceBetween={10}
+                                                    pagination={{ clickable: true }}
+                                                    navigation={true}
+                                                    onSlideChange={onSlideChange}
+                                                    modules={[Pagination, Navigation]}
+                                                    slidesPerView={1}
+                                                    className="rounded-[20px] overflow-hidden"
+                                                >
+                                                    {imageLinks && imageLinks.map((image) => (
+                                                        <SwiperSlide key={`swiper-item-${image}`} className="rounded-[20px] overflow-hidden">
+                                                            <div className="aspect-w-16 aspect-h-9">
+                                                                <img
+                                                                    src={`https://ucarecdn.com/${image}/`}
+                                                                    className="w-full h-48 object-cover rounded-[20px]"
+                                                                    alt="Default"
+                                                                />
+                                                            </div>
+                                                        </SwiperSlide>
+                                                    ))}
+                                                </Swiper>
+                                            </div>
+                                            
+                                            <div className="relative">
+                                                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                                    <div className="w-full border-t border-gray-300"></div>
+                                                </div>
+                                                <div className="relative flex justify-center">
+                                                    <span className="bg-white px-2 text-sm text-gray-500">OR UPLOAD NEW</span>
+                                                </div>
+                                            </div>
+
+                                            <div className={`${!isEditable ? "" : "hidden"} editable`}>
+                                                <GlobalUploader
+                                                    type="minimal" 
+                                                    ctxName="wish-thumbnail"
+                                                    ref={uploaderRef}
+                                                    accept="image/*"
+                                                    sendFile={getFileUID}
+                                                    options={st.wishitemUploader}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Step 3: Fulfillment & Settings */}
+                            <div className={step === 3 ? "block" : "hidden"}>
+                                <div className="mb-8">
+                                    <label className="mb-2 text-left block font-semibold text-gray-700 flex items-center gap-2">
+                                        Content File
+                                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Required</span>
+                                    </label>
+                                    <p className="text-sm text-gray-500 mb-4">
+                                        Upload the file that buyers will receive after purchase (Image, Video, Audio, Document, etc.).
+                                    </p>
+                                    
+                                    {item && item.content_file ? (
+                                        <div className="border border-green-200 bg-green-50 p-4 rounded-[40px] flex justify-between items-center mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-green-100 p-2 rounded-full">
+                                                    <RiCheckDoubleLine className="text-green-600" />
+                                                </div>
+                                                <span className="text-green-700 font-medium">File Uploaded</span>
+                                            </div>
+                                            <a 
+                                                target="_blank" 
+                                                className="text-sm font-semibold text-green-700 hover:text-green-800 underline" 
+                                                href={`https://ucarecdn.com/${item && item.content_file}/`}
+                                            >
+                                                View File
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <>
+                                        {contentFile ? (
+                                            <div className="mb-4">
+                                                <ContentFilePreview 
+                                                    fileUrl={`https://ucarecdn.com/${contentFile}/`}
+                                                    fileType={contentFileMetadata.type}
+                                                    fileName={contentFileMetadata.name}
+                                                    fileSize={contentFileMetadata.size}
+                                                    isImage={contentFileMetadata.isImage}
+                                                    isVideo={contentFileMetadata.isVideo}
+                                                    isAudio={contentFileMetadata.isAudio}
+                                                    className="mb-1"
+                                                />
+                                            </div>
+                                        ) : null}
+                                        </>
+                                    )}
+
+                                    <GlobalUploader
+                                        type="minimal" 
+                                        view={false}
+                                        ctxName="wishlistcontent"
+                                        ref={contentUploaderRef} 
+                                        imgonly={false}
+                                        accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
+                                        sendFile={getContentFileUID}
+                                        options={st.wishlistcontent}
+                                    />
+                                    
+                                    <div className="mt-4 text-xs text-gray-400">
+                                        Max file size: 100MB. Supported: Images, Videos, Audio, Docs, Archives.
+                                    </div>
+                                </div>
+
+                                <div className="mb-6 border-t border-gray-100 pt-6">
+                                    <label className="mb-4 text-left block font-semibold text-gray-700">Wish Type</label>
+                                    <div className="md:flex gap-4 mb-6">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSubs(0)}
+                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[40px] border font-medium transition-all ${
+                                                data.subscription === 0
+                                                    ? "border-pink-500 bg-pink-50 text-pink-700 shadow-sm"
+                                                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            One-Time Purchase
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSubs(1)}
+                                            className={`w-full mb-2 flex-1 py-3 px-4 rounded-[40px] border font-medium transition-all ${
+                                                data.subscription === 1
+                                                    ? "border-pink-500 bg-pink-50 text-pink-700 shadow-sm"
+                                                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            Subscription
+                                        </button>
                                     </div>
 
-                                    {editpop ? (
-                                        <LoaderButton
-                                            disabled={processing}
-                                            type="submit"
-                                            className="b w-full"
-                                            spinnerclass="fill-red-600"
-                                        >
-                                            {processing
-                                                ? "Updating.."
-                                                : "Update Wish"}
-                                        </LoaderButton>
+                                    {data.subscription === 0 ? (
+                                        <div className="bg-gray-50 p-4 rounded-[20px]">
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={repeat}
+                                                    onChange={rpValue}
+                                                    className="w-5 h-5 text-pink-600 rounded border-gray-300 focus:ring-pink-500"
+                                                />
+                                                <span className="text-gray-700 font-medium">Allow Repeat Purchases</span>
+                                            </label>
+                                            <p className="text-xs text-gray-500 mt-2 ml-8">
+                                                If checked, fans can buy this item multiple times.
+                                            </p>
+                                        </div>
                                     ) : (
-                                        <LoaderButton
-                                            disabled={processing}
-                                            type="submit"
-                                            className="b w-full"
-                                            spinnerclass="fill-red-600"
-                                        >
-                                            {processing
-                                                ? "Processing"
-                                                : "Add Wish"}
-                                        </LoaderButton>
+                                        <div className="bg-gray-50 p-6 rounded-[20px]">
+                                            <label className="block text-sm font-medium text-gray-700 mb-3">Billing Period</label>
+                                            <div className="flex flex-wrap gap-3">
+                                                {['daily', 'weekly', 'monthly'].map((period) => (
+                                                    <label key={period} className="cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="subscription_period"
+                                                            value={period}
+                                                            checked={data.subscription_period === period}
+                                                            onChange={spValue}
+                                                            className="peer hidden"
+                                                        />
+                                                        <div className="px-4 py-2 rounded-[40px] border border-gray-200 bg-white text-gray-600 text-sm font-medium peer-checked:border-pink-500 peer-checked:bg-pink-50 peer-checked:text-pink-700 transition-all hover:bg-gray-50 uppercase">
+                                                            {period}
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
-                                </>
+                                </div>
                             </div>
+
+                            {renderProgressBar()}
+
+                            {/* Navigation Buttons */}
+                            <div className="flex gap-3 mt-8 pt-4 border-t border-gray-100">
+                                {step > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={prevStep}
+                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-lg tracking-wider rounded-[40px] hover:bg-gray-200 transition-colors"
+                                    >
+                                        Back
+                                    </button>
+                                )}
+                                
+                                {step < totalSteps ? (
+                                    <button
+                                        type="button"
+                                        onClick={nextStep}
+                                        className="flex-1 py-3 px-4 bg-pink-500 text-white font-gulfs uppercase text-lg tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
+                                    >
+                                        Next
+                                    </button>
+                                ) : (
+                                    <LoaderButton
+                                        disabled={processing}
+                                        type="submit"
+                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-pink-500 text-white font-gulfs uppercase text-lg tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
+                                        spinnerclass="fill-white"
+                                    >
+                                        {processing ? (editpop ? "Updating..." : "Processing...") : (editpop ? "Update Wish" : "Add Wish")}
+                                    </LoaderButton>
+                                )}
+                            </div>
+
                         </form>
                     </div>
                 </div>

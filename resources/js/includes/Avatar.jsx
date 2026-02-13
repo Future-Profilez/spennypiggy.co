@@ -17,7 +17,7 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
         max-height: 60px;
         min-width: 60px;
         min-height: 60px;
-        border-radius: 13px;
+        border-radius: 40px;
         overflow: hidden;
         position: relative;
         flex-shrink: 0;
@@ -69,11 +69,11 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
-            <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[30px] ">
+            <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[40px] ">
               <img
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 rounded-[11px]" 
+                className="img-fluid bg-gray-200 rounded-[40px]" 
                 loading="lazy"
                 decoding="async"
                 style={{

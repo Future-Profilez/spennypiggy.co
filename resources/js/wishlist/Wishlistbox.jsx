@@ -87,7 +87,7 @@ export default function Wishlistbox(props) {
         >
             <div className=" rounded-[40px]   overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
-                    <div className="approvalmessge membership m-2 mt-5 rounded-[40px]   p-3 py-2 mb-2">
+                    <div className="approvalmessge membership m-2 mt-3 rounded-[25px]   p-3 py-2 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
                             <>
                                 <p className="font-semibold text-sm mb-1">Edit requested by admin reason : </p>
