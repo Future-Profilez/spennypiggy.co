@@ -101,12 +101,7 @@ export default function TabbedDashboard(props) {
                         </div>
                     </div>
 
-                    {/* Profile Steps (if needed) */}
-                    <div className="relative z-10 pt-4 px-4">
-                        <Suspense fallback={<div></div>}>
-                            <ProfileSteps IsloggedIn={IsloggedIn} sLinks={sLinks} />
-                        </Suspense>
-                    </div>
+
 
                     {/* User Profile Section */}
                     <div className="relative z-10">

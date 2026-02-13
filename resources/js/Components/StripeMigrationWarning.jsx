@@ -16,7 +16,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
         <div className="w-full mb-6 bg-white rounded-[30px] md:rounded-[40px]  shadow-sm border border-red-100 overflow-hidden">
             <div className="flex">
                 <div className="w-1.5 bg-red-600"></div>
-                <div className="flex-1 p-8">
+                <div className="flex-1  p-6 lg:p-8">
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-full bg-red-50 text-red-600">
@@ -42,7 +42,7 @@ export default function StripeMigrationWarning({ migrationStatus, className = ''
                     <Link 
                         onClick={() => setLoading(!loading)}
                         href="/stripe/upgrade-express-account"
-                        className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                        className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
                     >
                         {loading ? "Loading..." : "Upgrade Account"}
                     </Link>
