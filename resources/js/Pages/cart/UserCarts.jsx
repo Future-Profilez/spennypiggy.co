@@ -262,11 +262,9 @@ export default function UserCarts(props) {
                                     <strong className="!text-right !text-black">
                                         {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
                                     </strong>
-                                    {!auth?.user && (
-                                        <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
-                                            * Includes all applicable fees
-                                        </div>
-                                    )}
+                                    <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
+                                        * Includes all applicable fees
+                                    </div>
                                 </div>
                             </div>
 

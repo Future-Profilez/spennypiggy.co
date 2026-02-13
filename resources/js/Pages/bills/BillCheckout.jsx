@@ -29,6 +29,40 @@ export default function BillCheckout(props) {
         cf_turnstile_response: "",
     });
 
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Client Rule: Add VAT before other fees
+        const priceWithVat = listedPrice + vat;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     function checkanonymous(e) {
         setKeepAnonmyous(e.target.checked);
@@ -199,15 +233,21 @@ export default function BillCheckout(props) {
                                         <span className="min-w-[100px] block text-lg">
                                             Total :
                                         </span>
-                                        <strong className="text-lg">
-                                            {formatMultiPrice(
-                                                bill?.tax_amount +
-                                                    bill?.price +
-                                                    vat_amount || "",
-                                                bill && bill?.currency,
-                                                "adminfee"
-                                            )}
-                                        </strong>
+                                        <div className="text-right">
+                                            <strong className="text-lg block">
+                                                {formatMultiPrice(
+                                                    calculateTotalSupporterPays(
+                                                        bill?.price, 
+                                                        bill?.currency,
+                                                        vat_amount
+                                                    ),
+                                                    bill && bill?.currency
+                                                )}
+                                            </strong>
+                                            <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
+                                                * Includes all fees
+                                            </span>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
