@@ -78,7 +78,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="profileSteps bg-white border border-gray-400 rounded-[40px]   mb-4 p-3 lg:!p-6">
+            <div className="profileSteps bg-white border border-gray-400 rounded-[30px] md:rounded-[40px]   mb-4 p-3 lg:!p-6">
                 <h2 className="mb-1 text-[20px] font-bold">
                     Profile Verification
                 </h2>
@@ -99,7 +99,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </p>
                         </div>
                         <Link
-                            className="bg-[#fce100] mt-3 mb-4 block rounded-[40px]  px-3 py-2 text-sm text-center focus:opacity-[0.8]"
+                            className="bg-[#fce100] mt-3 mb-4 block rounded-[30px] md:rounded-[40px]  px-3 py-2 text-sm text-center focus:opacity-[0.8]"
                             href="/update-profile-lock-status"
                         >
                             Submit Re-verification Request
@@ -279,7 +279,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     ) : (
                         /* ❌ REJECTED */
-                        <div className="profile-steps border border-red-200 rounded-[40px]  flex items-center p-4 mt-3 justify-between">
+                        <div className="profile-steps border border-red-200 rounded-[30px] md:rounded-[40px]  flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className="check-icon mr-2 pt-1">
                                     <div
@@ -538,7 +538,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         {/* {auth?.user?.identity_admin_status == 2 && (
                             <div className="mt-2">
                                 {auth?.user?.identity_admin_notes && (
-                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-[40px]   text-sm">
+                                    <div className="mt-2 p-4 bg-red-100 text-red-800 rounded-[30px] md:rounded-[40px]   text-sm">
                                         <h2 className="mb-1 text-normal font-bold">Your Identity Is Rejected By Admin</h2>
                                         <p>Reason : {auth?.user?.identity_admin_notes}</p>
                                     </div>

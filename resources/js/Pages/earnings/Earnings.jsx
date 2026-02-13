@@ -41,7 +41,7 @@ export default function Earnings(props) {
   },[earnType]);
 
   const EARNER = ({data, i}) => {
-    return  <article className="flex flex-col p-3  bg-white rounded-[40px]   shadow">
+    return  <article className="flex flex-col p-3  bg-white rounded-[30px] md:rounded-[40px]   shadow">
     <header className="flex ">
       <div>
         <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">

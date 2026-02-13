@@ -172,7 +172,7 @@ export default function AddMembership({updateState, item, text, classes}) {
     };
     const AddItem = () => {
       return <div className=" flex items-center">
-          <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+          <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
           <div className="pl-3 text-left">
@@ -186,7 +186,7 @@ export default function AddMembership({updateState, item, text, classes}) {
         <Popup
             modalclass="pinkmodal full sendSurprize-modal shadow-pink pl-0"
             space="4" size="md"
-            action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-[40px]  p-3 mb-2 text-center`}
+            action={close} classes={classes ? classes : `addop w-full font-bold  bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center`}
             text={text ? text : <AddItem />} >
               <div className="addgoal" >
                 <h2 className="uppercase font-GillSans pb-4 font-large">Add Membership</h2>
@@ -217,7 +217,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                           <label className="block text-left mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
                           <div className="relative  currency-wrapper dollar-simbols" >
                             <span className="currency-tag">{defaultCurrency}</span>
-                            <input className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                            <input className="border-gray-300 border rounded-[30px] md:rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                 onChange={handleInput} defaultValue={item && item.price || ''}
                                 type="number" name="month_price"
                                 placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />

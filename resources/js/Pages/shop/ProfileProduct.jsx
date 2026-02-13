@@ -15,7 +15,7 @@ export default function ProfileProduct({item}) {
    const url = `/shop/item/${slug(item.name)}/${item.uuid}`;
 
   return (
-      <article className="max-w-sm w-full bg-white rounded-[40px]  overflow-hidden ">
+      <article className="max-w-sm w-full bg-white rounded-[30px] md:rounded-[40px]  overflow-hidden ">
          <div>
             <Link href={url} >
                <img className="object-cover h-[130px] sm:h-[200px] w-full" src={item.perma_link} alt="Converse sneakers" />

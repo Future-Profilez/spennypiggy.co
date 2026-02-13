@@ -417,7 +417,7 @@ export default function Discover(props) {
                                 
                                 
                                 {(!searchResults.creators?.length && !searchResults.wishes?.length) && (
-                                    <div className="text-center py-20 bg-white rounded-[40px]   border border-dashed border-gray-200">
+                                    <div className="text-center py-20 bg-white rounded-[30px] md:rounded-[40px]   border border-dashed border-gray-200">
                                         <div className="text-gray-400 text-5xl mb-4">🔍</div>
                                         <h3 className="text-lg font-medium text-gray-900 mb-2">No matches found</h3>
                                         <p className="text-gray-500">Try adjusting your search or filters to find what you're looking for.</p>

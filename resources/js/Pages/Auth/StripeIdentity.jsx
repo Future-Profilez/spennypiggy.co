@@ -41,16 +41,16 @@ export default function StripeIdentity({ auth }) {
     return (
         <Authenticated>
             <div className="flex flex-col py-12 items-center justify-center min-h-[80vh] bg-gray-100">
-                <div className="rounded-[40px]   p-6 sm:p-10 max-w-xl w-full">
+                <div className="rounded-[30px] md:rounded-[40px]   p-6 sm:p-10 max-w-xl w-full">
                     {/* Admin Review Banners */}
                     {/* {auth?.user?.identity_status == 1 && (!adminIdentity || adminIdentity?.status !== 1) && (
-                        <div className="mb-4 text-blue-800 bg-blue-100 p-4 rounded-[40px]   border border-blue-200 text-center">
+                        <div className="mb-4 text-blue-800 bg-blue-100 p-4 rounded-[30px] md:rounded-[40px]   border border-blue-200 text-center">
                             <p className="font-semibold mb-1">Identity Submitted</p>
                             <p className="text-sm">Your documents are with our admin team for review. You'll receive an email once approved.</p>
                         </div>
                     )} */}
                     {/* {auth?.user?.identity_status === 2 && (
-                        <div className="mb-4 text-red-800 bg-red-100 p-4 rounded-[40px]   border border-red-200 text-center">
+                        <div className="mb-4 text-red-800 bg-red-100 p-4 rounded-[30px] md:rounded-[40px]   border border-red-200 text-center">
                             <p className="font-semibold mb-1">Admin Review: Rejected</p>
                             <p className="text-sm">{adminIdentity?.notes || "Please re-submit your identity documents following the guidelines below."}</p>
                         </div>
@@ -58,7 +58,7 @@ export default function StripeIdentity({ auth }) {
 
                     {/* Display error explanation */}
                     {auth?.user?.identity_verification_error && (
-                        <div className="mb-4 text-yellow-700 bg-yellow-100 p-4 rounded-[40px]   border border-yellow-200 text-center">
+                        <div className="mb-4 text-yellow-700 bg-yellow-100 p-4 rounded-[30px] md:rounded-[40px]   border border-yellow-200 text-center">
                             <p className="font-semibold mb-2">Why are you seeing this error?</p>
                             <p className="text-sm">
                                 Your last attempt to complete identity verification was unsuccessful. Please review the details below and try again.

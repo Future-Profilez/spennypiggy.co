@@ -277,10 +277,10 @@ export default function Dashboard(props) {
                             dangerouslySetInnerHTML={{ __html: addicon }}
                         ></div>
                         {showAdd ? (
-                            <div className="bg-[#0001] rounded-[40px]  fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
+                            <div className="bg-[#0001] rounded-[30px] md:rounded-[40px]  fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-[40px]   shadow-lg z-10">
+                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-[30px] md:rounded-[40px]   shadow-lg z-10">
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
@@ -305,9 +305,9 @@ export default function Dashboard(props) {
                                                                     : false
                                                             }
                                                         />
-                                                        <div className="w-full font-bold disabled addop bg-white rounded-[40px]  p-3 mb-2 text-center">
+                                                        <div className="w-full font-bold disabled addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center">
                                                             <div className=" flex items-center">
-                                                                <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                     <CiGift
                                                                         color="var(--pink)"
                                                                         size="1.5rem"
@@ -351,10 +351,10 @@ export default function Dashboard(props) {
                                                                         true,
                                                                     )
                                                                 }
-                                                                className="w-full font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                className="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
                                                             >
                                                                 <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                         <FaRegHeart
                                                                             color="var(--pink)"
                                                                             size="1.5rem"
@@ -380,11 +380,11 @@ export default function Dashboard(props) {
                                                             </div>
 
                                                             <Link
-                                                                className="w-full block font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                className="w-full block font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
                                                                 href="/task/create"
                                                             >
                                                                 <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                         <BiTask
                                                                             color="var(--pink)"
                                                                             size="1.5rem"
@@ -408,7 +408,7 @@ export default function Dashboard(props) {
                                                             </Link>
 
                                                             {/* <AddItem
-                                                                classes="w-full font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center"
+                                                                classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
                                                                 product_type="digital_products"
                                                             /> */}
                                                             <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
@@ -474,12 +474,11 @@ export default function Dashboard(props) {
             <Guest auth={auth.user} user={user}>
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
 
-                <div className="wishlistPage blackbg pt-6 pb-0 sm:pb-5 ">
-
+                <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute top-30 left-10 w-80 h-80 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[90px] opacity-50 floating-shape"></div>
-                        <div className="absolute top-90 right-10 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-[50px] opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
+                        <div className="absolute top-0 right-10 w-[400px] h-[400px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[150px] opacity-90 floating-shape"></div>
+                        <div className="absolute top-[70vh] left-10 w-[400px] h-[400px] bg-pink-500 rounded-full mix-blend-multiply filter blur-[200px] opacity-[0.9] floating-shape" style={{animationDelay: '1s'}}></div>
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
 
@@ -499,7 +498,7 @@ export default function Dashboard(props) {
                                     alt={`${user?.name} - Cover Image`}
                                     height={400}
                                     width={1200}
-                                    className="w-full border-black border-2 shadow-mints rounded-[40px] "
+                                    className="w-full wishimagebanner border-black border-2 shadow-mints rounded-[30px] md:rounded-[40px] "
                                     src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
                                     loading="eager"
                                     fetchPriority="high"
@@ -539,7 +538,7 @@ export default function Dashboard(props) {
                         {/* Stripe Account Migration Warning */}
 
                         {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[40px]  ">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px] md:rounded-[40px]  ">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
@@ -598,7 +597,7 @@ export default function Dashboard(props) {
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[100px]">
-                                                                    <DashboardStripeMigrationWarning
+                                                                <DashboardStripeMigrationWarning
                                                                         migrationStatus={
                                                                             migration_status
                                                                         }

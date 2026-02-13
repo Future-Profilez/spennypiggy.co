@@ -49,7 +49,7 @@ export default function StripeSafe() {
                      </div>
                   </div>
 
-                  <div className=" grid lg:grid-cols-2 gap-0 overflow-hidden rounded-[40px]  md:rounded-[40px]  shadow-2xl border border-gray-200">
+                  <div className=" grid lg:grid-cols-2 gap-0 overflow-hidden rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  shadow-2xl border border-gray-200">
                      
                      <div className="bg-black text-white p-4 sm:!p-8 md:!p-12 lg:!p-16 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-800">
                         <div className="mb-10">
@@ -63,7 +63,7 @@ export default function StripeSafe() {
                         
                         <ul className="space-y-8">
                            <li className="flex gap-4">
-                              <div className="bg-red-500/20 p-3 rounded-[40px]  h-fit shrink-0">
+                              <div className="bg-red-500/20 p-3 rounded-[30px] md:rounded-[40px]  h-fit shrink-0">
                                  <AlertTriangle className="text-red-500" size={24} />
                               </div>
                               <div>
@@ -71,7 +71,7 @@ export default function StripeSafe() {
                               </div>
                            </li>
                            <li className="flex gap-4">
-                              <div className="bg-red-500/20 p-3 rounded-[40px]  h-fit shrink-0">
+                              <div className="bg-red-500/20 p-3 rounded-[30px] md:rounded-[40px]  h-fit shrink-0">
                                  <AlertTriangle className="text-red-500" size={24} />
                               </div>
                               <div>
@@ -115,7 +115,7 @@ export default function StripeSafe() {
                   </div>
 
                   <div className=" mt-12">
-                     <div className="bg-white border border-gray-100 text-gray-900 p-4 md:!p-8 lg:!p-12 rounded-[40px]  flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
+                     <div className="bg-white border border-gray-100 text-gray-900 p-4 md:!p-8 lg:!p-12 rounded-[30px] md:rounded-[40px]  flex flex-col md:flex-row items-center justify-between gap-10 shadow-xl">
                         <div>
                            <h2 className="text-2xl md:text-3xl lg:text-4xl font-gulfs uppercase mb-4">Disputes</h2>
                            <ul className="space-y-3">

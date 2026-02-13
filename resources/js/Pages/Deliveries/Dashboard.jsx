@@ -40,7 +40,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[40px]   p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px] md:rounded-[40px]   p-6">
                             <div className="flex items-center">
                                 <FiPackage className="w-8 h-8 text-blue-500 mr-3" />
                                 <div>
@@ -50,7 +50,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[40px]   p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px] md:rounded-[40px]   p-6">
                             <div className="flex items-center">
                                 <FiCheckCircle className="w-8 h-8 text-green-500 mr-3" />
                                 <div>
@@ -60,7 +60,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[40px]   p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px] md:rounded-[40px]   p-6">
                             <div className="flex items-center">
                                 <FiClock className="w-8 h-8 text-yellow-500 mr-3" />
                                 <div>
@@ -70,7 +70,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                             </div>
                         </div>
 
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[40px]   p-6">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px] md:rounded-[40px]   p-6">
                             <div className="flex items-center">
                                 <FiXCircle className="w-8 h-8 text-red-500 mr-3" />
                                 <div>
@@ -82,7 +82,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                     </div>
 
                     {/* Deliveries Table */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-[40px]  ">
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-[30px] md:rounded-[40px]  ">
                         <div className="p-6 bg-white border-b border-gray-200">
                             <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Deliveries</h3>
                             
@@ -216,7 +216,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                         {deliverables.prev_page_url && (
                                             <Link
                                                 href={deliverables.prev_page_url}
-                                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-[40px]  text-gray-700 bg-white hover:bg-gray-50"
+                                                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-[30px] md:rounded-[40px]  text-gray-700 bg-white hover:bg-gray-50"
                                             >
                                                 Previous
                                             </Link>
@@ -224,7 +224,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                         {deliverables.next_page_url && (
                                             <Link
                                                 href={deliverables.next_page_url}
-                                                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-[40px]  text-gray-700 bg-white hover:bg-gray-50"
+                                                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-[30px] md:rounded-[40px]  text-gray-700 bg-white hover:bg-gray-50"
                                             >
                                                 Next
                                             </Link>
@@ -243,7 +243,7 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                             </p>
                                         </div>
                                         <div>
-                                            <nav className="relative z-0 inline-flex rounded-[40px]  shadow-sm -space-x-px" aria-label="Pagination">
+                                            <nav className="relative z-0 inline-flex rounded-[30px] md:rounded-[40px]  shadow-sm -space-x-px" aria-label="Pagination">
                                                 {deliverables.prev_page_url && (
                                                     <Link
                                                         href={deliverables.prev_page_url}

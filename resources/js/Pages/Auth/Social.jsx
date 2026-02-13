@@ -278,7 +278,7 @@ export default function AddSocial({
                             placeholder={platform.placeholder}
                             maxLength={platform.maxLength}
                             className={clsx(
-                                "block w-full pl-12 pr-12 py-3 rounded-[40px]  text-sm transition-all duration-200",
+                                "block w-full pl-12 pr-12 py-3 rounded-[30px] md:rounded-[40px]  text-sm transition-all duration-200",
                                 "focus:outline-none focus:ring-2 focus:ring-opacity-50",
                                 {
                                     "border-2 border-gray-300 focus:border-gray-400 focus:ring-gray-200":

@@ -123,7 +123,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                      <label className="block text-left mb-2">Target Amount</label>
                      <div className="relative  currency-wrapper" >
                         <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
-                        <input className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[40px]  shadow-sm"
+                        <input className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[30px] md:rounded-[40px]  shadow-sm"
                            onChange={(e)=>setaprice(e.target.value)}
                            type="number" placeholder="Enter amount.. " />
                      </div>
@@ -133,7 +133,7 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   <div className="mb-4">
                         <label className="block text-left mb-2">Goal Description</label>
                         <textarea placeholder="Description..."
-                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
                         onChange={(e) => setData('description',e.target.value)}
                         type="text" />
                   </div>

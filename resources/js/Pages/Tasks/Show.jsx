@@ -144,7 +144,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             
                             <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
                                 {isCreator ? (
-                                    <div className="text-center  rounded-[40px]  py-6">
+                                    <div className="text-center  rounded-[30px] md:rounded-[40px]  py-6">
                                         <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
                                         <a href={route('task.dashboard')} className="button b">
                                             Manage Orders
@@ -155,19 +155,19 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         {/* Instant Delivery Section - Only if access granted */}
                                         {task.type === 'instant' && deliverableUrl && (
                                             <div className="mb-8">
-                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[40px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
+                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[30px] md:rounded-[40px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
                                                     ✓ Purchased Successfully
                                                 </div>
                                                 <div className="space-y-4">
                                                     {task.deliverable_note && (
-                                                        <div className="bg-white border-2 border-black rounded-[40px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                                        <div className="bg-white border-2 border-black rounded-[30px] md:rounded-[40px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                             <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
                                                             <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
                                                         </div>
                                                     )}
                                                     <a 
                                                         href={deliverableUrl} 
-                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[40px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[30px] md:rounded-[40px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                     >
@@ -200,7 +200,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                                  </a>
                                                              </div>
                                                              {historyItem.gifter_message && (
-                                                                 <div className="bg-gray-50 p-3 rounded-[40px]   text-sm italic text-gray-600 border border-gray-100">
+                                                                 <div className="bg-gray-50 p-3 rounded-[30px] md:rounded-[40px]   text-sm italic text-gray-600 border border-gray-100">
                                                                      "{historyItem.gifter_message}"
                                                                  </div>
                                                              )}

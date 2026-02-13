@@ -8,16 +8,12 @@ export default function SiteSubscription({ auth, subscription_status, user, card
         card_capabilities;
 
     return (
-        <div className="w-full finishs mb-4 rounded-[40px]   bg-white !border-voilet shadow-voilet">
+        <div className="w-full finishs mb-6 p-6 rounded-[30px] md:rounded-[40px]   bg-white  border-2 !border-pink-500  ">
 
-            <div className="border-bottom border-voilet !border-0">
-                <h2 className="text-large font-GillSans uppercase p-3 goaltitle text-white btn-shadow pinkbg">
-                    Subscription Status
-                </h2>
-            </div>
-
-            <div className="p-4">
-                <p className="mb-4 text-[15px] font-poppins text-center text-gray-700">
+            <h2 className="text-xl font-bold capitalize pb-3 goaltitle text-black  ">
+                Subscription Status
+            </h2>
+                <p className="mb-4 text-[15px] font-poppins text-start text-gray-700">
                     Enjoy a{" "}
                     <span className="text-green-700 font-bold uppercase">
                         3-days free trial
@@ -53,7 +49,6 @@ export default function SiteSubscription({ auth, subscription_status, user, card
                             : "Please ensure your avatar, bio, and social links are approved before activating your subscription."}
                     </p>
                 )}
-            </div>
 
         </div>
     );

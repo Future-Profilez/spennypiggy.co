@@ -70,7 +70,7 @@ export default function ThankyouMessages(props) {
       </>
     }
     const type = w && w.media_type;
-    return <div className='wish-grant box rounded-[40px]   p-3 my-2' key={key} >
+    return <div className='wish-grant box rounded-[30px] md:rounded-[40px]   p-3 my-2' key={key} >
       <p className='mb-3 text-grey ' ><span className='text-capitalize' >{w && w.owner && w.owner.name}</span> send a thankyou message {w && w.message ? <b>{w && w.message}</b> : ''} {type =='image' ? 'with attached pic' : type =='video' ? 'with attached video' : '' }.</p>
       <div className='flex justify-between items-center' >
         <Avatar name={w && w.owner && w.owner.name}
@@ -85,7 +85,7 @@ export default function ThankyouMessages(props) {
 
   return (
     <div className={data && data.length < 1 && !loading ? 'd-none' : ''  } >
-      <div className='box rounded-[40px]   p-4 mt-4 ' >
+      <div className='box rounded-[30px] md:rounded-[40px]   p-4 mt-4 ' >
         <h3 className='text-large text-dark title mb-3' >Thankyou Messages </h3>
           {data && data.map((d, i)=>{ 
             return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

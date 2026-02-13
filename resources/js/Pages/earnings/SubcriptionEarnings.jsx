@@ -62,7 +62,7 @@ export default function SubcriptionEarnings({ auth }) {
     }
 
     return (
-        <section className="bg-white rounded-[40px]   shadow lg:min-h-[510px]">
+        <section className="bg-white rounded-[30px] md:rounded-[40px]   shadow lg:min-h-[510px]">
             {/* <h2 className="w-full uppercase p-4 border-b border-gray-200 font-bold">Top Wishes Subscription </h2> */}
             <h2 className="w-full uppercase p-4 border-b border-gray-200 font-bold">
                 Top Paid Task{" "}

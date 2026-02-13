@@ -35,7 +35,7 @@ export default function Tiplisting({ auth }) {
     };
     return (
       <>
-        <div className="box shadow-pink rounded-[40px]   p-3 mb-4 ">
+        <div className="box shadow-pink rounded-[30px] md:rounded-[40px]   p-3 mb-4 ">
           <div
             onClick={openState}
             className="cursor-pointer trackbar"

@@ -270,7 +270,7 @@ export default function Header({ classMagicword }) {
                     </div>
                 </div>
             </div>
-            <div className="h-[88px] md:h-[96px]"></div>
+            <div className="h-[66px] sm:h-[68px] md:h-[80px] lg:h-[82px] xl:h-[92px]"></div>
 
             {isActive ? (
                 <div

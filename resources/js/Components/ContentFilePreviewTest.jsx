@@ -94,7 +94,7 @@ export default function ContentFilePreviewTest() {
                 ))}
             </div>
 
-            <div className="mt-12 p-6 bg-gray-50 rounded-[40px]  ">
+            <div className="mt-12 p-6 bg-gray-50 rounded-[30px] md:rounded-[40px]  ">
                 <h2 className="text-xl font-bold mb-4">Features Demonstrated:</h2>
                 <ul className="list-disc list-inside space-y-2 text-gray-700">
                     <li><strong>Image Files:</strong> Shows thumbnail preview with error fallback</li>

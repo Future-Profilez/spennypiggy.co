@@ -839,7 +839,11 @@ select#country{width:100%;}
 @media (max-width:380px){.loveboxes{width:100%;}
 .loveboxes h3{font-size:27px !important;line-height:38px !important;}
 }
-@media (max-width:767px){.tagsfilterbar{flex-wrap:nowrap !important;white-space:nowrap;overflow:auto;}
+@media (max-width:767px){
+.wishimagebanner { 
+  height: 230px !important;
+}
+.tagsfilterbar{flex-wrap:nowrap !important;white-space:nowrap;overflow:auto;}
 .whylovebox.pre .loveboxes{text-align:center;}
 .commingsooon{position:static !important;margin:20px -20px !important;}
 .videoPopup{width:100%;max-width:90%;}
@@ -851,8 +855,9 @@ select#country{width:100%;}
 .sno p{font-size:16px;}
 }
 @media (max-width:575px){.wishlistbutton{padding:5px 25px !important;}
-/* .welcomeLeft{padding:10px 0 90px 0 !important;}
-*/
+.wishimagebanner { 
+  height: 180px !important;
+}
  .filter-select-wrap{width:100% !important;}
 .filter-select-wrap select{width:100% !important;max-width:100% !important;}
 .subscribletag{padding:5px 11px;font-size:11px;}

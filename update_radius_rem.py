@@ -8,18 +8,18 @@ def process_file(filepath):
 
     original_content = content
     
-    # Replace rounded-[37.02px] with rounded-[40px] 
-    content = content.replace('rounded-[37.02px]', 'rounded-[40px] ')
+    # Replace rounded-[37.02px] with rounded-[30px] md:rounded-[40px] 
+    content = content.replace('rounded-[37.02px]', 'rounded-[30px] md:rounded-[40px] ')
     
-    # Replace rounded-[2.5rem] with rounded-[40px] 
-    content = content.replace('rounded-[2.5rem]', 'rounded-[40px] ')
+    # Replace rounded-[2.5rem] with rounded-[30px] md:rounded-[40px] 
+    content = content.replace('rounded-[2.5rem]', 'rounded-[30px] md:rounded-[40px] ')
     
     # Regex for rounded-[...rem]
-    # We want to replace anything around 2.5rem to 3.5rem with rounded-[40px] 
+    # We want to replace anything around 2.5rem to 3.5rem with rounded-[30px] md:rounded-[40px] 
     def replace_rem(match):
         val = float(match.group(1))
         if 2.0 <= val <= 4.0:
-            return "rounded-[40px] "
+            return "rounded-[30px] md:rounded-[40px] "
         return match.group(0)
 
     content = re.sub(r'rounded-\[([0-9.]+)rem\]', replace_rem, content)

@@ -340,7 +340,7 @@ export default function Wishlist(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
@@ -357,7 +357,7 @@ export default function Wishlist(props) {
         <Popup
             modalclass="pinkmodal full"
             action={close} space="4" size="lg"
-            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center" }`}
+            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center" }`}
             text={customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">
@@ -366,7 +366,7 @@ export default function Wishlist(props) {
                         <h2 className="mb-4 text-pink text-left font-GillSans uppercase text-large black-stroke font-semibold mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
-                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[40px]   bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
+                        <p className="p-3 mb-4 text-sm text-yellow-800 rounded-[30px] md:rounded-[40px]   bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
                             When adding items please ensure they are specific
                             i.e Holiday Clothes or New Gym Equipment. Items that
                             are non specific will be rejected and removed. Our
@@ -386,7 +386,7 @@ export default function Wishlist(props) {
                                         type="text"
                                         placeholder="Eg. Buy me a coffee"
                                         value={data.wishname}
-                                        className="w-full border-gray-300 focus:border-pink focus:ring-pink rounded-[40px]  shadow-sm px-3 py-3"
+                                        className="w-full border-gray-300 focus:border-pink focus:ring-pink rounded-[30px] md:rounded-[40px]  shadow-sm px-3 py-3"
                                         autoComplete="name"
                                         onChange={(e) =>
                                             setData("wishname", e.target.value)
@@ -409,7 +409,7 @@ export default function Wishlist(props) {
                                             placeholder="Eg. 50"
                                             value={data.price}
                                             step={`0.01`}
-                                            className="border-gray-300 border !px-6 py-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                                            className="border-gray-300 border !px-6 py-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
                                             autoComplete="price"
                                             onChange={(e) =>
                                                 setData("price", e.target.value)
@@ -438,7 +438,7 @@ export default function Wishlist(props) {
                                             data.item_url ||
                                             (item && item.item_url)
                                         }
-                                        className="w-full border-gray-300 border !px-6 py-3 rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                        className="w-full border-gray-300 border !px-6 py-3 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                                         autoComplete="item_url"
                                         onChange={(e) =>
                                             setData("item_url", e.target.value)
@@ -453,8 +453,8 @@ export default function Wishlist(props) {
 
                                     {thumbnail ? 
                                         <div className="relative">
-                                            <img className="max-h-[300px] w-full object-cover rounded-[40px]  border !border-gray-300" src={`https://ucarecdn.com/${thumbnail}/`} />
-                                            <button className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 text-sm rounded-[40px] " onClick={() => setThumbnail('')}>Remove</button>
+                                            <img className="max-h-[300px] w-full object-cover rounded-[30px] md:rounded-[40px]  border !border-gray-300" src={`https://ucarecdn.com/${thumbnail}/`} />
+                                            <button className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 text-sm rounded-[30px] md:rounded-[40px] " onClick={() => setThumbnail('')}>Remove</button>
                                         </div>
                                     :
                                     <>
@@ -517,13 +517,13 @@ export default function Wishlist(props) {
 
                             <p className="mt-8 pt-6 hidden   !border-t ">Choose Wish Type</p>
                             <div className=" hidden wishlistAccordian  mt-3 mb-6">
-                                <div className="w-full rounded-[40px]   bg-white p-2">
+                                <div className="w-full rounded-[30px] md:rounded-[40px]   bg-white p-2">
                                     <Disclosure defaultOpen={defaultKey === 0}>
                                         {({ open }) => (
                                             <>
                                                 <Disclosure.Button 
                                                     onClick={(e) => setSubs(0)}
-                                                    className="flex w-full justify-between rounded-[40px]   bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75 mb-2"
+                                                    className="flex w-full justify-between rounded-[30px] md:rounded-[40px]   bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75 mb-2"
                                                 >
                                                     <span className="flex items-center">
                                                         <span className="activedote mr-2"></span>
@@ -575,7 +575,7 @@ export default function Wishlist(props) {
                                             <>
                                                 <Disclosure.Button 
                                                     onClick={(e) => setSubs(1)}
-                                                    className="flex w-full justify-between rounded-[40px]   bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75"
+                                                    className="flex w-full justify-between rounded-[30px] md:rounded-[40px]   bg-pink-100 px-4 py-2 text-left text-sm font-medium text-pink-900 hover:bg-pink-200 focus:outline-none focus-visible:ring focus-visible:ring-pink-500 focus-visible:ring-opacity-75"
                                                 >
                                                     <span className="flex items-center">
                                                         <span className="activedote mr-2"></span>
@@ -680,7 +680,7 @@ export default function Wishlist(props) {
                                 </p>
                                
                                {item && item.content_file ? (
-                                     <div className="border !border-green-600 p-3 rounded-[40px]  flex justify-between items-center">
+                                     <div className="border !border-green-600 p-3 rounded-[30px] md:rounded-[40px]  flex justify-between items-center">
                                         <p className="text-green-600">Content File Added Successfully</p>
                                         <a target="_blank" className="text-green-600" href={`https://ucarecdn.com/${item && item.content_file}/`}>View</a>
                                      </div>
@@ -852,7 +852,7 @@ export default function Wishlist(props) {
                                             id="cats"
                                             type="text"
                                             ref={inputRef}
-                                            className="form-input px-2 py-2 border w-full rounded-[40px] "
+                                            className="form-input px-2 py-2 border w-full rounded-[30px] md:rounded-[40px] "
                                         />
                                         <div
                                             className="p-2 border cursor-pointer"

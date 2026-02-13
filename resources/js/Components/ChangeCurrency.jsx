@@ -80,7 +80,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <>
          <Menu as="div" className="relative inline-block text-left">
             <div>
-               <Menu.Button className="inline-flex justify-center w-full rounded-[40px]  border border-transparent px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+               <Menu.Button className="inline-flex justify-center w-full rounded-[30px] md:rounded-[40px]  border border-transparent px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
                   {selectedCurrency ? selectedCurrency : "N/A"}
                </Menu.Button>
             </div>

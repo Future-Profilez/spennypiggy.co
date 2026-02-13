@@ -48,19 +48,19 @@ export default function FounderProgramAnnouncement({ founderBonus }) {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                <div className="fading  bg-black p-3 rounded-[40px]  border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
+                                <div className="fading  bg-black p-3 rounded-[30px] md:rounded-[40px]  border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
                                     <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center shrink-0">
                                         <FaTrophy className="text-purple-900 text-xl" />
                                     </div>
                                     <span className="text-white font-medium text-lg">{config.bonusPercentage}% bonus on monthly earnings</span>
                                 </div>
-                                <div className="fading  bg-black p-3 rounded-[40px]  border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
+                                <div className="fading  bg-black p-3 rounded-[30px] md:rounded-[40px]  border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 wiggle">
                                     <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center shrink-0">
                                         <FaCrown className="text-white text-xl" />
                                     </div>
                                     <span className="text-white font-medium text-lg">Founder badge & recognition</span>
                                 </div>
-                                <div className="fading  bg-black p-3 rounded-[40px]  border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 md:col-span-2 wiggle">
+                                <div className="fading  bg-black p-3 rounded-[30px] md:rounded-[40px]  border !border-pink-500/30 flex items-center space-x-4 shadow-[4px_4px_0_0_#ec4899] hover:translate-y-[-4px] transition-transform duration-300 md:col-span-2 wiggle">
                                     <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shrink-0">
                                         <FaGift className="text-green-900 text-xl" />
                                     </div>

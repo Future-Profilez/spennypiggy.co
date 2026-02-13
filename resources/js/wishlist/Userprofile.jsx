@@ -33,7 +33,7 @@ export default function Userprofile({ IsloggedIn }) {
                             height={150}
                             width={150}
                             loading="eager"
-                            className="rounded-[40px]  !border-[3px] md:mt-[-40px] !border-[var(--mint)] !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px] md:!h-[170px] md:!w-[170px] md:min-w-[170px] md:!min-h-[170px] md:!max-w-[170px] md:!max-h-[170px]"
+                            className="rounded-[30px] md:rounded-[40px]  !border-[3px] md:mt-[-40px] !border-[var(--mint)] !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px] md:!h-[170px] md:!w-[170px] md:min-w-[170px] md:!min-h-[170px] md:!max-w-[170px] md:!max-h-[170px]"
                         />
 
                         {/* Waiting for approval (ORANGE) */}

@@ -58,28 +58,28 @@ export default function OrdersLists() {
       <>
 
       <div className='grid md:grid-cols-3 gap-4 mb-6 ' >
-         <div className='bg-white p-4 text-black rounded-[40px] ' >
+         <div className='bg-white p-4 text-black rounded-[30px] md:rounded-[40px] ' >
             <h2 className='font-bold text-2xl' >{claims}</h2>
             <p className='text-gray-500'>Claims</p>
          </div>
-         <div className='bg-white p-4 text-black rounded-[40px] ' >
+         <div className='bg-white p-4 text-black rounded-[30px] md:rounded-[40px] ' >
             <h2 className='font-bold text-2xl' >{formatMultiPrice(monthEarning, global_currency)}</h2>
             <p className='text-gray-500'>Last 30 Days</p>
          </div>
-         <div className='bg-white p-4 text-black rounded-[40px] ' >
+         <div className='bg-white p-4 text-black rounded-[30px] md:rounded-[40px] ' >
             <h2 className='font-bold text-2xl' >{formatMultiPrice(allEarning, global_currency)}</h2>
             <p className='text-gray-500'>All Time</p>
          </div>
       </div>
 
       <h2 className='font-GillSans uppercase text-xl mb-3 pt-3' >Recent Claims</h2>
-      <div  className="bg-white rounded-[40px]   px-0">
+      <div  className="bg-white rounded-[30px] md:rounded-[40px]   px-0">
          <div className="p-3 py-1 relative ">
             {orders &&  orders.map((item, index) =>
                <div key={index} className={`flex justify-between ${index > 0 ? "border-t" : "" } py-3 w-full items-center`}>
                      <Link href={`/${item.username}`} className="flex w-30">
                         <div className="p-relative flex-shrink-0">
-                              <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[40px]  object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
+                              <img className="border border-gray-200 h-12 w-12 min-w-12 min-h-12 rounded-[30px] md:rounded-[40px]  object-cover" src={item.avatar_url || userdefaultphoto} alt='user' />
                         </div>
                         <div className=" ml-3 w-full w-[40%] flex-vert-center">
                            <div>
@@ -126,7 +126,7 @@ export default function OrdersLists() {
                            leave="transition ease-in duration-75"
                            leaveFrom="transform opacity-100 scale-100"
                            leaveTo="transform opacity-0 scale-95" >
-                        <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-[40px]  overflow-hidden bg-white shadow-xl ring-1 ring-black ring-opacity-5">
+                        <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-[30px] md:rounded-[40px]  overflow-hidden bg-white shadow-xl ring-1 ring-black ring-opacity-5">
                            <OrderDetail date={<TimeFormat dateString={item.created_at} />} item={item} text={'View Info'} />
                         </Menu.Items>
                         </Transition>

@@ -7,7 +7,7 @@ def process_file(filepath):
         content = f.read()
 
     # Regex to find rounded-[...px]
-    # We want to replace it with rounded-[40px]  (which is 40px in config)
+    # We want to replace it with rounded-[30px] md:rounded-[40px]  (which is 40px in config)
     # But we need to be careful not to break things.
     
     def replace_rounded(match):
@@ -22,13 +22,13 @@ def process_file(filepath):
                 return match.group(0) # Keep as is
             
             # For everything else, user wants approx 40px consistency.
-            return "rounded-[40px] "
+            return "rounded-[30px] md:rounded-[40px] "
         except ValueError:
             return match.group(0)
 
     new_content = re.sub(r'rounded-\[(\d+)px\]', replace_rounded, content)
     
-    # Also replace rounded-[40px] , rounded-3xl with rounded-[40px]  to standardise usage?
+    # Also replace rounded-[30px] md:rounded-[40px] , rounded-3xl with rounded-[30px] md:rounded-[40px]  to standardise usage?
     # Or just leave them since they map to the same 40px in config now.
     # Leaving them is safer to minimize diff, but standardising is cleaner.
     # User asked for "consistant" design, code consistency is a plus.

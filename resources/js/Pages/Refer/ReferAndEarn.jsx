@@ -93,7 +93,7 @@ export default function ReferAndEarn({
                 <div className="containerbox">
                     {/* ================= HEADER ================= */}
                     {/* ================= HEADER + REFERRAL LINK (MERGED) ================= */}
-                    <div className="mb-6 border-[3px] border-black shadow-pink rounded-[40px]  overflow-hidden">
+                    <div className="mb-6 border-[3px] border-black shadow-pink rounded-[30px] md:rounded-[40px]  overflow-hidden">
                         {/* Mac style bar */}
                         <div className="p-4 pinkbg flex items-center border-b-[3px] border-black">
                             <span className="border-black border-2 bg-red-700 mr-2 w-5 h-5 rounded-full block"></span>
@@ -122,7 +122,7 @@ export default function ReferAndEarn({
                             </p>
 
                             {/* Referral Link Box */}
-                            <div className="border-2 border-black rounded-[40px]   p-4 md:p-5">
+                            <div className="border-2 border-black rounded-[30px] md:rounded-[40px]   p-4 md:p-5">
                                 <h2 className="text-lg font-GillSans uppercase mb-3">
                                     Your Referral Link
                                 </h2>
@@ -134,7 +134,7 @@ export default function ReferAndEarn({
                                         readOnly
                                         value={hasReferral ? referralLink : ""}
                                         placeholder="Click Generate to create your referral link"
-                                        className={`w-full px-4 py-3 md:py-4 pr-[220px] rounded-[40px]  border-2 border-black text-sm
+                                        className={`w-full px-4 py-3 md:py-4 pr-[220px] rounded-[30px] md:rounded-[40px]  border-2 border-black text-sm
                                         ${
                                             hasReferral
                                                 ? "bg-white text-black"

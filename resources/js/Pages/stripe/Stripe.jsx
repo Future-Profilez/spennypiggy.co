@@ -210,7 +210,7 @@ export default function Stripe(props) {
                         )}
 
                         {/* Merchant of Record Agreement Card */}
-                        <div className="bg-white rounded-[40px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
+                        <div className="bg-white rounded-[30px] md:rounded-[40px]   shadow-lg border border-gray-200 overflow-hidden mb-8">
                             <div className="p-8">
                                 {/* Agreement Header */}
                                 <div className="text-center mb-8">
@@ -227,7 +227,7 @@ export default function Stripe(props) {
 
                                 {/* Agreement Content */}
                                 <div className="space-y-6 mb-8">
-                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[40px]  p-6">
+                                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[30px] md:rounded-[40px]  p-6">
                                         <p className="text-gray-700 text-lg text-center font-semibold">
                                             I confirm that I understand and
                                             agree that I am the Merchant of
@@ -388,7 +388,7 @@ export default function Stripe(props) {
                                         </div>
                                     </div>
 
-                                    <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-[40px]  p-6">
+                                    <div className="bg-gradient-to-r from-green-50 to-mint/20 rounded-[30px] md:rounded-[40px]  p-6">
                                         <p className="text-gray-700 text-center font-semibold">
                                             By continuing, I confirm that I have
                                             read, understood, and agree to this
@@ -398,7 +398,7 @@ export default function Stripe(props) {
                                 </div>
 
                                 {/* Confirmation Checkbox */}
-                                <div className="bg-gray-50 rounded-[40px]  p-6 mb-8">
+                                <div className="bg-gray-50 rounded-[30px] md:rounded-[40px]  p-6 mb-8">
                                     <label
                                         htmlFor="mor_agreement"
                                         className="flex items-start space-x-3 cursor-pointer"
@@ -588,7 +588,7 @@ export default function Stripe(props) {
                     )}
 
                     {/* Main Content Card */}
-                    <div className="whbg rounded-[40px]  overflow-hidden">
+                    <div className="whbg rounded-[30px] md:rounded-[40px]  overflow-hidden">
                         <div className="">
                             {/* Payment Processor Guidelines */}
                             <div className="mb-8">
@@ -604,7 +604,7 @@ export default function Stripe(props) {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[40px]   p-6 mb-6">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-[30px] md:rounded-[40px]   p-6 mb-6">
                                     <p className="text-gray-700 leading-relaxed">
                                         <strong className="text-voilet">
                                             Stripe supports adult creators
@@ -662,7 +662,7 @@ export default function Stripe(props) {
                                     ].map((item, index) => (
                                         <div
                                             key={index}
-                                            className="bg-white border-2 border-red-100 rounded-[40px]  p-3 hover:border-red-200 transition-colors"
+                                            className="bg-white border-2 border-red-100 rounded-[30px] md:rounded-[40px]  p-3 hover:border-red-200 transition-colors"
                                         >
                                             <div className="flex items-center  gap-2">
                                                 <span className="text-2xl">
@@ -684,7 +684,7 @@ export default function Stripe(props) {
 
                             {/* Country Selection */}
                             <div className="mb-2">
-                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-[40px]   p-6">
+                                <div className="bg-gradient-to-r from-mint/10 to-voilet/10 rounded-[30px] md:rounded-[40px]   p-6">
                                     <h3 className="text-normal text-center font-bold text-gray-800 mb-2 capitalize">
                                         Select Your Country
                                     </h3>
@@ -720,7 +720,7 @@ export default function Stripe(props) {
                                             </p>
                                         </div>
 
-                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-[40px]  p-6 mb-6">
+                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-[30px] md:rounded-[40px]  p-6 mb-6">
                                             <p className="text-gray-700 mb-4">
                                                 To comply with Stripe's new
                                                 requirements, you must be
@@ -728,12 +728,12 @@ export default function Stripe(props) {
                                             </p>
 
                                             <div className="grid grid-cols-1 gap-2 mb-4">
-                                                <div className="bg-white rounded-[40px]  p-2 text-center border-2 border-voilet">
+                                                <div className="bg-white rounded-[30px] md:rounded-[40px]  p-2 text-center border-2 border-voilet">
                                                     <h3 className="font-bold text-voilet text-normal">
                                                         MEMBERSHIP
                                                     </h3>
                                                 </div>
-                                                <div className="bg-white rounded-[40px]  p-2 text-center border-2 border-pink">
+                                                <div className="bg-white rounded-[30px] md:rounded-[40px]  p-2 text-center border-2 border-pink">
                                                     <h3 className="font-bold text-pink text-normal">
                                                         BILLS
                                                     </h3>
@@ -753,7 +753,7 @@ export default function Stripe(props) {
                                             </div>
                                         </div>
 
-                                        <div className="bg-gray-50 rounded-[40px]  p-6 mb-6">
+                                        <div className="bg-gray-50 rounded-[30px] md:rounded-[40px]  p-6 mb-6">
                                             <label
                                                 htmlFor="termaccept"
                                                 className="flex items-start space-x-3 cursor-pointer"
