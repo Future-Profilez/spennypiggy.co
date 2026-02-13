@@ -155,7 +155,9 @@ class Helpers
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);
         
-        // Stripe fees (2.9% + $0.30 / 20p / etc.)
+        // Stripe fees (Variable based on card/country, used here for estimation to cover costs)
+        // Note: The actual fee is deducted by Stripe at transaction time.
+        // We use a standard rate (e.g. 2.9% + 30c) to ensure the gross-up covers most scenarios.
         $stripeFeeRate = 0.029;
         $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
         

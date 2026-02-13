@@ -73,7 +73,7 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
               <img
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 rounded-[16px]" 
+                className="img-fluid bg-gray-200 rounded-[11px]" 
                 loading="lazy"
                 decoding="async"
                 style={{

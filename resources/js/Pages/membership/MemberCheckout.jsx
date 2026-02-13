@@ -136,15 +136,15 @@ export default function SubCheckout(props) {
         <>
             <Authenticated auth={auth.user} user={user}>
                 <Head title={`Join - ${membership?.level} membership`} />
-                <div className={`px-0 mb-3 lg:px-2`}>
-                    <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-[40px]  md:rounded-[40px] ">
-                        <div className="cartMain">
-                            <div className="md:flex w-full gap-5">
+                <div className={`bg-white py-12 px-0  lg:px-2`}>
+                    <div className="containerbox mx-auto">
+                        <div className="cartMain max-w-[800px] mx-auto">
+                            <div className="md:flex w-full gap-10 mb-10">
                                 <div className="w-full md:max-w-[40%]">
                                     <Membership hidebtn={true} item={membership} />
                                 </div>
                                 <div className="pt-6">
-                                    <h2 className="pb-1 wishtitle">
+                                    <h2 className="pb-1 text-3xl font-bold">
                                         Membership Basket for{" "}
                                         {membership?.user?.name || " "}
                                         <Link
@@ -157,17 +157,17 @@ export default function SubCheckout(props) {
                                             @{membership?.user?.username || ""}
                                         </Link>
                                     </h2>
-                                    <p className="pb-4">
+                                    <p className="pb-4 mt-3">
                                         You are about to join {membership?.level}{" "}
                                         membership.
                                     </p>
                                     <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            <li className="flex justify-between  border p-2">
+                                            <li className="flex justify-between  border p-3">
                                                 <span className="min-w-[100px] block">Subtotal :</span>
                                                 <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
                                             </li>
-                                            {/* <li className="flex justify-between   border p-2">
+                                            <li className="flex justify-between   border p-3">
                                                 <span className="min-w-[100px] block">Platform Fee :</span>
                                                 <div>
                                                     <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
@@ -179,9 +179,9 @@ export default function SubCheckout(props) {
                                                     </p>
                                                     </button>
                                                 </div>
-                                            </li> */}
+                                            </li>
                                             {vat_amount && vat_amount > 0 ? (
-                                                <li className="flex justify-between   border p-2">
+                                                <li className="flex justify-between   border p-3">
                                                     <span className="min-w-[100px] block">VAT :</span>
                                                     <strong>{formatMultiPrice(
                                                             vat_amount || "",
@@ -192,21 +192,15 @@ export default function SubCheckout(props) {
                                             ) : (
                                                 ""
                                             )}
-                                            <li className="flex justify-between border p-2">
+                                            <li className="flex justify-between border p-3">
                                                 <span className="min-w-[100px] block">Total :</span>
-                                                <strong>{formatMultiPrice(
-                                                    membership?.tax_amount +
-                                                        membership?.price +
-                                                        vat_amount || "",
-                                                    membership && membership?.currency, 'adminfee'
-                                                )}</strong>
+                                                <strong>{formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}</strong>
                                             </li>
                                         </ul>
                                     </div>
                                 </div>
                                 
                             </div>
-
                             <div className="addMessage mt-5">
                                 <ul className="flex flex-wrap">
                                     <li className="w-full">
@@ -219,24 +213,17 @@ export default function SubCheckout(props) {
                                         ></textarea> 
                                         <span className="text-xs text-red-600"> {errors.message}</span>
                                     </li>
+
+
                                     <li className="w-full mt-3">
-                                        <div className="flex flex-wrap">
+                                        <div className="grid md:grid-cols-2 gap-4">
                                             <div className="w-full mb-4">
-                                                <label className=" text-left">
+                                                <label className=" text-left ">
                                                     Email{" "}
                                                 </label>
-                                                <p className="text-sm text-gray-500 mb-1">
-                                                    Your e-mail remains
-                                                    private.
-                                                </p>
+                                                
                                                 <input
-                                        className={`${
-                                            auth &&
-                                            auth?.user &&
-                                            auth?.user?.email
-                                                ? "disabled"
-                                                : ""
-                                        } border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
+                                                    className={`${auth && auth?.user && auth?.user?.email ? "disabled":""} mt-2 border-gray-300 border rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
                                                     disabled={
                                                         auth &&
@@ -254,16 +241,20 @@ export default function SubCheckout(props) {
                                                     type="email"
                                                     placeholder="Enter Your Email..."
                                                 />
-                                                <span className="text-xs text-red-600">
+                                                <span className=" text-xs text-red-600">
                                                     {errors.email}
                                                 </span>
+                                                <p className="mt-2 text-sm text-gray-500 mb-1">
+                                                    Your e-mail remains
+                                                    private.
+                                                </p>
                                             </div>
                                             <div className="w-full mb-4">
                                                 <label className=" text-left">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
+                                                    className="mt-2 border-gray-300 border !rounded-[20px] p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 "
                                                     onChange={(e) =>
                                                         setData(
                                                             "name",
@@ -444,7 +435,7 @@ export default function SubCheckout(props) {
                                     ) : null}
                                 <div className="mt-4 flex items-center justify-center">
                                     <button
-                                         onClick={handleSubmit}
+                                        onClick={handleSubmit}
                                         className={`${
                                             !data.agree ||
                                             processing ||
@@ -453,7 +444,7 @@ export default function SubCheckout(props) {
                                             !card_capabilities
                                                 ? "disabled"
                                                 : ""
-                                        } btn-pink md !px-8 mt-3 text-center`}
+                                        } button-pink btn-shadow shadow-black text-white md !px-8 mt-3 text-center`}
                                         disabled={
                                             !data.agree ||
                                             processing ||
@@ -464,7 +455,7 @@ export default function SubCheckout(props) {
                                     >
                                         {processing || checking
                                             ? "Processing..."
-                                            : "Join Now"}
+                                            : `${membership?.level == "lifetime" ? `Join Now for ${formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}` : `Subscribe Now for ${formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}`}`}
                                     </button>
                                     
                                 </div>
