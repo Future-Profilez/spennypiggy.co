@@ -101,9 +101,9 @@ export default function ActionRequired({ requirements = [] }) {
                     >
                         <div className="flex">
                             {/* Accent Bar */}
-                            <div className={`w-1.5 ${reqColors.bgSolid}`}></div>
+                            <div className={`w-[3px] md:w-1.5 ${reqColors.bgSolid}`}></div>
                             
-                            <div className="flex-1 p-8">
+                            <div className="flex-1 p-4 md:p-6 lg:p-8">
                                 {/* Header */}
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
@@ -133,7 +133,7 @@ export default function ActionRequired({ requirements = [] }) {
                                 </p>
 
                                 {/* Action Box */}
-                                <div className="bg-gray-50 rounded-[30px] md:rounded-[40px]  p-6 mb-6 border border-gray-100">
+                                <div className="bg-gray-50 rounded-[30px] md:rounded-[40px] p-4 md:p-6 mb-6 border border-gray-100">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex-1">
                                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Required Action</span>
@@ -161,12 +161,12 @@ export default function ActionRequired({ requirements = [] }) {
                                     <a
                                         onClick={() => setLoading(!loading)}
                                         href={requirement.action_url}
-                                        className={`block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
+                                        className={`block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
                                     >
                                         {loading ? "Processing..." : "Resolve Issue Now"}
                                     </a>
                                 ) : (
-                                    <div className="w-full text-center bg-gray-100 text-gray-400 font-gulfs uppercase text-lg py-3 px-6 rounded-full cursor-not-allowed">
+                                    <div className="w-full text-center bg-gray-100 text-gray-400 font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full cursor-not-allowed">
                                         Please Wait or Contact Support
                                     </div>
                                 )}

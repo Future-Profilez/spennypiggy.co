@@ -38,7 +38,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                     <style>{`
                         .check-icon.checked svg path {fill: #139700 !important;}
                     `}</style>
-                    <div className="profileSteps bg-white border border-gray-400 rounded-[30px] md:rounded-[40px]   mb-4  p-3 lg:!p-6" >
+                    <div className="profileSteps bg-white border border-gray-400 rounded-[30px] md:rounded-[40px]   mb-4  p-3 lg:!p-6 sticky top-0 z-10" >
                         <h2 className="mb-1 text-[20px] font-bold ">Let’s get you started</h2>
                         <p className="text-gray-500 mb-3">Successful creators complete these steps, although not all required.</p>
                         <CustomProgressBar now={profile && profile.total} max={9} />

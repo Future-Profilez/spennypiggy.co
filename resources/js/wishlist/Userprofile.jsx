@@ -175,7 +175,7 @@ export default function Userprofile({ IsloggedIn }) {
                                 : (
                                       <EditProfile
                                           user={user}
-                                          classes={"pinkbg uppercase text-lg text-white text-sm  font-gulfs rounded-full px-4 py-2"}
+                                          classes={"pinkbg btn-shadow uppercase text-lg text-white text-sm !font-light font-gulfs rounded-full px-4 py-2"}
                                           global_currency={global_currency}
                                       />
                                   ) || ""}
