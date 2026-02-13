@@ -284,12 +284,13 @@ export default function Dashboard(props) {
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
-                                            <p>
-                                                {" "}
+                                           
                                                 {AuthUserStripeConnected !== 1
-                                                    ? "Please complete your Stripe account setup to add your wishlist."
-                                                    : ""}{" "}
-                                            </p>
+                                                    ?
+                                                     <p className="!mb-6">
+                                                     Please complete your Stripe account setup to add your wishlist.
+                                                    </p>
+                                                    : ""} 
                                             <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
                                                 {wishOptions ? (
                                                     <div>

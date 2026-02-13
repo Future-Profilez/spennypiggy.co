@@ -111,31 +111,44 @@ export default function TabbedDashboard(props) {
                     </div>
                 </div>
 
-                {/* Profile Tabs Navigation */}
-                <ProfileTabs
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    showAddButton={IsloggedIn}
-                    onAddClick={handleAddClick}
-                />
+                {/* Profile Tabs Navigation and Content */}
+                <div className="container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
+                    {/* Main Content Area */}
+                    <div className="flex-grow lg:w-2/3">
+                        <ProfileTabs
+                            activeTab={activeTab}
+                            onTabChange={handleTabChange}
+                            showAddButton={IsloggedIn}
+                            onAddClick={handleAddClick}
+                        />
 
-                {/* Tab Content */}
-                <TabContent
-                    activeTab={activeTab}
-                    user={user}
-                    sLinks={sLinks}
-                    wishitems={wishitems}
-                    IsloggedIn={IsloggedIn}
-                    username={username}
-                    selectedCategory={selectedCategory}
-                    wish_categories={wish_categories}
-                    gifts={gifts}
-                    giftsloading={giftsloading}
-                    currency={global_currency}
-                    auth={auth?.user}
-                    itemid={null}
-                    setuped={auth?.user?.stripe_details_submitted === 1}
-                />
+                        <TabContent
+                            activeTab={activeTab}
+                            user={user}
+                            sLinks={sLinks}
+                            wishitems={wishitems}
+                            IsloggedIn={IsloggedIn}
+                            username={username}
+                            selectedCategory={selectedCategory}
+                            wish_categories={wish_categories}
+                            gifts={gifts}
+                            giftsloading={giftsloading}
+                            currency={global_currency}
+                            auth={auth?.user}
+                            itemid={null}
+                            setuped={auth?.user?.stripe_details_submitted === 1}
+                        />
+                    </div>
+
+                    {/* Right Sidebar */}
+                    {IsloggedIn && sLinks && sLinks.length > 0 && (
+                        <div className="lg:w-1/3">
+                            <Suspense fallback={<div></div>}>
+                                <ProfileSteps IsloggedIn={IsloggedIn} sLinks={sLinks} />
+                            </Suspense>
+                        </div>
+                    )}
+                </div>
 
                 {/* Bottom Navigation */}
                 <BottomNavigation activeTab="home" />
