@@ -44,7 +44,7 @@ export default function GifterMembership(props) {
   const Item = ({key, w}) => { 
 
     const amount =(w && +w.amount) + ( w && +w.tax)
-    return <div className='wish-grant my-3 pb-3 box rounded-xl  p-3' key={key} >
+    return <div className='wish-grant my-3 pb-3 box rounded-[40px]   p-3' key={key} >
         <div className='flex justify-between items-center' >
           <Avatar 
           role={w && w.owner && w.owner.role}
@@ -55,8 +55,8 @@ export default function GifterMembership(props) {
             src={w && w.membership && w.membership.perma_link}
           /> 
           <div className='text-center'>
-            <p className='text-uppercase mb-1 text-small' >{w && w?.membership && w?.membership.level}</p>
-            <div className="badge bg-green-600 text-uppercase" > 
+            <p className='uppercase mb-1 text-small' >{w && w?.membership && w?.membership.level}</p>
+            <div className="badge bg-green-600 uppercase" > 
             {w && w?.membership && w?.membership.level == 'lifetime' ? "Life Time" : 'Monthly'}
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function GifterMembership(props) {
 
   return (
     <div className={data && data.length < 1 && !loading ? 'd-none' : ''  } >
-      <div className='box rounded-xl  p-4 mt-4 mb-4' >
+      <div className='box rounded-[40px]   p-4 mt-4 mb-4' >
         <h3 className='text-large text-dark title mb-2' >Active Memberships </h3>
           {data && data.map((d, i)=>{ 
             return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

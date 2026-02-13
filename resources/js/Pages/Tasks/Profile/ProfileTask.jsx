@@ -18,7 +18,7 @@ export default function ProfileTask({ task, IsloggedIn }) {
     };
 
     return (
-        <li className="bg-white rounded-[25px] mb-3 p-4 hover:bg-gray-100 transition-colors border-b-2 border-gray-100 last:border-0">
+        <li className="bg-white rounded-[35px] mb-3 p-6 hover:bg-gray-100 transition-colors border-b-2 border-gray-100 last:border-0">
                 <div className="md:flex justify-between items-center hover:!text-pink-500">
                     <div className="">
                         <Link href={url} className="text-xl text-gray-900 line-clamp-1 font-bold font-poppins">

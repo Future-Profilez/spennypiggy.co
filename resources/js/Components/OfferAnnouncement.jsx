@@ -45,7 +45,7 @@ export default function OfferAnnouncement({
     if (!isVisible) return null;
 
     return <>
-    <div className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
+    <div className="my-2 mb-4 block w-full relative overflow-hidden bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 rounded-[40px]  shadow-lg p-6 text-white">
             <button
                 onClick={handleDismiss}
                 className="absolute !text-[20px] z-1 top-1 right-1 py-[3px] px-[10px] rounded-full hover:bg-white/20 transition-all"

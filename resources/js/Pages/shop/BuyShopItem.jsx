@@ -22,6 +22,7 @@ export default function BuyShopItem({
     selectedVarient,
     country,
     shippingPrice,
+    card_capabilities,
 }) {
     const { formatMultiPrice } = PriceFormat();
     const { global_currency, auth, turnstileSiteKey, shop } = usePage().props;
@@ -96,6 +97,10 @@ export default function BuyShopItem({
     };
 
     const buyItem = (token) => {
+        if (!card_capabilities) {
+             errorAlert("This creator cannot accept payments at the moment.");
+             return false;
+        }
         if (email === "" || name === "") {
             errorAlert("Please enter your name and email");
             return false;
@@ -228,9 +233,9 @@ export default function BuyShopItem({
                             <h2 className="text-center font-bold text-xl py-2">
                                 Thank you for your purchase!
                             </h2>
-                            <div className="border border-gray-200 p-3 rounded-[20px] mt-4">
-                                <div className="mb-3 shop-item flex justify-between w-full items-center bg-white rounded-xl">
-                                    <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-xl items-center">
+                            <div className="border border-gray-200 p-3 rounded-[40px]  mt-4">
+                                <div className="mb-3 shop-item flex justify-between w-full items-center bg-white rounded-[40px] ">
+                                    <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[40px]  items-center">
                                         <Link
                                             href={`/shop/item/${slug(s.name)}/${
                                                 s.uuid
@@ -238,7 +243,7 @@ export default function BuyShopItem({
                                             className="shop-img w-12 h-12 min-w-12"
                                         >
                                             <img
-                                                className="w-full h-full object-cover rounded-xl "
+                                                className="w-full h-full object-cover rounded-[40px]  "
                                                 src={s.perma_link}
                                                 alt=""
                                             />
@@ -281,14 +286,14 @@ export default function BuyShopItem({
                                             onChange={(e) =>
                                                 setReply(e.target.value)
                                             }
-                                            className="text-black bg-gray-100 rounded-xl  w-full mt-2 px-3 py-2 border border-gray-200"
+                                            className="text-black bg-gray-100 rounded-[40px]   w-full mt-2 px-3 py-2 border border-gray-200"
                                             type="text"
                                             placeholder="Ask your question ??"
                                         />
                                         {reply ? (
                                             <button
                                                 onClick={sendReply}
-                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[20px]"
+                                                className="pinkbg text-center text-white px-3 py-1 mt-3 mx-auto block rounded-[40px] "
                                             >
                                                 {posting ? "Posting" : "Post"}
                                             </button>
@@ -311,7 +316,7 @@ export default function BuyShopItem({
                                 </p>
                                 <button
                                     onClick={handleCopy}
-                                    className="bg-gray-200 rounded-[30px] px-4 py-2 mx-auto block mt-3 text-sm"
+                                    className="bg-gray-200 rounded-[40px]  px-4 py-2 mx-auto block mt-3 text-sm"
                                 >
                                     Copy Link
                                 </button>
@@ -351,8 +356,8 @@ export default function BuyShopItem({
                                     </p>
                                 )}
                             </div>
-                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-xl">
-                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-xl items-center">
+                            <div className="my-3 shop-item flex justify-between w-full items-center bg-white rounded-[40px] ">
+                                <div className="shop-item-user w-full flex bg-gray-100 p-3 rounded-[40px]  items-center">
                                     <Link
                                         href={`/shop/item/${slug(s.name)}/${
                                             s.uuid
@@ -360,7 +365,7 @@ export default function BuyShopItem({
                                         className="shop-img w-12 h-12 min-w-12"
                                     >
                                         <img
-                                            className="w-full h-full object-cover rounded-xl "
+                                            className="w-full h-full object-cover rounded-[40px]  "
                                             src={s.perma_link}
                                             alt=""
                                         />
@@ -382,7 +387,7 @@ export default function BuyShopItem({
                             </div>
                             {/* <p className='mb-1' >Enter a fair price (optional)</p>
                <input required onChange={enterFairPrice} min={s.price}
-               className="w-full border-gray-300 border px-4 py-2 rounded-xl focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
+               className="w-full border-gray-300 border px-4 py-2 rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 mb-3" placeholder={`+${s.price}`} type="number" /> */}
 
                             <div className="form-field mb-3">
                                 <p className="mb-1">Name</p>
@@ -391,7 +396,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.name ? true : false
                                     }
-                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded"
+                                    className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded"
                                     defaultValue={auth && auth.user?.name}
                                     onChange={(e) => setName(e.target.value)}
                                     type="text"
@@ -405,7 +410,7 @@ export default function BuyShopItem({
                                     disabled={
                                         auth && auth.user?.email ? true : false
                                     }
-                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                    className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                     defaultValue={auth && auth.user?.email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     type="email"
@@ -424,7 +429,7 @@ export default function BuyShopItem({
                                             Shipping Information
                                         </p>
                                         <select
-                                            className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                            className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                             name="country"
                                             onChange={handleShipInput}
                                         >
@@ -445,7 +450,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                             onChange={handleShipInput}
                                             name="street_address"
                                             type="text"
@@ -455,7 +460,7 @@ export default function BuyShopItem({
                                     <div className="mb-3">
                                         <input
                                             required
-                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                            className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                             onChange={handleShipInput}
                                             name="city"
                                             type="text"
@@ -466,7 +471,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                                 onChange={handleShipInput}
                                                 name="state"
                                                 type="text"
@@ -476,7 +481,7 @@ export default function BuyShopItem({
                                         <div className="mb-3">
                                             <input
                                                 required
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
                                                 onChange={handleShipInput}
                                                 name="postal_code"
                                                 type="email"
@@ -498,11 +503,18 @@ export default function BuyShopItem({
                                 />
                             ) : null}
 
+                            {!card_capabilities && (
+                                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                                    <strong className="font-bold">Payment Unavailable: </strong>
+                                    <span className="block sm:inline">This creator cannot receive payments yet.</span>
+                                </div>
+                            )}
+
                             <button
-                                disabled={checking || (turnstileSiteKey && !captchaToken)}
+                                disabled={checking || (turnstileSiteKey && !captchaToken) || !card_capabilities}
                                 onClick={executeCaptcha}
                                 className={`${
-                                    checking || (turnstileSiteKey && !captchaToken) ? "opacity-[0.5] disabled" : ""
+                                    checking || (turnstileSiteKey && !captchaToken) || !card_capabilities ? "opacity-[0.5] disabled" : ""
                                 }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
                             >
                                 {checking ? "Buying.." : "Pay"}

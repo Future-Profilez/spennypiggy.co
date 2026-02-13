@@ -286,6 +286,21 @@ Route::middleware('auth')->group(function () {
         Route::post('save_social_links', [SocialLinksController::class, 'saveSocialLinks'])->name('save_social_links');
     });
 
+    // Stripe routes - accessible without full identity verification to allow onboarding
+    Route::middleware('mustHaveToVerify')->group(function () {
+        Route::prefix("stripe")->name("stripe.")->group(function () {
+            Route::get("/authorize", [StripeController::class, "index"])->name("index");
+            Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
+            // Merchant of Record Consent Routes
+            Route::post('/mor-consent', [StripeController::class, 'storeMorConsent'])->name('mor-consent.store');
+
+            Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
+            Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
+            Route::get("/enable_card_payments", [StripeController::class, "enableCardPayments"])->name("enable.card.payments");
+            Route::get("/upgrade-express-account", [StripeController::class, "upgradeStripeAccount"])->name("upgrade.account");
+        });
+    });
+
     Route::middleware(['mustCompletedStripeIdentity'])->group(function () {
         Route::middleware('mustHaveToVerify')->group(function () {
             Route::get('gifter-card-verification', [RegisteredUserController::class, 'gifterCardVerification'])->name('gifter.card.verification');
@@ -294,17 +309,7 @@ Route::middleware('auth')->group(function () {
             Route::get('update-vat/{percent}', [AuthenticatedSessionController::class, 'updateVat'])->name('updateVat');
             Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-            Route::prefix("stripe")->name("stripe.")->group(function () {
-                Route::get("/authorize", [StripeController::class, "index"])->name("index");
-                Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
-                // Merchant of Record Consent Routes
-                Route::post('/mor-consent', [StripeController::class, 'storeMorConsent'])->name('mor-consent.store');
-
-                Route::get("/response", [StripeController::class, "connectReturn"])->name("return");
-                Route::post("/login", [StripeController::class, "loginToStripe"])->name("login");
-                Route::get("/enable_card_payments", [StripeController::class, "enableCardPayments"])->name("enable.card.payments");
-                Route::get("/upgrade-express-account", [StripeController::class, "upgradeStripeAccount"])->name("upgrade.account");
-            });
+            
             Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
             Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
             Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
@@ -604,7 +609,7 @@ Route::middleware('auth')->group(function () {
         Route::get('check-cart-exist/{creator_id}', [WishitemController::class, 'checkCartExist'])->name('check.cart.exist');
         Route::post('handle-rye-product-payment', [WishitemController::class, 'handleRyeProductPayment'])->name('handle.rye.product.payment')->middleware('mustCompletedCardVerification');
         Route::get('remove-cart/{cart_id}', [WishitemController::class, 'removeCart'])->name('remove.cart');
-        Route::get('rye-success-payment/{uuid}/{orderUuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
+        Route::get('rye-success-payment/{uuid}', [WishitemController::class, 'ryeSuccessPayment'])->name('rye.success.payment');
         Route::get('rye-cancel-payment/{uuid}', [WishitemController::class, 'ryeCancelPayment'])->name('rye.cancel.payment');
         Route::post('store-product-order-details', [WishitemController::class, 'storeProductOrderDetails'])->name('store.product.order.details');
         // rye product routes end

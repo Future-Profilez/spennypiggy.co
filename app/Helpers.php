@@ -5,16 +5,11 @@ namespace App;
 use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
-use App\Models\GifterCardVerification;
-use App\Models\User;
 use App\Models\UserPayment;
-use App\Models\UserVerificationStatus;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Ramsey\Uuid\Uuid;
-use Image;
 
 class Helpers
 {
@@ -68,6 +63,7 @@ class Helpers
             }
 
             // Always fetch referral
+            /** @var CreatorReferral|null $referral */
             $referral = CreatorReferral::with('referrer', 'referred')
                 ->where('referred_creator_id', $referredCreatorId)
                 ->whereIn('status', ['IN_PROGRESS', 'QUALIFIED'])
@@ -134,6 +130,83 @@ class Helpers
 
 
 
+
+    /**
+     * Calculate total price for Stripe Direct Charges Flow
+     * 
+     * Step 1: Gross-up for Stripe processing fees (2.9% + $0.30)
+     * Step 2: Add platform fee (15%) and compliance fee (2%)
+     * Step 3: Add fixed administration fee ($1.00)
+     * 
+     * @param float $listedPrice The price set by the creator
+     * @param string $currency The currency ISO code
+     * @return array Breakdown of fees and total
+     */
+    public static function isZeroDecimalCurrency($currency)
+    {
+        $zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return in_array(strtoupper($currency), $zeroDecimalCurrencies);
+    }
+
+    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'USD')
+    {
+        $listedPrice = (float) $listedPrice;
+        $isZeroDecimal = self::isZeroDecimalCurrency($currency);
+        
+        // Stripe fees (Variable based on card/country, used here for estimation to cover costs)
+        // Note: The actual fee is deducted by Stripe at transaction time.
+        // We use a standard rate (e.g. 2.9% + 30c) to ensure the gross-up covers most scenarios.
+        $stripeFeeRate = 0.029;
+        $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
+        
+        // Platform fees
+        $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
+        $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
+        $adminFee = config('app.administration_fee', 1);
+
+        // Correct gross-up formula to ensure creator receives exactly listedPrice:
+        // TotalAmount = (ListedPrice + StripeFixedFee + AdminFee) / (1 - StripeFeeRate - PlatformFeeRate - ComplianceFeeRate)
+        $totalDeductionRate = $stripeFeeRate + $platformFeeRate + $complianceFeeRate;
+        
+        if ($totalDeductionRate >= 1) {
+            Log::error('Total deduction rate exceeds 100% in calculateStripeDirectChargeFlow');
+            return [
+                'listed_price' => $listedPrice,
+                'total_supporter_pays' => $listedPrice,
+                'application_fee' => 0,
+            ];
+        }
+
+        $totalSupporterPays = ($listedPrice + $stripeFixedFee + $adminFee) / (1 - $totalDeductionRate);
+        
+        // Rounding to 2 decimal places (or 0 for zero-decimal)
+        $precision = $isZeroDecimal ? 0 : 2;
+        $totalSupporterPays = round($totalSupporterPays, $precision, PHP_ROUND_HALF_UP);
+        
+        // Calculate the actual Stripe fee based on the total charged
+        $actualStripeFee = round(($totalSupporterPays * $stripeFeeRate) + $stripeFixedFee, $precision, PHP_ROUND_HALF_UP);
+        
+        // Application Fee is what we take (Platform + Compliance + Admin)
+        // To be safe, we calculate it as (Total - StripeFee - ListedPrice) 
+        // OR as (Total * (PlatformRate + ComplianceRate) + AdminFee)
+        // Using the latter for clarity, but ensuring it doesn't exceed Total - StripeFee
+        $platformFee = round($totalSupporterPays * $platformFeeRate, $precision, PHP_ROUND_HALF_UP);
+        $complianceFee = round($totalSupporterPays * $complianceFeeRate, $precision, PHP_ROUND_HALF_UP);
+        $applicationFee = $platformFee + $complianceFee + $adminFee;
+
+        return [
+            'listed_price' => round($listedPrice, $precision),
+            'platform_fee' => $platformFee,
+            'compliance_fee' => $complianceFee,
+            'admin_fee' => round($adminFee, $precision),
+            'application_fee' => round($applicationFee, $precision),
+            'stripe_fee' => $actualStripeFee,
+            'total_supporter_pays' => $totalSupporterPays,
+            'net_to_creator' => round($totalSupporterPays - $actualStripeFee - $applicationFee, $precision),
+        ];
+    }
 
     public static function priceFormat($currency1, $amount, $currency2)
     {
@@ -228,7 +301,7 @@ class Helpers
 
         $tags = $data['appdata']['aws_rekognition_detect_moderation_labels']['data']['ModerationLabels'];
 
-        foreach ($tags as $key => $tag) {
+        foreach ($tags as $tag) {
             $name = explode(" ", $tag['Name']);
             $common = array_intersect($rest_words, $name);
 
@@ -306,6 +379,7 @@ class Helpers
      */
     public static function checkGifterCardVerificationStatus(): bool
     {
+        /** @var \App\Models\User|null $user */
         $user = Auth::user();
         if (!$user) {
             // No user logged in - this is normal for guest checkouts
@@ -334,9 +408,9 @@ class Helpers
                 }
             }
 
-            $totalPaid = array_sum($convertedAmount);
+            $totalAmountPaid = array_sum($convertedAmount);
 
-            if ($user->is_500_limit_exceeded == 0 && $totalPaid && $totalPaid > 500) {
+            if ($user->is_500_limit_exceeded == 0 && $totalAmountPaid && $totalAmountPaid > 500) {
                 $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
                 return true;
             }

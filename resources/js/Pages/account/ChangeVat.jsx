@@ -34,11 +34,11 @@ export default function ChangeVat({defaultvalue, updatevat}) {
    };
 
    return <>
-      <h2 className="text-uppercase font-GillSans pb-1 font-large"> Add VAT </h2>
+      <h2 className="uppercase font-GillSans pb-1 font-large"> Add VAT </h2>
       <p className="pb-4 font-normal text-gray-500">Add VAT percetage here eg. 40%</p>
       <div className="form-field mb-4">
           {/* <label className="d-block text-start"></label> */}
-          <input defaultValue={defaultvalue} onChange={handleinput} type="number" placeholder="VAT Percent" className="input-field w-full border rounded-xl p-3 py-3" />
+          <input defaultValue={defaultvalue} onChange={handleinput} type="number" placeholder="VAT Percent" className="input-field w-full border rounded-[40px]  p-3 py-3" />
       </div>
       <LoaderButton onClick={()=>changeVat(data.currency)}
         disabled={processing}

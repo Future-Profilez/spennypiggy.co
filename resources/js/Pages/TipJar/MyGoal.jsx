@@ -27,14 +27,14 @@ export default function MyGoal({  IsloggedIn}) {
   const percentage = goal?.target ? Math.min(100, Math.round((goal.fullfilled / goal.target) * 100)) : 0;
 
   return (
-    <div className='mb-8 bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[40px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group'>
+    <div className='mb-6 bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[40px]  overflow-hidden shadow-2xl transition-all hover:border-white/10 group'>
         <div className="bg-[#F94F97] p-5">
-            <h2 className='text-normal font-black font-gulfs tracking-[0.15em] uppercase text-white flex items-center gap-3'>
+            <h2 className='text-[17px] font-black font-gulfs tracking-[0.15em] uppercase text-white flex items-center gap-3 btn-shadow'>
                 {goal?.name || 'MY PIGGY BANK'}
             </h2>
         </div>
         <div className='p-6 bg-white' >
-            <p className='mb-6 text-black/40 font-black text-[10px] tracking-[0.2em] uppercase'>Total Support</p>
+            <p className='mb-6 text-black/40 font-black text-[13px] tracking-[0.2em] uppercase'>Total Support</p>
             <div className="relative w-full h-[12px] bg-[#F3F4F6] rounded-full overflow-visible mb-6">
                  <div className="h-full bg-[#F94F97] rounded-full relative shadow-[0_0_20px_rgba(249,79,150,0.3)] transition-all duration-1000" 
                     style={{ width: `${percentage}%` }} >
@@ -50,7 +50,7 @@ export default function MyGoal({  IsloggedIn}) {
                 </span>
             </div> */}
             
-            {!IsloggedIn ?
+            {IsloggedIn && user && user?.show_piggy_bank ?
                 <p className='text-black/50 text-sm font-medium mt-4' >
                     <span className="text-black font-black">{formatMultiPrice(goal?.fullfilled, goal?.currency)}</span> earned of {formatMultiPrice(goal?.target, goal?.currency)}
                 </p> 

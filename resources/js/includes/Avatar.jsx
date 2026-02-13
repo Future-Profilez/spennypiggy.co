@@ -69,11 +69,11 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
-            <div className="avatar !overflow-visible relative ">
+            <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[30px] ">
               <img
                 src={imageSrc || src || userphoto}
                 alt="image-avatar"
-                className="img-fluid rounded-[12px] bg-gray-200" 
+                className="img-fluid bg-gray-200 rounded-[11px]" 
                 loading="lazy"
                 decoding="async"
                 style={{

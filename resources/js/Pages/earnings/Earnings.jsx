@@ -9,6 +9,7 @@ import TopEarnWishes from './TopEarnWishes';
 import TopEarnBills from './TopEarnBills';
 import TopSupporters from './TopSupporters';
 import MonthlyRevenue from './MonthlyRevenue';
+import PaidTask from './PaidTask';
 
 export default function Earnings(props) {
   const colors = [ '#F94F96', 'var(--mint)', 'var(--voilet)','var(--yellow)', '#0005', 'var(--mint)',  ]
@@ -40,7 +41,7 @@ export default function Earnings(props) {
   },[earnType]);
 
   const EARNER = ({data, i}) => {
-    return  <article className="flex flex-col p-3  bg-white rounded-xl  shadow">
+    return  <article className="flex flex-col p-3  bg-white rounded-[40px]   shadow">
     <header className="flex ">
       <div>
         <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -95,7 +96,8 @@ export default function Earnings(props) {
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4' >
                 <div className='lg:col-span-12 xl:col-span-8 mb-4' > <MonthlyRevenue /> </div>
                 <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopEarnWishes currency={props?.global_currency || 'gbp'}  /> </div>
-                <div className='lg:col-span-6 xl:col-span-4 mb-4' > <SubcriptionEarnings /></div>
+                <div className='lg:col-span-6 xl:col-span-4 mb-4' > <PaidTask auth={auth}  /> </div>
+                {/* <div className='lg:col-span-6 xl:col-span-4 mb-4' > <SubcriptionEarnings /></div> */}
                 <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopEarnBills /> </div>
                 <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopSupporters /> </div>
               </div>

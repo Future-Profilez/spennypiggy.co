@@ -42,7 +42,7 @@ export default function FollowersBulkNotification() {
                 errorAlert(response?.data?.msg);
             }
         } catch (error) {
-            console.log("error", error);
+            // console.log("error", error);
             errorAlert(error?.response?.data?.msg || "An error occurred");
             setError(error?.response?.data?.errors || {});
         } finally {
@@ -57,7 +57,7 @@ export default function FollowersBulkNotification() {
             modalclass="pinkmodal"
             text={<>Notification Campaign</>}
         >
-            <h2 className="text-uppercase font-GillSans text-lg">
+            <h2 className="uppercase font-GillSans text-lg">
                 Send Push Notification
             </h2>
 
@@ -73,7 +73,7 @@ export default function FollowersBulkNotification() {
                     value={formData.title}
                     onChange={handleInputChange}
                     maxLength={maxTitleLength}
-                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-xl  w-full"
+                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-[40px]   w-full"
                     placeholder="Notification Title"
                 />
                 <div className="text-right text-xs text-gray-500">
@@ -90,7 +90,7 @@ export default function FollowersBulkNotification() {
                     value={formData.body}
                     onChange={handleInputChange}
                     maxLength={maxBodyLength}
-                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-xl  w-full"
+                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-[40px]   w-full"
                     placeholder="Enter something..."
                 ></textarea>
                 <div className="text-right text-xs text-gray-500">
@@ -126,11 +126,11 @@ export default function FollowersBulkNotification() {
                         Notification History
                     </h3>
 
-                    <div className=" rounded-xl  ">
+                    <div className=" rounded-[40px]   ">
                         {pwa_notification_details &&
                             pwa_notification_details?.map((value, key) => {
                                 return (
-                                    <div className="p-3 rounded-[20px] border border-gray-400 shadow-sm mb-2">
+                                    <div className="p-3 rounded-[40px]  border border-gray-400 shadow-sm mb-2">
                                         <h2 className="line-clamp-1 font-bold text-black text-[15px]">
                                             {value?.title}
                                         </h2>

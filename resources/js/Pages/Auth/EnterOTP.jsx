@@ -90,11 +90,11 @@ export default function EnterOTP({user, action}) {
                <form  >
                   {backup ? <>
                      <div className="flex items-center justify-center gap-3">
-                           <input type="text" className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-xl p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+                           <input type="text" className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-[40px]  p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
                               pattern="\d*" onChange={enterBCode} placeholder="Enter backup code..." />
                      </div>
                      <div className="max-w-[260px] mx-auto mt-4">
-                           <button  onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-xl">{ processing ? "processing..." : "Verify"}</button>
+                           <button  onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-[40px] ">{ processing ? "processing..." : "Verify"}</button>
                      </div>
                      <div className="text-sm text-slate-500 mt-4"> Don't have backup code ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)}  >Use Authenticator app</button></div>
                   </>
@@ -104,7 +104,7 @@ export default function EnterOTP({user, action}) {
                                  <input
                                     key={index}
                                     type="text"
-                                    className="border-gray-300  text-center bg-gray-200 text-black rounded-xl w-full  mx-1 max-w-[40px] min-h-[40px] otp-input  px-1 py-1 "
+                                    className="border-gray-300  text-center bg-gray-200 text-black rounded-[40px]  w-full  mx-1 max-w-[40px] min-h-[40px] otp-input  px-1 py-1 "
                                     maxLength="1"
                                     value={data}
                                     onChange={(e) => handleChange(e.target,index)}
@@ -114,7 +114,7 @@ export default function EnterOTP({user, action}) {
                               ))}
                         </div>
                         <div className="max-w-[260px] mx-auto mt-4">
-                              <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-xl">{ loading ? "processing..." : "Verify"}</button>
+                              <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-[40px] ">{ loading ? "processing..." : "Verify"}</button>
                         </div>
                         <div className="text-sm text-slate-500 mt-4"> Don't have phone ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(true)} >Use Backup code</button></div>
                      </>

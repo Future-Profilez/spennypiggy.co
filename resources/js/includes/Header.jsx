@@ -274,7 +274,7 @@ export default function Header({ classMagicword }) {
 
             {isActive ? (
                 <div
-                    className={`fixed top-0 z-50 h-full w-full  rounded-r-2xl
+                    className={`fixed top-0 z-50 h-full w-full  rounded-r-xl
                     transform transition-transform duration-600 ease-in-out
                      {isActive ? 'opacity-100' : '-opacity-100'}
                     flex flex-col p-8 bg-[#0008]
@@ -286,7 +286,7 @@ export default function Header({ classMagicword }) {
                 ""
             )}
             <div
-                className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-2xl
+                className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-xl
                     transform transition-transform duration-500 ease-in-out
                     ${isActive ? "translate-x-0" : "-translate-x-full"}
                     flex flex-col p-8 select-none${isActive ? "Open" : null}`}

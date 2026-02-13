@@ -34,118 +34,147 @@ export default function ActionRequired({ requirements = [] }) {
         switch (severity) {
             case 'critical':
                 return {
-                    border: 'border-red-500',
-                    bg: 'bg-red-50',
-                    text: 'text-red-800',
+                    border: 'border-red-100',
+                    borderLeft: 'border-l-red-600',
+                    bgLight: 'bg-red-50',
+                    bgSolid: 'bg-red-600',
+                    text: 'text-red-600',
+                    textDark: 'text-red-800',
+                    icon: 'text-red-600',
                     button: 'bg-red-600 hover:bg-red-700'
                 };
             case 'high':
                 return {
-                    border: 'border-red-400',
-                    bg: 'bg-red-50',
-                    text: 'text-red-700',
-                    button: 'bg-red-500 hover:bg-red-600'
+                    border: 'border-orange-100',
+                    borderLeft: 'border-l-orange-500',
+                    bgLight: 'bg-orange-50',
+                    bgSolid: 'bg-orange-500',
+                    text: 'text-orange-600',
+                    textDark: 'text-orange-800',
+                    icon: 'text-orange-500',
+                    button: 'bg-orange-600 hover:bg-orange-700'
                 };
             case 'medium':
                 return {
-                    border: 'border-yellow-400',
-                    bg: 'bg-yellow-50',
-                    text: 'text-yellow-800',
+                    border: 'border-yellow-100',
+                    borderLeft: 'border-l-yellow-500',
+                    bgLight: 'bg-yellow-50',
+                    bgSolid: 'bg-yellow-500',
+                    text: 'text-yellow-600',
+                    textDark: 'text-yellow-800',
+                    icon: 'text-yellow-600',
                     button: 'bg-yellow-600 hover:bg-yellow-700'
                 };
             case 'warning':
                 return {
-                    border: 'border-blue-400',
-                    bg: 'bg-blue-50',
-                    text: 'text-blue-800',
+                    border: 'border-blue-100',
+                    borderLeft: 'border-l-blue-500',
+                    bgLight: 'bg-blue-50',
+                    bgSolid: 'bg-blue-500',
+                    text: 'text-blue-600',
+                    textDark: 'text-blue-800',
+                    icon: 'text-blue-600',
                     button: 'bg-blue-600 hover:bg-blue-700'
                 };
             default:
                 return {
-                    border: 'border-gray-400',
-                    bg: 'bg-gray-50',
-                    text: 'text-gray-800',
-                    button: 'bg-gray-600 hover:bg-gray-700'
+                    border: 'border-gray-100',
+                    borderLeft: 'border-l-gray-500',
+                    bgLight: 'bg-gray-50',
+                    bgSolid: 'bg-gray-500',
+                    text: 'text-gray-600',
+                    textDark: 'text-gray-800',
+                    icon: 'text-gray-600',
+                    button: 'bg-gray-800 hover:bg-gray-900'
                 };
         }
     };
 
-    const colors = getSeverityColors(prioritizedRequirement.severity);
-
     return (
-        <>
+        <div className="space-y-4">
             {requirements.map((requirement, index) => {
                 const reqColors = getSeverityColors(requirement.severity);
                 return (
                     <div 
                         key={index}
-                        className={`w-full overflow-hidden mb-4 rounded-xl  bg-white border-2 ${reqColors.border} shadow-lg`}
+                        className={`w-full bg-white rounded-[40px]  shadow-sm border ${reqColors.border} overflow-hidden`}
                     >
-                        <div className={`border-bottom ${reqColors.border} ${reqColors.bg}`}>
-                            <div className="p-3 flex items-center">
-                                {getSeverityIcon(requirement.severity)}
-                                <h2 className={`text-large font-GillSans text-uppercase ${reqColors.text} ml-2 goaltitle`}>
-                                    Action Required
-                                </h2>
-                            </div>
-                        </div>
-                        <div className="p-4">
-                            <h3 className={`text-xl md:text-xl mb-2 font-gulfs uppercase ${reqColors.text}`}>
-                                {requirement.title}
-                            </h3>
-                            <p className={`mb-3 text-md ${reqColors.text.replace('800', '600')}`}>
-                                {requirement.message}
-                            </p>
-                            <p className={`mb-4 text-sm ${reqColors.text.replace('800', '500')}`}>
-                                <strong>Required Action:</strong> {requirement.action}
-                            </p>
+                        <div className="flex">
+                            {/* Accent Bar */}
+                            <div className={`w-1.5 ${reqColors.bgSolid}`}></div>
                             
-                            {/* Show required fields if available */}
-                            {requirement.fields_needed && requirement.fields_needed.length > 0 && (
-                                <div className={`mb-4 p-3 ${reqColors.bg} border ${reqColors.border} rounded-xl `}>
-                                    <p className={`text-sm font-medium ${reqColors.text} mb-2`}>
-                                        Required Information:
-                                    </p>
-                                    <ul className={`text-sm ${reqColors.text.replace('800', '600')} space-y-1`}>
-                                        {requirement.fields_needed.map((field, fieldIndex) => (
-                                            <li key={fieldIndex} className="flex items-center">
-                                                <span className="w-2 h-2 bg-current rounded-full mr-2"></span>
-                                                {field.replace(/[_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {requirement.action_url ? (
-                                <Link
-                                    onClick={() => setLoading(!loading)}
-                                    href={requirement.action_url}
-                                    className={`btn-pink text-sm btn-shadow w-full block text-center ${reqColors.button} text-white font-medium px-4 py-3 transition-all duration-200`}
-                                >
-                                    {loading ? "Loading..." : "Resolve Issue"}
-                                </Link>
-                            ) : (
-                                <div className={`w-full block text-center bg-gray-400 text-white font-medium px-4 py-3 rounded-xl  cursor-not-allowed`}>
-                                    Please Wait or Contact Support
-                                </div>
-                            )}
-
-                            {/* Show severity indicator */}
-                            <div className="mt-3 flex items-center justify-between">
-                                <span className={`text-xs uppercase font-medium ${reqColors.text.replace('800', '500')}`}>
-                                    Priority: {requirement.severity}
-                                </span>
-                                {requirements.length > 1 && (
-                                    <span className={`text-xs ${reqColors.text.replace('800', '500')}`}>
-                                        {index + 1} of {requirements.length} issues
+                            <div className="flex-1 p-8">
+                                {/* Header */}
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-full ${reqColors.bgLight} ${reqColors.icon}`}>
+                                            {getSeverityIcon(requirement.severity)}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-xl leading-tight">
+                                                {requirement.title}
+                                            </h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-xs font-bold uppercase tracking-wider ${reqColors.text}`}>
+                                                    Action Required
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Priority Badge */}
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${reqColors.bgLight} ${reqColors.textDark}`}>
+                                        {requirement.severity}
                                     </span>
+                                </div>
+
+                                {/* Message */}
+                                <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                                    {requirement.message}
+                                </p>
+
+                                {/* Action Box */}
+                                <div className="bg-gray-50 rounded-[40px]  p-6 mb-6 border border-gray-100">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Required Action</span>
+                                            <p className="text-sm font-semibold text-gray-800">{requirement.action}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Fields */}
+                                    {requirement.fields_needed && requirement.fields_needed.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-2">Missing Information</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {requirement.fields_needed.map((field, fieldIndex) => (
+                                                    <span key={fieldIndex} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white text-gray-600 border border-gray-200 shadow-sm">
+                                                        {field.replace(/[_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Action Button */}
+                                {requirement.action_url ? (
+                                    <a
+                                        onClick={() => setLoading(!loading)}
+                                        href={requirement.action_url}
+                                        className={`block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]`}
+                                    >
+                                        {loading ? "Processing..." : "Resolve Issue Now"}
+                                    </a>
+                                ) : (
+                                    <div className="w-full text-center bg-gray-100 text-gray-400 font-gulfs uppercase text-lg py-3 px-6 rounded-full cursor-not-allowed">
+                                        Please Wait or Contact Support
+                                    </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 );
             })}
-        </>
+        </div>
     );
 }

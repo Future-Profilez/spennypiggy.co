@@ -15,6 +15,7 @@ export default function UserCarts(props) {
     const { auth, removeFromCart, currency } = props;
     const { format, formatMultiPrice } = PriceFormat();
     const datas = props.data;
+    const card_capabilities = datas?.card_capabilities;
     
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
@@ -29,6 +30,10 @@ export default function UserCarts(props) {
     }, []);
 
     const handleSubmit = () => {
+        if (!card_capabilities) {
+             toast.error("This creator cannot accept payments at the moment.");
+             return;
+        }
         if (!captchaToken) {
             toast.error("Please complete the CAPTCHA verification.");
             return;
@@ -161,8 +166,8 @@ export default function UserCarts(props) {
 
     return (
         <div className={`${cartCleared ? "hidden" : ""} px-2 containerbox`}>
-            <div className="my-4 pb-12 mb-16 border-b border-[#000] cartPage overflow-hidden bg-white md:shadow-black md:border md:border-black md:rounded-[35px]">
-                    <div className='hidden md:flex p-3 md:p-4 pinkbg !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
+            <div className="my-4 pb-12 mb-16 border-b border-[#000] cartPage overflow-hidden bg-white md:shadow-black md:border md:border-black md:rounded-[30px] ">
+                    <div className='hidden md:flex p-4 md:p-6 pinkbg !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                         <span className=' border-black border-2 bg-red-700 mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-yellow-400 mr-2 h-4 w-4 md:w-5 md:h-5 rounded-full block'></span>
                         <span className=' border-black border-2 bg-mint mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
@@ -177,6 +182,12 @@ export default function UserCarts(props) {
                         <p className="md:pb-4 text-lg mt-2 mb-4">
                             You are about to send a payout to <strong> {datas?.user?.name || ""} </strong> to fund their lifestyle.
                         </p>
+                        {!card_capabilities && (
+                            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
+                                <p className="font-bold">Payments Unavailable</p>
+                                <p>This creator cannot accept payments at the moment (Card Payments capability missing).</p>
+                            </div>
+                        )}
                         <div className="CartItemBox">
                             {items &&
                                 items.map((c, i) => {
@@ -194,30 +205,17 @@ export default function UserCarts(props) {
                         </div>
 
                         <div className="cartTotal pt-3 pb-6">
-                            <div className="fading cartSubTotal text-right mt-1">
-                                <span>Subtotal :</span>
-                                <strong className="text-right text-black">
+                            <div className="fading cartSubTotal text-right mt-2">
+                                <span>Subtotal : </span>
+                                <strong className="!text-right text-black">
                                     {formatMultiPrice(subtotal || "", datas?.user && currency)}
                                     {/* {formatMultiPrice(subtotal || "", datas?.user && datas?.user?.default_currency)} */}
                                 </strong>
                             </div>
-                            <div className="fading cartSubTotal whitespace-nowrap text-right mt-1">
-                                <span className="sm:pl-[5px]">Platform Fee :</span>{" "}
-                                <strong className="text-right text-black">  
-                                    {formatMultiPrice(fee || "",datas?.user && currency, 'adminfee')}
-                                    {/* {formatMultiPrice(fee || "",datas?.user && datas?.user?.default_currency, 'adminfee')} */}
-                                    <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">?
-                                        <p className="fading max-w-[200px] min-w-[200px] !whitespace-normal absolute bg-[#505050] p-[10px] rounded-[20px] bottom-[20px] right-[10px] text-left font-normal text-[15px] z-[99] hidden group-hover:block">
-                                            {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
-                                            all transactions.
-                                        </p>
-                                    </button>
-                                </strong>
-                            </div>
 
-                            <div className="fading cartSubTotal text-right mt-1">
-                                <strong className="text-gray-900">Total :</strong>
-                                <strong className="text-right text-black">
+                            <div className="fading cartSubTotal text-right mt-2">
+                                <strong className="!text-black">Total :</strong>
+                                <strong className="!text-right !text-black">
                                     {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
                                 </strong>
                             </div>
@@ -238,7 +236,7 @@ export default function UserCarts(props) {
                                     <li className="w-full mt-3 fading">
                                         <div className="flex flex-wrap">
                                             <div className="w-full mb-4">
-                                                <label className="block text-left">
+                                                <label className=" text-start w-full">
                                                     Email{" "}
                                                 </label>
                                                 <p className="text-sm text-gray-500 mb-1">
@@ -246,30 +244,20 @@ export default function UserCarts(props) {
                                                 </p>
                                                 <input
                                                     required
-                                                    className={`${
-                                                        auth && auth.email
-                                                            ? "disabled"
-                                                            : ""
-                                                    } border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md`}
+                                                    className={`${ auth && auth.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] `}
                                                     value={auth && auth.email}
-                                                    disabled={
-                                                        auth && auth.email
-                                                            ? true
-                                                            : false
-                                                    }
-                                                    onChange={(e) =>
-                                                        setEmail(e.target.value)
-                                                    }
+                                                    disabled={ auth && auth.email ? true : false }
+                                                    onChange={ (e) => setEmail(e.target.value) }
                                                     type="email"
                                                     placeholder="Enter Your Email..."
                                                 />
                                             </div>
                                             <div className="w-full mb-4">
-                                                <label className="block text-left">
+                                                <label className="text-start w-full">
                                                     From
                                                 </label>
                                                 <input
-                                                    className="border-gray-300 border rounded-md px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-md"
+                                                    className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
                                                     onChange={(e) =>
                                                         setName(e.target.value)
                                                     }
@@ -421,10 +409,10 @@ export default function UserCarts(props) {
                                     </button>
                                     <button
                                         type="button"
-                                        disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken)}
+                                        disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken) || !card_capabilities}
                                         onClick={handleSubmit}
                                         className={`${
-                                            isChecked && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"
+                                            isChecked && !(turnstileSiteKey && !captchaToken) && !checking && card_capabilities ? "" : "disabled"
                                         } main-button p w-full`}
                                     >
                                         {checking ? "Wait.." : "Checkout"}{" "}

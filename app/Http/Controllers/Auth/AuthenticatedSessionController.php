@@ -96,7 +96,8 @@ class AuthenticatedSessionController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Logged in successfully',
-            'user' => $user
+            'user' => $user,
+            'redirect_url' => route('user.show', ['username' => $user->username])
         ]);
     }
 
@@ -255,14 +256,15 @@ class AuthenticatedSessionController extends Controller
             $migrationStatus = $this->getMigrationStatus($user);
             $founderData = $this->getFounderData($user);
 
-            return [
-                '__page' => 'Dashboard',
-                'username' => $username,
-                'user' => $user,
-                'itemid' => request()->query('item') ?? false,
-                'card_capabilities' => $cardCapabilities,
-                'isNeedToUpgrade' => $isNeedToUpgrade,
-                'stripe_requirements' => $stripeRequirements,
+                return [
+                    '__page' => 'Dashboard',
+                    'username' => $username,
+                    'user' => $user,
+                    'itemid' => request()->query('item') ?? false,
+                    'card_capabilities' => $cardCapabilities,
+                    'has_stripe_account' => !empty($user->account_id),
+                    'isNeedToUpgrade' => $isNeedToUpgrade,
+                    'stripe_requirements' => $stripeRequirements,
                 'migration_status' => $migrationStatus,
                 'sociallinks' => $sociallinks,
                 'slinks' => $sociallinks,
@@ -303,7 +305,7 @@ class AuthenticatedSessionController extends Controller
     private function getStripeCapabilities($user): array
     {
         if (empty($user->account_id)) {
-            return [false, true, []];
+            return [false, false, []];
         }
 
         // Removed caching
@@ -336,7 +338,7 @@ class AuthenticatedSessionController extends Controller
         } catch (\Exception $e) {
             // Update user if account is invalid
             $user->update(['stripe_details_submitted' => 0]);
-            return [false, true, [
+            return [false, false, [
                 'has_requirements' => true,
                 'requirements' => [[
                     'type' => 'connection_error',

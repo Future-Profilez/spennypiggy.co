@@ -4,43 +4,7 @@ import { FaBolt, FaMagic, FaShieldAlt, FaRocket } from 'react-icons/fa';
 export default function PaidTasksAnnouncement() {
     return (
         <>
-            <style jsx>{`
-                .excited-gradient {
-                    background: linear-gradient(120deg, #FF0080, #7928CA, #FF0080);
-                    background-size: 200% 200%;
-                    animation: gradientMove 6s ease infinite;
-                }
-                @keyframes gradientMove {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                .wiggle:hover {
-                    animation: wiggle 0.5s ease-in-out infinite;
-                }
-                @keyframes wiggle {
-                    0%, 100% { transform: rotate(-3deg); }
-                    50% { transform: rotate(3deg); }
-                }
-                .pop-in {
-                    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-                    opacity: 0;
-                    transform: scale(0.5);
-                }
-                @keyframes popIn {
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .floating-shape {
-                    animation: float 6s ease-in-out infinite;
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0) rotate(0deg); }
-                    50% { transform: translateY(-20px) rotate(10deg); }
-                }
-            `}</style>
-
             <div className="bg-black pb-12 py-24 md:pb-24 md:py-24 px-4 relative">
-                {/* Decorative Background Elements */}
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                     <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape"></div>
                     <div className="absolute top-10 right-10 w-32 h-32 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-30 floating-shape" style={{animationDelay: '1s'}}></div>
@@ -72,7 +36,7 @@ export default function PaidTasksAnnouncement() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2 md:px-4">
                         
                         {/* Card 1: Instant */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-pink-500 rounded-[30px] p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#EC4899] md:shadow-[8px_8px_0px_0px_#EC4899]">
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-pink-500 rounded-[40px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#EC4899] md:shadow-[8px_8px_0px_0px_#EC4899]">
                             <div className="absolute -top-6 -right-6 bg-pink-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-12">
                                 <FaBolt />
                             </div>
@@ -81,14 +45,14 @@ export default function PaidTasksAnnouncement() {
                                 Upload once. Get paid every time.
                                 Supporters access content instantly — no back-and-forth, no delivery stress.
                             </p>
-                            <div className="fading bg-gray-800 rounded-xl p-3 flex items-center gap-3">
+                            <div className="fading bg-gray-800 rounded-[40px]  p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-green-400 animate-pulse"></div>
                                 <span className="text-sm font-bold text-gray-300 uppercase">Passive income mode </span>
                             </div>
                         </div>
 
                         {/* Card 2: Custom */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[30px] p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300  shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15]">
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-yellow-400 rounded-[40px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300  shadow-[4px_4px_0px_0px_#FACC15] md:shadow-[8px_8px_0px_0px_#FACC15]">
                             <div className="absolute -top-6 -right-6 bg-yellow-400 text-black w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform -rotate-12">
                                 <FaMagic />
                             </div>
@@ -99,7 +63,7 @@ export default function PaidTasksAnnouncement() {
                                 Approve what you want, set the rules, and deliver when it works for you.
                                 No chasing. No awkwardness.
                             </p>
-                            <div className="fading bg-gray-800 rounded-xl p-3 flex items-center gap-3">
+                            <div className="fading bg-gray-800 rounded-[40px]  p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-blue-400 animate-pulse"></div>
                                 <span className="text-sm font-bold text-gray-300 uppercase">Full control. Zero pressure.
                                 </span>
@@ -107,7 +71,7 @@ export default function PaidTasksAnnouncement() {
                         </div>
 
                         {/* Card 3: Safe */}
-                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-purple-500 rounded-[30px] p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#A855F7] md:shadow-[8px_8px_0px_0px_#A855F7]">
+                        <div className="bg-gray-900 border-2 mb-2 md:mb-0 border-purple-500 rounded-[40px]  p-4 md:p-8 relative group hover:-translate-y-3 transition-all duration-300 shadow-[4px_4px_0px_0px_#A855F7] md:shadow-[8px_8px_0px_0px_#A855F7]">
                             <div className="absolute -top-6 -right-6 bg-purple-500 text-white w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg wiggle transform rotate-6">
                                 <FaShieldAlt />
                             </div>
@@ -123,7 +87,7 @@ If a task isn’t delivered on time, refunds are handled according to your terms
 
 
                             </p>
-                            <div className="fading bg-gray-800 rounded-xl p-3 flex items-center gap-3">
+                            <div className="fading bg-gray-800 rounded-[40px]  p-3 flex items-center gap-3">
                                 <div className="w-3 h-3 min-w-3 min-h-3 rounded-full bg-pink-400 animate-pulse"></div>
                                 <span className="text-sm font-bold text-gray-300 uppercase">PLATFORM-ENFORCED RULES
                                 </span>

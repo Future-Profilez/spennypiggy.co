@@ -10,7 +10,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
-    const { auth} = usePage().props;
+    const { auth, card_capabilities } = usePage().props;
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { usdtogbp, formatMultiPrice } = PriceFormat();
@@ -58,16 +58,16 @@ export default function AddCart(props) {
            
             <div className="!rounded-none p-4">
                 
-                <div className="flex items-center mb-4">
-                    <div className="h-[100px] bg-gray-200 rounded-xl border !border-gray-200 overflow-hidden w-[140px]">
+                <div className="items-center mb-4">
+                    <div className="m-auto h-[150px] max-w-[200px] flex justify-center items-center bg-gray-200 rounded-[15px]  border !border-gray-200 overflow-hidden">
                         <img
                             src={item.perma_link ? item.perma_link : uploadedimg}
                             alt="img" className="h-full w-full object-cover"
                         />
                     </div>
-                    <div className="pl-3">
-                        <div className="text-xl font-bold line-clamp-2 ">{item.wishname}</div>
-                        <div className="cartPrice font-CeraGRBold text-violet-600 mt-1">
+                    <div className="pt-4">
+                        <div className="text-center text-xl font-bold line-clamp-2 ">{item.wishname}</div>
+                        <div className="cartPrice text-center font-CeraGRBold text-violet-600 mt-1">
                             {IsloggedIn ?
                                 <>
                                     {formatMultiPrice(item.price, item?.currency || 'USD')}
@@ -92,7 +92,7 @@ export default function AddCart(props) {
                                 onChange={(e) => setcartamount(e.target.value)}
                                 placeholder={`Eg. 50`}
                                 type="number"
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
+                                className="block w-full rounded-[40px]  border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
                             />
                         </div>
                         <div className="crowd pt-2 mb-4">
@@ -124,13 +124,29 @@ export default function AddCart(props) {
                 {item.subscription == 1 ? (
                     <>
                     <div className=" pb-2">
+                        {card_capabilities === false ? (
+                             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-[40px] ">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-red-700">
+                                            This creator cannot receive payments at the moment.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
                         <Link
-                            className="btn-pink lg2 block text-center !w-full "
-                            href={route("wish.subscribe.checkout", {uuid: item.uuid,reccure: "onetime"})}>OneTime Purchase
+                            className={`btn-pink lg2 block text-center !w-full ${card_capabilities === false ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                            href={card_capabilities === false ? '#' : route("wish.subscribe.checkout", {uuid: item.uuid,reccure: "onetime"})}>OneTime Purchase
                         </Link>
                         <Link
-                            className="btn-pink mt-2 mb-2 lg2 block text-center !w-full"
-                            href={route("wish.subscribe.checkout", {uuid: item.uuid})}>
+                            className={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${card_capabilities === false ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                            href={card_capabilities === false ? '#' : route("wish.subscribe.checkout", {uuid: item.uuid})}>
                             Pay Every
                             {item.subscription_period == "daily"? " Day": ""}
                             {item.subscription_period == "weekly"? " Week": ""}
@@ -214,7 +230,7 @@ export default function AddCart(props) {
                             isEqual={item.price <= item.fullfill_amount}
                             is_cart={is_cart}
                             text={`Add To Cart And Keep Shopping`}
-                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                         <ToCart
@@ -230,20 +246,21 @@ export default function AddCart(props) {
                             is_cart={is_cart}
                             text={`Add To Cart And Checkout`}
                             checkoutbtn={true}
-                            classes={`btn-pink mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
+                            classes={`button-pink btn-shadow shadow-black !rounded-full !border-0 mt-2 mb-2 lg2 block text-center !w-full ${item.subscription == "2" &&item.price <= item.fullfill_amount? "hidden": ""}`}
                             uuid={uuid}
                         />
                     </div>
                 )}
 
                 {item.user ? (
-                    <Link 
-                        onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
+
+                    <div className="flex py-3 justify-center">
+                        <Link onClick={() => trackSearchClick(item?.user?.id, item?.user?.username)}
                         href={`/${item.user && item.user.username}`}
-                        className="mx-auto block text-blue-600"
-                    >
-                        See All {item.user && item.user.name}'s Wishes
-                    </Link>
+                        className="mx-auto block text-blue-600" >
+                            See All {item.user && item.user.name}'s Wishes
+                        </Link>
+                    </div>
                 ) : (
                     ""
                 )}

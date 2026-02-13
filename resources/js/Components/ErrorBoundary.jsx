@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component {
         if (this.state.hasError) {
             // Fallback UI
             return (
-                <div className="error-boundary-fallback p-4 bg-red-50 border border-red-200 rounded-xl ">
+                <div className="error-boundary-fallback p-4 bg-red-50 border border-red-200 rounded-[40px]  ">
                     <h2 className="text-lg font-semibold text-red-800 mb-2">
                         Something went wrong displaying the content
                     </h2>

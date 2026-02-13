@@ -40,12 +40,12 @@ export default function MyShopProducts({lists, loading, update}) {
          {loading ? <LoadingScreen /> : 
             <>
             {lists && lists.length ? lists.map((s, i)=>{
-               return <div className='mt-2 bg-white p-3 rounded-xl' > 
+               return <div className='mt-2 bg-white p-3 rounded-[40px] ' > 
                   <div className='shop-item flex justify-between w-full items-center ' >
                      <div className='shop-item-user flex  items-center max-w-[40%] min-w-[40%] ' >
                         <Link href={`/shop/item/${slug(s.name)}/${s.uuid}`} className='shop-img w-12 h-12 min-w-12' >
                            <img 
-                             className='w-full h-full object-cover rounded-xl ' 
+                             className='w-full h-full object-cover rounded-[40px]  ' 
                              src={s.perma_link} 
                              alt={s.name || 'Shop item'}
                              onError={(e) => {
@@ -67,7 +67,7 @@ export default function MyShopProducts({lists, loading, update}) {
                      <div className='relative'>
                         <Menu as="div" className="relative inline-block text-left">
                            <div>
-                              <Menu.Button className="inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+                              <Menu.Button className="inline-flex w-full justify-center rounded-[40px]  px-3 py-2 text-sm font-medium hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
                                  <HiDotsVertical size='1.5rem' color="#000" />
                               </Menu.Button>
                            </div>
@@ -80,14 +80,14 @@ export default function MyShopProducts({lists, loading, update}) {
                               leaveFrom="transform opacity-100 scale-100"
                               leaveTo="transform opacity-0 scale-95"
                            >
-                              <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                              <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                                  <div className="px-1 py-1 ">
                                     <Menu.Item>
                                        {({ active }) => (
                                           <button
                                              className={`${
                                                 active ? 'bg-gray-100' : ''
-                                             } group flex w-full items-center rounded-md px-2 py-2 text-sm text-gray-900`}
+                                             } group flex w-full items-center rounded-[40px]  px-2 py-2 text-sm text-gray-900`}
                                              onClick={() => handleCopy(`${window.location.origin}/shop/item/${slug(s.name)}/${s.uuid}`)}
                                           >
                                              {copied ? "Copied" : "Copy Link"}
@@ -98,7 +98,7 @@ export default function MyShopProducts({lists, loading, update}) {
                                        {({ active }) => (
                                           <div className={`${
                                              active ? 'bg-gray-100' : ''
-                                          } group flex w-full items-center rounded-md text-sm text-gray-900`}>
+                                          } group flex w-full items-center rounded-[40px]  text-sm text-gray-900`}>
                                              <AddItem update={update}
                                                 classes={"px-2 py-2 w-full text-left bg-transparent border-0 hover:bg-transparent"}
                                                 pre_title={s.name} title="Edit"
@@ -115,7 +115,7 @@ export default function MyShopProducts({lists, loading, update}) {
                         </Menu>
                      </div>
                   </div>
-                  {s.approved == 0 ?  <div className='approvalmessage static rounded-md p-3 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
+                  {s.approved == 0 ?  <div className='approvalmessage static rounded-[40px]  p-3 py-2 mt-3 bg-yellow-50 text-yellow-800' >Shop item waiting for approval. Currently only you can see this wish.</div> : ''}
                </div>
             }) : <Nocontent/>
              }

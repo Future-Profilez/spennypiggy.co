@@ -2,34 +2,28 @@
 
 namespace App\Http\Controllers\Auth;
 
-use AmrShawky\LaravelCurrency\Facade\Currency as FacadeCurrency;
 use App\Helpers;
 use App\Http\Controllers\Controller;
 use App\Jobs\CheckoutMailToUser;
-use App\Jobs\CheckoutUser;
+use App\Jobs\CreateThankYouPostJob;
 use App\Jobs\MonthlySubscribedJob;
-use App\Jobs\MonthlySubscribedJobs;
-use App\Jobs\MonthlySubscriptionFailedJobs;
 use App\Jobs\NotificationSave;
-use App\Jobs\SendMailSubscriptions;
+use App\Jobs\ProcessWishItemDeliverable;
 use App\Jobs\SendPaymentSuccessEmail;
 use App\Jobs\SendRenewMail;
 use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\SubscribedMail;
 use App\Jobs\SubscriptionCancelAtEnd;
 use App\Jobs\SubscriptionFailed;
-use App\Jobs\TipJarMailToUser;
 use App\Jobs\TipJarPurchased;
 use App\Jobs\TipJarTweet;
+use App\Jobs\TipPaymentMailToUser;
 use App\Jobs\WishSubscriptionMailToUser;
-use App\Models\BillPayment;
-use App\Models\Bills;
 use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
-use App\Models\Membership;
+use App\Models\Deliverable;
 use App\Models\MonthlyCharge;
 use App\Models\MorConsent;
-use App\Models\Post;
 use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\StripeWebhookStatus;
@@ -42,6 +36,7 @@ use App\Models\UserPayment;
 use App\Models\WishItem;
 use App\Models\WishItemSubscription;
 use App\StripeControl;
+use App\Services\StripeMetadataService;
 use Stripe\StripeClient;
 use Carbon\Carbon;
 use Exception;
@@ -50,22 +45,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use League\ISO3166\ISO3166;
-use Ramsey\Uuid\Uuid;
 use Stripe\Stripe;
-use Stripe\Checkout\Session;
 use Stripe\Webhook;
-use Stripe\Identity;
 use Stripe\Identity\VerificationSession;
-use Stripe\Exception\SignatureVerificationException;
-use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
 use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
-use Stripe\Account;
 use App\Services\UserProfileService;
 use Illuminate\Support\Facades\Http;
 
@@ -88,6 +76,12 @@ class StripeController extends Controller
      */
     private static function getServiceAgreementType($country)
     {
+        // We now enforce 'full' service agreement for all countries to support Direct Charges
+        // and card_payments capability.
+        return 'full';
+        
+        /* 
+        // Legacy recipient logic - disabled to support Direct Charges
         // Countries that require 'recipient' service agreement for cross-border payments
         // These are primarily EU countries that have restrictions with full service agreements
         $recipientCountries = [
@@ -122,6 +116,7 @@ class StripeController extends Controller
         ];
 
         return in_array(strtoupper($country), $recipientCountries) ? 'recipient' : 'full';
+        */
     }
 
     /**
@@ -440,7 +435,7 @@ class StripeController extends Controller
     /**
      * Show Merchant of Record consent page
      */
-    public function showMorConsent(Request $request)
+    public function showMorConsent()
     {
         $user = Auth::user();
 
@@ -555,7 +550,7 @@ class StripeController extends Controller
     /**
      * Show Stripe connect page
      */
-    public function showAllData(Request $request)
+    public function showAllData()
     {
         $user = Auth::user();
 
@@ -584,7 +579,6 @@ class StripeController extends Controller
     /**
      * Init Connect Account Start
      *
-     * @param Request $request
      * @param string $step Connection Current Step
      * @return mixed
      */
@@ -594,7 +588,7 @@ class StripeController extends Controller
     /**
      * Initialize Stripe connection
      */
-    public function initConnect(Request $request, $step = "init", $country = null, $currency = null)
+    public function initConnect($country = null, $currency = null)
     {
         /** @var \App\Models\User $user */
         $user = User::find(Auth::id());
@@ -787,7 +781,7 @@ class StripeController extends Controller
     /**
      * Stripe return callback
      */
-    public function stripeReturn(Request $request)
+    public function stripeReturn()
     {
         $user = Auth::user();
 
@@ -896,7 +890,7 @@ class StripeController extends Controller
     }
 
 
-    public function upgradeStripeAccount(Request $request)
+    public function upgradeStripeAccount()
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -1038,19 +1032,24 @@ class StripeController extends Controller
             // Determine what service agreement type should be based on country
             $expectedServiceAgreementType = self::getServiceAgreementType($user->country);
 
-            // Set capabilities based on the ACTUAL service agreement of the account
-            // This prevents capability mismatch errors
-            $capabilities = [];
-            if ($currentServiceAgreement === 'recipient') {
-                // Recipient accounts can only request transfers capability
-                $capabilities['transfers'] = ['requested' => true];
-            } else {
-                // Full service agreement accounts can request both capabilities
-                // For card_payments capability, Stripe requires BOTH card_payments AND transfers
-                // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
-                $capabilities['card_payments'] = ['requested' => true];
-                $capabilities['transfers'] = ['requested' => true];
-            }
+            // Set capabilities - ALWAYS request card_payments for Direct Charges support
+            // We are overriding the recipient/transfers-only logic because the platform
+            // now strictly uses Direct Charges which requires card_payments capability.
+            $capabilities = [
+                'card_payments' => ['requested' => true],
+                'transfers' => ['requested' => true]
+            ];
+            
+            // if ($currentServiceAgreement === 'recipient') {
+            //     // Recipient accounts can only request transfers capability
+            //     $capabilities['transfers'] = ['requested' => true];
+            // } else {
+            //     // Full service agreement accounts can request both capabilities
+            //     // For card_payments capability, Stripe requires BOTH card_payments AND transfers
+            //     // This is mandatory per Stripe documentation: https://stripe.com/docs/connect/account-capabilities#card-payments
+            //     $capabilities['card_payments'] = ['requested' => true];
+            //     $capabilities['transfers'] = ['requested' => true];
+            // }
 
             Log::info('Enabling card payments with capabilities', [
                 'user_id' => $user->id,
@@ -1070,17 +1069,82 @@ class StripeController extends Controller
                     'expected_agreement' => $expectedServiceAgreementType,
                     'country' => $user->country
                 ]);
+
+                // FIX: If account is 'recipient' but needs to be 'full', we MUST create a new account.
+                // Existing Express accounts cannot be upgraded from recipient to full via API.
+                if ($currentServiceAgreement === 'recipient' && $expectedServiceAgreementType === 'full') {
+                    Log::info('Migrating user from Recipient to Full account automatically', ['user_id' => $user->id]);
+                    
+                    try {
+                         $newAccount = StripeControl::createAccount([
+                            'country'       => $user->country,
+                            'type'          => 'express',
+                            'email'         => $user->email,
+                            'capabilities'  => $capabilities,
+                            'business_type' => ($user->country === 'AE') ? 'company' : 'individual',
+                            'business_profile' => [
+                                'url' => "https://spennypiggy.co/{$user->username}",
+                                'mcc' => '7278',
+                            ],
+                            'tos_acceptance' => [
+                                'service_agreement' => 'full',
+                            ],
+                        ]);
+
+                        // Update user to use the new account
+                        $oldAccountId = $user->account_id;
+                        $user->account_id = $newAccount->id;
+                        $user->stripe_details_submitted = 0; // Reset submitted status
+                        $user->save();
+
+                        Log::info('User migrated to new Stripe account', [
+                            'user_id' => $user->id,
+                            'old_account' => $oldAccountId,
+                            'new_account' => $newAccount->id
+                        ]);
+
+                        // Use the new account ID for the rest of the flow
+                        $user->refresh();
+                    } catch (ApiErrorException $e) {
+                         Log::error('Failed to create new account for migration', ['error' => $e->getMessage()]);
+                         throw $e;
+                    }
+                }
             }
 
             // 1. Ask for the capabilities ↴
-            StripeControl::getClient()->accounts->update(
+            $updateParams = [
+                'capabilities' => $capabilities,
+            ];
+
+            // NOTE: We cannot explicitly update 'tos_acceptance' via API for existing Express accounts
+            // as it triggers a permission error. We rely on the Account Link to handle this.
+            
+            $updatedAccount = StripeControl::getClient()->accounts->update(
                 $user->account_id,
-                [
-                    'capabilities' => $capabilities,
-                ]
+                $updateParams
             );
 
+            Log::info('Stripe Account Updated', [
+                'user_id' => $user->id,
+                'card_payments_status' => $updatedAccount->capabilities->card_payments ?? 'unknown',
+                'transfers_status' => $updatedAccount->capabilities->transfers ?? 'unknown',
+                'currently_due' => $updatedAccount->requirements->currently_due ?? [],
+                'eventually_due' => $updatedAccount->requirements->eventually_due ?? [],
+                'disabled_reason' => $updatedAccount->requirements->disabled_reason ?? null,
+            ]);
+
             // 2. Create an onboarding link ↴
+            $accountLinkType = 'account_onboarding';
+            
+            // If card_payments is inactive but no requirements are due, try account_update
+            // This happens when Stripe doesn't trigger onboarding for capability changes automatically
+            if (($updatedAccount->capabilities->card_payments ?? '') === 'inactive' 
+                && empty($updatedAccount->requirements->currently_due)) {
+                $accountLinkType = 'account_update';
+                Log::info('Switching to account_update flow due to inactive capability without requirements');
+            }
+
             $accountLink = StripeControl::getClient()->accountLinks->create([
                 'account'      => $user->account_id,
                 'refresh_url'  => route('stripe.connect', [
@@ -1088,7 +1152,7 @@ class StripeController extends Controller
                     'country' => $user->country,
                 ]),
                 'return_url'   => route('stripe.return'),
-                'type'         => 'account_onboarding',
+                'type'         => $accountLinkType,
             ]);
 
             // 3. Redirect to Stripe’s URL
@@ -1122,9 +1186,8 @@ class StripeController extends Controller
      * @param Request $request
      * @return mixed
      */
-    public function connectReturn(Request $request)
+    public function connectReturn()
     {
-        $data = $request->all();
         $user = User::find(Auth::id());
         if (empty($user->account_id)) {
             return redirect(route("user.show", ["username" => $user->username]))->with("error", "Stripe did not initiated properly.");
@@ -1175,9 +1238,10 @@ class StripeController extends Controller
     // }
 
 
-    public function loginToStripe(Request $request, $country = null)
+    public function loginToStripe($country = null)
     {
         try {
+            /** @var \App\Models\User|null $user */
             $user = Auth::user();
 
             Stripe::setApiKey(config('services.stripe.secret'));
@@ -1295,21 +1359,33 @@ class StripeController extends Controller
                 ->get();
 
             $lineItems = [];
-            $subtotal = 0;
-            $taxNew = 0;
-            $adminFee = config('app.administration_fee');
+            $totalApplicationFee = 0;
+            $totalCreatorNet = 0;
+            
             foreach ($getdata as $dd) {
-                $priceId = $dd->priceid != Null ? $dd->priceid : $dd->wish->price_id;
-                $totalPrice = $priceId + $adminFee + $dd->tax;
+                $listedPrice = $dd->priceid != Null ? $dd->priceid : $dd->wish->amount;
+                
+                // Use new gross-up flow
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $dd->wish->currency ?? 'USD');
+                
+                $totalPrice = $breakdown['total_supporter_pays'];
+                $applicationFee = $breakdown['application_fee'];
+                $creatorNet = $breakdown['net_to_creator'];
 
                 $lineItems[] = [
-                    'price' => $totalPrice ?? '',
+                    'price_data' => [
+                        'currency' => $dd->wish->currency ?? 'USD',
+                        'product_data' => [
+                            'name' => "Total value of item including all fees",
+                            'description' => "Support payment for " . ($dd->wish->title ?? 'Wish Item'),
+                        ],
+                        'unit_amount' => (int)($totalPrice * 100),
+                    ],
                     'quantity' => $dd->quantity,
                 ];
 
-                $subtotal += $dd->amount;
-                $taxNew += $dd->tax;
-                $taxNew += $adminFee;
+                $totalApplicationFee += ($applicationFee * $dd->quantity);
+                $totalCreatorNet += ($creatorNet * $dd->quantity);
             }
 
             $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
@@ -1320,7 +1396,7 @@ class StripeController extends Controller
                 'line_items' => $lineItems,
                 'mode' => 'payment',
                 'payment_intent_data' => [
-                    'application_fee_amount' => $taxNew,
+                    'application_fee_amount' => (int)($totalApplicationFee * 100),
                     'receipt_email' => $user->email,
                 ],
                 'customer_email' => $user->email,
@@ -1337,9 +1413,9 @@ class StripeController extends Controller
             ]);
 
             $stripePaymentDetail = StripePaymentDetail::create([
-                'amount_subtotal' => $subtotal,
+                'amount_subtotal' => $totalCreatorNet,
                 'amount_total' => $sessionCreate->amount_total / 100,
-                'tax' => $taxNew,
+                'tax' => $totalApplicationFee,
                 'currency' => $sessionCreate->currency,
                 'payment_method_config_detail_id' => optional($sessionCreate->payment_method_configuration_details)->id,
                 'payment_method_type' => optional($sessionCreate->payment_method_types)[0],
@@ -1367,7 +1443,7 @@ class StripeController extends Controller
     public function retrive($id)
     {
         $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-        $data = $stripe->checkout->sessions->retrieve(
+        $stripe->checkout->sessions->retrieve(
             $id,
             []
         );
@@ -1416,7 +1492,7 @@ class StripeController extends Controller
             $stripeid = StripePaymentDetail::where('session_id', $sessionId)->first();
             foreach ($getdata as $dd) {
                 $payment_data = StripePaymentItems::create([
-                    'uuid' => Uuid::uuid4(),
+                    'uuid' => (string) Str::uuid(),
                     'stripe_payment_detail_id' => $stripeid->id,
                     'wish_item_id' => $dd->wish_item_id ?? Null,
                     'user_cart_id' => $dd->id,
@@ -1426,7 +1502,6 @@ class StripeController extends Controller
                     'message' => $dd->message ?? null,
                 ]);
                 $payment_data->refresh();
-                $message = $stripeid->message;
 
 
                 // if ($dd->wish_item_id == NULL) {
@@ -1516,12 +1591,41 @@ class StripeController extends Controller
                 }
 
                 $lineItems = [];
-                foreach ($cart as $key => $value) {
+                $totalApplicationFee = 0;
+                $totalCreatorNet = 0;
+                $currency = $cart[0]->wish->currency ?? 'USD';
+
+                foreach ($cart as $value) {
+                    $listedPrice = $value->amount; // This is the price from the cart
+                    
+                    // Use new gross-up flow
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $currency);
+                    
+                    $totalPrice = $breakdown['total_supporter_pays'];
+                    $applicationFee = $breakdown['application_fee'];
+                    $creatorNet = $breakdown['net_to_creator'];
 
                     $lineItems[] = [
-                        'price' => !empty($value->priceid) ? $value->priceid : $value->wish->price_id,
+                        'price_data' => [
+                            'currency' => $currency,
+                            'product_data' => [
+                                'name' => "Total value of item including all fees",
+                                'description' => "Support payment for " . ($value->wish->title ?? 'Wish Item'),
+                            ],
+                            'unit_amount' => (int)($totalPrice * 100),
+                        ],
                         'quantity' => $value->quantity,
                     ];
+
+                    $totalApplicationFee += ($applicationFee * $value->quantity);
+                    $totalCreatorNet += ($creatorNet * $value->quantity);
+                }
+
+                $creator = User::find($cart[0]->owner_id);
+                $connectedAccountId = $creator->account_id;
+
+                if (empty($connectedAccountId)) {
+                    return redirect()->back()->with('error', 'Creator has not connected their Stripe account.');
                 }
 
                 $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -1530,20 +1634,26 @@ class StripeController extends Controller
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
-                    'metadata' => [
-                        'user_id' => null, // Anonymous purchase
-                        'creator_id' => $cart[0]->owner_id,
-                        'wish_id' => $cart[0]->wish_item_id ?? null,
-                        'deliverable_type' => 'media_bundle',
-                        'certificate' => 'true',
-                        'product_type' => 'wish_one_off',
-                        'device_id' => $device_id,
+                    'payment_intent_data' => [
+                        'application_fee_amount' => (int)($totalApplicationFee * 100),
+                        'description' => "Anonymous Support Payment for {$creator->username} (Total value including all fees)",
+                        'metadata' => [
+                            'user_id' => null, // Anonymous purchase
+                            'creator_id' => $creator->id,
+                            'wish_id' => $cart[0]->wish_item_id ?? null,
+                            'deliverable_type' => 'media_bundle',
+                            'certificate' => 'true',
+                            'product_type' => 'wish_one_off',
+                            'device_id' => $device_id,
+                            'creator_net_amount' => (string)($totalCreatorNet * 100),
+                            'total_charge_amount' => (string)(array_sum(array_column($lineItems, 'price_data.unit_amount'))),
+                        ],
                     ],
-                ]);
+                ], ['stripe_account' => $connectedAccountId]);
 
                 $callbackData = $sessioncreate;
-                $subtotal = ($callbackData->amount_total / 100) / (1 + (env('TAX_PERCENTAGE') / 100));
-                $taxnew = ($callbackData->amount_total / 100) - ($subtotal);
+                $subtotal = $totalCreatorNet;
+                $taxnew = $totalApplicationFee;
 
                 session()->forget('anonymous_session_id');
                 session(['anonymous_session_id' => $callbackData->id]);
@@ -1568,7 +1678,7 @@ class StripeController extends Controller
 
                 return Inertia::location($sessioncreate->url);
             }
-        } catch (\Throwable $th) {
+        } catch (\Throwable) {
             //throw $th;
         }
     }
@@ -1585,7 +1695,7 @@ class StripeController extends Controller
 
             $cart = UserCart::where('device_id', $device_id)->where('status', 1)->get();
 
-            foreach ($cart as $key => $value) {
+            foreach ($cart as $value) {
                 $amount = $value->amount;
                 $tax = $value->tax;
                 if ($value->wish_item_id != null) {
@@ -1596,7 +1706,7 @@ class StripeController extends Controller
                 }
 
                 $data = StripePaymentItems::create([
-                    'uuid' => Uuid::uuid4(),
+                    'uuid' => (string) Str::uuid(),
                     'stripe_payment_detail_id' => $stripeid->id,
                     'wish_item_id' => $value->wish_item_id ?? null,
                     'amount' => $amount,
@@ -1615,12 +1725,12 @@ class StripeController extends Controller
 
             $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
             return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
-        } catch (\Throwable $th) {
+        } catch (\Throwable) {
             //throw $th;
         }
     }
 
-    public function anonymousCancelCheckout($id = null)
+    public function anonymousCancelCheckout()
     {
         $sessionId = session('anonymous_session_id');
         StripePaymentDetail::where('session_id', $sessionId)->update([
@@ -1795,23 +1905,21 @@ class StripeController extends Controller
             }
 
             $basePrice = Helpers::priceFormat($wish->currency, $wish->price, $currency);
-            $platformFeePercentage = config('app.platform_fee_percentage');
-            $adminFeeGBP = config('app.administration_fee');
-            $gbpToUsdRate = Helpers::priceFormat('GBP', $adminFeeGBP, $currency);
+        
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatPercent = $wish->user->vat_amount_percentage ?? 0;
+        $vatAmount = $basePrice * $vatPercent / 100;
+        $priceWithVat = $basePrice + $vatAmount;
 
-            $platformFeeAmount = $basePrice * $platformFeePercentage / 100;
-            $vatAmount = 0;
-            if ($reccure === 'continue' && !empty($wish->user->vat_amount_percentage)) {
-                $vat_percentage_amount = Helpers::priceFormat($wish->currency, $vat_percentage_amount, $currency);
-                // $vatAmount = ($basePrice + $platformFeeAmount) * $wish->user->vat_amount_percentage / 100;
-            }
+        // Use new gross-up flow
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        $applicationFeeAmount = $breakdown['application_fee'];
+        $creatorNet = $breakdown['net_to_creator'];
+        $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
-            $creatorTotal = $basePrice + $vat_percentage_amount;
-            $platformTotal = $platformFeeAmount + $gbpToUsdRate;
-            $finalTotalAmount = $creatorTotal + $platformTotal;
-            $applicationFeePercent = ($platformTotal / $finalTotalAmount) * 100;
-
-            // Look for existing price with same currency
+        // Look for existing price with same currency
             $existingPrice = ConnectedAccountCustomer::where([
                 'user_id' => $user->id,
                 'creator_id' => $wish->user->id,
@@ -1882,23 +1990,18 @@ class StripeController extends Controller
                 ]);
             }
 
-            // Calculate creator VAT amount if applicable
-            $creatorVatAmount = 0;
-            if (isset($wish->user->vat_amount_percentage) && $wish->user->vat_amount_percentage > 0) {
-                $creatorVatAmount = round(($basePrice * $wish->user->vat_amount_percentage / 100) * $multiplier);
-            }
-
-            // Use destination charges pattern like cart/tip payments - create line items that sum to total charge
+            // Use Direct Charges pattern (Standard/Express accounts)
+            // Single line item hiding all fees
             $lineItems = [
                 [
                     'quantity' => 1,
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => $wish->wishname ?? 'Wish Item Subscription',
+                            'name' => "Wish: {$wish->name} (Total value including all fees)",
                             'description' => "Subscription content from {$wish->user->name}",
                         ],
-                        'unit_amount' => round($basePrice * $multiplier),
+                        'unit_amount' => round($finalTotalAmount * $multiplier),
                     ]
                 ]
             ];
@@ -1911,62 +2014,18 @@ class StripeController extends Controller
                 ];
             }
 
-            // Add creator VAT as separate line item if applicable
-            if ($creatorVatAmount > 0) {
-                $vatLineItem = [
-                    'quantity' => 1,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => 'Creator VAT',
-                        ],
-                        'unit_amount' => $creatorVatAmount,
-                        'tax_behavior' => 'exclusive',
-                    ],
-                ];
+            // Creator Net Amount = what creator receives after Stripe fees
+            $creatorNetAmount = round($creatorNet * $multiplier);
 
-                // Add recurring data for VAT if not onetime
-                if ($reccure !== 'onetime') {
-                    $vatLineItem['price_data']['recurring'] = [
-                        'interval' => StripeControl::$periods[$wish->subscription_period],
-                        'interval_count' => 1,
-                    ];
-                }
-
-                $lineItems[] = $vatLineItem;
-            }
-
-            // Add platform fee as separate line item
-            $platformFeeLineItem = [
-                'quantity' => 1,
-                'price_data' => [
-                    'currency' => $currency,
-                    'product_data' => [
-                        'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Wish Subscription',
-                    ],
-                    'unit_amount' => round($platformTotal * $multiplier),
-                    'tax_behavior' => 'exclusive',
-                ],
-            ];
-
-            // Add recurring data for platform fee if not onetime
-            if ($reccure !== 'onetime') {
-                $platformFeeLineItem['price_data']['recurring'] = [
-                    'interval' => StripeControl::$periods[$wish->subscription_period],
-                    'interval_count' => 1,
-                ];
-            }
-
-            $lineItems[] = $platformFeeLineItem;
-
-            // Creator Net Amount = wish price + creator's VAT (what creator receives)
-            $creatorNetAmount = round($basePrice * $multiplier) + $creatorVatAmount;
-
-            // Total charge amount = wish price + creator's VAT + platform fees
-            $totalChargeAmount = round($basePrice * $multiplier) + $creatorVatAmount + round($platformTotal * $multiplier);
+            // Total charge amount = what supporter pays
+            $totalChargeAmount = round($finalTotalAmount * $multiplier);
 
             // Check if creator has card_payments capability to determine payment flow
-            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
+            $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
+
+            if (!$hasCardPayments) {
+                return back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+            }
 
             $payload = [
                 'mode' => $reccure === 'onetime' ? 'payment' : 'subscription',
@@ -1979,8 +2038,8 @@ class StripeController extends Controller
 
             if ($reccure === 'onetime') {
                 $paymentIntentData = [
-                    'description' => "One-time Wish Subscription for {$wish->user->username} with platform fee",
-                    'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
+                    'description' => "One-time Wish Subscription for {$wish->user->username} (Total value including all fees)",
+                    'metadata' => Helpers::buildStripeMetadata('wish_subscription', $sub, [
                         'creator_id' => (string) $wish->user->id,
                         'wish_id' => (string) $wish->id,
                         'deliverable_type' => $reccure === 'onetime' ? 'media_bundle' : 'access',
@@ -1988,15 +2047,14 @@ class StripeController extends Controller
                         'product_type' => $reccure === 'onetime' ? 'wish_onetime' : 'wish_subscription',
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
-                        'creator_vat_amount' => (string) $creatorVatAmount,
                         'creator_net_amount' => (string) $creatorNetAmount,
-                        'platform_fee_amount' => (string) round($platformTotal * $multiplier),
+                        'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
                         'payment_type' => 'One-time Wish Subscription - Direct Charge',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
                         'has_card_payments' => (string) $hasCardPayments,
                     ]),
-                    'application_fee_amount' => (int) round($platformTotal * $multiplier),
+                    'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                 ];
 
                 // Direct Charges used
@@ -2012,7 +2070,7 @@ class StripeController extends Controller
             } else {
                 $subscriptionData = [
                     'description' => 'Wish Item Subscription Content Purchase.',
-                    'metadata' => \App\Helpers::buildStripeMetadata('wish_subscription', $sub, [
+                    'metadata' => Helpers::buildStripeMetadata('wish_subscription', $sub, [
                         'creator_id' => (string) $wish->user->id,
                         'wish_id' => (string) $wish->id,
                         'deliverable_type' => $reccure === 'onetime' ? 'media_bundle' : 'access',
@@ -2020,9 +2078,8 @@ class StripeController extends Controller
                         'product_type' => $reccure === 'onetime' ? 'wish_onetime' : 'wish_subscription',
                         'wishlist_item_id' => (string) $wish->id,
                         'item_amount' => (string) round($basePrice * $multiplier),
-                        'creator_vat_amount' => (string) $creatorVatAmount,
                         'creator_net_amount' => (string) $creatorNetAmount,
-                        'platform_fee_amount' => (string) round($platformTotal * $multiplier),
+                        'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
                         'total_charge_amount' => (string) $totalChargeAmount,
                         'payment_type' => 'Recurring Wish Subscription - Direct Charge',
                         'anonymous' => (string) ($sub->anonymous ?? 0),
@@ -2065,10 +2122,9 @@ class StripeController extends Controller
      * Handle Checkout Session
      *
      * @param string $uuid Subscription UUID
-     * @param string $status Status of Subscription
      * @return mixed
      */
-    public function handleSubscription($uuid, $status)
+    public function handleSubscription($uuid)
     {
         $sub = WishItemSubscription::whereUuid($uuid)->first();
         if (!$sub) {
@@ -2411,7 +2467,7 @@ class StripeController extends Controller
                 ]);
             }
             $subs = StripePaymentDetail::where('user_id', $user->id)->whereIn('payment_status', ['paid', 'pending'])->latest()->first();
-            $ret = StripeControl::getSubscription($event->data->object->subscription);
+            StripeControl::getSubscription($event->data->object->subscription);
             if ($charge->object == 'charge') {
                 if ($event->type == "customer.subscription.deleted" && !empty($subs)) {
                     $subs->payment_status = 'cancelled';
@@ -2501,9 +2557,13 @@ class StripeController extends Controller
                         // Check if wish item has content to deliver
                         if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
 
+                            // Use consistent fee calculation for creator net amount
+                            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency);
+                            $creatorNet = $breakdown['net_to_creator'];
+
                             // Create deliverable record for tracking
-                            $deliverable = \App\Models\Deliverable::create([
-                                'uuid' => \Illuminate\Support\Str::uuid(),
+                            $deliverable = Deliverable::create([
+                                'uuid' => Str::uuid(),
                                 'product_id' => (string) $wishSubscription->wish_item->id,
                                 'item_id' => $wishSubscription->wish_item->id,
                                 'creator_id' => $wishSubscription->wish_item->user_id,
@@ -2522,6 +2582,7 @@ class StripeController extends Controller
                                     'wish_id' => $wishSubscription->wish_item->id,
                                     'subscription_id' => $wishSubscription->id,
                                     'stripe_subscription_id' => $subscriptionId,
+                                    'creator_net_amount' => $creatorNet,
                                     'subscription_payment' => true,
                                     'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                                     'invoice_id' => $event->data->object->id,
@@ -2530,7 +2591,24 @@ class StripeController extends Controller
                             ]);
 
                             // Dispatch ProcessWishItemDeliverable job for content processing using SQS
-                            \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                            ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+
+                            // Update Stripe payment intent metadata (exactly like membership)
+                            if ($event->data->object->payment_intent) {
+                                try {
+                                    $stripeMetadataService = app(StripeMetadataService::class);
+                                    $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                                        'wish_content_processed_at' => now()->toISOString(),
+                                        'immediate_delivery' => 'true'
+                                    ]);
+                                } catch (\Exception $e) {
+                                    Log::error('StripeController: Failed to update Stripe metadata for wish subscription', [
+                                        'deliverable_id' => $deliverable->id,
+                                        'payment_intent_id' => $event->data->object->payment_intent,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                }
+                            }
 
                             Log::info('Subscription content delivery job dispatched', [
                                 'deliverable_id' => $deliverable->id,
@@ -2548,7 +2626,7 @@ class StripeController extends Controller
                             $paymentAmount = $formattedAmount . '/' . $subscriptionPeriod;
 
                             // Use existing wish subscription email system
-                            \App\Jobs\WishSubscriptionMailToUser::dispatch(
+                            WishSubscriptionMailToUser::dispatch(
                                 $wishSubscription,
                                 $wishSubscription->guest_email,
                                 $paymentAmount,
@@ -2666,14 +2744,18 @@ class StripeController extends Controller
             ]);
 
             // Send renewal email notification
-            $this->sendRenewalEmailNotification($wishSubscription, $invoiceData);
+            $this->sendRenewalEmailNotification($wishSubscription);
 
             // If wish item has content to deliver for renewals, create deliverable
             if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
 
+                // Use consistent fee calculation for creator net amount
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency);
+                $creatorNet = $breakdown['net_to_creator'];
+
                 // Create deliverable record for renewal content delivery
-                $deliverable = \App\Models\Deliverable::create([
-                    'uuid' => \Illuminate\Support\Str::uuid(),
+                $deliverable = Deliverable::create([
+                    'uuid' => Str::uuid(),
                     'product_id' => (string) $wishSubscription->wish_item->id,
                     'item_id' => $wishSubscription->wish_item->id,
                     'creator_id' => $wishSubscription->wish_item->user_id,
@@ -2682,7 +2764,7 @@ class StripeController extends Controller
                     'payment_intent_id' => $invoiceData->payment_intent ?? null,
                     'deliverable_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'media_bundle',
                     'product_type' => 'wish_subscription_renewal',
-                    'transaction_amount' => $wishSubscription->wish_item->price, // Use wish item price directly (base amount only)
+                    'transaction_amount' => $wishSubscription->amount,
                     'status' => 'pending',
                     'customer_email' => $wishSubscription->guest_email,
                     'customer_name' => $wishSubscription->guest_name,
@@ -2692,6 +2774,7 @@ class StripeController extends Controller
                         'wish_id' => $wishSubscription->wish_item->id,
                         'subscription_id' => $wishSubscription->id,
                         'stripe_subscription_id' => $subscriptionId,
+                        'creator_net_amount' => $creatorNet,
                         'subscription_renewal' => true,
                         'content_type' => !empty($wishSubscription->wish_item->content_file) ? 'content_file' : 'reward',
                         'invoice_id' => $invoiceData->id,
@@ -2700,7 +2783,24 @@ class StripeController extends Controller
                 ]);
 
                 // Dispatch job to process renewal content delivery using SQS
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+
+                // Update Stripe payment intent metadata (exactly like membership)
+                if ($invoiceData->payment_intent) {
+                    try {
+                        $stripeMetadataService = app(StripeMetadataService::class);
+                        $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                            'wish_renewal_processed_at' => now()->toISOString(),
+                            'immediate_delivery' => 'true'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('StripeController: Failed to update Stripe metadata for renewal', [
+                            'deliverable_id' => $deliverable->id,
+                            'payment_intent_id' => $invoiceData->payment_intent,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
 
                 Log::info('Subscription renewal content delivery job dispatched', [
                     'deliverable_id' => $deliverable->id,
@@ -2730,7 +2830,7 @@ class StripeController extends Controller
     /**
      * Send renewal email notification
      */
-    private function sendRenewalEmailNotification($wishSubscription, $invoiceData)
+    private function sendRenewalEmailNotification($wishSubscription)
     {
         try {
             // Prepare renewal amount with currency formatting and subscription period
@@ -2742,7 +2842,7 @@ class StripeController extends Controller
             $renewalAmount = $formattedAmount . '/' . $subscriptionPeriod;
 
             // Use the existing wish subscription email system for renewals
-            \App\Jobs\WishSubscriptionMailToUser::dispatch(
+            WishSubscriptionMailToUser::dispatch(
                 $wishSubscription,
                 $wishSubscription->guest_email,
                 $renewalAmount,
@@ -2799,6 +2899,14 @@ class StripeController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => "Currently creator has paused gift payments. Please try again later when gift payments are active."
+            ]);
+        }
+
+        // Check if creator has card_payments capability
+        if (!StripeControl::hasCardPaymentsCapability($creator->account_id)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "This creator cannot accept payments at the moment (Card Payments capability missing)."
             ]);
         }
 
@@ -2927,38 +3035,29 @@ class StripeController extends Controller
                 ]);
             }
 
-            $isZeroDecimalCurrency = in_array(strtolower($currency), ['jpy', 'krw', 'vnd']);
-            $amount = $request->amount;
-            $adminFeeAmount = config('app.administration_fee', 1);
-            $taxPercentage = config('app.platform_fee_percentage');
+            $amount = (float) $request->amount;
+            
+            // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+            $vatPercent = $creator->vat_amount_percentage ?? 0;
+            $vatAmount = $amount * $vatPercent / 100;
+            $amountWithVat = $amount + $vatAmount;
+
+            // Step 1: Calculate breakdown in supporter's currency to determine what they pay
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $currency);
+            
+            $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
+            $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
+            $creatorNet = $breakdown['net_to_creator']; // This is in supporter currency
+
+            // Step 2: Calculate equivalent values in creator's currency for DB and metadata
             $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
+            
+            // Calculate VAT for creator side breakdown too
+            $vatAmountCreator = $price * $vatPercent / 100;
+            $priceWithVatCreator = $price + $vatAmountCreator;
 
-            $tax = round(($price * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
-            $adminFeeForStoreDB = Helpers::priceFormat('GBP', $adminFeeAmount, $creator->default_currency);
-            $totalTaxForDB = $tax + $adminFeeForStoreDB;
-
-            $taxAmount = round(($amount * $taxPercentage / 100), 2, PHP_ROUND_HALF_UP);
-            $adminFeeForPay = Helpers::priceFormat('GBP', $adminFeeAmount, $currency);
-            $totalTaxForPay = $taxAmount + $adminFeeForPay;
-            // Get currency metadata to handle zero-decimal currencies properly
-            $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
-            $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-
-            $applicationFeeAmount = round($totalTaxForPay * $multiplier);
-            $unitAmount = round($amount * $multiplier);
-
-            // Calculate creator VAT amount if applicable
-            $creatorVatAmount = 0;
-            if (isset($creator->vat_amount_percentage) && $creator->vat_amount_percentage > 0) {
-                $creatorVatAmount = round(($amount * $creator->vat_amount_percentage / 100) * $multiplier);
-            }
-
-            // Creator Net Amount = item amount + creator's VAT (what creator receives)
-            $creatorNetAmount = $unitAmount + $creatorVatAmount;
-
-            // Total charge amount = item amount + creator's VAT + platform fees
-            $totalChargeAmount = $unitAmount + $creatorVatAmount + $applicationFeeAmount;
-
+            $creatorBreakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCreator, $creator->default_currency);
+            
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
                 'user_id' => Auth::id() ?? null,
@@ -2967,67 +3066,46 @@ class StripeController extends Controller
                 'guest_email' => $request->email,
                 'currency' => $creator->default_currency,
                 'amount' => $price,
-                'tax' => $totalTaxForDB,
+                'tax' => $creatorBreakdown['application_fee'],
                 'message' => $request->message ?? null,
                 'anonymous' => $request->anonymous ?? 0,
             ]);
 
             // Use destination charges pattern like createCheckout - create line items that sum to total charge
+            // Single line item hiding all fees
             $lineItems = [
                 [
                     'quantity' => 1,
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => "Support payment to {$creator->name}",
-                            'description' => "Some support to {$creator->name} to help them create more content.",
+                            'name' => "Total value of item including all fees",
+                            'description' => "Support payment to {$creator->name} to help them create more content.",
                         ],
                         'unit_amount' => $unitAmount,
                     ]
                 ]
             ];
 
-            // Add creator VAT as separate line item if applicable
-            if ($creatorVatAmount > 0) {
-                $lineItems[] = [
-                    'quantity' => 1,
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => 'Creator VAT',
-                        ],
-                        'unit_amount' => $creatorVatAmount,
-                        'tax_behavior' => 'exclusive',
-                    ],
-                ];
-            }
-
-            // Add platform fee as separate line item
-            $lineItems[] = [
-                'quantity' => 1,
-                'price_data' => [
-                    'currency' => $currency,
-                    'product_data' => [
-                        'name' => 'Platform Fee (' . config('app.platform_fee_percentage', 20) . '%) - Support Payment',
-                    ],
-                    'unit_amount' => $applicationFeeAmount,
-                    'tax_behavior' => 'exclusive',
-                ],
-            ];
-
             // Check if creator has card_payments capability to determine payment flow
-            $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($creator->account_id);
+            $hasCardPayments = StripeControl::hasCardPaymentsCapability($creator->account_id);
+
+            if (!$hasCardPayments) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "This creator cannot accept payments at the moment (Card Payments capability missing)."
+                ]);
+            }
 
             // Direct Charges Implementation
             $paymentIntentData = [
-                'description' => "Spenny Piggy - Support payment to {$creator->name} with platform fee",
-                "metadata" => \App\Helpers::buildStripeMetadata('support_payment', $pay, [
+                'description' => "Spenny Piggy - Support payment to {$creator->name} (Total value including all fees)",
+                "metadata" => Helpers::buildStripeMetadata('support_payment', $pay, [
                     'item_amount' => (string) $unitAmount,
                     'certificate' => true,
-                    'creator_vat_amount' => (string) $creatorVatAmount,
-                    'creator_net_amount' => (string) $creatorNetAmount,
+                    'creator_net_amount' => (string) ($creatorNet * 100),
                     'platform_fee_amount' => (string) $applicationFeeAmount,
-                    'total_charge_amount' => (string) $totalChargeAmount,
+                    'total_charge_amount' => (string) $unitAmount,
                     'payment_type' => 'Support Payment - Direct Charge',
                     'anonymous' => (string) ($request->anonymous ? 'yes' : 'no'),
                     'has_card_payments' => (string) $hasCardPayments,
@@ -3074,10 +3152,9 @@ class StripeController extends Controller
      * Handle Checkout Session
      *
      * @param string $uuid Subscription UUID
-     * @param string $status Status of Subscription
      * @return mixed
      */
-    public function handleTipJarPayment($uuid, $status)
+    public function handleTipJarPayment($uuid)
     {
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
         $tip_pay = TipGoalsPayment::whereUuid($uuid)->first();
@@ -3097,17 +3174,68 @@ class StripeController extends Controller
                     return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', 'Currency configuration error. Please contact support.');
                 }
 
-                $userAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
-                $creatorAmount = Helpers::priceFormat($tip_pay->currency, $tip_pay->amount, $currency);
-
                 // Send notification to creator
                 TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
 
+                // Use consistent fee calculation for creator net amount
+                $vatPercent = $tip_pay->creator->vat_amount_percentage ?? 0;
+                $vatAmount = $tip_pay->amount * $vatPercent / 100;
+                $amountWithVat = $tip_pay->amount + $vatAmount;
+
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $tip_pay->currency);
+                $creatorNet = $breakdown['net_to_creator'];
+
+                    // Create deliverable record for tracking and certificate generation
+                    $deliverable = Deliverable::create([
+                    'uuid' => (string) Str::uuid(),
+                    'product_id' => 'support_payment_' . $tip_pay->id,
+                    'item_id' => $tip_pay->id,
+                    'creator_id' => $tip_pay->creator_id,
+                    'gifter_id' => $tip_pay->user_id,
+                    'session_id' => $tip_pay->session_id,
+                    'payment_intent_id' => $session->payment_intent ?? null,
+                    'deliverable_type' => 'support',
+                    'product_type' => 'support_payment',
+                    'transaction_amount' => $tip_pay->amount,
+                    'customer_email' => $tip_pay->guest_email ?? ($tip_pay->user->email ?? null),
+                    'customer_name' => $tip_pay->guest_name ?? ($tip_pay->user->name ?? 'Anonymous'),
+                    'payment_currency' => strtoupper($tip_pay->currency ?? 'GBP'),
+                    'anonymous' => $tip_pay->anonymous ?? false,
+                    'message' => $tip_pay->message,
+                    'metadata' => json_encode([
+                        'support_payment_id' => $tip_pay->id,
+                        'creator_id' => $tip_pay->creator_id,
+                        'tip_goal_id' => $tip_pay->tip_goal_id,
+                        'creator_net_amount' => $creatorNet,
+                        'anonymous' => $tip_pay->anonymous,
+                    ])
+                ]);
+
+                // Dispatch ProcessWishItemDeliverable job for certificate generation using SQS
+                ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+
+                // Update Stripe payment intent metadata (exactly like membership)
+                if ($session->payment_intent) {
+                    try {
+                        $stripeMetadataService = app(StripeMetadataService::class);
+                        $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                            'support_payment_processed_at' => now()->toISOString(),
+                            'immediate_delivery' => 'true'
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('StripeController: Failed to update Stripe metadata for support payment', [
+                            'deliverable_id' => $deliverable->id,
+                            'payment_intent_id' => $session->payment_intent,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
                 // Process supporter deliverable, certificate, and email (replaces TipJarMailToUser)
-                \App\Jobs\TipPaymentMailToUser::dispatch($tip_pay, $userCurrency ? $userCurrency->iso : $tip_pay->currency);
+                TipPaymentMailToUser::dispatch($tip_pay, $userCurrency ? $userCurrency->iso : $tip_pay->currency);
 
                 // Generate thank you post for creator's feed
-                \App\Jobs\CreateThankYouPostJob::dispatch($tip_pay);
+                CreateThankYouPostJob::dispatch($tip_pay);
 
                 $tip_pay->save();
 
@@ -3208,8 +3336,12 @@ class StripeController extends Controller
     {
         $currency = strtolower($request->cookie("currency", "GBP"));
         $price = 4.00;
-        $tax = round(($price * 20 / 100), 2, PHP_ROUND_HALF_UP);
-        $fee_per = number_format(($tax / ($tax + $price)) * 100, 2);
+        
+        // Use new gross-up flow
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, 'GBP');
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        $tax = $breakdown['application_fee'];
 
         $user = User::where('id', Auth::id())->first();
         if (!$user) {
@@ -3239,7 +3371,7 @@ class StripeController extends Controller
             'tax'       =>  $tax,
         ]);
 
-        $amount = $price + $tax;
+        $amount = $finalTotalAmount;
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
@@ -3255,7 +3387,10 @@ class StripeController extends Controller
                 'quantity' => 1,
                 'price_data' => [
                     'currency' => $currency,
-                    'product' => env("SUBSCRIPTION_4_PRODUCT_ID"),
+                    'product_data' => [
+                        'name' => "Platform Charge: SpennyPiggy (Total value including all fees)",
+                        'description' => "Monthly platform charge for SpennyPiggy features",
+                    ],
                     'unit_amount' => $unit_amount, // Ensure integer
                     'recurring' => [
                         'interval' => StripeControl::$periods["monthly"],
@@ -3270,6 +3405,7 @@ class StripeController extends Controller
                     'subscription_amount' => (string) $price,
                     'tax_amount' => (string) $tax,
                     'trial_period_days' => (string) $trial_period_days,
+                    'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
                     'subscription_purpose' => 'mandatory_platform_access',
                 ]),
             ],
@@ -3296,10 +3432,9 @@ class StripeController extends Controller
      * Handle Checkout Session for mandatory subscription of 4 pound
      *
      * @param string $uuid Subscription UUID
-     * @param string $status Status of Subscription
      * @return mixed
      */
-    public function handleMandatorySubscription(Request $request, $uuid, $status)
+    public function handleMandatorySubscription(Request $request, $uuid)
     {
         $sub = MonthlyCharge::whereUuid($uuid)->first();
         if (!$sub) {
@@ -3309,7 +3444,6 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
 
-        $email = isset($sub->user) ? $sub->user->email : $sub->email;
         $user = User::where('id', $sub->user_id)->where('is_uk', 0)->first();
 
         try {
@@ -3327,6 +3461,52 @@ class StripeController extends Controller
                     $user->is_subscribed = 1;
                     $user->save();
                 }
+
+                // Use consistent fee calculation for creator net amount (platform keeps it here)
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($sub->amount, $sub->currency);
+                $creatorNet = $breakdown['net_to_creator'];
+
+                // Create deliverable record for tracking and consistency
+                $deliverable = Deliverable::create([
+                    'uuid' => (string) Str::uuid(),
+                    'product_id' => 'mandatory_charge_' . $sub->id,
+                    'item_id' => $sub->id,
+                    'creator_id' => null, // Platform access doesn't have a specific creator
+                    'gifter_id' => $sub->user_id,
+                    'session_id' => $sub->session_id,
+                    'payment_intent_id' => $session->payment_intent ?? null,
+                    'deliverable_type' => 'platform_access',
+                    'product_type' => 'mandatory_platform_access',
+                    'transaction_amount' => $sub->amount,
+                    'customer_email' => $sub->email,
+                    'customer_name' => $sub->name ?? $sub->user->name ?? 'User',
+                    'payment_currency' => strtoupper($sub->currency ?? 'GBP'),
+                    'metadata' => json_encode([
+                        'monthly_charge_id' => $sub->id,
+                        'user_id' => $sub->user_id,
+                        'creator_net_amount' => $creatorNet,
+                        'stripe_subscription_id' => $session->subscription,
+                        'access_type' => 'mandatory_platform_access'
+                    ])
+                ]);
+
+                // Update Stripe payment intent metadata
+                if ($session->payment_intent) {
+                    try {
+                        $stripeMetadataService = app(StripeMetadataService::class);
+                        $stripeMetadataService->updateDeliverableMetadata($deliverable, [
+                            'mandatory_access_processed_at' => now()->toISOString(),
+                            'immediate_delivery' => 'true'
+                        ]);
+                    } catch (Exception $e) {
+                        Log::error('StripeController: Failed to update Stripe metadata for mandatory charge', [
+                            'deliverable_id' => $deliverable->id,
+                            'payment_intent_id' => $session->payment_intent,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
                 $currency = strtolower($request->cookie("currency", "GBP"));
                 $convertedAmount = strtoupper(Helpers::priceFormat('gbp', $sub->amount, $currency));
                 SendPaymentSuccessEmail::dispatch($sub->user, $convertedAmount, $currency, $sub->upcoming_payment);
@@ -3536,7 +3716,7 @@ class StripeController extends Controller
     //     }
     // }
 
-    public function createVerificationSession(Request $request)
+    public function createVerificationSession()
     {
         try {
             Stripe::setApiKey(env('STRIPE_SECRET_KEY'));

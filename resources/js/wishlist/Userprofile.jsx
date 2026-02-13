@@ -18,12 +18,13 @@ export default function Userprofile({ IsloggedIn }) {
         supporters,
         follow_status,
         first30DayEarnings,
+        card_capabilities,
     } = usePage().props;
     const opponantUser = auth?.opposite_user;
     
     return (
         <div className="userprofilesec mb-2 ">
-            <div className="userPr px-4 py-0 md:py-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-50px]">
+            <div className="userPr px-4 py-0 md:py-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-30px]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="fading userphoto relative !flex items-center justify-center mb-4 ">
                         <img
@@ -32,7 +33,7 @@ export default function Userprofile({ IsloggedIn }) {
                             height={150}
                             width={150}
                             loading="eager"
-                            className="rounded-full !border-[3px] !border-[var(--mint)] !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px] md:!h-[150px] md:!w-[150px] md:min-w-[150px] md:!min-h-[150px] md:!max-w-[150px] md:!max-h-[150px]"
+                            className="rounded-[40px]  !border-[3px] md:mt-[-40px] !border-[var(--mint)] !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px] md:!h-[170px] md:!w-[170px] md:min-w-[170px] md:!min-h-[170px] md:!max-w-[170px] md:!max-h-[170px]"
                         />
 
                         {/* Waiting for approval (ORANGE) */}
@@ -86,7 +87,7 @@ export default function Userprofile({ IsloggedIn }) {
                             )}
                     </div>
 
-                    <div className="pl-3">
+                    <div className="ps-[20px]">
                         <h1 className="font-GillSans flex items-center  justify-center lg:justify-start text-center lg:text-left">
                             {user?.name}
                             {(user?.role == 1 &&
@@ -126,7 +127,7 @@ export default function Userprofile({ IsloggedIn }) {
                 <div className="flex lg:block justify-center mt-4 lg:mt-0">
                     <div>
                         {user && user?.role == 1 ? (
-                            <div className="flex mb-4 justify-center md:mb-2">
+                            <div className=" mt-8 flex mb-4 justify-center md:mb-2">
                                 <p className="md:flex text-center font-poppins mt-1 text-white">
                                     <span className="!w-auto !h-auto block md:inline-block pr-1 ">
                                         👥 {user?.followers_count}
@@ -149,7 +150,7 @@ export default function Userprofile({ IsloggedIn }) {
                         ) : (
                             ""
                         )}
-                        <div className="flex items-center justify-center mb-2">
+                        <div className=" mt-4 flex items-center justify-center mb-2">
                             {!IsloggedIn ? (
                                 <div className="">
                                     <FollowButton
@@ -165,7 +166,7 @@ export default function Userprofile({ IsloggedIn }) {
                                   user.stripe_details_submitted == 1 && (
                                       <div>
                                           {user && user.role == 1 ? (
-                                              <SendTip />
+                                              <SendTip card_capabilities={card_capabilities} />
                                           ) : (
                                               ""
                                           )}
@@ -174,7 +175,7 @@ export default function Userprofile({ IsloggedIn }) {
                                 : (
                                       <EditProfile
                                           user={user}
-                                          classes={"main-button p"}
+                                          classes={"pinkbg uppercase text-lg text-white text-sm  font-gulfs rounded-full px-4 py-2"}
                                           global_currency={global_currency}
                                       />
                                   ) || ""}

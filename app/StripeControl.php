@@ -170,9 +170,9 @@ class StripeControl
                 $agreement = $account->tos_acceptance->service_agreement ?? 'full';
 
                 // For recipient service agreement, only transfers capability is required
-                if ($agreement === 'recipient') {
-                    return ($account->capabilities->transfers ?? null) === 'active';
-                }
+                // if ($agreement === 'recipient') {
+                //    return ($account->capabilities->transfers ?? null) === 'active';
+                // }
 
                 // For full service agreement, both card_payments and transfers must be active
                 return ($account->capabilities->card_payments ?? null) === 'active'

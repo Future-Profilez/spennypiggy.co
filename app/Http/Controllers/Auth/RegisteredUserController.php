@@ -367,15 +367,18 @@ class RegisteredUserController extends Controller
         // Static base amount in GBP
         $baseAmount = 1.00;
 
-        // Add tax (20%) and VAT (20%)
-        $tax = $baseAmount * 0.20;
-        $subtotal = $baseAmount + $tax;
-        $vat = $subtotal * 0.20;
-        $finalAmount = $subtotal + $vat;
-
-        // Convert final amount to selected currency
-        $convertedAmount = Helpers::priceFormat('gbp', $finalAmount, $currency);
-        $finalUnitAmount = intval(round($convertedAmount * 100)); // in smallest currency unit
+        // Use new gross-up flow
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($baseAmount, 'GBP');
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        
+        // Convert final amount to selected currency if not GBP
+        if ($currency !== 'GBP') {
+            $convertedAmount = Helpers::priceFormat('gbp', $finalTotalAmount, $currency);
+            $finalUnitAmount = intval(round($convertedAmount * 100));
+        } else {
+            $finalUnitAmount = intval(round($finalTotalAmount * 100));
+        }
 
         // Create Stripe Checkout session
         $session = $stripe->checkout->sessions->create([
@@ -386,7 +389,12 @@ class RegisteredUserController extends Controller
             'line_items' => [[
                 'price_data' => [
                     'currency' => $currency,
-                    'product' => env('GIFTER_VERIFY_PRODUCT_ID'),
+                    'product_data' => [
+                        'name' => 'Total value of item including all fees',
+                        'metadata' => [
+                            'product_type' => 'gifter_card_verification',
+                        ],
+                    ],
                     'unit_amount' => $finalUnitAmount,
                 ],
                 'quantity' => 1,

@@ -35,11 +35,11 @@ export default function ActivateCard() {
     return (
         <>
             <div className="blackbg">
-                <div className=" mb-md-4 mx-auto border-mints swhbg shadow-mints rounded-[30px]">
+                <div className=" mb-md-4 mx-auto border-mints swhbg shadow-mints rounded-[40px] ">
                     {(auth?.user?.profile_status_lock == 1 || auth?.user?.profile_status_lock == 0) && auth?.user?.is_500_limit_exceeded == 1 && auth?.user?.is_subscribed !== 1  ? (
-                        <div className="dark2 rounded-[30px] p-3">
+                        <div className="dark2 rounded-[40px]  p-3">
                             <div className="stripNote p-3 p-md-4">
-                                <h4 className="text-[30px] font-GillSans text-white text-center text-uppercase mb-3">
+                                <h4 className="text-[30px] font-GillSans text-white text-center uppercase mb-3">
                                    {auth?.user?.profile_reject_reason ? 'Retry Card Verification' : 'Card Verification' }
                                 </h4>
                                 {auth?.user?.profile_reject_reason ? (
@@ -91,9 +91,9 @@ export default function ActivateCard() {
                     )}
 
                     {auth?.user?.profile_status_lock == 1 && auth?.user?.is_subscribed == 1 ? (
-                        <div className="dark2 rounded-[30px] p-3">
+                        <div className="dark2 rounded-[40px]  p-3">
                             <div className="stripNote p-3 p-md-4">
-                                <h4 className="text-[25px] font-GillSans text-yellow-400 text-center text-uppercase mb-3">
+                                <h4 className="text-[25px] font-GillSans text-yellow-400 text-center uppercase mb-3">
                                     Verification Pending
                                 </h4>
                                 <p className="mb-1 text-[18px] text-center max-w-[400px] m-auto text-gray-400">

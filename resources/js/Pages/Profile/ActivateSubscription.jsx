@@ -31,7 +31,7 @@ export default function ActivateSubscription(props) {
             <Head title={"Activate Subscription"} />
             <div className="blackbg py-10 flex items-center lg:h-[85vh] md:py-10 px-4">
                 <div className="max-w-5xl mx-auto">
-                    <div className="whbg shadow-voilet border-voilet rounded-[35px] overflow-hidden">
+                    <div className="whbg shadow-voilet border-voilet rounded-[40px]  overflow-hidden">
                         <div className="pinkbg px-6 py-4 !border-b-[3px] flex items-center">
                             <span className="border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
                             <span className="border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
@@ -55,7 +55,7 @@ export default function ActivateSubscription(props) {
                                 </div>
                             </div>
                             <div className='lg:ps-[30px]'>
-                                <div className="border border-black rounded-xl  !p-4 md:!p-6">
+                                <div className="border border-black rounded-[40px]   !p-4 md:!p-6">
                                     <div className="flex items-baseline font-poppins justify-between">
                                         <div>
                                             {/* <p className="text-sm text-black/60">Billing</p> */}
@@ -72,11 +72,11 @@ export default function ActivateSubscription(props) {
                                     <div className="mt-4 text-xs text-black/60">By continuing, you agree to the Membership Terms and recurring billing. You can cancel at any time before the trial ends.</div>
                                 </div>
                                 <div className="mt-2 grid grid-cols-2 gap-2 text-center">
-                                    <div className="border border-black rounded-xl p-2">
+                                    <div className="border border-black rounded-[40px]  p-2">
                                         <p className="text-xs text-black/60">Secure Payments</p>
                                         <p className="text-sm font-medium">Powered by Stripe</p>
                                     </div>
-                                    <div className="border border-black rounded-xl p-2">
+                                    <div className="border border-black rounded-[40px]  p-2">
                                         <p className="text-xs text-black/60">Support</p>
                                         <p className="text-sm font-medium">Priority Assistance</p>
                                     </div>

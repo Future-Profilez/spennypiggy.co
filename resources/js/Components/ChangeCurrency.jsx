@@ -80,7 +80,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          <>
          <Menu as="div" className="relative inline-block text-left">
             <div>
-               <Menu.Button className="inline-flex justify-center w-full rounded-md border border-transparent px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+               <Menu.Button className="inline-flex justify-center w-full rounded-[40px]  border border-transparent px-4 py-2 bg-cyan-500 text-sm font-medium text-white hover:bg-cyan-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
                   {selectedCurrency ? selectedCurrency : "N/A"}
                </Menu.Button>
             </div>
@@ -93,7 +93,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                leaveFrom="transform opacity-100 scale-100"
                leaveTo="transform opacity-0 scale-95"
             >
-               <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-[300px] overflow-y-auto">
+               <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-[20px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-[300px] overflow-y-auto">
                   <div className="px-1 py-1 ">
                      {currencies && currencies.map((c, i)=>{
                         return (
@@ -103,7 +103,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
                                     href={route('change.currency', {c:c.value})}
                                     className={`${
                                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                                    } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                                    } group flex w-full items-center rounded-[15px]  p-3 text-normal`}
                                  >
                                     {c.label}
                                  </Link>
@@ -118,7 +118,7 @@ export default function ChangeCurrency({defaultvalue, changer, currencyaction}) 
          </>
          :
          <div className=" ">
-            <h2 className="text-uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
+            <h2 className="uppercase font-GillSans pb-4 font-large"> Display Currency </h2>
             <div className="form-field mb-4">
                   <Select  classNamePrefix="react-select" className="max-h-[100px] react-select mb-4 mt-2 "
                      options={currencies} styles={customStyles}

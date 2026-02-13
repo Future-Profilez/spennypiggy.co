@@ -68,7 +68,7 @@ class TaskController extends Controller
         }
 
         $userCurrency = Auth::user()->default_currency ?? 'USD';
-        $currencySymbol = \App\Models\Currency::where('ISO', $userCurrency)->value('symbol') ?? '$';
+        $currencySymbol = Currency::where('ISO', $userCurrency)->value('symbol') ?? '$';
 
         return Inertia::render('Tasks/Create', [
             'currency' => $userCurrency,
@@ -156,7 +156,7 @@ class TaskController extends Controller
     {
         $task = Task::where('uuid', $uuid)->where('creator_id', Auth::id())->firstOrFail();
         $userCurrency = Auth::user()->default_currency ?? 'USD';
-        $currencySymbol = \App\Models\Currency::where('ISO', $userCurrency)->value('symbol') ?? '$';
+        $currencySymbol = Currency::where('ISO', $userCurrency)->value('symbol') ?? '$';
 
         return Inertia::render('Tasks/Edit', [
             'task' => $task,
@@ -177,12 +177,6 @@ class TaskController extends Controller
                 'numeric',
                 'min:1',
                 function ($attribute, $value, $fail) use ($request, $task) {
-                    // Use task's existing currency if not updating type, but usually currency is fixed per task or user default?
-                    // Task model has currency field. We should use that or User's default if it's being updated.
-                    // The update method doesn't seem to update currency field in the code I read earlier (lines 166-185), 
-                    // it only updates title, description, price, etc.
-                    // So we use $task->currency.
-
                     if ($request->type === 'timed') {
                         $currency = $task->currency ?? 'USD';
                         $priceGBP = Helpers::priceFormat(strtoupper($currency), $value, 'GBP');
@@ -273,7 +267,9 @@ class TaskController extends Controller
             $task->makeHidden(['deliverable_content', 'deliverable_note', 'deliverable_content_type']);
         }
 
-        $currencySymbol = \App\Models\Currency::where('ISO', $task->currency)->value('symbol') ?? '$';
+        $currencySymbol = Currency::where('ISO', $task->currency)->value('symbol') ?? '$';
+
+        $card_capabilities = StripeControl::hasCardPaymentsCapability($task->creator->account_id);
 
         return Inertia::render('Tasks/Show', [
             'task' => $task,
@@ -281,7 +277,8 @@ class TaskController extends Controller
             'purchaseHistory' => $purchaseHistory,
             'isCreator' => Auth::id() === $task->creator_id,
             'deliverableUrl' => ($purchase && $task->type === 'instant' && in_array($purchase->status, ['paid', 'delivered', 'completed', 'completed_accepted'])) ? route('task.download', $task->uuid) : null,
-            'currencySymbol' => $currencySymbol
+            'currencySymbol' => $currencySymbol,
+            'card_capabilities' => $card_capabilities
         ]);
     }
 
@@ -376,71 +373,39 @@ class TaskController extends Controller
             }
         }
 
-        // 1. Creator VAT
-        $creatorVatAmount = round($price * ($vatPercent / 100), 2);
+        // Use gross-up flow helper
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        $vatAmount = $price * $vatPercent / 100;
+        $priceWithVat = $price + $vatAmount;
 
-        // 2. Admin Fee (Convert from GBP/Default to Task Currency)
-        // Helpers::priceFormat($fromCurrency, $amount, $toCurrency)
-        $convertedAdminFee = Helpers::priceFormat('GBP', $adminFeeConfig, strtoupper($currency));
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        
+        $finalTotalAmount = $breakdown['total_supporter_pays'];
+        $applicationFeeAmount = $breakdown['application_fee'];
+        $creatorNet = $breakdown['net_to_creator'];
 
-        // 3. Platform Fee (Percentage of Price) + Admin Fee
-        $platformFeeBase = round($price * ($platformFeePercent / 100), 2);
-        $totalPlatformFee = round($platformFeeBase + $convertedAdminFee, 2);
-
-        // 4. Totals
-        $transferAmount = round(($price + $creatorVatAmount) * $multiplier);
-        $totalChargeAmount = round(($price + $creatorVatAmount + $totalPlatformFee) * $multiplier);
-        $transferAmountMajor = round($price + $creatorVatAmount, 2);
-
-        Stripe::setApiKey(config('services.stripe.secret'));
-
-        $lineItems = [];
-
-        // Item 1: The Task
-        $lineItems[] = [
-            'price_data' => [
-                'currency' => $currency,
-                'product_data' => [
-                    'name' => $task->title,
-                    'description' => "You are purchasing a digital task. This is a PG-13 digital service. Delivery method: " . ucfirst($task->type) . ". No adult or sexual content.",
-                    'images' => $task->media_url ? [asset($task->media_url)] : [],
-                ],
-                'unit_amount' => (int) ($price * $multiplier),
-            ],
-            'quantity' => 1,
+        $lineItems = [
+            [
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => $currency,
+                    'product_data' => [
+                        'name' => "Total value of item including all fees",
+                        'description' => "You are purchasing a digital task. Delivery method: " . ucfirst($task->type) . ".",
+                        'images' => $task->media_url ? [asset($task->media_url)] : [],
+                    ],
+                    'unit_amount' => round($finalTotalAmount * $multiplier),
+                ]
+            ]
         ];
-
-        // Item 2: Creator VAT (if applicable)
-        if ($creatorVatAmount > 0) {
-            $lineItems[] = [
-                'price_data' => [
-                    'currency' => $currency,
-                    'product_data' => [
-                        'name' => 'Creator VAT (' . $vatPercent . '%)',
-                    ],
-                    'unit_amount' => (int) ($creatorVatAmount * $multiplier),
-                ],
-                'quantity' => 1,
-            ];
-        }
-
-        // Item 3: Platform Fee
-        if ($totalPlatformFee > 0) {
-            $lineItems[] = [
-                'price_data' => [
-                    'currency' => $currency,
-                    'product_data' => [
-                        'name' => 'Platform Fee (' . $platformFeePercent . '% + Admin Fee)',
-                    ],
-                    'unit_amount' => (int) ($totalPlatformFee * $multiplier),
-                ],
-                'quantity' => 1,
-            ];
-        }
 
         // Prepare Transfer Data
         $connectedAccountId = $creator->account_id;
-        $hasCardPayments = \App\StripeControl::hasCardPaymentsCapability($connectedAccountId);
+        $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
+
+        if (!$hasCardPayments) {
+            return redirect()->back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+        }
 
         $appUrl = rtrim(config('app.url'), '/');
 
@@ -453,26 +418,25 @@ class TaskController extends Controller
             'task_type' => $task->type,
             'sla_hours' => (string) ($task->sla_hours ?? 0),
             'payment_type' => $paymentType,
-            'admin_fee' => $convertedAdminFee,
-            'platform_fee' => $totalPlatformFee,
-            'vat_amount' => $creatorVatAmount,
-            'creator_net_amount' => $transferAmountMajor,
+            'item_amount' => (string) round($price * $multiplier),
+            'creator_net_amount' => (string) round($creatorNet * $multiplier),
+            'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
+            'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
+            'has_card_payments' => (string) $hasCardPayments,
         ];
 
         $paymentIntentData = [
-            'description' => "Spenny Piggy - Task purchase: " . $task->title,
+            'description' => "Spenny Piggy - Task purchase: " . $task->title . " (Total value including all fees)",
+            'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
+            'metadata' => $complianceMetadata,
         ];
 
         // Create session on CONNECTED account
-        $session = \App\StripeControl::createCheckoutSession([
+        $session = StripeControl::createCheckoutSession([
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'mode' => 'payment',
-            'payment_intent_data' => [
-                'description' => "Spenny Piggy - Task purchase: " . $task->title,
-                'application_fee_amount' => (int) ($totalPlatformFee * $multiplier),
-                'metadata' => $complianceMetadata,
-            ],
+            'payment_intent_data' => $paymentIntentData,
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $appUrl . '/task/' . $task->uuid,
             'customer_email' => $user->email,
@@ -588,6 +552,19 @@ class TaskController extends Controller
             }
         }
 
+        // Use consistent fee calculation for creator net amount
+        $currency = $session->currency ?? 'GBP';
+        $currencyModel = \App\Models\Currency::where('ISO', strtoupper($currency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
+        if (isset($metadata->creator_net_amount)) {
+             $creatorNet = $metadata->creator_net_amount / $multiplier;
+        } else {
+             // Fallback (Note: this assumes amount is base price, which might be inaccurate for total paid)
+             $breakdown = Helpers::calculateStripeDirectChargeFlow($amount, $currency);
+             $creatorNet = $breakdown['net_to_creator'];
+        }
+
         // Create TaskPurchase
         $purchase = TaskPurchase::create([
             'task_id' => $taskId,
@@ -603,7 +580,7 @@ class TaskController extends Controller
             'admin_fee' => $metadata->admin_fee ?? 0,
             'platform_fee' => $metadata->platform_fee ?? 0,
             'vat_amount' => $metadata->vat_amount ?? 0,
-            'creator_net_amount' => $metadata->creator_net_amount ?? ($metadata->transfer_amount ?? 0),
+            'creator_net_amount' => $creatorNet,
             'dispute_status' => 'none',
         ]);
 
@@ -636,11 +613,15 @@ class TaskController extends Controller
             'payment_currency' => strtoupper($session->currency ?? 'GBP'),
             'customer_email' => $session->customer_details->email ?? null,
             'customer_name' => $session->customer_details->name ?? null,
-            'metadata' => json_encode($metadata),
+            'metadata' => json_encode(array_merge((array)$metadata, [
+                'creator_net_amount' => $creatorNet,
+                'total_supporter_pays' => $amount,
+                'currency' => strtoupper($session->currency ?? 'GBP')
+            ])),
         ]);
 
         // Dispatch job to process the deliverable (certificate generation)
-        \App\Jobs\ProcessWishItemDeliverable::dispatchSync($deliverable);
+        ProcessWishItemDeliverable::dispatchSync($deliverable);
 
         // Initial Metadata Sync (ensure payment_status is 'paid' on Stripe)
         try {
@@ -656,7 +637,7 @@ class TaskController extends Controller
 
             // Update Metadata
             try {
-                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                 if ($deliverable) {
                     app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                         'task_type' => 'instant'
@@ -727,7 +708,7 @@ class TaskController extends Controller
 
         // Update Metadata
         try {
-            $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+            $deliverable = Deliverable::where('order_id', $purchase->id)->first();
             if ($deliverable) {
                 app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                     'proof_uploaded_at' => now()->toIso8601String()
@@ -790,7 +771,7 @@ class TaskController extends Controller
 
             // Update Metadata
             try {
-                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                 if ($deliverable) {
                     $metadata = [
                         'proof_status' => 'accepted',
@@ -810,7 +791,7 @@ class TaskController extends Controller
 
             // Update Deliverable Status
             try {
-                $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                 if ($deliverable) {
                     $deliverable->status = 'delivered';
                     $deliverable->delivered_at = now();
@@ -851,7 +832,7 @@ class TaskController extends Controller
 
                 // Update Metadata with new status (paid_out / transferred)
                 try {
-                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                     if ($deliverable) {
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'transfer_status' => 'transferred',
@@ -860,7 +841,7 @@ class TaskController extends Controller
                         ]);
                     }
                 } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to update metadata after marking paid_out: " . $e->getMessage());
+                    Log::error("Failed to update metadata after marking paid_out: " . $e->getMessage());
                 }
             }
         } else {
@@ -877,7 +858,7 @@ class TaskController extends Controller
 
                 // Update Metadata
                 try {
-                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                     if ($deliverable) {
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'dispute_status' => 'open',
@@ -906,8 +887,14 @@ class TaskController extends Controller
 
                 // Notify Admin (via email)
                 try {
+                    $appUrl = config('app.url'); // e.g. https://dev.spennypiggy.co
+
+                    if (in_array($appUrl, ['https://dev.spennypiggy.co', 'http://127.0.0.1:8000', 'http://localhost:8000'])) {
+                        Mail::to('prem@futureprofilez.com')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    } elseif ($appUrl == 'https://spennypiggy.co') {
+                        Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
+                    }
                     // Send to admin support email
-                    Mail::to('support@spennypiggy.co')->send(new TaskDisputeEscalatedMail($purchase, $task, null, 'admin'));
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to notify admin about escalation: " . $e->getMessage());
                 }
@@ -918,7 +905,7 @@ class TaskController extends Controller
 
                 // Update Metadata
                 try {
-                    $deliverable = \App\Models\Deliverable::where('order_id', $purchase->id)->first();
+                    $deliverable = Deliverable::where('order_id', $purchase->id)->first();
                     if ($deliverable) {
                         app(StripeMetadataService::class)->updateDeliverableMetadata($deliverable, [
                             'status' => 'rejected_once',

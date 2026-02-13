@@ -14,7 +14,7 @@ export const MemoizedButton = memo(({
     size = 'medium',
     ...props 
 }) => {
-    const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
+    const baseClasses = 'inline-flex items-center justify-center rounded-[40px]  font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
     
     const variantClasses = useMemo(() => ({
         primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
@@ -138,7 +138,7 @@ export const VirtualizedList = memo(({
 
     return (
         <div 
-            className="overflow-auto border border-gray-200 rounded-xl "
+            className="overflow-auto border border-gray-200 rounded-[40px]  "
             style={{ height: containerHeight }}
             onScroll={onScroll}
         >
@@ -208,7 +208,7 @@ export const OptimizedCard = memo(({
     lazy = false 
 }) => {
     const cardContent = useMemo(() => (
-        <div className={`bg-white overflow-hidden shadow-sm rounded-xl  ${className}`}>
+        <div className={`bg-white overflow-hidden shadow-sm rounded-[40px]   ${className}`}>
             {image && (
                 <div className="aspect-w-16 aspect-h-9">
                     {lazy ? (
@@ -291,7 +291,7 @@ export const MemoizedModal = memo(({
                 
                 <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
                 
-                <div className={`inline-block align-bottom bg-white rounded-xl  text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}>
+                <div className={`inline-block align-bottom bg-white rounded-[40px]   text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}>
                     <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         {title && (
                             <div className="sm:flex sm:items-start">
@@ -412,7 +412,7 @@ export class ErrorBoundary extends Component {
     render() {
         if (this.state.hasError) {
             return this.props.fallback || (
-                <div className="p-4 border border-red-200 rounded-xl  bg-red-50">
+                <div className="p-4 border border-red-200 rounded-[40px]   bg-red-50">
                     <h2 className="text-lg font-semibold text-red-800 mb-2">
                         Something went wrong
                     </h2>

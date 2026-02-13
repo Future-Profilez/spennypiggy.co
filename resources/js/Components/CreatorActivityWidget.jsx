@@ -9,7 +9,7 @@ const CreatorActivityWidget = (props) => {
     }
     if (activityStatus.status === 'not_fully_verified') {
         return (
-            <div className={`rounded-xl  border-2 p-4 bg-yellow-100 border-yellow-300 text-yellow-800 ${className}`}>
+            <div className={`rounded-[40px]   border-2 p-4 bg-yellow-100 border-yellow-300 text-yellow-800 ${className}`}>
                 <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
                         <span className="text-2xl" role="img" aria-label="status">
@@ -94,7 +94,7 @@ const CreatorActivityWidget = (props) => {
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
     return (
         <>
-        <div className={`rounded-xl  shadow-pink border-2 p-3 ${getStatusColor(activityStatus.status)} ${className}`}>
+        <div className={`rounded-[30px]   shadow-pink border-2 p-4 ${getStatusColor(activityStatus.status)} ${className}`}>
             <div className="lg:flex items-center justify-between">
                 <div className="md:flex items-center gap-3 lg:max-w-[70%] me-3">
                     <div>
@@ -113,7 +113,7 @@ const CreatorActivityWidget = (props) => {
                 <div className='!mt-3'>
                     <Link
                         href="/creator/activity"
-                        className="text-center block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-3 py-2 rounded-xl text-sm  hover:underline opacity-80 hover:opacity-100"
+                        className="text-center block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-3 py-2 rounded-[40px]  text-sm  hover:underline opacity-80 hover:opacity-100"
                     >
                         View Details
                     </Link>

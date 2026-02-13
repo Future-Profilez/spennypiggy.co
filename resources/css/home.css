@@ -371,10 +371,9 @@ button.loadmore-text{margin:auto;display:table;padding:6px 14px;font-size:17px;c
 .gift-icon.voilet svg path{stroke:var(--voilet) !important;}
 .button.sm{font-size:14px !important;}
 .membershipdashboard{max-width:800px;margin:auto;}
-/* post css */
 .text-post-content:focus{box-shadow:none !important;}
 .post-wrap .post-img{width:100%;border-radius:10px;}
-.post-wrap .author-img{height:45px;width:45px;display:inline;border-radius:14px;object-fit:cover;border:1px solid #dfdfdf !important;}
+.post-wrap .author-img{height:55px;width:55px;display:inline;border-radius:14px;object-fit:cover;border:1px solid #dfdfdf !important;}
 .post-wrap .headerpost{display:flex;align-items:center;margin-bottom:15px;width:100%;}
 .post-wrap .authors{margin-left:15px;}
 .post-wrap svg{transition:fill 0.3s ease;cursor:pointer;margin-right:20px;}

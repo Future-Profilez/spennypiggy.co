@@ -88,9 +88,9 @@ function Bill(props) {
                 style={IsloggedIn ? style : stylenone}
                 className={` relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""}`}
             >
-                <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[23px] shadow-[7px_7px_0_0_var(--pink)] overflow-hidden w-full">
+                <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[40px] !border-2  overflow-hidden w-full">
                     {IsloggedIn && itm && itm.approved === 0 ? (
-                        <div className="approvalmessge membership m-3 rounded-xl  p-3 py-2 mb-2 ">
+                        <div className="approvalmessge membership m-3 rounded-[40px]   p-3 py-2 mb-2 ">
                             Bill item waiting for approval. Currently only you
                             can see this bill.
                         </div>
@@ -141,11 +141,11 @@ function Bill(props) {
                                     leaveFrom="transform opacity-100 scale-100"
                                     leaveTo="transform opacity-0 scale-95"
                                 >
-                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                         <div className="px-1 py-1">
                                             <Menu.Item>
                                                 {({ active }) => (
-                                                    <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-md px-2 py-2 text-sm`}>
+                                                    <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-[40px]  px-2 py-2 text-sm`}>
                                                         <RemoveBill
                                                             classes="w-full text-left"
                                                             uuid={itm.uuid}

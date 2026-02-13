@@ -54,7 +54,7 @@ export default function CountriesShipping({handleShipping, handlewws}) {
          </div>
          {haveQty ? (
             <input onChange={inputww}
-            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[13px] px-4"
+            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-[40px]  p-[13px] px-4"
             type="number" name="price" id="price" placeholder="Shipping Price" />
          ) :  ''}
 
@@ -62,7 +62,7 @@ export default function CountriesShipping({handleShipping, handlewws}) {
             {shipping.map((variant, index) => (
                 <div className="flex items-center justify-between my-2">
                   <div className='countries-selections w-full me-2' >
-                     <select className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
+                     <select className="shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-[40px]  p-[12px] px-[20px] "
                      onChange={(e) => handleVariantChange(index, 'country', e.target.value)} >
                         <option value={''} >Choose Country</option>
                         {AllContries && AllContries.map((c, i) => <option key={i} value={c.code}>{c.label}</option>)}
@@ -71,13 +71,13 @@ export default function CountriesShipping({handleShipping, handlewws}) {
                   <div className="relative  w-full me-2">
                      <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                      <input
-                        type="number" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-xl p-[12px] px-[20px] "
+                        type="number" className="shop-forms-input ps-[50px] bg-gray-200 w-full bg-gray-200 border-0 rounded-[40px]  p-[12px] px-[20px] "
                         name={`variantValue${index}`}
                         placeholder="Shipping Price"
                         onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
                      />
                   </div>
-                  <button type="button" className="text-black shop-forms-input bg-gray-200 w-full bg-gray-300 text-[20px] border-0 rounded-xl p-[8px] px-[20px] max-w-[50px]" onClick={() => handleRemoveVariant(index)}>
+                  <button type="button" className="text-black shop-forms-input bg-gray-200 w-full bg-gray-300 text-[20px] border-0 rounded-[40px]  p-[8px] px-[20px] max-w-[50px]" onClick={() => handleRemoveVariant(index)}>
                      &times;
                   </button>
                </div>

@@ -5,41 +5,35 @@ import PriceFormat from "@/includes/PriceFormat";
 import Nocontent from "../../includes/Nocontent";
 
 const Countdown = ({ createdAt, hours }) => {
-    if (!hours) return null;
+    if (!createdAt || !hours) return null;
 
     const targetDate = new Date(
-        new Date(createdAt).getTime() + hours * 60 * 60 * 1000
+        new Date(createdAt).getTime() + hours * 60 * 60 * 1000,
     );
 
     const calculateTimeLeft = () => {
-        const difference = +targetDate - +new Date();
-
-        if (difference <= 0) {
-            return null;
-        }
+        const diff = targetDate - new Date();
+        if (diff <= 0) return null;
 
         return {
-            days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-            hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-            minutes: Math.floor((difference / 1000 / 60) % 60),
-            seconds: Math.floor((difference / 1000) % 60),
+            days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+            minutes: Math.floor((diff / (1000 * 60)) % 60),
+            seconds: Math.floor((diff / 1000) % 60),
         };
     };
 
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
     useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft(calculateTimeLeft());
-        }, 1000);
-
+        const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
         return () => clearInterval(timer);
     }, [createdAt, hours]);
 
     if (!timeLeft) {
         return (
-            <span className="text-red-600 font-bold text-xs uppercase tracking-wider">
-                Overdue
+            <span className="text-red-600 font-bold text-xs uppercase">
+                SLA Overdue
             </span>
         );
     }
@@ -201,6 +195,20 @@ export default function Index({
         }
     };
 
+    const SLA_RUNNING_STATUSES = [
+        "paid",
+        "assigned",
+        "pending_review",
+        "rejected_once",
+        "initiated",
+    ];
+
+    const SLA_CLOSED_STATUSES = ["completed", "paid_out", "escalated"];
+
+    const shouldRunSLA = (status) => SLA_RUNNING_STATUSES.includes(status);
+
+    const isSLAFrozen = (status) => SLA_CLOSED_STATUSES.includes(status);
+
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="My Tasks" />
@@ -211,7 +219,7 @@ export default function Index({
                 <div className="max-w-4xl mx-auto space-y-8">
                     {/* Active Orders Section */}
                     {orders && orders.length > 0 && (
-                        <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-xl">
+                        <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-[40px] ">
                             <div className="py-3 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
@@ -238,7 +246,7 @@ export default function Index({
                                                                 Order #
                                                                 {order.uuid.substring(
                                                                     0,
-                                                                    8
+                                                                    8,
                                                                 )}{" "}
                                                                 -{" "}
                                                                 {
@@ -256,24 +264,42 @@ export default function Index({
                                                                 </span>{" "}
                                                                 | Ordered:{" "}
                                                                 {new Date(
-                                                                    order.created_at
+                                                                    order.created_at,
                                                                 ).toLocaleDateString()}
-                                                                {order.task
-                                                                    .sla_hours && (
+                                                                <span className="mx-1">
+                                                                    |
+                                                                </span>
+                                                                {shouldRunSLA(
+                                                                    order?.status,
+                                                                ) ? (
                                                                     <>
-                                                                        {" "}
-                                                                        |
-                                                                        Remaining:{" "}
+                                                                        <span>
+                                                                            Remaining:
+                                                                        </span>
                                                                         <Countdown
                                                                             createdAt={
                                                                                 order.created_at
                                                                             }
                                                                             hours={
                                                                                 order
-                                                                                    .task
-                                                                                    .sla_hours
+                                                                                    ?.task
+                                                                                    ?.sla_hours
                                                                             }
                                                                         />
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span>
+                                                                            SLA Deadline :
+                                                                        </span>
+                                                                        <span className="text-gray-500">
+                                                                            {
+                                                                                order
+                                                                                    ?.task
+                                                                                    ?.sla_hours
+                                                                            }{" "}
+                                                                            Hours
+                                                                        </span>
                                                                     </>
                                                                 )}
                                                             </p>
@@ -281,7 +307,7 @@ export default function Index({
                                                                 <span className="px-3 py-1 rounded-full text-xs font-bold uppercase border border-red-200 bg-red-100 text-red-800">
                                                                     {order.status.replace(
                                                                         "_",
-                                                                        " "
+                                                                        " ",
                                                                     )}
                                                                 </span>
                                                             </div>
@@ -290,7 +316,7 @@ export default function Index({
                                                             <Link
                                                                 href={route(
                                                                     "task.order",
-                                                                    order.uuid
+                                                                    order.uuid,
                                                                 )}
                                                                 className="button p block !text-sm sm"
                                                             >
@@ -310,7 +336,7 @@ export default function Index({
 
                     {/* Purchased Tasks */}
                     {purchased_tasks && purchased_tasks.length > 0 ? (
-                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[23px] overflow-hidden">
+                        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,9)] rounded-[40px]  overflow-hidden">
                             <div className="p-4 bg-blue-100 flex !border-b-2 !border-black items-center justify-between">
                                 <h3 className="font-bold text-xl uppercase tracking-tight">
                                     Tasks I've Purchased
@@ -334,7 +360,7 @@ export default function Index({
                                                     <Link
                                                         href={route(
                                                             "task.order",
-                                                            purchase.uuid
+                                                            purchase.uuid,
                                                         )}
                                                         className="hover:underline"
                                                     >
@@ -349,7 +375,7 @@ export default function Index({
                                                     </span>{" "}
                                                     | Purchased:{" "}
                                                     {new Date(
-                                                        purchase.created_at
+                                                        purchase.created_at,
                                                     ).toLocaleDateString()}
                                                     {[
                                                         "paid",
@@ -359,7 +385,7 @@ export default function Index({
                                                         "escalated",
                                                         "initiated",
                                                     ].includes(
-                                                        purchase.status
+                                                        purchase.status,
                                                     ) &&
                                                         purchase.task
                                                             .sla_hours && (
@@ -382,12 +408,12 @@ export default function Index({
                                                 <div className="mt-2">
                                                     <span
                                                         className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStatusColor(
-                                                            purchase.status
+                                                            purchase.status,
                                                         )}`}
                                                     >
                                                         {purchase.status.replace(
                                                             "_",
-                                                            " "
+                                                            " ",
                                                         )}
                                                     </span>
                                                 </div>
@@ -396,9 +422,9 @@ export default function Index({
                                                 <Link
                                                     href={route(
                                                         "task.order",
-                                                        purchase.uuid
+                                                        purchase.uuid,
                                                     )}
-                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[15px] font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                                    className="inline-block bg-white border-2 border-black text-black px-6 py-2 rounded-[40px]  font-bold hover:bg-gray-100 uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,8)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                                 >
                                                     View Details
                                                 </Link>
@@ -421,7 +447,7 @@ export default function Index({
                     )}
 
                     {auth.user.role === 1 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-xl">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[40px] ">
                             <div className="py-3 px-4 bg-mint flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     My Task Definitions
@@ -471,7 +497,7 @@ export default function Index({
                                                                     <Link
                                                                         href={route(
                                                                             "task.show",
-                                                                            task.uuid
+                                                                            task.uuid,
                                                                         )}
                                                                         className="hover:text-pink-500"
                                                                     >
@@ -520,7 +546,7 @@ export default function Index({
                                                                 <p className="text-xs text-gray-500 font-bold uppercase">
                                                                     Created:{" "}
                                                                     {new Date(
-                                                                        task.created_at
+                                                                        task.created_at,
                                                                     ).toLocaleDateString()}
                                                                 </p>
                                                             </div>
@@ -530,7 +556,7 @@ export default function Index({
                                                                         {formatMultiPrice(
                                                                             task.price,
                                                                             task.currency ||
-                                                                                "USD"
+                                                                                "USD",
                                                                         )}
                                                                     </p>
                                                                 </div>
@@ -538,9 +564,9 @@ export default function Index({
                                                                     <Link
                                                                         href={route(
                                                                             "task.edit",
-                                                                            task.uuid
+                                                                            task.uuid,
                                                                         )}
-                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-xl  font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-[40px]   font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
                                                                     >
                                                                         Edit
                                                                     </Link>
@@ -552,9 +578,8 @@ export default function Index({
 
                                                 {/* Creator Note Section - Properly structured container */}
                                                 {creatorNote && (
-                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-xl `} >
+                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-[40px]  `} >
                                                         <div className="flex items-start gap-3">
-                                                            
                                                             <div className="flex-1">
                                                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                                                                     <div className="flex-1">
@@ -592,7 +617,7 @@ export default function Index({
                                                                                             Rejected
                                                                                             on:{" "}
                                                                                             {new Date(
-                                                                                                task.rejected_at
+                                                                                                task.rejected_at,
                                                                                             ).toLocaleDateString()}
                                                                                         </p>
                                                                                     )}
@@ -629,13 +654,12 @@ export default function Index({
                                                                                         Approved
                                                                                         on:{" "}
                                                                                         {new Date(
-                                                                                            task.approved_at
+                                                                                            task.approved_at,
                                                                                         ).toLocaleDateString()}
                                                                                     </p>
                                                                                 </div>
                                                                             )}
                                                                     </div>
-
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -651,7 +675,7 @@ export default function Index({
 
                     {/* Completed Orders / Sales History */}
                     {completed_orders && completed_orders.length > 0 && (
-                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-xl">
+                        <div className="shadow-layout !border-3 border-black bg-white shadow-black overflow-hidden rounded-[40px] ">
                             <div className="py-3 px-4 bg-green-100 flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-black">
                                     Sales History
@@ -684,18 +708,18 @@ export default function Index({
                                                     </span>{" "}
                                                     | Ordered:{" "}
                                                     {new Date(
-                                                        order.created_at
+                                                        order.created_at,
                                                     ).toLocaleDateString()}
                                                 </p>
                                                 <div className="mt-2">
                                                     <span
                                                         className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStatusColor(
-                                                            order.status
+                                                            order.status,
                                                         )}`}
                                                     >
                                                         {order.status.replace(
                                                             "_",
-                                                            " "
+                                                            " ",
                                                         )}
                                                     </span>
                                                 </div>
@@ -704,7 +728,7 @@ export default function Index({
                                                 <Link
                                                     href={route(
                                                         "task.order",
-                                                        order.uuid
+                                                        order.uuid,
                                                     )}
                                                     className="button b text-sm"
                                                 >

@@ -89,7 +89,7 @@ class OptimizedProfileController extends Controller
     private function getStripeCapabilities($user): array
     {
         if (empty($user->account_id)) {
-            return [false, true, []];
+            return [false, false, []];
         }
 
         try {
@@ -121,7 +121,7 @@ class OptimizedProfileController extends Controller
         } catch (\Exception $e) {
             // Update user if account is invalid
             $user->update(['stripe_details_submitted' => 0]);
-            return [false, true, [
+            return [false, false, [
                 'has_requirements' => true,
                 'requirements' => [[
                     'type' => 'connection_error',
