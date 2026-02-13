@@ -4,7 +4,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { useAlerts } from "@/Components/Alerts";
 import axios from "axios";
 
-export default function CartItem({data, removeCart, quantityUpdate, currency}) {
+export default function CartItem({data, removeCart, quantityUpdate, currency, isLoggedIn, totalPrice}) {
 
     const { formatMultiPrice } = PriceFormat();
     const [quantity, setQuantity] = useState(data && data.quantity || 1);
@@ -46,7 +46,18 @@ export default function CartItem({data, removeCart, quantityUpdate, currency}) {
                 <div>
                     <div className=' !text-normal md:!text-lg font-bold !text-black '>{data.wishname}</div>
                     <div className='font-bold'>
-                        {formatMultiPrice(data.price, currency)}
+                        {isLoggedIn ? (
+                            formatMultiPrice(data.price, currency)
+                        ) : (
+                            <div className="flex flex-col">
+                                <span>
+                                    {formatMultiPrice(totalPrice || ((data.price || 0) + (data.tax || 0)), currency)}
+                                </span>
+                                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                    * Includes all applicable fees
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

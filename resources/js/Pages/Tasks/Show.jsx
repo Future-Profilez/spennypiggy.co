@@ -16,6 +16,40 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     });
     const { formatMultiPrice } = PriceFormat();
 
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Client Rule: Add VAT before other fees
+        const priceWithVat = listedPrice + vat;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
     const [verified, setVerified] = useState(false);
     const onVerify = useCallback((token) => {
         if(token !== null && token !== "" && token !== undefined){
@@ -100,8 +134,24 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         {task.description}
                                     </div>
                                 </div> 
-                                <span className="text-2xl font-black text-pink font-anton tracking-wider">
-                                    {formatMultiPrice(task.price, task.currency || 'USD')}
+                                <span className="text-2xl font-black text-pink font-anton tracking-wider text-right">
+                                    {isCreator ? (
+                                        formatMultiPrice(task.price, task.currency || 'USD')
+                                    ) : (
+                                        <>
+                                            {formatMultiPrice(
+                                                calculateTotalSupporterPays(
+                                                    task.price, 
+                                                    task.currency || 'USD',
+                                                    ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
+                                                ), 
+                                                task.currency || 'USD'
+                                            )}
+                                            <span className="block text-xs text-gray-500 font-normal mt-1 leading-tight">
+                                                * Includes all fees
+                                            </span>
+                                        </>
+                                    )}
                                 </span>
                             </div>
                             <div className="flex flex-wrap gap-2 mt-4 mb-4">

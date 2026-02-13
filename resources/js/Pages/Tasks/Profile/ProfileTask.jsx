@@ -2,11 +2,49 @@ import { useAlerts } from "@/Components/Alerts";
 import PriceFormat from "@/includes/PriceFormat";
 import { Link, useForm, usePage } from "@inertiajs/react";
 
-export default function ProfileTask({ task, IsloggedIn }) {
+export default function ProfileTask({ task, IsloggedIn, profileUser }) {
     const { auth } = usePage().props;
     const { formatMultiPrice } = PriceFormat();
     const { post, processing } = useForm();
     const url = `/task/${task.uuid}`;
+
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Client Rule: Add VAT before other fees
+        const priceWithVat = listedPrice + vat;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
+    const isCreator = auth?.user?.id === (profileUser?.id || task.creator_id);
+    const vatPercentage = profileUser?.vat_amount_percentage || 0;
+    const vatAmount = ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * vatPercentage / 100);
 
      const handlePurchase = () => {
         post(route('task.purchase', task.uuid));
@@ -50,10 +88,28 @@ export default function ProfileTask({ task, IsloggedIn }) {
                     </div>
                     <div className="text-start ps-0 md:!ps-6">
                         <div className="mt-4 md:mt-0  min-w-[100px] gap-4 flex flex-wrap md:!flex-nowrap items-center">
-                            <p className="text-xl sm:text-2xl font-black text-pink-500 font-poppins">
-                                {formatMultiPrice(task.price, task.currency || 'USD')}
-                            </p> 
-                            {!IsloggedIn ? 
+                            <div className="flex flex-col items-end">
+                                <p className="text-xl sm:text-2xl font-black text-pink-500 font-poppins">
+                                    {isCreator ? (
+                                        formatMultiPrice(task.price, task.currency || 'USD')
+                                    ) : (
+                                        formatMultiPrice(
+                                            calculateTotalSupporterPays(
+                                                task.price, 
+                                                task.currency || 'USD',
+                                                vatAmount
+                                            ), 
+                                            task.currency || 'USD'
+                                        )
+                                    )}
+                                </p> 
+                                {!isCreator && (
+                                    <span className="block text-xs text-gray-500 font-normal mt-0 leading-tight text-right">
+                                        * Includes all fees
+                                    </span>
+                                )}
+                            </div>
+                            {!IsloggedIn ?  
                                 <div className="">
                                     <Link href={`/task/${task.uuid}`} className="whitespace-nowrap text-sm sm:text-normal inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
                                         <>{task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝'} </> 

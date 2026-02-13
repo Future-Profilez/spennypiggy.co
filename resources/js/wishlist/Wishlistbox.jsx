@@ -17,7 +17,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 import { Link, usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
-    const { ziggy } = usePage().props;
+    const { ziggy, auth: globalAuth } = usePage().props;
     const { format, formatMultiPrice } = PriceFormat();
     const {
         imagesize,
@@ -34,6 +34,43 @@ export default function Wishlistbox(props) {
         key,
         trackClick,
     } = props;
+
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Client Rule: Add VAT before other fees
+        const priceWithVat = listedPrice + vat;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
+    const effectiveAuth = auth || globalAuth;
+    const isCreator = effectiveAuth?.user?.id === itm?.user_id;
 
     const {
         attributes,
@@ -73,9 +110,6 @@ export default function Wishlistbox(props) {
         const r = (paid / actual) * 100;
         return r.toFixed(1);
     };
-
-    const processingFee = 
-        ((itm?.price || 0) * (window.platformFeePercentage || 20)) / 100;
 
     return (
         <div
@@ -194,7 +228,7 @@ export default function Wishlistbox(props) {
                             }`} > {itm.wishname}
                         </h4>
                         <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
-                            {/* {console.log("processingFee", itm?.currency)} */}
+                            {/* Price Display Logic: Logged-in users (including Creator) see listed price, Guests see total with fees */}
                             {IsloggedIn ? (
                                 <>
                                     {formatMultiPrice(
@@ -203,19 +237,21 @@ export default function Wishlistbox(props) {
                                     )}
                                 </>
                             ) : (
-                                <>
-                                    {formatMultiPrice((parseInt(itm.price)+parseInt(processingFee || 0)), itm?.currency || 'USD', 'adminfee')} 
-                                    {/* {formatMultiPrice(parseInt(itm.price) + parseInt(processingFee || 0), itm?.currency || "GBP", "adminfee")} */} 
-                                </>
-                            )}
-                            {IsloggedIn ? (
-                                <button className="tooltipbtn">
-                                    ?<p>*just not including service fee.</p>
-                                </button>
-                            ) : (
-                                <button className="tooltipbtn">
-                                    ?<p>*including service fee.</p>
-                                </button>
+                                <div className="flex flex-col items-center">
+                                    <span>
+                                        {formatMultiPrice(
+                                            calculateTotalSupporterPays(
+                                                itm.price, 
+                                                itm?.currency || "GBP",
+                                                ((parseFloat(String(itm.price || 0).replace(/,/g, '')) + parseFloat(String(itm.tax_amount || 0).replace(/,/g, ''))) * (itm?.user?.vat_amount_percentage || 0) / 100)
+                                            ), 
+                                            itm?.currency || "GBP"
+                                        )}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                        * Includes all applicable fees
+                                    </span>
+                                </div>
                             )}
                         </h5>
                     </div>

@@ -1105,6 +1105,7 @@ export default function Dashboard(props) {
                                                                     IsloggedIn={
                                                                         IsloggedIn
                                                                     }
+                                                                    profileUser={user}
                                                                 />
                                                             </Suspense>
                                                         ) : (

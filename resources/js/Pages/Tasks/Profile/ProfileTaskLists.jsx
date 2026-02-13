@@ -2,7 +2,7 @@ import ProfileTask from './ProfileTask';
 import { usePage, Link } from '@inertiajs/react';
 import Nocontent from '@/includes/Nocontent';
 
-export default function ProfileTaskLists({ tasks, IsloggedIn }) {
+export default function ProfileTaskLists({ tasks, IsloggedIn, profileUser }) {
     return (
         <section className="pb-6">
 
@@ -14,6 +14,7 @@ export default function ProfileTaskLists({ tasks, IsloggedIn }) {
                                 key={task.id || index} 
                                 task={task} 
                                 IsloggedIn={IsloggedIn} 
+                                profileUser={profileUser}
                             />
                         ))}
                     </ul>

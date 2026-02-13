@@ -18,6 +18,38 @@ export default function AddCart(props) {
 
     const gbpprice = usdtogbp(item.price, "GBP");
 
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr) => {
+        const listedPrice = parseFloat(price || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return listedPrice;
+
+        const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
+    const isCreator = auth?.user?.id === item?.user_id;
+
     const [close, setClose] = useState(action);
     const [is_cart, setIs_cart] = useState(item && item?.is_cart);
     const ItemAdded = (e) => {
@@ -47,7 +79,6 @@ export default function AddCart(props) {
         const url = `/wish/checkout/${item.uuid}/${recure ? recure : ""}`;
         router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
     };
-    const processingFee = (item?.price||0) * (window.platformFeePercentage || 20) / 100;
 
     return (
         <Popup
@@ -68,14 +99,23 @@ export default function AddCart(props) {
                     <div className="pt-4">
                         <div className="text-center text-xl font-bold line-clamp-2 ">{item.wishname}</div>
                         <div className="cartPrice text-center font-CeraGRBold text-violet-600 mt-1">
-                            {IsloggedIn ?
+                            {IsloggedIn ? (
                                 <>
                                     {formatMultiPrice(item.price, item?.currency || 'USD')}
-                                </> :
-                                <>
-                                    {formatMultiPrice((parseInt(item.price)+parseInt(processingFee || 0)), item?.currency || 'USD', 'adminfee')}
                                 </>
-                            }
+                            ) : (
+                                <div className="flex flex-col items-center">
+                                    <span>
+                                        {formatMultiPrice(
+                                            calculateTotalSupporterPays(item.price, item?.currency || 'USD'), 
+                                            item?.currency || 'USD'
+                                        )}
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                        * Includes all applicable fees
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
