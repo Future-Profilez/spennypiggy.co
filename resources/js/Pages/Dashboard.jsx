@@ -477,8 +477,8 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute top-0 right-10 w-[400px] h-[400px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[150px] opacity-90 floating-shape"></div>
-                        <div className="absolute top-[70vh] left-10 w-[400px] h-[400px] bg-pink-500 rounded-full mix-blend-multiply filter blur-[200px] opacity-[0.9] floating-shape" style={{animationDelay: '1s'}}></div>
+                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[400px] lg:h-[400px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] md:blur-[150px]  opacity-90 floating-shape"></div>
+                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[400px] lg:h-[400px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[200px] opacity-[0.9] floating-shape" style={{animationDelay: '1s'}}></div>
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
 
