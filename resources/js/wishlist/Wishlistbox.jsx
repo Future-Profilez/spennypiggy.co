@@ -85,7 +85,7 @@ export default function Wishlistbox(props) {
                 isDragging ? "dragging" : ""
             }`}
         >
-            <div className=" rounded-[40px]   overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
+            <div className=" rounded-[30px] md:rounded-[40px]   overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-2 mt-3 rounded-[25px]   p-3 py-2 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
@@ -155,11 +155,11 @@ export default function Wishlistbox(props) {
                             leaveFrom="transform opacity-100 scale-100"
                             leaveTo="transform opacity-0 scale-95"
                         >
-                            <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-[30px] md:rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                 <div className="px-1 py-1">
                                     <Menu.Item>
                                         {({ active }) => (
-                                            <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-[40px]  px-2 py-2 text-sm text-gray-900`}>
+                                            <div className={`${active ? 'bg-pink-100' : ''} group flex w-full items-center rounded-[30px] md:rounded-[40px]  px-2 py-2 text-sm text-gray-900`}>
                                                 <RemoveWish uuid={itm.uuid} text="Remove Wish" />
                                             </div>
                                         )}
@@ -288,10 +288,10 @@ export default function Wishlistbox(props) {
     );
 }
 
-// <div className="bg-white rounded-[40px]   shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
+// <div className="bg-white rounded-[30px] md:rounded-[40px]   shadow-pink  sshadow-lg relative border-2 border-[#F94F97] w-full max-w-[250px]">
 
 //                                                 <div className="flex justify-center ">
-//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[40px] " />
+//                                                     <img src="https://ucarecdn.com/901c0a0e-e5de-4d7a-8ac3-de11a4632542/" alt="Piggy Bank Illustration" className="w-full rounded-[30px] md:rounded-[40px] " />
 //                                                 </div>
 //                                                 <div className="p-4">
 //                                                     <div className="text-lg   text-gray-800 text-center">Naveen Tehrpariya</div>

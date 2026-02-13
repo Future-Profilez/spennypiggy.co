@@ -67,7 +67,7 @@ export default function GifterTips(props) {
 
   return (
     <div className={`mb-4 ${data && data.length < 1 && !loading ? 'd-none' : ''  }`} >
-      <div className='box rounded-[40px]   p-4 ' >
+      <div className='box rounded-[30px] md:rounded-[40px]   p-4 ' >
         <h3 className='text-large text-dark title mb-2' >Tips </h3>
           {data && data.map((d, i)=>{ 
             return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

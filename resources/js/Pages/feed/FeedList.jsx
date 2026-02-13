@@ -125,7 +125,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
           <p className="text-red-600 mb-4">Error: {error}</p>
           <button 
             onClick={() => fetchPosts(filter, 1, false)}
-            className="bg-pink-600 text-white px-4 py-2 rounded-[40px]   hover:bg-pink-700"
+            className="bg-pink-600 text-white px-4 py-2 rounded-[30px] md:rounded-[40px]   hover:bg-pink-700"
           >
             Try Again
           </button>
@@ -157,7 +157,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
               ) : (
                 <button
                   onClick={handleLoadMore}
-                  className="bg-pink-600 text-white px-6 py-3 rounded-[40px]   hover:bg-pink-700 font-medium transition-colors duration-200"
+                  className="bg-pink-600 text-white px-6 py-3 rounded-[30px] md:rounded-[40px]   hover:bg-pink-700 font-medium transition-colors duration-200"
                   disabled={isLoadingMore}
                 >
                   Load More Posts
@@ -186,7 +186,7 @@ function PostFilterTabs({ filters, activeFilter, onFilterChange, disabled = fals
           key={key}
           onClick={() => onFilterChange(key)}
           disabled={disabled}
-          className={`px-4 py-2 text-sm rounded-[40px]  font-medium transition-all duration-200 ${
+          className={`px-4 py-2 text-sm rounded-[30px] md:rounded-[40px]  font-medium transition-all duration-200 ${
             activeFilter === key
               ? 'bg-pink-600 text-white shadow-sm'
               : 'bg-gray-700 text-gray-100 hover:bg-white hover:text-black hover:shadow-sm'

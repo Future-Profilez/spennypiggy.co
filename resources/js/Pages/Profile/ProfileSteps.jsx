@@ -38,12 +38,12 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                     <style>{`
                         .check-icon.checked svg path {fill: #139700 !important;}
                     `}</style>
-                    <div className="profileSteps bg-white border border-gray-400 rounded-[40px]   mb-4  p-3 lg:!p-6" >
+                    <div className="profileSteps bg-white border border-gray-400 rounded-[30px] md:rounded-[40px]   mb-4  p-3 lg:!p-6" >
                         <h2 className="mb-1 text-[20px] font-bold ">Let’s get you started</h2>
                         <p className="text-gray-500 mb-3">Successful creators complete these steps, although not all required.</p>
                         <CustomProgressBar now={profile && profile.total} max={9} />
 
-                        {/* {profile && profile.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {/* {profile && profile.payment_connect !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${
                                     profile && profile.payment_connect == 1? "checked": ""}`}>
@@ -64,7 +64,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ""} */}
 
                         {/* Intro Video */}
-                        {profile?.intro !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {profile?.intro !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div
                                     className={`check-icon mr-2 pt-1 ${
@@ -93,7 +93,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ''}
 
                         {/* auto_tweets */}
-                        {profile && profile.auto_tweets !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {profile && profile.auto_tweets !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title  flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${profile && profile.auto_tweets == 1? "checked": ""}`}  >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -113,7 +113,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
 
 
                         {/* basic_profile */}
-                        {profile && profile.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {profile && profile.basic_profile !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div
                                     className={`check-icon mr-2 pt-1 ${
@@ -144,7 +144,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
 
 
                         {/* social_links */}
-                        {/* {profile && profile.social_links !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {/* {profile && profile.social_links !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div
                                     className={`check-icon mr-2 pt-1 ${ profile && profile.social_links == 1 ? "checked": "" }`} >
@@ -163,7 +163,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ''} */}
 
                         {/* post_required */}
-                       {profile && profile.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                       {profile && profile.post_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${ profile && profile.post_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -183,7 +183,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ""}
 
                         {/* membership_required */}
-                       {profile && profile.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                       {profile && profile.membership_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${ profile && profile.membership_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -203,7 +203,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ""}
 
                         {/* bill_required */}
-                       {profile && profile.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                       {profile && profile.bill_required !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${ profile && profile.bill_required == 1 ? "checked" : "" }`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -223,7 +223,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ""}
 
                         {/* vat_setting */}
-                        {profile && profile.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {profile && profile.vat_setting !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${profile && profile.vat_setting == 1 ? "checked":""}`}
                                 >
@@ -245,7 +245,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
 
 
                         {/* vat_setting */}
-                        {profile && profile.is_2fa !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {profile && profile.is_2fa !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${profile && profile.is_2fa == 1 ? "checked":""}`}
                                 >
@@ -269,7 +269,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                             </div>
                         </div> : ''}
 
-                        {profile && profile.shop !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {profile && profile.shop !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${profile && profile.shop == 1 ? "checked":""}`} >
                                     <div dangerouslySetInnerHTML={{ __html: checkedItem }} />
@@ -289,7 +289,7 @@ export default function ProfileSteps({ IsloggedIn,  sLinks }) {
                         </div> : ''}
 
                         {/* content */}
-                        {/* {profile && profile.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
+                        {/* {profile && profile.contents !== 1 ? <div className="profile-steps border border-gray-200 rounded-[30px] md:rounded-[40px]  flex  items-center p-3 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1 ${profile && profile.contents == 1 ? "checked": ""}`} >
                                    <div dangerouslySetInnerHTML={{ __html: checkedItem }} />

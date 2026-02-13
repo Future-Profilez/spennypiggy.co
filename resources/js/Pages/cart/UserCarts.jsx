@@ -244,7 +244,7 @@ export default function UserCarts(props) {
                                                 </p>
                                                 <input
                                                     required
-                                                    className={`${ auth && auth.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] `}
+                                                    className={`${ auth && auth.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] `}
                                                     value={auth && auth.email}
                                                     disabled={ auth && auth.email ? true : false }
                                                     onChange={ (e) => setEmail(e.target.value) }

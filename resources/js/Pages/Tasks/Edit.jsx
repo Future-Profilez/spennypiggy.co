@@ -64,7 +64,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                         <div className="mb-6">
                             <button
                                 onClick={handleBack}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[40px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px] md:rounded-[40px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
                             >
                                 <svg
                                     className="w-4 h-4"
@@ -85,7 +85,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                         {/* Rejection Notice Banner */}
                         {isRejected && (
-                            <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-[40px]  shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
+                            <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-[30px] md:rounded-[40px]  shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]">
                                 <div className="flex items-start gap-3">
                                     {/* <div className="p-2 bg-red-100 rounded-full flex-shrink-0">
                                         <svg
@@ -113,7 +113,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             for review.
                                         </p>
                                         {task.reason && (
-                                            <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-[40px]  ">
+                                            <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-[30px] md:rounded-[40px]  ">
                                                 <p className="text-red-800 font-bold text-sm mb-1">
                                                     Rejection Feedback:
                                                 </p>
@@ -153,7 +153,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                 <div className="mb-0">
                                     <input
                                         type="text"
-                                        className="w-full border-2 border-black rounded-[40px]  p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400"
+                                        className="w-full border-2 border-black rounded-[30px] md:rounded-[40px]  p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-yellow-50 placeholder-gray-400"
                                         value={data.title}
                                         onChange={(e) =>
                                             setData("title", e.target.value)
@@ -169,7 +169,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                 {/* Description */}
                                 <div className="mb-0">
                                     <textarea
-                                        className="w-full border-2 border-black rounded-[40px]  p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
+                                        className="w-full border-2 border-black rounded-[30px] md:rounded-[40px]  p-4 text-lg font-medium shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all min-h-[120px] bg-blue-50 placeholder-gray-400"
                                         rows="4"
                                         value={data.description}
                                         onChange={(e) =>
@@ -197,7 +197,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 type="number"
                                                 placeholder={`Price (${currencySymbol})`}
                                                 step="0.01"
-                                                className="w-full border-2 border-black rounded-[40px]  p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
+                                                className="w-full border-2 border-black rounded-[30px] md:rounded-[40px]  p-[18px] pl-10 text-normal font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-green-50"
                                                 value={data.price}
                                                 onChange={(e) =>
                                                     setData(
@@ -217,7 +217,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     <div className="mb-0">
                                         <input
                                             type="text"
-                                            className="w-full border-2 border-black rounded-[40px]  p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 placeholder-gray-400"
+                                            className="w-full border-2 border-black rounded-[30px] md:rounded-[40px]  p-[18px] text-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:outline-none transition-all bg-purple-50 placeholder-gray-400"
                                             value={data.category}
                                             onChange={(e) =>
                                                 setData(
@@ -245,7 +245,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             onClick={() =>
                                                 setData("type", "instant")
                                             }
-                                            className={`p-4 rounded-[40px]  border-2 border-black text-left transition-all ${
+                                            className={`p-4 rounded-[30px] md:rounded-[40px]  border-2 border-black text-left transition-all ${
                                                 data.type === "instant"
                                                     ? "bg-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                                                     : "bg-white hover:bg-gray-50"
@@ -272,7 +272,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             onClick={() =>
                                                 setData("type", "timed")
                                             }
-                                            className={`p-4 rounded-[40px]  border-2 border-black text-left transition-all ${
+                                            className={`p-4 rounded-[30px] md:rounded-[40px]  border-2 border-black text-left transition-all ${
                                                 data.type === "timed"
                                                     ? "bg-blue-500 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                                                     : "bg-white hover:bg-gray-50"
@@ -303,7 +303,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                         </label>
                                         <input
                                             type="number"
-                                            className="w-full border-2 bg-blue-100 border-black rounded-[40px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-bold text-xl"
+                                            className="w-full border-2 bg-blue-100 border-black rounded-[30px] md:rounded-[40px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-bold text-xl"
                                             value={data.sla_hours}
                                             onChange={(e) =>
                                                 setData(
@@ -330,7 +330,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                 {/* Deliverable File (Only for Instant) */}
                                 {data.type === "instant" && (
                                     <div className="">
-                                        <div className="border-2 border-black rounded-[40px]  p-4 bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="border-2 border-black rounded-[30px] md:rounded-[40px]  p-4 bg-pink-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             <label className="block font-black text-lg mb-3 text-pink-900 uppercase flex items-center gap-2">
                                                 <span className="bg-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm border-2 border-black">
                                                     1
@@ -338,7 +338,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 Update Deliverable Content
                                             </label>
                                             <textarea
-                                                className="bg-white w-full border-2 border-black rounded-[40px]  p-3 mb-4 font-medium focus:!shadow-none"
+                                                className="bg-white w-full border-2 border-black rounded-[30px] md:rounded-[40px]  p-3 mb-4 font-medium focus:!shadow-none"
                                                 rows="2"
                                                 placeholder="Add a note or external link (optional if file provided)..."
                                                 value={data.deliverable_note}
@@ -355,7 +355,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                                             {task.deliverable_content &&
                                                 !data.deliverable_file && (
-                                                    <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-3 rounded-[40px]   border-2 border-black flex flex-col gap-2">
+                                                    <div className="mb-4 text-sm text-blue-800 font-bold bg-blue-100 p-3 rounded-[30px] md:rounded-[40px]   border-2 border-black flex flex-col gap-2">
                                                         <div className="flex items-center gap-2">
                                                             <span>📁</span>
                                                             <span>
@@ -377,7 +377,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                                 )}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-[40px]  text-xs font-bold uppercase transition-colors"
+                                                                className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-[30px] md:rounded-[40px]  text-xs font-bold uppercase transition-colors"
                                                             >
                                                                 Download / View
                                                             </a>
@@ -400,7 +400,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 imgonly={false}
                                             />
                                             {data.deliverable_file && (
-                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-[40px]   border-2 border-black flex items-center gap-2">
+                                                <div className="mt-3 text-sm text-green-800 font-bold bg-green-100 p-3 rounded-[30px] md:rounded-[40px]   border-2 border-black flex items-center gap-2">
                                                     <span>✅</span> New File
                                                     selected:{" "}
                                                     {data.deliverable_file.name}
@@ -436,7 +436,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                     <button
                                         type="button"
                                         onClick={handleBack}
-                                        className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[40px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-center flex items-center justify-center gap-2"
+                                        className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-[30px] md:rounded-[40px]  border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all text-center flex items-center justify-center gap-2"
                                     >
                                         <svg
                                             className="w-4 h-4"
@@ -462,7 +462,7 @@ export default function Edit({ auth, currencySymbol, task }) {
                                             isRejected
                                                 ? "bg-red-600 hover:bg-red-700"
                                                 : "bg-black hover:bg-gray-800"
-                                        } text-white font-bold rounded-[40px]  border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all`}
+                                        } text-white font-bold rounded-[30px] md:rounded-[40px]  border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all`}
                                     >
                                         {processing
                                             ? isRejected
@@ -474,7 +474,7 @@ export default function Edit({ auth, currencySymbol, task }) {
 
                                 {/* Additional info for rejected tasks */}
                                 {isRejected && (
-                                    <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded-[40px]   text-center">
+                                    <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded-[30px] md:rounded-[40px]   text-center">
                                         <p className="text-gray-700 text-sm font-medium">
                                             <span className="font-bold">
                                                 Note:

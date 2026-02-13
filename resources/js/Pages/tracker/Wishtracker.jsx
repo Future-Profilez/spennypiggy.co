@@ -175,7 +175,7 @@ export default function Wishtracker(props) {
               leaveTo="transform opacity-0 max-h-0"
             >
             <div id="example-collapse-text">
-              <div className="wishitem-des box border rounded-[40px]  ">
+              <div className="wishitem-des box border rounded-[30px] md:rounded-[40px]  ">
                   <div className="flex justify-between items-center">
                     <div className="wish-item">
                       <img
@@ -345,13 +345,13 @@ export default function Wishtracker(props) {
           <h2 className='font-gulfs uppercase text-white text-xl lg:text-3xl mb-6 lg:mt-6'>Wish Tracker</h2>
 
           <Tab.Group>
-            <Tab.List className="flex space-x-1 rounded-[40px]  bg-white/10 p-1 mb-4 overflow-x-auto">
+            <Tab.List className="flex space-x-1 rounded-[30px] md:rounded-[40px]  bg-white/10 p-1 mb-4 overflow-x-auto">
               {['Wish Payments', 'Subscriptions', 'Piggy Bank', 'Bills', 'Memberships', 'Shop'].map((tab) => (
                 <Tab as={Fragment} key={tab}>
                   {({ selected }) => (
                     <button
                       className={`
-                        min-w-fit px-4 rounded-[40px]   py-2.5 text-sm font-medium leading-5 transition-colors duration-200
+                        min-w-fit px-4 rounded-[30px] md:rounded-[40px]   py-2.5 text-sm font-medium leading-5 transition-colors duration-200
                         ${selected ? 'bg-pink-600 text-white shadow' : 'text-gray-400 hover:bg-white/[0.12] hover:text-white'}
                       `}
                     >
@@ -541,7 +541,7 @@ export default function Wishtracker(props) {
                             <div className="mt-3">
                               <Link
                                 href={`/${s.wish_item.user.username}?tab=feed`}
-                                className="w-full flex justify-center items-center px-4 py-2 border border-blue-600 rounded-[40px]  shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none gap-2"
+                                className="w-full flex justify-center items-center px-4 py-2 border border-blue-600 rounded-[30px] md:rounded-[40px]  shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none gap-2"
                               >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M12 2L3 7L12 12L21 7L12 2Z" />

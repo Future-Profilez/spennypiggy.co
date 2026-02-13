@@ -125,41 +125,36 @@ export default function TipInner({classes, idd}) {
             <h2 className='p-3 text-pink-500 !font-normal font-GillSans uppercase text-2xl mb-1 mt-4 pr-5'>Support Me</h2>
             <div className='border-t border-gray-200 p-3 pt-3' >
 
-              {user?.role === 1 && card_capabilities === false && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong className="font-bold">Payments Disabled: </strong>
-                    <span className="block sm:inline">This creator cannot accept payments at the moment.</span>
-                </div>
-              )}
+              
 
               {/* <div className='tip-counter flex items-center justify-between mb-3' >
                   <p className='tipheading flex items-center' >
                     <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} />
                   {defaultAmount} &nbsp;Each</p>
                   <div className='incresecounter flex items-center' >
-                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-[40px]  ' onClick={decresevalue} >-</button>
-                        <div className='border px-3 py-2 rounded-[40px]   mx-1' >{tipQuantity}</div>
-                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-[40px]  ' onClick={incresevalue} >+</button>
+                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px]  border  rounded-[30px] md:rounded-[40px]  ' onClick={decresevalue} >-</button>
+                        <div className='border px-3 py-2 rounded-[30px] md:rounded-[40px]   mx-1' >{tipQuantity}</div>
+                        <button className='pinkbg text-white min-w-[40px] px-2 font-large min-h-[40px] border  rounded-[30px] md:rounded-[40px]  ' onClick={incresevalue} >+</button>
                   </div>
               </div> */}
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 mt-2">
-                  <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, global_currency || "GBP")}</button>
-                  {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[40px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
+                  <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, global_currency || "GBP")}</button>
+                  {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
               {selectegTag === 'custom' ? <div className="mb-4 ">
                   <div className="relative currency-wrapper " >
                       <span className="currency-tag">{global_currency || 'GBP'}</span>
-                      <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] " value={amount}
+                      <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] " value={amount}
                       onChange={customAmount}
                       type="number" placeholder="Enter amount.. " />
                   </div>
@@ -175,7 +170,7 @@ export default function TipInner({classes, idd}) {
                 <>
                   <div className="mb-4">
                     <input required
-                      className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                      className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
                       defaultValue={auth && auth.user?.name}
                       onChange={(e) => setData('name', e.target.value)}
                       type="text" placeholder="Enter nickname.. "
@@ -184,7 +179,7 @@ export default function TipInner({classes, idd}) {
 
                   <div className="mb-4">
                     <input required  disabled={auth && auth.user?.email ? true : false}
-                      className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                      className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
                       defaultValue={auth && auth.user?.email}
                       onChange={(e) => setData('email', e.target.value)}
                       type="email" placeholder="Enter email.. " />
@@ -228,13 +223,19 @@ export default function TipInner({classes, idd}) {
                   />
                 </div>
               ) : null}
+
+              {user?.role === 1 && card_capabilities === false && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-[20px] relative mb-4"  >
+                    <h2 className="font-bold w-full text-normal uppercase">Payments Disabled : </h2>
+                    <span className="block sm:inline">This creator cannot accept payments at the moment.</span>
+                </div>
+              )}
+
               <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-black
-                rounded-[40px]  btn-pink md justify-center btn-shadow !font-normal
+                rounded-[30px] md:rounded-[40px]  btn-pink md justify-center btn-shadow !font-normal
                 ease-in-out duration-150 flex button text-center w-full
                   mx-auto  ${(checkRef.current && checkRef.current.checked && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
                 > {loading ? "Processing..." : 'Support Me'} </button>
-
-
 
               <div className='securestripe text-center mt-3' >
                 🔒 Secured via <b>Stripe</b>

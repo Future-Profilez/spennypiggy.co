@@ -7,7 +7,7 @@ def process_file(filepath):
         content = f.read()
 
     # Regex to find rounded-[...px] or rounded-t-[...px] etc
-    # We want to replace it with rounded-[40px]  (or rounded-t-xl)
+    # We want to replace it with rounded-[30px] md:rounded-[40px]  (or rounded-t-xl)
     
     def replace_rounded(match):
         direction = match.group(1) or "" # e.g. "-t", "-bl", or empty
@@ -19,7 +19,7 @@ def process_file(filepath):
             if val < 5:
                 return match.group(0)
             
-            # Use rounded-[40px]  (which is 40px)
+            # Use rounded-[30px] md:rounded-[40px]  (which is 40px)
             return f"rounded{direction}-xl"
         except ValueError:
             return match.group(0)

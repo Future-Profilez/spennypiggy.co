@@ -108,13 +108,13 @@ export default function Hero({auth}) {
         <div className="containerbox relative w-full">
           <div className="welcome" >
               <div className="welcomeLeft mx-auto w-full text-center">
-                  <h2 className="headingSm shadow-none uppercase text-white font-gulfs stroke-none text-xl md:text-5xl xl:text-6xl max-w-4xl mx-auto text-center leading-tight">
-                    The everything {" "}
-                    <div className='block mt-2 text-3xl md:text-6xl xl:text-7xl'>
+                  <h2 className="headingSm animate-jump shadow-none uppercase !text-white font-gulfs stroke-none !text-3xl sm:!text-4xl md:!text-7xl xl:!text-[80px] max-w-4xl mx-auto text-center leading-tight">
+                    The everything 
+                    <div className='animate-jump block mt-2 text-3xl md:text-6xl xl:text-8xl'>
                       <span className="text-gradient-wishlist animate-pulse">
-                                wishlist
-                            </span>
-                            </div>
+                          wishlist
+                      </span>
+                    </div>
                   </h2>
                   <h3 className="text-center text-xl uppercase text-yellow-400 font-bold tracking-widest mt-6 mb-4">
                       Built for Creators
@@ -143,7 +143,8 @@ export default function Hero({auth}) {
                           <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                          </Link>
                     }
-                    <span className="absolute -top-4 -right-3 bg-pink-500 text-white text-[14px] font-bold px-2 py-1 rounded-full animate-pulse">It's Free 🎉</span>
+                    <span className="absolute -top-4 -right-3 bg-pink-500 text-white text-[14px] font-bold px-2 py-1 rounded-full animate-wiggle 
+                     ">It's Free 🎉</span>
                    
                   </div>
                   <div className=" flex justify-center">

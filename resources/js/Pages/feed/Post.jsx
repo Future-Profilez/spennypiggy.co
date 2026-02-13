@@ -65,7 +65,7 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className=" post-wrap bg-white rounded-[40px]  md:rounded-[40px]  p-[15px] xl:p-6 mb-3 md:mb- border-2 border-[#F94F97]">
+      <div className=" post-wrap bg-white rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  p-[15px] xl:p-6 mb-3 md:mb- border-2 border-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img alt='spenny piggy' className="fading author-img" src={item?.user?.avatar_url || userphoto} />
@@ -104,18 +104,18 @@ export default function Post({item}) {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-[30px] md:rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                       <div className="px-1 py-1">
                         <Menu.Item>
                           {({ active }) => (
-                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[40px]  text-sm`}>
+                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[30px] md:rounded-[40px]  text-sm`}>
                               <AddPost title="Edit Post" text={"Edit Post"} classes={`text-left w-full px-4 py-2`} item={item} isEdit={true} />
                             </div>
                           )}
                         </Menu.Item>
                         <Menu.Item>
                           {({ active }) => (
-                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[40px]  text-sm`}>
+                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[30px] md:rounded-[40px]  text-sm`}>
                               <RemovePost classes={`px-4 py-2 text-left w-full`} uuid={item.uuid} text="Remove Post" />
                             </div>
                           )}
@@ -126,7 +126,7 @@ export default function Post({item}) {
                 </Menu>
             ) : ''}
         </div>
-        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-[40px]   mb-2 border !border-yellow-500' >
+        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-[30px] md:rounded-[40px]   mb-2 border !border-yellow-500' >
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
 
@@ -134,13 +134,13 @@ export default function Post({item}) {
           <div className='fading post-images lazywrap relative w-full' >
               
               {posturl() ?<>
-                <span className='rounded-[40px]  pinkbg absolute py-1 px-2 top-3 right-3 uppercase text-[10px] text-white ' >{postBadge()}</span>
+                <span className='rounded-[30px] md:rounded-[40px]  pinkbg absolute py-1 px-2 top-3 right-3 uppercase text-[10px] text-white ' >{postBadge()}</span>
                 <LazyLoadImage
                 effect="blur"
                 width='400' height='400' alt='spenny piggy'
-                className="post-img rounded-[40px]   md:!rounded-[40px]  w-full max-h-[400px] object-cover"
+                className="post-img rounded-[30px] md:rounded-[40px]   md:!rounded-[30px] md:rounded-[40px]  w-full max-h-[400px] object-cover"
                  src={posturl()} />
-                <div className='absolute bottom-3 right-3 z-1 bg-[color:var(--pink)] shadow-sm rounded-[40px]  px-2 py-1 text-[10px] text-white'>
+                <div className='absolute bottom-3 right-3 z-1 bg-[color:var(--pink)] shadow-sm rounded-[30px] md:rounded-[40px]  px-2 py-1 text-[10px] text-white'>
                   {item && item.for_module === 'public' ? "Shoutout" : ""}
                   {item && item.for_module === 'membership' ? "Members Only" : ""}
                   {item && item.for_module === 'subscription' ? "Subscriber Only" : ""}
@@ -151,7 +151,7 @@ export default function Post({item}) {
               
               
               {item.ai_generated == 1 ? 
-              <div className='absolute bottom-3 left-3 z-10 bg-black shadow-sm rounded-[40px]  px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
+              <div className='absolute bottom-3 left-3 z-10 bg-black shadow-sm rounded-[30px] md:rounded-[40px]  px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
                : ""}
           </div>
         : ''}

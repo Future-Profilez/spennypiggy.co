@@ -84,7 +84,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         <p className="text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
                         <img src="${spennypiggy}" alt="Logo" className="mr-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
                         <div className="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
-                            px-4 leading-[15px] h-[40px] rounded-[40px]  text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
+                            px-4 leading-[15px] h-[40px] rounded-[30px] md:rounded-[40px]  text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
                         </div>
                     </div>
                 </div>
@@ -204,7 +204,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         {UploadingStart ? <div className='p-4 '>
                             <div className='flex items-center justify-between mb-3'>
                                 <h2 className='pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
-                                <button onClick={()=>setUploadingStart(false)} className='mr-4  bg-gray-200 px-4 py-1 rounded-[40px]  '>Exit</button>
+                                <button onClick={()=>setUploadingStart(false)} className='mr-4  bg-gray-200 px-4 py-1 rounded-[30px] md:rounded-[40px]  '>Exit</button>
                             </div>
                            {user?.role == 1 && <p className=' text-yellow-600'>Your Profile picture must match the person in the ID verification which is the next step, if it doesn’t your account will be blocked and the user banned.</p>}
                             <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
@@ -213,7 +213,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                         {CoverUploadingStart ? <div className=''>
                             <div className='flex items-center justify-between'>
                                 <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
-                                <button onClick={()=>setCoverUploadingStart(false)} className='mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-[40px]  '>Exit</button>
+                                <button onClick={()=>setCoverUploadingStart(false)} className='mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-[30px] md:rounded-[40px]  '>Exit</button>
                             </div>
                             
                              <UpdateAvatar type="cover" getImageUID={getCoverUID}
@@ -241,12 +241,12 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                             <label className="mb-1">Display Name</label>
                                             <input onBlur={IsProfileChannged} type="text" name="name" defaultValue={user?.name || ''}
                                                 onChange={(e) => setData('name', e.target.value)}
-                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] " />
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] " />
                                         </li>
                                         <li className="mb-2">
                                             <label className="mb-1">Username</label>
                                             <input onBlur={IsProfileChannged} defaultValue={user?.username || ''} onChange={(e) => setData("username", e.target.value)}
-                                                type="text" name="username" className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] " placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
+                                                type="text" name="username" className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] " placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                                         </li>
 
                                         <li><strong className='block text-left mb-4' >Profile URL : {typeof window !== 'undefined' ? window.location.href : ''}</strong></li>
@@ -265,7 +265,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                                                 <input type="text" name="name" defaultValue={user?.min_surprise_amount || ''}
                                                 onChange={(e) => setData('min_surprise_amount', e.target.value)}
-                                                className="w-full border-gray-300 border px-4 py-2 rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" />
+                                                className="w-full border-gray-300 border px-4 py-2 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500" />
                                             </div>
                                             <p className="mt-1">
                                                 The Minimum amount is set
@@ -285,10 +285,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                         {currentSocialBanner && (
                                             <div className="mb-4">
                                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Your Social Media Banner:</h4>
-                                                <div className="border-2 border-gray-200 rounded-[40px]  p-0 bg-gray-50">
+                                                <div className="border-2 border-gray-200 rounded-[30px] md:rounded-[40px]  p-0 bg-gray-50">
                                                     <img 
                                                         src={currentSocialBanner || auth?.user?.social_url} 
-                                                        alt="Social Media Banner" className="w-full max-w-md mx-auto rounded-[40px]  shadow-sm"
+                                                        alt="Social Media Banner" className="w-full max-w-md mx-auto rounded-[30px] md:rounded-[40px]  shadow-sm"
                                                     />
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-2">Right-click and save to download your banner</p>
@@ -311,7 +311,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 }
                                             }}
                                             disabled={generatingBanner || (!localAvatar && !user?.avatar)}
-                                            className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[40px]  mb-3 disabled:opacity-50" >
+                                            className="btn bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-[30px] md:rounded-[40px]  mb-3 disabled:opacity-50" >
                                             {generatingBanner ? 'Generating Banner...' : (currentSocialBanner ? 'Regenerate Social Media Banner' : 'Generate Social Media Banner')}
                                         </button> 
                                     </div>

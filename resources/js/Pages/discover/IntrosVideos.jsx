@@ -66,7 +66,7 @@ export default function IntroVideos(props) {
 
     const Intro = ({w}) => {
       const verified = w && w.user && ((w.user.role === 1) && (w.user.profile_status_lock === 2));
-      return  <div className="relative rounded-[40px]  h-[250px] md:h-[270px] overflow-hidden border border-pink-200 bg-black group"> 
+      return  <div className="relative rounded-[30px] md:rounded-[40px]  h-[250px] md:h-[270px] overflow-hidden border border-pink-200 bg-black group"> 
         <ProfileIntro data={w}  text={
           <>
             <div className="h-full relative">
@@ -79,7 +79,7 @@ export default function IntroVideos(props) {
                 width={260}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/70"></div>
-              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[40px] ">
+              <div className="absolute top-3 left-3 pinkbg text-white text-xs font-medium px-2 py-1 rounded-[30px] md:rounded-[40px] ">
                 Intro Video
               </div>
               <div className="absolute inset-0 flex items-center justify-center">

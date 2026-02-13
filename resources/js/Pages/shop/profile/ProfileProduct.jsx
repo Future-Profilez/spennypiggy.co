@@ -33,10 +33,10 @@ export default function ProfileProduct({ item, IsloggedIn }) {
     const itemPriceGbp = convertUsdToGbp(item.price);
 
     return (
-        <article className="max-w-sm w-full bg-white rounded-[40px]  overflow-hidden">
+        <article className="max-w-sm w-full bg-white rounded-[30px] md:rounded-[40px]  overflow-hidden">
             <div className="relative">
                 {IsloggedIn && item?.approved === 0 && (
-                    <div className="approvalmessge membership m-3 rounded-[40px]  p-3 py-2 mb-2">
+                    <div className="approvalmessge membership m-3 rounded-[30px] md:rounded-[40px]  p-3 py-2 mb-2">
                         Shop item waiting for approval. Currently only you can
                         see this.
                     </div>
@@ -57,7 +57,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
                         }}
                     />
                     {item.ai_generated == 1 && (
-                        <div className="absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-[40px]  px-2 py-1 text-[8px] text-white">
+                        <div className="absolute bottom-2 left-2 z-1 bg-black shadow-sm rounded-[30px] md:rounded-[40px]  px-2 py-1 text-[8px] text-white">
                             MADE WITH AI
                         </div>
                     )}

@@ -71,7 +71,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
         
         if (items.length === 0) {
              return (
-                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-[40px]   border border-dashed border-gray-200">
+                 <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-[30px] md:rounded-[40px]   border border-dashed border-gray-200">
                      <div className="w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mb-6">
                         <RiSearchLine className="text-4xl text-pink-500" />
                      </div>
@@ -81,7 +81,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                      </p>
                      <button 
                         onClick={() => window.location.reload()} 
-                        className="px-6 py-3 bg-gray-900 text-white rounded-[40px]  font-bold hover:bg-black transition-colors"
+                        className="px-6 py-3 bg-gray-900 text-white rounded-[30px] md:rounded-[40px]  font-bold hover:bg-black transition-colors"
                      >
                         Clear All Filters
                      </button>
@@ -144,21 +144,21 @@ function SpotlightSection({ index }) {
     const spot = spotlights[index % spotlights.length];
 
     return (
-        <div className={`rounded-[40px]   border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
+        <div className={`rounded-[30px] md:rounded-[40px]   border p-6 ${spot.color} flex flex-col md:flex-row items-center justify-between gap-6`}>
             <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-1">{spot.title}</h3>
                 <p className="text-gray-600">{spot.subtitle}</p>
             </div>
             {spot.title === "Trending Now 🔥" ? (
-                <Link href={route('discover', { type: 'trending', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[40px]  shadow-sm hover:shadow-md transition-all">
+                <Link href={route('discover', { type: 'trending', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px] md:rounded-[40px]  shadow-sm hover:shadow-md transition-all">
                     View Collection
                 </Link>
             ) : spot.title === "Quick Wins ⚡" ? (
-                <Link href={route('discover', { search: 'under 20', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[40px]  shadow-sm hover:shadow-md transition-all">
+                <Link href={route('discover', { search: 'under 20', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px] md:rounded-[40px]  shadow-sm hover:shadow-md transition-all">
                     View Collection
                 </Link>
             ) : (
-                <Link href={route('discover', { search: 'expiring', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[40px]  shadow-sm hover:shadow-md transition-all">
+                <Link href={route('discover', { search: 'expiring', page: 1 })} className="px-6 py-3 bg-white text-gray-900 font-bold rounded-[30px] md:rounded-[40px]  shadow-sm hover:shadow-md transition-all">
                     View Collection
                 </Link>
             )}

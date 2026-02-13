@@ -34,7 +34,7 @@ export default function ActionRequired({ requirements = [] }) {
         switch (severity) {
             case 'critical':
                 return {
-                    border: 'border-red-100',
+                    border: 'border-red-500',
                     borderLeft: 'border-l-red-600',
                     bgLight: 'bg-red-50',
                     bgSolid: 'bg-red-600',
@@ -45,7 +45,7 @@ export default function ActionRequired({ requirements = [] }) {
                 };
             case 'high':
                 return {
-                    border: 'border-orange-100',
+                    border: 'border-orange-500',
                     borderLeft: 'border-l-orange-500',
                     bgLight: 'bg-orange-50',
                     bgSolid: 'bg-orange-500',
@@ -56,7 +56,7 @@ export default function ActionRequired({ requirements = [] }) {
                 };
             case 'medium':
                 return {
-                    border: 'border-yellow-100',
+                    border: 'border-yellow-500',
                     borderLeft: 'border-l-yellow-500',
                     bgLight: 'bg-yellow-50',
                     bgSolid: 'bg-yellow-500',
@@ -67,7 +67,7 @@ export default function ActionRequired({ requirements = [] }) {
                 };
             case 'warning':
                 return {
-                    border: 'border-blue-100',
+                    border: 'border-blue-500',
                     borderLeft: 'border-l-blue-500',
                     bgLight: 'bg-blue-50',
                     bgSolid: 'bg-blue-500',
@@ -78,7 +78,7 @@ export default function ActionRequired({ requirements = [] }) {
                 };
             default:
                 return {
-                    border: 'border-gray-100',
+                    border: 'border-gray-500',
                     borderLeft: 'border-l-gray-500',
                     bgLight: 'bg-gray-50',
                     bgSolid: 'bg-gray-500',
@@ -91,13 +91,13 @@ export default function ActionRequired({ requirements = [] }) {
     };
 
     return (
-        <div className="space-y-4">
+        <div className=" ">
             {requirements.map((requirement, index) => {
                 const reqColors = getSeverityColors(requirement.severity);
                 return (
                     <div 
                         key={index}
-                        className={`w-full bg-white rounded-[40px]  shadow-sm border ${reqColors.border} overflow-hidden`}
+                        className={`mb-6 w-full bg-white rounded-[30px] md:rounded-[40px]  shadow-sm border-2 ${reqColors.border} overflow-hidden`}
                     >
                         <div className="flex">
                             {/* Accent Bar */}
@@ -133,7 +133,7 @@ export default function ActionRequired({ requirements = [] }) {
                                 </p>
 
                                 {/* Action Box */}
-                                <div className="bg-gray-50 rounded-[40px]  p-6 mb-6 border border-gray-100">
+                                <div className="bg-gray-50 rounded-[30px] md:rounded-[40px]  p-6 mb-6 border border-gray-100">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex-1">
                                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Required Action</span>

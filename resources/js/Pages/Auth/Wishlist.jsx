@@ -386,7 +386,7 @@ export default function Wishlist(props) {
     const AddItem = () => {
         return (
             <div className=" flex items-center">
-                <div className="p-1 rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
@@ -403,7 +403,7 @@ export default function Wishlist(props) {
         <Popup
             modalclass="pinkmodal full"
             action={close} space="4" size="lg"
-            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[40px]  p-3 mb-2 text-center" }`}
+            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center" }`}
             text={customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">

@@ -173,7 +173,7 @@ export default function SubCheckout(props) {
                                                     <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
                                                     <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
                                                     ?
-                                                    <p className="absolute bg-[#505050] p-[10px] rounded-[40px]  top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
+                                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px] md:rounded-[40px]  top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
                                                         {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
                                                     all transactions.
                                                     </p>
@@ -206,7 +206,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full">
                                         <label className=" mb-2 text-sm font-medium text-gray-900">Add Message </label>
                                         <textarea
-                                            className="border-gray-300 border rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[40px] "
+                                            className="border-gray-300 border rounded-[30px] md:rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
                                             onKeyUp={(e) => setData("message",e.target.value)}
                                             placeholder="Write message in under 800 Words..."
                                             defaultValue={data.message}

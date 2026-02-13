@@ -127,7 +127,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
             paid_out: 'bg-green-100 text-green-800',
         };
         return (
-            <span className={`px-3 py-1 rounded-[40px]   text-xs font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${colors[status] || 'bg-gray-100'}`}>
+            <span className={`px-3 py-1 rounded-[30px] md:rounded-[40px]   text-xs font-black uppercase tracking-widest border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${colors[status] || 'bg-gray-100'}`}>
                 {status === 'running_late' ? 'GRACE PERIOD' : status.replace('_', ' ')}
             </span>
         );
@@ -146,20 +146,20 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                     </div>
                     <p className="text-gray-600 mt-2 text-xl">Task: <Link href={route('task.show', task.uuid)} className="text-pink-600 hover:underline font-bold">{task.title}</Link></p>
                     <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-700">
-                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px] md:rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             TYPE: <span className="uppercase text-pink-600">{task.type}</span>
                         </span>
-                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px] md:rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             PRICE: <span className="text-green-600">{formatMultiPrice(purchase.amount, task.currency || 'USD')}</span>
                         </span>
-                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px] md:rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             ASSIGNED: <span className="text-blue-600">{new Date(purchase.created_at).toLocaleDateString()}</span>
                         </span>
 
 
                         {['paid', 'assigned', 'pending_review', 'rejected_once', 'initiated', 'running_late'].includes(purchase.status) && 
                         task.sla_hours && (
-                            <span className={`px-[10px] py-[8px] border-2 border-black rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isGraceActive ? 'bg-orange-100 border-orange-500' : 'bg-gray-100'}`}>
+                            <span className={`px-[10px] py-[8px] border-2 border-black rounded-[30px] md:rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isGraceActive ? 'bg-orange-100 border-orange-500' : 'bg-gray-100'}`}>
                                 {isGraceActive ? 'GRACE PERIOD: ' : 'REMAINING: '}
                                 {isGraceActive ? (
                                     <Countdown 
@@ -174,14 +174,14 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                 )}
                             </span>
                         )}
-                       {task?.sla_hours ? <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                       {task?.sla_hours ? <span className="px-[10px] py-[8px] bg-gray-100 border-2 border-black rounded-[30px] md:rounded-[40px]  font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                             SLA Deadline : <span className="text-green-600">{task?.sla_hours} hours</span>
                         </span> : ''}
                     </div>
                         
                     {/* Gifter Message Display */}
                     {purchase.gifter_message && (
-                        <div className="bg-white border-2 border-black rounded-[40px]  p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-8 mb-8">
+                        <div className="bg-white border-2 border-black rounded-[30px] md:rounded-[40px]  p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-8 mb-8">
                             <h3 className="font-black text-gray-900 mb-2 uppercase tracking-wide text-sm">
                                 {isCreator ? "Message from Supporter" : "Your Message"}
                             </h3>
@@ -227,13 +227,13 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             {isCreator && (
                                 <div>
                                     {['paid', 'assigned', 'rejected_once', 'initiated', 'running_late'].includes(purchase.status) ? (
-                                        <div className="bg-blue-50 p-6 rounded-[40px]  border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="bg-blue-50 p-6 rounded-[30px] md:rounded-[40px]  border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             <h3 className="font-black text-xl uppercase text-blue-900 mb-4">
                                                 {purchase.status === 'rejected_once' ? 'Proof Rejected - Please Re-upload' : (purchase.status === 'running_late' ? 'Grace Period Active - Upload Proof' : 'Action Required: Upload Proof')}
                                             </h3>
                                             
                                             {purchase.status === 'running_late' && purchase.sla_deadline && (
-                                                <div className="bg-yellow-100 border-2 border-yellow-300 rounded-[40px]  p-4 mb-6">
+                                                <div className="bg-yellow-100 border-2 border-yellow-300 rounded-[30px] md:rounded-[40px]  p-4 mb-6">
                                                     <p className="font-bold text-yellow-900 uppercase text-sm">Grace Period Ends In:</p>
                                                     <p className="text-yellow-800 font-black text-lg mt-1">
                                                         <Countdown createdAt={purchase.sla_deadline} hours={1} />
@@ -242,7 +242,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                             )}
                                             
                                             {purchase.status === 'rejected_once' && (
-                                                <div className="bg-red-50 p-3 rounded-[40px]  border-2 border-red-200 mb-6 text-red-800">
+                                                <div className="bg-red-50 p-3 rounded-[30px] md:rounded-[40px]  border-2 border-red-200 mb-6 text-red-800">
                                                     <strong>Supporter Reason:</strong> {purchase.rejection_reason}
                                                 </div>
                                             )}
@@ -250,7 +250,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                             <form onSubmit={handleUpload} className="space-y-6">
                                                 <div>
                                                     <label className="block text-sm font-bold uppercase text-gray-900 mb-2">Proof File (Image, PDF, etc.)</label>
-                                                    <div className="bg-white border-2 border-black rounded-[40px]  p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
+                                                    <div className="bg-white border-2 border-black rounded-[30px] md:rounded-[40px]  p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)]">
                                                         <GlobalUploader
                                                             ctxName="task-proof"
                                                             type="minimal"
@@ -271,7 +271,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                     <textarea 
                                                         value={uploadData.notes}
                                                         onChange={e => setUploadData('notes', e.target.value)}
-                                                        className="w-full border-2 border-black rounded-[40px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] focus:border-pink-500 transition-all"
+                                                        className="w-full border-2 border-black rounded-[30px] md:rounded-[40px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] focus:border-pink-500 transition-all"
                                                         rows="3"
                                                     ></textarea>
                                                 </div>
@@ -287,7 +287,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                     ) : (
                                         <div>
                                             {purchase.proof_content ? (
-                                                <div className="border-2 border-black p-6 rounded-[40px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
+                                                <div className="border-2 border-black p-6 rounded-[30px] md:rounded-[40px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
                                                     <h3 className="font-black uppercase text-lg mb-4">Your Uploaded Proof</h3>
                                                         <a 
                                                             href={purchase.proof_content.is_external ? purchase.proof_content.file : `/storage/${purchase.proof_content.file}`} 
@@ -297,7 +297,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                             View Proof File {purchase.proof_content.name ? `(${purchase.proof_content.name})` : ''}
                                                         </a>
                                                         {purchase.proof_content.notes && (
-                                                            <div className="mt-4 p-3 bg-white border border-gray-300 rounded-[40px]  ">
+                                                            <div className="mt-4 p-3 bg-white border border-gray-300 rounded-[30px] md:rounded-[40px]  ">
                                                                 <p className="text-sm text-gray-500 uppercase font-bold text-xs mb-1">Notes you added:</p>
                                                                 <p className="text-gray-800">{purchase.proof_content.notes}</p>
                                                             </div>
@@ -309,7 +309,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                 {purchase.status === 'pending_review' && "Waiting for supporter review."}
                                                 {purchase.status === 'completed_accepted' && "Order completed successfully!"}
                                                 {purchase.status === 'escalated' && (
-                                                    <div className="bg-red-50 border-2 border-red-200 rounded-[40px]  p-4 mx-auto max-w-full">
+                                                    <div className="bg-red-50 border-2 border-red-200 rounded-[30px] md:rounded-[40px]  p-4 mx-auto max-w-full">
                                                         <h4 className="text-red-800 font-bold uppercase mb-2">Order Escalated</h4>
                                                         <p className="text-red-700 text-sm">
                                                             This order has been escalated to the admin for review. You will be notified once a decision is made.
@@ -326,7 +326,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                             {isSupporter && (
                                 <div>
                                     {['pending_review', 'completed_accepted', 'rejected_once', 'escalated', 'paid_out'].includes(purchase.status) && purchase.proof_content ? (
-                                        <div className="border-2 border-black p-6 rounded-[40px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
+                                        <div className="border-2 border-black p-6 rounded-[30px] md:rounded-[40px]  shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] mb-6">
                                             <h3 className="font-black uppercase text-lg mb-4">Uploaded Proof</h3>
                                                 <a 
                                                     href={purchase.proof_content.is_external ? purchase.proof_content.file : `/storage/${purchase.proof_content.file}`} 
@@ -336,7 +336,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                     View Proof File {purchase.proof_content.name ? `(${purchase.proof_content.name})` : ''}
                                                 </a>
                                                 {purchase.proof_content.notes && (
-                                                    <div className="mt-4 p-3 bg-white border border-gray-300 rounded-[40px]  ">
+                                                    <div className="mt-4 p-3 bg-white border border-gray-300 rounded-[30px] md:rounded-[40px]  ">
                                                         <p className="text-sm text-gray-500 uppercase font-bold text-xs mb-1">Notes from Creator:</p>
                                                         <p className="text-gray-800">{purchase.proof_content.notes}</p>
                                                     </div>
@@ -349,14 +349,14 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                     <div className="flex flex-wrap gap-3">
                                                         <button 
                                                             onClick={handleAccept}
-                                                            className="bg-green-500 text-white px-4 !py-[10px] rounded-[40px]  font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                                                            className="bg-green-500 text-white px-4 !py-[10px] rounded-[30px] md:rounded-[40px]  font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
                                                             disabled={reviewProcessing}
                                                         >
                                                             Accept & Complete 
                                                         </button>
                                                         <button 
                                                             onClick={() => setShowRejectForm(!showRejectForm)}
-                                                            className="bg-red-500 text-white px-4 !py-[10px] ] rounded-[40px]  font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                                                            className="bg-red-500 text-white px-4 !py-[10px] ] rounded-[30px] md:rounded-[40px]  font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
                                                         >
                                                             Reject
                                                         </button>
@@ -368,14 +368,14 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                             <textarea 
                                                                 value={reviewData.reason}
                                                                 onChange={e => setReviewData('reason', e.target.value)}
-                                                                className="w-full border-2 bg-red-100 border-black rounded-[40px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.7)] focus:border-red-500 transition-all"
+                                                                className="w-full border-2 bg-red-100 border-black rounded-[30px] md:rounded-[40px]  p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.7)] focus:border-red-500 transition-all"
                                                                 rows="3"
                                                                 required
                                                             ></textarea>
                                                             <div className="mt-4">
                                                                 <button 
                                                                     type="submit" 
-                                                                    className="bg-red-700 text-white px-4 py-3 rounded-[40px]  w-full font-bold border-2  shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] border-black hover:bg-red-800 uppercase text-sm"
+                                                                    className="bg-red-700 text-white px-4 py-3 rounded-[30px] md:rounded-[40px]  w-full font-bold border-2  shadow-[4px_4px_0px_0px_rgba(0,0,0,0.9)] border-black hover:bg-red-800 uppercase text-sm"
                                                                     disabled={reviewProcessing}
                                                                 >
                                                                     Submit Rejection
@@ -388,7 +388,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
 
                                             {purchase.status === 'escalated' && (
                                                 <div className="mt-6 pt-6 border-t-2 border-dashed border-red-200">
-                                                    <div className="bg-red-50 border-2 border-red-200 rounded-[40px]  p-4 mb-4">
+                                                    <div className="bg-red-50 border-2 border-red-200 rounded-[30px] md:rounded-[40px]  p-4 mb-4">
                                                         <h4 className="text-red-800 font-bold uppercase mb-2">Order Escalated</h4>
                                                         <p className="text-red-700 text-sm mb-2">
                                                             This order has been escalated to the admin for review. 
@@ -398,7 +398,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                                     
                                                     <button 
                                                         onClick={handleAccept}
-                                                        className="w-full bg-green-500 text-white px-4 py-3 rounded-[40px]  font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
+                                                        className="w-full bg-green-500 text-white px-4 py-3 rounded-[30px] md:rounded-[40px]  font-bold border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase"
                                                         disabled={reviewProcessing}
                                                     >
                                                         Accept & Resolve Dispute
@@ -407,7 +407,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-[40px]  p-8 text-center">
+                                        <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-[30px] md:rounded-[40px]  p-8 text-center">
                                             <p className="text-gray-500 italic font-medium">Waiting for creator to upload proof...</p>
                                         </div>
                                     )}
@@ -418,7 +418,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
 
                     {task.type === 'instant' && (
                         <div>
-                            <div className="bg-green-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 rounded-[40px]  text-center mt-6">
+                            <div className="bg-green-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 rounded-[30px] md:rounded-[40px]  text-center mt-6">
                                 {isCreator ? (
                                     <>
                                         <h2 className="text-2xl font-black text-green-800 mb-2 uppercase">Order Completed!</h2>
@@ -432,7 +432,7 @@ export default function Order({ auth, purchase, task, isCreator, isSupporter, cu
                                         <p className="text-green-700 mb-8 font-medium text-lg">Your purchase was successful.</p>
                                         <a 
                                             href={route('task.download', task.uuid)} 
-                                            className="inline-block bg-green-500 text-white px-4 py-[12px] rounded-[40px]  font-black uppercase tracking-widest text-sm border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                            className="inline-block bg-green-500 text-white px-4 py-[12px] rounded-[30px] md:rounded-[40px]  font-black uppercase tracking-widest text-sm border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                         >
                                             Download Content
                                         </a>
