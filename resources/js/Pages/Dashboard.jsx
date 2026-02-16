@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
-import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
@@ -28,7 +27,6 @@ const MyGoal = lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = lazy(() => import("@/includes/SocialLinks"));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
-import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
@@ -54,9 +52,7 @@ import InstantTabSystem from "@/Components/InstantTabSystem";
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
 
-const CreatorActivityWidget = lazy(
-    () => import("@/Components/CreatorActivityWidget"),
-);
+const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
 
 export default function Dashboard(props) {
 
@@ -89,12 +85,9 @@ export default function Dashboard(props) {
             setWishitems(items);
             setIsInitialLoad(false);
         } else if (items === null || items === undefined) {
-            // Keep previous items if new items are undefined (loading state)
-            // This prevents flickering to empty state during transitions
         }
     }, [items, selectedCategory]);
 
-    const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     const hasPendingCardPayments = useMemo(() => {
@@ -106,7 +99,6 @@ export default function Dashboard(props) {
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
 
-    // Keep local sLinks state in sync when server props change (e.g., after save/refresh)
     useEffect(() => {
         setLinks(slinks || []);
     }, [slinks]);
@@ -218,8 +210,6 @@ export default function Dashboard(props) {
         }
     };
 
-    // Flash messages now handled centrally by FlashMessenger in layout
-
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
         const dismissedAt = localStorage.getItem("stripeAlertDismissedAt");
@@ -231,7 +221,6 @@ export default function Dashboard(props) {
             }
         }
     }, []);
-
 
     useEffect(() => {
         if (auth?.user?.email && typeof twq !== "undefined") {
@@ -467,18 +456,16 @@ export default function Dashboard(props) {
     useEffect(() => {
         setAuthUserStripeConnected((auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0);
     }, [auth?.user?.stripe_details_submitted]);
- 
 
     return (
         <>
             <Guest auth={auth.user} user={user}>
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
-
                 <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[400px] lg:h-[400px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] md:blur-[150px]  opacity-90 floating-shape"></div>
-                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[400px] lg:h-[400px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[200px] opacity-[0.9] floating-shape" style={{animationDelay: '1s'}}></div>
+                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-90 floating-shape"></div>
+                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
 
@@ -662,14 +649,14 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    <div className="pink-round mb-4">
-                                                                        <h2 className="text-large  font-GillSans uppercase pinkbg p-3 text-white btn-shadow">
-                                                                            About
-                                                                            Me
-                                                                        </h2>
-                                                                        <div className="p-4">
+                                                                    <div className="bg-white border-2 border-voilet rounded-[40px] mb-4">
+                                                                        <div className="p-4 md:p-6">
+                                                                            <h2 className="text-large  font-GillSans uppercase text-black  ">
+                                                                                About
+                                                                                Me
+                                                                            </h2>
                                                                             <p
-                                                                                className={`text-gray-500 text-left mt-2 ${
+                                                                                className={`text-gray-500  text-lg text-left mt-2 ${
                                                                                     user &&
                                                                                     !user.bio
                                                                                         ? "hidden"

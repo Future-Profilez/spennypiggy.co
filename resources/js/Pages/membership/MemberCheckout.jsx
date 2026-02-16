@@ -197,10 +197,10 @@ export default function SubCheckout(props) {
                                     </p>
                                     <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            <li className="flex justify-between  border p-3">
+                                            {/* <li className="flex justify-between  border p-3">
                                                 <span className="min-w-[100px] block">Subtotal :</span>
                                                 <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
-                                            </li>
+                                            </li> */}
                                             {/* <li className="flex justify-between   border p-3">
                                                 <span className="min-w-[100px] block">Platform Fee :</span>
                                                 <div>
@@ -214,7 +214,7 @@ export default function SubCheckout(props) {
                                                     </button>
                                                 </div>
                                             </li> */}
-                                            {vat_amount && vat_amount > 0 ? (
+                                            {/* {vat_amount && vat_amount > 0 ? (
                                                 <li className="flex justify-between   border p-3">
                                                     <span className="min-w-[100px] block">VAT :</span>
                                                     <strong>{formatMultiPrice(
@@ -225,9 +225,9 @@ export default function SubCheckout(props) {
                                                 </li>
                                             ) : (
                                                 ""
-                                            )}
-                                            <li className="flex justify-between border p-3">
-                                                <span className="min-w-[100px] block">Total :</span>
+                                            )} */}
+                                            <li className="flex justify-between">
+                                                <span className="min-w-[100px] text-lg block">Total :</span>
                                                 <div className="text-right">
                                                     <strong className="block">
                                                         {formatMultiPrice(
@@ -503,7 +503,14 @@ export default function SubCheckout(props) {
                                     >
                                         {processing || checking
                                             ? "Processing..."
-                                            : `${membership?.level == "lifetime" ? `Join Now for ${formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}` : `Subscribe Now for ${formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}`}`}
+                                            : `${membership?.level == "lifetime" ? "Join Now for" : "Subscribe Now for"} ${formatMultiPrice(
+                                                calculateTotalSupporterPays(
+                                                    membership?.price,
+                                                    membership?.currency,
+                                                    vat_amount
+                                                ),
+                                                membership && membership?.currency
+                                            )}`}
                                     </button>
                                     
                                 </div>

@@ -512,14 +512,14 @@ export default function BillCheckout(props) {
                                         >
                                             {processing || checking
                                                 ? "Processing..."
-                                                : `Subscribe & Pay Now - 
-                                                ${formatMultiPrice(
-                                                bill?.tax_amount +
-                                                    bill?.price +
-                                                    vat_amount || "",
-                                                bill && bill?.currency,
-                                                "adminfee"
-                                            )}`}
+                                                : `Subscribe & Pay Now - ${formatMultiPrice(
+                                                    calculateTotalSupporterPays(
+                                                        bill?.price, 
+                                                        bill?.currency,
+                                                        vat_amount
+                                                    ),
+                                                    bill && bill?.currency
+                                                )}`}
                                         </button>
                                     </div>
                                 </form>

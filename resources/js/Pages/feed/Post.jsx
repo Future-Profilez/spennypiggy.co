@@ -65,7 +65,7 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className=" post-wrap bg-white rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  p-[15px] xl:p-6 mb-3 md:mb- border-2 border-[#F94F97]">
+      <div className=" post-wrap bg-white rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  p-[15px] xl:p-6 !mb-3 md:!mb-[22px] border-2 border-[#F94F97]">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img alt='spenny piggy' className="fading author-img" src={item?.user?.avatar_url || userphoto} />

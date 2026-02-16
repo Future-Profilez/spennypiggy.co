@@ -1,9 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import GifterItems from './GifterItems';
 import GifterTips from './GifterTips';
-import GifterSubscriptions from './GifterSubscriptions';
-import GifterBills from './GifterBills';
-import Social from '../Auth/Social';
 import ShareProfile from '@/wishlist/ShareProfile';
 import SocialLinks from '@/includes/SocialLinks';
 import { Tab } from '@headlessui/react';
@@ -14,14 +11,12 @@ import GifterMedia from './GifterMedia';
 import ActivateCard from './ActivateCard';
 import ThankyouMessages from './ThankyouMessages';
 
-
 export default function Gifter({ IsloggedIn,  sLinks }){
   const pageProps = usePage().props || {};
   const { auth, user, itemid  } = pageProps;
   const categories = ['about', 'feed', 'memberships', 'gifts', 'tips', 'media', 'thanks'];
   const [selectedIndex, setSelectedIndex] = useState(0);
   
-  // Check for tab parameter in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
@@ -36,9 +31,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
   const AboutScreen = () => {
     return (
         <div className="about-sec m-auto max-w-4xl">
-            {/* Gifter Header Card */}
             <div className="relative mb-10 rounded-[30px] md:rounded-[40px]  overflow-hidden bg-[#1A1B23]/90 backdrop-blur-3xl border border-white/10 shadow-2xl group">
-                {/* Cover Image Area */}
                 <div className="h-48 md:h-64 relative overflow-hidden">
                     {user?.cover ? (
                         <img src={user.cover} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700" alt="Cover" />
@@ -48,11 +41,9 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1A1B23] to-transparent"></div>
                 </div>
 
-                {/* Profile Info Overlay */}
                 <div className="px-8 md:px-12 pb-12 -mt-16 relative">
                     <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-10">
                         <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
-                            {/* Avatar */}
                             <div className="relative group/avatar">
                                 <div className="absolute -inset-1 bg-gradient-to-r from-[#05EFB8] via-[#8C52FF] to-[#F94F97] rounded-full blur opacity-40 group-hover/avatar:opacity-100 transition duration-500"></div>
                                 <div className="relative w-32 h-32 rounded-full border-4 border-[#1A1B23] overflow-hidden bg-[#1A1B23]">
@@ -82,51 +73,17 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* Bio Section */}
-                        <div className="md:col-span-2">
-                            <h3 className="text-[10px] font-black text-white/30 tracking-[0.25em] uppercase mb-4 flex items-center gap-4">
-                                <div className="w-8 h-[1px] bg-gradient-to-r from-[#8C52FF] to-transparent"></div>
-                                About Me
-                            </h3>
-                            <p className="text-white/80 text-lg md:text-xl leading-relaxed font-medium">
-                                {(user && user.bio) || "Supporting incredible creators and being part of amazing journeys. 💖"}
-                            </p>
-                            
-                            {/* Connected Socials */}
-                            <div className="mt-8 pt-8 border-t border-white/5">
-                                <SocialLinks textcolor="text-white/40 hover:text-[#8C52FF] transition-all duration-300" links={sLinks} />
-                            </div>
-                        </div>
-
-                        {/* Impact Stats Card */}
-                        <div className="bg-white/5 rounded-[30px] md:rounded-[40px]  p-8 border border-white/5 backdrop-blur-xl">
-                            <h3 className="text-[10px] font-black text-white/30 tracking-[0.25em] uppercase mb-6">Impact & Achievements</h3>
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mb-1">Impact Tier</p>
-                                        <p className="text-white text-xl font-black">Diamond</p>
-                                    </div>
-                                    <div className="w-12 h-12 rounded-[30px] md:rounded-[40px]  bg-gradient-to-br from-[#05EFB8] to-[#8C52FF] p-[1px]">
-                                        <div className="w-full h-full rounded-[30px] md:rounded-[40px]  bg-[#1A1B23] flex items-center justify-center text-xl">💎</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mb-1">Badges Earned</p>
-                                        <p className="text-white text-xl font-black">12</p>
-                                    </div>
-                                    <div className="w-12 h-12 rounded-[30px] md:rounded-[40px]  bg-white/5 flex items-center justify-center text-xl">🏆</div>
-                                </div>
-                                <div className="pt-6 border-t border-white/10">
-                                    <p className="text-white/40 text-[10px] font-black tracking-widest uppercase mb-3 text-center">Next Milestone</p>
-                                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                        <div className="h-full w-[75%] bg-gradient-to-r from-[#8C52FF] to-[#F94F97] rounded-full shadow-[0_0_10px_#8C52FF]"></div>
-                                    </div>
-                                    <p className="text-white/30 text-[9px] font-bold mt-2 text-center uppercase tracking-widest">75% to Legend Status</p>
-                                </div>
-                            </div>
+                    <div className="mt-8">
+                        <h3 className="text-[10px] font-black text-white/30 tracking-[0.25em] uppercase mb-4 flex items-center gap-4">
+                            <div className="w-8 h-[1px] bg-gradient-to-r from-[#8C52FF] to-transparent"></div>
+                            About Me
+                        </h3>
+                        <p className="text-white/80 text-lg md:text-xl leading-relaxed font-medium">
+                            {(user && user.bio) || "Supporting incredible creators and being part of amazing journeys. 💖"}
+                        </p>
+                        
+                        <div className="mt-8 pt-8 border-t border-white/5">
+                            <SocialLinks textcolor="text-white/40 hover:text-[#8C52FF] transition-all duration-300" links={sLinks} />
                         </div>
                     </div>
 
