@@ -444,7 +444,7 @@ export default function Wishlist(props) {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">Price</label>
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">Price ({defaultCurrency})</label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-gray-500">{defaultCurrency}</span>
                                         <input
@@ -459,9 +459,9 @@ export default function Wishlist(props) {
                                             onChange={(e) => setData("price", e.target.value)}
                                         />
                                     </div>
-                                    {defaultCurrency !== "USD" && (
+                                    {defaultCurrency !== global_currency && data.price > 0 && (
                                         <p className="mt-2 text-sm text-gray-500">
-                                            The wish item amount is set to {formatMultiPrice(data.price, defaultCurrency)}.
+                                            ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
                                         </p>
                                     )}
                                 </div>

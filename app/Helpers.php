@@ -181,17 +181,19 @@ class Helpers
 
         $totalSupporterPays = ($listedPrice + $stripeFixedFee + $adminFee) / (1 - $totalDeductionRate);
         
-        // Rounding to 2 decimal places (or 0 for zero-decimal)
+        // Use CEIL as per client requirement to avoid underpayment (round UP)
         $precision = $isZeroDecimal ? 0 : 2;
-        $totalSupporterPays = round($totalSupporterPays, $precision, PHP_ROUND_HALF_UP);
+        // For standard currencies, multiply by 100, ceil, then divide by 100
+        if (!$isZeroDecimal) {
+            $totalSupporterPays = ceil($totalSupporterPays * 100) / 100;
+        } else {
+            $totalSupporterPays = ceil($totalSupporterPays);
+        }
         
         // Calculate the actual Stripe fee based on the total charged
         $actualStripeFee = round(($totalSupporterPays * $stripeFeeRate) + $stripeFixedFee, $precision, PHP_ROUND_HALF_UP);
         
         // Application Fee is what we take (Platform + Compliance + Admin)
-        // To be safe, we calculate it as (Total - StripeFee - ListedPrice) 
-        // OR as (Total * (PlatformRate + ComplianceRate) + AdminFee)
-        // Using the latter for clarity, but ensuring it doesn't exceed Total - StripeFee
         $platformFee = round($totalSupporterPays * $platformFeeRate, $precision, PHP_ROUND_HALF_UP);
         $complianceFee = round($totalSupporterPays * $complianceFeeRate, $precision, PHP_ROUND_HALF_UP);
         $applicationFee = $platformFee + $complianceFee + $adminFee;

@@ -68,7 +68,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
         <div>
             <Popup
                 modalclass="editprofile full"
-                size="md"
+                size="md" space="6"
                 action={close}
                 text={<> USE AI 🤖</>}
                 classes={`${
@@ -101,7 +101,7 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                             {AiImage && AiImage.url ? (
                                 <div className="pt-4">
                                     <img
-                                        className="w-full max-h-[350px] object-cover rounded-[30px] md:rounded-[40px] "
+                                        className="w-full max-h-[350px] object-cover rounded-[20px] md:rounded-[30px] "
                                         src={AiImage.url}
                                         alt="image"
                                     />
@@ -123,18 +123,18 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                                 </div>
                             ) : (
                                 <div className="pt-4">
-                                    <div className="mt-4">
+                                    <div className="mt-1">
                                         <textarea
                                             defaultValue={prompt}
                                             onChange={(e) =>
                                                 setPrompt(e.target.value)
                                             }
-                                            className="input rounded-[30px] md:rounded-[40px]  border border-gray-500 w-full p-3"
+                                            className="input rounded-[15px] md:rounded-[20px]  border border-gray-500 w-full p-3"
                                             placeholder="Enter prompt for AI image generation...."
                                         />
                                     </div>
                                     <button
-                                        className="btn pinkbg py-2 px-3 text-white uppercase hover:border-gray-300 hover:bg-black mx-auto block rounded-[30px] md:rounded-[40px]   mt-3"
+                                        className="btn pinkbg w-full font-gulfs btn-shadow py-2 px-3 text-white uppercase hover:border-gray-300 hover:bg-black mx-auto block rounded-[30px] md:rounded-[40px]   mt-3"
                                         onClick={renerate}
                                     >
                                         Generate

@@ -37,6 +37,14 @@ class MembershipPayment extends Model
         'status',
         'twitter_response',
         'payout_at',
+        'creator_currency',
+        'charge_currency',
+        'display_currency',
+        'stripe_fee_actual',
+        'stripe_fee_expected',
+        'supporter_country',
+        'card_country',
+        'fee_variance',
     ];
 
     protected $appends = [

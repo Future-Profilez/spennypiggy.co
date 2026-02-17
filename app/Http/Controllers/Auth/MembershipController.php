@@ -420,17 +420,19 @@ class MembershipController extends Controller
         // }
 
         if ($user != null && $membership->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own membership!");
-        $currency = strtolower($request->cookie("currency", "GBP"));
-        $creatorCurrency = $membership->currency;
+        // Client Requirement: Always charge in Creator's Currency
+        $chargeCurrency = $membership->currency;
+        // Supporter's display currency for estimation
+        $displayCurrency = strtolower($request->cookie("currency", "GBP"));
+        
         $price = $membership->price;
 
-        // Calculate creator's desired net in supporter's currency
+        // Calculate VAT in Creator's Currency
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
-        $supporterPrice = Helpers::priceFormat($creatorCurrency, $priceWithVat, $currency);
-
-        // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($supporterPrice, $currency);
+        
+        // Gross-up calculation in Creator's Currency (No FX conversion)
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
         
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -440,7 +442,8 @@ class MembershipController extends Controller
         $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
-            $convertedAmountForCheck = Helpers::priceFormat($creatorCurrency, $price, 'gbp');
+            // Conversion only for login threshold check (approximate)
+            $convertedAmountForCheck = Helpers::priceFormat($chargeCurrency, $price, 'gbp');
             if (!Auth::check() && $convertedAmountForCheck > 50) {
                 return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
             }
@@ -458,7 +461,7 @@ class MembershipController extends Controller
                 'user_id' => $user->id ?? null,
                 'guest_name' => $request->name,
                 'guest_email' => $request->email,
-                'currency' => $currency,
+                'currency' => $chargeCurrency, // Force Creator's Currency
                 'amount' => $price,
                 'tax' => $applicationFeeAmount,
                 'vat_tax_amount' => $breakdown['compliance_fee'] + $breakdown['admin_fee'], // Storing other fees in vat for now
@@ -466,6 +469,9 @@ class MembershipController extends Controller
                 'recurring_type' => in_array($membership->level, ['bronze', 'silver', 'gold', 'platinum']) ? 'monthly' : 'lifetime',
                 'surprise_message' => $request->message,
                 'anonymous' => $request->anonymous ?? 0,
+                'creator_currency' => $membership->currency,
+                'charge_currency' => $chargeCurrency,
+                'display_currency' => $displayCurrency,
             ]);
 
             try {
@@ -482,7 +488,7 @@ class MembershipController extends Controller
                     'connected_account_id' => $connectedAccountId,
                     'product_type' => 'membership',
                     'product_id' => $membership->product_id,
-                    'currency' => $currency
+                    'currency' => $chargeCurrency
                 ])->first();
 
                 $customer_id = $customerRecord->stripe_customer_id ?? null;
@@ -491,7 +497,7 @@ class MembershipController extends Controller
                     ? StripeControl::getActiveSubscriptionByCustomer($customer_id, $connectedAccountId)
                     : null;
 
-                if ($existingSub && $existingSub->currency !== $currency) {
+                if ($existingSub && $existingSub->currency !== $chargeCurrency) {
                     $customer = StripeControl::createCustomer([
                         'email' => $user->email ?? $request->email,
                         'name' => $user->name ?? $request->name,
@@ -512,7 +518,7 @@ class MembershipController extends Controller
                 $priceId = $customerRecord->price_id ?? null;
 
                 // Get currency metadata to handle zero-decimal currencies properly
-                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
                 if (!$priceId) {
@@ -552,7 +558,7 @@ class MembershipController extends Controller
 
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                         'product' => $membership->product_id,
                     ];
 
@@ -576,7 +582,7 @@ class MembershipController extends Controller
                         'product_type' => 'membership',
                         'product_id' => $membership->product_id,
                         'price_id' => $priceId,
-                        'currency' => $currency
+                        'currency' => $chargeCurrency
                     ]);
                 }
 
@@ -586,7 +592,7 @@ class MembershipController extends Controller
                     [
                         'quantity' => 1,
                         'price_data' => [
-                            'currency' => $currency,
+                            'currency' => $chargeCurrency,
                             'product_data' => [
                                 'name' => "Total value of item including all fees",
                                 'description' => "{$membership->level} membership from {$membership->user->name}",
@@ -624,6 +630,9 @@ class MembershipController extends Controller
                             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
                             'payment_type' => 'Lifetime Membership - Direct Charge',
                             'anonymous' => (string) ($request->anonymous ?? 0),
+                            'creator_currency' => $membership->currency,
+                            'display_currency' => $displayCurrency,
+                            'vat_rate' => (string) $vatPercent,
                         ]),
                         'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                     ];
@@ -641,6 +650,9 @@ class MembershipController extends Controller
                             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
                             'payment_type' => 'Monthly Membership - Direct Charge',
                             'anonymous' => (string) ($request->anonymous ?? 0),
+                            'creator_currency' => $membership->currency,
+                            'display_currency' => $displayCurrency,
+                            'vat_rate' => (string) $vatPercent,
                         ]),
                         'application_fee_percent' => $applicationFeePercent,
                     ];
@@ -685,6 +697,8 @@ class MembershipController extends Controller
             'reccure' => $reccure,
             'card_capabilities' => $card_capabilities,
             'vat_amount' => $vatAmount,
+            'creator_currency' => $membership->currency, // Pass creator currency
+            'display_currency' => $displayCurrency, // Pass display currency
         ]);
     }
 

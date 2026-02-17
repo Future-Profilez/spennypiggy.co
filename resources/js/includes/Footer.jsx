@@ -7,7 +7,7 @@ import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
 
 export default function Footer(props) {
     const { auth } = props;
-   
+
     async function configIntercom() {
       window.intercomSettings = {
          api_base: "https://api-iam.intercom.io",
@@ -49,7 +49,8 @@ export default function Footer(props) {
          }
       })();
     }
-    
+
+
     async function confgureGtag() {
         window.dataLayer = window.dataLayer || [];
         function gtag() {
@@ -59,18 +60,20 @@ export default function Footer(props) {
         gtag("config", "G-9F1M3QZZB3");
     }
 
+
     useEffect(() => {
         configIntercom();
     }, [auth && auth?.name]);
+    
     useEffect(() => {
         confgureGtag();
     }, []);
+
     const date = new Date();
+
+
     return (
         <>
-
-
-        
             <Head>
                 {/* Google Analytics now loaded dynamically via lazy loading */}
             </Head>

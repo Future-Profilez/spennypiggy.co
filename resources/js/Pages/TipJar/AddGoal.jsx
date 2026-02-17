@@ -120,14 +120,18 @@ export default function AddGoal({activegoal, fetch_goal, stripe_enabled}) {
                   Add Piggy Bank Goal
                   </h2>
                   <div className="mb-4">
-                     <label className="block text-left mb-2">Target Amount</label>
+                     <label className="block text-left mb-2">Target Amount ({defaultCurrency})</label>
                      <div className="relative  currency-wrapper" >
                         <span className="currency-tag">{defaultCurrency || 'GBP'}</span>
                         <input className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[30px] md:rounded-[40px]  shadow-sm"
                            onChange={(e)=>setaprice(e.target.value)}
                            type="number" placeholder="Enter amount.. " />
                      </div>
-                           <p className="mt-1">The wish item amount is set to {formatMultiPrice(aprice, defaultCurrency)}.</p>
+                     {defaultCurrency !== global_currency && aprice > 0 && (
+                        <p className="mt-1 text-sm text-gray-500">
+                           ≈ {formatMultiPrice(aprice, defaultCurrency)} ({global_currency})
+                        </p>
+                     )}
                   </div>
                  
                   <div className="mb-4">

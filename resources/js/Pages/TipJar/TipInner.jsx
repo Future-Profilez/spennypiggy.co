@@ -11,22 +11,30 @@ import Turnstile from "@/Components/Turnstile";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
-  
   const checkRef = useRef();
   const turnstileRef = useRef(null);
   const { formatMultiPrice } = PriceFormat();
-
   const [defaultAmount, setdefaultAmount] = useState(25);
   const [amount, setAmount] = useState(defaultAmount);
   const { errorAlert } = useAlerts();
   const [verified, setVerified] = useState(false);
 
-
   const [selectegTag, setselectegTag] = useState(25);
+  const { data, setData } = useForm({
+    email: auth && auth.user?.email || '',
+    name: auth && auth.user?.name || '',
+    message: 'Just a small token of appreciation 💖',
+    anonymous: 0,
+    amount: amount,
+    currency: user?.default_currency || 'GBP', // Default to creator currency
+    cf_turnstile_response: "",
+  });
+
   const customAmountTag = (e) => {
     setAmount(e);
     setdefaultAmount(e);
     setselectegTag(e);
+    setData("currency", user?.default_currency || 'GBP');
   }
 
   const customAmount = (e) => {
@@ -36,16 +44,11 @@ export default function TipInner({classes, idd}) {
     }
     setAmount(e.target.value);
     setdefaultAmount(e.target.value);
+    // When using custom input, amount is in display currency (global_currency)
+    // We set currency here, but useEffect below also syncs amount. 
+    // We need to ensure currency is set correctly when typing.
+    setData("currency", global_currency || 'GBP');
   }
-
-  const { data, setData } = useForm({
-    email: auth && auth.user?.email || '',
-    name: auth && auth.user?.name || '',
-    message: 'Just a small token of appreciation 💖',
-    anonymous: 0,
-    amount: amount,
-    cf_turnstile_response: "",
-  });
 
   useEffect(()=>{
     setData("amount", amount);
@@ -138,7 +141,7 @@ export default function TipInner({classes, idd}) {
                   </div>
               </div> */}
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 mt-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 mt-2">
                   <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, global_currency || "GBP")}</button>
                   <button className={`${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, global_currency || "GBP")}</button>
                   <button className={`${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, global_currency || "GBP")}</button>
@@ -150,6 +153,10 @@ export default function TipInner({classes, idd}) {
                   <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, global_currency || "GBP")}</button>
                   {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
+
+              <p className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                * Includes all fees. You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
+              </p>
 
               {selectegTag === 'custom' ? <div className="mb-4 ">
                   <div className="relative currency-wrapper " >

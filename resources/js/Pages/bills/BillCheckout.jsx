@@ -10,7 +10,7 @@ import Turnstile from "@/Components/Turnstile";
 export default function BillCheckout(props) {
     const turnstileRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
-    const { bill, vat_amount, card_capabilities } = props;
+    const { bill, vat_amount, card_capabilities, creator_currency, display_currency } = props;
     const { user, auth, turnstileSiteKey } = usePage().props;
 
     const [name, setName] = useState(
@@ -62,6 +62,20 @@ export default function BillCheckout(props) {
         
         return totalSupporterPays;
     };
+
+    // New: Calculate estimated display price for UI only
+    const getEstimatedDisplayPrice = (amount) => {
+        if (!amount || !display_currency || !creator_currency || display_currency === creator_currency) return null;
+        
+        // This is purely for estimation display, actual charge is in creator_currency
+        return formatMultiPrice(amount, display_currency);
+    };
+
+    const finalTotalAmount = calculateTotalSupporterPays(
+        bill?.price, 
+        bill?.currency,
+        vat_amount
+    );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     function checkanonymous(e) {
@@ -236,16 +250,20 @@ export default function BillCheckout(props) {
                                         <div className="text-right">
                                             <strong className="text-lg block">
                                                 {formatMultiPrice(
-                                                    calculateTotalSupporterPays(
-                                                        bill?.price, 
-                                                        bill?.currency,
-                                                        vat_amount
-                                                    ),
+                                                    finalTotalAmount,
                                                     bill && bill?.currency
                                                 )}
                                             </strong>
+                                            
+                                            {/* Show estimated price if display currency differs from charge currency */}
+                                            {display_currency && display_currency !== bill?.currency && (
+                                                <div className="text-sm text-gray-500 font-medium mt-1">
+                                                    ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
+                                                </div>
+                                            )}
+
                                             <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                                * Includes all fees
+                                                * Includes all fees. You will be charged in {bill?.currency}.
                                             </span>
                                         </div>
                                     </li>
@@ -513,11 +531,7 @@ export default function BillCheckout(props) {
                                             {processing || checking
                                                 ? "Processing..."
                                                 : `Subscribe & Pay Now - ${formatMultiPrice(
-                                                    calculateTotalSupporterPays(
-                                                        bill?.price, 
-                                                        bill?.currency,
-                                                        vat_amount
-                                                    ),
+                                                    finalTotalAmount,
                                                     bill && bill?.currency
                                                 )}`}
                                         </button>

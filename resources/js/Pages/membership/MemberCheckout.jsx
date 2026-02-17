@@ -12,7 +12,7 @@ import axios from "axios";
 export default function SubCheckout(props) {
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
-    const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities } = props;
+    const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
     const { formatMultiPrice } = PriceFormat();
     const [username, setUserName] = useState(
         (auth && auth.user && auth.user.username) || ""
@@ -66,6 +66,12 @@ export default function SubCheckout(props) {
         
         return totalSupporterPays;
     };
+
+    const finalTotalAmount = calculateTotalSupporterPays(
+        membership?.price, 
+        membership?.currency,
+        vat_amount
+    );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     function checkanonymous(e) {
@@ -231,16 +237,20 @@ export default function SubCheckout(props) {
                                                 <div className="text-right">
                                                     <strong className="block">
                                                         {formatMultiPrice(
-                                                            calculateTotalSupporterPays(
-                                                                membership?.price,
-                                                                membership?.currency,
-                                                                vat_amount
-                                                            ),
+                                                            finalTotalAmount,
                                                             membership && membership?.currency
                                                         )}
                                                     </strong>
+                                                    
+                                                    {/* Show estimated price if display currency differs from charge currency */}
+                                                    {display_currency && display_currency !== membership?.currency && (
+                                                        <div className="text-sm text-gray-500 font-medium mt-1">
+                                                            ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
+                                                        </div>
+                                                    )}
+
                                                     <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                                        * Includes all fees
+                                                        * Includes all fees. You will be charged in {membership?.currency}.
                                                     </span>
                                                 </div>
                                             </li>
@@ -504,11 +514,7 @@ export default function SubCheckout(props) {
                                         {processing || checking
                                             ? "Processing..."
                                             : `${membership?.level == "lifetime" ? "Join Now for" : "Subscribe Now for"} ${formatMultiPrice(
-                                                calculateTotalSupporterPays(
-                                                    membership?.price,
-                                                    membership?.currency,
-                                                    vat_amount
-                                                ),
+                                                finalTotalAmount,
                                                 membership && membership?.currency
                                             )}`}
                                     </button>
