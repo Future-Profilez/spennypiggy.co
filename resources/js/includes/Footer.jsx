@@ -68,6 +68,9 @@ export default function Footer(props) {
     const date = new Date();
     return (
         <>
+
+
+        
             <Head>
                 {/* Google Analytics now loaded dynamically via lazy loading */}
             </Head>
