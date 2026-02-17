@@ -557,13 +557,13 @@ export default function Dashboard(props) {
                                         <div className="inlinetab ">
                                             {/* Show rejection message if profile is rejected */}
                                             {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
-                                                    <div className="text-red-600 text-xl">
-                                                        This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
-                                                    </div>
-                                                )} */}
+                                                <div className="text-red-600 text-xl">
+                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                                </div>
+                                            )} */}
 
                                             <InstantTabSystem
-                                                Toggle={Toggle}
+                                                Toggle={Toggle} 
                                                 activeTab={page || "about"}
                                                 user={user}
                                                 username={user.username}

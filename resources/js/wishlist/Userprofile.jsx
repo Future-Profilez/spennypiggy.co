@@ -1,6 +1,5 @@
 import { lazy } from "react";
 import userphoto from "../../assets/siteicon.png";
-import { LazyLoadImage } from "react-lazy-load-image-component";
 import { usePage } from "@inertiajs/react";
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 const ShareProfile = lazy(() => import("./ShareProfile"));

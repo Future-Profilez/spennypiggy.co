@@ -71,12 +71,8 @@ export default function ImageGenerationWithAI({ classes, size, update }) {
                 size="md" space="6"
                 action={close}
                 text={<> USE AI 🤖</>}
-                classes={`${
-                    classes
-                        ? classes
-                        : "button bg-pink block sm:flex mx-auto sm:mx-0 hover:opacity-80"
-                }`}
-            >
+                classes={`${ classes ? classes : "button bg-pink block sm:flex mx-auto sm:mx-0 hover:opacity-80"
+                }`} >
                 <div className="p-4">
                     <h2 className="mb-0 text-large font-bold">
                         IMAGE GENERATE WITH AI
