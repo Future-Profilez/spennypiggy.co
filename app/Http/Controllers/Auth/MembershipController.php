@@ -517,6 +517,39 @@ class MembershipController extends Controller
 
                 if (!$priceId) {
 
+                    // Verify product exists on connected account before creating price
+                    try {
+                        StripeControl::getProduct($membership->product_id, $connectedAccountId);
+                    } catch (\Exception $e) {
+                        // Product not found or other error - recreate it
+                        Log::info("Product not found for membership checkout, recreating: " . $membership->product_id);
+                        
+                        $productPayload = [
+                            "name"  => "Membership: {$membership->level} (Total value including all fees)",
+                            "images" => [$membership->perma_link],
+                            "url"   =>  env('APP_URL') . '/' . $membership->user->username,
+                            'metadata' => [
+                                'membership_level' => $membership->level,
+                                'creator_id' => $membership->user->id,
+                            ]
+                        ];
+                        
+                        try {
+                            $product = StripeControl::createProduct($productPayload, $connectedAccountId);
+                            $membership->product_id = $product->id;
+                            $membership->save();
+                            
+                            // Update customer record if it exists
+                            if ($customerRecord) {
+                                $customerRecord->product_id = $product->id;
+                                $customerRecord->save();
+                            }
+                        } catch (\Exception $createEx) {
+                            Log::error("Failed to recreate product: " . $createEx->getMessage());
+                            return back()->with('error', "Payment configuration error. Please try again.");
+                        }
+                    }
+
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
                         'currency' => $currency,

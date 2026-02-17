@@ -213,7 +213,7 @@ function Bill(props) {
                                 {isCreator ? (
                                     formatMultiPrice(itm.price, itm?.currency || "GBP")
                                 ) : (
-                                    <>
+                                    <div className="flex flex-col items-center">
                                         {formatMultiPrice(
                                             calculateTotalSupporterPays(
                                                 itm.price, 
@@ -225,7 +225,7 @@ function Bill(props) {
                                         <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-center">
                                             * Includes all fees
                                         </div>
-                                    </>
+                                    </div>
                                 )}
                             </h5>
                         </div>

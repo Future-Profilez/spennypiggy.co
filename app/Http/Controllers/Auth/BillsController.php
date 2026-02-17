@@ -394,7 +394,11 @@ class BillsController extends Controller
         $applicationFeeAmount = $breakdown['application_fee'];
         
         $totalTax = $applicationFeeAmount;
-        $vatAmount = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
+        // $vatAmount variable here is used for vat_tax_amount in DB which stores compliance+admin fees
+        $feesAsVat = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
+        
+        // Calculate actual VAT amount for display
+        $actualVatAmount = $price * $vatPercent / 100;
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
@@ -430,7 +434,7 @@ class BillsController extends Controller
                 'currency'       => $bill->currency,
                 'amount'         => $bill->price,
                 'tax'            => $totalTax,
-                'vat_tax_amount' => $vatAmount,
+                'vat_tax_amount' => $feesAsVat,
                 'recurring_for'  => $reccure ?? null,
                 'recurring_type' => $bill->period,
                 'message'        => $request->message ?? null,
@@ -613,7 +617,7 @@ class BillsController extends Controller
 
         return Inertia::render('bills/BillCheckout', [
             'bill' => $bill,
-            'vat_amount' => $vatAmount,
+            'vat_amount' => $actualVatAmount,
             'reccure' => $reccure,
             'card_capabilities' => $card_capabilities,
         ]);
