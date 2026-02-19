@@ -217,10 +217,9 @@ export default function Index({
                     Task Dashboard
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
-                    {/* Active Orders Section */}
                     {orders && orders.length > 0 && (
                         <div className="shadow-layout  !border-3 border-black bg-white shadow-black overflow-hidden rounded-[30px] md:rounded-[40px] ">
-                            <div className="py-3 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
+                            <div className="py-4 px-4 pinkbg flex !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center justify-between">
                                 <h3 className="font-bold text-xl text-white">
                                     Active Orders (Action Required)
                                 </h3>
@@ -236,13 +235,11 @@ export default function Index({
                                     <>
                                         {orders &&
                                             orders.map((order) => (
-                                                <li
-                                                    key={order.id}
-                                                    className="p-6 hover:bg-red-50 transition-colors"
-                                                >
+                                                <li key={order.id}
+                                                    className="p-6 hover:bg-red-50 transition-colors" >
                                                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                                         <div className="w-full md:w-auto">
-                                                            <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
+                                                            <h3 className="text-xl font-[500] text-gray-900  font-bold ">
                                                                 Order #
                                                                 {order.uuid.substring(
                                                                     0,
@@ -318,7 +315,7 @@ export default function Index({
                                                                     "task.order",
                                                                     order.uuid,
                                                                 )}
-                                                                className="button p block !text-sm sm"
+                                                                className="button block !text-sm sm"
                                                             >
                                                                 Manage Order
                                                             </Link>
@@ -493,7 +490,7 @@ export default function Index({
                                                     <div className="flex-1">
                                                         <div className="flex flex-col md:flex-row md:items-center gap-3">
                                                             <div className="flex-1">
-                                                                <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide mb-1">
+                                                                <h3 className="text-xl font-bold text-gray-900  mb-1">
                                                                     <Link
                                                                         href={route(
                                                                             "task.show",
@@ -552,7 +549,7 @@ export default function Index({
                                                             </div>
                                                             <div className="flex items-center gap-3">
                                                                 <div className="text-right min-w-[100px]">
-                                                                    <p className="text-2xl font-black text-pink-500 font-anton font-bold">
+                                                                    <p className="text-2xl font-black text-pink-500 font-bold">
                                                                         {formatMultiPrice(
                                                                             task.price,
                                                                             task.currency ||
@@ -566,7 +563,7 @@ export default function Index({
                                                                             "task.edit",
                                                                             task.uuid,
                                                                         )}
-                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-[30px] md:rounded-[40px]   font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+                                                                        className="inline-block bg-yellow-300 text-black border-2 border-black px-4 py-2 rounded-[15px] md:rounded-[20px]   font-bold uppercase text-sm  "
                                                                     >
                                                                         Edit
                                                                     </Link>
@@ -578,7 +575,7 @@ export default function Index({
 
                                                 {/* Creator Note Section - Properly structured container */}
                                                 {creatorNote && (
-                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-[30px] md:rounded-[40px]  `} >
+                                                    <div className={`mt-4 p-3 ${creatorNote.bgColor} border ${creatorNote.borderColor} rounded-[15px] md:rounded-[20px]  `} >
                                                         <div className="flex items-start gap-3">
                                                             <div className="flex-1">
                                                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
@@ -695,7 +692,7 @@ export default function Index({
                                     >
                                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                             <div className="w-full md:w-auto">
-                                                <h3 className="text-xl font-[500] text-gray-900 font-anton tracking-wide">
+                                                <h3 className="text-xl font-bold text-gray-900  ">
                                                     Order #
                                                     {order.uuid.substring(0, 8)}{" "}
                                                     - {order.task.title}
@@ -713,7 +710,7 @@ export default function Index({
                                                 </p>
                                                 <div className="mt-2">
                                                     <span
-                                                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${getStatusColor(
+                                                        className={`px-3 py-1 !rounded-[20px] text-xs font-bold uppercase border ${getStatusColor(
                                                             order.status,
                                                         )}`}
                                                     >
@@ -730,7 +727,7 @@ export default function Index({
                                                         "task.order",
                                                         order.uuid,
                                                     )}
-                                                    className="button b text-sm"
+                                                    className="button  text-sm"
                                                 >
                                                     View Details
                                                 </Link>
