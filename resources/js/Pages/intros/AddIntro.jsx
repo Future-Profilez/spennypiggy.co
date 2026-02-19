@@ -142,10 +142,6 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
       {intro ?
         <div className='relative'>
           <ProfileIntro />
-<<<<<<< HEAD
-          {IsloggedIn ? <button onClick={removeVideo} className='badge bg-red-700 remove-story px-4 py-2 rounded-xl text-white !text-xs' >Remove</button> : ''}
-=======
->>>>>>> c1606ba8729da10c47a087807627f1ed54f1e931
         </div>
         :
         <>
