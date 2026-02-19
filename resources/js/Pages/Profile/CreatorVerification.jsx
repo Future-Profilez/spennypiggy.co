@@ -111,7 +111,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                 {/* Step 1: Social Handles */}
                 <div className="profile-steps border border-gray-200 rounded-[25px]  p-4 mt-3">
-                    <div className="flex items-center justify-between">
+                    <div className="md:flex items-center justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
                                 className={`check-icon mr-2 pt-1 ${slinks?.status == 1 ? "checked" : ""}`}
@@ -140,7 +140,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 </p>
                             </div>
                         </div>
-                        {slinks?.status !== 1 && <Social links={slinks} />}
+                        {slinks?.status !== 1 && <Social 
+                        classes="
+                        bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm md:ms-[30px]
+                        "
+                         className links={slinks} />}
                     </div>
 
                     {hasAnySocialMedia && slinks?.status == 0 ? (
@@ -365,18 +369,19 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </p>
                         </div>
                     </div>
+                     
                     {auth?.user?.avatar_approved &&
                     auth?.user?.bio_approved &&
                     auth?.user?.is_subscribed == 0 &&
                     hasAnySocialMedia && slinks?.status == 1 ? (
                         <Link
-                            className="text-pink text-nowrap"
+                            className="bg-pink-500 my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
                             href="/activate-subscription"
                         >
                             Start for Free
                         </Link>
                     ) : (
-                        <Link className="text-pink text-nowrap disabled">
+                        <Link className="bg-gray-200 my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] disabled">
                             Start for Free
                         </Link>
                     )}

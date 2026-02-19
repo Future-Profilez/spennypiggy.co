@@ -662,7 +662,7 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    <div className="bg-white border-2 border-pink-500 rounded-[20px] md:rounded-[40px] mb-4">
+                                                                    <div className="bg-white border-2 border-pink-500 rounded-[30px] md:rounded-[40px] mb-4">
                                                                         <div className="p-4 md:p-6">
                                                                             <h2 className="text-xl">
                                                                                 About
