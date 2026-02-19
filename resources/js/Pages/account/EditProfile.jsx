@@ -56,39 +56,67 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         setLoading(true);
         const container = document.createElement('div');
         container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        container.style.zIndex = '-1';
+        // container.style.left = '-9999px';
+        // container.style.top = '0';
+        // container.style.zIndex = '-1';
         document.body.appendChild(container);
         container.innerHTML = `
-            <div id="card-to-capture"  className="dot-pattern relative my-[300px] flex items-center  p-6 w-[600px] h-[337.5px]  text-white shadow-2xl  ">
-                    <img src="${socialbg}" alt="Background" className="w-full h-full object-cover absolute top-0 left-0 z-[-1]" crossorigin="anonymous" />
+            <div 
+                id="card-to-capture"
+                style=" position:relative;margin:300px 0;display:flex;align-items:center;padding:24px;width:600px;height:337.5px;color:white;box-shadow:0 25px 50px rgba(0,0,0,0.5);overflow:hidden;"
+                >
+                <img 
+                    src="${socialbg}" 
+                    alt="Background"
+                    crossorigin="anonymous"
+                    style=" width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:-1;"
+                />
 
-                    <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_3px,transparent_3px)] bg-[size:30px_30px]"></div>
-                    <div className="absolute top-18 left-6 text-yellow-300 text-4xl">✨</div>
-                    <div className="absolute bottom-4 right-28 text-cyan-300 text-2xl">⭐</div>
-                    <div className="absolute top-18 right-20 text-cyan-300 text-3xl">💰</div>
+                <div
+                    style=" position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.2) 3px,transparent 3px);background-size:30px 30px;"
+                ></div>
 
-                    <div className="inner-image w-full">
-                        <div className="flex items-center justify-center  mb-4">
-                            <div className="w-28 h-28 rounded-full border-2 border-[#00ff5e] overflow-hidden shadow-lg">
-                                <img src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/" alt="Profile" className="w-full h-full object-cover" crossorigin="anonymous" />
-                            </div>
-                            <div className="pl-3"> 
-                                <h1 className="${`image-name max-w-[200px] mt-[-20px] pb-2 uppercase font-fre text-3xl text-left whitespace-normal ${!hasFullName(user?.name) ? 'break-all' : 'break-words'} `}">
-                                    ${user?.name}
-                                </h1>
-                            </div>
-                        </div>
+                <div style="position:absolute; top:72px; left:24px; color:#fde047; font-size:36px;">✨</div>
+                <div style="position:absolute; bottom:16px; right:112px; color:#22d3ee; font-size:24px;">⭐</div>
+                <div style="position:absolute; top:72px; right:80px; color:#22d3ee; font-size:30px;">💰</div>
 
-                        <p className="text-white text-xl font-bold mr-3 absolute top-[180px] left-[210px] max-w-[100px] object-cover">is now on </p>
-                        <img src="${spennypiggy}" alt="Logo" className="mr-3 absolute top-[190px] left-[310px] max-w-[100px] object-cover" crossorigin="anonymous" />
-                        <div className="bg-gradient-to-r mt-[100px] from-[#9b0039] to-[#9b0039b6] link-shadow text-white
-                            px-4 leading-[15px] h-[40px] rounded-[30px] md:rounded-[40px]  text-center text-[20px] shadow-md">https://spennypiggy.co/${user?.username}
-                        </div>
+                <div style="width:100%; position:relative; z-index:2;">
+
+                    <div style="display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+
+                    <div
+                        style=" width:112px;height:112px;border-radius:50%;border:2px solid #00ff5e;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,0.5);" >
+                        <img
+                        src="https://ucarecdn.com/${avataruid}/-/crop/1:1/-/preview/"
+                        alt="Profile"
+                        crossorigin="anonymous"
+                        style=" width:100%;height:100%;object-fit:cover;" />
                     </div>
+
+                    <div style="padding-left:12px;">
+                        <h1
+                        style=" max-width:200px;margin-top:-20px;padding-bottom:8px;text-transform:uppercase;font-size:30px;text-align:left;word-break:${!hasFullName(user?.name) ? 'break-all':'break-word'} ; line-height:30px;   font-family: 'gulfs' ; letter-spacing: 1px; text-shadow:0.5px 0.5px #000000 !important; " >
+                        ${user?.name}
+                        </h1>
+                    </div>
+                    </div>
+
+                    <p
+                        style=" position:absolute;top:180px;left:210px;font-size:20px;font-weight:bold;max-width:100px;" >
+                        is now on
+                    </p>
+                    <img
+                        src="${spennypiggy}"
+                        alt="Logo"
+                        crossorigin="anonymous"
+                        style=" position:absolute;top:190px;left:310px;max-width:100px;object-fit:cover;"
+                    />  
+                    <div style="margin-top:100px;padding:0 16px;height:50px;line-height:50px;border-radius:40px;text-align:center;font-size:22px;color:white;box-shadow:0 8px 20px rgba(0,0,0,0.4);" ><div style="height:50px; position relative; top:-30px; padding-bottom:16px; display:block;">https://spennypiggy.co/${user?.username}</div></div>
                 </div>
+                </div>
+
         `;
+        // background:linear-gradient(to right,#9b0039,#9b0039b6);
 
         const card = container.querySelector('#card-to-capture');
         const images = card.querySelectorAll('img');
@@ -110,7 +138,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
         await new Promise(resolve => setTimeout(resolve, 500));
         
         const html2canvas = (await import('html2canvas')).default;
-
         const canvas = await html2canvas(card, {
         useCORS: true,
         scale: 2,
@@ -244,6 +271,12 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                         text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
                         </div> : ''}
 
+
+
+
+                        
+
+
                         {UploadingStart || CoverUploadingStart ? ''
                             :
                             <>
@@ -304,7 +337,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
 
                                     </ul>
                                 {auth?.user?.role == 1 ? 
-                                    <div className="hidden text-center mb-4">
+                                    <div className="  text-center mb-4">
                                         <div className="mb-2">
                                             <p className="text-sm text-gray-600 mb-2">
                                                 Generate a promotional banner to share your profile on social media platforms like Twitter, Facebook, and Instagram.
@@ -335,7 +368,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                     <div className=" text-center mb-7">
                                         <LoaderButton type='submit' disabled={processing} className='p '
                                         spinnerclass='fill-red-600'>
-                                            {processing ? "Updating" : "Update"}
+                                            {loading || processing ? "Updating" : "Update"}
                                         </LoaderButton>
                                     </div>
                                 </form>

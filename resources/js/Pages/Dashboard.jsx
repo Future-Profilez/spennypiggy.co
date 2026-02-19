@@ -469,6 +469,19 @@ export default function Dashboard(props) {
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
 
+
+
+
+
+
+
+
+
+
+
+
+                    
+
                     <div className="containerbox">
                         <VersionUpdate />
                         <OfferAnnouncement variant="default" />
