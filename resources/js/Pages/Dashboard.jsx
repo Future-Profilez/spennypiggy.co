@@ -464,8 +464,10 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                        <div className="absolute top-40  left-10  w-[100px] h-[100px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[20px]  opacity-60 floating-shape"></div>
                         <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-90 floating-shape"></div>
                         <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
+                        <div className="absolute top-[1000px] right-10 md:right-0 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
 
@@ -651,16 +653,7 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {UserStripeConnected ==
-                                                                    1 ? (
-                                                                        <MyGoal
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
+                                                                    
 
                                                                     <div className="bg-white border-2 border-voilet rounded-[40px] mb-4">
                                                                         <div className="p-4 md:p-6">
@@ -747,28 +740,8 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 md:pt-3">
-                                                                                    {auth.user &&
-                                                                                    auth
-                                                                                        .user
-                                                                                        .role ==
-                                                                                        1 &&
-                                                                                    AuthUserStripeConnected ==
-                                                                                        1 ? (
-                                                                                        <PaymentDashboard
-                                                                                            classes="b w-full"
-                                                                                            text="Payment Dashboard"
-                                                                                        />
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            {/* {auth?.user?.identity_status == 1 ? 
-                                                                                            <div className="finish mt-4 block">
-                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
-                                                                                                </Link>
-                                                                                            </div> 
-                                                                                            : ''} */}
-                                                                                        </>
-                                                                                    )}
+                                                                                    
+                                                                                    
 
                                                                                     {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                                                             <AddGoal
@@ -809,6 +782,28 @@ export default function Dashboard(props) {
                                                                             ) : (
                                                                                 ""
                                                                             )}
+
+                                                                            {UserStripeConnected == 1 ? (
+                                                                                <MyGoal IsloggedIn={IsloggedIn} />
+                                                                            ) :  "" }
+
+                                                                                    {auth.user && auth .user .role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                        <PaymentDashboard
+                                                                                            classes="shadow-none mt-6 text-white !p-3 w-full btn-shadow !border-0 !bg-pink-600 hover:!bg-pink-900 font-medium px-4 py-2 3 transition-all duration-200"
+                                                                                            text="Creator Payment Dashboard"
+                                                                                        />
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            {auth?.user?.identity_status == 1 ? 
+                                                                                            <div className="finish mt-4 block">
+                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                                </Link>
+                                                                                            </div> 
+                                                                                            : ''}
+                                                                                        </>
+                                                                                    )}
+                                                                                
                                                                         </div>
                                                                     </div>
                                                                     {IsloggedIn ||
