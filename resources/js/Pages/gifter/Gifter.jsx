@@ -114,8 +114,8 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                         {category}
                                     </button>
                                 )}
-                            </Tab>
-                        ))}
+                            </Tab> 
+                        ))} 
                     </Tab.List>
                     <Tab.Panels>
                         <Tab.Panel className="focus:outline-none">

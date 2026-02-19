@@ -29,6 +29,7 @@ import axios from "axios";
 import DeviceID from "./includes/DeviceID";
 import "./utils/pwaDebug";
 import Maintaince from "./Components/Maintaince.jsx";
+import ConnectivityListener from "./Components/ConnectivityListener.jsx";
 
 if (window.location.hostname === 'spennypiggy.co' || window.location.hostname === 'www.spennypiggy.co') {
     Sentry.init({
@@ -205,7 +206,9 @@ createInertiaApp({
                 <Provider store={store}>
                     <Suspense fallback={null}>
                         <GlobalErrorBoundary>
-                            <App {...props} />
+                            <ConnectivityListener>
+                                <App {...props} />
+                            </ConnectivityListener>
                         </GlobalErrorBoundary>
                     </Suspense>
                 </Provider>

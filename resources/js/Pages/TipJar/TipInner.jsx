@@ -154,8 +154,8 @@ export default function TipInner({classes, idd}) {
                   {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
-              <p className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                * Includes all fees. You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
+              <p className="!my-4 text-[14px]  text-gray-500 font-normal mt-1 leading-tight">
+                * Includes all fees. <br /> You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
               </p>
 
               {selectegTag === 'custom' ? <div className="mb-4 ">

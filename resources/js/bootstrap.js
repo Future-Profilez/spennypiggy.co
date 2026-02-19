@@ -19,6 +19,19 @@ window.axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
 // Import CSRF interceptor for automatic token refresh
 import './utils/csrfInterceptor';
 
+// Add network error interceptor to detect offline state
+window.axios.interceptors.response.use(
+    response => response,
+    error => {
+        // Check for network errors (no response)
+        if (!error.response && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+            // Force offline state
+            window.dispatchEvent(new Event('offline'));
+        }
+        return Promise.reject(error);
+    }
+);
+
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting
