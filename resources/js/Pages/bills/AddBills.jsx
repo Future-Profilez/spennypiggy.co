@@ -171,7 +171,7 @@ export default function AddBills(props) {
                                 </li>
                                 <li className="mb-4">
                                     <label className="mb-2 text-left block">
-                                        Price{" "}
+                                        Price ({defaultCurrency})
                                     </label>
                                     <div className="currency-wrapper dollar-symbols relative">
                                         <span className="currency-tag "> 
@@ -193,15 +193,14 @@ export default function AddBills(props) {
                                             }
                                         />
                                     </div>
-                                    {/* {defaultCurrency !== 'USD' && */}
-                                    <p className="mt-1">
-                                        The Bill amount is set to{" "}
-                                        {formatMultiPrice(
+                                    {defaultCurrency !== global_currency && data.price > 0 && (
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        ≈ {formatMultiPrice(
                                             data.price,
                                             defaultCurrency
-                                        )}.
+                                        )} ({global_currency})
                                     </p> 
-                                    {/* // } */}
+                                    )}
                                 </li>
 
                                 <li className="mb-4">

@@ -38,7 +38,7 @@ const CreatorActivityWidget = (props) => {
             case 'grace_period':
                 return 'bg-white sshadow-pink border-black text-blue-600';
             case 'active':
-                return 'bg-green-100 border-green-300 text-green-800';
+                return 'bg-green-100 border-green-500 text-green-800';
             case 'insufficient_content':
                 return 'bg-red-100 border-red-300 text-red-800';
             case 'grace_period_ending':
@@ -94,7 +94,7 @@ const CreatorActivityWidget = (props) => {
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
     return (
         <>
-        <div className={`rounded-[30px]   shadow-pink border-2 p-4 ${getStatusColor(activityStatus.status)} ${className}`}>
+        <div className={`rounded-[30px] border-2 p-4 md:p-6 ${getStatusColor(activityStatus.status)} ${className}`}>
             <div className="lg:flex items-center justify-between">
                 <div className="md:flex items-center gap-3 lg:max-w-[70%] me-3">
                     <div>
@@ -113,7 +113,7 @@ const CreatorActivityWidget = (props) => {
                 <div className='!mt-3'>
                     <Link
                         href="/creator/activity"
-                        className="text-center block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-3 py-2 rounded-[30px] md:rounded-[40px]  text-sm  hover:underline opacity-80 hover:opacity-100"
+                        className="text-center border !border-black block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-4 py-3  rounded-[30px] md:rounded-[40px]  text-sm  hover:underline opacity-80 hover:opacity-100"
                     >
                         View Details
                     </Link>

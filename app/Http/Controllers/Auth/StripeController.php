@@ -1808,8 +1808,7 @@ class StripeController extends Controller
         $ConvertedToGBpAmount = Helpers::priceFormat($wish->currency, $totalAmount, 'gbp');
         $subtotals += $ConvertedToGBpAmount;
 
-
-        $currency = strtolower($request->cookie("currency", "usd"));
+        $chargeCurrency = $wish->currency ?? $wish->user->default_currency ?? 'usd';
         $tax = (float) str_replace(',', '', $wish->tax_amount);
         $price = (float) str_replace(',', '', $wish->price);
         $adminFee = (float) config('app.administration_fee');
@@ -1894,7 +1893,7 @@ class StripeController extends Controller
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
                 'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
-                'currency' => $currency
+                'currency' => $chargeCurrency
             ])->first();
 
             if (!$storeCustomer) {
@@ -1904,42 +1903,39 @@ class StripeController extends Controller
                 ], $connectedAccountId);
             }
 
-            $basePrice = Helpers::priceFormat($wish->currency, $wish->price, $currency);
+            $basePrice = $price;
         
-        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
-        $vatPercent = $wish->user->vat_amount_percentage ?? 0;
-        $vatAmount = $basePrice * $vatPercent / 100;
-        $priceWithVat = $basePrice + $vatAmount;
+            $vatPercent = $wish->user->vat_amount_percentage ?? 0;
+            $vatAmount = $basePrice * $vatPercent / 100;
+            $priceWithVat = $basePrice + $vatAmount;
 
-        // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
         
-        $finalTotalAmount = $breakdown['total_supporter_pays'];
-        $applicationFeeAmount = $breakdown['application_fee'];
-        $creatorNet = $breakdown['net_to_creator'];
-        $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
+            $finalTotalAmount = $breakdown['total_supporter_pays'];
+            $applicationFeeAmount = $breakdown['application_fee'];
+            $creatorNet = $breakdown['net_to_creator'];
+            $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
-        // Look for existing price with same currency
+            // Look for existing price with same currency
             $existingPrice = ConnectedAccountCustomer::where([
                 'user_id' => $user->id,
                 'creator_id' => $wish->user->id,
                 'connected_account_id' => $connectedAccountId,
                 'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                 'product_id' => $wish->stripe_product_id,
-                'currency' => $currency
+                'currency' => $chargeCurrency
             ])->first();
 
             $priceId = $existingPrice->price_id ?? null;
 
-            // Get currency metadata to handle zero-decimal currencies properly
-            $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+            $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
             if (!$priceId) {
 
                 $priceParams = [
                     'unit_amount' => round($finalTotalAmount * $multiplier),
-                    'currency' => $currency,
+                    'currency' => $chargeCurrency,
                     'product' => $wish->stripe_product_id,
                 ];
                 if ($reccure !== 'onetime') {
@@ -1957,7 +1953,7 @@ class StripeController extends Controller
 
             // Handle currency mismatch for customer
             $existingSubscription = StripeControl::getActiveSubscriptionByCustomer($customer_id, $connectedAccountId);
-            if ($existingSubscription && $existingSubscription->currency !== $currency) {
+            if ($existingSubscription && $existingSubscription->currency !== $chargeCurrency) {
                 $customer = StripeControl::createCustomer([
                     'email' => $user->email,
                     'name' => $user->name,
@@ -1973,7 +1969,7 @@ class StripeController extends Controller
                     'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
-                    'currency' => $currency
+                    'currency' => $chargeCurrency
                 ]);
             }
 
@@ -1986,7 +1982,7 @@ class StripeController extends Controller
                     'product_type' => $reccure != 'onetime' ? 'wish item subscription' : 'wish item subscription onetime',
                     'product_id' => $wish->stripe_product_id,
                     'price_id' => $priceId,
-                    'currency' => $currency
+                    'currency' => $chargeCurrency
                 ]);
             }
 
@@ -1996,7 +1992,7 @@ class StripeController extends Controller
                 [
                     'quantity' => 1,
                     'price_data' => [
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => "Wish: {$wish->name} (Total value including all fees)",
                             'description' => "Subscription content from {$wish->user->name}",
@@ -2887,7 +2883,6 @@ class StripeController extends Controller
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
             ]);
         }
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'usd';
         $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
         if (!$creator) {
             return response()->json([
@@ -3018,8 +3013,17 @@ class StripeController extends Controller
 
             $this->ensureTurnstileVerified($request);
 
+            $sourceCurrency = strtolower($request->currency ?? $creator->default_currency);
+            $amount = (float) $request->amount;
 
-            $amount = $request->amount;
+            // If source currency differs from creator currency, convert amount to creator currency
+            if (strtoupper($sourceCurrency) !== strtoupper($creator->default_currency)) {
+                // Example: User entered 100 USD, Creator is GBP.
+                // We need to find how many GBP is 100 USD.
+                // priceFormat(from, amount, to) -> converts FROM currency TO target currency
+                $amount = Helpers::priceFormat(strtoupper($sourceCurrency), $amount, strtoupper($creator->default_currency));
+            }
+
             $ConvertedAmount = Helpers::priceFormat($creator->default_currency, $amount, 'gbp');
             // return response()->json([
             //     'creator->default_currency' => $creator->default_currency,
@@ -3034,29 +3038,22 @@ class StripeController extends Controller
                     'msg' => "Larger payments more than £50 need to login."
                 ]);
             }
-
-            $amount = (float) $request->amount;
             
             // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
             $vatPercent = $creator->vat_amount_percentage ?? 0;
             $vatAmount = $amount * $vatPercent / 100;
             $amountWithVat = $amount + $vatAmount;
 
-            // Step 1: Calculate breakdown in supporter's currency to determine what they pay
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $currency);
+            // Calculate breakdown in creator's currency to determine what supporter pays
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $creator->default_currency);
             
             $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
             $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
             $creatorNet = $breakdown['net_to_creator']; // This is in supporter currency
 
-            // Step 2: Calculate equivalent values in creator's currency for DB and metadata
-            $price = Helpers::priceFormat($currency, $amount, $creator->default_currency);
-            
-            // Calculate VAT for creator side breakdown too
-            $vatAmountCreator = $price * $vatPercent / 100;
-            $priceWithVatCreator = $price + $vatAmountCreator;
-
-            $creatorBreakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVatCreator, $creator->default_currency);
+            // Values for DB in creator's currency
+            $price = $amount;
+            $creatorBreakdown = $breakdown;
             
             $pay = TipGoalsPayment::create([
                 'tip_goal_id' => $goal->id ?? null,
@@ -3077,7 +3074,7 @@ class StripeController extends Controller
                 [
                     'quantity' => 1,
                     'price_data' => [
-                        'currency' => $currency,
+                        'currency' => $creator->default_currency,
                         'product_data' => [
                             'name' => "Total value of item including all fees",
                             'description' => "Support payment to {$creator->name} to help them create more content.",

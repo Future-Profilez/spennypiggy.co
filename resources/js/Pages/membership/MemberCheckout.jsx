@@ -12,7 +12,7 @@ import axios from "axios";
 export default function SubCheckout(props) {
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
-    const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities } = props;
+    const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
     const { formatMultiPrice } = PriceFormat();
     const [username, setUserName] = useState(
         (auth && auth.user && auth.user.username) || ""
@@ -32,6 +32,46 @@ export default function SubCheckout(props) {
         anonymous: 0,
         cf_turnstile_response: "",
     });
+
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Client Rule: Add VAT before other fees
+        const priceWithVat = listedPrice + vat;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
+    const finalTotalAmount = calculateTotalSupporterPays(
+        membership?.price, 
+        membership?.currency,
+        vat_amount
+    );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     function checkanonymous(e) {
@@ -163,11 +203,11 @@ export default function SubCheckout(props) {
                                     </p>
                                     <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            <li className="flex justify-between  border p-3">
+                                            {/* <li className="flex justify-between  border p-3">
                                                 <span className="min-w-[100px] block">Subtotal :</span>
                                                 <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
-                                            </li>
-                                            <li className="flex justify-between   border p-3">
+                                            </li> */}
+                                            {/* <li className="flex justify-between   border p-3">
                                                 <span className="min-w-[100px] block">Platform Fee :</span>
                                                 <div>
                                                     <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
@@ -179,8 +219,8 @@ export default function SubCheckout(props) {
                                                     </p>
                                                     </button>
                                                 </div>
-                                            </li>
-                                            {vat_amount && vat_amount > 0 ? (
+                                            </li> */}
+                                            {/* {vat_amount && vat_amount > 0 ? (
                                                 <li className="flex justify-between   border p-3">
                                                     <span className="min-w-[100px] block">VAT :</span>
                                                     <strong>{formatMultiPrice(
@@ -191,10 +231,28 @@ export default function SubCheckout(props) {
                                                 </li>
                                             ) : (
                                                 ""
-                                            )}
-                                            <li className="flex justify-between border p-3">
-                                                <span className="min-w-[100px] block">Total :</span>
-                                                <strong>{formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}</strong>
+                                            )} */}
+                                            <li className="flex justify-between">
+                                                <span className="min-w-[100px] text-lg block">Total :</span>
+                                                <div className="text-right">
+                                                    <strong className="block">
+                                                        {formatMultiPrice(
+                                                            finalTotalAmount,
+                                                            membership && membership?.currency
+                                                        )}
+                                                    </strong>
+                                                    
+                                                    {/* Show estimated price if display currency differs from charge currency */}
+                                                    {display_currency && display_currency !== membership?.currency && (
+                                                        <div className="text-sm text-gray-500 font-medium mt-1">
+                                                            ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
+                                                        </div>
+                                                    )}
+
+                                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
+                                                        * Includes all fees. You will be charged in {membership?.currency}.
+                                                    </span>
+                                                </div>
                                             </li>
                                         </ul>
                                     </div>
@@ -455,7 +513,10 @@ export default function SubCheckout(props) {
                                     >
                                         {processing || checking
                                             ? "Processing..."
-                                            : `${membership?.level == "lifetime" ? `Join Now for ${formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}` : `Subscribe Now for ${formatMultiPrice( membership?.tax_amount + membership?.price + vat_amount || "",membership && membership?.currency,'adminfee' )}`}`}
+                                            : `${membership?.level == "lifetime" ? "Join Now for" : "Subscribe Now for"} ${formatMultiPrice(
+                                                finalTotalAmount,
+                                                membership && membership?.currency
+                                            )}`}
                                     </button>
                                     
                                 </div>

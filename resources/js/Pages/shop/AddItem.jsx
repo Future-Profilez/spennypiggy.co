@@ -65,6 +65,8 @@ export default function AddItem(props) {
     }, [open]);
 
     const AddForm = () => {
+        const { formatMultiPrice } = PriceFormat();
+        const { global_currency } = usePage().props;
         const [isVat, setIsVat] = useState(
             auth && auth.user && auth.user.vat_amount_percentage ? true : false
         );
@@ -496,9 +498,9 @@ export default function AddItem(props) {
                         </div>
 
                         <div className="shop-forms-field mb-4">
-                            <label className="w-full mb-2">Price*</label>
+                            <label className="w-full mb-2">Price ({defaultCurrency})*</label>
                             <div className="relative  currency-wrapper dollar" >
-                                <span className="currency-tag">$</span>
+                                <span className="currency-tag">{defaultCurrency}</span>
                                 <input
                                     name="price"
                                     defaultValue={pre_price}
@@ -508,6 +510,11 @@ export default function AddItem(props) {
                                     placeholder="Enter the price of your item"
                                 />
                             </div>
+                            {defaultCurrency !== global_currency && shopItem.price > 0 && (
+                                <p className="mt-1 text-sm text-gray-500">
+                                    ≈ {formatMultiPrice(shopItem.price, defaultCurrency)} ({global_currency})
+                                </p>
+                            )}
                         </div>
 
                         <h2 className="text-md font-normal mb-3 mt-3">Item image</h2>
@@ -866,18 +873,25 @@ export default function AddItem(props) {
                                             </span>
                                         </label>
                                         <span className="ml-3 text-base font-medium text-gray-900">
-                                            Special Price for Members
+                                            Special Price for Members ({defaultCurrency})
                                         </span>
                                     </div>
                                     {haveSpPrice ? (
-                                        <input
-                                            onChange={(e) =>
-                                                setSpPrice(e.target.value)
-                                            }
-                                            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-[30px] md:rounded-[40px]  p-[13px] px-4"
-                                            type="text"
-                                            defaultValue={spPrice || ""}
-                                        />
+                                        <>
+                                            <input
+                                                onChange={(e) =>
+                                                    setSpPrice(e.target.value)
+                                                }
+                                                className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full bg-gray-200 border-0 rounded-[30px] md:rounded-[40px]  p-[13px] px-4"
+                                                type="text"
+                                                defaultValue={spPrice || ""}
+                                            />
+                                            {defaultCurrency !== global_currency && spPrice > 0 && (
+                                                <p className="mb-3 text-sm text-gray-500">
+                                                    ≈ {formatMultiPrice(spPrice, defaultCurrency)} ({global_currency})
+                                                </p>
+                                            )}
+                                        </>
                                     ) : (
                                         ""
                                     )}

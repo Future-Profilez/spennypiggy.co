@@ -1434,7 +1434,7 @@ class WishitemController extends Controller
                 ]);
             }
 
-            $currency = 'usd';
+            $chargeCurrency = strtolower($orderDetails->creator->default_currency ?? 'usd');
             $totalAmount = 0;
             $cartData = is_string($orderDetails->cart_details) ? json_decode($orderDetails->cart_details, true) : $orderDetails->cart_details;
             $cartLines = data_get($cartData, 'cart.stores.0.cartLines', []);
@@ -1485,23 +1485,24 @@ class WishitemController extends Controller
                 ], 422);
             }
 
-            // Use gross-up flow helper
-            $basePrice = $totalAmount / 100; // Convert cents to major unit
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $currency);
+            // Use gross-up flow helper in creator's currency
+            $basePriceStore = $totalAmount / 100; // Convert cents to major unit
+            $basePrice = Helpers::priceFormat('usd', $basePriceStore, $chargeCurrency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $chargeCurrency);
             
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
             $creatorNetAmount = $breakdown['net_to_creator'];
 
             // Handle zero-decimal currencies
-            $multiplier = Helpers::isZeroDecimalCurrency($currency) ? 1 : 100;
+            $multiplier = Helpers::isZeroDecimalCurrency($chargeCurrency) ? 1 : 100;
 
             // Single line item hiding all fees
             $lineItems = [
                 [
                     'quantity' => 1,
                     'price_data' => [
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => "Total value of item including all fees",
                         ],
@@ -1514,7 +1515,7 @@ class WishitemController extends Controller
 
             $ryeProductPayment = new RyeProductPayment();
             $ryeProductPayment->user_id = Auth::id();
-            $ryeProductPayment->currency = $currency;
+            $ryeProductPayment->currency = $chargeCurrency;
             $ryeProductPayment->amount = $finalTotalAmount; // Store total paid by supporter
             $ryeProductPayment->payment_method = 'card';
             $ryeProductPayment->shipping_address = $addressJson;

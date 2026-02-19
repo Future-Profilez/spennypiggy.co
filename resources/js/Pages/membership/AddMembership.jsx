@@ -78,7 +78,7 @@ const membershipBenifits = [
 ];
 
 export default function AddMembership({updateState, item, text, classes}) {
-  const { auth } = usePage().props;
+  const { auth, global_currency } = usePage().props;
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   const { formatMultiPrice } = PriceFormat();
   const defaultCurrency = (auth && auth.user && auth.user.default_currency) || "USD";
@@ -214,7 +214,7 @@ export default function AddMembership({updateState, item, text, classes}) {
                       </div>
 
                       <div className="w-full mb-4">
-                          <label className="block text-left mb-2">{data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price'}</label>
+                          <label className="block text-left mb-2">{(data && data.level =='lifetime' ? "Lifetime membership price" : 'Monthly Price') + ` (${defaultCurrency})`}</label>
                           <div className="relative  currency-wrapper dollar-simbols" >
                             <span className="currency-tag">{defaultCurrency}</span>
                             <input className="border-gray-300 border rounded-[30px] md:rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
@@ -222,13 +222,13 @@ export default function AddMembership({updateState, item, text, classes}) {
                                 type="number" name="month_price"
                                 placeholder={data && data.level =='lifetime' ? "Enter Lifetime membership price" : 'Enter monthly price.. '}  />
                           </div>
-                          {defaultCurrency !== 'USD' && <p className="mt-1">
-                              The Bill amount is set to{" "}
-                              {formatMultiPrice(
+                          {defaultCurrency !== global_currency && data.month_price > 0 && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              ≈ {formatMultiPrice(
                                   data.month_price,
                                   defaultCurrency
-                              )}.
-                          </p>}
+                              )} ({global_currency})
+                          </p>)}
                       </div>
 
                       <div className="w-full mb-4">

@@ -46,18 +46,14 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
                 <div>
                     <div className=' !text-normal md:!text-lg font-bold !text-black '>{data.wishname}</div>
                     <div className='font-bold'>
-                        {isLoggedIn ? (
-                            formatMultiPrice(data.price, currency)
-                        ) : (
-                            <div className="flex flex-col">
-                                <span>
-                                    {formatMultiPrice(totalPrice || ((data.price || 0) + (data.tax || 0)), currency)}
-                                </span>
-                                <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                    * Includes all applicable fees
-                                </span>
-                            </div>
-                        )}
+                        <div className="flex flex-col">
+                            <span>
+                                {formatMultiPrice(totalPrice || ((data.price || 0) + (data.tax || 0)), currency)}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                * Includes all applicable fees
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

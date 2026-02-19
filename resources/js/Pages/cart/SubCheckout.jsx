@@ -75,7 +75,7 @@ export default function SubCheckout(props) {
         });
     }
 
-    const {flash}   = usePage().props;
+    const { flash, global_currency } = usePage().props;
     useEffect(() => {
         if(flash?.error){
             errorAlert(flash.error);
@@ -154,9 +154,25 @@ export default function SubCheckout(props) {
                             </div> */}
                             <div className="cartSubTotal text-right mt-1">
                                 <strong className="text-gray-900">Total :</strong>
-                                <strong className="text-right text-black">
-                                    {formatMultiPrice(calculateTotalSupporterPays(wish.price, wish?.currency, vat_amount), wish && wish.currency)}
-                                </strong>
+                                <div className="text-right text-black">
+                                    <strong className="block">
+                                        {formatMultiPrice(
+                                            calculateTotalSupporterPays(wish.price, wish?.currency, vat_amount),
+                                            wish && wish.currency
+                                        )}
+                                    </strong>
+                                    {global_currency && global_currency.toUpperCase() !== (wish?.currency || '').toUpperCase() && (
+                                        <div className="text-sm text-gray-500 font-medium mt-1">
+                                            ≈ {formatMultiPrice(
+                                                calculateTotalSupporterPays(wish.price, wish?.currency, vat_amount),
+                                                global_currency
+                                            )} (estimated)
+                                        </div>
+                                    )}
+                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
+                                        * Includes all fees. You will be charged in {wish?.currency}.
+                                    </span>
+                                </div>
                             </div>
                         </div>
 

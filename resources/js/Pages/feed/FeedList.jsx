@@ -102,6 +102,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
   if (isLoading && !posts.length) {
     return (
       <div className='max-feed m-auto'>
+        
         <PostFilterTabs 
           filters={FILTER_OPTIONS}
           activeFilter={filter}
@@ -142,14 +143,12 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
         onFilterChange={handleFilterChange}
         disabled={isLoading}
       />}
-      
+
       {displayPosts.length > 0 ? (
         <>
           {displayPosts.map((post, i) => 
             <Post key={`post-${post.uuid || post.id || i}`} item={post} />
           )}
-          
-          {/* Load More Button */}
           {hasMore && (
             <div className="text-center py-6">
               {isLoadingMore ? (

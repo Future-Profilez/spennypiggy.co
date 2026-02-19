@@ -33,6 +33,14 @@ class BillPayment extends Model
         'twitter_response',
         'end',
         'upcoming_payment',
+        'creator_currency',
+        'charge_currency',
+        'display_currency',
+        'stripe_fee_actual',
+        'stripe_fee_expected',
+        'supporter_country',
+        'card_country',
+        'fee_variance',
     ];
 
     protected $appends = [

@@ -154,7 +154,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                 
                 {/* Activity Insights */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div className="bg-blue-50 rounded-[30px] md:rounded-[40px]   p-3">
+                    <div className="bg-blue-50 rounded-[30px] md:rounded-[20px]   p-4">
                         <div className="text-blue-600 text-sm font-medium">Most Active Day</div>
                         <div className="text-blue-900 font-semibold">
                             {(() => {
@@ -169,7 +169,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         </div>
                     </div>
                     
-                    <div className="bg-green-50 rounded-[30px] md:rounded-[40px]   p-3">
+                    <div className="bg-green-50 rounded-[30px] md:rounded-[20px]   p-4">
                         <div className="text-green-600 text-sm font-medium">Consistency Score</div>
                         <div className="text-green-900 font-semibold">
                             {Math.round((totalDaysWithContent / 30) * 100)}%
@@ -179,7 +179,7 @@ const ActivityStatus = ({ activityStatus, contentBreakdown, blockedPayments, act
                         </div>
                     </div>
                     
-                    <div className="bg-purple-50 rounded-[30px] md:rounded-[40px]   p-3">
+                    <div className="bg-purple-50 rounded-[30px] md:rounded-[20px]   p-4">
                         <div className="text-purple-600 text-sm font-medium">Content Velocity</div>
                         <div className="text-purple-900 font-semibold">
                             {(() => {

@@ -380,21 +380,28 @@ class BillsController extends Controller
         ]);
 
         $price = $bill->price;
-        $currency = strtolower($request->cookie("currency", "GBP"));
+        // Client Requirement: Always charge in Creator's Currency
+        $chargeCurrency = $bill->currency;
+        // Supporter's display currency for estimation
+        $displayCurrency = strtolower($request->cookie("currency", "GBP"));
         
-        // Calculate creator's desired net in supporter's currency
+        // Calculate VAT in Creator's Currency
         $vatPercent = $bill->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
-        $supporterPrice = Helpers::priceFormat($bill->currency, $priceWithVat, $currency);
-
-        // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($supporterPrice, $currency);
+        
+        // Gross-up calculation in Creator's Currency (No FX conversion)
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
         
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
+        $creatorNet = $breakdown['net_to_creator'];
         
         $totalTax = $applicationFeeAmount;
-        $vatAmount = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
+        // $vatAmount variable here is used for vat_tax_amount in DB which stores compliance+admin fees
+        $feesAsVat = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
+        
+        // Calculate actual VAT amount for display
+        $actualVatAmount = $price * $vatPercent / 100;
 
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         if ($checkGifterStatus === true) {
@@ -409,7 +416,8 @@ class BillsController extends Controller
         }
 
         if ($request->isMethod("POST")) {
-            $convertedAmountForCheck = Helpers::priceFormat($bill->currency, $price, 'gbp');
+            // Conversion only for login threshold check (approximate)
+            $convertedAmountForCheck = Helpers::priceFormat($chargeCurrency, $price, 'gbp');
             if (!Auth::check() && $convertedAmountForCheck > 50) {
                 return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
             }
@@ -427,14 +435,17 @@ class BillsController extends Controller
                 'user_id'        => $user->id ?? null,
                 'guest_name'     => $request->name,
                 'guest_email'    => $request->email,
-                'currency'       => $bill->currency,
+                'currency'       => $chargeCurrency, // Force Creator's Currency
                 'amount'         => $bill->price,
                 'tax'            => $totalTax,
-                'vat_tax_amount' => $vatAmount,
+                'vat_tax_amount' => $feesAsVat,
                 'recurring_for'  => $reccure ?? null,
                 'recurring_type' => $bill->period,
                 'message'        => $request->message ?? null,
                 'anonymous'      => $request->anonymous ?? 0,
+                'creator_currency' => $bill->currency,
+                'charge_currency' => $chargeCurrency,
+                'display_currency' => $displayCurrency,
             ]);
 
             try {
@@ -444,7 +455,7 @@ class BillsController extends Controller
                     ['user_id', $user->id ?? null],
                     ['creator_id', $bill->user->id],
                     ['connected_account_id', $connectedAccountId],
-                    ['currency', $currency],
+                    ['currency', $chargeCurrency],
                 ])->first();
 
                 $existingPriceEntry = ConnectedAccountCustomer::where([
@@ -452,15 +463,11 @@ class BillsController extends Controller
                     ['creator_id', $bill->user->id],
                     ['connected_account_id', $connectedAccountId],
                     ['product_id', $bill->product_id],
-                    ['currency', $currency],
+                    ['currency', $chargeCurrency],
                 ])->whereNotNull('price_id')->first();
 
                 $customer_id = $storeCustomer ? $storeCustomer->stripe_customer_id : null;
-                // $product_id = $storeCustomer->product_id ?? null;
-
-                // $existingSubscription = $customer_id
-                //     ? StripeControl::getSubscription($product_id, $connectedAccountId)
-                //     : null;
+                
                 $existingSubscription = null;
                 if (isset($storeCustomer->stripe_customer_id)) {
                     $existingSubscription = StripeControl::getActiveSubscriptionByCustomer(
@@ -471,7 +478,7 @@ class BillsController extends Controller
 
                 DB::commit();
 
-                if ($existingSubscription && $existingSubscription->currency !== $currency) {
+                if ($existingSubscription && $existingSubscription->currency !== $chargeCurrency) {
                     $newCustomer = StripeControl::createCustomer([
                         'email' => $user->email ?? $request->email,
                         'name' => $user->name ?? $request->name,
@@ -486,7 +493,7 @@ class BillsController extends Controller
                         'stripe_customer_id' => $customer_id ?? null,
                         'product_type' => 'bill',
                         'product_id' => $bill->product_id,
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                     ]);
                 }
 
@@ -502,26 +509,14 @@ class BillsController extends Controller
                 $priceId = $existingPriceEntry->price_id ?? null;
 
                 // Get currency metadata to handle zero-decimal currencies properly
-                $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+                $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
                 $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-
-                // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
-                $vatPercent = $bill->user->vat_amount_percentage ?? 0;
-                $vatAmountCalc = $bill->price * $vatPercent / 100;
-                $priceWithVat = $bill->price + $vatAmountCalc;
-
-                // Use new gross-up flow helper
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
-                
-                $finalTotalAmount = $breakdown['total_supporter_pays'];
-                $applicationFeeAmount = $breakdown['application_fee'];
-                $creatorNet = $breakdown['net_to_creator'];
 
                 if (!$priceId) {
 
                     $priceData = [
                         'unit_amount' => round($finalTotalAmount * $multiplier),
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                         'product' => $bill->product_id,
                         'recurring' => [
                             'interval' => StripeControl::$periods[$bill->period],
@@ -546,7 +541,7 @@ class BillsController extends Controller
                         'product_type' => 'bill',
                         'product_id' => $bill->product_id,
                         'price_id' => $priceId,
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                     ]);
                 }
 
@@ -555,7 +550,7 @@ class BillsController extends Controller
                     [
                         'quantity' => 1,
                         'price_data' => [
-                            'currency' => $currency,
+                            'currency' => $chargeCurrency,
                             'product_data' => [
                                 'name' => "Total value of item including all fees",
                                 'description' => "Recurring Bill from {$bill->user->name}",
@@ -584,6 +579,9 @@ class BillsController extends Controller
                             'total_charge_amount' => (string) ($finalTotalAmount * $multiplier),
                             'payment_type' => 'Bill Payment - Direct Charges',
                             'anonymous' => (string) ($sub->anonymous ?? 0),
+                            'creator_currency' => $bill->currency,
+                            'display_currency' => $displayCurrency,
+                            'vat_rate' => (string) $vatPercent,
                         ]),
                         'application_fee_amount' => (int)($applicationFeeAmount * $multiplier),
                     ],
@@ -613,9 +611,11 @@ class BillsController extends Controller
 
         return Inertia::render('bills/BillCheckout', [
             'bill' => $bill,
-            'vat_amount' => $vatAmount,
+            'vat_amount' => $actualVatAmount,
             'reccure' => $reccure,
             'card_capabilities' => $card_capabilities,
+            'creator_currency' => $bill->currency, // Pass creator currency to frontend
+            'display_currency' => $displayCurrency, // Pass display currency to frontend
         ]);
     }
 

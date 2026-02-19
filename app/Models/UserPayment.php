@@ -19,6 +19,14 @@ class UserPayment extends Model
         'payment_details',
         'paid_at',
         'status',
+        'creator_currency',
+        'charge_currency',
+        'display_currency',
+        'stripe_fee_actual',
+        'stripe_fee_expected',
+        'supporter_country',
+        'card_country',
+        'fee_variance',
     ];
     protected $casts = [
         'from_user_id' => 'integer',

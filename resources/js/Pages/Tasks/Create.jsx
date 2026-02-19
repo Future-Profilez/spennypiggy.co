@@ -1,9 +1,13 @@
-import { useForm, Head } from "@inertiajs/react";
+import { useForm, Head, usePage } from "@inertiajs/react";
 import Guest from "@/Layouts/GuestLayout";
 import GlobalUploader from "@/uploadcare/Uploader";
 import InputError from "@/Components/InputError";
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function Create({ auth, currencySymbol }) {
+    const { global_currency } = usePage().props;
+    const { formatMultiPrice } = PriceFormat();
+    const defaultCurrency = auth.user.default_currency || 'GBP';
     const { data, setData, post, processing, errors } = useForm({
         title: "",
         description: "",
@@ -114,6 +118,11 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                             />
                                         </div>
+                                        {defaultCurrency !== global_currency && data.price > 0 && (
+                                            <p className="mt-2 text-sm text-gray-500 font-bold">
+                                                ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
+                                            </p>
+                                        )}
 
                                         <InputError
                                             message={errors.price}

@@ -215,7 +215,7 @@ function InstantTabSystem({
 
     return (
         <div className='relative'>
-            <div className="newnav-tabs hideScroll mb-8 pe-[100px] overflow-x-auto flex items-center justify-between py-0 relative px-4">
+            <div className="newnav-tabs hideScroll mb-8 pe-[100px] overflow-x-auto flex items-center justify-between py-0 relative">
                 <div className="flex ps-1 scrollbar-hide space-x-8 min-w-max">
                     {tabs.map((tab) => (
                         <TabButton

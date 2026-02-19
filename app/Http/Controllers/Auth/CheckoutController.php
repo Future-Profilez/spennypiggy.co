@@ -55,8 +55,6 @@ class CheckoutController extends Controller
         $this->ensureTurnstileVerified(request());
 
         $user = Auth::user();
-        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        // dd($currency,auth()->user()->default_currency);
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -104,6 +102,9 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
             }
 
+            // Client Requirement: Always charge in Creator's Currency
+            $chargeCurrency = strtolower($owner->default_currency ?? 'gbp');
+
             // Calculate preliminary total for activity check notification
             $preliminaryTotal = $getdata->sum(function ($item) {
                 return $item->amount * $item->quantity;
@@ -146,7 +147,7 @@ class CheckoutController extends Controller
             }
 
             // Get currency metadata to handle zero-decimal currencies properly
-            $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
+            $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
             $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
             // Initialize connectedAccountId outside the loop to avoid undefined variable error
@@ -213,8 +214,8 @@ class CheckoutController extends Controller
                 $vatAmount = $itemAmount * $vatPercent / 100;
                 $itemAmountWithVat = $itemAmount + $vatAmount;
 
-                // Calculate breakdown using gross-up logic for this item
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $currency);
+                // Calculate breakdown using gross-up logic for this item in creator's currency
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($itemAmountWithVat, $chargeCurrency);
 
                 $finalTotalAmount = $breakdown['total_supporter_pays'];
                 $applicationFeeAmount = $breakdown['application_fee'];
@@ -224,7 +225,7 @@ class CheckoutController extends Controller
                 $lineItems[] = [
                     'quantity' => $dd->quantity,
                     'price_data' => [
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                         'product_data' => [
                             'name' => "Total value of item including all fees",
                             'description' => $productName . ' from ' . ($dd->owner->name ?? 'Creator'),
@@ -1071,12 +1072,18 @@ class CheckoutController extends Controller
                 if ($dd->user_id && !empty($dd->user->email)) {
                     Log::info("Creating UserPayment for user", ['user_id' => $dd->user_id]);
                     $total_amount = $dd->amount * $dd->quantity;
+                $creatorCurrency = strtoupper($dd->owner->default_currency ?? ($dd->wish->currency ?? 'GBP'));
+                $chargeCurrency = strtoupper($stripeid->currency ?? $creatorCurrency);
+                $displayCurrency = strtoupper(request()->cookie('currency', 'GBP'));
                     $userPayment = new UserPayment();
                     $userPayment->from_user_id = $dd->user_id ?? null;
                     $userPayment->to_user_id = $dd->owner_id;
                     $userPayment->product_type = 'wish item';
                     $userPayment->amount = $total_amount;
-                    $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
+                $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
+                $userPayment->creator_currency = $creatorCurrency;
+                $userPayment->charge_currency = $chargeCurrency;
+                $userPayment->display_currency = $displayCurrency;
                     $userPayment->payment_method = 'stripe';
                     $userPayment->payment_details = json_encode($sessionId, true);
                     $userPayment->paid_at = Carbon::now();

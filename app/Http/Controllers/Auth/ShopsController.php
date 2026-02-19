@@ -702,14 +702,18 @@ class ShopsController extends Controller
             }
 
             $amount = $shop->price;
-            $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
+            
+            // $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
 
-            if (!Auth::check() && $ConvertedAmount > 50) {
-                return response()->json([
-                    'status' => false,
-                    'msg' => 'Larger payments more than £50 need to login.',
-                ]);
-                // return redirect()->back()->with('error', 'Larger payments more than £50 need to login.');
+            if (!Auth::check() && $amount > 50) { // Assuming 50 in creator currency or similar check
+                 // Ideally convert to GBP for consistent safety check
+                 $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
+                 if ($ConvertedAmount > 50) {
+                    return response()->json([
+                        'status' => false,
+                        'msg' => 'Larger payments more than £50 need to login.',
+                    ]);
+                 }
             }
 
             if ($shop->type == 'physical') {
@@ -815,7 +819,7 @@ class ShopsController extends Controller
                     ->where('creator_id', $shop->user->id)
                     ->where('connected_account_id', $connectedAccountId)
                     ->where('product_type', 'shop item')
-                    ->where('currency', $currency)
+                    ->where('currency', $shop->user->default_currency)
                     ->first();
 
                 // Step 2: Check if price already exists
@@ -824,7 +828,7 @@ class ShopsController extends Controller
                     ->where('connected_account_id', $connectedAccountId)
                     ->where('product_id', $shop->stripe_product_id)
                     ->where('product_type', 'shop item')
-                    ->where('currency', $currency)
+                    ->where('currency', $shop->user->default_currency)
                     ->whereNotNull('price_id')
                     ->first();
 
@@ -841,7 +845,9 @@ class ShopsController extends Controller
                     $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
 
                     // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $shop->currency ?? 'USD');
+                    // Force using shop currency, ignoring cookie currency
+                    $chargeCurrency = $shop->user->default_currency ?? 'USD';
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency);
                     
                     $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
                     $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
@@ -849,7 +855,7 @@ class ShopsController extends Controller
 
                     $pricePayload = [
                         'unit_amount' => $unitAmount,
-                        'currency' => $currency,
+                        'currency' => $chargeCurrency,
                         'product' => $shop->stripe_product_id,
                     ];
 
@@ -863,7 +869,8 @@ class ShopsController extends Controller
                     $priceId = $price->id;
                 } else {
                     // If price exists, we still need to calculate the breakdown for application fee
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $shop->currency ?? 'USD');
+                    $chargeCurrency = $shop->user->default_currency ?? 'USD';
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency);
                     $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
                     $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
                     $creatorNet = $breakdown['net_to_creator'];
@@ -883,7 +890,7 @@ class ShopsController extends Controller
                     'product_type' => 'shop item',
                     'product_id' => $shop->stripe_product_id,
                     'price_id' => $priceId,
-                    'currency' => $currency,
+                    'currency' => $chargeCurrency,
                 ]);
             }
 

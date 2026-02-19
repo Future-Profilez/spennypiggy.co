@@ -88,6 +88,47 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
     'lifetime' : '!border-green-500',
   }
 
+  const isZeroDecimalCurrency = (curr) => {
+    const zeroDecimalCurrencies = [
+        'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+        'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+    ];
+    return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+  };
+
+  const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+    const listedPrice = parseFloat(price || 0);
+    const isZeroDecimal = isZeroDecimalCurrency(curr);
+    
+    // 1. VAT is added to the listed price first
+    const vatAmount = listedPrice * (vatPercent || 0) / 100;
+    const priceWithVat = listedPrice + vatAmount;
+
+    // 2. Define fee rates
+    const stripeFeeRate = 0.029; // 2.9%
+    const stripeFixedFee = isZeroDecimal ? 0 : 0.30; // 30 cents (0 for zero-decimal)
+    const platformFeeRate = 0.15; // 15%
+    const complianceFeeRate = 0.02; // 2%
+    const adminFee = 1.00; // Fixed admin fee
+
+    // 3. Gross-up formula:
+    // Total = (PriceWithVAT + FixedFees) / (1 - TotalPercentageFees)
+    
+    const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+    
+    if (totalDeductionRate >= 1) {
+        // Safety check to avoid division by zero or negative
+        return priceWithVat;
+    }
+
+    const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+    
+    return totalSupporterPays;
+  };
+
+  const isCreator = auth?.user?.id === item?.user_id;
+  const vatPercentage = item?.user?.vat_amount_percentage || 0;
+
   return (
     <>
           <div className={`bg-opacity-90 relative rounded-[30px] md:rounded-[40px]  
@@ -144,13 +185,31 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                           </h2>
                         </div>
 
-                        <div className="flex items-baseline  justify-center py-4 pt-2 ">
-                          <h2 className={`font-bold text-xl`}>
-                            {formatMultiPrice(item && item?.price, item && item?.currency)}
-                          </h2>
-                          <div className="pl-1">
-                            <p className="text-[17px]">/month</p>
+                        <div className="flex flex-col items-center justify-center py-4 pt-2 ">
+                          <div className="flex items-baseline">
+                            <h2 className={`font-bold text-xl`}>
+                              {isCreator ? (
+                                formatMultiPrice(item && item?.price, item && item?.currency)
+                              ) : (
+                                formatMultiPrice(
+                                  calculateTotalSupporterPays(
+                                    item?.price, 
+                                    item?.currency,
+                                    vatPercentage
+                                  ), 
+                                  item?.currency
+                                )
+                              )}
+                            </h2>
+                            <div className="pl-1">
+                              <p className="text-[17px]">/month</p>
+                            </div>
                           </div>
+                          {!isCreator && (
+                            <div className="text-[10px] text-white/80 font-normal mt-1 leading-tight text-center">
+                              * Includes all fees
+                            </div>
+                          )}
                         </div>
                     </div>
                     <div className='p-3'>

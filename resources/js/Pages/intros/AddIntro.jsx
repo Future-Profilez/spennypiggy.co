@@ -84,22 +84,34 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
   const ProfileIntro = () => {
     return <>
       <Popup space="0" size="md" action={close} classes={`w-full`}
-        text={<>
-        <div className='isintro border-2 border-voilet !shadow-none relative cursor-pointer shadow-voilet !rounded-[20px] md:!rounded-[40px]'>
-          <img
-          alt={"image"}  effect="blur"
-          height={350} src={ intro && intro.poster_url || wishlistbannerimg} className='' width={400} />
+        text={<div className='mt-3 relative'>
+
+        {IsloggedIn ? <button onClick={removeVideo} className='!z-2 !py-2 !px-4 rounded-xl bg-red-600 remove-story text-sm text-white' >Remove</button> : ''}
+
+        <div className='isintro  relative border-2 border-pink-500 !rounded-[30px] md:!rounded-[40px] cursor-pointer  '>
+          
+          <img alt={"image"} width={400}  effect="blur"
+          height={350} src={ intro && intro.poster_url || wishlistbannerimg} 
+          className='!min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px]'  />
+          
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="32" cy="32" r="32" fill="#F94F97"/>
             <path d="M40 32.0234L22.72 22.0468V42L40 32.0234Z" fill="black"/>
             </svg>
           </div>
-          {IsloggedIn && intro && intro.approved !== 1 ? <div className='text-sm mb-0   alert bg-black text-yellow-400 w-full  absolute z-1 bottom-0 left-0 rounded p-2 px-3' >Profile intro video is waiting for approval. Currently only you can see this intro.</div> : ''}
+
+          {IsloggedIn && intro && intro.approved !== 1 ? 
+          <div className='text-sm mb-0  
+          alert bg-black text-yellow-400 w-full  absolute z-1 bottom-0 left-0 
+          rounded p-2 px-3'
+           >Profile intro video is waiting for approval. 
+           Currently only you can see this intro.</div> 
+          : ''}
+          
         </div>
-        </>} >
+        </div>} >
           <div className='video-payer-pop' >
-            {/* Prefer the real video UUID; fall back to perma_link if present */}
             <video
               playsInline
               muted
@@ -109,7 +121,6 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
               disablePictureInPicture
               poster={intro && intro.poster_url || undefined}
             >
-              {/* Build from uuid to avoid incorrect perma_link values */}
               <source
                  src={
                    intro && intro.uuid
@@ -131,19 +142,22 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
       {intro ?
         <div className='relative'>
           <ProfileIntro />
+<<<<<<< HEAD
           {IsloggedIn ? <button onClick={removeVideo} className='badge bg-red-700 remove-story px-4 py-2 rounded-xl text-white !text-xs' >Remove</button> : ''}
+=======
+>>>>>>> c1606ba8729da10c47a087807627f1ed54f1e931
         </div>
         :
         <>
         { IsloggedIn ?
-              <Popup modalclass="pinkmodal sendSurprize-modal shadow-pink" space="4" size="md" action={close} classes={`${classes} w-full`}
+              <Popup modalclass="pinkmodal sendSurprize-modal shadow-pink" space="6" size="md" action={close} classes={`${classes} w-full`}
                 text={text ? text :
-                  <div className='cursor-pointer box shadow-voilet rounded-[30px] md:rounded-[40px]   p-3 py-4 flex items-center justify-content-center' >
-                    <div>
-                        <div className='svg-icon mx-auto block' >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" strokeWidth="1.5" ></path> <path d="M8 12H16" strokeWidth="1.5"></path> <path d="M12 16V8" strokeWidth="1.5"></path> </svg>
+                  <div className='cursor-pointer bg-white !border-2 border-pink-500 rounded-[30px] md:rounded-[40px]   p-3 py-4 flex items-center justify-content-center' >
+                    <div className='py-6'>
+                        <div className='svg-icon mx-auto flex justify-center' >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="50px" viewBox="0 0 24 24" className="stroke-green-400 fill-none group-hover:fill-green-800 group-active:stroke-green-200 group-active:fill-green-600 group-active:duration-0 duration-300"> <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" strokeWidth="1.5" ></path> <path d="M8 12H16" strokeWidth="1.5"></path> <path d="M12 16V8" strokeWidth="1.5"></path> </svg>
                         </div>
-                        <p className='w-full text-center mt-2' >Add Verification Video</p>
+                        <p className='w-full text-center mt-2 text-lg' >Add Verification Video</p>
                     </div>
                   </div>
                 } >
