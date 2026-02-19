@@ -262,7 +262,7 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action absolute top-[-3px] right-0 cursor-pointer pl-3 bg-black p-2 "
+                            className="addoption-action cursor-pointer  p-1 "
                             dangerouslySetInnerHTML={{ __html: addicon }}
                         ></div>
                         {showAdd ? (
