@@ -1,15 +1,14 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-  import { usePage, Link } from '@inertiajs/react';
-  import LoadingScreen from '@/includes/LoadingScreen';
-  import Nocontent from '@/includes/Nocontent';
+import { Link } from '@inertiajs/react';
+import LoadingScreen from '@/includes/LoadingScreen';
+import Nocontent from '@/includes/Nocontent';
 import PriceFormat from '@/includes/PriceFormat';
 import Membership from './../membership/Membership';
 
   export default function MembershipLists({username}) {
 
     const [handleTab, setHandleTab] = useState('memberships');
-    const { user, auth } = usePage().props;
     const { formatMultiPrice } = PriceFormat();
 
     const ITEM = ({itm}) => { 
@@ -102,15 +101,13 @@ import Membership from './../membership/Membership';
 
     return ( <>
           <div className='m-auto'>
-            <div className='flex justify-center  items-center' >
+            <div className='flex justify-center items-center' >
               <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
               <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
             </div>
-
-            {handleTab == 'memberships' ? 
-              <CATITEM type={handleTab} /> 
-                : 
-              <CATITEM type={handleTab} /> 
+            {handleTab == 'memberships' 
+              ? <CATITEM type={handleTab} /> 
+              : <CATITEM type={handleTab} /> 
             }
           </div>
     </>);
