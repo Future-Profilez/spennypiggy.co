@@ -102,16 +102,16 @@ import Membership from './../membership/Membership';
 
     return ( <>
           <div className='m-auto'>
-          <div className='flex justify-center  items-center' >
-            <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
-            <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
-          </div>
+            <div className='flex justify-center  items-center' >
+              <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
+              <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
+            </div>
 
-          {handleTab == 'memberships' ? 
-            <CATITEM type={handleTab} /> 
-              : 
-            <CATITEM type={handleTab} /> 
-          }
+            {handleTab == 'memberships' ? 
+              <CATITEM type={handleTab} /> 
+                : 
+              <CATITEM type={handleTab} /> 
+            }
           </div>
     </>);
   }
