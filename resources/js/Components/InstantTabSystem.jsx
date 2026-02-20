@@ -213,7 +213,7 @@ function InstantTabSystem({
 
     return (
         <div className='relative pb-6 mt-2'>
-            <div className="bg-black overflow-hidden border-2 border-pink-600 rounded-[30px] p-2 w-full flex items-center justify-between py-0 relative">
+            <div className="bg-black overflow-hidden border-2 border-pink-600 rounded-[30px] !p-2 w-full flex items-center justify-between py-0 relative">
                 <div className="flex !pe-[100px] max-w-[85%] overflow-x-auto scrollbar-hide space-x-3 md:space-x-4 ">
                     {tabs.map((tab) => (
                         <TabButton

@@ -297,13 +297,12 @@ export default function UserCarts(props) {
                                                     </label>
                                                     <input
                                                         className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
-                                                        onChange={(e) =>
-                                                            setName(e.target.value)
-                                                        }
-                                                        value={name}
-                                                        type="text"
-                                                        placeholder="Enter Your Name..."
+                                                        onChange={(e) =>setName(e.target.value)} 
+                                                        // value={name}
+                                                        defaultValue={auth && auth.name || ""}
+                                                        type="text" placeholder="Enter Your Name..."
                                                     />
+                                                    {auth && auth.name}
                                                 </div>
                                             </div>
                                         </li>

@@ -279,7 +279,7 @@ export default function Dashboard(props) {
                                                      Please complete your Stripe account setup to add your wishlist.
                                                     </p>
                                                     : ""} 
-                                            <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
+                                            <div className="max-h-[55vh]  sm:max-h-[50vh] overflow-y-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -325,7 +325,7 @@ export default function Dashboard(props) {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div>
+                                                    <div className="grid grid-cols-2">
                                                         <div
                                                             className={`${
                                                                 AuthUserStripeConnected ==
@@ -423,7 +423,7 @@ export default function Dashboard(props) {
                                                     setShowAdd(false);
                                                     setWishOptions(false);
                                                 }}
-                                                className="mx-auto block p-2 mt-3"
+                                                className="w-full rounded-full !bg-gray-200 mx-auto block p-2 mt-3"
                                             >
                                                 Cancel
                                             </button>

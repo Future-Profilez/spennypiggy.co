@@ -93,22 +93,22 @@ export default function Gifter({ IsloggedIn,  sLinks }){
   }
 
   return (
-    <div className={`min-h-screen pb-20 ${IsloggedIn ? "IsloggedIn" : ""}`} >
+    <div className={` relative z-1 min-h-screen pb-20 ${IsloggedIn ? "IsloggedIn" : ""}`} >
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-8">
           {IsloggedIn ? (
             <div className="inlinetab ">
                 <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-                    <Tab.List className="flex items-center justify-center gap-4 md:gap-2 mb-12 px-4 overflow-x-auto scrollbar-hide">
+                    <Tab.List className="flex items-center justify-center  gap-2 mb-12  overflow-x-auto scrollbar-hide rounded-full p-2">
                         {['About', 'Feed', 'Memberships', 'Gifts', 'Tips', 'Media'].map((category, idx) => (
                             <Tab key={category} as={Fragment} >
                                 {({ selected }) => (
                                     <button
                                         className={`
                                             relative  focus:border-0 focus:outline-none text-sm font-black tracking-[0.2em] uppercase transition-all duration-300 whitespace-nowrap
-                                            py-[12px] px-6 bg-gray-300 rounded-xl
+                                            py-[10px] px-6 bg-gray-300 rounded-xl 
                                             ${selected
-                                                ? 'text-white bg-gradient-to-r from-[#05EFB8] via-[#8C52FF] to-[#F94F97]   shadow-[0_-2px_10px_rgba(140,82,255,0.5)]'
-                                                : 'text-black hover:text-black/70  '}
+                                                ? 'text-white bg-pink-600'
+                                                : ''} hover:opacity-70
                                         `}
                                     >
                                         {category}
@@ -117,6 +117,8 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             </Tab> 
                         ))} 
                     </Tab.List>
+
+
                     <Tab.Panels>
                         <Tab.Panel className="focus:outline-none">
                             <div className='max-w-4xl mx-auto'>
@@ -130,7 +132,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             </div>
                         </Tab.Panel>
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-4xl mx-auto bg-[#1A1B23]/80 backdrop-blur-3xl rounded-[30px] md:rounded-[40px]  p-8 border border-white/10 shadow-2xl">
+                            <div className="max-w-4xl mx-auto">
                                 <MembershipLists username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
@@ -139,16 +141,21 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                                 <GifterItems username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
+
                         <Tab.Panel className="focus:outline-none">
                             <div className="max-w-3xl mx-auto">
                                 <GifterTips username={user && user.username || ''}/>
                             </div>
                         </Tab.Panel>
+
                         <Tab.Panel className="focus:outline-none">
-                            <div className="max-w-3xl mx-auto">
-                                <GifterMedia username={user && user.username || ''}/>
+                            <div className="max-w-3xl mx-auto ">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+                                    <GifterMedia username={user && user.username || ''}/>
+                                </div>
                             </div>
                         </Tab.Panel>
+
                     </Tab.Panels>
                 </Tab.Group>
             </div>
