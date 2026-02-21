@@ -325,7 +325,7 @@ export default function Dashboard(props) {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="grid grid-cols-2">
+                                                    <>
                                                         <div
                                                             className={`${
                                                                 AuthUserStripeConnected ==
@@ -334,88 +334,91 @@ export default function Dashboard(props) {
                                                                     : "disabled"
                                                             }`}
                                                         >
-                                                            <div
-                                                                onClick={() =>
-                                                                    setWishOptions(
-                                                                        true,
-                                                                    )
-                                                                }
-                                                                className="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
-                                                            >
-                                                                <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                        <FaRegHeart
-                                                                            color="var(--pink)"
-                                                                            size="1.5rem"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="pl-3 text-left">
-                                                                        <h2 className="text-md font-normal font-GillSans uppercase">
-                                                                            Add
-                                                                            Wish
-                                                                        </h2>
-                                                                        <p className="text-sm font-poppins">
-                                                                            Let
-                                                                            fans
-                                                                            fund
-                                                                            your
-                                                                            lifestyle
-                                                                            for
-                                                                            a
-                                                                            reward.
-                                                                        </p>
+
+                                                            <div className="w-full">
+                                                                <div
+                                                                    onClick={() =>
+                                                                        setWishOptions(
+                                                                            true,
+                                                                        )
+                                                                    }
+                                                                    className="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                >
+                                                                    <div className=" flex items-center">
+                                                                        <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                            <FaRegHeart
+                                                                                color="var(--pink)"
+                                                                                size="1.5rem"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="pl-3 text-left">
+                                                                            <h2 className="text-md font-normal font-GillSans uppercase">
+                                                                                Add
+                                                                                Wish
+                                                                            </h2>
+                                                                            <p className="text-sm font-poppins">
+                                                                                Let
+                                                                                fans
+                                                                                fund
+                                                                                your
+                                                                                lifestyle
+                                                                                for
+                                                                                a
+                                                                                reward.
+                                                                            </p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+
+                                                                <Link
+                                                                    className="w-full block font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                    href="/task/create"
+                                                                >
+                                                                    <div className=" flex items-center">
+                                                                        <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                            <BiTask
+                                                                                color="var(--pink)"
+                                                                                size="1.5rem"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="pl-3 text-left">
+                                                                            <h2 className="text-md font-normal font-GillSans uppercase">
+                                                                                Create
+                                                                                Task
+                                                                            </h2>
+                                                                            <p className="text-sm font-poppins">
+                                                                                Offer
+                                                                                something
+                                                                                unique
+                                                                                to
+                                                                                your
+                                                                                supporters.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </Link>
+
+                                                                {/* <AddItem
+                                                                    classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
+                                                                    product_type="digital_products"
+                                                                /> */}
+                                                                <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
+                                                                {/* <AddGift
+                                                                    text="Add Gift "
+                                                                    classes="font-bold py-3 px-3 mb-2 text-center"
+                                                                    fetch_gifts={
+                                                                        fetch_gifts
+                                                                    }
+                                                                    addressAdded={
+                                                                        auth?.user
+                                                                            ?.is_creator_address_found
+                                                                    }
+                                                                /> */}
+                                                                <AddMembership />
+                                                                <AddBills />
                                                             </div>
-
-                                                            <Link
-                                                                className="w-full block font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
-                                                                href="/task/create"
-                                                            >
-                                                                <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                        <BiTask
-                                                                            color="var(--pink)"
-                                                                            size="1.5rem"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="pl-3 text-left">
-                                                                        <h2 className="text-md font-normal font-GillSans uppercase">
-                                                                            Create
-                                                                            Task
-                                                                        </h2>
-                                                                        <p className="text-sm font-poppins">
-                                                                            Offer
-                                                                            something
-                                                                            unique
-                                                                            to
-                                                                            your
-                                                                            supporters.
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </Link>
-
-                                                            {/* <AddItem
-                                                                classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
-                                                                product_type="digital_products"
-                                                            /> */}
-                                                            <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
-                                                            {/* <AddGift
-                                                                text="Add Gift "
-                                                                classes="font-bold py-3 px-3 mb-2 text-center"
-                                                                fetch_gifts={
-                                                                    fetch_gifts
-                                                                }
-                                                                addressAdded={
-                                                                    auth?.user
-                                                                        ?.is_creator_address_found
-                                                                }
-                                                            /> */}
-                                                            <AddMembership />
-                                                            <AddBills />
                                                         </div>
-                                                    </div>
+                                                    </>
                                                 )}
                                             </div>
                                             <button
@@ -464,10 +467,15 @@ export default function Dashboard(props) {
                 <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute top-40  left-10  w-[100px] h-[100px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[20px]  opacity-60 floating-shape"></div>
-                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-90 floating-shape"></div>
-                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
+
+                        <div className="absolute top-40  left-10  w-[100px] h-[100px] bg-yellow-500 rounded-full mix-blend-multiply filter blur-[20px]  opacity-60 floating-shape animate-pulse"></div>
+
+                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-80 floating-shape"></div>
+
+                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-yellow-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
+
                         <div className="absolute top-[1000px] right-10 md:right-0 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
+
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
 

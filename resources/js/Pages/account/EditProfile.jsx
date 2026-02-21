@@ -148,13 +148,12 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
             console.log('❌ Failed to convert card to image');
             return;
         }
-        setTimeout(() => {
-            setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
-            setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
-            // Update the preview with the newly generated banner
-            const bannerUrl = URL.createObjectURL(blob);
-            setCurrentSocialBanner(bannerUrl);
-        },500);
+        
+        setSocialFile(new File([blob],  `${user?.username}-social_avatar`, { type: blob.type }))
+        setData('social_image', new File([blob], `${user?.username}-social_avatar`, { type: blob.type }));
+        // Update the preview with the newly generated banner
+        const bannerUrl = URL.createObjectURL(blob);
+        setCurrentSocialBanner(bannerUrl);
 
         // 7. Cleanup
         setTimeout(() => {
@@ -212,10 +211,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
 
 
     const updateProfile = async (e) => {
-        await generateSocialImage();
         e.preventDefault();
+        await generateSocialImage();
         // auth?.user?.role == 1 && await generateCardAndUpload(localAvatar || user?.avatar);
-        post(route('edit-profile', {...data}), {
+        post(route('edit-profile'), {
             preserveScroll: true,
             onSuccess: (resp) => {
                 setClose(false);
@@ -261,9 +260,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                             <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
                         </div> : ''}
 
-                        {CoverUploadingStart ? <div className=''>
+                        {CoverUploadingStart ? <div className='py-4'>
                             <div className='flex items-center justify-between'>
-                                <h2 className='p-4 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
+                                <h2 className='py-2 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
                                 <button onClick={()=>setCoverUploadingStart(false)} className='mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-[30px] md:rounded-[40px]  '>Exit</button>
                             </div>
                             
