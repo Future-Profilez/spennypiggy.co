@@ -849,7 +849,12 @@ class AuthenticatedSessionController extends Controller
                     ]);
 
                     Auth::logout();
-                    return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
+                    // return Inertia::location("https://spennypiggy.co/verify-token/{$auth->uuid}");
+                    return response()->json([
+                        'status' => true,
+                        'redirect_url' => "https://spennypiggy.co/verify-token/{$auth->uuid}",
+                        'message' => 'Redirecting...'
+                    ]);
                 } else if (!in_array($request->getHttpHost(), ['::1', 'localhost:8000', '127.0.0.1:8000']) and $request->getHttpHost() == 'spennypiggy.co' and $user->country == 'GB') {
                     // return Inertia::location("https://uk.spennypiggy.com/{$user->username}");
                     $auth = AuthRedirect::create([
@@ -862,11 +867,25 @@ class AuthenticatedSessionController extends Controller
                     ]);
 
                     Auth::logout();
-                    return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
+                    // return Inertia::location("https://uk.spennypiggy.co/verify-token/{$auth->uuid}");
+                    return response()->json([
+                        'status' => true,
+                        'redirect_url' => "https://uk.spennypiggy.co/verify-token/{$auth->uuid}",
+                        'message' => 'Redirecting...'
+                    ]);
                 }
-                return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
+                // return redirect(route("user.show", ['username' => $user->username]))->with("success", "Logged in successfully.");
+                return response()->json([
+                    'status' => true,
+                    'redirect_url' => route("user.show", ['username' => $user->username]),
+                    'message' => 'Logged in successfully.'
+                ]);
             } else {
-                return back()->with("error", "Unable to login.");
+                // return back()->with("error", "Unable to login.");
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Unable to login."
+                ]);
             }
         } else {
             if (!empty($otp)) {
@@ -874,7 +893,11 @@ class AuthenticatedSessionController extends Controller
             } else {
                 $text = 'Backup Code';
             }
-            return back()->with("error", "$text is invalid.");
+            // return back()->with("error", "$text is invalid.");
+            return response()->json([
+                'status' => false,
+                'msg' => "$text is invalid."
+            ]);
         }
     }
 

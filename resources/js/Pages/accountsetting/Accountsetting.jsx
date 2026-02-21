@@ -14,7 +14,6 @@ import { useAlerts } from "@/Components/Alerts";
 import ChangeVat from "../account/ChangeVat";
 import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
-import TFA from "../Auth/TFA";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
@@ -43,7 +42,7 @@ export default function Accountsetting(props) {
     const swicthEarning = () => {
         setShowEarning(!showEarning);
         axios
-            .get(`piggy-bank-setting`)
+            .post(route('piggy-bank-setting'))
             .then((resp) => {
                 successAlert(resp.data.message);
             })
@@ -71,7 +70,7 @@ export default function Accountsetting(props) {
     const switchNotification = () => {
         setSetEnabled(!emailEnabled);
         axios
-            .get(`notification-switch`)
+            .post(route('notification-switch'))
             .then((resp) => {
                 successAlert(resp.data.msg);
             })
@@ -511,7 +510,12 @@ export default function Accountsetting(props) {
                             )}
 
                             <li>
-                                <TFA />
+                                <Link
+                                    href={route('account.2fa')}
+                                    className="button bg-pink w-full block text-center rounded-[30px] md:rounded-[40px] py-3 text-white font-gulfs text-lg hover:bg-pink-700 transition-colors uppercase"
+                                >
+                                    Multi-Step Verification {auth?.user?.is_2fa == 1 && <span className="text-sm bg-white/20 px-2 py-0.5 rounded-full ml-2 normal-case font-sans">Enabled</span>}
+                                </Link>
                             </li>
 
                             <li>

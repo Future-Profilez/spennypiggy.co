@@ -51,27 +51,30 @@ export default function EnterOTP({user, action}) {
    const verify = (e) => {
       e.preventDefault();
       setLoading(true);
-         post(route('verify2FA', {
-            "otp":otp.join(""),
-            "backup_code": bCode || '',
-            'email': user.email,
-            'password': user.password,
-         }),{
-         preserveScroll: true,
-         onSuccess: (resp) => {
-            setLoading(false);
-            if(resp?.props?.flash?.error){
-               errorAlert(resp?.props?.flash?.error || "Something went wrong.");
-            }
-            // reset();
-         },
-         onError: (err) => {
-            setLoading(false);
-            console.log(err)
-            Object.keys(err).map((key) => {
-               errorAlert(err[key]);
-            });
-         }
+      axios.post(route('verify2FA'), {
+         "otp":otp.join(""),
+         "backup_code": bCode || '',
+         'email': user.email,
+         'password': user.password,
+      })
+      .then(resp => {
+           setLoading(false);
+           if (resp.data.status) {
+               if (resp.data.redirect_url) {
+                   window.location.href = resp.data.redirect_url;
+               }
+           } else {
+               errorAlert(resp.data.msg || "Something went wrong.");
+           }
+      })
+      .catch(err => {
+           setLoading(false);
+           console.log(err);
+           if (err.response && err.response.data && err.response.data.message) {
+               errorAlert(err.response.data.message);
+           } else {
+               errorAlert("Something went wrong.");
+           }
       });
    };
 
@@ -99,12 +102,15 @@ export default function EnterOTP({user, action}) {
                      <div className="text-sm text-slate-500 mt-4"> Don't have backup code ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)}  >Use Authenticator app</button></div>
                   </>
                      :
-                     <> <div className="flex items-center justify-center ">
+                     <> <div className="flex items-center justify-center  gap-1">
                            {otp.map((data, index) => (
                                  <input
                                     key={index}
                                     type="text"
-                                    className="border-gray-300  text-center bg-gray-200 text-black rounded-[30px] md:rounded-[40px]  w-full  mx-1 max-w-[40px] min-h-[40px] otp-input  px-1 py-1 "
+                                    className="border-gray-300  text-center bg-gray-200 
+                                    text-black rounded-[12px] 
+                                    md:rounded-[15px]  w-full   text-xl font-bold
+                                     max-w-[50px] min-h-[50px] otp-input  px-1 py-1 "
                                     maxLength="1"
                                     value={data}
                                     onChange={(e) => handleChange(e.target,index)}
@@ -114,7 +120,7 @@ export default function EnterOTP({user, action}) {
                               ))}
                         </div>
                         <div className="max-w-[260px] mx-auto mt-4">
-                              <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-[30px] md:rounded-[40px] ">{ loading ? "processing..." : "Verify"}</button>
+                              <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-[30px] md:rounded-[40px] ">{ loading ? "processing..." : "Verify & Login"}</button>
                         </div>
                         <div className="text-sm text-slate-500 mt-4"> Don't have phone ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(true)} >Use Backup code</button></div>
                      </>

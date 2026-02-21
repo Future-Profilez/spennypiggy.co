@@ -152,7 +152,8 @@ class ProfileController extends Controller
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
                 'bio' => ['nullable', 'string', 'max:255'], // updated
                 'creator_category' => ['nullable', 'string'],
-                 // same fix
+                'gender' => ['nullable', 'string', 'max:50'],
+                'country' => ['nullable', 'string', 'max:100'],
             ]);
 
             $avatar = $request->avatar;
@@ -160,6 +161,8 @@ class ProfileController extends Controller
 
             $user->name = $request->name;
             $user->username = $request->username;
+            $user->gender = $request->gender;
+            $user->country = $request->country;
             $user->creator_category = $request->creator_category;
 
             if ($request->email !== $user->email) {
