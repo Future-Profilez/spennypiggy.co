@@ -149,8 +149,10 @@ class ProfileController extends Controller
             $request->validate([
                 'name' => ['string', 'max:255'],
                 'username' => ['string', 'lowercase', 'max:20', Rule::unique('users')->ignore($user->id)],
+                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
                 'bio' => ['nullable', 'string', 'max:255'], // updated
-                'tags' => ['nullable', 'string', 'max:255'], // same fix
+                'creator_category' => ['nullable', 'string'],
+                 // same fix
             ]);
 
             $avatar = $request->avatar;
@@ -158,6 +160,18 @@ class ProfileController extends Controller
 
             $user->name = $request->name;
             $user->username = $request->username;
+            $user->creator_category = $request->creator_category;
+
+            if ($request->email !== $user->email) {
+                 // Direct update to ensure it persists and bypasses any potential model interference
+                 User::where('id', $user->id)->update([
+                     'email' => $request->email,
+                     'email_verified_at' => null
+                 ]);
+                 $user->refresh(); // Sync the model instance with DB changes
+                 Log::info('Email updated and verification reset for user: ' . $user->id);
+            }
+            
             $userProfileStatus = UserVerificationStatus::where('user_id', $user->id)->where('role', $user->role)->first();
             if (!$userProfileStatus) {
                 $userProfileStatus = UserVerificationStatus::create([

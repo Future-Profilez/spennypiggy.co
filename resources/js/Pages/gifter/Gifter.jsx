@@ -103,12 +103,10 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             <Tab key={category} as={Fragment} >
                                 {({ selected }) => (
                                     <button
-                                        className={`
-                                            relative  focus:border-0 focus:outline-none text-sm font-black tracking-[0.2em] uppercase transition-all duration-300 whitespace-nowrap
+                                        className={`relative focus:border-0 focus:outline-none text-sm 
+                                            font-black tracking-[0.2em] uppercase transition-all duration-300 whitespace-nowrap
                                             py-[10px] px-6 bg-gray-300 rounded-xl 
-                                            ${selected
-                                                ? 'text-white bg-pink-600'
-                                                : ''} hover:opacity-70
+                                            ${selected ? 'text-white bg-pink-600' : ''} hover:opacity-70
                                         `}
                                     >
                                         {category}

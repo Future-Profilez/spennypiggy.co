@@ -43,10 +43,12 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
      const { data, setData, post, processing, errors, reset } = useForm({
         name: user?.name || '',
         username: user?.username || '',
+        email: user?.email || '',
         bio: user?.bio || '',
         avatar: '',
         cover: '',
         min_surprise_amount: user?.min_surprise_amount || '',
+        creator_category: user?.creator_category || '',
         social_image: socialFile || null,
     });
     const [loading, setLoading] = useState(processing);
@@ -191,6 +193,55 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
     const [username, setUsername] = useState(user?.username);
 
 
+    const [profileTags, setProfileTags] = useState([]);
+
+    useEffect(() => {
+        if (user?.creator_category) {
+            try {
+                // Handle both array and string format from DB
+                const categories = typeof user.creator_category === 'string' 
+                    ? JSON.parse(user.creator_category) 
+                    : user.creator_category;
+                setProfileTags(Array.isArray(categories) ? categories : []);
+            } catch (e) {
+                console.error("Error parsing creator tags", e);
+                setProfileTags([]);
+            }
+        }
+    }, [user]);
+
+    const handleProfileTags = (e) => {
+        const value = e.target.value;
+        setProfileTags(prevTags => {
+            const newTags = prevTags.includes(value)
+                ? prevTags.filter(tag => tag !== value)
+                : [...prevTags, value];
+            
+            setData("creator_category", JSON.stringify(newTags));
+            return newTags;
+        });
+    };
+
+    const creatortypes = [
+        { label: "Artist", value: "Artist" },
+        { label: "Activist", value: "Activist" },
+        { label: "DJ", value: "DJ" },
+        { label: "Beauty Creator", value: "Beauty Creator" },
+        { label: "Dancer", value: "Dancer" },
+        { label: "Developer", value: "Developer" },
+        { label: "Cosplay Creator", value: "Cosplay Creator" },
+        { label: "Education Creator", value: "Education Creator" },
+        { label: "Fashionista", value: "Fashionista" },
+        { label: "Gamer", value: "Gamer" },
+        { label: "Gym Bunny", value: "Gym Bunny" },
+        { label: "Musician", value: "Musician" },
+        { label: "Model", value: "Model" },
+        { label: "Podcaster", value: "Podcaster" },
+        { label: "Streamer", value: "Streamer" },
+        { label: "Video Creator", value: "Video Creator" },
+        { label: "Writer", value: "Writer" },
+    ];
+
     const generateSocialImage = async () => {
         const avatarToUse = localAvatar || user?.avatar;
         if (avatarToUse) {
@@ -229,6 +280,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                 console.table("profile update error", _err);
                 if(_err.username){
                     errorAlert(_err.username || "Something went wrong in username.")
+                }
+                if(_err.email){
+                    errorAlert(_err.email || "Something went wrong in email.")
                 }
                 if(_err.bio){
                     errorAlert(_err.bio || "Something went wrong in bio.")
@@ -305,6 +359,13 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 type="text" name="username" className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] " placeholder='Spennypiggy.co/warner99' onKeyUp={(e) => {setUsername(e.target.value)}}/>
                                         </li>
 
+                                        <li className="mb-3">
+                                            <label className="mb-1">Email</label>
+                                            <input onBlur={IsProfileChannged} type="email" name="email" defaultValue={user?.email || ''}
+                                                onChange={(e) => setData('email', e.target.value)}
+                                                className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] " />
+                                        </li>
+
                                         <li>
                                             <strong className='block text-left mb-4' >
                                                 Profile URL :  &nbsp;
@@ -319,6 +380,39 @@ export default function EditProfile({ user, text, classes, updateProfileSteps })
                                                 name="bio" className="border-gray-300 border p-4 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[20px] "
                                                 placeholder='Bio' />
                                         </li>
+
+                                        {user?.role === 1 && (
+                                            <li className="mb-3">
+                                                <label className="mb-2 block">Profile Tags</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {creatortypes.map((s, index) => {
+                                                        const isSelected = profileTags.includes(s.value);
+                                                        return (
+                                                            <div key={s.value} className="relative">
+                                                                <input 
+                                                                    id={`types-${index}`} 
+                                                                    type="checkbox" 
+                                                                    value={s.value} 
+                                                                    className="hidden"
+                                                                    onChange={handleProfileTags}
+                                                                    checked={isSelected}
+                                                                />
+                                                                <label
+                                                                    htmlFor={`types-${index}`}
+                                                                    className={`block px-4 py-2 text-sm rounded-full font-medium cursor-pointer transition-all duration-300 border 
+                                                                        ${isSelected 
+                                                                            ? "bg-pink-600 border-pink-500 text-white shadow-md" 
+                                                                            : "bg-gray-100 border-gray-200 text-gray-500 hover:bg-gray-200"
+                                                                        }`}
+                                                                >
+                                                                    {s.label}
+                                                                </label>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </li>
+                                        )}
 
                                         {/* <li className="mb-3">
                                             <label className="mb-1">Minimum surprise gift amount</label>

@@ -469,7 +469,7 @@ export default function Dashboard(props) {
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
 
                         <div className="absolute top-40  left-10  w-[100px] h-[100px] bg-yellow-500 rounded-full mix-blend-multiply filter blur-[20px]  opacity-60 floating-shape animate-pulse"></div>
-
+        
                         <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-80 floating-shape"></div>
 
                         <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-yellow-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
@@ -681,6 +681,31 @@ export default function Dashboard(props) {
                                                                                     user.bio) ||
                                                                                     "Hy, I am a creator on SpennyPiggy."}
                                                                             </p>
+
+                                                                            {user?.creator_category && (
+                                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                                    {(() => {
+                                                                                        try {
+                                                                                            const tags = typeof user.creator_category === 'string' 
+                                                                                                ? JSON.parse(user.creator_category) 
+                                                                                                : user.creator_category;
+                                                                                            
+                                                                                            if (!Array.isArray(tags)) return null;
+                                                                                            
+                                                                                            return tags.map((tag, index) => (
+                                                                                                <span 
+                                                                                                    key={index} 
+                                                                                                    className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-sm font-medium border border-pink-100"
+                                                                                                >
+                                                                                                    {tag}
+                                                                                                </span>
+                                                                                            ));
+                                                                                        } catch (e) {
+                                                                                            return null;
+                                                                                        }
+                                                                                    })()}
+                                                                                </div>
+                                                                            )}
 
                                                                             {IsloggedIn &&
                                                                             user?.edit_bio_reason &&
