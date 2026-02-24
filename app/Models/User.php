@@ -98,7 +98,7 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute()
     {
-        if (!$this->avatar) return false;
+        if (!$this->avatar) return "https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/";
 
         $modifier = $this->avatar_cdn_modifier
             ? "{$this->avatar_cdn_modifier}-/preview/"

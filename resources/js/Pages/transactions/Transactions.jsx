@@ -98,6 +98,8 @@ export default function Transactions(props) {
     return formatMultiPrice(total, e.currency || 'gbp');
   };
 
+  const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
+
   const isNew = (date) => {
     if (!date) return false;
     const d = new Date(date);
@@ -380,7 +382,7 @@ export default function Transactions(props) {
                           </div>
                           <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                             <div className="flex items-center gap-1.5">
-                              {avatar ? <img src={avatar} alt="" className="h-8 w-8 rounded-full border border-white/10 object-cover" /> : null}
+                              <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full border border-white/10 object-cover" />
                               <p className="text-white/40 text-[14px] uppercase tracking-widest truncate max-w-[120px] sm:max-w-none">
                                 {e.category === 'sent'
                                   ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-white/70 hover:text-white">@{e.creator.username}</Link> : cp)

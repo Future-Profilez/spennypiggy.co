@@ -1623,15 +1623,16 @@ class ProfileController extends Controller
             throw new AuthorizationException('Unauthorized');
         }
 
-        // Daily limit for gifter: 3 messages per day
+        // Limit for gifter: 3 messages per creator per 24-hour window
         if (Auth::id() === $gifter->id) {
             $dailyCount = SupportStoryReply::where('user_id', Auth::id())
+                ->where('creator_id', $creator->id)
                 ->where('gifter_id', $gifter->id)
-                ->whereDate('created_at', Carbon::today())
+                ->where('created_at', '>=', now()->subHours(24))
                 ->count();
             
             if ($dailyCount >= 3) {
-                return response()->json(['status' => false, 'msg' => 'You have reached your daily limit of 3 replies.'], 422);
+                return response()->json(['status' => false, 'msg' => 'You have reached the limit of 3 replies to this creator in 24 hours.'], 422);
             }
         }
 

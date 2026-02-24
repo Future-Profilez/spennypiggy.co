@@ -4,6 +4,8 @@ import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
 
+const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
+
 export default function Avatar({ hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
 
   return (
@@ -70,7 +72,7 @@ export default function Avatar({ hidename, namecolor, src, role, profile_status_
           >
             <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ">
               <img
-                src={imageSrc || src || userphoto}
+                src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
                 className="img-fluid bg-gray-200 rounded-[17px]" 
                 loading="lazy"
@@ -85,7 +87,7 @@ export default function Avatar({ hidename, namecolor, src, role, profile_status_
                 }}
                 onError={(e) => {
                   console.warn('Avatar image failed to load:', imageSrc || src);
-                  e.target.src = userphoto;
+                  e.target.src = defaultAvatar;
                 }}
               />
               {role && profile_status_lock && (
@@ -120,7 +122,7 @@ export default function Avatar({ hidename, namecolor, src, role, profile_status_
           <div className="useravatar">
             <div className="avatar">
               <img
-                src={imageSrc || src || userphoto}
+                src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
                 className="img-fluid"
                 loading="lazy"
@@ -135,7 +137,7 @@ export default function Avatar({ hidename, namecolor, src, role, profile_status_
                 }}
                 onError={(e) => {
                   console.warn('Avatar image failed to load:', imageSrc || src);
-                  e.target.src = userphoto;
+                  e.target.src = defaultAvatar;
                 }}
               />
             </div>
