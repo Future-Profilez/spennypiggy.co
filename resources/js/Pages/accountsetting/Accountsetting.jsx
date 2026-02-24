@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import closeblacksm from "../../../assets/img/closeblacksm.png";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -17,6 +16,14 @@ import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
+import { Switch } from '@headlessui/react';
+import { 
+    User, CreditCard, Bell, Shield, LogOut, ExternalLink, 
+    ChevronRight, Settings, DollarSign, Heart, Gift, 
+    LayoutDashboard, History, MapPin, Percent, 
+    Twitter, PiggyBank, Users, Trash2, Mail, Lock,
+    HelpCircle, FileText, Globe
+} from 'lucide-react';
 
 export default function Accountsetting(props) {
     const { successAlert, errorAlert } = useAlerts();
@@ -30,15 +37,15 @@ export default function Accountsetting(props) {
         subscription_history,
         subscription_status,
     } = props;
-    const [showModal, setShowModal] = useState(false);
-    const [emailPopupAction, setEmailPopupAction] = useState(null);
 
+    const [emailPopupAction, setEmailPopupAction] = useState(null);
     const [emailEnabled, setSetEnabled] = useState(
         auth && auth.user && auth.user.notification_send == 1 ? true : false,
     );
     const [showEarning, setShowEarning] = useState(
         auth && auth.user && auth.user.show_piggy_bank == 1 ? true : false,
     );
+
     const swicthEarning = () => {
         setShowEarning(!showEarning);
         axios
@@ -48,6 +55,7 @@ export default function Accountsetting(props) {
             })
             .catch((_err) => {
                 console.error("error", _err);
+                setShowEarning(!showEarning); // Revert on error
             });
     };
 
@@ -76,6 +84,7 @@ export default function Accountsetting(props) {
             })
             .catch((_err) => {
                 console.error("error", _err);
+                setSetEnabled(!emailEnabled); // Revert on error
             });
     };
 
@@ -85,459 +94,343 @@ export default function Accountsetting(props) {
 
     const closeEmailPopup = () => {
         setEmailPopupAction(false);
-
-        // 🔑 reset so it works next time
         setTimeout(() => {
             setEmailPopupAction(null);
         }, 50);
     };
 
+    const SettingItem = ({ icon: Icon, title, subtitle, onClick, action, isDestructive, value, className, bordercolor }) => (
+        <div
+            onClick={onClick}
+            className={`relative group w-full w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || 'border-pink-500'}  !rounded-[30px] md:rounded-[40px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? 'hover:bg-red-50 hover:border-red-200' : ''} ${className}`}
+        >
+            <div className="flex !items-center gap-4 text-left">
+                <div className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center
+                    ${isDestructive ? 'bg-red-200 text-red-600' : 'bg-pink-200 text-pink-600'}`}>
+                    <Icon size={28} strokeWidth={2} />
+                </div>
+                <div>
+                    <h3 className={`font-bold text-base ${isDestructive ? 'text-red-600' : 'text-gray-800'}`}>{title}</h3>
+                    {subtitle && <p className="text-xs text-gray-500 font-medium mt-0.5">{subtitle}</p>}
+                </div>
+            </div>
+            <div className="flex items-center gap-3">
+                 {value && <span className=" mt-4 md:mt-0 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg border border-pink-500">{value}</span>}
+                 {action ? action : <ChevronRight size={18} className="
+                 text-gray-300 group-hover:text-pink-400 absolute md:static !text-xl
+                 top-[30px] right-4 " />}
+            </div>
+        </div>
+    );
+
+    const SectionTitle = ({ title }) => (
+        <h2 className="text-normal text-gray-600 mb-4 px-2 uppercase tracking-widest font-gulfs">{title}</h2>
+    );
+
+    const isCreator = auth && auth.user && auth.user.role == 1;
+    const stripeSubmitted = auth && auth.user && auth.user.stripe_details_submitted == 1;
+
     return (
         <Authenticated user={user} auth={auth.user}>
             <Head title={"My Account"} />
-            <div className="blackbg pt-4">
-                <div className="accountsetting mx-auto border-3 !border-[var(--purple)] !border-black whbg shadow-pink overflow-hidden rounded-[30px] md:rounded-[40px]  mb-4 mb-md-5">
-                    <div className="p-4 pinkbg flex  !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center ">
-                        <span className=" border-black border-2 bg-red-700 me-2 w-5 h-5 rounded-full block"></span>
-                        <span className=" border-black border-2 bg-yellow-400 me-2 w-5 h-5 rounded-full block"></span>
-                        <span className=" border-black border-2 bg-mint me-2 w-5 h-5 rounded-full block"></span>
+            <div className="min-h-screen bg-gray-200 py-6 md:py-16">
+                <div className="max-w-3xl mx-auto px-4 pt-8">
+                    <div className="md:text-center mb-10">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-gray-900 uppercase tracking-wide mb-2">
+                            Account <span className="text-pink-600">Settings</span>
+                        </h1>
+                        <p className="text-gray-500 font-medium text-normal">Manage your profile, preferences and security</p>
                     </div>
-                    <div className="accsettingList !p-6">
-                        <ul>
-                            {auth &&
-                            auth.user &&
-                            auth?.user?.role == 1 &&
-                            auth.user.stripe_details_submitted == 1 ? (
-                                <li>
-                                    <PaymentDashboard
-                                        classes="w-full !bg-white !py-0 !mt-0 !text-black hover:!text-black"
-                                        text={
-                                            <>
-                                                PAYMENT DASHBOARD
-                                                <span className="text-green-600 font-bold text-sm">
-                                                    Linked
-                                                </span>
-                                            </>
-                                        }
-                                    />
-                                </li>
-                            ) : (
-                                ""
-                            )}
 
-                            {auth && auth.user && auth?.user?.role == 1 ? (
-                                <li>
-                                    <Popup
-                                        space="4"
-                                        modalclass="pinkmodal"
-                                        text={
-                                            <div className="flex items-center justify-between w-full">
-                                                <p className="text-start">
-                                                    SPENNY PIGGY
-                                                    SUBSCRIPTION{" "}
-                                                </p>
-
-                                                <span
-                                                    className={`
-                                                text-gray  text-start
-                                                uppercase
-                                                ${(site_subscription && site_subscription.status == "ACTIVE") || site_subscription.status == "FREE_TRIAL" ? "text-green-600" : "text-red-600"} `}
-                                                >
-                                                    {site_subscription?.trial_status ===
-                                                    "active" ? (
-                                                        "Free Trial"
-                                                    ) : (
-                                                        <>
-                                                            {(site_subscription &&
-                                                                site_subscription.status) ||
-                                                                "Start"}
-                                                        </>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        }
-                                    >
-                                        <h2 className="text-black text-start font-gulfs text-xl mb-3">
-                                            SPENNY PIGGY SUBSCRIPTION
-                                        </h2>
-
-                                        {site_subscription?.trial_status ===
-                                        "active" ? (
-                                            <>
-                                                <h2>
-                                                    Subscription Status :{" "}
-                                                    <span className="text-green-600 font-bold text-lg uppercase">
-                                                        Free Trial
-                                                    </span>
-                                                </h2>
-                                                <p className="text-lg my-2">
-                                                    Free Trial Start :{" "}
-                                                    <strong>
-                                                        {site_subscription?.trial_start ||
-                                                            ""}
-                                                    </strong>
-                                                </p>
-                                                <p className="text-lg my-2">
-                                                    Free Trial End In :{" "}
-                                                    <strong>
-                                                        {site_subscription?.trial_end_in ||
-                                                            ""}
-                                                    </strong>
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                {site_subscription &&
-                                                site_subscription.status ==
-                                                    "ACTIVE" ? (
-                                                    <>
-                                                        <p className="text-lg my-2">
-                                                            Subscription Start
-                                                            On :{" "}
-                                                            <strong>
-                                                                {site_subscription?.subscription_start ||
-                                                                    ""}
-                                                            </strong>
-                                                        </p>
-                                                        <p className="text-lg my-2">
-                                                            Subscription Renew
-                                                            On :{" "}
-                                                            <strong>
-                                                                {site_subscription?.subscription_renew_in ||
-                                                                    ""}
-                                                            </strong>
-                                                        </p>
-                                                        <p className="text-lg my-2">
-                                                            Next Payment On :{" "}
-                                                            <strong>
-                                                                {site_subscription?.next_payment_date ||
-                                                                    ""}
-                                                            </strong>
-                                                        </p>
-                                                    </>
-                                                ) : (
-                                                    ""
-                                                )}
-                                            </>
-                                        )}
-
-                                        {site_subscription &&
-                                        site_subscription.status ==
-                                            "EXPIRED" ? (
-                                            <>
-                                                {site_subscription?.subscription_end ? (
-                                                    <p className="text-lg text-red-600 my-2">
-                                                        Subscription expired on
-                                                        :{" "}
-                                                        <strong>
-                                                            {site_subscription?.subscription_end ||
-                                                                ""}
-                                                        </strong>
-                                                    </p>
-                                                ) : (
-                                                    <>
-                                                        {site_subscription?.trial_end_in ? (
-                                                            <p className="text-lg my-2 text-red-600">
-                                                                Subscription
-                                                                Free trial ended{" "}
-                                                                {site_subscription?.trial_end_in ||
-                                                                    ""}{" "}
-                                                            </p>
-                                                        ) : (
-                                                            ""
-                                                        )}
-                                                    </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            ""
-                                        )}
-
-                                        {site_subscription &&
-                                        site_subscription.status ==
-                                            "INACTIVE" ? (
-                                            <p className="text-lg my-2 text-blue-700">
-                                                You don't have any active
-                                                subscription
-                                            </p>
-                                        ) : (
-                                            ""
-                                        )}
-                                    </Popup>
-                                </li>
-                            ) : (
-                                ""
-                            )}
-
-                            {auth &&
-                            auth.user &&
-                            auth?.user?.role == 1 &&
-                            subscription_history &&
-                            subscription_history.length > 0 ? (
-                                <li>
-                                    <Popup
-                                        space="4"
-                                        modalclass="pinkmodal"
-                                        text={
-                                            <div className="flex w-full justify-between items-center">
-                                                <p className="text-start">
-                                                    SUBSCRIPTION HISTORY
-                                                </p>
-                                                <span className="text-gray whitespace-nowrap">
-                                                    {
-                                                        subscription_history.length
-                                                    }{" "}
-                                                    records
-                                                </span>
-                                            </div>
-                                        }
-                                    >
-                                        <h2 className="text-black font-gulfs text-xl mb-3">
-                                            SUBSCRIPTION PAYMENT HISTORY
-                                        </h2>
-                                        <SubscriptionHistory
-                                            subscriptionHistory={
-                                                subscription_history
-                                            }
+                    {/* CREATOR STUDIO SECTION */}
+                    {isCreator && (
+                        <div className="mb-10 animate-fade-in-up">
+                            <SectionTitle title="Creator Studio" />
+                            
+                            {stripeSubmitted && (
+                                <PaymentDashboard
+                                    classes="w-full"
+                                    trigger={
+                                        <SettingItem 
+                                            icon={LayoutDashboard} 
+                                            title="Payment Dashboard" 
+                                            subtitle="Manage your earnings and payouts"
+                                            value="Linked"
                                         />
-                                    </Popup>
-                                </li>
-                            ) : (
-                                ""
+                                    }
+                                />
                             )}
 
-                            <li>
+                            <Popup
+                                space="4"
+                                modalclass="pinkmodal" classes='w-full'
+                                text={
+                                    <SettingItem 
+                                        icon={Gift} 
+                                        title="Platform Subscription" 
+                                        subtitle={site_subscription?.status === 'ACTIVE' ? 'Active Subscription' : 'Manage Subscription'}
+                                        value={site_subscription?.status}
+                                    />
+                                }
+                            >
+                                <SiteSubscription site_subscription={site_subscription} />
+                            </Popup>
+
+                            {subscription_history && subscription_history.length > 0 && (
                                 <Popup
-                                    action={emailPopupAction}
-                                    space="4"
+                                    space="4" classes='w-full'
                                     modalclass="pinkmodal"
                                     text={
-                                        <>
-                                            EMAIL{" "}
-                                            <span className="text-gray">
-                                                {auth?.user?.email}
-                                            </span>
-                                        </>
+                                        <SettingItem 
+                                            icon={History} 
+                                            title="Billing History" 
+                                            subtitle="View past invoices and payments"
+                                            value={`${subscription_history.length} Records`}
+                                        />
                                     }
                                 >
-                                    <UpdateProfileInformation
-                                        closeModal={closeEmailPopup}
-                                    />
+                                    <h2 className="text-black font-gulfs text-xl mb-3">SUBSCRIPTION PAYMENT HISTORY</h2>
+                                    <SubscriptionHistory subscriptionHistory={subscription_history} />
                                 </Popup>
-                            </li>
+                            )}
 
-                            <li>
-                                <Popup
-                                    action={passClose}
-                                    space="4"
-                                    modalclass="pinkmodal"
-                                    text={<>PASSWORD</>}
-                                >
-                                    <UpdatePasswordForm
-                                        passwordUpdate={passwordUpdated}
+                            <Popup
+                                action={passClose}
+                                space="4" classes='w-full'
+                                modalclass="pinkmodal"
+                                text={
+                                    <SettingItem 
+                                        icon={Twitter} 
+                                        title="Auto Tweet" 
+                                        subtitle={auth.user.twitter_username ? `@${auth.user.twitter_username}` : "Connect X (Twitter)"}
+                                        value={auth.user.twitter_username ? "Connected" : "Setup"}
                                     />
-                                </Popup>
-                            </li>
-                            <li>
+                                }
+                            >
+                                <LinkTwitter
+                                    auto_tweet={auto_tweet}
+                                    auth={auth}
+                                    username={(auth && auth.user && auth.user.twitter_username) || false}
+                                />
+                            </Popup>
+
+                            <FollowersBulkNotification 
+                                trigger={
+                                    <SettingItem 
+                                        icon={Users} 
+                                        title="Follower Notifications" 
+                                        subtitle="Send push notifications to followers"
+                                    />
+                                }
+                                pwa_notification_details={pwa_notification_details} 
+                            />
+                        </div>
+                    )}
+
+                    {/* PREFERENCES SECTION */}
+                    <div className="mb-10 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+                        <SectionTitle title="Preferences" />
+                        
+                        <Popup
+                            action={passClose}
+                            space="4" classes='w-full'
+                            modalclass="pinkmodal"
+                            text={
+                                <SettingItem iconcolor={`text-voilet`} 
+                                    icon={DollarSign} 
+                                    title="Display Currency" 
+                                    subtitle="Choose your preferred currency"
+                                    value={global_currency}
+                                />
+                            }
+                        >
+                            <ChangeCurrency defaultvalue={global_currency} />
+                        </Popup>
+
+                        {isCreator && (
+                            <>
                                 <Popup
+                                    size={"lg"}
                                     action={passClose}
-                                    space="4"
+                                    space="4" classes='w-full'
                                     modalclass="pinkmodal"
                                     text={
-                                        <>
-                                            DISPLAY CURRENCY{" "}
-                                            <span className="text-gray">
-                                                {global_currency}
-                                            </span>
-                                        </>
+                                        <SettingItem iconcolor={`text-voilet`} 
+                                            icon={MapPin} 
+                                            title="Address" 
+                                            subtitle="Manage your physical address"
+                                        />
                                     }
                                 >
-                                    <ChangeCurrency
-                                        defaultvalue={global_currency}
-                                    />
+                                    <AddressForm isEditPopup={true} setSassClose={setSassClose} />
                                 </Popup>
-                            </li>
 
-                            {auth && auth?.user?.role == 1 ? (
-                                <>
-                                    <li>
-                                        <Popup
-                                            size={"lg"}
-                                            action={passClose}
-                                            space="4"
-                                            modalclass="pinkmodal"
-                                            text={"ADDRESS"}
-                                        >
-                                            <AddressForm
-                                                isEditPopup={true}
-                                                setSassClose={setSassClose}
-                                            />
-                                        </Popup>
-                                    </li>
-                                </>
-                            ) : (
-                                ""
-                            )}
-
-                            {auth && auth?.user?.role == 1 ? (
-                                <>
-                                    <li>
-                                        <Popup
-                                            action={passClose}
-                                            space="4"
-                                            modalclass="pinkmodal"
-                                            text={
-                                                <>
-                                                    VAT{" "}
-                                                    <span className="text-gray">
-                                                        {vatpercent || "0"}%
-                                                    </span>
-                                                </>
-                                            }
-                                        >
-                                            <ChangeVat
-                                                defaultvalue={vatpercent}
-                                                updatevat={updatevat}
-                                            />
-                                        </Popup>
-                                    </li>
-                                </>
-                            ) : (
-                                ""
-                            )}
-
-                            {auth && auth?.user?.role == 1 ? (
-                                <>
-                                    <li>
-                                        <Popup
-                                            action={passClose}
-                                            space="4"
-                                            modalclass="pinkmodal"
-                                            text={
-                                                <>
-                                                    {auth &&
-                                                    auth.user &&
-                                                    auth.user.twitter_username
-                                                        ? `AUTO TWEET`
-                                                        : "SET UP AUTO TWEET"}
-                                                    <div className="flex items-center">
-                                                        <img
-                                                            src={closeblacksm}
-                                                            alt="img"
-                                                            className="me-2 w-5 h-5"
-                                                        />
-                                                        {auth &&
-                                                        auth.user &&
-                                                        auth.user
-                                                            .twitter_username
-                                                            ? `@${auth.user.twitter_username}`
-                                                            : ""}
-                                                    </div>
-                                                </>
-                                            }
-                                        >
-                                            <LinkTwitter
-                                                auto_tweet={auto_tweet}
-                                                auth={auth}
-                                                username={
-                                                    (auth &&
-                                                        auth.user &&
-                                                        auth.user
-                                                            .twitter_username) ||
-                                                    false
-                                                }
-                                            />
-                                        </Popup>
-                                    </li>
-                                </>
-                            ) : (
-                                ""
-                            )}
-
-                            <li>
-                                <div className="notification uppercase">
-                                    {" "}
-                                    Receive e-mail notifications
-                                    <label className="toggle-switch">
-                                        <input
-                                            id="notification_handle"
-                                            checked={emailEnabled}
-                                            type="checkbox"
-                                            onChange={switchNotification}
+                                <Popup
+                                    action={passClose}
+                                    space="4" classes='w-full'
+                                    modalclass="pinkmodal"
+                                    text={
+                                        <SettingItem iconcolor={`text-voilet`} 
+                                            icon={Percent} 
+                                            title="VAT Settings" 
+                                            subtitle="Manage tax settings"
+                                            value={`${vatpercent || "0"}%`}
                                         />
-                                        <span
-                                            htmlFor="notification_handle"
-                                            className="slider"
-                                        ></span>
-                                    </label>
-                                </div>
-                            </li>
-
-                            {auth && auth?.user?.role == 1 ? (
-                                <>
-                                    <li>
-                                        <div className="notification uppercase">
-                                            Show Piggy Bank Earnings
-                                            <label className="toggle-switch">
-                                                <input
-                                                    id="showbankearning"
-                                                    checked={showEarning}
-                                                    type="checkbox"
-                                                    onChange={swicthEarning}
-                                                />
-                                                <span
-                                                    htmlFor="showbankearning"
-                                                    className="slider"
-                                                ></span>
-                                            </label>
+                                    }
+                                >
+                                    <ChangeVat defaultvalue={vatpercent} updatevat={updatevat} />
+                                </Popup>
+                                
+                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-2xl hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                                    <div className="flex items-center gap-4 text-left">
+                                        <div className="p-2.5 rounded-xl bg-pink-50 text-pink-600">
+                                            <PiggyBank size={20} strokeWidth={2.5} />
                                         </div>
-                                    </li>
-                                </>
-                            ) : (
-                                ""
-                            )}
+                                        <div>
+                                            <h3 className="font-bold text-base text-gray-800">Piggy Bank Earnings</h3>
+                                            <p className="text-xs text-gray-500 font-medium mt-0.5">Show earnings goal on profile</p>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={showEarning}
+                                        onChange={swicthEarning}
+                                        className={`${showEarning ? 'bg-pink-600' : 'bg-gray-200'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
+                                    >
+                                        <span className={`${showEarning ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
+                                    </Switch>
+                                </div>
+                            </>
+                        )}
 
-                            {auth && auth?.user?.role == 1 ? (
-                                <li>
-                                    <FollowersBulkNotification
-                                        pwa_notification_details={
-                                            pwa_notification_details
-                                        }
-                                    />
-                                </li>
-                            ) : (
-                                ""
-                            )}
-
-                            <li>
-                                <Link
-                                    href={route('account.2fa')}
-                                    className="button bg-pink w-full block text-center rounded-[30px] md:rounded-[40px] py-3 text-white font-gulfs text-lg hover:bg-pink-700 transition-colors uppercase"
-                                >
-                                    Multi-Step Verification {auth?.user?.is_2fa == 1 && <span className="text-sm bg-white/20 px-2 py-0.5 rounded-full ml-2 normal-case font-sans">Enabled</span>}
-                                </Link>
-                            </li>
-
-                            <li>
-                                <Popup
-                                    space="4"
-                                    modalclass="pinkmodal"
-                                    text={<>DELETE ACCOUNT </>}
-                                >
-                                    <DeleteUserForm />
-                                </Popup>
-                            </li>
-
-                            {/* {auth && auth?.user?.stripe_details_submitted == 1 ?
-                             <li>
-                                <Popup space='4' modalclass="pinkmodal"
-                                text={<>DELETE STRIPE ACCOUNT  </>} >
-                                    <DeleteStripeAccount />
-                                </Popup >
-                            </li>  : ''
-                            } */}
-                        </ul>
+                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-2xl hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                            <div className="flex items-center gap-4 text-left">
+                                <div className="p-2.5 rounded-xl bg-pink-50 text-pink-600">
+                                    <Bell size={20} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base text-gray-800">Email Notifications</h3>
+                                    <p className="text-xs text-gray-500 font-medium mt-0.5">Receive updates via email</p>
+                                </div>
+                            </div>
+                            <Switch
+                                checked={emailEnabled}
+                                onChange={switchNotification}
+                                className={`${emailEnabled ? 'bg-pink-600' : 'bg-gray-200'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2`}
+                            >
+                                <span className={`${emailEnabled ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
+                            </Switch>
+                        </div>
                     </div>
+
+                    {/* SECURITY SECTION */}
+                    <div className="mb-10 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+                        <SectionTitle title="Security" />
+                        
+                        <Popup
+                            action={emailPopupAction}
+                            space="4" classes='w-full'
+                            modalclass="pinkmodal"
+                            text={
+                                <SettingItem 
+                                    icon={Mail} 
+                                    title="Email Address" 
+                                    subtitle="Update your email address"
+                                    value={auth?.user?.email}
+                                />
+                            }
+                        >
+                            <UpdateProfileInformation closeModal={closeEmailPopup} />
+                        </Popup>
+
+                        <Popup
+                            action={passClose}
+                            space="4" classes='w-full'
+                            modalclass="pinkmodal"
+                            text={
+                                <SettingItem 
+                                    icon={Lock} 
+                                    title="Password" 
+                                    subtitle="Change your password"
+                                    value="••••••••"
+                                />
+                            }
+                        >
+                            <UpdatePasswordForm passwordUpdate={passwordUpdated} />
+                        </Popup>
+
+                        <Link href={route('account.2fa')} className="block w-full">
+                            <SettingItem 
+                                icon={Shield} 
+                                title="Multi-Step Verification" 
+                                subtitle="Add an extra layer of security"
+                                value={auth?.user?.is_2fa == 1 ? "Enabled" : "Disabled"}
+                            />
+                        </Link>
+                    </div>
+
+                    {/* SUPPORT SECTION */}
+                    <div className="mb-10 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+                        <SectionTitle title="Support & Legal" />
+                        
+                        <Link href={route('refer-and-earn')} className="block w-full">
+                            <SettingItem 
+                                icon={Users} 
+                                title="Refer & Earn" 
+                                subtitle="Invite creators and earn rewards"
+                            />
+                        </Link>
+
+                        <Link href={route('how-it-works')} className="block w-full">
+                            <SettingItem 
+                                icon={HelpCircle} 
+                                title="How it Works" 
+                                subtitle="Learn about Spenny Piggy"
+                            />
+                        </Link>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                             <Link href={route('terms-and-conditions')} className="block w-full">
+                                <SettingItem 
+                                    icon={FileText} 
+                                    title="Terms & Conditions" 
+                                    subtitle="Read our terms and conditions"
+                                    className="!mb-0"
+                                />
+                            </Link>
+                            <Link href={route('promotion-terms')} className="block w-full">
+                                <SettingItem 
+                                    icon={Globe}  
+                                    title="Privacy Policy" 
+                                    subtitle="Read our privacy policy"
+                                    className="!mb-0"
+                                />
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* DANGER ZONE */}
+                    <div className="mb-10 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
+                        <SectionTitle title="Danger Zone" />
+                        <Popup
+                            space="4" classes='w-full'
+                            modalclass="pinkmodal"
+                            text={
+                                <SettingItem  bordercolor="border-red-600"
+                                    icon={Trash2}  
+                                    title="Delete Account" 
+                                    subtitle="Permanently remove your account and data"
+                                    isDestructive
+                                />
+                            }
+                        >
+                            <DeleteUserForm />
+                        </Popup>
+                    </div>
+
+                    <div className="text-center text-xs text-gray-400 mt-10 pb-10">
+                        Version 2.0.0 • Spenny Piggy © {new Date().getFullYear()}
+                    </div>
+
                 </div>
             </div>
         </Authenticated>

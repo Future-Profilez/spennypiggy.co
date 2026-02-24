@@ -27,7 +27,7 @@
                  </tr>
                  <tr>
                      <td style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center; ">
-                         Go to <a href="{{ env('APP_URL') . '/wish-tracker' }}">Spenny Piggy</a> where you can see your granted items, send a message to
+                         Go to <a href="{{ env('APP_URL') . '/history' }}">Spenny Piggy</a> where you can see your granted items, send a message to
                          your gifter and share your gift on social media </td>
                  </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>

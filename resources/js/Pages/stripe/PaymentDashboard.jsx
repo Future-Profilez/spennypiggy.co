@@ -1,7 +1,7 @@
 import LoaderButton from "@/Components/LoaderButton";
 import { useForm } from "@inertiajs/react";
 
-export default function PaymentDashboard({auth, classes, text}){
+export default function PaymentDashboard({auth, classes, text, trigger}){
     const {data, post, processing} = useForm();
 
     const handleStripeLogin = (e) => {
@@ -9,6 +9,14 @@ export default function PaymentDashboard({auth, classes, text}){
         post(route("stripe.login"),{
             preserveScroll:true,
         });
+    }
+
+    if (trigger) {
+        return (
+            <div onClick={handleStripeLogin} className={classes}>
+                {trigger}
+            </div>
+        )
     }
 
     return(

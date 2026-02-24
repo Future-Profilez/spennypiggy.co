@@ -445,7 +445,7 @@ export default function Header({ classMagicword }) {
                                     )}
                                     {auth?.user?.username ? (
                                         <>
-                                            <li>
+                                            {/* <li>
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/purchases`}
@@ -459,6 +459,23 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                     <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         All Purchases
+                                                    </span>
+                                                </Link>
+                                            </li> */}
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/history`}
+                                                    className={getNavLinkClass('/history')}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SiBuymeacoffee
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Support History
                                                     </span>
                                                 </Link>
                                             </li>
@@ -476,23 +493,6 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                     <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Tasks
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/wish-tracker`}
-                                                    className={getNavLinkClass('/wish-tracker')}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-4">
-                                                        <SlCalculator
-                                                            color="#fff"
-                                                            size={"1.2rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                        Wish tracker
                                                     </span>
                                                 </Link>
                                             </li>

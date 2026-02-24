@@ -35,7 +35,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     const [coverImage, setCoverImage] = useState();
     const [socialFile, setSocialFile] = useState();
 
-    // Tab State
     const [activeTab, setActiveTab] = useState('profile'); // profile, appearance, settings
 
     useEffect(() => {
@@ -44,23 +43,27 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
         }
     },[socialFile]);
 
-     const { data, setData, post, processing, errors, reset } = useForm({
-        name: user?.name || '',
-        username: user?.username || '',
-        email: user?.email || '',
+    const { data, setData, post, processing, errors } = useForm({
+        name: user.name,
+        username: user.username,
+        email: user.email,
         bio: user?.bio || '',
-        avatar: '',
-        cover: '',
-        gender: user?.gender || '',
-        min_surprise_amount: user?.min_surprise_amount || '',
-        creator_category: user?.creator_category || '',
-        social_image: socialFile || null,
+        avatar: null,
+        cover: null,
+        gender: user?.gender || 'He/Him',
+        creator_category: user?.creator_category ? (typeof user.creator_category === 'string' ? JSON.parse(user.creator_category) : user.creator_category) : [],
+        country: user?.country || '',
+        social_image: null,
+        min_surprise_amount: user?.min_surprise_amount || 5,
+        social_handle: user?.social_handle || '',
     });
     const [loading, setLoading] = useState(processing);
 
 
-    const generateCardAndUpload = async (avataruid) => {
-        setLoading(true);
+    const generateCardAndUpload = async (avataruid, load) => {
+        // if(load == true){
+        //     setLoading(true);
+        // }
         const container = document.createElement('div');
         container.style.position = 'absolute';
         // container.style.left = '-9999px';
@@ -102,8 +105,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
 
                     <div style="padding-left:12px;">
                         <h1
-                        style=" max-width:200px;margin-top:-20px;padding-bottom:8px;text-transform:uppercase;font-size:30px;text-align:left;word-break:${!hasFullName(user?.name) ? 'break-all':'break-word'} ; line-height:30px;   font-family: 'gulfs' ; letter-spacing: 1px; text-shadow:0.5px 0.5px #000000 !important; " >
-                        ${user?.name}
+                        style=" max-width:200px;margin-top:-20px;padding-bottom:8px;text-transform:uppercase;font-size:30px;text-align:left;word-break:${!hasFullName(data?.name || user?.name) ? 'break-all':'break-word'} ; line-height:30px;   font-family: 'gulfs' ; letter-spacing: 1px; text-shadow:0.5px 0.5px #000000 !important; " >
+                        ${data?.name || user?.name}
                         </h1>
                     </div>
                     </div>
@@ -118,7 +121,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                     crossorigin="anonymous"
                     style=" position:absolute;top:190px;left:310px;max-width:100px;object-fit:cover;"
                     />  
-                    <div style="margin-top:100px;padding:0 16px;height:50px;line-height:50px;border-radius:40px;text-align:center;font-size:22px;color:white;box-shadow:0 8px 20px rgba(0,0,0,0.4);" ><div style="height:50px; position relative; top:-30px; padding-bottom:16px; display:block;">https://spennypiggy.co/${user?.username}</div></div>
+                    <div style="margin-top:100px;padding:0 16px;height:50px;line-height:50px;border-radius:40px;text-align:center;font-size:22px;color:white;box-shadow:0 8px 20px rgba(0,0,0,0.4);" ><div style="height:50px; position relative; top:-30px; padding-bottom:16px; display:block;">https://spennypiggy.co/${data?.username || user?.username}</div></div>
                 </div>
                 </div>
 
@@ -179,16 +182,9 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     const [piggyBankEnabled, setPiggyBankEnabled] = useState(user?.show_piggy_bank === 1);
     const [notificationsEnabled, setNotificationsEnabled] = useState(user?.notification_send === 1);
 
-    useEffect(() => {
-        if(localAvatar){
-            setData('avatar', localAvatar);
-        }
-    },[localAvatar]);
-
-    
     const getImageUID = (e) => {
         setData('avatar', e);
-        setLocalAvatar(e);
+        setLocalAvatar(e?.uuid || '');
         setProfileDP(e.cdnUrl);
         setUploadingStart(false);
     }
@@ -225,8 +221,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
             const newTags = prevTags.includes(value)
                 ? prevTags.filter(tag => tag !== value)
                 : [...prevTags, value];
-            
-            setData("creator_category", JSON.stringify(newTags));
+            setData("creator_category", newTags);
             return newTags;
         });
     };
@@ -279,7 +274,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
         // I will keep it but only if on appearance tab or if avatar changed? 
         // Actually, let's keep it simple and not force regeneration unless needed.
         // But the previous code forced it. I'll comment it out to make updates faster unless user clicks generate.
-        // await generateSocialImage(); 
+        setLoading(true);
+        await generateSocialImage(); 
         
         post(route('edit-profile'), {
             preserveScroll: true,
@@ -291,6 +287,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                 if(resp.props.flash?.success){
                     updateProfileSteps && updateProfileSteps();
                 }
+                setLoading(false);
             },
             onError: (_err) => {
                 console.table("profile update error", _err);
@@ -306,6 +303,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                 if(_err.name){
                     errorAlert(_err.name || "Something went wrong in your display name.")
                 }
+                setLoading(false);
             }
         });
     };
@@ -597,7 +595,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                                 </div>
                                             </li>
 
-                                            <li className="mb-6">
+                                            {/* <li className="mb-6">
                                                 <label className="block text-normal font-medium !text-black mb-2">Minimum Surprise Gift Amount</label>
                                                 <div className="relative">
                                                     <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
@@ -615,7 +613,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                                 <p className="text-xs text-gray-500 mt-1">
                                                     Minimum amount supporters must spend for surprise gifts.
                                                 </p>
-                                            </li>
+                                            </li> */}
                                         </>
                                     )}
 

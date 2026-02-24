@@ -49,7 +49,13 @@ export default function UpdateAvatar({getImageUID, text, close, type }) {
             <div className='editprofileModal innermodal  '>
                 <div className='editprofileModalInner mt-4'>
                     <div className={`${isEditable ? '' : 'd-none'} editable`} >
-                        <UploadcareEditor height={'50vh'} uuid={file && file.uuid || ''} updateFile={updateFile}  />
+                        <UploadcareEditor
+                            height={'50vh'}
+                            uuid={file && file.uuid || ''}
+                            updateFile={updateFile}
+                            ctxName={`editor-${type}`}
+                            cropPreset={type === 'cover' ? '16:9' : '1:1'}
+                        />
                     </div>
                     <div className={`${!isEditable ? '' : 'd-none'} edited`} >
                         <div className="pb-4" >

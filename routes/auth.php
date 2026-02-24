@@ -464,7 +464,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
-            Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
             Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
@@ -601,6 +600,18 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-bills/{username}', [ProfileController::class, 'gifterBills'])->name('gifter-bills');
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
         Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
+
+        Route::get('support/{creator}/{gifter}', function ($creator, $gifter) {
+            return Inertia::render('gifter/SupportStory', [
+                'creator' => $creator,
+                'gifter' => $gifter
+            ]);
+        })->name('support.story.page');
+        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->name('support.story');
+        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->name('support.story.react');
+        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->name('support.story.reply');
+        Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
+        Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
         // Intro video
         Route::get('/redirecting', function () {

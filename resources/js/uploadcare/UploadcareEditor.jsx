@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export default function UploadcareEditor({uuid, updateFile, setIsEditable, height, ctxName = "my-editor"}){
+export default function UploadcareEditor({uuid, updateFile, setIsEditable, height, ctxName = "my-editor", cropPreset = "1:1"}){
 
   useEffect(() => {
     async function loadEditor() {
@@ -50,14 +50,14 @@ export default function UploadcareEditor({uuid, updateFile, setIsEditable, heigh
 
       {uuid ? <div className='image-editor border rounded-[30px] md:rounded-[40px]  overflow-hidden' >
         <lr-config  
-        ctx-name={ctxName}
+          ctx-name={ctxName}
         ></lr-config>
         <lr-cloud-image-editor
           id={ctxName}
           ctx-name={ctxName}
           css-src="https://cdn.jsdelivr.net/npm/@uploadcare/blocks@0.25.0/web/lr-cloud-image-editor.min.css"
-          uuid={uuid}  
-          crop-preset="1:1"
+          uuid={uuid}
+          crop-preset={cropPreset}
           crop="true"
         ></lr-cloud-image-editor>
       </div> : ''}

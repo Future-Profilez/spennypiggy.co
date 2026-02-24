@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 import PriceFormat from '@/includes/PriceFormat';
 import LoadingScreen from '@/includes/LoadingScreen';
 import { piggy } from '@/includes/Icons';
@@ -63,6 +63,7 @@ export default function GifterItems(props) {
       const uname = user && user.username;
       const amount = formatMultiPrice(total_amount, w && w.currency);
       const owner  = w && w.owner && w.owner.name;
+      const ownerUsername = w && w.owner && w.owner.username;
       const wishname  = w && w.wish && w.wish.wishname;
       const s = w && w.wish && w.wish.subscription;
       return <div className='box rounded-[30px] md:rounded-[40px]   px-3 py-3  '>
@@ -94,6 +95,11 @@ export default function GifterItems(props) {
           }
       </div>
         {IsloggedIn && w && w.media_url ? <MessageMedia w={w} /> : ''}
+        <div className='mt-3'>
+          <Link href={`/support/${ownerUsername || ''}/${uname || ''}`} className="button rounded-[30px] md:rounded-[40px] px-3 text-[11px] uppercase">
+            View Story
+          </Link>
+        </div>
       </div>
     }
     return <div className='wish-grant my-2' key={key} >

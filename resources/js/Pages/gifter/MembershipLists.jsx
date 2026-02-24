@@ -55,6 +55,11 @@ import Membership from './../membership/Membership';
                     <span className="text-white/40 text-[10px] font-black tracking-widest uppercase">Duration</span> 
                     <strong className="text-white/70 font-black text-[10px] tracking-widest uppercase">Monthly</strong> 
                 </div>
+                <div className='pt-3'>
+                  <Link href={`/support/${itm?.owner?.username || ''}/${username || ''}`} className="button rounded-[30px] md:rounded-[40px] px-3 text-[11px] uppercase">
+                    View Story
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -75,6 +80,10 @@ import Membership from './../membership/Membership';
             }
             setLoading(false);
           }).catch((_err) => {
+            const isCanceled = (signal && signal.aborted) || _err?.code === 'ERR_CANCELED' || _err?.message === 'canceled' || _err?.name === 'CanceledError';
+            if (isCanceled) { 
+              return; 
+            }
             console.error(`${type} error`, _err);
             setLoading(false);
           });

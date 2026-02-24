@@ -98,6 +98,7 @@ export default function Dashboard(props) {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
+    const [supporterLookup, setSupporterLookup] = useState('');
 
     useEffect(() => {
         setLinks(slinks || []);
@@ -662,6 +663,52 @@ export default function Dashboard(props) {
                                                                     )}
 
                                                                     
+                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
+                                                                        <div className="mb-6 relative group">
+                                                                            {/* <div className="absolute  -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] md:rounded-[40px] bg-[#0b0c12]/70 backdrop-blur-2xl border border-white/10 min-h-[120px] md:min-h-[140px] border-2 !border-pink-500">
+                                                                                <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-[#8C52FF]/70 to-transparent blur-2xl"></div>
+                                                                                <div className="pointer-events-none absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-gradient-to-tr from-[#05EFB8]/70 to-transparent blur-2xl"></div>
+                                                                                <div className="items-stretch md:items-center justify-between gap-5">
+                                                                                    <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
+                                                                                        <div className="relative">
+                                                                                            <img
+                                                                                                src={(auth?.user?.avatar_url) || ""}
+                                                                                                alt="you"
+                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-[20px] object-cover border border-white/10"
+                                                                                            />
+                                                                                            <div className="absolute -inset-[2px] rounded-[22px] md:rounded-[22px] bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] opacity-20 -z-10"></div>
+                                                                                        </div>
+                                                                                        <div className="text-white/60 text-sm font-black tracking-widest">×</div>
+                                                                                        <div className="relative">
+                                                                                            <img
+                                                                                                src={(user?.avatar_url) || ""}
+                                                                                                alt="creator"
+                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-[20px] object-cover border border-white/10"
+                                                                                            />
+                                                                                            <div className="absolute -inset-[2px] rounded-[22px] md:rounded-[22px] bg-gradient-to-r from-[#F94F97] to-[#8C52FF] opacity-20 -z-10"></div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex-1 order-2 text-center md:text-left mt-6">
+                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-white/60 mb-1">Support Story</p>
+                                                                                        <p className="text-white font-black text-xl md:text-2xl leading-snug">
+                                                                                            Relive your moments with {user?.name || '@'+user?.username}
+                                                                                        </p>
+                                                                                        <p className="text-white/60 text-sm md:text-sm mt-1">
+                                                                                            Gifts, thank‑yous and milestones — beautifully in one place.
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div className="order-3 w-full md:w-auto md:shrink-0 mt-4">
+                                                                                        <Link href={`/support/${user?.username}/${auth?.user?.username}`}
+                                                                                            className="w-full md:w-auto block text-center px-5 py-3 font-bold rounded-[30px] md:rounded-[40px] text-[13px] uppercase tracking-widest bg-pink-500 hover:bg-pink-700 text-white transition-all duration-200 " >
+                                                                                            View Your Story
+                                                                                        </Link> 
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : ('')}
+
 
                                                                     <div className="bg-white border-2 border-voilet rounded-[40px] mb-4">
                                                                         <div className="p-4 md:p-6">
@@ -706,6 +753,8 @@ export default function Dashboard(props) {
                                                                                     })()}
                                                                                 </div>
                                                                             )}
+
+                                                                           
 
                                                                             {IsloggedIn &&
                                                                             user?.edit_bio_reason &&
@@ -810,6 +859,31 @@ export default function Dashboard(props) {
                                                                                                 </ShareProfile>
                                                                                             </li>
                                                                                         </ul>
+                                                                                    </div>
+
+                                                                                    {/* Quick Story Access for Creator */}
+                                                                                    <div className="mt-4">
+                                                                                        <div className="relative group">
+                                                                                            <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF]/50 to-[#05EFB8]/50 rounded-[30px] md:rounded-[40px] blur opacity-10"></div>
+                                                                                            <div className="relative p-4 rounded-[30px] md:rounded-[40px] bg-[#0b0c12]/60 backdrop-blur border border-white/10">
+                                                                                                <p className="text-[11px] font-black tracking-[0.25em] uppercase text-white/60 mb-2">Find Support Story</p>
+                                                                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                                                                    <input
+                                                                                                        value={supporterLookup}
+                                                                                                        onChange={(e) => setSupporterLookup(e.target.value.trim())}
+                                                                                                        placeholder="Enter supporter username"
+                                                                                                        className="flex-1 bg-white/5 border border-white/10 rounded-[20px] px-3 py-2 text-white/80 placeholder-white/30"
+                                                                                                    />
+                                                                                                    <Link
+                                                                                                        href={supporterLookup ? `/support/${user?.username}/${supporterLookup}` : '#'}
+                                                                                                        className={`px-4 py-2 rounded-[20px] text-[11px] uppercase tracking-widest ${supporterLookup ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-white/10 text-white/40 cursor-not-allowed'}`}
+                                                                                                    >
+                                                                                                        View Story
+                                                                                                    </Link>
+                                                                                                </div>
+                                                                                                <p className="text-white/30 text-[11px] mt-1">Tip: supporter ka username type karo aur open karo.</p>
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
                                                                             ) : (
