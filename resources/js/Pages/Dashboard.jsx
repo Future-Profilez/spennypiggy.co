@@ -98,7 +98,6 @@ export default function Dashboard(props) {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
-    const [supporterLookup, setSupporterLookup] = useState('');
 
     useEffect(() => {
         setLinks(slinks || []);
@@ -861,30 +860,7 @@ export default function Dashboard(props) {
                                                                                         </ul>
                                                                                     </div>
 
-                                                                                    {/* Quick Story Access for Creator */}
-                                                                                    <div className="mt-4">
-                                                                                        <div className="relative group">
-                                                                                            <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF]/50 to-[#05EFB8]/50 rounded-[30px] md:rounded-[40px] blur opacity-10"></div>
-                                                                                            <div className="relative p-4 rounded-[30px] md:rounded-[40px] bg-[#0b0c12]/60 backdrop-blur border border-white/10">
-                                                                                                <p className="text-[11px] font-black tracking-[0.25em] uppercase text-white/60 mb-2">Find Support Story</p>
-                                                                                                <div className="flex flex-col sm:flex-row gap-2">
-                                                                                                    <input
-                                                                                                        value={supporterLookup}
-                                                                                                        onChange={(e) => setSupporterLookup(e.target.value.trim())}
-                                                                                                        placeholder="Enter supporter username"
-                                                                                                        className="flex-1 bg-white/5 border border-white/10 rounded-[20px] px-3 py-2 text-white/80 placeholder-white/30"
-                                                                                                    />
-                                                                                                    <Link
-                                                                                                        href={supporterLookup ? `/support/${user?.username}/${supporterLookup}` : '#'}
-                                                                                                        className={`px-4 py-2 rounded-[20px] text-[11px] uppercase tracking-widest ${supporterLookup ? 'bg-pink-600 hover:bg-pink-700 text-white' : 'bg-white/10 text-white/40 cursor-not-allowed'}`}
-                                                                                                    >
-                                                                                                        View Story
-                                                                                                    </Link>
-                                                                                                </div>
-                                                                                                <p className="text-white/30 text-[11px] mt-1">Tip: supporter ka username type karo aur open karo.</p>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
+
                                                                                 </div>
                                                                             ) : (
                                                                                 ""
