@@ -1,7 +1,7 @@
 import seek from "../../../assets/img/seeksearch.png";
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, eclasses, text, img, classes, reverse}) {
+export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, eclasses, text, img, classes, reverse, step}) {
     return (
         <>
 
@@ -22,10 +22,18 @@ export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, ecla
     </div>
     <div className={` ${reverse ? "justify-end" : "justify-start"} md:w-1/2 p-4 ${textbg}`}>
       <div className='max-w-[700px]  p-[20px] md:p-[30px]  lg:p-[50px] xl:p-[70px] '>
+        {step && (
+            <div className={`text-2xl font-bold mb-4 tracking-wider uppercase font-gulfs ${textcolor || 'text-white'}`}>
+                {step}
+            </div>
+        )}
         <h3 className={`animate-fading text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl  
            font-gulfs ${textcolor || 'text-white'} mb-3 uppercase leading-tight`} >
           {heading}
         </h3>
+        {text && (
+            <div className={`text-lg leading-relaxed ${textcolor || 'text-white'}`} dangerouslySetInnerHTML={{ __html: text }} />
+        )}
       </div>
     </div>
   </div>
