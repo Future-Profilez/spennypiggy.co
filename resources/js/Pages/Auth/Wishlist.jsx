@@ -444,7 +444,7 @@ export default function Wishlist(props) {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">Price</label>
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">Price ({defaultCurrency})</label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-gray-500">{defaultCurrency}</span>
                                         <input
@@ -459,9 +459,9 @@ export default function Wishlist(props) {
                                             onChange={(e) => setData("price", e.target.value)}
                                         />
                                     </div>
-                                    {defaultCurrency !== "USD" && (
+                                    {defaultCurrency !== global_currency && data.price > 0 && (
                                         <p className="mt-2 text-sm text-gray-500">
-                                            The wish item amount is set to {formatMultiPrice(data.price, defaultCurrency)}.
+                                            ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
                                         </p>
                                     )}
                                 </div>
@@ -553,7 +553,7 @@ export default function Wishlist(props) {
                                                             <div className="aspect-w-16 aspect-h-9">
                                                                 <img
                                                                     src={`https://ucarecdn.com/${image}/`}
-                                                                    className="w-full h-48 object-cover rounded-[20px]"
+                                                                    className="w-full h-52 object-cover rounded-[20px]"
                                                                     alt="Default"
                                                                 />
                                                             </div>
@@ -723,7 +723,7 @@ export default function Wishlist(props) {
                                     <button
                                         type="button"
                                         onClick={prevStep}
-                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-lg tracking-wider rounded-[40px] hover:bg-gray-200 transition-colors"
+                                        className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[40px] hover:bg-gray-200 transition-colors"
                                     >
                                         Back
                                     </button>
@@ -733,7 +733,7 @@ export default function Wishlist(props) {
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="flex-1 py-3 px-4 bg-pink-500 text-white font-gulfs uppercase text-lg tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
+                                        className="flex-1 py-3 px-4 bg-pink-500 text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                     >
                                         Next
                                     </button>
@@ -741,7 +741,7 @@ export default function Wishlist(props) {
                                     <LoaderButton
                                         disabled={processing}
                                         type="submit"
-                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-pink-500 text-white font-gulfs uppercase text-lg tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
+                                        className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-pink-500 text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                         spinnerclass="fill-white"
                                     >
                                         {processing ? (editpop ? "Updating..." : "Processing...") : (editpop ? "Update Wish" : "Add Wish")}

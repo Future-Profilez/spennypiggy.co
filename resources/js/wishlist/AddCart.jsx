@@ -112,7 +112,7 @@ export default function AddCart(props) {
                                         )}
                                     </span>
                                     <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
-                                        * Includes all applicable fees
+                                        * Includes all applicable fees. You will be charged in {item?.currency || 'USD'}.
                                     </span>
                                 </div>
                             )}
@@ -135,6 +135,9 @@ export default function AddCart(props) {
                                 className="block w-full rounded-[30px] md:rounded-[40px]  border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mt-1"
                             />
                         </div>
+                        <p className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                            * Includes all fees. You will be charged in {item?.currency || 'USD'}. Amounts shown in {currency || 'GBP'} are estimates.
+                        </p>
                         <div className="crowd pt-2 mb-4">
                             <CustomProgressBar
                                 now={item.fullfill_amount}

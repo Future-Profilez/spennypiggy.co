@@ -61,15 +61,16 @@ export default defineConfig((env) => {
     
     // Optimize dev server
     server: {
-        // host: '0.0.0.0',
-        // port: 5173,
+        host: '0.0.0.0',
+        port: 5175,
+        strictPort: false,
         cors: true,
         headers: {
             'Access-Control-Allow-Origin': '*',
         },
         hmr: {
+            host: 'localhost',
             overlay: false,
-            port: 5173
         } 
     },
     resolve: {

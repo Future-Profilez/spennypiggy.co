@@ -311,16 +311,25 @@ Route::middleware('auth')->group(function () {
             Route::put('password', [PasswordController::class, 'update'])->name('password.update');
             
             Route::post('edit-profile', [ProfileController::class, 'updateProfile'])->name('edit-profile');
-            Route::get('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('switch-notification');
+            Route::post('notification-switch', [ProfileController::class, 'notificationSwitch'])->name('notification-switch');
             Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
             Route::post('edit-category/{id}', [WishitemController::class, 'editWishCategory'])->name('edit-category');
             Route::get('delete-category/{id}', [WishitemController::class, 'deleteCategory'])->name('delete-category');
+            Route::get('setup/multi-step-verification', function () {
+                return Inertia::render('account/TwoFactorSetup');
+            })->name('account.2fa');
+
             Route::get('account', function () {
                 try {
                     $user = Auth::user();
                     if (!$user) {
                         return redirect()->route('login');
                     }
+                    
+                    // ... existing logic ...
+                    // I need to copy the whole closure or just insert before it. 
+                    // To avoid copying the massive closure, I will use a different anchor.
+
 
                     $auto_tweet = (int)($user->auto_tweet ?? 0) === 1;
                     $pwaNotificationDetails = BulkPwaNotification::where('creator_id', $user->id)->latest()->get();
@@ -444,7 +453,7 @@ Route::middleware('auth')->group(function () {
                         'consoleMessage' => $e->getMessage(),
                     ]);
                 }
-            });
+            })->name('account');
 
             Route::get('/refer-and-earn', [ReferAndEarnController::class, 'index'])->name('refer-and-earn');
             Route::post('/refer-and-earn/create-link', [ReferAndEarnController::class, 'createReferralLink'])->name('create-referral-link');
@@ -455,7 +464,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
-            Route::get('wish-tracker', [WishitemController::class, 'wishtrackerItems'])->name('wish-tracker');
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
             Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
@@ -548,7 +556,7 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('earnings/Earnings');
         })->name('earnings-page');
 
-        Route::get('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
+        Route::post('piggy-bank-setting/', [ProfileController::class, 'piggyBankSetting'])->name("piggy-bank-setting");
 
         Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
         Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
@@ -592,6 +600,18 @@ Route::middleware('auth')->group(function () {
         Route::get('gifter-bills/{username}', [ProfileController::class, 'gifterBills'])->name('gifter-bills');
         Route::get('gifter-thanks-message/{username}', [ProfileController::class, 'gifterThanksMessages'])->name('gifter-thanks-message');
         Route::get('gifter-subscriptions/{username}', [ProfileController::class, 'gifterSubscription'])->name('gifter-subscription');
+
+        Route::get('support/{creator}/{gifter}', function ($creator, $gifter) {
+            return Inertia::render('gifter/SupportStory', [
+                'creator' => $creator,
+                'gifter' => $gifter
+            ]);
+        })->name('support.story.page');
+        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->name('support.story');
+        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->name('support.story.react');
+        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->name('support.story.reply');
+        Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
+        Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
         // Intro video
         Route::get('/redirecting', function () {

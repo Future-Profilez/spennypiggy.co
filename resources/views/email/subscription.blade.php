@@ -32,13 +32,13 @@
      
                 <tr>
                     <td style="padding: 0 0 20px 0; font-weight: normal; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: center;">
-                        Visit <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> to manage your current subscriptions and send a thank you message to your supporter!
+                        Visit <a href="{{ env('APP_URL') . '/history' }}" style="color:#F94F97; text-decoration:none;">Spenny Piggy</a> to manage your current subscriptions and send a thank you message to your supporter!
                     </td>
                 </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center;">
-                        <a href="{{ env('APP_URL') . '/wish-tracker' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
+                        <a href="{{ env('APP_URL') . '/history' }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #F94F97; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">Manage Subscriptions</a>
                      </td>
                  </tr>
                  <tr style="line-height: 10px; height: 10px;"><td></td></tr>

@@ -30,24 +30,17 @@ export default function UserCarts(props) {
     const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
         const listedPrice = parseFloat(price || 0);
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
         const vatAmount = listedPrice * (vatPercent || 0) / 100;
         const priceWithVat = listedPrice + vatAmount;
-
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
         const adminFee = 1.00; 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
-        
         if (totalDeductionRate >= 1) return priceWithVat;
-
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        
         return totalSupporterPays;
     };
 
@@ -84,7 +77,6 @@ export default function UserCarts(props) {
             anonymous: keepAnonmyous ? 1 : 0,
             cf_turnstile_response: captchaToken || "",
         };
-        
         // Use Inertia navigation instead of window.location.href to properly handle flash messages
         router.visit(checkoutUrl, {
             method: 'get',
@@ -262,11 +254,9 @@ export default function UserCarts(props) {
                                     <strong className="!text-right !text-black">
                                         {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
                                     </strong>
-                                    {!auth?.user && (
-                                        <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
-                                            * Includes all applicable fees
-                                        </div>
-                                    )}
+                                    <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
+                                        * Includes all applicable fees
+                                    </div>
                                 </div>
                             </div>
 
@@ -293,7 +283,7 @@ export default function UserCarts(props) {
                                                     </p>
                                                     <input
                                                         required
-                                                        className={`${ auth && auth.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] `}
+                                                        className={`${ auth && auth.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[12px] md:rounded-[12px] `}
                                                         value={auth && auth.email}
                                                         disabled={ auth && auth.email ? true : false }
                                                         onChange={ (e) => setEmail(e.target.value) }
@@ -307,13 +297,12 @@ export default function UserCarts(props) {
                                                     </label>
                                                     <input
                                                         className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
-                                                        onChange={(e) =>
-                                                            setName(e.target.value)
-                                                        }
-                                                        value={name}
-                                                        type="text"
-                                                        placeholder="Enter Your Name..."
+                                                        onChange={(e) =>setName(e.target.value)} 
+                                                        // value={name}
+                                                        defaultValue={auth && auth.name || ""}
+                                                        type="text" placeholder="Enter Your Name..."
                                                     />
+                                                    {auth && auth.name}
                                                 </div>
                                             </div>
                                         </li>

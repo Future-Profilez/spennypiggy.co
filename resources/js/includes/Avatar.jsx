@@ -4,7 +4,9 @@ import userphoto from "../../assets/siteicon.png";
 import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FounderBadge from "@/Components/FounderBadge";
 
-export default function Avatar({ hidename, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
+const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
+
+export default function Avatar({ hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
 
   return (
     <>
@@ -17,7 +19,6 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
         max-height: 60px;
         min-width: 60px;
         min-height: 60px;
-        border-radius: 40px;
         overflow: hidden;
         position: relative;
         flex-shrink: 0;
@@ -69,11 +70,11 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
-            <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[40px] ">
+            <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ">
               <img
-                src={imageSrc || src || userphoto}
+                src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 rounded-[40px]" 
+                className="img-fluid bg-gray-200 rounded-[17px]" 
                 loading="lazy"
                 decoding="async"
                 style={{
@@ -86,7 +87,7 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
                 }}
                 onError={(e) => {
                   console.warn('Avatar image failed to load:', imageSrc || src);
-                  e.target.src = userphoto;
+                  e.target.src = defaultAvatar;
                 }}
               />
               {role && profile_status_lock && (
@@ -103,7 +104,7 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
             {hidename ? "" : 
             <>
               <div className="avatar-content">
-                  <h2 className="flex items-center gap-1 capitalize">
+                  <h2 className={` flex items-center gap-1 capitalize ${namecolor || ''}`}>
                     <span className="line-clamp-1 ">
                       {name}
                     </span>
@@ -121,7 +122,7 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
           <div className="useravatar">
             <div className="avatar">
               <img
-                src={imageSrc || src || userphoto}
+                src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
                 className="img-fluid"
                 loading="lazy"
@@ -136,12 +137,12 @@ export default function Avatar({ hidename, src, role, profile_status_lock, image
                 }}
                 onError={(e) => {
                   console.warn('Avatar image failed to load:', imageSrc || src);
-                  e.target.src = userphoto;
+                  e.target.src = defaultAvatar;
                 }}
               />
             </div>
             <div className="avatar-content">
-              <h2>{name}</h2>
+              <h2 className={`${namecolor || ''}`}>{name}</h2>
               {subhead && <p className=''>{subhead}</p>}
             </div>
           </div>

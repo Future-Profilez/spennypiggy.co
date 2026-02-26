@@ -18,6 +18,43 @@ function Bill(props) {
     const { format, formatMultiPrice } = PriceFormat();
     const { itm, itemid, IsloggedIn, classes, key } = props;
 
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        const vatAmount = listedPrice * (vatPercent || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
+    const isCreator = auth?.user?.id === itm?.user_id;
+    const vatPercentage = itm?.user?.vat_amount_percentage || 0;
+
     const {
         attributes,
         listeners,
@@ -173,10 +210,23 @@ function Bill(props) {
                             </h4>
 
                             <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
-                                {formattedPrice}
-                                <button className="tooltipbtn">
-                                    ?<p>*just not including service fee.</p>
-                                </button>
+                                {isCreator ? (
+                                    formatMultiPrice(itm.price, itm?.currency || "GBP")
+                                ) : (
+                                    <div className="flex flex-col items-center">
+                                        {formatMultiPrice(
+                                            calculateTotalSupporterPays(
+                                                itm.price, 
+                                                itm?.currency || "GBP",
+                                                vatPercentage
+                                            ), 
+                                            itm?.currency || "GBP"
+                                        )}
+                                        <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-center">
+                                            * Includes all fees
+                                        </div>
+                                    </div>
+                                )}
                             </h5>
                         </div>
                         <p className=" text-[12px] mt-3 text-center">

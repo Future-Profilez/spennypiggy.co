@@ -32,7 +32,7 @@ import {
 
 export default function AddSocial({
     removetext,
-    openSocial,
+    openSocial, classes,
     sLinks,
     links,
     type,
@@ -364,7 +364,7 @@ export default function AddSocial({
             space="4"
             modalclass="pinkmodal full"
             size="md"
-            classes=""
+            classes={classes}
             text={removetext ? "" : "Add Social Links"}
         >
             <div className="editprofileModalInner p-3  ">

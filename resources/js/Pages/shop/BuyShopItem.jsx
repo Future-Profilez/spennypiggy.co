@@ -341,6 +341,9 @@ export default function BuyShopItem({
                                                 : ""}{" "}
                                             + processing fee
                                         </strong>
+                                        <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
+                                            * Includes all fees. You will be charged in {s?.currency || "GBP"}.
+                                        </span>
                                         <button className="tooltipbtn flex justify-center items-center !font-normal">
                                             ?
                                             <p className="!text-left">

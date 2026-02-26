@@ -9,7 +9,7 @@ export default function EnableCardCapabilities({charges}) {
     <div className="w-full mb-6 bg-white rounded-[30px] md:rounded-[40px]  shadow-sm border-2 border-pink-500 overflow-hidden">
         <div className="flex">
             <div className="w-1.5 bg-[#F94F96]"></div>
-            <div className="flex-1 p-8">
+            <div className="flex-1 p-6 sm:p-6 md:p-8">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-pink-50 text-[#F94F96]">
@@ -33,7 +33,7 @@ export default function EnableCardCapabilities({charges}) {
                 <a 
                     onClick={() => setLoading(!loading)}
                     href="/stripe/enable_card_payments"
-                    className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
+                    className="block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-sm sm:text-normal md:text-[17px] py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99]"
                 >
                     {loading ? "Loading..." : "Enable Card Payments"} 
                 </a>

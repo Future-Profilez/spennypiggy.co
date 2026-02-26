@@ -187,14 +187,14 @@ function InstantTabSystem({
                 style={buttonStyles}
                 disabled={isTransitioning && isPending}
                 className={`
-                    relative py-4 px-0 text-normal font-black uppercase 
+                    relative px-4 py-2 text-sm md:text-normal font-black uppercase 
                     transition-all duration-300 min-w-max whitespace-nowrap
                     select-none touch-manipulation tracking-[0.2em]
                     ${isEffectivelyActive 
-                        ? 'text-white' 
-                        : 'text-white/40 hover:text-white/70'
+                        ? 'text-white bg-pink-600 !rounded-[30px]' 
+                        : 'text-white/70 hover:text-white/70'
                     }
-                    ${shouldShowLoading ? 'opacity-90' : ''}
+                    ${shouldShowLoading ? 'opacity-90 animate-pulse' : ''}
                     disabled:pointer-events-none
                 `}
                 aria-pressed={isEffectivelyActive}
@@ -204,19 +204,17 @@ function InstantTabSystem({
                 <span className="flex items-center gap-2">
                     <span>{tab.label}</span>
                 </span>
-                
-                {/* Gradient active indicator */}
-                {isEffectivelyActive && (
+                {/* {isEffectivelyActive && (
                     <div className="absolute bottom-[2px] left-0 right-0 h-[3px] bg-gradient-to-r from-[#05EFB8] via-[#8C52FF] to-[#F94F97] rounded-t-full shadow-[0_-2px_10px_rgba(140,82,255,0.5)]"></div>
-                )}
+                )} */}
             </button>
         );
     });
 
     return (
-        <div className='relative'>
-            <div className="newnav-tabs hideScroll mb-8 pe-[100px] overflow-x-auto flex items-center justify-between py-0 relative px-4">
-                <div className="flex ps-1 scrollbar-hide space-x-8 min-w-max">
+        <div className='relative pb-6 mt-2'>
+            <div className="bg-black overflow-hidden border-2 border-pink-600 rounded-[30px] !p-2 w-full flex items-center justify-between py-0 relative">
+                <div className="flex !pe-[100px] max-w-[85%] overflow-x-auto scrollbar-hide space-x-3 md:space-x-4 ">
                     {tabs.map((tab) => (
                         <TabButton
                             key={tab.id}
@@ -229,12 +227,12 @@ function InstantTabSystem({
                     ))}
                 </div>
                 {isTransitioning && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-transparent opacity-20 animate-pulse pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-pink-100 to-white opacity-70 animate-pulse pointer-events-none"></div>
+                )}
+                {IsloggedIn && (
+                    <Toggle />
                 )}
             </div>
-                {IsloggedIn && (
-                        <Toggle />
-                )}
         </div>
     );
 }

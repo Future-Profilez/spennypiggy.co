@@ -1,15 +1,14 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-  import { usePage, Link } from '@inertiajs/react';
-  import LoadingScreen from '@/includes/LoadingScreen';
-  import Nocontent from '@/includes/Nocontent';
+import { Link } from '@inertiajs/react';
+import LoadingScreen from '@/includes/LoadingScreen';
+import Nocontent from '@/includes/Nocontent';
 import PriceFormat from '@/includes/PriceFormat';
 import Membership from './../membership/Membership';
 
   export default function MembershipLists({username}) {
 
     const [handleTab, setHandleTab] = useState('memberships');
-    const { user, auth } = usePage().props;
     const { formatMultiPrice } = PriceFormat();
 
     const ITEM = ({itm}) => { 
@@ -56,6 +55,11 @@ import Membership from './../membership/Membership';
                     <span className="text-white/40 text-[10px] font-black tracking-widest uppercase">Duration</span> 
                     <strong className="text-white/70 font-black text-[10px] tracking-widest uppercase">Monthly</strong> 
                 </div>
+                <div className='pt-3'>
+                  <Link href={`/support/${itm?.owner?.username || ''}/${username || ''}`} className="button rounded-[30px] md:rounded-[40px] px-3 text-[11px] uppercase">
+                    View Story
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -76,6 +80,10 @@ import Membership from './../membership/Membership';
             }
             setLoading(false);
           }).catch((_err) => {
+            const isCanceled = (signal && signal.aborted) || _err?.code === 'ERR_CANCELED' || _err?.message === 'canceled' || _err?.name === 'CanceledError';
+            if (isCanceled) { 
+              return; 
+            }
             console.error(`${type} error`, _err);
             setLoading(false);
           });
@@ -90,7 +98,7 @@ import Membership from './../membership/Membership';
 
         return <>
           {loading ? <LoadingScreen /> :
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-8 '>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 pt-8 '>
             {subs && subs.length ? subs.map((item, i)=>{ 
               return <div className='mb-4' >
                 <ITEM key={`memberships-${i}`} itm={item} />
@@ -100,17 +108,20 @@ import Membership from './../membership/Membership';
         </>
     }
 
+    return <>
+      <div className='m-auto'>
 
-    return (
-      <>
-          <div className='m-auto'>
-          <div className='flex justify-start items-center' >
-            <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
-            <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
-          </div>
-            {handleTab == 'memberships' ? <CATITEM type={handleTab} /> : <CATITEM type={handleTab} /> }
-          </div>
-      </>
-    )
+        <div className='flex justify-center items-center' >
+          <button onClick={()=>setHandleTab(`memberships`)} className={`${handleTab !== 'memberships' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Memberships</button>
+          <button onClick={()=>setHandleTab('subscriptions')} className={`${handleTab !== 'subscriptions' ? 'bg-gray-500 opacity-[0.6]' : 'opacity-[1]' } button  rounded-[30px] md:rounded-[40px]  mx-1 px-3 text-[11px] uppercase `} >Subscriptions</button>
+        </div>
+
+        {handleTab == 'memberships' 
+          ? <CATITEM type={handleTab} /> 
+          : <CATITEM type={handleTab} /> 
+        }
+        
+    </div>
+    </>;
   }
   

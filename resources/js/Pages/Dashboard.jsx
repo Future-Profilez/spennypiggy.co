@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, Suspense, lazy, useRef } from "react";
-import { useAlerts } from "@/Components/Alerts";
 import { Head, Link, usePage } from "@inertiajs/react";
 import wishlistbannerimg from "../../assets/img/wishlistbannerimg.jpg";
 import { addicon } from "@/includes/Icons";
@@ -28,7 +27,6 @@ const MyGoal = lazy(() => import("./TipJar/MyGoal"));
 const SocialLinks = lazy(() => import("@/includes/SocialLinks"));
 import axios from "axios";
 import Guest from "@/Layouts/GuestLayout";
-import { LazyLoadImage } from "react-lazy-load-image-component";
 import useWidthCount from "@/Components/useWidthCount";
 
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy,} from "@dnd-kit/sortable";
@@ -54,9 +52,7 @@ import InstantTabSystem from "@/Components/InstantTabSystem";
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
 
-const CreatorActivityWidget = lazy(
-    () => import("@/Components/CreatorActivityWidget"),
-);
+const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
 
 export default function Dashboard(props) {
 
@@ -89,12 +85,9 @@ export default function Dashboard(props) {
             setWishitems(items);
             setIsInitialLoad(false);
         } else if (items === null || items === undefined) {
-            // Keep previous items if new items are undefined (loading state)
-            // This prevents flickering to empty state during transitions
         }
     }, [items, selectedCategory]);
 
-    const { successAlert, errorAlert, infoAlert, warningAlert } = useAlerts();
     const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
 
     const hasPendingCardPayments = useMemo(() => {
@@ -106,7 +99,6 @@ export default function Dashboard(props) {
     const [giftsloading, setGiftsLoading] = useState(false);
     const [sLinks, setLinks] = useState(slinks || []);
 
-    // Keep local sLinks state in sync when server props change (e.g., after save/refresh)
     useEffect(() => {
         setLinks(slinks || []);
     }, [slinks]);
@@ -218,8 +210,6 @@ export default function Dashboard(props) {
         }
     };
 
-    // Flash messages now handled centrally by FlashMessenger in layout
-
     const [showAlert, setShowAlert] = useState(true);
     useEffect(() => {
         const dismissedAt = localStorage.getItem("stripeAlertDismissedAt");
@@ -231,7 +221,6 @@ export default function Dashboard(props) {
             }
         }
     }, []);
-
 
     useEffect(() => {
         if (auth?.user?.email && typeof twq !== "undefined") {
@@ -273,7 +262,7 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action absolute top-[-3px] right-0 cursor-pointer pl-3 bg-black p-2 "
+                            className="addoption-action cursor-pointer  p-1 "
                             dangerouslySetInnerHTML={{ __html: addicon }}
                         ></div>
                         {showAdd ? (
@@ -284,13 +273,13 @@ export default function Dashboard(props) {
                                             <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
-                                            <p>
-                                                {" "}
-                                                {AuthUserStripeConnected !== 1
-                                                    ? "Please complete your Stripe account setup to add your wishlist."
-                                                    : ""}{" "}
-                                            </p>
-                                            <div className="max-h-[55vh]  sm:max-h-[40vh] overflow-y-auto">
+                                           
+                                                {AuthUserStripeConnected !== 1 ?
+                                                     <p className="!mb-6">
+                                                     Please complete your Stripe account setup to add your wishlist.
+                                                    </p>
+                                                    : ""} 
+                                            <div className="max-h-[55vh]  sm:max-h-[50vh] overflow-y-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -336,7 +325,7 @@ export default function Dashboard(props) {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div>
+                                                    <>
                                                         <div
                                                             className={`${
                                                                 AuthUserStripeConnected ==
@@ -345,88 +334,91 @@ export default function Dashboard(props) {
                                                                     : "disabled"
                                                             }`}
                                                         >
-                                                            <div
-                                                                onClick={() =>
-                                                                    setWishOptions(
-                                                                        true,
-                                                                    )
-                                                                }
-                                                                className="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
-                                                            >
-                                                                <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                        <FaRegHeart
-                                                                            color="var(--pink)"
-                                                                            size="1.5rem"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="pl-3 text-left">
-                                                                        <h2 className="text-md font-normal font-GillSans uppercase">
-                                                                            Add
-                                                                            Wish
-                                                                        </h2>
-                                                                        <p className="text-sm font-poppins">
-                                                                            Let
-                                                                            fans
-                                                                            fund
-                                                                            your
-                                                                            lifestyle
-                                                                            for
-                                                                            a
-                                                                            reward.
-                                                                        </p>
+
+                                                            <div className="w-full">
+                                                                <div
+                                                                    onClick={() =>
+                                                                        setWishOptions(
+                                                                            true,
+                                                                        )
+                                                                    }
+                                                                    className="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                >
+                                                                    <div className=" flex items-center">
+                                                                        <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                            <FaRegHeart
+                                                                                color="var(--pink)"
+                                                                                size="1.5rem"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="pl-3 text-left">
+                                                                            <h2 className="text-md font-normal font-GillSans uppercase">
+                                                                                Add
+                                                                                Wish
+                                                                            </h2>
+                                                                            <p className="text-sm font-poppins">
+                                                                                Let
+                                                                                fans
+                                                                                fund
+                                                                                your
+                                                                                lifestyle
+                                                                                for
+                                                                                a
+                                                                                reward.
+                                                                            </p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+
+                                                                <Link
+                                                                    className="w-full block font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                    href="/task/create"
+                                                                >
+                                                                    <div className=" flex items-center">
+                                                                        <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                            <BiTask
+                                                                                color="var(--pink)"
+                                                                                size="1.5rem"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="pl-3 text-left">
+                                                                            <h2 className="text-md font-normal font-GillSans uppercase">
+                                                                                Create
+                                                                                Task
+                                                                            </h2>
+                                                                            <p className="text-sm font-poppins">
+                                                                                Offer
+                                                                                something
+                                                                                unique
+                                                                                to
+                                                                                your
+                                                                                supporters.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </Link>
+
+                                                                {/* <AddItem
+                                                                    classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
+                                                                    product_type="digital_products"
+                                                                /> */}
+                                                                <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
+                                                                {/* <AddGift
+                                                                    text="Add Gift "
+                                                                    classes="font-bold py-3 px-3 mb-2 text-center"
+                                                                    fetch_gifts={
+                                                                        fetch_gifts
+                                                                    }
+                                                                    addressAdded={
+                                                                        auth?.user
+                                                                            ?.is_creator_address_found
+                                                                    }
+                                                                /> */}
+                                                                <AddMembership />
+                                                                <AddBills />
                                                             </div>
-
-                                                            <Link
-                                                                className="w-full block font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
-                                                                href="/task/create"
-                                                            >
-                                                                <div className=" flex items-center">
-                                                                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
-                                                                        <BiTask
-                                                                            color="var(--pink)"
-                                                                            size="1.5rem"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="pl-3 text-left">
-                                                                        <h2 className="text-md font-normal font-GillSans uppercase">
-                                                                            Create
-                                                                            Task
-                                                                        </h2>
-                                                                        <p className="text-sm font-poppins">
-                                                                            Offer
-                                                                            something
-                                                                            unique
-                                                                            to
-                                                                            your
-                                                                            supporters.
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </Link>
-
-                                                            {/* <AddItem
-                                                                classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
-                                                                product_type="digital_products"
-                                                            /> */}
-                                                            <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
-                                                            {/* <AddGift
-                                                                text="Add Gift "
-                                                                classes="font-bold py-3 px-3 mb-2 text-center"
-                                                                fetch_gifts={
-                                                                    fetch_gifts
-                                                                }
-                                                                addressAdded={
-                                                                    auth?.user
-                                                                        ?.is_creator_address_found
-                                                                }
-                                                            /> */}
-                                                            <AddMembership />
-                                                            <AddBills />
                                                         </div>
-                                                    </div>
+                                                    </>
                                                 )}
                                             </div>
                                             <button
@@ -434,7 +426,7 @@ export default function Dashboard(props) {
                                                     setShowAdd(false);
                                                     setWishOptions(false);
                                                 }}
-                                                className="mx-auto block p-2 mt-3"
+                                                className="w-full rounded-full !bg-gray-200 mx-auto block p-2 mt-3"
                                             >
                                                 Cancel
                                             </button>
@@ -467,20 +459,38 @@ export default function Dashboard(props) {
     useEffect(() => {
         setAuthUserStripeConnected((auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0);
     }, [auth?.user?.stripe_details_submitted]);
- 
 
     return (
         <>
             <Guest auth={auth.user} user={user}>
                 <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
-
                 <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[400px] lg:h-[400px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] md:blur-[150px]  opacity-90 floating-shape"></div>
-                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[400px] lg:h-[400px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[200px] opacity-[0.9] floating-shape" style={{animationDelay: '1s'}}></div>
+
+                        <div className="absolute top-40  left-10  w-[100px] h-[100px] bg-yellow-500 rounded-full mix-blend-multiply filter blur-[20px]  opacity-60 floating-shape animate-pulse"></div>
+        
+                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-80 floating-shape"></div>
+
+                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-yellow-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
+
+                        <div className="absolute top-[1000px] right-10 md:right-0 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
+
                         {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
                     </div>
+
+
+
+
+
+
+
+
+
+
+
+
+                    
 
                     <div className="containerbox">
                         <VersionUpdate />
@@ -570,13 +580,13 @@ export default function Dashboard(props) {
                                         <div className="inlinetab ">
                                             {/* Show rejection message if profile is rejected */}
                                             {/* {!IsloggedIn && user?.profile_status_lock != 2 && user?.profile_reject_reason != null && (
-                                                    <div className="text-red-600 text-xl">
-                                                        This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
-                                                    </div>
-                                                )} */}
+                                                <div className="text-red-600 text-xl">
+                                                    This creator's profile has been rejected by the admin. Payments to this creator are currently disabled.
+                                                </div>
+                                            )} */}
 
                                             <InstantTabSystem
-                                                Toggle={Toggle}
+                                                Toggle={Toggle} 
                                                 activeTab={page || "about"}
                                                 user={user}
                                                 username={user.username}
@@ -651,25 +661,62 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
 
-                                                                    {UserStripeConnected ==
-                                                                    1 ? (
-                                                                        <MyGoal
-                                                                            IsloggedIn={
-                                                                                IsloggedIn
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
+                                                                    
+                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
+                                                                        <div className="mb-6 relative group">
+                                                                            {/* <div className="absolute  -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
+                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] md:rounded-[40px] bg-[#0b0c12]/70 backdrop-blur-2xl border border-white/10 min-h-[120px] md:min-h-[140px] border-2 !border-pink-500">
+                                                                                <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-[#8C52FF]/70 to-transparent blur-2xl"></div>
+                                                                                <div className="pointer-events-none absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-gradient-to-tr from-[#05EFB8]/70 to-transparent blur-2xl"></div>
+                                                                                <div className="items-stretch md:items-center justify-between gap-5">
+                                                                                    <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
+                                                                                        <div className="relative">
+                                                                                            <img
+                                                                                                src={(auth?.user?.avatar_url) || ""}
+                                                                                                alt="you"
+                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-[20px] object-cover border border-white/10"
+                                                                                            />
+                                                                                            <div className="absolute -inset-[2px] rounded-[22px] md:rounded-[22px] bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] opacity-20 -z-10"></div>
+                                                                                        </div>
+                                                                                        <div className="text-white/60 text-sm font-black tracking-widest">×</div>
+                                                                                        <div className="relative">
+                                                                                            <img
+                                                                                                src={(user?.avatar_url) || ""}
+                                                                                                alt="creator"
+                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-[20px] object-cover border border-white/10"
+                                                                                            />
+                                                                                            <div className="absolute -inset-[2px] rounded-[22px] md:rounded-[22px] bg-gradient-to-r from-[#F94F97] to-[#8C52FF] opacity-20 -z-10"></div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex-1 order-2 text-center md:text-left mt-6">
+                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-white/60 mb-1">Support Story</p>
+                                                                                        <p className="text-white font-black text-xl md:text-2xl leading-snug">
+                                                                                            Relive your moments with {user?.name || '@'+user?.username}
+                                                                                        </p>
+                                                                                        <p className="text-white/60 text-sm md:text-sm mt-1">
+                                                                                            Gifts, thank‑yous and milestones — beautifully in one place.
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div className="order-3 w-full md:w-auto md:shrink-0 mt-4">
+                                                                                        <Link href={`/support/${user?.username}/${auth?.user?.username}`}
+                                                                                            className="w-full md:w-auto block text-center px-5 py-3 font-bold rounded-[30px] md:rounded-[40px] text-[13px] uppercase tracking-widest bg-pink-500 hover:bg-pink-700 text-white transition-all duration-200 " >
+                                                                                            View Your Story
+                                                                                        </Link> 
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : ('')}
 
-                                                                    <div className="pink-round mb-4">
-                                                                        <h2 className="text-large  font-GillSans uppercase pinkbg p-3 text-white btn-shadow">
-                                                                            About
-                                                                            Me
-                                                                        </h2>
-                                                                        <div className="p-4">
+
+                                                                    <div className="bg-white border-2 border-voilet rounded-[40px] mb-4">
+                                                                        <div className="p-4 md:p-6">
+                                                                            <h2 className="text-large  font-GillSans uppercase text-black  ">
+                                                                                About
+                                                                                Me
+                                                                            </h2>
                                                                             <p
-                                                                                className={`text-gray-500 text-left mt-2 ${
+                                                                                className={`text-gray-500  text-lg text-left mt-2 ${
                                                                                     user &&
                                                                                     !user.bio
                                                                                         ? "hidden"
@@ -680,6 +727,33 @@ export default function Dashboard(props) {
                                                                                     user.bio) ||
                                                                                     "Hy, I am a creator on SpennyPiggy."}
                                                                             </p>
+
+                                                                            {user?.creator_category && (
+                                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                                    {(() => {
+                                                                                        try {
+                                                                                            const tags = typeof user.creator_category === 'string' 
+                                                                                                ? JSON.parse(user.creator_category) 
+                                                                                                : user.creator_category;
+                                                                                            
+                                                                                            if (!Array.isArray(tags)) return null;
+                                                                                            
+                                                                                            return tags.map((tag, index) => (
+                                                                                                <span 
+                                                                                                    key={index} 
+                                                                                                    className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-sm font-medium border border-pink-100"
+                                                                                                >
+                                                                                                    {tag}
+                                                                                                </span>
+                                                                                            ));
+                                                                                        } catch (e) {
+                                                                                            return null;
+                                                                                        }
+                                                                                    })()}
+                                                                                </div>
+                                                                            )}
+
+                                                                           
 
                                                                             {IsloggedIn &&
                                                                             user?.edit_bio_reason &&
@@ -747,28 +821,8 @@ export default function Dashboard(props) {
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 md:pt-3">
-                                                                                    {auth.user &&
-                                                                                    auth
-                                                                                        .user
-                                                                                        .role ==
-                                                                                        1 &&
-                                                                                    AuthUserStripeConnected ==
-                                                                                        1 ? (
-                                                                                        <PaymentDashboard
-                                                                                            classes="b w-full"
-                                                                                            text="Payment Dashboard"
-                                                                                        />
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            {/* {auth?.user?.identity_status == 1 ? 
-                                                                                            <div className="finish mt-4 block">
-                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
-                                                                                                </Link>
-                                                                                            </div> 
-                                                                                            : ''} */}
-                                                                                        </>
-                                                                                    )}
+                                                                                    
+                                                                                    
 
                                                                                     {/* {auth.user && auth.user.stripe_details_submitted == 1 ?
                                                                                             <AddGoal
@@ -805,10 +859,34 @@ export default function Dashboard(props) {
                                                                                             </li>
                                                                                         </ul>
                                                                                     </div>
+
+
                                                                                 </div>
                                                                             ) : (
                                                                                 ""
                                                                             )}
+
+                                                                            {UserStripeConnected == 1 ? (
+                                                                                <MyGoal IsloggedIn={IsloggedIn} />
+                                                                            ) :  "" }
+
+                                                                                    {auth.user && auth .user .role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                        <PaymentDashboard
+                                                                                            classes="shadow-none mt-6 text-white !p-3 w-full btn-shadow !border-0 !bg-pink-600 hover:!bg-pink-900 font-medium px-4 py-2 3 transition-all duration-200"
+                                                                                            text="Creator Payment Dashboard"
+                                                                                        />
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            {auth?.user?.identity_status == 1 ? 
+                                                                                            <div className="finish mt-4 block">
+                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                                </Link>
+                                                                                            </div> 
+                                                                                            : ''}
+                                                                                        </>
+                                                                                    )}
+                                                                                
                                                                         </div>
                                                                     </div>
                                                                     {IsloggedIn ||

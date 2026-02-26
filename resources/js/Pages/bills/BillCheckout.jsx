@@ -10,7 +10,7 @@ import Turnstile from "@/Components/Turnstile";
 export default function BillCheckout(props) {
     const turnstileRef = useRef(null);
     const { formatMultiPrice } = PriceFormat();
-    const { bill, vat_amount, card_capabilities } = props;
+    const { bill, vat_amount, card_capabilities, creator_currency, display_currency } = props;
     const { user, auth, turnstileSiteKey } = usePage().props;
 
     const [name, setName] = useState(
@@ -28,6 +28,54 @@ export default function BillCheckout(props) {
         anonymous: 0,
         cf_turnstile_response: "",
     });
+
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
+        const listedPrice = parseFloat(price || 0);
+        const vat = parseFloat(vatAmount || 0);
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        
+        // Client Rule: Add VAT before other fees
+        const priceWithVat = listedPrice + vat;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = 0.15; 
+        const complianceFeeRate = 0.02; 
+        const adminFee = 1.00; 
+
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        return totalSupporterPays;
+    };
+
+    // New: Calculate estimated display price for UI only
+    const getEstimatedDisplayPrice = (amount) => {
+        if (!amount || !display_currency || !creator_currency || display_currency === creator_currency) return null;
+        
+        // This is purely for estimation display, actual charge is in creator_currency
+        return formatMultiPrice(amount, display_currency);
+    };
+
+    const finalTotalAmount = calculateTotalSupporterPays(
+        bill?.price, 
+        bill?.currency,
+        vat_amount
+    );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     function checkanonymous(e) {
@@ -199,15 +247,25 @@ export default function BillCheckout(props) {
                                         <span className="min-w-[100px] block text-lg">
                                             Total :
                                         </span>
-                                        <strong className="text-lg">
-                                            {formatMultiPrice(
-                                                bill?.tax_amount +
-                                                    bill?.price +
-                                                    vat_amount || "",
-                                                bill && bill?.currency,
-                                                "adminfee"
+                                        <div className="text-right">
+                                            <strong className="text-lg block">
+                                                {formatMultiPrice(
+                                                    finalTotalAmount,
+                                                    bill && bill?.currency
+                                                )}
+                                            </strong>
+                                            
+                                            {/* Show estimated price if display currency differs from charge currency */}
+                                            {display_currency && display_currency !== bill?.currency && (
+                                                <div className="text-sm text-gray-500 font-medium mt-1">
+                                                    ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
+                                                </div>
                                             )}
-                                        </strong>
+
+                                            <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
+                                                * Includes all fees. You will be charged in {bill?.currency}.
+                                            </span>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
@@ -472,14 +530,10 @@ export default function BillCheckout(props) {
                                         >
                                             {processing || checking
                                                 ? "Processing..."
-                                                : `Subscribe & Pay Now - 
-                                                ${formatMultiPrice(
-                                                bill?.tax_amount +
-                                                    bill?.price +
-                                                    vat_amount || "",
-                                                bill && bill?.currency,
-                                                "adminfee"
-                                            )}`}
+                                                : `Subscribe & Pay Now - ${formatMultiPrice(
+                                                    finalTotalAmount,
+                                                    bill && bill?.currency
+                                                )}`}
                                         </button>
                                     </div>
                                 </form>

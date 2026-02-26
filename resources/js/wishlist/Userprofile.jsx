@@ -1,6 +1,5 @@
 import { lazy } from "react";
 import userphoto from "../../assets/siteicon.png";
-import { LazyLoadImage } from "react-lazy-load-image-component";
 import { usePage } from "@inertiajs/react";
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 const ShareProfile = lazy(() => import("./ShareProfile"));
@@ -175,7 +174,7 @@ export default function Userprofile({ IsloggedIn }) {
                                 : (
                                       <EditProfile
                                           user={user}
-                                          classes={"pinkbg uppercase text-lg text-white text-sm  font-gulfs rounded-full px-4 py-2"}
+                                          classes={"pinkbg btn-shadow uppercase text-lg text-white text-sm !font-light font-gulfs rounded-full px-4 py-2"}
                                           global_currency={global_currency}
                                       />
                                   ) || ""}

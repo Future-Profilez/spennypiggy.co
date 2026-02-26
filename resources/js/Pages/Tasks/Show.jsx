@@ -148,7 +148,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                 task.currency || 'USD'
                                             )}
                                             <span className="block text-xs text-gray-500 font-normal mt-1 leading-tight">
-                                                * Includes all fees
+                                                * Includes all fees. You will be charged in {task.currency || 'USD'}.
                                             </span>
                                         </>
                                     )}

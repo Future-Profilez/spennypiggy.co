@@ -6,7 +6,7 @@ import Popup from "./Popup";
 import { router, usePage } from "@inertiajs/react";
 import Nocontent from "@/includes/Nocontent";
 
-export default function FollowersBulkNotification() {
+export default function FollowersBulkNotification({ trigger }) {
     const { pwa_notification_details } = usePage().props;
     const { successAlert, errorAlert } = useAlerts();
     const [loading, setLoading] = useState(false);
@@ -53,9 +53,9 @@ export default function FollowersBulkNotification() {
     return (
         <Popup
             space="4"
-            classes="uppercase"
+            classes="uppercase w-full"
             modalclass="pinkmodal"
-            text={<>Notification Campaign</>}
+            text={trigger || <>Notification Campaign</>}
         >
             <h2 className="uppercase font-GillSans text-lg">
                 Send Push Notification

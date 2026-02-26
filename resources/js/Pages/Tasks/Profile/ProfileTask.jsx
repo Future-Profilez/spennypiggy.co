@@ -56,7 +56,7 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
     };
 
     return (
-        <li className="bg-white rounded-[35px] mb-3 p-6 hover:bg-gray-100 transition-colors border-b-2 border-gray-100 last:border-0">
+        <li className="bg-white rounded-[35px] mb-4 p-6 hover:bg-gray-100 transition-colors !border-2 !border-voilet ">
                 <div className="md:flex justify-between items-center hover:!text-pink-500">
                     <div className="">
                         <Link href={url} className="text-xl text-gray-900 line-clamp-1 font-bold font-poppins">
@@ -89,7 +89,7 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
                     <div className="text-start ps-0 md:!ps-6">
                         <div className="mt-4 md:mt-0  min-w-[100px] gap-4 flex flex-wrap md:!flex-nowrap items-center">
                             <div className="flex flex-col items-end">
-                                <p className="text-xl sm:text-2xl font-black text-pink-500 font-poppins">
+                                <p className="text-xl sm:text-2xl font-black text-voilet font-poppins">
                                     {isCreator ? (
                                         formatMultiPrice(task.price, task.currency || 'USD')
                                     ) : (
@@ -111,7 +111,7 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
                             </div>
                             {!IsloggedIn ?  
                                 <div className="">
-                                    <Link href={`/task/${task.uuid}`} className="whitespace-nowrap text-sm sm:text-normal inline-block px-6 py-2 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
+                                    <Link href={`/task/${task.uuid}`} className="whitespace-nowrap text-sm sm:text-normal inline-block px-6 py-2 bg-voilet text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
                                         <>{task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝'} </> 
                                     </Link> 
                                 </div>
