@@ -21,7 +21,7 @@ environments:
       - "php artisan optimize:clear"
       # - "npm install --no-audit --no-fund"
       - "php artisan ziggy:generate"
-      - "rm -rf public/build"
+      - "rm -rf public/build" 
       - "rm -rf bootstrap/ssr"
       - "npm run build"
       - "npm run clear"
