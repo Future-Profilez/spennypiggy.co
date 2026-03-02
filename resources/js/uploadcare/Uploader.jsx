@@ -68,7 +68,7 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
       checkAdult(data);
       // sendFile(data[0]);
       // setFiles(data);
-      handleResetUploader();
+      // handleResetUploader();
     };
     
     const startHandler = e => {
