@@ -1,36 +1,174 @@
 import { Tab } from '@headlessui/react';
-import { Fragment } from 'react';
-import vishitimg01 from '../../../assets/img/vishitimg01.png'; 
-import giftbasketimg01 from '../../../assets/img/giftbasketimg01.png'; 
-import fundbasketimg01 from '../../../assets/img/fundbasketimg01.png'; 
-import yourwishlist01 from '../../../assets/img/yourwishlist01.png'; 
-import setuppaymentimg01 from '../../../assets/img/setuppaymentimg01.png'; 
-import sharlinkimg from '../../../assets/img/sharlinkimg.png'; 
-import { Head, Link } from '@inertiajs/react';
+import { Fragment, useEffect } from 'react';
+import { Head } from '@inertiajs/react';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import JoinUs from '@/Components/JoinUs';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import { 
+    FaSearch, FaHeart, FaUserPlus, 
+    FaMagic, FaShieldAlt, FaShareAlt,
+    FaRocket, FaBolt, FaCrown
+} from 'react-icons/fa';
+
+import vishitimg from "../../../assets/img/vishitimg01.png";
+import giftbasketimg from "../../../assets/img/giftbasketimg01.png";
+import fundbasketimg from "../../../assets/img/fundbasketimg01.png";
+import yourwishlist from "../../../assets/img/yourwishlist01.png";
+import setuppaymentimg from "../../../assets/img/setuppaymentimg01.png";
+import sharlinkimg from "../../../assets/img/sharlinkimg.png";
+
+const StepCard = ({ step, title, description, img, icon: Icon, color, shadowColor, index }) => {
+    return (
+        <div 
+            className={`group bg-gray-900 border-2 border-${color} rounded-[30px] md:rounded-[40px] p-6 md:p-8 relative hover:-translate-y-3 transition-all duration-300 shadow-[8px_8px_0px_0px_${shadowColor}] h-full flex flex-col`}
+            data-aos="fade-up"
+            data-aos-delay={index * 100}
+        >
+            {/* Floating Icon */}
+            <div className={`absolute -top-6 -right-6 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full text-xl md:text-3xl shadow-lg transform group-hover:rotate-12 transition-transform duration-300 bg-${color} text-black`}>
+                <Icon />
+            </div>
+
+            {/* Step Label */}
+            <div className={`inline-block w-fit px-3 py-1 rounded-full bg-${color}/10 text-${color} font-black text-xs uppercase tracking-widest mb-4 border border-${color}/20`}>
+                {step}
+            </div>
+
+            {/* Title & Description */}
+            <h3 className="text-2xl md:text-3xl font-gulfs text-white mb-4 uppercase leading-none tracking-tight">
+                {title}
+            </h3>
+            <p className="text-gray-400 text-lg mb-8 leading-snug flex-grow" dangerouslySetInnerHTML={{ __html: description }} />
+
+            {/* Image Container */}
+            <div className="relative mt-auto rounded-[20px] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-inner group-hover:shadow-2xl transition-shadow duration-300">
+                <LazyLoadImage 
+                    src={img} 
+                    alt={title} 
+                    effect="blur"
+                    className="w-full h-48 object-cover transform transition-transform duration-700 group-hover:scale-110" 
+                />
+            </div>
+        </div>
+    );
+};
 
 export default function Works(props) {
-    const {auth} = props;
-  return (
-    <Authenticated auth={auth?.user || ''} >
-        <Head title={"How it works"} />
-        <div className='pt-20 howitmain whbg'>
-            <div className='containerbox'>
-                <h2 className='headingMd text-shadow-black text-center mb-3'>How it works</h2>
-                <p className='text-center text-2xl mb-3'>Setting up your page only takes a few minutes to get started. 🚀🐷
-                </p>
-                <div className='howWorkTab mt-12 pb-12 mx-auto'>
+    const { auth } = props;
+
+    useEffect(() => {
+        AOS.init({
+            duration: 800,
+            once: true,
+            easing: 'ease-out-back'
+        });
+    }, []);
+
+    const supporterSteps = [
+        {
+            step: "Step 1",
+            title: "Seek & Search",
+            description: "Find your favorite creators. Browse their profile, shop items, and check out their latest wishes.",
+            img: vishitimg,
+            icon: FaSearch,
+            color: "pink-500",
+            shadowColor: "#EC4899"
+        },
+        {
+            step: "Step 2",
+            title: "Support Them",
+            description: "Join a membership, purchase a wish, or simply send some love to fill their Piggy Bank.",
+            img: giftbasketimg,
+            icon: FaHeart,
+            color: "yellow-400",
+            shadowColor: "#FACC15"
+        },
+        {
+            step: "Step 3",
+            title: "Create Account",
+            description: "Sign up to track your exclusive content and custom orders. Quick and easy checkout!",
+            img: fundbasketimg,
+            icon: FaUserPlus,
+            color: "purple-500",
+            shadowColor: "#A855F7"
+        }
+    ];
+
+    const creatorSteps = [
+        {
+            step: "Step 1",
+            title: "Set Up Page",
+            description: "Craft your unique space. Publish a reward-based Wishlist or offer tailored memberships.",
+            img: yourwishlist,
+            icon: FaMagic,
+            color: "pink-500",
+            shadowColor: "#EC4899"
+        },
+        {
+            step: "Step 2",
+            title: "Secure Payouts",
+            description: "Connect our secure third-party payment processor and start funding your fabulous lifestyle!",
+            img: setuppaymentimg,
+            icon: FaShieldAlt,
+            color: "yellow-400",
+            shadowColor: "#FACC15"
+        },
+        {
+            step: "Step 3",
+            title: "Share & Grow",
+            description: "Update your fans, share on socials, and watch the support roll in with auto-tweets.",
+            img: sharlinkimg,
+            icon: FaShareAlt,
+            color: "purple-500",
+            shadowColor: "#A855F7"
+        }
+    ];
+
+    return (
+        <Authenticated auth={auth?.user || ''}>
+            <Head title="How It Works — Spenny Piggy" />
+            
+            <div className="min-h-screen bg-black text-white relative overflow-hidden pb-24">
+                {/* Decorative Background Shapes */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+                    <div className="absolute top-10 left-10 w-64 h-64 bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape"></div>
+                    <div className="absolute top-40 right-10 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 floating-shape" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute bottom-40 left-1/2 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20 floating-shape" style={{animationDelay: '2s'}}></div>
+                </div>
+
+                {/* Hero Section */}
+                <div className="relative z-10 pt-32 pb-16 px-6 max-w-7xl mx-auto text-center">
+                    <div className="inline-block transform -rotate-2 hover:rotate-0 transition-transform duration-300 mb-6">
+                        <span className="bg-yellow-400 text-black font-black px-6 py-2 uppercase tracking-widest text-sm rounded-full shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
+                            ✨ Join the Spenny Piggy Party ✨
+                        </span>
+                    </div>
+
+                    <h1 className="uppercase text-4xl md:text-6xl lg:text-7xl font-gulfs tracking-[2px] text-white mb-6 leading-none drop-shadow-2xl" data-aos="fade-down">
+                        How it <span className="text-gradient-wishlist">works</span>
+                    </h1>
+                    
+                    <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto font-medium leading-relaxed" data-aos="fade-up" data-aos-delay="200">
+                        Setting up your page only takes a few minutes. 🚀🐷 <br/>
+                        Choose your path below to get started.
+                    </p>
+                </div>
+
+                {/* Tab Section */}
+                <div className="relative z-10 px-4 max-w-7xl mx-auto">
                     <Tab.Group>
-                        <Tab.List className="flex justify-center space-x-4 mb-8">
+                        <Tab.List className="flex p-2 space-x-4 bg-gray-900/50 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-2xl" data-aos="zoom-in" data-aos-delay="400">
                             <Tab as={Fragment}>
                                 {({ selected }) => (
                                     <button
                                         className={`
-                                            px-6 py-2.5 rounded-full text-lg font-bold outline-none ring-0 border-0
+                                            w-full py-3 text-lg font-gulfs leading-5 rounded-[18px] uppercase tracking-wider transition-all duration-300
+                                            focus:outline-none ring-0 border-0
                                             ${selected 
-                                                ? 'bg-pink-500 text-white shadow-lg' 
-                                                : 'bg-white text-gray-700 hover:bg-gray-100'}
+                                                ? 'bg-pink-500 text-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] scale-105' 
+                                                : 'text-gray-400 hover:text-white hover:bg-white/5'}
                                         `}
                                     >
                                         Supporters
@@ -41,10 +179,11 @@ export default function Works(props) {
                                 {({ selected }) => (
                                     <button
                                         className={`
-                                            px-6 py-2.5 rounded-full text-lg font-bold outline-none ring-0 border-0
+                                            w-full py-3 text-lg font-gulfs leading-5 rounded-[18px] uppercase tracking-wider transition-all duration-300
+                                            focus:outline-none ring-0 border-0
                                             ${selected 
-                                                ? 'bg-pink-500 text-white shadow-lg' 
-                                                : 'bg-white text-gray-700 hover:bg-gray-100'}
+                                                ? 'bg-yellow-400 text-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)] scale-105' 
+                                                : 'text-gray-400 hover:text-white hover:bg-white/5'}
                                         `}
                                     >
                                         Creators
@@ -52,92 +191,34 @@ export default function Works(props) {
                                 )}
                             </Tab>
                         </Tab.List>
-                        <Tab.Panels>
-                            <Tab.Panel>
-                                <div className='funboxs mintbg shadow-black border-black mb-10'>
-                                    <div className='funboximg' >
-                                            <img src={vishitimg01} alt='img' />
-                                    </div>
-                                    <div className='funcnt'>
-                                        <h5 className='text-voilet mb-2'>STEP 1</h5>
-                                        <h3 className='headingSm text-shadow-black mb-3'>Visit a <br></br> Creator’s Page</h3>
-                                        <p className='text-CeraGR'>Browse your favorite creator’s page and check out their latest posts, shop
-                                        items, wishes, and so much more.</p>
-                                    </div>
-                                </div>
-                                
-                                <div className='funboxs pinkbg shadow-black border-black mb-10'>
-                                    <div className='funcnt'>
-                                        <h5 className='text-voilet text-black mb-2'>STEP 2</h5>
-                                        <h3 className='headingSm text-shadow-black mb-3 text-purple'>Send Some<br/> Support</h3>
-                                        <p className='text-CeraGR text-wh'>Join a membership, purchase a wish or shop item, and maybe just send
-                                        some love to fill their Piggy Bank.</p>
-                                    </div>
-                                    <div className='funboximg'>
-                                        <img src={giftbasketimg01} alt='img' />
-                                    </div>
-                                </div>
-                                <div className='funboxs bluebg shadow-black border-black mb-10'>
-                                    <div className='funboximg md:pr-4' >
-                                        <img src={fundbasketimg01} className='max-h-[400px]' alt='img' />
-                                    </div>
-                                    <div className='funcnt' >
-                                        <h5 className='text-mint mb-2'>STEP 3</h5>
-                                        <h3 className='headingSm text-shadow-black mb-3 text-pink'>Create an <br></br> Account </h3>
-                                        <p className='text-CeraGR text-wh'>Sign up for your supporter account. At the end of checkout, you’ll be
-                                        prompted to create an account if you haven’t done so already. Here you can
-                                        find all your exclusive content purchases or check the status of your custom
-                                        orders.</p>
-                                    </div>
-                                </div>
-                            </Tab.Panel>
-                            <Tab.Panel>
-                            <div className='funboxs mintbg shadow-black border-black mb-10'>
-                                    <div className='funboximg pr-4'>
-                                            <img src={yourwishlist01} alt='img' />
-                                        </div>
-                                        <div className='funcnt' >
-                                        <h5 className='text-voilet mb-2'>STEP 1</h5>
-                                        <h3 className='headingSm text-shadow-black mb-3'>Set Up Your Page</h3>
-                                        <p className='text-CeraGR'>Craft your unique space to sell exclusive content and custom products. <br></br>
-                                            Publish an epic reward-based Wishlist or offer awesome tailored
-                                            memberships. Make your page as unique as you are!</p>
-                                    </div>
-                                </div>
-                                
-                                <div className='funboxs pinkbg shadow-black border-black mb-10'>
-                                    <div className='funcnt'>
-                                        <h5 className='text-voilet text-black mb-2'>STEP 2</h5>
-                                        <h3 className='headingSm text-shadow-black mb-3 text-purple'>Set up your <br/> payments</h3>
-                                        <p className='text-CeraGR text-wh'>Using our secure third-party payment processor, set up your payments to
-                                        quickly and securely receive direct support and start funding your fabulous
-                                        lifestyle!</p>
-                                    </div>
-                                    <div className='funboximg'>
-                                        <img src={setuppaymentimg01} alt='img' />
-                                    </div>
-                                </div>
 
-                                <div className='funboxs bluebg shadow-black border-black mb-10'>
-                                    <div className='funboximg'>
-                                        <img src={sharlinkimg} alt='img' />
-                                    </div>
-                                        
-                                    <div className='funcnt'>
-                                        <h5 className='text-mint mb-2'>STEP 3</h5>
-                                        <h3 className='headingSm text-shadow-black mb-3 text-pink'> 
-                                        Don’t Be Shy…</h3>
-                                        <p className='text-CeraGR text-wh'>Update your supporters with your first member-only posts. Share your page
-                                        across all your socials, set up auto tweets, and watch the support roll in.</p>
-                                    </div>
-                                </div>  
+                        <Tab.Panels>
+                            <Tab.Panel className="outline-none">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 px-4">
+                                    {supporterSteps.map((step, idx) => (
+                                        <StepCard key={idx} index={idx} {...step} />
+                                    ))}
+                                </div>
                             </Tab.Panel>
-                        </Tab.Panels>   
+                            <Tab.Panel className="outline-none">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 px-4">
+                                    {creatorSteps.map((step, idx) => (
+                                        <StepCard key={idx} index={idx} {...step} />
+                                    ))}
+                                </div>
+                            </Tab.Panel>
+                        </Tab.Panels>
                     </Tab.Group>
                 </div>
-            </div>  
-            <JoinUs />
-        </div>
-    </Authenticated>
-  )
+
+                {/* Bottom Call to Action */}
+                <div className="relative z-10 mt-32 text-center" data-aos="fade-up">
+                    <p className="text-gray-400 mb-8 uppercase tracking-widest font-black text-sm">
+                        Ready to start your journey?
+                    </p>
+                    <JoinUs />
+                </div>
+            </div>
+        </Authenticated>
+    );
 }
