@@ -53,6 +53,10 @@ return [
         'identity_secret' => env('INTERCOM_IDENTITY_VERIFICATION_SECRET'),
     ],
 
+    'risk_engine' => [
+        'enabled' => env('RISK_ENGINE_ENABLED', true),
+    ],
+
     'turnstile' => [
         'site_key' => env('TRUNSTILE_SITE_KEY') ?: env('TURNSTILE_SITE_KEY'),
         'secret_key' => env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY'),

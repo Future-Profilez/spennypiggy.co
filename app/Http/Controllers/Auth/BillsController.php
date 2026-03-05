@@ -389,8 +389,12 @@ class BillsController extends Controller
         $vatPercent = $bill->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
         
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $bill->user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+        
         // Gross-up calculation in Creator's Currency (No FX conversion)
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
         
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -745,8 +749,12 @@ class BillsController extends Controller
         try {
             $bill = $billPayment->bill;
 
+            // Fetch creator risk metrics for reserve calculation
+            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $bill->user->uuid]);
+            $reserveRate = $metrics->reserve_percent ?? 0;
+
             // Use consistent fee calculation for creator net amount
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($billPayment->amount, $billPayment->currency, $reserveRate);
             $creatorNet = $breakdown['net_to_creator'];
 
             // Get payment intent ID from Stripe session if available

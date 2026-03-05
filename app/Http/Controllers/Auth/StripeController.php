@@ -1361,14 +1361,18 @@ class StripeController extends Controller
             $lineItems = [];
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
-            
-            foreach ($getdata as $dd) {
-                $listedPrice = $dd->priceid != Null ? $dd->priceid : $dd->wish->amount;
                 
-                // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $dd->wish->currency ?? 'USD');
+                // Fetch creator risk metrics for reserve calculation
+                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $owner_id]);
+                $reserveRate = $metrics->reserve_percent ?? 0;
                 
-                $totalPrice = $breakdown['total_supporter_pays'];
+                foreach ($getdata as $dd) {
+                    $listedPrice = $dd->priceid != Null ? $dd->priceid : $dd->wish->amount;
+                    
+                    // Use new gross-up flow
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $dd->wish->currency ?? 'USD', $reserveRate);
+                    
+                    $totalPrice = $breakdown['total_supporter_pays'];
                 $applicationFee = $breakdown['application_fee'];
                 $creatorNet = $breakdown['net_to_creator'];
 
@@ -1594,12 +1598,16 @@ class StripeController extends Controller
                 $totalApplicationFee = 0;
                 $totalCreatorNet = 0;
                 $currency = $cart[0]->wish->currency ?? 'USD';
+                
+                // Fetch creator risk metrics for reserve calculation
+                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $cart[0]->owner_id]);
+                $reserveRate = $metrics->reserve_percent ?? 0;
 
                 foreach ($cart as $value) {
                     $listedPrice = $value->amount; // This is the price from the cart
                     
                     // Use new gross-up flow
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $currency);
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPrice, $currency, $reserveRate);
                     
                     $totalPrice = $breakdown['total_supporter_pays'];
                     $applicationFee = $breakdown['application_fee'];
@@ -2553,8 +2561,12 @@ class StripeController extends Controller
                         // Check if wish item has content to deliver
                         if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
 
+                            // Fetch creator risk metrics for reserve calculation
+                            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $wishSubscription->wish_item->user_id]);
+                            $reserveRate = $metrics->reserve_percent ?? 0;
+
                             // Use consistent fee calculation for creator net amount
-                            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency);
+                            $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate);
                             $creatorNet = $breakdown['net_to_creator'];
 
                             // Create deliverable record for tracking
@@ -2745,8 +2757,12 @@ class StripeController extends Controller
             // If wish item has content to deliver for renewals, create deliverable
             if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
 
+                // Fetch creator risk metrics for reserve calculation
+                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $wishSubscription->wish_item->user_id]);
+                $reserveRate = $metrics->reserve_percent ?? 0;
+
                 // Use consistent fee calculation for creator net amount
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate);
                 $creatorNet = $breakdown['net_to_creator'];
 
                 // Create deliverable record for renewal content delivery

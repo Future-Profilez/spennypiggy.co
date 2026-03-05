@@ -51,6 +51,7 @@ import ErrorBoundary from "@/Components/ErrorBoundary";
 import InstantTabSystem from "@/Components/InstantTabSystem";
 import OfferAnnouncement from "@/Components/OfferAnnouncement";
 import FounderBadge from "@/Components/FounderBadge";
+import CreatorRiskBanner from "@/Components/Risk/CreatorRiskBanner";
 
 const CreatorActivityWidget = lazy(() => import("@/Components/CreatorActivityWidget"));
 
@@ -562,6 +563,7 @@ export default function Dashboard(props) {
                                 </div>
                             : ''} */}
 
+
                         {user && user.role == 1 ? (
                             <div className="wishManage sticky top-8 ">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
@@ -596,44 +598,24 @@ export default function Dashboard(props) {
                                                 }}
                                             />
 
+
+
                                             <div className="tabs-containers min-height">
                                                 {page === "about" ||
                                                 page === false ? (
-                                                    <Suspense
-                                                        fallback={
-                                                            <LoadingScreen />
-                                                        }
-                                                    >
+                                                    <Suspense fallback={ <LoadingScreen /> } >
+                                                        {IsloggedIn && <CreatorRiskBanner />}
+
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[100px]">
                                                                 <DashboardStripeMigrationWarning
-                                                                        migrationStatus={
-                                                                            migration_status
-                                                                        }
-                                                                    />
+                                                                        migrationStatus={migration_status} />
 
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    stripe_requirements &&
-                                                                    stripe_requirements.has_requirements &&
-                                                                    stripe_requirements.requirements &&
-                                                                    stripe_requirements
-                                                                        .requirements
-                                                                        .length >
-                                                                        0 &&
+                                                                    {IsloggedIn && auth?.user && auth?.user ?.role == 1 && stripe_requirements && stripe_requirements.has_requirements && stripe_requirements.requirements && stripe_requirements .requirements .length > 0 &&
                                                                     (AuthUserStripeConnected || has_stripe_account) ? (
-                                                                        <ActionRequired
-                                                                            requirements={
-                                                                                stripe_requirements.requirements
-                                                                            }
-                                                                        />
-                                                                    ) : (
-                                                                        ""
-                                                                    )}
+                                                                        <ActionRequired requirements={stripe_requirements.requirements} />
+                                                                    ) : ''}
 
                                                                     {IsloggedIn &&
                                                                     auth?.user &&

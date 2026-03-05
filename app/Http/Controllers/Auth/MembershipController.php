@@ -76,8 +76,6 @@ class MembershipController extends Controller
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $exist = Membership::where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
 
-
-
         if (in_array($request->level, $exist)) {
             return response()->json([
                 "status" => false,
@@ -90,13 +88,17 @@ class MembershipController extends Controller
         $price = $request->month_price;
         $currency = $user->default_currency ?? 'USD';
         
-        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        // Calculate VAT in Creator's Currency
         $vatPercent = $user->vat_amount_percentage ?? 0;
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
         // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
         $totalPrice = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['application_fee']; // We'll store application fee as tax_amount for consistency in DB
 
@@ -209,13 +211,17 @@ class MembershipController extends Controller
                 $price = $request->month_price;
                 $currency = $user->default_currency ?? 'USD';
                 
-                // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+                // Calculate VAT in Creator's Currency
                 $vatPercent = $user->vat_amount_percentage ?? 0;
                 $vatAmount = $price * $vatPercent / 100;
                 $priceWithVat = $price + $vatAmount;
 
+                // Fetch creator risk metrics for reserve calculation
+                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+                $reserveRate = $metrics->reserve_percent ?? 0;
+
                 // Use new gross-up flow
-                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
                 $totalPriceGrossedUp = $breakdown['total_supporter_pays'];
                 $totalTaxAmount = $breakdown['application_fee'];
 
@@ -431,8 +437,12 @@ class MembershipController extends Controller
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
         
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $membership->user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
         // Gross-up calculation in Creator's Currency (No FX conversion)
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
         
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
@@ -683,7 +693,12 @@ class MembershipController extends Controller
         $vatAmount = $membership->price * $vatPercent / 100;
         
         $priceWithVat = $membership->price + $vatAmount;
-        $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency);
+        
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $membership->user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
+        $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate);
         
         // Update membership object for view (this doesn't save to DB)
         // We include both application fee and stripe fee in the "tax_amount" for display so the total is closer to reality

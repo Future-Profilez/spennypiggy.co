@@ -162,7 +162,7 @@ Route::get('/', function (DiscoveryService $discoveryService) {
             return $discoveryService->getNewVerifiedCreators();
         });
         $ttl = match ($period) {
-            'daily' => 600,
+            'daily' => 600, 
             'weekly' => 1200,
             'monthly' => 1800,
             default => 1200,
@@ -213,7 +213,6 @@ Route::get('get-cart', function () {
 
 // Analytics
 Route::post('/analytics/search-click', [\App\Http\Controllers\AnalyticsController::class, 'searchClick'])->name('analytics.search-click');
-
 Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
 
 
@@ -257,31 +256,42 @@ Route::get('/creators/founder-bonus', function () {
 
 if (app()->environment('local')) {
     Route::get('create-product-for-creator-and-gifter', [StripeWebhookController::class, 'CreateProductForCreatorAndGifter']);
-
+    
     // routes/web.php or routes/api.php
-
     Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
-
+    
     // delete all products from stripe
     Route::get('archived-all-products', [TestController::class, 'archiveAllStripeProducts'])->name('archived.all.products');
-
     Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
-
     Route::get('create-product/{price}', [StripeController::class, 'makeProductId'])->name('create.product');
 }
 
 //check referal code
 Route::get('check-coupon-code/{code}', [RegisteredUserController::class, 'checkCouponCode'])->name('checkCouponCode');
-
 Route::post("/username-availablity", [RegisteredUserController::class, "checkUsername"])->name("check.username");
 Route::post('/register/validate', [RegisteredUserController::class, 'validateRegistration'])->name('register.validate');
 
-// Define global Dashboard route (required by multiple controllers and components)
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    // return Inertia::render('Dashboard');
+    return redirect()->route('user.show', ['username' => Auth::user()->username]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Creator Risk Status (Moved from api.php to support session auth)
+    Route::get('/api/creator/risk-status', [\App\Http\Controllers\Api\CreatorRiskController::class, 'getRiskStatus']);
+
+    Route::get('/risk-test-panel', function () {
+        return Inertia::render('RiskTestPanel');
+    })->name('risk.test.panel');
+
+    // Test Routes (Using Web Session)
+    Route::prefix('api/test')->group(function () {
+        Route::post('/risk/on', [\App\Http\Controllers\Api\TestRiskController::class, 'triggerRisk']);
+        Route::post('/risk/off', [\App\Http\Controllers\Api\TestRiskController::class, 'clearRisk']);
+        Route::post('/platform/freeze', [\App\Http\Controllers\Api\TestRiskController::class, 'triggerFreeze']);
+        Route::post('/platform/normal', [\App\Http\Controllers\Api\TestRiskController::class, 'triggerNormal']);
+    });
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

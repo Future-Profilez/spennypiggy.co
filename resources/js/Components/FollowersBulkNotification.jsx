@@ -51,21 +51,13 @@ export default function FollowersBulkNotification({ trigger }) {
     };
 
     return (
-        <Popup
-            space="4"
-            classes="uppercase w-full"
-            modalclass="pinkmodal"
-            text={trigger || <>Notification Campaign</>}
-        >
-            <h2 className="uppercase font-GillSans text-lg">
-                Send Push Notification
-            </h2>
-
+        <Popup space="4" classes="uppercase w-full" modalclass="pinkmodal"
+            text={trigger || <>Notification Campaign</>} >
+            <h2 className="uppercase font-GillSans text-lg">Send Push Notification</h2>
             <p className="pb-4 text-gray-500">
                 Send a bulk push notification to all of your followers.
             </p>
 
-            {/* Title Field */}
             <div className="mb-2">
                 <input
                     type="text"
@@ -73,7 +65,7 @@ export default function FollowersBulkNotification({ trigger }) {
                     value={formData.title}
                     onChange={handleInputChange}
                     maxLength={maxTitleLength}
-                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-[30px] md:rounded-[40px]   w-full"
+                    className="px-3 py-[13px] bg-gray-100 !border-gray-200 border-1 rounded-[14px] md:rounded-[18px]   w-full"
                     placeholder="Notification Title"
                 />
                 <div className="text-right text-xs text-gray-500">
@@ -90,7 +82,7 @@ export default function FollowersBulkNotification({ trigger }) {
                     value={formData.body}
                     onChange={handleInputChange}
                     maxLength={maxBodyLength}
-                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-[30px] md:rounded-[40px]   w-full"
+                    className="px-3 py-[10px] bg-gray-100 !border-gray-200 border-1 rounded-[14px] md:rounded-[18px]   w-full"
                     placeholder="Enter something..."
                 ></textarea>
                 <div className="text-right text-xs text-gray-500">
@@ -103,8 +95,7 @@ export default function FollowersBulkNotification({ trigger }) {
             <div
                 className={`flex justify-end ${
                     formData.title === "" || formData.body === ""
-                        ? "disabled"
-                        : ""
+                        ? "disabled" : ""
                 }`}
             >
                 <button

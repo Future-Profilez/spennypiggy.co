@@ -473,6 +473,36 @@ class StripeControl
     }
 
     /**
+     * Create Payment Intent
+     *
+     * @param array $payload Payment Payload
+     * @return Throwable|\Stripe\PaymentIntent
+     */
+    public static function createPaymentIntent(array $payload, $connectedAccountId = null)
+    {
+        self::setClient();
+        try {
+            if ($connectedAccountId) {
+                // Set the Stripe Account context
+                return self::$client->paymentIntents->create(
+                    $payload,
+                    ['stripe_account' => $connectedAccountId]
+                );
+            }
+
+            return self::$client->paymentIntents->create($payload);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Create Payment Session
      *
      * @param array $payload Payment Payload
@@ -829,6 +859,41 @@ class StripeControl
         
         try {
             return self::$client->transfers->retrieve($transferId);
+        } catch (RateLimitException $e) {
+            throw new Exception("Stripe RateLimit: " . $e->getMessage());
+        } catch (InvalidRequestException $e) {
+            throw new Exception("Stripe InvalidRequest: " . $e->getMessage());
+        } catch (ApiConnectionException $e) {
+            throw new Exception("Stripe API Connection: " . $e->getMessage());
+        } catch (ApiErrorException $e) {
+            throw new Exception("Stripe API Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Transfer funds to a connected account
+     *
+     * @param string $destinationAccountId
+     * @param int|float $amount Amount in major units (e.g. 10.00)
+     * @param string $currency
+     * @return \Stripe\Transfer
+     * @throws Exception
+     */
+    public static function transferToConnectedAccount($destinationAccountId, $amount, $currency = 'usd')
+    {
+        self::setClient();
+        
+        try {
+            // Convert to minor units (cents/pence)
+            $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
+            $amountMinor = $isZeroDecimal ? (int)$amount : (int)($amount * 100);
+
+            return self::$client->transfers->create([
+                'amount' => $amountMinor,
+                'currency' => strtolower($currency),
+                'destination' => $destinationAccountId,
+                'description' => 'Reserve Release Payout',
+            ]);
         } catch (RateLimitException $e) {
             throw new Exception("Stripe RateLimit: " . $e->getMessage());
         } catch (InvalidRequestException $e) {

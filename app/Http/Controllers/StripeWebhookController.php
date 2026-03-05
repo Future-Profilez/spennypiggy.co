@@ -276,8 +276,7 @@ class StripeWebhookController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function handle(Request $request)
-    {
+    public function handle(Request $request) {
         $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
@@ -302,7 +301,6 @@ class StripeWebhookController extends Controller
                 'status' => false,
                 'message' => $e->getMessage()
             ]);
-            // Invalid signature
             http_response_code(400);
             exit();
         }
@@ -360,9 +358,19 @@ class StripeWebhookController extends Controller
                 $this->handleChargeRefunded($data);
                 break;
 
+            case 'payment_intent.succeeded':
+                Log::info("Handling Payment Intent Succeeded");
+                $this->handlePaymentIntentSucceeded($data);
+                break;
+
             case 'payment_intent.payment_failed':
                 Log::info("Handling Payment Intent Failed");
                 $this->handlePaymentIntentFailed($data);
+                break;
+
+            case 'early_fraud_warning.created':
+                Log::info("Handling Early Fraud Warning Created");
+                $this->handleEarlyFraudWarningCreated($data);
                 break;
 
             case 'customer.subscription.updated':
@@ -740,6 +748,36 @@ class StripeWebhookController extends Controller
     {
         $paymentIntentId = $dispute->payment_intent ?? null;
 
+        // --- Risk Engine: Record Dispute ---
+        try {
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            
+            \App\Models\Dispute::create([
+                'payment_id' => $payment ? $payment->id : null,
+                'creator_id' => $payment ? $payment->creator_id : null,
+                'stripe_dispute_id' => $dispute->id,
+                'amount' => $dispute->amount,
+                'currency' => $dispute->currency,
+                'reason' => $dispute->reason,
+                'status' => $dispute->status,
+            ]);
+            
+            // Update Identity Rollups (Dispute Count)
+            if ($payment && $payment->riskIdentity) {
+                app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($payment->riskIdentity);
+            }
+            
+            // Update Payment Status
+            if ($payment) {
+                $payment->update(['status' => 'disputed']);
+            }
+            
+            Log::info("Risk Engine: Dispute recorded", ['dispute_id' => $dispute->id]);
+        } catch (\Exception $e) {
+            Log::error("Risk Engine: Failed to record dispute: " . $e->getMessage());
+        }
+        // -----------------------------------
+
         if (!$paymentIntentId) {
             return;
         }
@@ -758,6 +796,21 @@ class StripeWebhookController extends Controller
     private function handleChargeDisputeClosed($dispute)
     {
         $paymentIntentId = $dispute->payment_intent ?? null;
+
+        // --- Risk Engine: Update Dispute Status ---
+        try {
+            $riskDispute = \App\Models\Dispute::where('stripe_dispute_id', $dispute->id)->first();
+            if ($riskDispute) {
+                $riskDispute->update([
+                    'status' => $dispute->status,
+                    'resolved_at' => now(),
+                ]);
+                Log::info("Risk Engine: Dispute status updated", ['status' => $dispute->status]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Risk Engine: Failed to update dispute status: " . $e->getMessage());
+        }
+        // ------------------------------------------
 
         if (!$paymentIntentId) {
             return;
@@ -2526,6 +2579,23 @@ class StripeWebhookController extends Controller
     {
         $paymentIntentId = $charge->payment_intent ?? null;
 
+        // --- Risk Engine: Handle Refund ---
+        try {
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            if ($payment) {
+                $payment->update(['status' => 'refunded']);
+                
+                // Update Creator Metrics (Refund Count)
+                $metric = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $payment->creator_id]);
+                $metric->increment('refunds_30d');
+                
+                Log::info("Risk Engine: Payment marked as refunded", ['payment_id' => $payment->id]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Risk Engine: Failed to process refund: " . $e->getMessage());
+        }
+        // ----------------------------------
+
         if (!$paymentIntentId) {
             return;
         }
@@ -2612,6 +2682,73 @@ class StripeWebhookController extends Controller
             } catch (\Exception $e) {
                 Log::error("Failed to send refund notifications (webhook): " . $e->getMessage());
             }
+        }
+    }
+
+    /**
+     * Handle Payment Intent Succeeded
+     * Syncs with Risk Engine Ledger and Updates Rollups
+     */
+    private function handlePaymentIntentSucceeded($paymentIntent)
+    {
+        $paymentIntentId = $paymentIntent->id;
+        
+        // 1. Update Risk Ledger (payments table)
+        $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        
+        if ($payment) {
+            $payment->update(['status' => 'succeeded']);
+            Log::info("Risk Ledger: Payment marked as succeeded", ['id' => $payment->id]);
+            
+            // 2. Update Identity Rollups
+            if ($payment->riskIdentity) {
+                try {
+                    $rollupService = app(\App\Services\Risk\IdentityRollupService::class);
+                    $rollupService->refreshRollups($payment->riskIdentity);
+                    Log::info("Risk Ledger: Identity rollups refreshed", ['identity_id' => $payment->risk_identity_id]);
+                } catch (\Exception $e) {
+                    Log::error("Failed to refresh identity rollups on payment success: " . $e->getMessage());
+                }
+            }
+            
+            // 3. Update Creator Metrics (Transaction Count)
+            // We can do this async or here. Let's do a simple increment if model exists.
+            try {
+                $metric = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $payment->creator_id]);
+                $metric->increment('tx_30d');
+            } catch (\Exception $e) {
+                Log::error("Failed to update creator metrics on payment success: " . $e->getMessage());
+            }
+        } else {
+            Log::info("Payment intent succeeded but not found in Risk Ledger (might be legacy or direct)", ['pi' => $paymentIntentId]);
+        }
+    }
+
+    /**
+     * Handle Early Fraud Warning Created
+     */
+    private function handleEarlyFraudWarningCreated($efw)
+    {
+        try {
+            $paymentIntentId = $efw->payment_intent;
+            $chargeId = $efw->charge;
+            
+            // Find related payment
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            
+            \App\Models\EarlyFraudWarning::create([
+                'payment_id' => $payment ? $payment->id : null,
+                'stripe_efw_id' => $efw->id,
+                'stripe_charge_id' => $chargeId,
+            ]);
+            
+            Log::info("Early Fraud Warning recorded", ['efw_id' => $efw->id]);
+            
+            // Notify Creator? (Add to action queue logic later)
+            // if ($payment) { ... }
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to handle EFW: " . $e->getMessage());
         }
     }
 

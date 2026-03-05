@@ -1,0 +1,20 @@
+php artisan risk:monitor-platform
+
+1. Banner ON karne ke liye: 
+   POST /api/test/risk/on hit karein.
+   - Response: "Risk flags ACTIVATED"
+   - Result: Ab Creator Dashboard refresh karein. 
+   Aapko top par 3 banners dikhne chahiye:
+   - Yellow: Reserve Applied (10%)
+   - Blue: Payout Delayed (7 Days)
+   - Info: Growth Pacing Active
+
+2. Platform Freeze Test: 
+   POST /api/test/platform/freeze
+   Result: Ab "Onboarding Paused" ka 
+   RED banner bhi dikhna chahiye.
+
+3. Reset (Banner OFF) karne ke liye: 
+   POST /api/test/risk/off POST /api/test/platform/normal
+   Result: Saare banners gayab ho jayenge.
+   

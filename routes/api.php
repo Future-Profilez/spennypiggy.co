@@ -46,7 +46,7 @@ Route::prefix('analytics')->group(function () {
 Route::post('/alerts/performance', function (Request $request) {
     // This endpoint receives performance alerts from the frontend
     // and can forward them to external monitoring services
-    \Log::channel('performance')->critical('Performance alert received', $request->all());
+    Illuminate\Support\Facades\Log::channel('performance')->critical('Performance alert received', $request->all());
     return response()->json(['status' => 'received'], 200);
 });
 
@@ -60,10 +60,36 @@ Route::middleware('auth:sanctum')->prefix('deliverables')->group(function () {
     Route::get('/{uuid}/certificate/download', [DeliverableController::class, 'downloadCertificate'])->name('api.deliverables.certificate');
 });
 
-// Profile Posts API (supports pagination and filtering)
+// Profile Posts API (supports pagination and filtering) 
 Route::middleware('web')->group(function () {
     Route::get('/profile/{user}/posts', [\App\Http\Controllers\ProfilePostController::class, 'index'])
         ->name('api.profile.posts');
 });
 
+// Risk Engine Routes
+Route::prefix('risk')->group(function () {
+    Route::post('/evaluate', [\App\Http\Controllers\Api\RiskController::class, 'evaluate']);
+    Route::post('/step-up/verify', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUp']);
+    Route::get('/limits', [\App\Http\Controllers\Api\RiskController::class, 'getEffectiveLimits']);
+});
 
+Route::prefix('payments')->group(function () {
+    Route::post('/create-intent', [\App\Http\Controllers\Api\RiskController::class, 'createPaymentIntent']);
+});
+
+// Creator Risk Dashboard moved to web.php for session auth
+// Route::prefix('creator')->middleware(['auth:sanctum'])->group(function () {
+//     Route::get('/risk-status', [\App\Http\Controllers\Api\CreatorRiskController::class, 'getRiskStatus']);
+// });
+
+// Admin Dashboard & Exports
+Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
+    Route::get('/export/audit-pack', [\App\Http\Controllers\Admin\AuditExportController::class, 'export']);
+    
+    // Payout Routes
+    Route::prefix('payout')->group(function () {
+        Route::post('/preview', [\App\Http\Controllers\Admin\PayoutController::class, 'preview']);
+        Route::post('/execute', [\App\Http\Controllers\Admin\PayoutController::class, 'execute']);
+    });
+});

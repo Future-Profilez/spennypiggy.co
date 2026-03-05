@@ -216,7 +216,11 @@ class ShopsController extends Controller
         $vatAmount = $request->price * $vatPercent / 100;
         $priceWithVat = $request->price + $vatAmount;
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
         
         $createpriceid = $breakdown['total_supporter_pays'];
 
@@ -373,8 +377,12 @@ class ShopsController extends Controller
             $vatAmount = $request->price * $vatPercent / 100;
             $priceWithVat = $request->price + $vatAmount;
 
+            // Fetch creator risk metrics for reserve calculation
+            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+            $reserveRate = $metrics->reserve_percent ?? 0;
+
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
             
             $createpriceid = $breakdown['total_supporter_pays'];
 
@@ -847,7 +855,12 @@ class ShopsController extends Controller
                     // Use new gross-up flow
                     // Force using shop currency, ignoring cookie currency
                     $chargeCurrency = $shop->user->default_currency ?? 'USD';
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency);
+
+                    // Fetch creator risk metrics for reserve calculation
+                    $metrics = \App\Models\CreatorMetric::where('creator_id', $shop->user->uuid)->first();
+                    $reserveRate = $metrics->reserve_percent ?? 0;
+
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
                     
                     $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
                     $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
@@ -870,7 +883,12 @@ class ShopsController extends Controller
                 } else {
                     // If price exists, we still need to calculate the breakdown for application fee
                     $chargeCurrency = $shop->user->default_currency ?? 'USD';
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency);
+
+                    // Fetch creator risk metrics for reserve calculation
+                    $metrics = \App\Models\CreatorMetric::where('creator_id', $shop->user->uuid)->first();
+                    $reserveRate = $metrics->reserve_percent ?? 0;
+
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
                     $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
                     $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
                     $creatorNet = $breakdown['net_to_creator'];
