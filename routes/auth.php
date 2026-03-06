@@ -290,7 +290,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('mustHaveToVerify')->group(function () {
         Route::prefix("stripe")->name("stripe.")->group(function () {
             Route::get("/authorize", [StripeController::class, "index"])->name("index");
-            Route::match(["get", "post"], "/connect-{step}/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
+            Route::match(["get", "post"], "/connect-init/{country?}/{currency?}", [StripeController::class, "initConnect"])->name("connect");
             // Merchant of Record Consent Routes
             Route::post('/mor-consent', [StripeController::class, 'storeMorConsent'])->name('mor-consent.store');
 
