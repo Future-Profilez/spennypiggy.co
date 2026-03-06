@@ -24,6 +24,7 @@ class CreatorMetric extends Model
         'payout_delay_days',
         'top_buyer_percent',
         'volatility_score',
+        'risk_level',
     ];
 
     protected $casts = [

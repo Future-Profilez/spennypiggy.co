@@ -131,11 +131,11 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
 
   return (
     <>
-          <div className={`bg-opacity-90 relative rounded-[30px] md:rounded-[40px]  
+          <div className={`bg-opacity-90 relative rounded-[25px] md:rounded-[30px]  
             border-[3px] md:border-2 ${borderclasses[item?.level || 'default']} 
             h-full bg-white `}>
                   {IsloggedIn && item && item?.approved === 0 ?
-                    <div className='absolute top-8 z-10 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[30px] md:rounded-[40px] ' >Membership waiting for approval. Currently only you can see this membership.</div>
+                    <div className='absolute top-8 z-10 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[25px] md:rounded-[30px] ' >Membership waiting for approval. Currently only you can see this membership.</div>
                   : ''}
                   
                     {IsloggedIn ?  
@@ -156,7 +156,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                           leaveFrom="transform opacity-100 scale-100"
                           leaveTo="transform opacity-0 scale-95"
                         >
-                          <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-[30px] md:rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                          <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right divide-y divide-gray-100 rounded-[25px] md:rounded-[30px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                             <div className="px-1 py-1">
                               <Menu.Item>
                                 {({ active }) => (
@@ -171,11 +171,8 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                       </Menu>
                     : ''}
                     <div className={`${membershipclasses[item?.level || 'default']} 
-                      rounded-tl-[35px] 
-                      rounded-tr-[35px] 
-                      text-white pt-6`}>
-                        <div className='m-auto w-16 h-16 !rounded-full overflow-hidden 
-                        relative' >
+                      rounded-tl-[25px] rounded-tr-[25px] text-white pt-6`}>
+                        <div className='m-auto w-16 h-16 !rounded-full overflow-hidden relative' >
                           <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-[30px] md:rounded-[40px]   w-full h-full object-cover  ' />
                         </div>
                         <div className="flex justify-center ">

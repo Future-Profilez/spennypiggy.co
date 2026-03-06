@@ -77,8 +77,12 @@ class BillsController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
         
         $createPriceId = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['application_fee'];
@@ -142,8 +146,7 @@ class BillsController extends Controller
         ]);
     }
 
-    public function billEdit(Request $request, $id)
-    {
+    public function billEdit(Request $request, $id) {
         Log::info("from start request->period: $request->period");
 
         $validator = Validator::make($request->all(), [
@@ -182,8 +185,12 @@ class BillsController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
         // Use new gross-up flow for consistent fee calculation
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
         
         $taxamount = $breakdown['application_fee'];
         $totalAmount = $breakdown['total_supporter_pays'];

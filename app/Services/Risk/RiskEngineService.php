@@ -86,6 +86,46 @@ class RiskEngineService
             $this->logDecision($identity, $context, $decision, $reasons);
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
+
+        // --- RULE 2: SPEND LIMITS (1H, 24H, 7D) ---
+        // Check 1 Hour Limit
+        if (($rollup->spend_1h + $amount) > $limits['max_spend_1h']) {
+            $decision = 'BLOCK';
+            $reasons[] = 'LIMIT_EXCEEDED_1H';
+            $ui = [
+                'key' => 'LIMIT_EXCEEDED',
+                'title' => 'Hourly Limit Reached',
+                'body' => 'You have reached your hourly spending limit. Please try again later.',
+            ];
+            $this->logDecision($identity, $context, $decision, $reasons);
+            return $this->formatResponse($decision, $reasons, $limits, $ui);
+        }
+
+        // Check 24 Hour Limit
+        if (($rollup->spend_24h + $amount) > $limits['max_spend_24h']) {
+            $decision = 'BLOCK';
+            $reasons[] = 'LIMIT_EXCEEDED_24H';
+            $ui = [
+                'key' => 'LIMIT_EXCEEDED',
+                'title' => 'Daily Limit Reached',
+                'body' => 'You have reached your daily spending limit. Please try again tomorrow.',
+            ];
+            $this->logDecision($identity, $context, $decision, $reasons);
+            return $this->formatResponse($decision, $reasons, $limits, $ui);
+        }
+
+        // Check 7 Day Limit
+        if (($rollup->spend_7d + $amount) > $limits['max_spend_7d']) {
+            $decision = 'BLOCK';
+            $reasons[] = 'LIMIT_EXCEEDED_7D';
+            $ui = [
+                'key' => 'LIMIT_EXCEEDED',
+                'title' => 'Weekly Limit Reached',
+                'body' => 'You have reached your weekly spending limit.',
+            ];
+            $this->logDecision($identity, $context, $decision, $reasons);
+            return $this->formatResponse($decision, $reasons, $limits, $ui);
+        }
         
         // --- RULE 6: 3 PAYMENTS IN 10 MIN -> STEP_UP ---
         // payment_count_10m includes current attempt? No, rollups are past.

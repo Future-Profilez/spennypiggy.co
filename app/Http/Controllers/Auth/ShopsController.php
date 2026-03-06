@@ -857,7 +857,7 @@ class ShopsController extends Controller
                     $chargeCurrency = $shop->user->default_currency ?? 'USD';
 
                     // Fetch creator risk metrics for reserve calculation
-                    $metrics = \App\Models\CreatorMetric::where('creator_id', $shop->user->uuid)->first();
+                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
                     $reserveRate = $metrics->reserve_percent ?? 0;
 
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
@@ -885,7 +885,7 @@ class ShopsController extends Controller
                     $chargeCurrency = $shop->user->default_currency ?? 'USD';
 
                     // Fetch creator risk metrics for reserve calculation
-                    $metrics = \App\Models\CreatorMetric::where('creator_id', $shop->user->uuid)->first();
+                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
                     $reserveRate = $metrics->reserve_percent ?? 0;
 
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);

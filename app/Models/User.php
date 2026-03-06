@@ -704,4 +704,12 @@ class User extends Authenticatable
     {
         return $this->morConsents()->where('consent_given', true)->exists();
     }
+
+    /**
+     * Get the creator metric record associated with the user.
+     */
+    public function metric()
+    {
+        return $this->hasOne(CreatorMetric::class, 'creator_id', 'uuid');
+    }
 }

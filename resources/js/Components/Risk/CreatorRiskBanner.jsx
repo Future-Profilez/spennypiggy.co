@@ -48,7 +48,7 @@ export default function CreatorRiskBanner() {
                     <div 
                         key={index} 
                         className={`relative overflow-hidden rounded-[30px] border backdrop-blur-md transition-all duration-300 shadow-sm hover:shadow-md ${getBannerStyle(banner.type)}`} >
-                        <div className="flex flex-col md:flex-row items-start md:items-center p-4 md:p-5 relative z-10 gap-4">
+                        <div className="flex flex-col md:flex-row items-start md:items-center p-4 relative z-10 gap-4">
                             <div className={`flex-shrink-0 p-6 !rounded-[25px] ${getIconBg(banner.type)}`}>
                                 {getIcon(banner.type)}
                             </div>
@@ -119,14 +119,17 @@ export default function CreatorRiskBanner() {
                                 Close
                             </button>
                             {selectedBanner.action_url && (
-                                <Link
-                                    href={selectedBanner.action_url}
-                                    method={selectedBanner.action_method || 'get'}
-                                    as={selectedBanner.action_method === 'post' ? 'button' : 'a'}
-                                    type={selectedBanner.action_method === 'post' ? 'button' : undefined}
-                                    className={`px-6 py-3 rounded-[20px] text-white font-bold shadow-lg transition-transform transform active:scale-95 w-full md:w-auto text-center flex items-center justify-center gap-2 ${getButtonStyles(selectedBanner.type).split(' ').filter(c => c.startsWith('bg-') || c.startsWith('hover:')).join(' ')}`}
-                                >
-                                    {selectedBanner.action_label || 'Proceed'} <BiChevronRight size={18} />
+                                <Link  
+                                href={selectedBanner.action_url} 
+                                method={selectedBanner.action_method || 'get'} 
+                                as={selectedBanner.action_method === 'post' ? 'button' : 'a'} 
+                                type={selectedBanner.action_method === 'post' ? 'button' : undefined} 
+                                className={`px-6 py-3 rounded-[20px] text-white font-bold shadow-lg transition-transform 
+                                transform active:scale-95 w-full md:w-auto text-center flex items-center justify-center 
+                                gap-2 ${getButtonStyles(selectedBanner.type).split(' ').filter(c => c.startsWith('bg-') 
+                                || c.startsWith('hover:')).join(' ')}`} > 
+                                    {selectedBanner.action_label || 'Proceed'} 
+                                    <BiChevronRight size={18} />
                                 </Link>
                             )}
                         </div>
@@ -188,7 +191,7 @@ function getButtonStyles(type) {
 }
 
 function getIcon(type) {
-    const size = 40;
+    const size = 35;
     switch (type) {
         case 'critical':
             return <BiError size={size} />;

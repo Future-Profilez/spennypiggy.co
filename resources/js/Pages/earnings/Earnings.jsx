@@ -10,6 +10,7 @@ import TopEarnBills from './TopEarnBills';
 import TopSupporters from './TopSupporters';
 import MonthlyRevenue from './MonthlyRevenue';
 import PaidTask from './PaidTask';
+import ReserveWidget from '@/Components/Creator/ReserveWidget';
 
 export default function Earnings(props) {
   const colors = [ '#F94F96', 'var(--mint)', 'var(--voilet)','var(--yellow)', '#0005', 'var(--mint)',  ]
@@ -94,7 +95,10 @@ export default function Earnings(props) {
                   })}
                 </div>
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4' >
-                <div className='lg:col-span-12 xl:col-span-8 mb-4' > <MonthlyRevenue /> </div>
+                <div className='lg:col-span-12 xl:col-span-8 mb-4' > 
+                    <ReserveWidget className="mb-4" />
+                    <MonthlyRevenue /> 
+                </div>
                 <div className='lg:col-span-6 xl:col-span-4 mb-4' > <TopEarnWishes currency={props?.global_currency || 'gbp'}  /> </div>
                 <div className='lg:col-span-6 xl:col-span-4 mb-4' > <PaidTask auth={auth}  /> </div>
                 {/* <div className='lg:col-span-6 xl:col-span-4 mb-4' > <SubcriptionEarnings /></div> */}

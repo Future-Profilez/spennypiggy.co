@@ -125,7 +125,7 @@ function Bill(props) {
                 style={IsloggedIn ? style : stylenone}
                 className={` relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""}`}
             >
-                <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[30px] md:rounded-[40px] !border-2  overflow-hidden w-full">
+                <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[25px] md:rounded-[30px] !border-2  overflow-hidden w-full">
                     {IsloggedIn && itm && itm.approved === 0 ? (
                         <div className="approvalmessge membership m-3 rounded-[30px] md:rounded-[40px]   p-3 py-2 mb-2 ">
                             Bill item waiting for approval. Currently only you

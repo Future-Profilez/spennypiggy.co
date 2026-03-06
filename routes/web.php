@@ -390,6 +390,14 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     Route::get('/subscription/dashboard', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getDashboardInfo'])->name('subscription.dashboard');
     Route::get('/subscription/warnings', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getCreatorsNeedingWarnings'])->name('subscription.warnings');
     Route::post('/subscription/sync', [\App\Http\Controllers\SubscriptionSyncController::class, 'syncCurrentUser'])->name('subscription.sync');
+
+    // Dispute Portal Routes
+    Route::get('/disputes', [\App\Http\Controllers\Creator\DisputeController::class, 'index'])->name('disputes.index');
+    Route::get('/disputes/{id}', [\App\Http\Controllers\Creator\DisputeController::class, 'show'])->name('disputes.show');
+    Route::post('/disputes/{id}/submit', [\App\Http\Controllers\Creator\DisputeController::class, 'submitEvidence'])->name('disputes.submit');
+    
+    // Payout/Reserve Routes
+    Route::get('/payouts/reserves', [\App\Http\Controllers\Api\CreatorPayoutController::class, 'getReserves'])->name('payouts.reserves');
 });
 
 Route::get('/service-worker.js', function () {

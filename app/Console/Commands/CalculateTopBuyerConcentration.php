@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AuditLog;
 use App\Models\CreatorMetric;
 use App\Models\Payment;
+use App\Models\RiskSetting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +31,17 @@ class CalculateTopBuyerConcentration extends Command
     public function handle()
     {
         $this->info('Calculating top buyer concentration...');
+        
+        // Fetch Settings
+        $thresholds = RiskSetting::get('risk_thresholds', [
+            'concentration_gmv_threshold' => 500000, // £5k
+            'concentration_percent_trigger' => 40,
+            'concentration_reserve_increase' => 10
+        ]);
+        
+        $gmvThreshold = $thresholds['concentration_gmv_threshold'] ?? 500000;
+        $percentTrigger = $thresholds['concentration_percent_trigger'] ?? 40;
+        $reserveIncrease = $thresholds['concentration_reserve_increase'] ?? 10;
 
         // 1. Get Creators with significant volume (e.g. > £1000 in 30d)
         // Optimization: Only scan creators active in last 30d
@@ -46,7 +58,7 @@ class CalculateTopBuyerConcentration extends Command
                 ->where('status', 'succeeded')
                 ->sum('amount');
 
-            if ($totalGmv < 500000) { // Skip if < £5k total (low risk)
+            if ($totalGmv < $gmvThreshold) { // Skip if < threshold (low risk)
                 // Reset metric if previously set?
                 // Or just keep it.
                 // Spec says: "If top_buyer_percent >= 40% and creator GMV >= threshold -> apply safety".
@@ -73,7 +85,7 @@ class CalculateTopBuyerConcentration extends Command
             
             // 5. Apply Safety Actions if Rule Triggers
             // Rule: >= 40% and GMV >= £5k
-            if ($percent >= 40 && $totalGmv >= 500000) {
+            if ($percent >= $percentTrigger && $totalGmv >= $gmvThreshold) {
                 // Log Action
                 $this->warn("Creator {$creatorId} has {$percent}% concentration risk!");
                 
@@ -89,9 +101,9 @@ class CalculateTopBuyerConcentration extends Command
                 ]);
                 
                 // Increase Reserve? (e.g. set floor to 10%)
-                if ($metric->reserve_percent < 10) {
-                    $metric->update(['reserve_percent' => 10]);
-                    $this->info("Increased reserve to 10% for creator {$creatorId}");
+                if ($metric->reserve_percent < $reserveIncrease) {
+                    $metric->update(['reserve_percent' => $reserveIncrease]);
+                    $this->info("Increased reserve to {$reserveIncrease}% for creator {$creatorId}");
                 }
             }
         }

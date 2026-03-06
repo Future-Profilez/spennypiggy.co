@@ -29,14 +29,17 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\TaskRefunded;
 use App\Services\UserProfileService;
 use App\Services\StripeMetadataService;
+use App\Services\Risk\RiskService;
 
 class StripeWebhookController extends Controller
 {
     protected $userProfileService;
+    protected $riskService;
 
-    public function __construct(UserProfileService $userProfileService)
+    public function __construct(UserProfileService $userProfileService, RiskService $riskService)
     {
         $this->userProfileService = $userProfileService;
+        $this->riskService = $riskService;
     }
 
     /**
@@ -750,7 +753,7 @@ class StripeWebhookController extends Controller
 
         // --- Risk Engine: Record Dispute ---
         try {
-            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+            $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->with('creator')->first();
             
             \App\Models\Dispute::create([
                 'payment_id' => $payment ? $payment->id : null,
@@ -760,6 +763,7 @@ class StripeWebhookController extends Controller
                 'currency' => $dispute->currency,
                 'reason' => $dispute->reason,
                 'status' => $dispute->status,
+                'evidence_due_by' => isset($dispute->evidence_details->due_by) ? Carbon::createFromTimestamp($dispute->evidence_details->due_by) : null,
             ]);
             
             // Update Identity Rollups (Dispute Count)
@@ -770,6 +774,29 @@ class StripeWebhookController extends Controller
             // Update Payment Status
             if ($payment) {
                 $payment->update(['status' => 'disputed']);
+                
+                // Recalculate Risk Metrics
+                try {
+                    $this->riskService->recalculateMetrics($payment->creator_id);
+                } catch (\Exception $e) {
+                    Log::error("Risk Engine: Failed to recalculate metrics on dispute: " . $e->getMessage());
+                }
+
+                // Notify Creator
+                if ($payment->creator) {
+                    $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
+                    $formattedAmount = number_format($dispute->amount / 100, 2);
+                    
+                    $title = "⚠️ Action Required: New Dispute Received";
+                    $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened. Reason: " . str_replace('_', ' ', $dispute->reason) . ". Please submit evidence immediately to prevent chargeback.";
+                    
+                    try {
+                        \App\Helpers::sendNotification($title, $content, $payment->creator->email);
+                        Log::info("Dispute notification sent to creator: " . $payment->creator->email);
+                    } catch (\Exception $e) {
+                        Log::error("Failed to send dispute notification: " . $e->getMessage());
+                    }
+                }
             }
             
             Log::info("Risk Engine: Dispute recorded", ['dispute_id' => $dispute->id]);
@@ -799,13 +826,35 @@ class StripeWebhookController extends Controller
 
         // --- Risk Engine: Update Dispute Status ---
         try {
-            $riskDispute = \App\Models\Dispute::where('stripe_dispute_id', $dispute->id)->first();
+            $riskDispute = \App\Models\Dispute::where('stripe_dispute_id', $dispute->id)->with('creator')->first();
             if ($riskDispute) {
                 $riskDispute->update([
                     'status' => $dispute->status,
                     'resolved_at' => now(),
                 ]);
                 Log::info("Risk Engine: Dispute status updated", ['status' => $dispute->status]);
+
+                // Notify Creator
+                if ($riskDispute->creator) {
+                    $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
+                    $formattedAmount = number_format($dispute->amount / 100, 2);
+                    
+                    if ($dispute->status === 'won') {
+                        $title = "✅ Dispute Won!";
+                        $content = "Great news! You won the dispute for {$currencySymbol}{$formattedAmount}. The funds have been returned to your balance.";
+                    } elseif ($dispute->status === 'lost') {
+                        $title = "❌ Dispute Lost";
+                        $content = "The dispute for {$currencySymbol}{$formattedAmount} was decided in favor of the cardholder. The funds have been deducted.";
+                    }
+
+                    if (isset($title)) {
+                        try {
+                            \App\Helpers::sendNotification($title, $content, $riskDispute->creator->email);
+                        } catch (\Exception $e) {
+                            Log::error("Failed to send dispute closed notification: " . $e->getMessage());
+                        }
+                    }
+                }
             }
         } catch (\Exception $e) {
             Log::error("Risk Engine: Failed to update dispute status: " . $e->getMessage());
@@ -2585,9 +2634,12 @@ class StripeWebhookController extends Controller
             if ($payment) {
                 $payment->update(['status' => 'refunded']);
                 
-                // Update Creator Metrics (Refund Count)
-                $metric = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $payment->creator_id]);
-                $metric->increment('refunds_30d');
+                // Recalculate Risk Metrics
+                try {
+                    $this->riskService->recalculateMetrics($payment->creator_id);
+                } catch (\Exception $e) {
+                    Log::error("Risk Engine: Failed to recalculate metrics on refund: " . $e->getMessage());
+                }
                 
                 Log::info("Risk Engine: Payment marked as refunded", ['payment_id' => $payment->id]);
             }
@@ -2711,11 +2763,10 @@ class StripeWebhookController extends Controller
                 }
             }
             
-            // 3. Update Creator Metrics (Transaction Count)
-            // We can do this async or here. Let's do a simple increment if model exists.
+            // 3. Update Creator Metrics (Transaction Count & Risk Check)
             try {
-                $metric = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $payment->creator_id]);
-                $metric->increment('tx_30d');
+                // We recalculate fully to ensure rates are up to date with new denominator
+                $this->riskService->recalculateMetrics($payment->creator_id);
             } catch (\Exception $e) {
                 Log::error("Failed to update creator metrics on payment success: " . $e->getMessage());
             }

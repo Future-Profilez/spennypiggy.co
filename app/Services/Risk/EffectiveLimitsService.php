@@ -4,6 +4,7 @@ namespace App\Services\Risk;
 
 use App\Models\PlatformRiskState;
 use App\Models\RiskIdentity;
+use App\Models\RiskSetting;
 
 class EffectiveLimitsService
 {
@@ -17,24 +18,30 @@ class EffectiveLimitsService
         $stateRecord = PlatformRiskState::latest('started_at')->first();
         $state = $stateRecord ? $stateRecord->state : 'NORMAL';
 
-        // 2. Define Limits per State
-        // These could be in config or DB, but for now hardcoded as per spec logic.
+        // 2. Fetch Limits from Database Settings
+        // Fallback to hardcoded defaults if DB settings missing
+        $dbLimits = RiskSetting::get('global_limits');
         
+        // Define Limits per State
+        // Logic: NORMAL uses DB settings. Other states are reductions of NORMAL.
+        
+        $normalLimits = [
+            'max_spend_1h' => $dbLimits['max_spend_1h'] ?? 75000,   // £750.00
+            'max_spend_24h' => $dbLimits['max_spend_24h'] ?? 150000, // £1500.00
+            'max_spend_7d' => $dbLimits['max_spend_7d'] ?? 300000,  // £3000.00
+            'max_new_creators_24h' => $dbLimits['max_creators_per_day'] ?? 1,
+            'step_up_threshold' => 50000, // £500
+            'cooldown_minutes' => 15,
+            'review_hold_threshold' => 100000, // £1000
+            'guest_allowed' => $dbLimits['guest_allowed'] ?? true,
+        ];
+
         $limits = [
-            'NORMAL' => [
-                'max_spend_1h' => 200000, // pence
-                'max_spend_24h' => 500000,
-                'max_spend_7d' => 1000000,
-                'max_new_creators_24h' => 1,
-                'step_up_threshold' => 150000,
-                'cooldown_minutes' => 15,
-                'review_hold_threshold' => 250000,
-                'guest_allowed' => true,
-            ],
+            'NORMAL' => $normalLimits,
             'CAUTION' => [
-                'max_spend_1h' => 100000,
-                'max_spend_24h' => 250000,
-                'max_spend_7d' => 500000,
+                'max_spend_1h' => (int)($normalLimits['max_spend_1h'] * 0.5), // 50%
+                'max_spend_24h' => (int)($normalLimits['max_spend_24h'] * 0.5),
+                'max_spend_7d' => (int)($normalLimits['max_spend_7d'] * 0.5),
                 'max_new_creators_24h' => 1,
                 'step_up_threshold' => 50000,
                 'cooldown_minutes' => 15,
@@ -42,23 +49,23 @@ class EffectiveLimitsService
                 'guest_allowed' => true,
             ],
             'THROTTLE' => [
-                'max_spend_1h' => 75000,
-                'max_spend_24h' => 150000,
-                'max_spend_7d' => 300000,
-                'max_new_creators_24h' => 1,
-                'step_up_threshold' => 25000,
-                'cooldown_minutes' => 30,
-                'review_hold_threshold' => 100000,
+                'max_spend_1h' => (int)($normalLimits['max_spend_1h'] * 0.25), // 25%
+                'max_spend_24h' => (int)($normalLimits['max_spend_24h'] * 0.25),
+                'max_spend_7d' => (int)($normalLimits['max_spend_7d'] * 0.25),
+                'max_new_creators_24h' => 0,
+                'step_up_threshold' => 0, // Always step up
+                'cooldown_minutes' => 60,
+                'review_hold_threshold' => 50000,
                 'guest_allowed' => false,
             ],
             'FREEZE' => [
-                'max_spend_1h' => 50000,
-                'max_spend_24h' => 100000,
-                'max_spend_7d' => 200000,
-                'max_new_creators_24h' => 1, // Usually strictly blocked or very limited
-                'step_up_threshold' => 25000,
-                'cooldown_minutes' => 30,
-                'review_hold_threshold' => 75000,
+                'max_spend_1h' => 0,
+                'max_spend_24h' => 0,
+                'max_spend_7d' => 0,
+                'max_new_creators_24h' => 0,
+                'step_up_threshold' => 0,
+                'cooldown_minutes' => 1440, // 24 hours
+                'review_hold_threshold' => 0,
                 'guest_allowed' => false,
             ],
         ];

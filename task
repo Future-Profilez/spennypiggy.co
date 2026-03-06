@@ -1,3 +1,73 @@
+SECURITY
+Ah, main samajh gaya! Aapko Client ki original requirement (Business Flow) ke perspective se samajhna hai ki humne Risk Engine mein ab tak kya-kya implement kiya hai—chahe wo Creator Risk ho ya Platform Risk.
+
+Client ka vision tha ek Automated Risk Engine jo fraud ko roke, paise protect kare, aur Admin ko control de. Niche poora Business Flow hai jo humne implement kiya hai:
+
+### 1. Creator Risk Profiling (Individual Creator Level)
+Client chahta tha ki har creator ek jaisa nahi hota. Kuch naye hain, kuch purane trusted hain, aur kuch fraud ho sakte hain. Isliye humne 3 Risk Levels banaye:
+
+- Low Risk (Standard):
+  
+  - Kaun: Trusted creators, kam disputes.
+  - Rule: 0% Reserve , 7 Days Payout Delay .
+  - Implementation: Agar dispute rate < 0.5% hai, to system automatically ye level deta hai.
+- Medium Risk (Warning):
+  
+  - Kaun: Thode disputes aa rahe hain ya refund rate high hai.
+  - Rule: 10% Reserve (Hum 10% paisa hold karte hain future refunds ke liye), 7 Days Delay .
+  - Implementation: Agar dispute rate > 0.5% ya refund rate > 5% hai.
+- High Risk (Danger):
+  
+  - Kaun: Bahut disputes, fraud suspicion.
+  - Rule: 25% Reserve , 14 Days Payout Delay (Paisa lamba hold karte hain).
+  - Implementation: Agar dispute rate > 1% hai.
+Feature: Admin dashboard par ab aap har creator ke aage ye "High/Medium/Low" tag dekh sakte hain aur chaho to "Override" karke manually badal sakte ho.
+
+### 2. Platform Risk States (Global Kill Switch)
+Client ka kehna tha: "Agar platform par fraud attack ho jaye (e.g. Card Testing), to main ek-ek creator ko block nahi kar sakta. Mujhe ek button chahiye jo sab rok de."
+
+Iske liye humne 4 System States banayi:
+
+- NORMAL (Green): Business as usual.
+  
+  - Limit: £5,000 spend/day per user.
+  - New Creators: 25/day allow.
+  - Guest Checkout: Allowed.
+- CAUTION (Yellow): Thoda fraud dikh raha hai.
+  
+  - Limit: £2,500 spend/day.
+  - Monitoring: Badh jati hai (Step-Up auth zyada maanga jata hai).
+- THROTTLE (Orange): Attack confirm ho gaya hai.
+  
+  - Limit: £1,500 spend/day.
+  - Action: Guest Payments BLOCKED (Kyunki fraud zyada guests karte hain).
+  - New Creators: 0 (Naye signups band).
+- FREEZE (Red - The Nuclear Option): Emergency.
+  
+  - Limit: £0 (Ek rupaya bhi move nahi hoga).
+  - Action: Sab payments blocked. Platform pause mode mein.
+Feature: Admin dashboard ke top-right mein ab wo button hai jisse aap ye state badal sakte hain.
+
+### 3. Transaction Rules (The Invisible Guard)
+Backend mein humne Rules lagaye hain jo har payment par check hote hain (Client ki "Safety Net"):
+
+- Velocity Check: Agar koi user 10 minute mein 3 payments kar chuka hai -> Step-Up (OTP) maango. Agar 5 kar chuka hai -> Cooldown (Block for 15 min) .
+- New Creator Limit: Ek user ek din mein sirf 1 Naye Creator ko pay kar sakta hai (Fraudsters ek hi card se 50 naye accounts ko pay karte hain).
+- Hourly/Daily Limits: Koi bhi user £5000 se zyada ek din mein kharch nahi kar sakta (Normal state mein).
+### 4. Dispute Evidence System
+Client ne kaha tha: "Jab dispute aata hai, mujhe dikhna chahiye ki creator ne kya safai di hai."
+
+- Flow: Jab bank chargeback karta hai -> Creator form bharta hai aur files upload karta hai -> Admin ab Dashboard par "Disputes" click karke wo files aur explanation padh sakta hai taaki decide kare ki fight karna hai ya nahi.
+### Summary: Ab System Kya Kar Raha Hai?
+1. Monitor: Har payment aur creator ko watch kar raha hai.
+2. Classify: Creators ko automatically Low/Medium/High mein daal raha hai.
+3. Protect: Agar attack hua, to Admin ek click mein "System Freeze" kar sakta hai.
+4. Report: Admin ko disputes aur risk history dikha raha hai.
+Ye wo poora ecosystem hai jo humne banaya hai.
+
+
+==================================================
+
 php artisan app:process-task-auto-confirmations
 
 php artisan app:process-sla-refunds

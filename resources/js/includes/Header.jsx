@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import DeviceID from "./DeviceID";
 import axios from "axios";
 import { SiBuymeacoffee } from "react-icons/si";
-import { BiTask } from "react-icons/bi";
+import { BiTask, BiShield } from "react-icons/bi";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
@@ -345,26 +345,23 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                    <li>
-                                        <a
-                                            href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                            className={getNavLinkClass("https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk")}
-                                        >
-                                            <span className="inline-flex justify-center items-center ml-4">
-                                                <SlCalender
-                                                    color="#fff"
-                                                    size={"1.2rem"}
-                                                />
-                                            </span>
-                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                Subscription Billing
-                                            </span>
-                                        </a>
-                                    </li>
+                                            <li>
+                                                <a
+                                                    href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
+                                                    className={getNavLinkClass("https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk")}>
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SlCalender
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Subscription Billing
+                                                    </span>
+                                                </a>
+                                            </li>
                                         </>
-                                    ) : (
-                                        ""
-                                    )}
+                                    ) :""}
 
                                     {auth &&
                                     auth.user &&
@@ -419,6 +416,23 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                     <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Earnings
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={route('creator.disputes.index')}
+                                                    className={getNavLinkClass(route('creator.disputes.index'))}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <BiShield
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Disputes Center
                                                     </span>
                                                 </Link>
                                             </li>

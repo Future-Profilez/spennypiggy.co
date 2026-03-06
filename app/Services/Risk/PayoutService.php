@@ -152,7 +152,7 @@ class PayoutService
                 $releasedTotal += $amount;
                 
                 // Notify Creator via PWA/Email
-                $currencySymbol = \App\Helpers::getCurrencySymbol($creator->default_currency ?? 'gbp');
+                $currencySymbol = \App\Helpers::getCurrency($creator->default_currency ?? 'gbp');
                 $title = "💰 Reserve Released";
                 $content = "Your held reserve of {$currencySymbol}{$amount} has been released to your balance.";
                 
@@ -260,5 +260,142 @@ class PayoutService
             Log::error("Payout Execution Failed: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Get held reserves for a creator.
+     */
+    public function getHeldReserves($creatorId)
+    {
+        // Find executed runs with unreleased reserves for this creator
+        // Note: whereJsonContains might be slow on large datasets, consider indexing or separate table for reserves if scaling
+        $runs = PayoutRun::where('status', 'executed')
+            ->get();
+
+        $held = [];
+        $totalHeld = 0;
+
+        foreach ($runs as $run) {
+            // Check if this run has data for the creator
+            $payouts = $run->totals['payouts'] ?? [];
+            $data = $payouts[$creatorId] ?? null;
+
+            if ($data && isset($data['reserve_amount']) && $data['reserve_amount'] > 0 
+                && empty($data['reserve_released'])) {
+                
+                $releaseDate = $data['reserve_release_date'] ?? Carbon::parse($run->run_date)->addDays(90)->toDateString();
+                
+                $held[] = [
+                    'payout_run_id' => $run->id,
+                    'amount' => $data['reserve_amount'],
+                    'run_date' => $run->run_date,
+                    'release_date' => $releaseDate,
+                    'days_remaining' => max(0, Carbon::now()->diffInDays(Carbon::parse($releaseDate), false))
+                ];
+                $totalHeld += $data['reserve_amount'];
+            }
+        }
+
+        // Sort by release date (soonest first)
+        usort($held, function($a, $b) {
+            return strtotime($a['release_date']) - strtotime($b['release_date']);
+        });
+
+        return [
+            'total_held' => $totalHeld,
+            'breakdown' => $held
+        ];
+    }
+
+    /**
+     * Manually Release Specific Reserve
+     */
+    public function releaseSpecificReserve($payoutRunId, $creatorId)
+    {
+        $run = PayoutRun::findOrFail($payoutRunId);
+        $data = $run->totals;
+        
+        if (!isset($data['payouts'][$creatorId])) {
+            throw new \Exception("No payout data found for this creator in this run.");
+        }
+
+        $payoutData = $data['payouts'][$creatorId];
+
+        // Check eligibility
+        if (!isset($payoutData['reserve_amount']) || $payoutData['reserve_amount'] <= 0) {
+            throw new \Exception("No reserve held for this payout.");
+        }
+        if (!empty($payoutData['reserve_released'])) {
+            throw new \Exception("Reserve already released.");
+        }
+
+        $amountToRelease = $payoutData['reserve_amount'];
+
+        // Execute Transfer
+        $this->transferReserveToCreator($creatorId, $amountToRelease);
+
+        // Update Record
+        $payoutData['reserve_released'] = true;
+        $payoutData['released_at'] = now()->toDateString();
+        $payoutData['released_manually'] = true;
+        $payoutData['released_by'] = auth()->id() ?? 'admin';
+        
+        $data['payouts'][$creatorId] = $payoutData;
+        $run->totals = $data;
+        $run->save();
+
+        return $amountToRelease;
+    }
+
+    /**
+     * Manually Release All Reserves for a Creator
+     */
+    public function releaseAllReserves($creatorId)
+    {
+        $reserves = $this->getHeldReserves($creatorId);
+        $totalReleased = 0;
+        $releasedCount = 0;
+
+        foreach ($reserves['breakdown'] as $reserve) {
+            try {
+                $this->releaseSpecificReserve($reserve['payout_run_id'], $creatorId);
+                $totalReleased += $reserve['amount'];
+                $releasedCount++;
+            } catch (\Exception $e) {
+                Log::error("Failed to release reserve {$reserve['payout_run_id']} for creator {$creatorId}: " . $e->getMessage());
+            }
+        }
+
+        return [
+            'count' => $releasedCount,
+            'total' => $totalReleased
+        ];
+    }
+
+    /**
+     * Helper to transfer funds and notify
+     */
+    private function transferReserveToCreator($creatorId, $amount)
+    {
+        $creator = User::where('uuid', $creatorId)->first();
+        if (!$creator || !$creator->account_id) {
+            throw new \Exception("Creator not found or not connected to Stripe.");
+        }
+
+        // Transfer funds
+        \App\StripeControl::transferToConnectedAccount(
+            $creator->account_id, 
+            $amount, 
+            $creator->default_currency ?? 'gbp'
+        );
+        
+        // Notify
+        $currencySymbol = \App\Helpers::getCurrency($creator->default_currency ?? 'gbp');
+        $title = "💰 Reserve Released";
+        $content = "Your held reserve of {$currencySymbol}{$amount} has been manually released to your balance.";
+        
+        \App\Helpers::sendNotification($title, $content, $creator->email);
+        
+        Log::info("Manual reserve release for creator {$creatorId}: {$amount}");
     }
 }

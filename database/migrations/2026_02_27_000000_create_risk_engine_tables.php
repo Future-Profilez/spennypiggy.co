@@ -15,13 +15,13 @@ return new class extends Migration
         Schema::create('platform_risk_states', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->enum('state', ['NORMAL', 'CAUTION', 'THROTTLE', 'FREEZE'])->default('NORMAL');
-            $table->json('reason_codes')->default(json_encode([])); // Postgres array -> JSON in MySQL/Generic or specific
+            $table->json('reason_codes')->nullable(); 
             $table->text('reason_detail')->nullable();
             $table->enum('set_by', ['system', 'admin']);
             $table->uuid('set_by_user_id')->nullable();
             $table->timestamp('started_at')->useCurrent();
             $table->timestamp('expires_at')->nullable();
-            $table->json('metrics_snapshot')->default(json_encode([]));
+            $table->json('metrics_snapshot')->nullable();
             $table->timestamps();
 
             $table->index('started_at');
@@ -84,7 +84,7 @@ return new class extends Migration
             ])->index();
             
             $table->uuid('confirmation_log_id')->nullable();
-            $table->json('reason_codes')->default(json_encode([]));
+            $table->json('reason_codes')->nullable();
             
             $table->timestamps();
         });
@@ -100,7 +100,7 @@ return new class extends Migration
             $table->string('device_id_hash')->nullable();
             $table->boolean('otp_verified')->default(false);
             $table->string('typed_confirmation')->nullable();
-            $table->json('spend_snapshot')->default(json_encode([]));
+            $table->json('spend_snapshot')->nullable();
             
             $table->timestamps();
         });
@@ -152,7 +152,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->date('run_date');
             $table->string('status')->default('preview'); // preview/executed/failed
-            $table->json('totals')->default(json_encode([]));
+            $table->json('totals')->nullable();
             $table->timestamps();
         });
 
@@ -162,7 +162,7 @@ return new class extends Migration
             $table->string('actor'); // system/admin/user:ID
             $table->string('action_type');
             $table->string('reference_id')->nullable(); // payment_id, creator_id, etc.
-            $table->json('metadata_json')->default(json_encode([]));
+            $table->json('metadata_json')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
         

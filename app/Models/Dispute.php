@@ -18,10 +18,31 @@ class Dispute extends Model
         'currency',
         'reason',
         'status',
+        'evidence_due_by',
+        'evidence_status',
+        'evidence_details',
+        'customer_email',
+        'has_response',
         'resolved_at',
     ];
 
     protected $casts = [
+        'amount' => 'integer',
+        'evidence_due_by' => 'datetime',
         'resolved_at' => 'datetime',
+        'evidence_details' => 'array',
+        'has_response' => 'boolean',
     ];
+    
+    public $timestamps = false; // Disable updated_at since migration doesn't have it
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'creator_id', 'uuid');
+    }
+
+    public function payment()
+    {
+        return $this->belongsTo(Payment::class, 'payment_id', 'uuid');
+    }
 }
