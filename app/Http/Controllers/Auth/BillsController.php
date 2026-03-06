@@ -583,7 +583,7 @@ class BillsController extends Controller
                             'display_currency' => $displayCurrency,
                             'vat_rate' => (string) $vatPercent,
                         ]),
-                        'application_fee_amount' => (int)($applicationFeeAmount * $multiplier),
+                        'application_fee_percent' => round(($applicationFeeAmount / $finalTotalAmount) * 100, 2),
                     ],
                     'customer_email' => $user->email ?? $request->email,
                     'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
