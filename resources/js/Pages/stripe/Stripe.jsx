@@ -100,7 +100,7 @@ export default function Stripe(props) {
 
         // Generate the URL first
         const stripeUrl = route("stripe.connect", {
-            step: "init",
+            // step: "init",
             country: country,
             currency: countryCurrency,
         });
