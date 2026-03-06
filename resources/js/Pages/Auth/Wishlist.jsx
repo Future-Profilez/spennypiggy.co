@@ -31,20 +31,14 @@ const imageLinks = [
 
 export default function Wishlist(props) {
     const { global_currency, auth, wish_categories } = usePage().props;
-    const {
-        currency,
-        item, text,
-        editpop,
-        openPop,
-        setuped,
-        customtext,
-    } = props;
+    const { currency, item, text, editpop, openPop, setuped, customtext } =
+        props;
     const defaultCurrency =
         (auth && auth.user && auth.user.default_currency) || "GBP";
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const inputRef = useRef(null);
     const [defaultKey, setDefaultKey] = useState(
-        item && item.subscription !== null ? +item.subscription : null
+        item && item.subscription !== null ? +item.subscription : null,
     );
 
     const [close, setClose] = useState();
@@ -90,16 +84,19 @@ export default function Wishlist(props) {
     };
 
     const AddCategory = async () => {
+        
+console.log("Function triggered");
         const value = inputRef.current.value;
         setAdding(true);
         axios
             .post("/user/save-category", { category: value })
             .then((res) => {
+                console.log("res", res);
                 setAdding(false);
                 if (res.data.status) {
                     successAlert(res.data.msg || "Added");
                     inputRef.current.value = "";
-                     fetch_categories();
+                    fetch_categories();
                 } else {
                     errorAlert(res.data.msg || "Something went wrong.");
                 }
@@ -114,7 +111,12 @@ export default function Wishlist(props) {
         wishname: item && item.wishname ? item.wishname : "",
         price: item && item.price ? item.price : "",
         item_url: item && item.item_url ? item.item_url : "",
-        thumbnail: item && item.thumbnail ? item.thumbnail : (editpop ? "" : imageLinks[0]),
+        thumbnail:
+            item && item.thumbnail
+                ? item.thumbnail
+                : editpop
+                  ? ""
+                  : imageLinks[0],
         reward_file: item && item.reward_file ? item.reward_file : "",
         content_file: item?.content_file || "",
         content_file_name: item?.content_file_name || "",
@@ -145,14 +147,14 @@ export default function Wishlist(props) {
                     return;
                 }
                 if (!data.category && !editpop && checkboxes.length === 0) {
-                     errorAlert("Please choose a category.");
-                     return;
+                    errorAlert("Please choose a category.");
+                    return;
                 }
             }
             // Validation for Step 2
             if (step === 2) {
-             // Thumbnail is optional, defaults to first image if not provided
-        }
+                // Thumbnail is optional, defaults to first image if not provided
+            }
 
             setStep(step + 1);
         }
@@ -165,14 +167,13 @@ export default function Wishlist(props) {
     const renderProgressBar = () => {
         return (
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 dark:bg-gray-700">
-                <div 
-                    className="bg-pink-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+                <div
+                    className="bg-pink-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
                     style={{ width: `${(step / totalSteps) * 100}%` }}
                 ></div>
             </div>
         );
     };
-
 
     const onSlideChange = (swiper) => {
         setData("thumbnail", imageLinks[swiper && swiper.activeIndex]);
@@ -185,7 +186,7 @@ export default function Wishlist(props) {
 
     const [checkboxes, setCheckboxes] = useState([]);
     const [real_category, setreal_category] = useState(
-        item && item.real_category
+        item && item.real_category,
     );
     const catValue = (event) => {
         const { value, checked } = event.target;
@@ -199,39 +200,40 @@ export default function Wishlist(props) {
 
     const [contentFile, setContentFile] = useState(item?.content_file || "");
     const [contentFileMetadata, setContentFileMetadata] = useState({
-        name: item?.content_file_name || '',
-        type: item?.content_file_type || '',
-        size: item?.content_file_size || 0
+        name: item?.content_file_name || "",
+        type: item?.content_file_type || "",
+        size: item?.content_file_size || 0,
     });
     const contentUploaderRef = useRef();
 
     const getContentFileUID = async (uploadData) => {
         let uuid = uploadData?.uuid;
         setContentFile(uuid);
-        
+
         // Store complete file metadata
         const metadata = {
-            name: uploadData?.name || 'Content file',
-            type: uploadData?.mimeType ? `${uploadData.mimeType}/${uploadData.mimeSubtype}` : 'file',
+            name: uploadData?.name || "Content file",
+            type: uploadData?.mimeType
+                ? `${uploadData.mimeType}/${uploadData.mimeSubtype}`
+                : "file",
             size: uploadData?.size || 0,
             isImage: uploadData?.isImage || false,
             isVideo: uploadData?.isVideo || false,
-            isAudio: uploadData?.isAudio || false
+            isAudio: uploadData?.isAudio || false,
         };
         setContentFileMetadata(metadata);
-        
+
         // Update only the content file fields, preserving existing form data
-        setData(prevData => ({
+        setData((prevData) => ({
             ...prevData,
             content_file: uuid,
             content_file_name: metadata.name,
             content_file_type: metadata.type,
-            content_file_size: metadata.size
+            content_file_size: metadata.size,
         }));
     };
 
     // Content file updates are handled in getContentFileUID function
-
 
     const [isEditable, setIsEditable] = useState(false);
     const getFileUID = async (data) => {
@@ -243,7 +245,6 @@ export default function Wishlist(props) {
         }
     };
 
-
     // const wishImageEdited = async (d, uuid) => {
     //     const url = `${uuid}/${d.cdnUrlModifiers}-/preview/`;
     //     setThumbnail(url);
@@ -253,7 +254,7 @@ export default function Wishlist(props) {
     const getAIImage = (e) => {
         setRewardImage(
             e.uuid +
-                "/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/"
+                "/-/text_align/left/center/-/font/10/fff/-/text/80px8p/8p,100p/Made%20with%20AI%20/-/format/jpeg/-/preview/",
         );
         setIsAiImage(e.url);
         setData("ai_generated", 1);
@@ -265,7 +266,6 @@ export default function Wishlist(props) {
         setIsAiImage(false);
         setData("ai_generated", 0);
     };
-
 
     const rpValue = (e) => {
         setRepeat(e.target.checked);
@@ -288,7 +288,6 @@ export default function Wishlist(props) {
             setData("thumbnail", imageLinks[0]);
         }
     }, [thumbnail]);
-
 
     // Initialize thumbnail state when editing an item
     useEffect(() => {
@@ -318,8 +317,10 @@ export default function Wishlist(props) {
             errorAlert("Please choose a category for this item.");
             return false;
         }
-        if ((!editpop && (!data.content_file || data.content_file === ""))) {
-            errorAlert("Please choose a exclusive reward content for this wish item.");
+        if (!editpop && (!data.content_file || data.content_file === "")) {
+            errorAlert(
+                "Please choose a exclusive reward content for this wish item.",
+            );
             return false;
         }
         if (editpop) {
@@ -329,9 +330,10 @@ export default function Wishlist(props) {
                     if (resp.props.flash?.success !== null) {
                         router.visit(
                             route("user.show", {
-                            username: auth?.user?.username,
-                            page : 'wishes'
-                        }));
+                                username: auth?.user?.username,
+                                page: "wishes",
+                            }),
+                        );
                         reset();
                         setClose(false);
                         setTimeout(() => {
@@ -341,7 +343,7 @@ export default function Wishlist(props) {
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(
-                            resp.props.flash?.error || "Something went wrong."
+                            resp.props.flash?.error || "Something went wrong.",
                         );
                     }
                 },
@@ -358,9 +360,10 @@ export default function Wishlist(props) {
                     if (resp.props.flash?.success !== null) {
                         router.visit(
                             route("user.show", {
-                            username: auth?.user?.username,
-                            page : 'wishes'
-                        }));
+                                username: auth?.user?.username,
+                                page: "wishes",
+                            }),
+                        );
                         reset();
                         setClose(false);
                         resetUploader();
@@ -370,7 +373,7 @@ export default function Wishlist(props) {
                     }
                     if (resp.props.flash?.error) {
                         errorAlert(
-                            resp.props.flash?.error || "Something went wrong."
+                            resp.props.flash?.error || "Something went wrong.",
                         );
                     }
                 },
@@ -390,7 +393,9 @@ export default function Wishlist(props) {
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
-                    <h2 className="text-md font-normal font-GillSans uppercase">{text ?text :"Add Wish Item"}</h2>
+                    <h2 className="text-md font-normal font-GillSans uppercase">
+                        {text ? text : "Add Wish Item"}
+                    </h2>
                     <p className="text-sm font-poppins">
                         For products you will buy directly
                     </p>
@@ -402,8 +407,10 @@ export default function Wishlist(props) {
     return (
         <Popup
             modalclass="pinkmodal full"
-            action={close} space="4" size="lg"
-            classes={`${ editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center" }`}
+            action={close}
+            space="4"
+            size="lg"
+            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"}`}
             text={customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">
@@ -412,24 +419,24 @@ export default function Wishlist(props) {
                         <h2 className="mb-4 !text-start font-GillSans uppercase text-large  mb-1 pr-5">
                             {editpop ? " Edit Wish" : "Add A Wish"}
                         </h2>
-                       
-                        <form onSubmit={createWishList} className="text-left">
-                            
 
+                        <form onSubmit={createWishList} className="text-left">
                             {/* Step 1: Basic Info & Category */}
                             <div className={step === 1 ? "block" : "hidden"}>
-
-                                 <p className="p-4 mb-4 text-normal text-yellow-800 rounded-[20px]   border border-yellow-500 bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
-                                    When adding items please ensure they are specific
-                                    i.e Holiday Clothes or New Gym Equipment. Items that
-                                    are non specific will be rejected and removed. Our
-                                    AI blocks adult content but any overly suggestive
-                                    images will also be rejected. Please reach out to
+                                <p className="p-4 mb-4 text-normal text-yellow-800 rounded-[20px]   border border-yellow-500 bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300">
+                                    When adding items please ensure they are
+                                    specific i.e Holiday Clothes or New Gym
+                                    Equipment. Items that are non specific will
+                                    be rejected and removed. Our AI blocks adult
+                                    content but any overly suggestive images
+                                    will also be rejected. Please reach out to
                                     support for further clarification.
                                 </p>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">Wish Name</label>
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                        Wish Name
+                                    </label>
                                     <input
                                         id="wishname"
                                         name="wishname"
@@ -438,15 +445,21 @@ export default function Wishlist(props) {
                                         value={data.wishname}
                                         className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[40px] shadow-sm px-4 py-3"
                                         autoComplete="name"
-                                        onChange={(e) => setData("wishname", e.target.value)}
+                                        onChange={(e) =>
+                                            setData("wishname", e.target.value)
+                                        }
                                         required
                                     />
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">Price ({defaultCurrency})</label>
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                        Price ({defaultCurrency})
+                                    </label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-gray-500">{defaultCurrency}</span>
+                                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 font-bold text-gray-500">
+                                            {defaultCurrency}
+                                        </span>
                                         <input
                                             id="price"
                                             type="number"
@@ -456,44 +469,76 @@ export default function Wishlist(props) {
                                             step="0.01"
                                             className="w-full border-gray-300 focus:border-pink-500 focus:ring-pink-500 rounded-[40px] shadow-sm pl-16 pr-4 py-3"
                                             autoComplete="price"
-                                            onChange={(e) => setData("price", e.target.value)}
+                                            onChange={(e) =>
+                                                setData("price", e.target.value)
+                                            }
                                         />
                                     </div>
-                                    {defaultCurrency !== global_currency && data.price > 0 && (
-                                        <p className="mt-2 text-sm text-gray-500">
-                                            ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
-                                        </p>
-                                    )}
+                                    {defaultCurrency !== global_currency &&
+                                        data.price > 0 && (
+                                            <p className="mt-2 text-sm text-gray-500">
+                                                ≈{" "}
+                                                {formatMultiPrice(
+                                                    data.price,
+                                                    defaultCurrency,
+                                                )}{" "}
+                                                ({global_currency})
+                                            </p>
+                                        )}
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="mb-2 text-left block font-semibold text-gray-700">Category</label>
+                                    <label className="mb-2 text-left block font-semibold text-gray-700">
+                                        Category
+                                    </label>
                                     <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto custom-scrollbar ">
-                                        {categories && categories.length ? categories.map((c, i) => {
-                                            const filteritem = real_category && real_category.filter((item) => item?.category == c?.category);
-                                            const isCategory = filteritem && filteritem[0] ? true : null;
-                                            return (
-                                                <div key={i} className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        id={"categories" + i}
-                                                        value={c.id}
-                                                        name="category"
-                                                        onChange={catValue}
-                                                        checked={isCategory}
-                                                        className="peer hidden"
-                                                    />
-                                                    <label 
-                                                        htmlFor={"categories" + i}
-                                                        className="block cursor-pointer select-none rounded-[15px] border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 hover:bg-gray-50"
+                                        {categories && categories.length ? (
+                                            categories.map((c, i) => {
+                                                const filteritem =
+                                                    real_category &&
+                                                    real_category.filter(
+                                                        (item) =>
+                                                            item?.category ==
+                                                            c?.category,
+                                                    );
+                                                const isCategory =
+                                                    filteritem && filteritem[0]
+                                                        ? true
+                                                        : null;
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        className="relative"
                                                     >
-                                                        {c.category}
-                                                    </label>
-                                                </div>
-                                            );
-                                        }) : <p className="text-gray-500 text-sm">No categories found.</p>}
+                                                        <input
+                                                            type="checkbox"
+                                                            id={
+                                                                "categories" + i
+                                                            }
+                                                            value={c.id}
+                                                            name="category"
+                                                            onChange={catValue}
+                                                            checked={isCategory}
+                                                            className="peer hidden"
+                                                        />
+                                                        <label
+                                                            htmlFor={
+                                                                "categories" + i
+                                                            }
+                                                            className="block cursor-pointer select-none rounded-[15px] border border-gray-300 px-4 py-2 text-sm font-medium transition-colors peer-checked:bg-pink-500 peer-checked:text-white peer-checked:border-pink-500 hover:bg-gray-50"
+                                                        >
+                                                            {c.category}
+                                                        </label>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <p className="text-gray-500 text-sm">
+                                                No categories found.
+                                            </p>
+                                        )}
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-2">
                                         <input
                                             id="cats"
@@ -522,15 +567,15 @@ export default function Wishlist(props) {
 
                                     {thumbnail ? (
                                         <div className="relative mb-4 group">
-                                            <img 
-                                                className="w-full h-64 object-cover rounded-[40px] border border-gray-200 shadow-sm" 
-                                                src={`https://ucarecdn.com/${thumbnail}/`} 
+                                            <img
+                                                className="w-full h-64 object-cover rounded-[40px] border border-gray-200 shadow-sm"
+                                                src={`https://ucarecdn.com/${thumbnail}/`}
                                                 alt="Wish Thumbnail"
                                             />
-                                            <button 
+                                            <button
                                                 type="button"
-                                                className="absolute top-4 right-4 bg-white/90 text-red-600 p-2 rounded-full shadow-lg hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100" 
-                                                onClick={() => setThumbnail('')}
+                                                className="absolute top-4 right-4 bg-white/90 text-red-600 p-2 rounded-full shadow-lg hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                                onClick={() => setThumbnail("")}
                                             >
                                                 <RiCloseLine size={20} />
                                             </button>
@@ -538,47 +583,71 @@ export default function Wishlist(props) {
                                     ) : (
                                         <div className="space-y-6">
                                             <div className="bg-gray-50 p-4 rounded-[40px]">
-                                                <h4 className="text-sm font-medium text-gray-500 mb-3 text-center">Select from Default</h4>
+                                                <h4 className="text-sm font-medium text-gray-500 mb-3 text-center">
+                                                    Select from Default
+                                                </h4>
                                                 <Swiper
                                                     spaceBetween={10}
-                                                    pagination={{ clickable: true }}
+                                                    pagination={{
+                                                        clickable: true,
+                                                    }}
                                                     navigation={true}
-                                                    onSlideChange={onSlideChange}
-                                                    modules={[Pagination, Navigation]}
+                                                    onSlideChange={
+                                                        onSlideChange
+                                                    }
+                                                    modules={[
+                                                        Pagination,
+                                                        Navigation,
+                                                    ]}
                                                     slidesPerView={1}
                                                     className="rounded-[20px] overflow-hidden"
                                                 >
-                                                    {imageLinks && imageLinks.map((image) => (
-                                                        <SwiperSlide key={`swiper-item-${image}`} className="rounded-[20px] overflow-hidden">
-                                                            <div className="aspect-w-16 aspect-h-9">
-                                                                <img
-                                                                    src={`https://ucarecdn.com/${image}/`}
-                                                                    className="w-full h-52 object-cover rounded-[20px]"
-                                                                    alt="Default"
-                                                                />
-                                                            </div>
-                                                        </SwiperSlide>
-                                                    ))}
+                                                    {imageLinks &&
+                                                        imageLinks.map(
+                                                            (image) => (
+                                                                <SwiperSlide
+                                                                    key={`swiper-item-${image}`}
+                                                                    className="rounded-[20px] overflow-hidden"
+                                                                >
+                                                                    <div className="aspect-w-16 aspect-h-9">
+                                                                        <img
+                                                                            src={`https://ucarecdn.com/${image}/`}
+                                                                            className="w-full h-52 object-cover rounded-[20px]"
+                                                                            alt="Default"
+                                                                        />
+                                                                    </div>
+                                                                </SwiperSlide>
+                                                            ),
+                                                        )}
                                                 </Swiper>
                                             </div>
-                                            
+
                                             <div className="relative">
-                                                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                                <div
+                                                    className="absolute inset-0 flex items-center"
+                                                    aria-hidden="true"
+                                                >
                                                     <div className="w-full border-t border-gray-300"></div>
                                                 </div>
                                                 <div className="relative flex justify-center">
-                                                    <span className="bg-white px-2 text-sm text-gray-500">OR UPLOAD NEW</span>
+                                                    <span className="bg-white px-2 text-sm text-gray-500">
+                                                        OR UPLOAD NEW
+                                                    </span>
                                                 </div>
                                             </div>
 
-                                            <div className={`${!isEditable ? "" : "hidden"} editable`}>
+                                            <div
+                                                className={`${!isEditable ? "" : "hidden"} editable`}
+                                            >
                                                 <GlobalUploader
-                                                    type="minimal" 
+                                                    type="minimal"
                                                     ctxName="wish-thumbnail"
                                                     ref={uploaderRef}
                                                     accept="image/*"
                                                     sendFile={getFileUID}
-                                                    options={st.wishitemUploader}
+                                                    options={
+                                                        st.wishitemUploader
+                                                    }
                                                 />
                                             </div>
                                         </div>
@@ -591,23 +660,29 @@ export default function Wishlist(props) {
                                 <div className="mb-8">
                                     <label className="mb-2 text-left block font-semibold text-gray-700 flex items-center gap-2">
                                         Content File
-                                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Required</span>
+                                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                            Required
+                                        </span>
                                     </label>
                                     <p className="text-sm text-gray-500 mb-4">
-                                        Upload the file that buyers will receive after purchase (Image, Video, Audio, Document, etc.).
+                                        Upload the file that buyers will receive
+                                        after purchase (Image, Video, Audio,
+                                        Document, etc.).
                                     </p>
-                                    
+
                                     {item && item.content_file ? (
                                         <div className="border border-green-200 bg-green-50 p-4 rounded-[40px] flex justify-between items-center mb-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="bg-green-100 p-2 rounded-full">
                                                     <RiCheckDoubleLine className="text-green-600" />
                                                 </div>
-                                                <span className="text-green-700 font-medium">File Uploaded</span>
+                                                <span className="text-green-700 font-medium">
+                                                    File Uploaded
+                                                </span>
                                             </div>
-                                            <a 
-                                                target="_blank" 
-                                                className="text-sm font-semibold text-green-700 hover:text-green-800 underline" 
+                                            <a
+                                                target="_blank"
+                                                className="text-sm font-semibold text-green-700 hover:text-green-800 underline"
                                                 href={`https://ucarecdn.com/${item && item.content_file}/`}
                                             >
                                                 View File
@@ -615,41 +690,56 @@ export default function Wishlist(props) {
                                         </div>
                                     ) : (
                                         <>
-                                        {contentFile ? (
-                                            <div className="mb-4">
-                                                <ContentFilePreview 
-                                                    fileUrl={`https://ucarecdn.com/${contentFile}/`}
-                                                    fileType={contentFileMetadata.type}
-                                                    fileName={contentFileMetadata.name}
-                                                    fileSize={contentFileMetadata.size}
-                                                    isImage={contentFileMetadata.isImage}
-                                                    isVideo={contentFileMetadata.isVideo}
-                                                    isAudio={contentFileMetadata.isAudio}
-                                                    className="mb-1"
-                                                />
-                                            </div>
-                                        ) : null}
+                                            {contentFile ? (
+                                                <div className="mb-4">
+                                                    <ContentFilePreview
+                                                        fileUrl={`https://ucarecdn.com/${contentFile}/`}
+                                                        fileType={
+                                                            contentFileMetadata.type
+                                                        }
+                                                        fileName={
+                                                            contentFileMetadata.name
+                                                        }
+                                                        fileSize={
+                                                            contentFileMetadata.size
+                                                        }
+                                                        isImage={
+                                                            contentFileMetadata.isImage
+                                                        }
+                                                        isVideo={
+                                                            contentFileMetadata.isVideo
+                                                        }
+                                                        isAudio={
+                                                            contentFileMetadata.isAudio
+                                                        }
+                                                        className="mb-1"
+                                                    />
+                                                </div>
+                                            ) : null}
                                         </>
                                     )}
 
                                     <GlobalUploader
-                                        type="minimal" 
+                                        type="minimal"
                                         view={false}
                                         ctxName="wishlistcontent"
-                                        ref={contentUploaderRef} 
+                                        ref={contentUploaderRef}
                                         imgonly={false}
                                         accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,application/rtf,application/zip,application/x-zip-compressed"
                                         sendFile={getContentFileUID}
                                         options={st.wishlistcontent}
                                     />
-                                    
+
                                     <div className="mt-4 text-xs text-gray-400">
-                                        Max file size: 100MB. Supported: Images, Videos, Audio, Docs, Archives.
+                                        Max file size: 100MB. Supported: Images,
+                                        Videos, Audio, Docs, Archives.
                                     </div>
                                 </div>
 
                                 <div className="mb-6 border-t border-gray-100 pt-6">
-                                    <label className="mb-4 text-left block font-semibold text-gray-700">Wish Type</label>
+                                    <label className="mb-4 text-left block font-semibold text-gray-700">
+                                        Wish Type
+                                    </label>
                                     <div className="md:flex gap-4 mb-6">
                                         <button
                                             type="button"
@@ -684,23 +774,38 @@ export default function Wishlist(props) {
                                                     onChange={rpValue}
                                                     className="w-5 h-5 text-pink-600 rounded border-gray-300 focus:ring-pink-500"
                                                 />
-                                                <span className="text-gray-700 font-medium">Allow Repeat Purchases</span>
+                                                <span className="text-gray-700 font-medium">
+                                                    Allow Repeat Purchases
+                                                </span>
                                             </label>
                                             <p className="text-xs text-gray-500 mt-2 ml-8">
-                                                If checked, fans can buy this item multiple times.
+                                                If checked, fans can buy this
+                                                item multiple times.
                                             </p>
                                         </div>
                                     ) : (
                                         <div className="bg-gray-50 p-6 rounded-[20px]">
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">Billing Period</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                                                Billing Period
+                                            </label>
                                             <div className="flex flex-wrap gap-3">
-                                                {['daily', 'weekly', 'monthly'].map((period) => (
-                                                    <label key={period} className="cursor-pointer">
+                                                {[
+                                                    "daily",
+                                                    "weekly",
+                                                    "monthly",
+                                                ].map((period) => (
+                                                    <label
+                                                        key={period}
+                                                        className="cursor-pointer"
+                                                    >
                                                         <input
                                                             type="radio"
                                                             name="subscription_period"
                                                             value={period}
-                                                            checked={data.subscription_period === period}
+                                                            checked={
+                                                                data.subscription_period ===
+                                                                period
+                                                            }
                                                             onChange={spValue}
                                                             className="peer hidden"
                                                         />
@@ -728,7 +833,7 @@ export default function Wishlist(props) {
                                         Back
                                     </button>
                                 )}
-                                
+
                                 {step < totalSteps ? (
                                     <button
                                         type="button"
@@ -744,11 +849,16 @@ export default function Wishlist(props) {
                                         className="!mt-0 flex-1 py-3 !border-0 px-4 !bg-pink-500 text-white font-gulfs uppercase text-sm md:text-normal tracking-wider rounded-[40px] hover:bg-pink-600 transition-colors shadow-md shadow-pink-200"
                                         spinnerclass="fill-white"
                                     >
-                                        {processing ? (editpop ? "Updating..." : "Processing...") : (editpop ? "Update Wish" : "Add Wish")}
+                                        {processing
+                                            ? editpop
+                                                ? "Updating..."
+                                                : "Processing..."
+                                            : editpop
+                                              ? "Update Wish"
+                                              : "Add Wish"}
                                     </LoaderButton>
                                 )}
                             </div>
-
                         </form>
                     </div>
                 </div>

@@ -115,7 +115,7 @@ class WishitemController extends Controller
 
             // Use new gross-up flow for consistent fee calculation
             $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
-            
+
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
             $createpriceid = $finalTotalAmount;
@@ -204,7 +204,7 @@ class WishitemController extends Controller
             'user_role' => Auth::user()?->role,
             'subscription_status' => Auth::user()?->subscription_status,
         ]);
-        
+
         $request->validate([
             "wishname" => [
                 "required",
@@ -286,7 +286,7 @@ class WishitemController extends Controller
 
         // Use new gross-up flow for consistent fee calculation
         $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $currency);
-        
+
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $taxamount = $applicationFeeAmount;
@@ -424,7 +424,7 @@ class WishitemController extends Controller
         if (!empty($request->price)) {
             // Use new gross-up flow for consistent fee calculation
             $breakdown = Helpers::calculateStripeDirectChargeFlow($request->price, $currency);
-            
+
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
             $taxamount = $applicationFeeAmount;
@@ -443,7 +443,7 @@ class WishitemController extends Controller
             $contentFileType = $wish->content_file_type;
             $contentFileName = $wish->content_file_name;
             $contentFileSize = $wish->content_file_size;
-            
+
             if ($request->content_file && $request->content_file !== $wish->content_file) {
                 // Update with new Uploadcare UUID and metadata
                 $contentFile = $request->content_file;
@@ -451,7 +451,7 @@ class WishitemController extends Controller
                 $contentFileName = $request->content_file_name;
                 $contentFileSize = $request->content_file_size;
             }
-            
+
             WishItem::where('uuid', $uuid)->update([
                 "user_id" => Auth::id(),
                 'wishname' => $request->wishname ?? $wish->wishname,
@@ -544,7 +544,7 @@ class WishitemController extends Controller
                         ];
 
                         $stripeProduct = StripeControl::createProduct($productPayload, $user->account_id);
-                        
+
                         // Save the new product and price IDs
                         $wish->stripe_product_id = $stripeProduct->id;
                         $wish->price_id = $stripeProduct->default_price;
@@ -578,7 +578,7 @@ class WishitemController extends Controller
                                     'wish_name' => !empty($request->wishname) ? $request->wishname : $wish->wishname,
                                 ]
                             ];
-                            
+
                             $stripeProduct = StripeControl::updateSubscription($wish->stripe_product_id, $productUpdatePayload, $wish->user->account_id);
 
                             // Deactivate old price if it exists
@@ -634,21 +634,21 @@ class WishitemController extends Controller
             // Delete related database records first
             WishCategory::where('wish_item_id', $wishitem->id)->delete();
             UserCart::where('wish_item_id', $wishitem->id)->delete();
-            
+
             $si = StripePaymentItems::where('wish_item_id', $wishitem->id)->get();
-            
+
             foreach ($si as $value) {
                 StripePaymentDetail::where('id', $value->stripe_payment_detail_id)->delete();
                 $value->delete();
             }
-            
+
             WishItemSubscription::where('wish_item_id', $wishitem->id)->delete();
-            
+
             // Try to delete Stripe product if it exists
             if (!empty($wishitem->stripe_product_id)) {
                 try {
                     $stripeProduct = StripeControl::getProduct($wishitem->stripe_product_id, $wishitem->user->account_id);
-                    
+
                     if ($stripeProduct) {
                         StripeControl::deleteProductAndPrices($stripeProduct->id, $wishitem->user->account_id);
                         Log::info('Deleted Stripe product during wish deletion', [
@@ -665,31 +665,30 @@ class WishitemController extends Controller
                     // Continue with deletion even if Stripe fails
                 }
             }
-            
+
             // Delete the wish item from database
             $wishitem->delete();
 
             // Clear user caches
             $user = User::find(Auth::id());
             $this->userProfileService->clearUserCaches($user->username, $user->id);
-            
+
             Log::info('Wish item deleted successfully', [
                 'wish_id' => $wishitem->id,
                 'user_id' => $wishitem->user_id
             ]);
-            
+
             return response()->json([
                 'status' => true,
                 'msg' => "Wishitem removed successfully."
             ]);
-            
         } catch (Exception $e) {
             Log::error('Error deleting wish item', [
                 'wish_id' => $wishitem->id ?? null,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'status' => false,
                 'msg' => "Error deleting wish item: " . $e->getMessage()
@@ -699,45 +698,61 @@ class WishitemController extends Controller
 
     public function saveUserCategory(Request $request)
     {
-        $request->validate([
-            "category" => [
-                "required",
-                "string",
-                "min:3",
-                "max:30",
-                "alpha_dash"
-            ],
-        ]);
+        // echo "hello";
+        // dd($request->all());
+        try {
 
-        $checkdata = Helpers::checkBlockData($request);
-        if ($checkdata == 1) {
+            $request->validate([
+                "category" => [
+                    "required",
+                    "string",
+                    "min:3",
+                    "max:30",
+                    "alpha_dash"
+                ],
+            ]);
+
+            $checkdata = Helpers::checkBlockData($request);
+            if ($checkdata == 1) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
+             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
+                ]);
+            }
+
+            $categories = UserCategory::where('user_id', Auth::id())->get();
+            foreach ($categories as $value) {
+                if (strtolower($request->category) == strtolower($value->category)) {
+                    return response()->json([
+                        'status' => false,
+                        'msg' => "Category already exists."
+                    ]);
+                }
+            }
+
+            UserCategory::create([
+                "user_id" => Auth::id(),
+                'category' => $request->category ?? null,
+            ]);
+
+            // Clear user caches
+            $user = User::find(Auth::id());
+            $this->userProfileService->clearUserCaches($user->username, $user->id);
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Category Saved."
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error saving user category', [
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                 'status' => false,
-                'msg' => "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress,
-             😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦",
+                'msg' => "Error saving category: " . $e->getMessage()
             ]);
         }
-
-        $categories = UserCategory::where('user_id', Auth::id())->get();
-        foreach ($categories as $value) {
-            if (strtolower($request->category) == strtolower($value->category)) {
-                return back()->with('error', 'Category is already exists.');
-            }
-        }
-
-        UserCategory::create([
-            "user_id" => Auth::id(),
-            'category' => $request->category ?? null,
-        ]);
-
-        // Clear user caches
-        $user = User::find(Auth::id());
-        $this->userProfileService->clearUserCaches($user->username, $user->id);
-
-        return response()->json([
-            'status' => true,
-            'msg' => "Category Saved."
-        ]);
     }
 
     public function discover_all_wishes($order, $type, $price)
@@ -797,32 +812,33 @@ class WishitemController extends Controller
     }
 
 
-    public function discover_all_creators($order, $gender) {
+    public function discover_all_creators($order, $gender)
+    {
         $subQuery = UserIntro::selectRaw('MAX(id) as latest_id')
             ->whereNull('deleted_at')
             ->where('approved', 1)
             ->groupBy('user_id');
 
         $query = UserIntro::joinSub($subQuery, 'latest_intros', function ($join) {
-                $join->on('user_intros.id', '=', 'latest_intros.latest_id');
-            })
+            $join->on('user_intros.id', '=', 'latest_intros.latest_id');
+        })
             ->with(['user' => function ($q) use ($gender) {
                 $q->where('is_uk', 0)
-                  ->where('suspended_account', 0)
-                  ->whereNotNull('username')
-                  ->where('username', '!=', '');
+                    ->where('suspended_account', 0)
+                    ->whereNotNull('username')
+                    ->where('username', '!=', '');
                 if ($gender != 'all') {
                     $q->where('gender', $gender);
                 }
             }])
             ->select('user_intros.*'); // make sure we select proper columns
-            
+
         // Double-check to ensure we only get intros with valid users
         $query->whereHas('user', function ($q) use ($gender) {
             $q->whereNull('deleted_at')
-              ->where('is_uk', 0)
-              ->where('suspended_account', 0)
-              ->where('username', '!=', '');
+                ->where('is_uk', 0)
+                ->where('suspended_account', 0)
+                ->where('username', '!=', '');
             if ($gender != 'all') {
                 $q->where('gender', $gender);
             }
@@ -833,7 +849,7 @@ class WishitemController extends Controller
         }
 
         $intros = $query->paginate(30);
-        
+
         // Filter out any intro records where user is still null (safety check)
         $filteredIntros = $intros->getCollection()->filter(function ($intro) {
             return $intro->user !== null && !empty($intro->user->username);
@@ -902,7 +918,7 @@ class WishitemController extends Controller
 
     public function addToCart($uuid, $device_id, $sub, $amount = null)
     {
-           
+
         if (Helpers::checkGifterCardVerificationStatus()) {
             return response()->json([
                 'success' => false,
@@ -910,8 +926,8 @@ class WishitemController extends Controller
             ]);
         }
 
-        $currency = request()->cookie('currency') 
-            ? strtolower(request()->cookie('currency')) 
+        $currency = request()->cookie('currency')
+            ? strtolower(request()->cookie('currency'))
             : 'gbp';
 
         $amount = round($amount, 2, PHP_ROUND_HALF_UP);
@@ -948,16 +964,16 @@ class WishitemController extends Controller
             ->first();
 
         // ✅ Calculate product details (refactored block)
-        $calculateProduct = function($wishitem, $currency, $amount, $accountId = null) {
+        $calculateProduct = function ($wishitem, $currency, $amount, $accountId = null) {
             $breakdown = Helpers::calculateStripeDirectChargeFlow($wishitem->price, $wishitem->user->default_currency);
-            
+
             if ($wishitem->subscription == 2) {
                 // For crowdfunding, we need to calculate the gross-up total for the requested amount
                 $price = Helpers::priceFormat($currency, $amount, $wishitem->user->default_currency);
-                
+
                 // Use new gross-up flow for consistent fee calculation
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($price, $wishitem->user->default_currency);
-                
+
                 $total = $breakdown['total_supporter_pays'];
                 $tax = $breakdown['application_fee'];
 
@@ -967,7 +983,7 @@ class WishitemController extends Controller
                     'images'             => [$wishitem->perma_link],
                     "default_price_data" => [
                         "currency"           => "gbp",
-                        "unit_amount_decimal"=> round($total * 100, 0)
+                        "unit_amount_decimal" => round($total * 100, 0)
                     ],
                     'metadata' => [
                         'wish_name' => $wishitem->wishname,
@@ -1003,7 +1019,7 @@ class WishitemController extends Controller
             $cart->priceid       = $priceId;
             $cart->country       = 'global';
             $cart->updated_at    = now();
-            
+
             $cart->save();
         } else {
             $cartData = [
@@ -1016,7 +1032,7 @@ class WishitemController extends Controller
                 'amount'       => $fullfillAmount,
                 'tax'          => $tax,
                 'country'      => 'global', // CRITICAL: Always set country
-                'is_subscribed'=> ($sub == false || $sub == 'onetime') ? 0 : 1,
+                'is_subscribed' => ($sub == false || $sub == 'onetime') ? 0 : 1,
                 'priceid'      => $priceId,
             ];
             try {
@@ -1047,8 +1063,8 @@ class WishitemController extends Controller
             'cart_uuid'   => $cart->uuid,
             'user_id'     => $cart->user_id,
             'device_id'   => $cart->device_id,
-            'wish_item_id'=> $cart->wish_item_id,
-            'final_status'=> $cart->status
+            'wish_item_id' => $cart->wish_item_id,
+            'final_status' => $cart->status
         ]);
 
         return response()->json([
@@ -1413,11 +1429,11 @@ class WishitemController extends Controller
 
             // Check creator subscription eligibility
             $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($orderDetails->creator);
-            
+
             if (!$subscriptionCheck['eligible']) {
                 // Send notification to creator about blocked payment
                 $orderDetails->creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $request->amount ?? 0));
-                
+
                 // Log the blocked payment for subscription issues
                 Log::warning('Rye product payment blocked due to subscription issue', [
                     'creator_id' => $orderDetails->creator->id,
@@ -1426,7 +1442,7 @@ class WishitemController extends Controller
                     'subscription_status' => $subscriptionCheck['status'],
                     'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
                 ]);
-                
+
                 // Return user-friendly error to fan
                 return response()->json([
                     'status' => false,
@@ -1474,7 +1490,7 @@ class WishitemController extends Controller
                     'message' => 'Stripe account details are missing.',
                 ], 422);
             }
-            
+
             // Check if creator has card_payments capability to determine payment flow
             $hasCardPayments = StripeControl::hasCardPaymentsCapability($orderDetails->creator->account_id);
 
@@ -1489,7 +1505,7 @@ class WishitemController extends Controller
             $basePriceStore = $totalAmount / 100; // Convert cents to major unit
             $basePrice = Helpers::priceFormat('usd', $basePriceStore, $chargeCurrency);
             $breakdown = Helpers::calculateStripeDirectChargeFlow($basePrice, $chargeCurrency);
-            
+
             $finalTotalAmount = $breakdown['total_supporter_pays'];
             $applicationFeeAmount = $breakdown['application_fee'];
             $creatorNetAmount = $breakdown['net_to_creator'];
@@ -1530,7 +1546,7 @@ class WishitemController extends Controller
                 'uuid' => $ryeProductPayment->uuid,
                 'orderUuid' => $orderDetails->uuid
             ]);
-            
+
             // Build payment_intent_data for Direct Charges
             $paymentIntentData = [
                 'application_fee_amount' => round($applicationFeeAmount * $multiplier),
@@ -1546,7 +1562,7 @@ class WishitemController extends Controller
                     'total_charge_amount' => (string) $finalTotalAmount,
                 ],
             ];
-            
+
             Log::info('Using Direct Charges for Rye product payment', [
                 'creator_id' => $orderDetails->creator->id,
                 'connected_account_id' => $orderDetails->creator->account_id,
@@ -2288,10 +2304,10 @@ class WishitemController extends Controller
     public function removeSurpriseFromCart($uuid, $device_id = null)
     {
         // Check if this is an AJAX request
-        $isAjax = request()->header('X-Requested-With') === 'XMLHttpRequest' || 
-                  request()->header('Accept') === 'application/json' ||
-                  request()->wantsJson();
-        
+        $isAjax = request()->header('X-Requested-With') === 'XMLHttpRequest' ||
+            request()->header('Accept') === 'application/json' ||
+            request()->wantsJson();
+
         $query = UserCart::where('country', 'global')->whereUuid($uuid);
         if (Auth::check()) {
             $query->where('user_id', Auth::id());
@@ -2299,7 +2315,7 @@ class WishitemController extends Controller
             if (!$device_id) {
                 $device_id = request()->get('device_id') ?? request()->header('X-Device-ID');
             }
-            
+
             if (!$device_id) {
                 if ($isAjax) {
                     return response()->json([
@@ -2312,7 +2328,7 @@ class WishitemController extends Controller
             $query->where('device_id', $device_id);
         }
         $cart = $query->first();
-        
+
         if (!$cart) {
             // Handle not found case based on request type
             if ($isAjax) {
@@ -2321,17 +2337,17 @@ class WishitemController extends Controller
                     'message' => 'Cart item not found or you do not have permission to remove it'
                 ], 404);
             }
-            
+
             if (request()->header('X-Inertia')) {
                 return redirect()->route('cart')->with('error', 'Cart item not found or you do not have permission to remove it.');
             }
-            
+
             return back()->with('error', 'Cart item not found or you do not have permission to remove it.');
         }
-        
+
         $cart->status = 0;
         $cart->save();
-        
+
         // Return appropriate response based on request type
         if ($isAjax) {
             return response()->json([
@@ -2339,11 +2355,11 @@ class WishitemController extends Controller
                 'message' => 'Item removed from cart'
             ]);
         }
-        
+
         if (request()->header('X-Inertia')) {
             return redirect()->route('cart')->with('success', 'Item removed from cart');
         }
-        
+
         return back()->with('success', 'Item removed from cart');
     }
 
@@ -2555,8 +2571,8 @@ class WishitemController extends Controller
             "success" => true,
             "carts" => $cart,
         ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-          ->header('Pragma', 'no-cache')
-          ->header('Expires', '0');
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -2570,7 +2586,7 @@ class WishitemController extends Controller
             'user_id' => Auth::id(),
             'timestamp' => now()
         ]);
-        
+
         if (!Auth::check()) {
             return response()->json([
                 "success" => false,
@@ -2582,18 +2598,18 @@ class WishitemController extends Controller
         $user = User::where('id', Auth::id())
             ->where('is_uk', 0)
             ->first();
-            
+
         $cart = [];
         if ($user) {
             // Get authenticated cart items
             $carts = UserCart::whereHas('wish')->where('user_id', $user->id)->where('country', 'global')->where('status', 1)->get();
-            
+
             // FALLBACK: Also check if there are any orphaned cart items with device_id that should belong to this user
             // This handles cases where the login cart transfer might not have worked
-            $deviceIdFromRequest = request()->header('X-Device-ID') 
-                                  ?? request()->cookie('device_id')
-                                  ?? request()->input('device_id');
-            
+            $deviceIdFromRequest = request()->header('X-Device-ID')
+                ?? request()->cookie('device_id')
+                ?? request()->input('device_id');
+
             if (!empty($deviceIdFromRequest)) {
                 $orphanedCarts = UserCart::whereHas('wish')
                     ->where('device_id', $deviceIdFromRequest)
@@ -2601,21 +2617,21 @@ class WishitemController extends Controller
                     ->where('country', 'global')
                     ->where('status', 1)
                     ->get();
-                    
+
                 if ($orphanedCarts->isNotEmpty()) {
                     Log::info('Found orphaned cart items during cart retrieval - performing merge', [
                         'user_id' => $user->id,
                         'device_id' => $deviceIdFromRequest,
                         'orphaned_count' => $orphanedCarts->count()
                     ]);
-                    
+
                     // Merge orphaned cart items
                     foreach ($orphanedCarts as $orphanedItem) {
                         // Check if user already has this item
                         $existingItem = $carts->where('wish_item_id', $orphanedItem->wish_item_id)
-                                             ->where('owner_id', $orphanedItem->owner_id)
-                                             ->first();
-                        
+                            ->where('owner_id', $orphanedItem->owner_id)
+                            ->first();
+
                         if ($existingItem) {
                             // Merge quantities
                             $existingItem->quantity += $orphanedItem->quantity;
@@ -2635,7 +2651,7 @@ class WishitemController extends Controller
                 'user_id' => $user->id,
                 'cart_count' => $carts->count(),
                 'cart_ids' => $carts->pluck('id')->toArray(),
-                'cart_details' => $carts->map(function($cart) {
+                'cart_details' => $carts->map(function ($cart) {
                     return [
                         'id' => $cart->id,
                         'user_id' => $cart->user_id,
@@ -2650,7 +2666,7 @@ class WishitemController extends Controller
                     ];
                 })->toArray()
             ]);
-            
+
             $groupedWishes = [];
             foreach ($carts as $wish) {
                 $owner_id = $wish->owner_id;
@@ -2672,12 +2688,12 @@ class WishitemController extends Controller
                     'quantity' => $wish->quantity ?? '',
                 ];
             }
-            
+
             Log::info('Grouped wishes processed', [
                 'grouped_count' => count($groupedWishes),
                 'owner_ids' => array_keys($groupedWishes)
             ]);
-            
+
             $key = 0;
             foreach ($groupedWishes as $value) {
                 $cart[$key] = [
@@ -2738,11 +2754,11 @@ class WishitemController extends Controller
                 $key++;
             }
         }
-        
+
         Log::info('Final authenticated cart response', [
             'user_id' => Auth::id(),
             'final_cart_count' => count($cart),
-            'cart_structure' => array_map(function($c) {
+            'cart_structure' => array_map(function ($c) {
                 return [
                     'user_id' => $c['user']['id'] ?? null,
                     'username' => $c['user']['username'] ?? null,
@@ -2752,7 +2768,7 @@ class WishitemController extends Controller
                 ];
             }, $cart)
         ]);
-        
+
         return response()->json([
             "success" => true,
             "carts" => $cart,
