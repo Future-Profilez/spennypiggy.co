@@ -1,9 +1,10 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { BiError, BiCheckCircle, BiTime, BiFile } from 'react-icons/bi';
+import { BiArrowBack, BiCheckCircle, BiLock, BiShield } from 'react-icons/bi';
 
 export default function DisputesIndex({ auth, disputes }) {
+    const { props } = usePage();
     const getStatusBadge = (status) => {
         const styles = {
             needs_response: 'bg-red-100 text-red-800 border-red-200',
@@ -45,6 +46,40 @@ export default function DisputesIndex({ auth, disputes }) {
                         </div>
                     </div>
 
+                    {/* Summary Cards */}
+                    <div className="grid md:grid-cols-2 gap-6 mb-8">
+                        <div className="bg-[#1a1a1a] rounded-[30px] p-6 border border-gray-800 flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-1">Total Reserved Amount</p>
+                                <h3 className="text-3xl font-bold text-white">
+                                    {disputes.data.reduce((acc, curr) => curr.status === 'needs_response' || curr.status === 'warning_needs_response' || curr.status === 'under_review' ? acc + curr.amount : acc, 0) / 100} 
+                                    <span className="text-sm text-gray-500 ml-1">
+                                        {disputes.data[0]?.currency.toUpperCase() || 'GBP'}
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="bg-yellow-500/10 p-4 rounded-full">
+                                <BiLock className="text-yellow-500 w-8 h-8" />
+                            </div>
+                        </div>
+
+                        <div className="bg-[#1a1a1a] rounded-[30px] p-6 border border-gray-800 flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-1">Dispute Win Rate</p>
+                                <h3 className="text-3xl font-bold text-white">
+                                    {(() => {
+                                        const closed = disputes.data.filter(d => d.status === 'won' || d.status === 'lost');
+                                        const won = closed.filter(d => d.status === 'won');
+                                        return closed.length > 0 ? Math.round((won.length / closed.length) * 100) : 0;
+                                    })()}%
+                                </h3>
+                            </div>
+                            <div className="bg-green-500/10 p-4 rounded-full">
+                                <BiShield className="text-green-500 w-8 h-8" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="bg-[#1a1a1a] rounded-[40px] p-6 md:p-8 shadow-xl border border-gray-800">
                         {disputes.data.length === 0 ? (
                             <div className="text-center py-16 flex flex-col items-center justify-center">
@@ -64,7 +99,6 @@ export default function DisputesIndex({ auth, disputes }) {
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Reason</th>
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                                             <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Due By</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-800">
@@ -88,14 +122,6 @@ export default function DisputesIndex({ auth, disputes }) {
                                                             {new Date(dispute.evidence_due_by).toLocaleDateString()}
                                                         </span>
                                                     ) : '-'}
-                                                </td>
-                                                <td className="px-6 py-5 text-sm font-medium">
-                                                    <Link 
-                                                        href={route('creator.disputes.show', dispute.id)}
-                                                        className="inline-flex items-center justify-center px-4 py-2 bg-white text-black font-bold rounded-full text-xs uppercase tracking-wide hover:bg-[#05EFB8] transition-all duration-200 transform group-hover:scale-105"
-                                                    >
-                                                        View Details
-                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))}

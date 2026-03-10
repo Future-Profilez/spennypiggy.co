@@ -384,6 +384,23 @@ class TaskController extends Controller
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
 
+        // NEW: Risk Engine Evaluation
+        $riskService = app(\App\Services\Risk\RiskService::class);
+        $riskEvaluation = $riskService->evaluate(
+            $creator,
+            (int) round($finalTotalAmount * $multiplier),
+            $request->ip(),
+            $request->header('User-Agent'),
+            $user->email,
+            null
+        );
+
+        if ($riskEvaluation['decision'] === 'BLOCK') {
+             return back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
+        }
+        
+        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
+
         $lineItems = [
             [
                 'quantity' => 1,
@@ -431,8 +448,7 @@ class TaskController extends Controller
             'metadata' => $complianceMetadata,
         ];
 
-        // Create session on CONNECTED account
-        $session = StripeControl::createCheckoutSession([
+        $payload = [
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'mode' => 'payment',
@@ -441,7 +457,19 @@ class TaskController extends Controller
             'cancel_url' => $appUrl . '/task/' . $task->uuid,
             'customer_email' => $user->email,
             'metadata' => $complianceMetadata,
-        ], $connectedAccountId);
+        ];
+
+        // Risk Engine: Force 3DS if Step-Up required
+        if (isset($force3DS) && $force3DS) {
+            $payload['payment_method_options'] = [
+                'card' => [
+                    'request_three_d_secure' => 'any',
+                ],
+            ];
+        }
+
+        // Create session on CONNECTED account
+        $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
         return Inertia::location($session->url);
     }

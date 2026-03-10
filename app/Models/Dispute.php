@@ -38,11 +38,11 @@ class Dispute extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'creator_id', 'uuid');
+        return $this->belongsTo(User::class, 'creator_id', 'id');
     }
 
     public function payment()
     {
-        return $this->belongsTo(Payment::class, 'payment_id', 'uuid');
+        return $this->belongsTo(Payment::class, 'payment_id', 'id');
     }
 }

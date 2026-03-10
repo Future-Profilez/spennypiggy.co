@@ -118,10 +118,13 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
-                        router.visit(
-                            `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
-                        );
-                        // errorAlert(res.data.msg || "Something went wrong");
+                        if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
+                            router.visit(
+                                `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
+                            );
+                        } else {
+                            errorAlert(res.data.message || res.data.msg || "Transaction declined.");
+                        }
                     } else if (res.data.url) {
                         window.location.href = res.data.url;
                     } else {
@@ -141,9 +144,13 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
-                        router.visit(
-                            `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
-                        );
+                        if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
+                            router.visit(
+                                `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
+                            );
+                        } else {
+                            errorAlert(res.data.message || res.data.msg || "Transaction declined.");
+                        }
                     } else if (res.data.url) {
                         window.location.href = res.data.url;
                     } else {

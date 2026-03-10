@@ -25,6 +25,7 @@ class CreatorMetric extends Model
         'top_buyer_percent',
         'volatility_score',
         'risk_level',
+        'is_overridden'
     ];
 
     protected $casts = [

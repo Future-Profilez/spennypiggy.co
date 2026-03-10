@@ -1,134 +1,90 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Status Update</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            background-color: #ff3366; /* Spenny Piggy Brand Color */
-            color: #ffffff;
-            padding: 20px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px;
-        }
-        .status-box {
-            background-color: #f8f9fa;
-            border-left: 4px solid #ff3366;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .status-box.high {
-            border-color: #dc3545;
-            background-color: #fff5f5;
-        }
-        .status-box.medium {
-            border-color: #ffc107;
-            background-color: #fffdf5;
-        }
-        .status-box.low {
-            border-color: #28a745;
-            background-color: #f0fff4;
-        }
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .details-table th, .details-table td {
-            text-align: left;
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-        }
-        .footer {
-            background-color: #f4f4f4;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #777;
-        }
-        .btn {
-            display: inline-block;
-            background-color: #ff3366;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Spenny Piggy</h1>
-        </div>
-        <div class="content">
-            <h2>Hello {{ $user->name }},</h2>
-            
-            <p>{{ $messageBody }}</p>
-            
-            <div class="status-box {{ $metric->risk_level }}">
-                <h3>Current Account Status: {{ ucfirst($metric->risk_level) }} Risk</h3>
-                <p>
-                    @if($metric->risk_level === 'low')
-                        Your account is in good standing. No additional reserves are being held.
-                    @else
-                        A temporary rolling reserve has been applied to your account to cover potential disputes or refunds.
-                    @endif
-                </p>
-            </div>
+@extends('email.default-2')
+@section('content')
+    @php
+        $riskColor = match($metric->risk_level) {
+            'high' => '#e3342f',
+            'medium' => '#f6993f',
+            'low' => '#38c172',
+            default => '#F94F97',
+        };
+    @endphp
 
-            <table class="details-table">
+    <tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <a href="{{ env('APP_URL') . '/' }}">
+                <img width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none" alt="Spenny Piggy Logo">
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
                 <tr>
-                    <th>Reserve Rate:</th>
-                    <td>{{ $metric->reserve_percent }}%</td>
+                    <td style="font-weight: bold; font-size: 24px; color: {{ $riskColor }}; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                        Account Status Update
+                    </td>
                 </tr>
                 <tr>
-                    <th>Payout Delay:</th>
-                    <td>{{ $metric->payout_delay_days }} Days</td>
+                    <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 16px; line-height: 24px; color: #141414; text-align: left;">
+                        Hello {{ $user->name }},
+                    </td>
                 </tr>
                 <tr>
-                    <th>Dispute Rate (30d):</th>
-                    <td>{{ number_format($metric->dispute_rate_30d * 100, 1) }}%</td>
+                    <td style="padding: 0 0 15px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: left;">
+                        {{ $messageBody }}
+                    </td>
                 </tr>
+
+                <!-- Status Box -->
                 <tr>
-                    <th>Refund Rate (30d):</th>
-                    <td>{{ number_format($metric->refund_rate_30d * 100, 1) }}%</td>
+                    <td style="padding: 15px; background-color: #f8f9fa; border-left: 4px solid {{ $riskColor }}; text-align: left;">
+                        <strong style="color: {{ $riskColor }}; font-size: 15px;">Current Status: {{ ucfirst($metric->risk_level) }} Risk</strong><br>
+                        <span style="font-size: 13px; color: #4D4D4D;">
+                            @if($metric->risk_level === 'low')
+                                Your account is in good standing. No additional reserves are being held.
+                            @else
+                                A temporary rolling reserve has been applied to your account to cover potential disputes or refunds.
+                            @endif
+                        </span>
+                    </td>
+                </tr>
+
+                <!-- Details Table -->
+                <tr>
+                    <td style="padding: 20px 0 0 0;">
+                        <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Reserve Rate:</strong></td>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ $metric->reserve_percent }}%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Payout Delay:</strong></td>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ $metric->payout_delay_days }} Days</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Dispute Rate (30d):</strong></td>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ number_format($metric->dispute_rate_30d * 100, 1) }}%</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px;"><strong>Refund Rate (30d):</strong></td>
+                                <td style="padding: 5px 0; border-bottom: 1px solid #eee; color: #4D4D4D; font-size: 14px; text-align: right;">{{ number_format($metric->refund_rate_30d * 100, 1) }}%</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 20px 0 15px 0; font-size: 13px; line-height: 20px; color: #999; text-align: left;">
+                        Rolling reserves are released automatically after 90 days if no disputes occur. You can continue to accept payments normally.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 10px 0 20px 0; text-align: center;">
+                        <a href="{{ url('/dashboard') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: {{ $riskColor }}; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Dashboard</a>
+                    </td>
                 </tr>
             </table>
-
-            <p>
-                Rolling reserves are released automatically after 90 days if no disputes occur. You can continue to accept payments normally.
-            </p>
-            
-            <a href="{{ url('/dashboard') }}" class="btn">View Dashboard</a>
-        </div>
-        <div class="footer">
-            &copy; {{ date('Y') }} Spenny Piggy. All rights reserved.
-        </div>
-    </div>
-</body>
-</html>
+        </td>
+    </tr>
+@endsection

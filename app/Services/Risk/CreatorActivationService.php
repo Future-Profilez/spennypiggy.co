@@ -23,7 +23,7 @@ class CreatorActivationService
         $limits = [
             'NORMAL' => 25,
             'CAUTION' => 10,
-            'THROTTLE' => 5,
+            'THROTTLE' => 0,
             'FREEZE' => 0,
         ];
         

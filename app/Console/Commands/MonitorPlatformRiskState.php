@@ -3,9 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\PlatformRiskState;
+use App\Models\Admin;
+use App\Mail\PlatformRiskAlert;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class MonitorPlatformRiskState extends Command
 {
@@ -242,5 +245,38 @@ class MonitorPlatformRiskState extends Command
                 'metrics' => $metrics
             ]
         ]);
+
+        // Notify Admins
+        if ($newState === 'FREEZE' || $newState === 'THROTTLE') {
+            try {
+                $admins = Admin::all(); // Assuming Admin model exists and has email
+                if ($admins->isEmpty()) {
+                    // Fallback to config email or hardcoded if no admins in DB
+                    $fallbackEmail = config('mail.from.address');
+                    if ($fallbackEmail) {
+                        Mail::to($fallbackEmail)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
+                        \App\Helpers::sendNotification(
+                            "Platform Risk Alert: {$newState}", 
+                            "System state changed to {$newState}. Reasons: " . implode(', ', $reasons), 
+                            $fallbackEmail
+                        );
+                    }
+                } else {
+                    foreach ($admins as $admin) {
+                        if ($admin->email) {
+                            Mail::to($admin->email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
+                            \App\Helpers::sendNotification(
+                                "Platform Risk Alert: {$newState}", 
+                                "System state changed to {$newState}. Reasons: " . implode(', ', $reasons), 
+                                $admin->email
+                            );
+                        }
+                    }
+                }
+                $this->info("Admin notifications sent.");
+            } catch (\Exception $e) {
+                Log::error("Failed to send Platform Risk Alert email: " . $e->getMessage());
+            }
+        }
     }
 }

@@ -1,40 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Restored: Low Risk</title>
-    <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; color: #333; line-height: 1.6; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .header { background-color: #28a745; color: #ffffff; padding: 20px; text-align: center; } /* Green Header */
-        .content { padding: 30px; }
-        .alert-box { background-color: #f0fff4; border: 1px solid #28a745; color: #155724; padding: 15px; border-radius: 4px; margin: 20px 0; }
-        .footer { background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777; }
-        .btn { display: inline-block; background-color: #28a745; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 4px; margin-top: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Account Restored</h1>
-        </div>
-        <div class="content">
-            <h2>Good news, {{ $user->name }}!</h2>
-            <p>Your account metrics have improved and are now within normal ranges.</p>
-            
-            <div class="alert-box">
-                <strong>Account Status: Low Risk</strong><br>
-                All additional reserves and payout delays have been lifted.
-            </div>
+@extends('email.default-2')
+@section('content')
+    <tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <a href="{{ env('APP_URL') . '/' }}">
+                <img width="119" src="https://ucarecdn.com/2c2af8ee-fbdb-4d38-9ba4-3de474410a20/emaillogo.png" style="border:none" alt="Spenny Piggy Logo">
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="padding:10px 10px 20px 10px;">
+            <table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 400px; width: 100%; text-align: center;">
+                <tr>
+                    <td style="font-weight: bold; font-size: 24px; color: #38c172; line-height: 32px; padding: 0 0 25px 0; text-align: center;">
+                        Account Restored
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 0 15px 0; font-weight: bold; font-size: 16px; line-height: 24px; color: #141414; text-align: left;">
+                        Good news, {{ $user->name }}!
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 0 0 15px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: left;">
+                        Your account metrics have improved and are now within normal ranges.
+                    </td>
+                </tr>
 
-            <p>Thank you for maintaining a healthy account status.</p>
-            
-            <a href="{{ url('/dashboard') }}" class="btn">View Dashboard</a>
-        </div>
-        <div class="footer">
-            &copy; {{ date('Y') }} Spenny Piggy. All rights reserved.
-        </div>
-    </div>
-</body>
-</html>
+                <!-- Alert Box -->
+                <tr>
+                    <td style="padding: 15px; background-color: #f0fff4; border: 1px solid #28a745; border-radius: 8px; text-align: left;">
+                        <strong style="color: #155724; font-size: 15px;">Account Status: Low Risk</strong><br>
+                        <span style="font-size: 13px; color: #155724;">
+                            All additional reserves and payout delays have been lifted.
+                        </span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 15px 0 15px 0; font-size: 14px; line-height: 22px; color: #4D4D4D; text-align: left;">
+                        Thank you for maintaining a healthy account status.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 20px 0 20px 0; text-align: center;">
+                        <a href="{{ url('/dashboard') }}" style="border-radius:30px;padding:13px 30px 13px 30px; width: 210px; text-decoration:none; border:none;background-color: #38c172; font-weight: bold; font-size: 15px; text-align: center; color:#ffffff; cursor: pointer;">View Dashboard</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+@endsection

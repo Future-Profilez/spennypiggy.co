@@ -126,25 +126,72 @@ class RiskEngineService
             $this->logDecision($identity, $context, $decision, $reasons);
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
+
+        // --- RULE 3: SINGLE TRANSACTION LIMIT (> $200 -> STEP_UP) ---
+        if ($amount > 20000) { // $200.00
+            if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
+                $decision = 'STEP_UP';
+                $reasons[] = 'HIGH_VALUE_TX';
+                $reasons[] = 'FORCE_3DS';
+                $ui = [
+                    'key' => 'STEP_UP_REQUIRED',
+                    'title' => 'Confirm Your Payment',
+                    'body' => 'For your security, please confirm this payment.',
+                ];
+            }
+        }
+
+        // --- RULE 4: NEW CREATOR ACCOUNT PROTECTION (< 30 Days Old -> Max $500/day) ---
+        if ($creatorId) {
+            $creator = \App\Models\User::where('uuid', $creatorId)->first();
+            if ($creator && $creator->created_at->diffInDays(now()) < 30) {
+                 // Calculate creator's total volume today (all payers)
+                 // This query might be heavy if not indexed on creator_id + created_at
+                 $dailyVolume = Payment::where('creator_id', $creatorId)
+                     ->where('created_at', '>=', now()->subDay())
+                     ->whereIn('status', ['succeeded', 'step_up', 'review_hold'])
+                     ->sum('amount');
+                 
+                 if (($dailyVolume + $amount) > 50000) { // $500.00
+                     $decision = 'BLOCK';
+                     $reasons[] = 'NEW_CREATOR_VOLUME_LIMIT';
+                     $ui = [
+                        'key' => 'CREATOR_LIMIT_REACHED',
+                        'title' => 'Creator Limit Reached',
+                        'body' => 'This creator has reached their daily processing limit. Please try again tomorrow.',
+                    ];
+                    $this->logDecision($identity, $context, $decision, $reasons);
+                    return $this->formatResponse($decision, $reasons, $limits, $ui);
+                 }
+            }
+        }
         
         // --- RULE 6: 3 PAYMENTS IN 10 MIN -> STEP_UP ---
-        // payment_count_10m includes current attempt? No, rollups are past.
-        // If current count is >= 2, this 3rd one triggers.
-        // Spec: "If payment_count_10m >= 3 -> trigger STEP_UP".
-        // If rollup says 2, and we are attempting 3rd... usually logic is "if (count + 1) >= limit".
-        // Let's use strict spec: if payment_count_10m >= 3.
-        // Wait, if rollup is *past* payments, and we are attempting now.
-        // If user made 3 payments already, next one is 4th.
-        // If limit is "3 payments in 10m -> STEP_UP", it usually means "velocity check".
-        // Let's assume if count >= 3, we step up.
+        // --- RULE 7: 5 PAYMENTS IN 10 MIN -> COOLDOWN ---
+        if ($rollup->payment_count_10m >= 5) {
+            $decision = 'COOLDOWN';
+            $reasons[] = 'VELOCITY_5_IN_10M';
+            $ui = [
+                'key' => 'COOLDOWN_ACTIVE',
+                'title' => 'Please Wait',
+                'body' => 'You are paying too fast. Please wait ' . $limits['cooldown_minutes'] . ' minutes and try again.',
+            ];
+            $this->logDecision($identity, $context, $decision, $reasons);
+            // Trigger cooldown on identity
+            $identity->update(['cooldown_until' => Carbon::now()->addMinutes($limits['cooldown_minutes'])]);
+            return $this->formatResponse($decision, $reasons, $limits, $ui);
+        }
+
         if ($rollup->payment_count_10m >= 3) {
             $decision = 'STEP_UP';
             $reasons[] = 'ACCELERATION_3_IN_10M';
-             $ui = [
+            $ui = [
                 'key' => 'STEP_UP_REQUIRED',
                 'title' => 'Confirm Your Payment',
                 'body' => 'For your security, please confirm this payment.',
             ];
+            // Step-up doesn't block immediately, but requires action.
+            // We return decision. Controller handles logic.
         }
 
         // --- RULE 7: CONTINUED RAPID PAYMENTS AFTER STEP_UP -> COOLDOWN ---

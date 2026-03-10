@@ -215,6 +215,15 @@ Route::get('get-cart', function () {
 Route::post('/analytics/search-click', [\App\Http\Controllers\AnalyticsController::class, 'searchClick'])->name('analytics.search-click');
 Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
 
+// Unified Stripe Webhook Endpoint
+Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->name('stripe.webhook.unified');
+
+// Legacy routes redirected to unified handler (for backward compatibility)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+Route::post('/mandatory-status', [StripeWebhookController::class, 'handle']);
+Route::post('/webhook/connect', [StripeWebhookController::class, 'handle']);
+// Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
+
 
 // GiftStore Route
 Route::get('/giftstore', function () {

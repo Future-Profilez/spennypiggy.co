@@ -109,6 +109,16 @@ class Kernel extends ConsoleKernel
                 \Illuminate\Support\Facades\Log::error('Reserve Release Job Failed: ' . $e->getMessage());
             }
         })->dailyAt('04:00'); // Run at 4 AM daily when traffic is low
+
+        // Risk Engine: Monitor Platform State (Every 5 Minutes)
+        $schedule->command('risk:monitor-platform')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping();
+
+        // Risk Engine: Weekly Payout Run (Fridays at 10 AM)
+        $schedule->command('payout:run-weekly')
+                 ->weeklyOn(5, '10:00')
+                 ->withoutOverlapping();
     }
 
     /**

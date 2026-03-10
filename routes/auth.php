@@ -685,10 +685,12 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
 });
 
 Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class, 'usergoal'])->name('user.goal');
-// subscription webhook
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
-Route::post('/mandatory-status', [StripeWebhookController::class, 'mandatorySubscriptionStatus']);
-Route::post('/webhook/payment', [StripeWebhookController::class, 'handle']);
+// Unified Stripe Webhook Endpoint
+Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->name('stripe.webhook.unified');
+
+// Legacy routes redirected to unified handler
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+Route::post('/mandatory-status', [StripeWebhookController::class, 'handle']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 // Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
 Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');

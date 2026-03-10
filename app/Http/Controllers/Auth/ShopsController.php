@@ -34,6 +34,7 @@ use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
 use App\Services\UserProfileService;
+use App\Services\Risk\RiskService;
 
 class ShopsController extends Controller
 {
@@ -766,6 +767,30 @@ class ShopsController extends Controller
                 $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
             }
 
+            // RISK ENGINE: Evaluate transaction
+            $riskService = app(RiskService::class);
+            $riskAmount = $amount + $vat_percentage_amount; // Base amount + VAT
+            
+            $riskEvaluation = $riskService->evaluate(
+                $shop->user, // Creator
+                (int) round($riskAmount * 100), // Amount in cents
+                $request->ip(),
+                $request->header('User-Agent') ?? 'Unknown',
+                $request->query('email')
+            );
+
+            if ($riskEvaluation['decision'] === 'BLOCK') {
+                return response()->json([
+                    'status' => false,
+                    'message' => $riskEvaluation['reason']
+                ]);
+            }
+
+            $requestThreeDSecure = 'automatic';
+            if ($riskEvaluation['decision'] === 'STEP_UP') {
+                $requestThreeDSecure = 'any';
+            }
+
             $adminFee = config('app.administration_fee');
             $ConvertedStoreAdminFees = Helpers::priceFormat($currency, $adminFee, $shop->currency);
             $ConvertedAdminFees = Helpers::priceFormat('GBP', $adminFee, $currency);
@@ -925,6 +950,11 @@ class ShopsController extends Controller
                 'line_items' => [$items],
                 'mode' => 'payment',
                 'payment_method_types' => ['card'], // Add this line
+                'payment_method_options' => [
+                    'card' => [
+                        'request_three_d_secure' => $requestThreeDSecure,
+                    ],
+                ],
                 "customer" => $customer_id,
                 'payment_intent_data' => [
                     'application_fee_amount' => $applicationFeeAmount,

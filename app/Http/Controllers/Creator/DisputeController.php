@@ -25,7 +25,7 @@ class DisputeController extends Controller
     {
         $user = $request->user();
         
-        $disputes = Dispute::where('creator_id', $user->uuid)
+        $disputes = Dispute::where('creator_id', $user->id)
             ->with('payment')
             ->orderByRaw("FIELD(status, 'needs_response', 'warning_needs_response', 'under_review', 'charge_refunded', 'won', 'lost')")
             ->orderBy('created_at', 'desc')
@@ -42,7 +42,7 @@ class DisputeController extends Controller
     public function show(Request $request, $id)
     {
         $dispute = Dispute::where('id', $id)
-            ->where('creator_id', $request->user()->uuid)
+            ->where('creator_id', $request->user()->id)
             ->with('payment')
             ->firstOrFail();
 
@@ -62,7 +62,7 @@ class DisputeController extends Controller
         ]);
 
         $dispute = Dispute::where('id', $id)
-            ->where('creator_id', $request->user()->uuid)
+            ->where('creator_id', $request->user()->id)
             ->firstOrFail();
 
         if ($dispute->evidence_status === 'submitted' || $dispute->status === 'won' || $dispute->status === 'lost') {

@@ -246,13 +246,12 @@ class CheckoutMailToUser implements ShouldQueue
                 'has_url' => !empty($deliverableUrl)
             ]);
             
-            // Dispatch certificate generation job for the deliverable using SQS
+            // Dispatch certificate generation job for the deliverable using default connection
             try {
-                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
-                \Log::info('CheckoutMailToUser: Certificate generation job dispatched to SQS', [
+                \App\Jobs\ProcessWishItemDeliverable::dispatch($deliverable);
+                \Log::info('CheckoutMailToUser: Certificate generation job dispatched', [
                     'deliverable_id' => $deliverable->id,
-                    'wish_id' => $wish->id,
-                    'queue_connection' => 'sqs_certificates'
+                    'wish_id' => $wish->id
                 ]);
             } catch (\Exception $e) {
                 \Log::error('CheckoutMailToUser: Failed to dispatch certificate generation job', [

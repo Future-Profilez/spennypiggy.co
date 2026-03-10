@@ -407,6 +407,23 @@ class BillsController extends Controller
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
         
+        // NEW: Risk Engine Evaluation
+        $riskService = app(\App\Services\Risk\RiskService::class);
+        $riskEvaluation = $riskService->evaluate(
+            $bill->user,
+            (int) round($finalTotalAmount * 100),
+            $request->ip(),
+            $request->header('User-Agent'),
+            $user->email ?? $request->email,
+            null
+        );
+
+        if ($riskEvaluation['decision'] === 'BLOCK') {
+             return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
+        }
+        
+        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
+
         $totalTax = $applicationFeeAmount;
         // $vatAmount variable here is used for vat_tax_amount in DB which stores compliance+admin fees
         $feesAsVat = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
@@ -600,6 +617,15 @@ class BillsController extends Controller
                     'success_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
                     'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
+
+                // Risk Engine: Force 3DS if Step-Up required
+                if (isset($force3DS) && $force3DS) {
+                    $payload['payment_method_options'] = [
+                        'card' => [
+                            'request_three_d_secure' => 'any',
+                        ],
+                    ];
+                }
 
                 $session = StripeControl::createCheckoutSession($payload, $connectedAccountId); // Create session on CONNECTED account
 
@@ -864,7 +890,7 @@ class BillsController extends Controller
     {
         Log::info("Bill status request received");
 
-        $endpoint_secret = env('BILL_SUB_WEBHOOK_SECRET');
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
 
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');

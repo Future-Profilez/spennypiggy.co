@@ -87,6 +87,13 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index']);
     Route::get('/export/audit-pack', [\App\Http\Controllers\Admin\AuditExportController::class, 'export']);
     
+    // Risk Management Routes
+    Route::post('/risk/override', [\App\Http\Controllers\Admin\RiskController::class, 'override']);
+    Route::post('/risk/reset', [\App\Http\Controllers\Admin\RiskController::class, 'reset']);
+    Route::get('/risk/creators/{id}/disputes', [\App\Http\Controllers\Admin\RiskController::class, 'disputes']);
+    Route::get('/risk/creators/{id}/reserves', [\App\Http\Controllers\Admin\RiskController::class, 'reserves']);
+    Route::post('/risk/recalculate/{id}', [\App\Http\Controllers\Admin\RiskController::class, 'recalculate']);
+    
     // Payout Routes
     Route::prefix('payout')->group(function () {
         Route::post('/preview', [\App\Http\Controllers\Admin\PayoutController::class, 'preview']);

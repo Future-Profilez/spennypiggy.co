@@ -97,94 +97,25 @@ export default function DisputeShow({ auth, dispute }) {
                         {/* Evidence Form Column */}
                         <div className="md:col-span-2">
                             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                <h4 className="text-lg font-bold text-gray-900 mb-4">Evidence Submission</h4>
+                                <h4 className="text-lg font-bold text-gray-900 mb-4">Dispute Status</h4>
                                 
-                                {canSubmit ? (
-                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-start gap-4">
+                                        <div className="bg-blue-100 p-2 rounded-full">
+                                            <BiCheckCircle className="text-blue-600 w-6 h-6" />
+                                        </div>
                                         <div>
-                                            <InputLabel value="Explanation" />
-                                            <p className="text-xs text-gray-500 mb-2">
-                                                Provide a clear, concise explanation of why this charge is valid. Mention if the customer received the product/service.
+                                            <h3 className="text-blue-800 font-bold mb-2">We Are Handling This For You</h3>
+                                            <p className="text-blue-700 text-sm leading-relaxed mb-4">
+                                                No action is required from your side. Spenny Piggy automatically collects delivery receipts, activity logs, and transaction details to contest this dispute on your behalf.
                                             </p>
-                                            <textarea
-                                                className="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm h-32"
-                                                value={data.explanation}
-                                                onChange={e => setData('explanation', e.target.value)}
-                                                placeholder="e.g., The customer purchased a digital item on [Date]. Access logs show they downloaded the file on [Date]..."
-                                            />
-                                            <InputError message={errors.explanation} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel value="Supporting Documents (Optional)" />
-                                            <p className="text-xs text-gray-500 mb-2">
-                                                Upload screenshots, receipts, or logs (PDF, JPG, PNG). Max 5MB.
-                                            </p>
-                                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50 transition-colors">
-                                                <div className="space-y-1 text-center">
-                                                    <BiUpload className="mx-auto h-12 w-12 text-gray-400" />
-                                                    <div className="flex text-sm text-gray-600">
-                                                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                                                            <span>Upload a file</span>
-                                                            <input 
-                                                                id="file-upload" 
-                                                                name="file-upload" 
-                                                                type="file" 
-                                                                className="sr-only" 
-                                                                multiple
-                                                                onChange={e => setData('files', Array.from(e.target.files))}
-                                                            />
-                                                        </label>
-                                                        <p className="pl-1">or drag and drop</p>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500">
-                                                        PNG, JPG, PDF up to 5MB
-                                                    </p>
-                                                </div>
+                                            <div className="text-xs text-blue-600 bg-blue-100/50 p-3 rounded border border-blue-200">
+                                                <strong>Note:</strong> While the dispute is open, the disputed amount ({dispute.currency.toUpperCase()} {(dispute.amount / 100).toFixed(2)}) is temporarily reserved. If won, it will be returned to your balance immediately.
                                             </div>
-                                            {data.files.length > 0 && (
-                                                <div className="mt-2 space-y-1">
-                                                    {data.files.map((file, idx) => (
-                                                        <div key={idx} className="text-sm text-gray-600 flex items-center gap-2">
-                                                            <BiFile /> {file.name} ({(file.size / 1024).toFixed(0)} KB)
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <InputError message={errors.files} className="mt-2" />
                                         </div>
-
-                                        {progress && (
-                                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                                <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${progress.percentage}%` }}></div>
-                                            </div>
-                                        )}
-
-                                        <div className="flex justify-end">
-                                            <PrimaryButton disabled={processing}>
-                                                Submit Evidence
-                                            </PrimaryButton>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    <div className="bg-gray-50 p-6 rounded-lg text-center">
-                                        {isSubmitted ? (
-                                            <>
-                                                <BiCheckCircle className="mx-auto h-12 w-12 text-green-500 mb-3" />
-                                                <h3 className="font-bold text-gray-900">Evidence Submitted</h3>
-                                                <p className="text-gray-600 text-sm mt-2">
-                                                    We have forwarded your evidence to the card issuer. Reviews typically take 60-75 days.
-                                                </p>
-                                                <div className="mt-4 text-left bg-white p-4 rounded border text-sm text-gray-500">
-                                                    <strong>Your Explanation:</strong>
-                                                    <p className="mt-1 italic">"{dispute.evidence_details?.explanation || 'No explanation provided'}"</p>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <p className="text-gray-500">This dispute is closed.</p>
-                                        )}
                                     </div>
-                                )}
+                                </div>
+
                             </div>
                         </div>
                     </div>

@@ -448,6 +448,23 @@ class MembershipController extends Controller
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator']; // This is what creator gets after Stripe fees
         
+        // NEW: Risk Engine Evaluation
+        $riskService = app(\App\Services\Risk\RiskService::class);
+        $riskEvaluation = $riskService->evaluate(
+            $membership->user,
+            (int) round($finalTotalAmount * 100),
+            $request->ip(),
+            $request->header('User-Agent'),
+            $user->email ?? $request->email,
+            null
+        );
+
+        if ($riskEvaluation['decision'] === 'BLOCK') {
+             return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
+        }
+        
+        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
+
         // Application Fee % = (Application Fee / Total Amount) * 100
         $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
@@ -627,6 +644,15 @@ class MembershipController extends Controller
                     'success_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                 ];
+
+                // Risk Engine: Force 3DS if Step-Up required
+                if (isset($force3DS) && $force3DS) {
+                    $payload['payment_method_options'] = [
+                        'card' => [
+                            'request_three_d_secure' => 'any',
+                        ],
+                    ];
+                }
 
                 if ($membership->level === 'lifetime') {
                     $payload['mode'] = 'payment';
@@ -938,7 +964,7 @@ class MembershipController extends Controller
         // $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
         // $payload = $request->getContent();
         // $endpoint_secret = env('MEMBER_SUB_WEBHOOK_SECRET');
-        $endpoint_secret = 'whsec_xRYw7XUOjpI2icZQ7c8YwG3y4NtiXOMG';
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;

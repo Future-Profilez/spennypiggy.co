@@ -1813,6 +1813,29 @@ class StripeController extends Controller
 
         $subtotals = 0;
         $totalAmount = $wish->price;
+
+        // NEW: Risk Engine Evaluation
+        $riskService = app(\App\Services\Risk\RiskService::class);
+        $riskEvaluation = $riskService->evaluate(
+            $wish->user,
+            (int) round($totalAmount * 100), // Amount in cents
+            $request->ip(),
+            $request->header('User-Agent'),
+            $user->email,
+            null // Card fingerprint not available before payment
+        );
+
+        if ($riskEvaluation['decision'] === 'BLOCK') {
+            Log::warning('Risk Engine BLOCKED payment', [
+                'user_id' => $user->id,
+                'creator_id' => $wish->user->id,
+                'reason' => $riskEvaluation['reason']
+            ]);
+            return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
+        }
+        
+        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
+
         $ConvertedToGBpAmount = Helpers::priceFormat($wish->currency, $totalAmount, 'gbp');
         $subtotals += $ConvertedToGBpAmount;
 
@@ -2039,6 +2062,15 @@ class StripeController extends Controller
                 'success_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'success']),
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
+
+            // Risk Engine: Force 3DS if Step-Up required
+            if (isset($force3DS) && $force3DS) {
+                $payload['payment_method_options'] = [
+                    'card' => [
+                        'request_three_d_secure' => 'any',
+                    ],
+                ];
+            }
 
             if ($reccure === 'onetime') {
                 $paymentIntentData = [
@@ -2428,7 +2460,7 @@ class StripeController extends Controller
         // This is your Stripe CLI webhook secret for testing your endpoint locally.
 
         // $payload = @file_get_contents('php://input');
-        $endpoint_secret = env('WISH_SUB_WEBHOOK_SECRET');
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = $request->getContent();
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
@@ -2598,8 +2630,8 @@ class StripeController extends Controller
                                 ])
                             ]);
 
-                            // Dispatch ProcessWishItemDeliverable job for content processing using SQS
-                            ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                            // Dispatch ProcessWishItemDeliverable job for content processing
+                            ProcessWishItemDeliverable::dispatch($deliverable);
 
                             // Update Stripe payment intent metadata (exactly like membership)
                             if ($event->data->object->payment_intent) {
@@ -2794,8 +2826,8 @@ class StripeController extends Controller
                     ])
                 ]);
 
-                // Dispatch job to process renewal content delivery using SQS
-                ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                // Dispatch job to process renewal content delivery
+                ProcessWishItemDeliverable::dispatch($deliverable);
 
                 // Update Stripe payment intent metadata (exactly like membership)
                 if ($invoiceData->payment_intent) {
@@ -3224,8 +3256,8 @@ class StripeController extends Controller
                     ])
                 ]);
 
-                // Dispatch ProcessWishItemDeliverable job for certificate generation using SQS
-                ProcessWishItemDeliverable::dispatch($deliverable)->onConnection('sqs_certificates');
+                // Dispatch ProcessWishItemDeliverable job for certificate generation
+                ProcessWishItemDeliverable::dispatch($deliverable);
 
                 // Update Stripe payment intent metadata (exactly like membership)
                 if ($session->payment_intent) {

@@ -140,6 +140,14 @@ class StripeMetadataService
              $stripeAccountId = $deliverable->bill->user->account_id;
         } elseif ($deliverable->product_type === 'membership' && $deliverable->membership && $deliverable->membership->user) {
              $stripeAccountId = $deliverable->membership->user->account_id;
+        } elseif ($deliverable->product_type === 'support_payment') {
+             // Look up creator for support payments
+             if ($deliverable->creator_id) {
+                 $creator = \App\Models\User::find($deliverable->creator_id);
+                 if ($creator && $creator->account_id) {
+                     $stripeAccountId = $creator->account_id;
+                 }
+             }
         }
 
         if (in_array($deliverable->product_type, ['task', 'task_purchase'])) {

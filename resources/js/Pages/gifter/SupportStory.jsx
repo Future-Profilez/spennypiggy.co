@@ -233,6 +233,20 @@ export default function SupportStory({ creator, gifter }) {
               {amount ? <div className="text-[#05EFB8] font-black text-sm">{amount}</div> : null}
             </div>
           </div>
+          
+          {/* Status Badges */}
+          {(ev.status === 'disputed' || ev.status === 'review_hold' || (ev.dispute_status && ev.dispute_status !== 'none')) && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 text-[10px] font-bold uppercase tracking-widest">
+                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2 animate-pulse"></span>
+                Reserved / Disputed
+            </div>
+          )}
+          
+          {(ev.status === 'refunded' || ev.dispute_status === 'lost') && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-500 text-[10px] font-bold uppercase tracking-widest">
+                Refunded
+            </div>
+          )}
 
           {isThankyou ? (
             <div className="mt-4">
@@ -374,7 +388,7 @@ export default function SupportStory({ creator, gifter }) {
               <div className='pt-6'>
                 <Link
                     href={`/${data?.creator?.username || creator}`}
-                    className="!w-full md:!w-auto button rounded-[30px] md:rounded-[40px] mx-1 px-4 text-[11px] uppercase" >
+                    className="!w-full md:!w-auto button rounded-[30px] md:rounded-[40px] px-4 text-[11px] uppercase" >
                       View Creator Profile
                 </Link>
               </div>

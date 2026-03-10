@@ -1293,6 +1293,7 @@ class ProfileController extends Controller
                     'reward_file' => $it->wish->content_file_url ?? $it->wish->reward_url ?? null,
                 ] : null,
                 'message' => $it->payment->message ?? null,
+                'status' => $it->payment->payment_status ?? null,
             ];
 
             if (!empty($it->thankyou_message) || !empty($it->message_url)) {
@@ -1338,6 +1339,7 @@ class ProfileController extends Controller
                     'level' => $mp->membership->level,
                     'perma_link' => $mp->membership->perma_link,
                 ] : null,
+                'status' => $mp->status,
             ];
         }
 
@@ -1366,6 +1368,7 @@ class ProfileController extends Controller
                     'name' => $bp->bill->name,
                     'perma_link' => $bp->bill->perma_link,
                 ] : null,
+                'status' => $bp->status,
             ];
         }
 
@@ -1394,6 +1397,7 @@ class ProfileController extends Controller
                 'tip' => !empty($tp->tipGoal) ? [
                     'name' => $tp->tipGoal->name,
                 ] : null,
+                'status' => $tp->status,
             ];
         }
 
@@ -1424,6 +1428,7 @@ class ProfileController extends Controller
                     'quantity' => $sp->quantity ?? 1,
                 ] : null,
                 'message' => $sp->message ?? null,
+                'status' => $sp->payment_status,
             ];
         }
 
@@ -1464,6 +1469,8 @@ class ProfileController extends Controller
                     'reward_note' => $tpur->proof_content['message'] ?? null,
                 ],
                 'message' => $tpur->gifter_message ?? null,
+                'status' => $tpur->status,
+                'dispute_status' => $tpur->dispute_status ?? null,
             ];
         }
 

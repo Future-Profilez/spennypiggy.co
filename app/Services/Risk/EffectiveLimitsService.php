@@ -26,9 +26,9 @@ class EffectiveLimitsService
         // Logic: NORMAL uses DB settings. Other states are reductions of NORMAL.
         
         $normalLimits = [
-            'max_spend_1h' => $dbLimits['max_spend_1h'] ?? 75000,   // £750.00
-            'max_spend_24h' => $dbLimits['max_spend_24h'] ?? 150000, // £1500.00
-            'max_spend_7d' => $dbLimits['max_spend_7d'] ?? 300000,  // £3000.00
+            'max_spend_1h' => $dbLimits['max_spend_1h'] ?? 100000,   // £1000.00
+            'max_spend_24h' => $dbLimits['max_spend_24h'] ?? 500000, // £5000.00
+            'max_spend_7d' => $dbLimits['max_spend_7d'] ?? 1000000,  // £10000.00
             'max_new_creators_24h' => $dbLimits['max_creators_per_day'] ?? 1,
             'step_up_threshold' => 50000, // £500
             'cooldown_minutes' => 15,
@@ -39,19 +39,19 @@ class EffectiveLimitsService
         $limits = [
             'NORMAL' => $normalLimits,
             'CAUTION' => [
-                'max_spend_1h' => (int)($normalLimits['max_spend_1h'] * 0.5), // 50%
-                'max_spend_24h' => (int)($normalLimits['max_spend_24h'] * 0.5),
-                'max_spend_7d' => (int)($normalLimits['max_spend_7d'] * 0.5),
+                'max_spend_1h' => 50000, // £500
+                'max_spend_24h' => 250000, // £2,500
+                'max_spend_7d' => 500000,
                 'max_new_creators_24h' => 1,
-                'step_up_threshold' => 50000,
+                'step_up_threshold' => 25000, // Lower threshold for Step-Up
                 'cooldown_minutes' => 15,
                 'review_hold_threshold' => 150000,
                 'guest_allowed' => true,
             ],
             'THROTTLE' => [
-                'max_spend_1h' => (int)($normalLimits['max_spend_1h'] * 0.25), // 25%
-                'max_spend_24h' => (int)($normalLimits['max_spend_24h'] * 0.25),
-                'max_spend_7d' => (int)($normalLimits['max_spend_7d'] * 0.25),
+                'max_spend_1h' => 25000,
+                'max_spend_24h' => 150000, // £1,500
+                'max_spend_7d' => 300000,
                 'max_new_creators_24h' => 0,
                 'step_up_threshold' => 0, // Always step up
                 'cooldown_minutes' => 60,

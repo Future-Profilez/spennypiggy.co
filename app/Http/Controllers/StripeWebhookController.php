@@ -43,53 +43,482 @@ class StripeWebhookController extends Controller
     }
 
     /**
-     * Handle Stripe Identity Verification Webhook
+     * Handle Stripe Webhook for ALL events (Payment, Identity, Connect, Subscription)
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function handleWebhook(Request $request)
+    public function handle(Request $request)
     {
+        Log::info("StripeWebhookController: Received request at /webhook/payment (Unified Endpoint)");
+        
+        // Ensure API key is set for any subsequent Stripe calls
         Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
 
-        $endpointSecret = env('STRIPE_IDENTITY_VERIFICATION_WEBHOOK_SECRET');
-        $sigHeader = $request->header('Stripe-Signature');
-        $payload = $request->getContent();
+        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $payload = @file_get_contents('php://input');
+        $sig_header = $request->header('Stripe-Signature');
+        $event = null;
 
         try {
-            // Validate the Stripe event
-            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            $event = Webhook::constructEvent(
+                $payload,
+                $sig_header,
+                $endpoint_secret
+            ); 
+        } catch (\UnexpectedValueException $e) {
+            Log::error('Stripe webhook: Invalid payload');
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            Log::error('Stripe webhook: Invalid signature');
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 400);
+        }
 
-            $session = $event->data->object;
+        if (!$event || !isset($event->type)) {
+            Log::warning('Stripe webhook: Invalid event');
+            return response()->json(['error' => 'Invalid event'], 400);
+        }
 
-            switch ($event->type) {
-                case 'identity.verification_session.requires_input':
-                    $this->handleRequiresInputEvent($session);
-                    break;
+        // Log if it's a Connect event
+        if (isset($event->account)) {
+            Log::info("Connect Event: {$event->type}", ['account' => $event->account]);
+        }
 
-                case 'identity.verification_session.verified':
-                    $this->handleVerifiedEvent($session);
-                    break;
+        $type = $event->type;
+        $data = $event->data->object;
+        $metadata = $event->data->object->metadata ?? null;
 
-                default:
-                    Log::warning('Unhandled event type', ['type' => $event->type]);
-                    break;
+        Log::info("Handling Stripe Event: " . $type);
+
+        switch ($type) {
+            // --- Identity Verification Events ---
+            case 'identity.verification_session.requires_input':
+            case 'identity.verification_session.verified':
+                $this->processIdentityVerification($event);
+                break;
+
+            // --- Payment & Subscription Events ---
+            case 'checkout.session.completed':
+                $this->handleCheckoutSessionCompleted($data, $metadata);
+                $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                break;
+
+            case 'checkout.session.async_payment_succeeded':
+                $this->handleAsyncPaymentSucceeded($data);
+                break;
+
+            case 'checkout.session.async_payment_failed':
+                $this->handleAsyncPaymentFailed($data);
+                break;
+
+            case 'invoice.paid':
+                // Handles Wish/Bill/Membership subscriptions
+                $this->handleInvoicePaid($data); 
+                // Handles MonthlyCharge (Platform Subscription)
+                $this->processMandatorySubscription($event); 
+                break;
+
+            case 'invoice.payment_succeeded':
+                // Handles Wish renewals
+                $this->handleInvoicePaymentSucceeded($data, $metadata); 
+                $this->handleSupportPaymentDeliverableReady($data, $metadata);
+                // Handles MonthlyCharge (Platform Subscription)
+                $this->processMandatorySubscription($event); 
+                break;
+
+            case 'invoice.payment_failed':
+                $this->processMandatorySubscription($event);
+                break;
+
+            case 'charge.dispute.created':
+                $this->handleChargeDisputeCreated($data);
+                break;
+
+            case 'charge.dispute.closed':
+                $this->handleChargeDisputeClosed($data);
+                break;
+
+            case 'charge.refunded':
+                $this->handleChargeRefunded($data);
+                break;
+
+            case 'payment_intent.succeeded':
+                $this->handlePaymentIntentSucceeded($data, $event->account ?? null);
+                break;
+
+            case 'payment_intent.payment_failed':
+                $this->handlePaymentIntentFailed($data);
+                break;
+
+            case 'early_fraud_warning.created':
+                $this->handleEarlyFraudWarningCreated($data);
+                break;
+
+            case 'customer.subscription.updated':
+                // Handle Wish/Bill/Membership updates based on metadata
+                $productType = $metadata->type ?? null;
+                if ($productType) {
+                    switch ($productType) {
+                        case 'bill':
+                            $this->handleBillSubscriptionUpdate($data, $metadata);
+                            break;
+                        case 'membership':
+                            $this->handleMembershipSubscriptionUpdate($data, $metadata);
+                            break;
+                        case 'wish':
+                            $this->handleWishSubscriptionUpdate($data, $metadata);
+                            break;
+                    }
+                }
+                // Handle MonthlyCharge updates (Platform Subscription)
+                $this->processMandatorySubscription($event);
+                break;
+
+            case 'customer.subscription.deleted':
+                $this->customerSubscriptionDeleted($data);
+                $this->processMandatorySubscription($event);
+                break;
+
+            case 'customer.subscription.trial_will_end':
+            case 'customer.subscription.created':
+            case 'customer.updated':
+                $this->processMandatorySubscription($event);
+                break;
+            
+            case 'review.closed':
+                $this->processMandatorySubscription($event);
+                break;
+
+            default:
+                Log::info("Unhandled event type: " . $type);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Process Identity Verification Events (extracted from handleWebhook)
+     */
+    private function processIdentityVerification($event)
+    {
+        $session = $event->data->object;
+        $type = $event->type;
+
+        switch ($type) {
+            case 'identity.verification_session.requires_input':
+                $this->handleRequiresInputEvent($session);
+                break;
+
+            case 'identity.verification_session.verified':
+                $this->handleVerifiedEvent($session);
+                break;
+
+            default:
+                Log::warning('Unhandled identity event type', ['type' => $type]);
+                break;
+        }
+    }
+
+    /**
+     * Process Mandatory Subscription (MonthlyCharge) Events (extracted from mandatorySubscriptionStatus)
+     */
+    private function processMandatorySubscription($event)
+    {
+        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        
+        $eventType = $event->type;
+        $object = $event->data->object;
+
+        $subscriptionId = $object->subscription ?? $object->id ?? null;
+        if (!$subscriptionId) return; // Ignored
+
+        // Check if this subscription exists in MonthlyCharge table
+        // If not, and it's not a creation event, we might ignore it or create it if needed.
+        // The original logic fetches subscription from Stripe first to get customer info.
+        
+        // Optimisation: Check DB first to see if we even care about this subscription ID?
+        // But for 'customer.subscription.created', we might need to create it.
+        // Let's stick to original logic flow but safer.
+
+        try {
+            // Fetch subscription from Stripe FIRST to get customer info (expand customer)
+            // Only if it looks like a subscription ID (starts with sub_)
+            if (strpos($subscriptionId, 'sub_') !== 0) {
+                 // If it's not a subscription object ID, we might need to look it up differently?
+                 // But $object->subscription usually holds the ID.
+                 if (!isset($object->subscription) && $object->object !== 'subscription') {
+                     return; 
+                 }
             }
 
-            return response()->json(['status' => 'success']);
-        } catch (\UnexpectedValueException $e) {
-            // Invalid payload
-            Log::error('Invalid Payload', ['message' => $e->getMessage()]);
-            return response()->json(['error' => 'Invalid payload'], 400);
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            // Invalid signature
-            Log::error('Invalid Signature', [
-                'message' => $e->getMessage(),
-                'sig_header' => $sigHeader,
-                'payload' => $payload,
-                'expected_secret' => $endpointSecret,
+            // If event object IS subscription, use it. If invoice, use subscription ID.
+            if ($object->object === 'subscription') {
+                $subscription = $object;
+                // We need customer details, might need to fetch if not expanded
+                if (is_string($subscription->customer)) {
+                     $customer = $stripe->customers->retrieve($subscription->customer);
+                } else {
+                     $customer = $subscription->customer;
+                }
+            } else {
+                $subscription = $stripe->subscriptions->retrieve($subscriptionId, [
+                    'expand' => ['customer']
+                ]);
+                $customer = $subscription->customer;
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to retrieve subscription/customer in processMandatorySubscription: " . $e->getMessage());
+            return;
+        }
+
+        // Latest DB row for this subscription
+        $subs = MonthlyCharge::where('stripe_id', $subscriptionId)
+            ->latest()
+            ->first();
+
+        // If no DB record and not a creation event, we might want to skip or create?
+        // Original logic: "Trial Started" creates record. "First Payment" creates record.
+        
+        /* ================= Stripe billing period ================= */
+        $stripeStart = Carbon::createFromTimestamp($subscription->current_period_start);
+        $stripeEnd   = Carbon::createFromTimestamp($subscription->current_period_end);
+
+        /* ================= Handle different event types ================= */
+
+        // TRIAL STARTED
+        if (
+            $eventType === 'customer.subscription.trial_will_end' ||
+            ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')
+        ) {
+            // Check duplicate
+            if ($subs && $subs->status === 'trialing') {
+                return;
+            }
+
+            // Create new record for trial
+            MonthlyCharge::create([
+                'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                'name' => $customer->name ?? 'Creator',
+                'email' => $customer->email,
+                'stripe_id' => $subscriptionId,
+                'current_start_trial_date' => $stripeStart,
+                'current_end_trial_date' => $stripeEnd,
+                'current_start_subscription_date' => null,
+                'current_end_subscription_date' => null,
+                'status' => 'trialing',
+                'upcoming_payment' => $stripeEnd,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
-            return response()->json(['error' => 'Invalid signature'], 400);
+
+            Log::info("MonthlyCharge: Trial Started/Will End processed", ['sub_id' => $subscriptionId]);
+            return;
+        }
+
+        // TRIAL ENDED / SUBSCRIPTION STARTED (First Payment)
+        if ($eventType === 'invoice.payment_succeeded' && $subscription->status === 'active') {
+
+            $invoice = $object;
+            $amount = ($invoice->amount_paid ?? 0) / 100;
+            $currency = strtoupper($invoice->currency ?? 'GBP');
+
+            $tax = 0;
+            if (!empty($invoice->total_tax_amounts)) {
+                foreach ($invoice->total_tax_amounts as $t) {
+                    $tax += ($t->amount ?? 0) / 100;
+                }
+            }
+
+            // Check if this is the first payment after trial
+            $isFirstPayment = false;
+            if ($subs) {
+                $isFirstPayment = !empty($subs->current_start_trial_date) &&
+                    empty($subs->current_start_subscription_date);
+            } else {
+                // No record exists, create first one
+                $isFirstPayment = true;
+            }
+
+            if ($isFirstPayment) {
+                if ($subs) {
+                    // Update existing trial record with subscription dates
+                    $subs->current_start_subscription_date = $stripeStart;
+                    $subs->current_end_subscription_date = $stripeEnd;
+                    $subs->amount = $amount;
+                    $subs->currency = $currency;
+                    $subs->tax = $tax;
+                    $subs->status = 'active';
+                    $subs->upcoming_payment = $stripeEnd;
+                    $subs->save();
+                } else {
+                    // Create new record for first payment (if trial wasn't tracked)
+                    MonthlyCharge::create([
+                        'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
+                        'name' => $customer->name ?? 'Creator',
+                        'email' => $customer->email,
+                        'stripe_id' => $subscriptionId,
+                        'current_start_trial_date' => null, // No trial for this subscription
+                        'current_end_trial_date' => null,
+                        'current_start_subscription_date' => $stripeStart,
+                        'current_end_subscription_date' => $stripeEnd,
+                        'amount' => $amount,
+                        'currency' => $currency,
+                        'tax' => $tax,
+                        'status' => 'active',
+                        'upcoming_payment' => $stripeEnd,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                Log::info("MonthlyCharge: First Payment processed", ['sub_id' => $subscriptionId]);
+                return;
+            }
+        }
+
+        // SUBSCRIPTION RENEWAL (Existing subscription, new billing period)
+        if ($eventType === 'invoice.payment_succeeded' && $subs && $subs->status === 'active') {
+
+            $invoice = $object;
+            $amount = ($invoice->amount_paid ?? 0) / 100;
+            $currency = strtoupper($invoice->currency ?? 'GBP');
+
+            $tax = 0;
+            if (!empty($invoice->total_tax_amounts)) {
+                foreach ($invoice->total_tax_amounts as $t) {
+                    $tax += ($t->amount ?? 0) / 100;
+                }
+            }
+
+            // Check if this billing period already exists
+            $exists = MonthlyCharge::where('stripe_id', $subscriptionId)
+                ->where('current_start_subscription_date', $stripeStart->toDateString())
+                ->where('current_end_subscription_date', $stripeEnd->toDateString())
+                ->exists();
+
+            if (!$exists) {
+                // End previous cycle
+                $subs->status = 'ended';
+                $subs->save();
+
+                // Create new active cycle WITHOUT trial dates
+                MonthlyCharge::create([
+                    'user_id' => $subs->user_id,
+                    'name' => $subs->name ?? $customer->name ?? 'Creator',
+                    'email' => $subs->email ?? $customer->email,
+                    'stripe_id' => $subscriptionId,
+
+                    // DO NOT copy trial dates for renewals
+                    'current_start_trial_date' => null,
+                    'current_end_trial_date' => null,
+
+                    // New subscription period
+                    'current_start_subscription_date' => $stripeStart,
+                    'current_end_subscription_date' => $stripeEnd,
+
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'tax' => $tax,
+                    'status' => 'active',
+                    'upcoming_payment' => $stripeEnd,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Update user subscription status
+                if ($subs->user) {
+                    $subs->user->is_subscribed = 1;
+                    $subs->user->save();
+                }
+
+                Log::info("MonthlyCharge: Renewal processed", ['sub_id' => $subscriptionId]);
+                return;
+            }
+        }
+
+        // PAYMENT FAILED
+        if ($eventType === 'invoice.payment_failed') {
+            if ($subs) {
+                $subs->status = 'failed';
+                $subs->upcoming_payment = null;
+                $subs->save();
+
+                if ($subs->user) {
+                    $subs->user->is_subscribed = 0;
+                    $subs->user->save();
+                }
+            }
+            Log::info("MonthlyCharge: Payment Failed processed", ['sub_id' => $subscriptionId]);
+            return;
+        }
+
+        // SUBSCRIPTION CANCELLED
+        if ($eventType === 'customer.subscription.deleted') {
+            if ($subs) {
+                $subs->status = 'cancelled';
+                $subs->upcoming_payment = null;
+                $subs->save();
+
+                if ($subs->user) {
+                    $subs->user->is_subscribed = 0;
+                    $subs->user->save();
+                }
+            }
+            Log::info("MonthlyCharge: Subscription Cancelled processed", ['sub_id' => $subscriptionId]);
+            return;
+        }
+
+        // UPDATE STATUS FOR OTHER EVENTS
+        if ($subs && $subs->status !== $subscription->status) {
+            $subs->status = $subscription->status;
+
+            if (in_array($subscription->status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
+                $subs->upcoming_payment = $stripeEnd;
+            } else {
+                $subs->upcoming_payment = null;
+            }
+
+            $subs->save();
+            Log::info("MonthlyCharge: Status Updated", ['sub_id' => $subscriptionId, 'status' => $subs->status]);
+        }
+
+        // Handle customer details update
+        if (in_array($eventType, ['customer.updated', 'customer.subscription.updated']) && $subs) {
+            // Update name and email if they changed in Stripe
+            if ($customer) {
+                $updates = [];
+                if ($customer->name && $customer->name !== $subs->name) {
+                    $updates['name'] = $customer->name;
+                }
+                if ($customer->email && $customer->email !== $subs->email) {
+                    $updates['email'] = $customer->email;
+                }
+
+                if (!empty($updates)) {
+                    // Update all records for this subscription to keep consistency
+                    MonthlyCharge::where('stripe_id', $subscriptionId)
+                        ->update($updates);
+                    Log::info("MonthlyCharge: Customer details updated", ['sub_id' => $subscriptionId]);
+                }
+            }
+        }
+        
+        // Handle Manual Capture (review.closed)
+        if ($eventType === 'review.closed') {
+             $review = $object;
+             if ($review->reason === 'approved') {
+                 $paymentIntentId = $review->payment_intent;
+                 if ($paymentIntentId) {
+                     try {
+                         $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
+                         if ($paymentIntent->status === 'requires_capture') {
+                             $stripe->paymentIntents->capture($paymentIntentId);
+                             Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
+                         }
+                     } catch (\Exception $e) {
+                         Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
+                     }
+                 }
+             }
         }
     }
 
@@ -245,194 +674,6 @@ class StripeWebhookController extends Controller
         }
 
         return false;
-    }
-
-    // private function checkForFraud($session)
-    // {
-    //     // Analyze the session details for fraud
-    //     $lastError = $session->last_error;
-    //     $verificationChecks = $session->verification_checks;
-
-    //     if ($lastError) {
-    //         Log::warning('Fraud detected based on last error', ['error' => $lastError]);
-    //         return true; // Fraud detected due to error
-    //     }
-
-    //     // Check if any verification checks failed
-    //     if ($verificationChecks) {
-    //         foreach ($verificationChecks as $check) {
-    //             if ($check->status !== 'passed') {
-    //                 Log::warning('Fraud detected based on failed verification check', ['check' => $check]);
-    //                 return true; // Fraud detected due to failed checks
-    //             }
-    //         }
-    //     }
-
-    //     // Additional fraud detection logic can go here (e.g., comparing with other systems)
-
-    //     return false; // No fraud detected
-    // }
-
-    /**
-     * Handle Stripe Webhook for all subscription updates
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function handle(Request $request) {
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
-        $payload = @file_get_contents('php://input');
-        $sig_header = $request->header('Stripe-Signature');
-        $event = null;
-
-        try {
-            $event = Webhook::constructEvent(
-                $payload,
-                $sig_header,
-                $endpoint_secret
-            );
-        } catch (\UnexpectedValueException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ]);
-            // Invalid payload
-            http_response_code(400);
-            exit();
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => $e->getMessage()
-            ]);
-            http_response_code(400);
-            exit();
-        }
-
-        if (!$event || !isset($event->type)) {
-            Log::warning('Stripe webhook: invalid payload');
-            return response()->json(['error' => 'Invalid payload'], 400);
-        }
-
-        $type = $event->type;
-        $data = $event->data->object;
-
-        $metadata = $event->data->object->metadata ?? null;
-
-        switch ($type) {
-            case 'checkout.session.completed':
-                Log::info("Handling Checkout Session Completed");
-                $this->handleCheckoutSessionCompleted($data, $metadata);
-                $this->handleSupportPaymentDeliverableReady($data, $metadata);
-                break;
-
-            case 'checkout.session.async_payment_succeeded':
-                Log::info("Handling Checkout Session Async Payment Succeeded");
-                $this->handleAsyncPaymentSucceeded($data);
-                break;
-
-            case 'checkout.session.async_payment_failed':
-                Log::info("Handling Checkout Session Async Payment Failed");
-                $this->handleAsyncPaymentFailed($data);
-                break;
-
-            case 'invoice.paid':
-                Log::info("Handling Invoice Paid");
-                $this->handleInvoicePaid($data);
-                break;
-
-            case 'invoice.payment_succeeded':
-                Log::info("Handling Invoice Payment Succeeded");
-                $this->handleInvoicePaymentSucceeded($data, $metadata);
-                $this->handleSupportPaymentDeliverableReady($data, $metadata);
-                break;
-
-            case 'charge.dispute.created':
-                Log::info("Handling Charge Dispute Created");
-                $this->handleChargeDisputeCreated($data);
-                break;
-
-            case 'charge.dispute.closed':
-                Log::info("Handling Charge Dispute Closed");
-                $this->handleChargeDisputeClosed($data);
-                break;
-
-            case 'charge.refunded':
-                Log::info("Handling Charge Refunded");
-                $this->handleChargeRefunded($data);
-                break;
-
-            case 'payment_intent.succeeded':
-                Log::info("Handling Payment Intent Succeeded");
-                $this->handlePaymentIntentSucceeded($data);
-                break;
-
-            case 'payment_intent.payment_failed':
-                Log::info("Handling Payment Intent Failed");
-                $this->handlePaymentIntentFailed($data);
-                break;
-
-            case 'early_fraud_warning.created':
-                Log::info("Handling Early Fraud Warning Created");
-                $this->handleEarlyFraudWarningCreated($data);
-                break;
-
-            case 'customer.subscription.updated':
-                $productType = $metadata->type ?? null;
-
-                switch ($productType) {
-                    case 'bill':
-                        Log::info("Handling Bill Subscription Update");
-                        $this->handleBillSubscriptionUpdate($data, $metadata);
-                        break;
-
-                    case 'membership':
-                        Log::info("Handling Membership Subscription Update");
-                        $this->handleMembershipSubscriptionUpdate($data, $metadata);
-                        break;
-
-                    case 'wish':
-                        Log::info("Handling Wish Subscription Update");
-                        $this->handleWishSubscriptionUpdate($data, $metadata);
-                        break;
-
-                    default:
-                        Log::warning("Unknown product type in metadata: " . json_encode($metadata));
-                        break;
-                }
-                break;
-
-            case 'customer.subscription.deleted':
-                $this->customerSubscriptionDeleted($data);
-                Log::info("Subscription canceled: " . $data->id);
-                break;
-
-            // case 'customer.subscription.trial_will_end':
-            //     $subscriptionId = data_get($event, 'data.object.id');
-            //     $customerEmail = data_get($event, 'data.object.customer_email');
-            //     $customerName = data_get($event, 'data.object.customer_name');
-            //     $invoicePdf = data_get($event, 'data.object.invoice_pdf');
-
-            //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->first();
-
-            //     $array = [
-            //         'email' => $customerEmail,
-            //         'name' => $customerName,
-            //         'invoice_pdf' => $invoicePdf,
-            //         'uuid' => $subs->uuid,
-            //         'notification' => $subs->user->notification_send ?? 0,
-            //         'trial_end' => $subs->upcoming_payment ?? null,
-            //         'amount' => $subs->amount ?? null,
-            //         'currency' => $subs->currency ?? 'GBP',
-            //     ];
-
-            //     SendRenewMail::dispatch($array, 'trial', 'site');
-            //     Log::info("Trial will end soon for subscription: " . $data->id);
-            //     break;
-            // $this->customerSubscriptionTrialWillEnd($data);
-            default:
-                Log::info("Unhandled event type: " . $type);
-        }
-        return response()->json(['status' => 'success']);
     }
 
     /**
@@ -750,14 +991,68 @@ class StripeWebhookController extends Controller
     private function handleChargeDisputeCreated($dispute)
     {
         $paymentIntentId = $dispute->payment_intent ?? null;
+        $creatorId = null;
+
+        Log::info("handleChargeDisputeCreated: Processing dispute", [
+            'dispute_id' => $dispute->id,
+            'payment_intent_id' => $paymentIntentId,
+            'amount' => $dispute->amount,
+            'reason' => $dispute->reason
+        ]);
 
         // --- Risk Engine: Record Dispute ---
         try {
             $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->with('creator')->first();
             
-            \App\Models\Dispute::create([
+            if ($payment) {
+                $creatorId = $payment->creator_id;
+            }
+            
+            if (!$payment && $paymentIntentId) {
+                Log::warning("handleChargeDisputeCreated: Payment not found for PaymentIntent ID: $paymentIntentId. Attempting auto-creation.");
+                
+                $amount = $dispute->amount; // Default to dispute amount if we can't find original
+                
+                // Check Deliverable
+                $deliverable = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)->first();
+                if ($deliverable) {
+                    $creatorId = $deliverable->creator_id;
+                    $amount = (int)($deliverable->transaction_amount * 100); // Convert back to cents
+                }
+                
+                // Check TaskPurchase
+                if (!$creatorId) {
+                    $taskPurchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+                    if ($taskPurchase) {
+                        $creatorId = $taskPurchase->creator_id;
+                        $amount = (int)($taskPurchase->amount * 100);
+                    }
+                }
+
+                if ($creatorId) {
+                    try {
+                        $payment = \App\Models\Payment::create([
+                            'stripe_payment_intent_id' => $paymentIntentId,
+                            'creator_id' => $creatorId,
+                            'amount' => $amount,
+                            'currency' => $dispute->currency,
+                            'status' => 'disputed',
+                        ]);
+                        $payment->load('creator'); // Load relationship for downstream logic
+                        Log::info("handleChargeDisputeCreated: Auto-created Payment record", ['payment_id' => $payment->id]);
+                    } catch (\Exception $e) {
+                        Log::error("handleChargeDisputeCreated: Failed to auto-create payment: " . $e->getMessage());
+                    }
+                }
+            } else {
+                if ($payment) {
+                    Log::info("handleChargeDisputeCreated: Payment found", ['payment_id' => $payment->id, 'creator_id' => $payment->creator_id]);
+                }
+            }
+
+            $dbDispute = \App\Models\Dispute::create([
                 'payment_id' => $payment ? $payment->id : null,
-                'creator_id' => $payment ? $payment->creator_id : null,
+                'creator_id' => $creatorId,
                 'stripe_dispute_id' => $dispute->id,
                 'amount' => $dispute->amount,
                 'currency' => $dispute->currency,
@@ -766,6 +1061,12 @@ class StripeWebhookController extends Controller
                 'evidence_due_by' => isset($dispute->evidence_details->due_by) ? Carbon::createFromTimestamp($dispute->evidence_details->due_by) : null,
             ]);
             
+            Log::info("Risk Engine: Dispute model created", [
+                'db_dispute_id' => $dbDispute->id ?? null,
+                'creator_id' => $dbDispute->creator_id ?? $creatorId,
+                'payment_id' => $dbDispute->payment_id ?? ($payment->id ?? null),
+            ]);
+
             // Update Identity Rollups (Dispute Count)
             if ($payment && $payment->riskIdentity) {
                 app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($payment->riskIdentity);
@@ -774,25 +1075,36 @@ class StripeWebhookController extends Controller
             // Update Payment Status
             if ($payment) {
                 $payment->update(['status' => 'disputed']);
-                
-                // Recalculate Risk Metrics
+            }
+
+            // Recalculate Risk Metrics (Always, if we know the creator)
+            if ($creatorId) {
                 try {
-                    $this->riskService->recalculateMetrics($payment->creator_id);
+                    $this->riskService->recalculateMetrics($creatorId);
                 } catch (\Exception $e) {
                     Log::error("Risk Engine: Failed to recalculate metrics on dispute: " . $e->getMessage());
                 }
+            }
 
+            if ($payment || $creatorId) {
                 // Notify Creator
-                if ($payment->creator) {
+                $creator = null;
+                if ($payment && $payment->creator) {
+                    $creator = $payment->creator;
+                } elseif ($creatorId) {
+                    $creator = \App\Models\User::find($creatorId);
+                }
+
+                if ($creator) {
                     $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
                     $formattedAmount = number_format($dispute->amount / 100, 2);
                     
-                    $title = "⚠️ Action Required: New Dispute Received";
-                    $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened. Reason: " . str_replace('_', ' ', $dispute->reason) . ". Please submit evidence immediately to prevent chargeback.";
+                    $title = "⚠️ Dispute Opened: We Are Handling It";
+                    $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened by a supporter. No action is required from you—Spenny Piggy is automatically submitting evidence on your behalf. The amount is temporarily reserved.";
                     
                     try {
-                        \App\Helpers::sendNotification($title, $content, $payment->creator->email);
-                        Log::info("Dispute notification sent to creator: " . $payment->creator->email);
+                        \App\Helpers::sendNotification($title, $content, $creator->email);
+                        Log::info("Dispute notification sent to creator: " . $creator->email);
                     } catch (\Exception $e) {
                         Log::error("Failed to send dispute notification: " . $e->getMessage());
                     }
@@ -1603,695 +1915,6 @@ class StripeWebhookController extends Controller
         Log::info("Subscription deleted: {$subscriptionId}");
     }
 
-    /**
-     * Handle Stripe Webhook for mandatory subscription status
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-
-    public function mandatorySubscriptionStatus(Request $request)
-    {
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-        $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
-
-        $payload = $request->getContent();
-        $sig_header = $request->header('Stripe-Signature');
-
-        try {
-            $event = \Stripe\Webhook::constructEvent(
-                $payload,
-                $sig_header,
-                $endpoint_secret
-            );
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Invalid signature'], 400);
-        }
-
-        $eventType = $event->type;
-        $object = $event->data->object;
-
-        $subscriptionId = $object->subscription ?? $object->id ?? null;
-        if (!$subscriptionId) return response()->json(['ignored']);
-
-        // Fetch subscription from Stripe FIRST to get customer info
-        $subscription = $stripe->subscriptions->retrieve($subscriptionId, [
-            'expand' => ['customer']
-        ]);
-
-        // Get customer details from Stripe
-        $customer = $subscription->customer;
-        if (is_string($customer)) {
-            $customer = $stripe->customers->retrieve($customer);
-        }
-
-        // Latest DB row for this subscription
-        $subs = MonthlyCharge::where('stripe_id', $subscriptionId)
-            ->latest()
-            ->first();
-
-        /* ================= Stripe billing period ================= */
-        $stripeStart = Carbon::createFromTimestamp($subscription->current_period_start);
-        $stripeEnd   = Carbon::createFromTimestamp($subscription->current_period_end);
-
-        /* ================= Handle different event types ================= */
-
-        // TRIAL STARTED
-        if (
-            $eventType === 'customer.subscription.trial_will_end' ||
-            ($eventType === 'customer.subscription.created' && $subscription->status === 'trialing')
-        ) {
-
-            // Create new record for trial
-            MonthlyCharge::create([
-                'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
-                'name' => $customer->name ?? 'Creator',
-                'email' => $customer->email,
-                'stripe_id' => $subscriptionId,
-                'current_start_trial_date' => $stripeStart,
-                'current_end_trial_date' => $stripeEnd,
-                'current_start_subscription_date' => null,
-                'current_end_subscription_date' => null,
-                'status' => 'trialing',
-                'upcoming_payment' => $stripeEnd,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            return response()->json(['success' => 'trial_started']);
-        }
-
-        // TRIAL ENDED / SUBSCRIPTION STARTED (First Payment)
-        if ($eventType === 'invoice.payment_succeeded' && $subscription->status === 'active') {
-
-            $invoice = $object;
-            $amount = ($invoice->amount_paid ?? 0) / 100;
-            $currency = strtoupper($invoice->currency ?? 'GBP');
-
-            $tax = 0;
-            if (!empty($invoice->total_tax_amounts)) {
-                foreach ($invoice->total_tax_amounts as $t) {
-                    $tax += ($t->amount ?? 0) / 100;
-                }
-            }
-
-            // Check if this is the first payment after trial
-            $isFirstPayment = false;
-            if ($subs) {
-                $isFirstPayment = !empty($subs->current_start_trial_date) &&
-                    empty($subs->current_start_subscription_date);
-            } else {
-                // No record exists, create first one
-                $isFirstPayment = true;
-            }
-
-            if ($isFirstPayment) {
-                if ($subs) {
-                    // Update existing trial record with subscription dates
-                    $subs->current_start_subscription_date = $stripeStart;
-                    $subs->current_end_subscription_date = $stripeEnd;
-                    $subs->amount = $amount;
-                    $subs->currency = $currency;
-                    $subs->tax = $tax;
-                    $subs->status = 'active';
-                    $subs->upcoming_payment = $stripeEnd;
-                    $subs->save();
-                } else {
-                    // Create new record for first payment (if trial wasn't tracked)
-                    MonthlyCharge::create([
-                        'user_id' => $subscription->metadata->user_id ?? $customer->metadata->user_id ?? null,
-                        'name' => $customer->name ?? 'Creator',
-                        'email' => $customer->email,
-                        'stripe_id' => $subscriptionId,
-                        'current_start_trial_date' => null, // No trial for this subscription
-                        'current_end_trial_date' => null,
-                        'current_start_subscription_date' => $stripeStart,
-                        'current_end_subscription_date' => $stripeEnd,
-                        'amount' => $amount,
-                        'currency' => $currency,
-                        'tax' => $tax,
-                        'status' => 'active',
-                        'upcoming_payment' => $stripeEnd,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-
-                return response()->json(['success' => 'first_payment_completed']);
-            }
-        }
-
-        // SUBSCRIPTION RENEWAL (Existing subscription, new billing period)
-        if ($eventType === 'invoice.payment_succeeded' && $subs && $subs->status === 'active') {
-
-            $invoice = $object;
-            $amount = ($invoice->amount_paid ?? 0) / 100;
-            $currency = strtoupper($invoice->currency ?? 'GBP');
-
-            $tax = 0;
-            if (!empty($invoice->total_tax_amounts)) {
-                foreach ($invoice->total_tax_amounts as $t) {
-                    $tax += ($t->amount ?? 0) / 100;
-                }
-            }
-
-            // Check if this billing period already exists
-            $exists = MonthlyCharge::where('stripe_id', $subscriptionId)
-                ->where('current_start_subscription_date', $stripeStart->toDateString())
-                ->where('current_end_subscription_date', $stripeEnd->toDateString())
-                ->exists();
-
-            if (!$exists) {
-                // End previous cycle
-                $subs->status = 'ended';
-                $subs->save();
-
-                // Create new active cycle WITHOUT trial dates
-                MonthlyCharge::create([
-                    'user_id' => $subs->user_id,
-                    'name' => $subs->name ?? $customer->name ?? 'Creator',
-                    'email' => $subs->email ?? $customer->email,
-                    'stripe_id' => $subscriptionId,
-
-                    // DO NOT copy trial dates for renewals
-                    'current_start_trial_date' => null,
-                    'current_end_trial_date' => null,
-
-                    // New subscription period
-                    'current_start_subscription_date' => $stripeStart,
-                    'current_end_subscription_date' => $stripeEnd,
-
-                    'amount' => $amount,
-                    'currency' => $currency,
-                    'tax' => $tax,
-                    'status' => 'active',
-                    'upcoming_payment' => $stripeEnd,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                // Update user subscription status
-                if ($subs->user) {
-                    $subs->user->is_subscribed = 1;
-                    $subs->user->save();
-                }
-
-                return response()->json(['success' => 'renewal_completed']);
-            }
-        }
-
-        // PAYMENT FAILED
-        if ($eventType === 'invoice.payment_failed') {
-            if ($subs) {
-                $subs->status = 'failed';
-                $subs->upcoming_payment = null;
-                $subs->save();
-
-                if ($subs->user) {
-                    $subs->user->is_subscribed = 0;
-                    $subs->user->save();
-                }
-            }
-
-            return response()->json(['success' => 'payment_failed']);
-        }
-
-        // SUBSCRIPTION CANCELLED
-        if ($eventType === 'customer.subscription.deleted') {
-            if ($subs) {
-                $subs->status = 'cancelled';
-                $subs->upcoming_payment = null;
-                $subs->save();
-
-                if ($subs->user) {
-                    $subs->user->is_subscribed = 0;
-                    $subs->user->save();
-                }
-            }
-
-            return response()->json(['success' => 'subscription_cancelled']);
-        }
-
-        // UPDATE STATUS FOR OTHER EVENTS
-        if ($subs && $subs->status !== $subscription->status) {
-            $subs->status = $subscription->status;
-
-            if (in_array($subscription->status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
-                $subs->upcoming_payment = $stripeEnd;
-            } else {
-                $subs->upcoming_payment = null;
-            }
-
-            $subs->save();
-        }
-
-        // Handle customer details update
-        if (in_array($eventType, ['customer.updated', 'customer.subscription.updated']) && $subs) {
-            // Update name and email if they changed in Stripe
-            if ($customer) {
-                $updates = [];
-                if ($customer->name && $customer->name !== $subs->name) {
-                    $updates['name'] = $customer->name;
-                }
-                if ($customer->email && $customer->email !== $subs->email) {
-                    $updates['email'] = $customer->email;
-                }
-
-                if (!empty($updates)) {
-                    // Update all records for this subscription to keep consistency
-                    MonthlyCharge::where('stripe_id', $subscriptionId)
-                        ->update($updates);
-                }
-            }
-        }
-
-        return response()->json(['success' => 'status_updated']);
-    }
-
-
-
-
-    // public function mandatorySubscriptionStatus(Request $request)
-    // {
-    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-    //     $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
-
-    //     $payload = $request->getContent();
-    //     $sig_header = $request->header('Stripe-Signature');
-
-    //     try {
-    //         $event = \Stripe\Webhook::constructEvent(
-    //             $payload,
-    //             $sig_header,
-    //             $endpoint_secret
-    //         );
-    //     } catch (\Exception $e) {
-    //         Log::error("Webhook verification failed: " . $e->getMessage());
-    //         return response()->json(['error' => 'Invalid signature'], 400);
-    //     }
-
-    //     $eventType = $event->type;
-    //     $object = $event->data->object;
-
-    //     // Subscription & customer IDs
-    //     $subscriptionId = $object->subscription ?? $object->id ?? null;
-    //     $customerId = $object->customer ?? null;
-
-    //     if (!$subscriptionId) {
-    //         Log::info("No subscription id in event");
-    //         return response()->json(['status' => 'ignored']);
-    //     }
-
-    //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
-
-    //     if (!$subs) {
-    //         Log::info("No DB record for subscription {$subscriptionId}");
-    //         return response()->json(['status' => 'no_record']);
-    //     }
-
-    //     // Fetch subscription fresh from Stripe
-    //     try {
-    //         $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
-    //     } catch (\Exception $e) {
-    //         Log::error("Failed to retrieve subscription: " . $e->getMessage());
-    //         return response()->json(['error' => 'subscription fetch failed']);
-    //     }
-
-    //     /* -------------------------------
-    //    PERIOD DATES
-    //     --------------------------------*/
-
-    //     $currentStart = $subscription->current_period_start
-    //         ? Carbon::createFromTimestamp($subscription->current_period_start)
-    //         : null;
-
-    //     $currentEnd = $subscription->current_period_end
-    //         ? Carbon::createFromTimestamp($subscription->current_period_end)
-    //         : null;
-
-    //     $subs->current_start_subscription_date = $currentStart;
-    //     $subs->current_end_subscription_date = $currentEnd;
-
-    //     if (
-    //         in_array($subscription->status, ['active', 'trialing'])
-    //         && !$subscription->cancel_at_period_end
-    //     ) {
-    //         $subs->upcoming_payment = $currentEnd;
-    //     } else {
-    //         $subs->upcoming_payment = null;
-    //     }
-
-    //     $subs->status = $subscription->status ?? 'incomplete';
-
-    //     /* -------------------------------
-    //    AMOUNT + CURRENCY (FIXED)
-    //     --------------------------------*/
-
-    //     if ($eventType === 'invoice.payment_succeeded') {
-
-    //         // Stripe invoice object
-    //         $invoice = $object;
-
-    //         // Amount paid in cents → convert
-    //         $amountPaid = ($invoice->amount_paid ?? 0) / 100;
-
-    //         // Currency
-    //         $currency = strtoupper($invoice->currency ?? 'GBP');
-
-    //         // Tax (if exists)
-    //         $taxAmount = 0;
-
-    //         if (!empty($invoice->total_tax_amounts)) {
-    //             foreach ($invoice->total_tax_amounts as $tax) {
-    //                 $taxAmount += ($tax->amount ?? 0) / 100;
-    //             }
-    //         }
-
-    //         // Update DB properly
-    //         $subs->amount = $amountPaid;
-    //         $subs->currency = $currency;
-    //         $subs->tax = $taxAmount;
-    //     }
-
-    //     $subs->save();
-
-    //     /* -------------------------------
-    //    USER STATUS
-    //     --------------------------------*/
-
-    //     $user = $subs->user;
-
-    //     if ($eventType === 'invoice.payment_succeeded') {
-
-    //         if ($user) {
-    //             $user->is_subscribed = 1;
-    //             $user->save();
-    //         }
-
-    //         $trialEnd = $subscription->trial_end ?? 0;
-    //         $previousStart = optional(
-    //             $subs->getOriginal('current_start_subscription_date')
-    //         )?->timestamp ?? 0;
-
-    //         $nowStart = $subscription->current_period_start ?? 0;
-
-    //         if (
-    //             $subscription->status === 'active'
-    //             && $trialEnd > 0
-    //             && $nowStart > $trialEnd
-    //             && $previousStart < $trialEnd
-    //         ) {
-
-    //             $type = 'start';
-    //         } else {
-    //             $type = 'renew';
-    //         }
-
-    //         if ($subs->last_email_type !== $type) {
-
-    //             if ($type === 'renew') {
-    //                 Helpers::sendNotification(
-    //                     'Subscription renewed 🎉',
-    //                     'Your subscription was renewed successfully!',
-    //                     $user?->email
-    //                 );
-    //             } else {
-    //                 Helpers::sendNotification(
-    //                     'Subscription started 🎉',
-    //                     'Welcome to premium subscription!',
-    //                     $user?->email
-    //                 );
-    //             }
-
-    //             SendRenewMail::dispatch([
-    //                 'email' => $user?->email,
-    //                 'name' => $user?->name,
-    //                 'uuid' => $subs->uuid,
-    //                 'amount' => $subs->amount,
-    //                 'currency' => $subs->currency,
-    //                 'renew_on' => $currentStart,
-    //                 'trial_end' => $subs->current_end_trial_date,
-    //                 'notification' => $user?->notification_send ?? 0,
-    //             ], $type, 'site');
-
-    //             $subs->last_email_type = $type;
-    //             $subs->save();
-    //         }
-    //     }
-
-    //     /* -------------------------------
-    //    FAILED PAYMENT
-    //  --------------------------------*/
-
-    //     if ($eventType === 'invoice.payment_failed') {
-
-    //         $subs->status = 'failed';
-    //         $subs->save();
-
-    //         if ($user) {
-    //             $user->is_subscribed = 0;
-    //             $user->save();
-    //         }
-
-    //         Helpers::sendNotification(
-    //             'Payment failed ❌',
-    //             'Please update your payment method.',
-    //             $user?->email
-    //         );
-
-    //         SendRenewMail::dispatch([
-    //             'email' => $user?->email,
-    //             'name' => $user?->name,
-    //             'uuid' => $subs->uuid,
-    //             'amount' => $subs->amount,
-    //             'currency' => $subs->currency
-    //         ], 'failed', 'site');
-    //     }
-
-    //     /* -------------------------------
-    //    CANCELLED
-    //     --------------------------------*/
-
-    //     if ($eventType === 'customer.subscription.deleted') {
-
-    //         $subs->status = 'cancelled';
-    //         $subs->cancelled_at = now();
-    //         $subs->upcoming_payment = null;
-    //         $subs->save();
-
-    //         if ($user) {
-    //             $user->is_subscribed = 0;
-    //             $user->save();
-    //         }
-
-    //         Helpers::sendNotification(
-    //             'Subscription cancelled 🛑',
-    //             'Your subscription has been cancelled.',
-    //             $user?->email
-    //         );
-
-    //         SendRenewMail::dispatch([
-    //             'email' => $user?->email,
-    //             'name' => $user?->name,
-    //             'uuid' => $subs->uuid,
-    //         ], 'cancelled', 'site');
-    //     }
-
-    //     return response()->json(['status' => 'success']);
-    // }
-
-    // public function mandatorySubscriptionStatus(Request $request)
-    // {
-    //     $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
-    //     $endpoint_secret = env('MANDATORY_STATUS_WEBHOOK_SECRET');
-    //     $payload = $request->getContent();
-    //     $sig_header = $request->header('Stripe-Signature');
-
-    //     try {
-    //         $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-    //     } catch (\UnexpectedValueException | \Stripe\Exception\SignatureVerificationException $e) {
-    //         Log::error("Webhook signature verification failed: " . $e->getMessage());
-    //         return response()->json(['error' => 'Invalid signature'], 400);
-    //     }
-
-    //     $eventType = $event->type;
-    //     $object = $event->data->object;
-    //     $subscriptionId = data_get($object, 'subscription') ?? data_get($object, 'id');
-    //     $customerId = data_get($object, 'customer');
-
-    //     try {
-    //         $customer = $stripe->customers->retrieve($customerId, []);
-    //     } catch (\Exception $e) {
-    //         Log::error("Failed to retrieve customer: " . $e->getMessage());
-    //         return response()->json(['error' => 'Customer not found'], 404);
-    //     }
-
-    //     $subscription = null;
-    //     try {
-    //         $subscription = $stripe->subscriptions->retrieve($subscriptionId, []);
-    //     } catch (\Exception $e) {
-    //         Log::error("Failed to retrieve subscription: " . $e->getMessage());
-    //     }
-
-    //     $subs = MonthlyCharge::where('stripe_id', $subscriptionId)->latest()->first();
-
-    //     if (!$subs) {
-    //         Log::info("Subscription record not found for Stripe ID: {$subscriptionId}");
-    //         return response()->json(['message' => 'No record to update'], 200);
-    //     }
-
-    //     $currentPeriodStart = optional($subscription)->current_period_start ? Carbon::createFromTimestamp($subscription->current_period_start) : null;
-    //     $currentPeriodEnd = optional($subscription)->current_period_end ? Carbon::createFromTimestamp($subscription->current_period_end) : null;
-    //     $status = $subscription->status ?? 'incomplete';
-
-    //     $subs->current_start_subscription_date = $currentPeriodStart;
-    //     $subs->current_end_subscription_date = $currentPeriodEnd;
-    //     $subs->status = $status;
-
-    //     if (in_array($status, ['active', 'trialing']) && !$subscription->cancel_at_period_end) {
-    //         $subs->upcoming_payment = Carbon::createFromTimestamp($subscription->current_period_end);
-    //     } else {
-    //         $subs->upcoming_payment = null;
-    //     }
-
-    //     $subs->save();
-    //     // $subscriptionId = data_get($object, 'subscription');
-    //     $customerName = data_get($object, 'customer_name');
-    //     $invoicePdf = data_get($object, 'invoice_pdf');
-    //     $customerEmail = $customer->email ?? null;
-
-    //     $array = [
-    //         'email' => $customerEmail ?? null,
-    //         'name' => $customerName ?? null,
-    //         'uuid' => $subs->uuid,
-    //         'invoice_pdf' => $invoicePdf,
-    //         'notification' => $subs->user->notification_send ?? 0,
-    //         'renew_on' => $currentPeriodStart,
-    //         'trial_end' => $subs->current_end_trial_date,
-    //         'amount' => $subs->amount ?? null,
-    //         'currency' => $subs->currency ?? 'GBP',
-    //     ];
-
-    //     $user = $subs->user;
-
-    //     switch ($eventType) {
-    //         case 'customer.subscription.trial_will_end':
-    //             Helpers::sendNotification('Free Trial Ending Soon ⏳.', 'Your free trial is about to end.', $customerEmail ?? null);
-    //             SendRenewMail::dispatch($array, 'trial', 'site');
-    //             break;
-
-    //         case 'invoice.payment_succeeded':
-    //             if ($user) {
-    //                 $user->is_subscribed = 1;
-    //                 $user->save();
-    //             }
-
-    //             $nowStart = optional($subscription)->current_period_start;
-    //             $previousStart = optional($subs->getOriginal('current_start_subscription_date'))?->timestamp ?? 0;
-    //             $trialEnd = optional($subscription)->trial_end ?? 0;
-
-    //             // Determine if this is first payment after trial
-    //             if ($status === 'active' && $trialEnd > 0 && $nowStart > $trialEnd && $previousStart < $trialEnd) {
-    //                 $type = 'start';
-    //             } else {
-    //                 $type = 'renew';
-    //             }
-
-    //             // Ensure we don't send the same type twice for the same cycle
-    //             if ($subs->last_email_type !== $type) {
-    //                 if ($type === 'renew') {
-    //                     Helpers::sendNotification(
-    //                         'Subscription renewed 🎉',
-    //                         '🎉 Your subscription was renewed. Thank you for continuing your journey with Spenny Piggy!',
-    //                         $customerEmail ?? null
-    //                     );
-    //                 } else {
-    //                     Helpers::sendNotification(
-    //                         '🎉 You’ve successfully started your subscription!',
-    //                         'Get ready to unlock all premium features 🚀 — no limits, no restrictions!',
-    //                         $customerEmail ?? null
-    //                     );
-    //                 }
-    //                 SendRenewMail::dispatch($array, $type, 'site');
-
-    //                 // Update record so next webhook won't send same email again
-    //                 $subs->last_email_type = $type;
-    //                 $subs->save();
-    //             } else {
-    //                 Log::info("Skipping duplicate {$type} email for subscription {$subscriptionId}");
-    //             }
-    //             break;
-
-    //         case 'review.closed':
-    //             $review = $event->data->object;
-
-    //             if ($review->reason === 'approved') {
-    //                 $paymentIntentId = $review->payment_intent;
-
-    //                 if ($paymentIntentId) {
-    //                     try {
-    //                         $paymentIntent = $stripe->paymentIntents->retrieve($paymentIntentId, []);
-
-    //                         // Only capture if it's still requires_capture
-    //                         if ($paymentIntent->status === 'requires_capture') {
-    //                             $stripe->paymentIntents->capture($paymentIntentId);
-    //                             Log::info("Manually captured PaymentIntent: {$paymentIntentId}");
-    //                         }
-    //                     } catch (\Exception $e) {
-    //                         Log::error("Failed to capture PaymentIntent {$paymentIntentId}: " . $e->getMessage());
-    //                     }
-    //                 }
-    //             }
-    //             break;
-
-    //         case 'invoice.payment_failed':
-    //             $subs->status = 'failed';
-    //             $subs->save();
-    //             if ($user) {
-    //                 $user->is_subscribed = 0;
-    //                 $user->save();
-    //             }
-    //             Helpers::sendNotification('Spenny PiggySubscription could not be processed ❌', 'There was a problem processing your payment. Please update your payment method to continue enjoying premium access.', $customerEmail ?? null);
-    //             SendRenewMail::dispatch($array, 'failed', 'site');
-    //             break;
-
-    //         case 'customer.subscription.deleted':
-    //             Log::info("Subscription deleted: {$subscriptionId}");
-    //             $subs->status = 'cancelled';
-    //             $subs->cancelled_at = now();
-    //             $subs->save();
-    //             if ($user) {
-    //                 $user->is_subscribed = 0;
-    //                 $user->save();
-    //             }
-    //             Helpers::sendNotification('Subscription has been cancelled 🛑', 'We’re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
-    //             SendRenewMail::dispatch($array, 'cancelled', 'site');
-    //             break;
-
-    //         case 'customer.subscription.deleted':
-    //             Log::info("Subscription deleted: {$subscriptionId}");
-    //             $subs->status = 'cancelled';
-    //             $subs->cancelled_at = now();
-    //             $subs->upcoming_payment = null;
-    //             $subs->save();
-    //             if ($user) {
-    //                 $user->is_subscribed = 0;
-    //                 $user->save();
-    //             }
-    //             Helpers::sendNotification('Subscription has been cancelled 🛑', 'We\'re sorry to see you go. Your access will remain active until the end of the current billing period.', $customerEmail ?? null);
-    //             SendRenewMail::dispatch($array, 'cancelled', 'site');
-    //             break;
-
-    //         default:
-    //             Log::info("Unhandled event type: {$eventType}");
-    //             break;
-    //     }
-
-    //     return response()->json(['status' => 'success']);
-    // }
-
-
-
     public function CreateProductForCreatorAndGifter()
     {
         $client = new StripeClient(env('STRIPE_SECRET_KEY'));
@@ -2562,7 +2185,7 @@ class StripeWebhookController extends Controller
                 ->whereNotNull('certificate_url')
                 ->whereNotNull('payment_intent_id')
                 ->get()
-                ->filter(function ($deliverable) {
+                ->filter(function ($deliverable) use ($data) {
                     // Check if Stripe metadata hasn't been updated yet
                     $metadata = json_decode($deliverable->metadata, true) ?? [];
                     $alreadyUpdated = $metadata['stripe_metadata_updated'] ?? false;
@@ -2741,12 +2364,62 @@ class StripeWebhookController extends Controller
      * Handle Payment Intent Succeeded
      * Syncs with Risk Engine Ledger and Updates Rollups
      */
-    private function handlePaymentIntentSucceeded($paymentIntent)
+    private function handlePaymentIntentSucceeded($paymentIntent, $connectedAccountId = null)
     {
         $paymentIntentId = $paymentIntent->id;
+
+        Log::info("Handling payment_intent.succeeded", [
+            'pi_id' => $paymentIntentId,
+            'metadata' => $paymentIntent->metadata ?? 'null',
+            'amount' => $paymentIntent->amount,
+            'currency' => $paymentIntent->currency,
+            'connected_account' => $connectedAccountId
+        ]);
         
         // 1. Update Risk Ledger (payments table)
         $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        
+        if (!$payment) {
+            // Attempt to auto-create missing Payment record for legacy/direct flows
+            $creatorId = $paymentIntent->metadata->creator_id ?? null;
+
+            // Fallback: Look up via Connected Account (Direct Charges)
+            if (!$creatorId && $connectedAccountId) {
+                $creator = \App\Models\User::where('account_id', $connectedAccountId)->first();
+                if ($creator) {
+                    $creatorId = $creator->id;
+                    Log::info("Risk Ledger: Found creator via Connected Account ID", ['creator_id' => $creatorId, 'account_id' => $connectedAccountId]);
+                }
+            }
+            
+            // Fallback: Look up via Deliverable
+            if (!$creatorId) {
+                $deliverable = \App\Models\Deliverable::where('payment_intent_id', $paymentIntentId)->first();
+                $creatorId = $deliverable->creator_id ?? null;
+            }
+
+            if ($creatorId) {
+                try {
+                    // Normalize amount (Stripe sends cents, DB likely expects major units)
+                    $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($paymentIntent->currency);
+                    $amount = $paymentIntent->amount;
+                    if (!$isZeroDecimal) {
+                        $amount = $amount / 100;
+                    }
+
+                    $payment = \App\Models\Payment::create([
+                        'stripe_payment_intent_id' => $paymentIntentId,
+                        'creator_id' => $creatorId,
+                        'amount' => $amount,
+                        'currency' => strtoupper($paymentIntent->currency),
+                        'status' => 'succeeded',
+                    ]);
+                    Log::info("Risk Ledger: Auto-created missing Payment record", ['id' => $payment->id, 'creator_id' => $creatorId]);
+                } catch (\Exception $e) {
+                    Log::error("Risk Ledger: Failed to auto-create payment: " . $e->getMessage());
+                }
+            }
+        }
         
         if ($payment) {
             $payment->update(['status' => 'succeeded']);
@@ -2794,9 +2467,6 @@ class StripeWebhookController extends Controller
             ]);
             
             Log::info("Early Fraud Warning recorded", ['efw_id' => $efw->id]);
-            
-            // Notify Creator? (Add to action queue logic later)
-            // if ($payment) { ... }
             
         } catch (\Exception $e) {
             Log::error("Failed to handle EFW: " . $e->getMessage());

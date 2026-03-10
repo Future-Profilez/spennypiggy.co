@@ -100,6 +100,15 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        /* =========================RISK ENGINE CHECK========================== */
+        // Check Platform State (FREEZE blocks new creator activation)
+        $platformState = \App\Models\PlatformRiskState::latest('started_at')->first();
+        if ($platformState && $platformState->state === 'FREEZE' && $request->role == 1) {
+            throw ValidationException::withMessages([
+                'email' => 'New creator registration is temporarily paused due to system maintenance.',
+            ]);
+        }
+
         /* =========================BASIC VALIDATION========================== */
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
