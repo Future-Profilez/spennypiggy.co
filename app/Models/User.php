@@ -705,6 +705,16 @@ class User extends Authenticatable
         return $this->morConsents()->where('consent_given', true)->exists();
     }
 
+    public function financialTransactions()
+    {
+        return $this->hasMany(FinancialTransaction::class);
+    }
+
+    public function financialProfile()
+    {
+        return $this->hasOne(CreatorFinancialProfile::class);
+    }
+
     /**
      * Get the creator metric record associated with the user.
      */

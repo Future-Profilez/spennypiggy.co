@@ -439,6 +439,23 @@ export default function Header({ classMagicword }) {
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
+                                                    href={route('financial.dashboard')}
+                                                    className={getNavLinkClass(route('financial.dashboard'))}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                        <SlCalculator
+                                                            color="#fff"
+                                                            size={"1.2rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                        Finance & Tax
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
                                                     href={`/membership-dashboard`}
                                                     className={getNavLinkClass('/membership-dashboard')}
                                                 >

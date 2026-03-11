@@ -561,6 +561,22 @@ Route::middleware('auth')->group(function () {
         Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
         Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
 
+        // Creator Financial Tools
+        Route::prefix('financial')->name('financial.')->group(function () {
+            Route::get('/dashboard', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('dashboard');
+            Route::get('/history', [\App\Http\Controllers\CreatorFinancialController::class, 'history'])->name('history');
+            Route::post('/profile', [\App\Http\Controllers\CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
+            Route::get('/export/csv', [\App\Http\Controllers\CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
+            Route::get('/statement', [\App\Http\Controllers\CreatorFinancialController::class, 'generateIncomeStatement'])->name('statement');
+            Route::get('/certificate', [\App\Http\Controllers\CreatorFinancialController::class, 'certificate'])->name('certificate');
+            
+            // Expenses
+            Route::get('/expenses', [\App\Http\Controllers\CreatorExpenseController::class, 'index'])->name('expenses.index');
+            Route::post('/expenses', [\App\Http\Controllers\CreatorExpenseController::class, 'store'])->name('expenses.store');
+            Route::put('/expenses/{expense}', [\App\Http\Controllers\CreatorExpenseController::class, 'update'])->name('expenses.update');
+            Route::delete('/expenses/{expense}', [\App\Http\Controllers\CreatorExpenseController::class, 'destroy'])->name('expenses.destroy');
+        });
+
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
             Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
