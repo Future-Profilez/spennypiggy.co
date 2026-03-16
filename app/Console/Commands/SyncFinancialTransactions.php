@@ -158,9 +158,10 @@ class SyncFinancialTransactions extends Command
 
                 $creatorId = $payment->bill->user_id;
                 $amount = $payment->amount;
-                // Assuming similar structure
-                $vat = 0; 
-                $net = $amount;
+                $vat = $payment->vat_tax_amount ?? 0;
+                $platformFee = $payment->tax ?? 0;
+                $stripeFee = $payment->stripe_fee_actual ?? 0;
+                $net = $amount - $vat - $platformFee - $stripeFee;
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -172,8 +173,8 @@ class SyncFinancialTransactions extends Command
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
                         'gross_amount' => $amount,
-                        'platform_fee' => 0,
-                        'stripe_fee' => 0,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $net,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
@@ -215,7 +216,7 @@ class SyncFinancialTransactions extends Command
                 if (!$creatorId) continue;
 
                 $amount = $item->amount;
-                $vat = $item->tax ?? 0;
+                $vat = $item->vat_amount ?? ($item->tax ?? 0);
                 // Platform fee logic would go here
                 $platformFee = 0; 
                 $stripeFee = 0;
@@ -304,8 +305,13 @@ class SyncFinancialTransactions extends Command
                 if (!$creatorId) continue;
 
                 $amount = $payment->amount;
-                $vat = $payment->tax ?? 0;
-                $net = $amount - $vat;
+                $vat = $payment->vat_amount ?? 0;
+                $platformFee = 0;
+                $stripeFee = 0;
+                $net = $amount;
+
+                $status = strtolower((string) ($payment->status ?? ''));
+                $normalizedStatus = in_array($status, ['paid', 'succeeded', 'completed', 'paid_out'], true) ? 'completed' : ($status ?: 'pending');
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -317,12 +323,12 @@ class SyncFinancialTransactions extends Command
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
                         'gross_amount' => $amount,
-                        'platform_fee' => 0,
-                        'stripe_fee' => 0,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $net,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
-                        'status' => $payment->status === 'succeeded' ? 'completed' : 'pending',
+                        'status' => $normalizedStatus,
                         'description' => 'Tip / Support',
                         'transaction_date' => $payment->created_at,
                     ]

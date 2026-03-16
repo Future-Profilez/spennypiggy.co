@@ -102,7 +102,7 @@ class FinancialService
             $gross = (float) ($tx->gross_amount ?? 0);
             $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
             $vat = (float) ($tx->vat_amount ?? 0);
-            $net = $gross - $fees - $vat;
+            $net = $gross - $fees;
 
             $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
             $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);

@@ -94,6 +94,11 @@ export default function Transactions(props) {
   });
 
   const amountFor = (e) => {
+    if (e.type === 'gift_tip') {
+      const total = Number(e.amount || 0) + Number(e.vat_amount || 0);
+      return formatMultiPrice(total, e.currency || 'gbp');
+    }
+
     const total = Number(e.amount || 0) + Number(e.tax || 0) + Number(e.vat_amount || 0) + Number(e.vat_tax_amount || 0);
     return formatMultiPrice(total, e.currency || 'gbp');
   };
@@ -467,7 +472,14 @@ export default function Transactions(props) {
                             <Link href={storyUrlFor(e)} className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-pink-600/10 text-pink-500 border border-pink-500/20 hover:bg-pink-600/20 transition-all">View Story</Link>
                           ) : null}
                         </div>
-                        <div className="text-[#05EFB8] font-black text-lg md:text-xl">{amountFor(e)}</div>
+                        <div className="text-right">
+                          <div className="text-[#05EFB8] font-black text-lg md:text-xl">{amountFor(e)}</div>
+                          {Number(e?.vat_amount || 0) > 0 ? (
+                            <div className="text-[11px] text-white/50 font-bold mt-1">
+                              VAT: {formatMultiPrice(Number(e.vat_amount || 0), e.currency || 'gbp')}
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                     <div className="mt-6">

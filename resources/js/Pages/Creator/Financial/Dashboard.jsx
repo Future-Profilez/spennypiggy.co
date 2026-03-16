@@ -374,7 +374,10 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                                                         </div>
                                                     </td>
                                                     <td className={`px-4 md:px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                                                        {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.gross_amount, tx.currency)}
+                                                        <div>{tx.type === 'income' ? '+' : ''}{formatCurrency(tx.gross_amount, tx.currency)}</div>
+                                                        {Number(tx.vat_amount || 0) > 0 && (
+                                                            <div className="text-[10px] text-gray-500 font-sans font-bold">VAT: {formatCurrency(tx.vat_amount, tx.currency)}</div>
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-right">
                                                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${

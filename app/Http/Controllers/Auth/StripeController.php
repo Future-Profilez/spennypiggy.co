@@ -3112,6 +3112,8 @@ class StripeController extends Controller
                 'currency' => $creator->default_currency,
                 'amount' => $price,
                 'tax' => $creatorBreakdown['application_fee'],
+                'vat_amount' => $vatAmount,
+                'total_paid' => $creatorBreakdown['total_supporter_pays'],
                 'message' => $request->message ?? null,
                 'anonymous' => $request->anonymous ?? 0,
             ]);

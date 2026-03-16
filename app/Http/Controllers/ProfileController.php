@@ -1789,7 +1789,8 @@ class ProfileController extends Controller
                     'source_id' => $it->id,
                     'category' => 'sent',
                     'amount' => $it->amount,
-                    'tax' => $it->tax,
+                    'tax' => 0,
+                    'vat_amount' => $it->vat_amount ?? ($it->tax ?? 0),
                     'currency' => optional($it->payment)->currency,
                     'created_at' => Carbon::parse($it->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => optional($it->payment->owner)->id,
@@ -1829,6 +1830,7 @@ class ProfileController extends Controller
                     'category' => 'sent',
                     'amount' => $mp->amount,
                     'tax' => $mp->tax,
+                    'vat_amount' => $mp->vat_tax_amount ?? 0,
                     'currency' => $mp->currency,
                     'created_at' => Carbon::parse($mp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => optional(optional($mp->membership)->user)->id,
@@ -1864,6 +1866,7 @@ class ProfileController extends Controller
                     'category' => 'sent',
                     'amount' => $bp->amount,
                     'tax' => $bp->tax,
+                    'vat_amount' => $bp->vat_tax_amount ?? 0,
                     'currency' => $bp->currency,
                     'created_at' => Carbon::parse($bp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => optional($bp->bill->user)->id,
@@ -1892,8 +1895,7 @@ class ProfileController extends Controller
                 $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
             })->with(['creator', 'user'])->get();
             foreach ($tipPayments as $tp) {
-                $vatPercent = optional($tp->creator)->vat_amount_percentage ?? 0;
-                $vatAmount = ($tp->amount * $vatPercent) / 100;
+                $vatAmount = $tp->vat_amount ?? 0;
                 $events[] = [
                     'type' => 'gift_tip',
                     'source' => 'tip_goals_payments',
@@ -1902,6 +1904,7 @@ class ProfileController extends Controller
                     'amount' => $tp->amount,
                     'tax' => $tp->tax,
                     'vat_amount' => $vatAmount,
+                    'paid_total' => $tp->total_paid ?? null,
                     'currency' => $tp->currency,
                     'created_at' => Carbon::parse($tp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => optional($tp->creator)->id,
@@ -1934,7 +1937,8 @@ class ProfileController extends Controller
                     'source_id' => $sp->id,
                     'category' => 'sent',
                     'amount' => $sp->amount,
-                    'tax' => ($sp->tax_amount ?? 0) + ($sp->vat_tax_amount ?? 0),
+                    'tax' => $sp->tax_amount ?? 0,
+                    'vat_amount' => $sp->vat_tax_amount ?? 0,
                     'currency' => $sp->currency,
                     'created_at' => Carbon::parse($sp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => optional(optional($sp->shop)->user)->id,
@@ -1968,7 +1972,8 @@ class ProfileController extends Controller
                     'source_id' => $tpur->id,
                     'category' => 'sent',
                     'amount' => $tpur->amount,
-                    'tax' => $tpur->vat_amount ?? 0,
+                    'tax' => 0,
+                    'vat_amount' => $tpur->vat_amount ?? 0,
                     'currency' => 'gbp',
                     'created_at' => Carbon::parse($tpur->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => $tpur->creator_id,
@@ -2011,7 +2016,8 @@ class ProfileController extends Controller
                     'source_id' => $it->id,
                     'category' => 'received',
                     'amount' => $it->amount,
-                    'tax' => $it->tax,
+                    'tax' => 0,
+                    'vat_amount' => $it->vat_amount ?? ($it->tax ?? 0),
                     'currency' => optional($it->payment)->currency,
                     'created_at' => Carbon::parse($it->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => $creator->id,
@@ -2049,6 +2055,7 @@ class ProfileController extends Controller
                     'category' => 'received',
                     'amount' => $mp->amount,
                     'tax' => $mp->tax,
+                    'vat_amount' => $mp->vat_tax_amount ?? 0,
                     'currency' => $mp->currency,
                     'created_at' => Carbon::parse($mp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => $creator->id,
@@ -2084,6 +2091,7 @@ class ProfileController extends Controller
                     'category' => 'received',
                     'amount' => $bp->amount,
                     'tax' => $bp->tax,
+                    'vat_amount' => $bp->vat_tax_amount ?? 0,
                     'currency' => $bp->currency,
                     'created_at' => Carbon::parse($bp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => $creator->id,
@@ -2110,8 +2118,7 @@ class ProfileController extends Controller
             // SUPPORT/TIP
             $tipPayments = TipGoalsPayment::where('creator_id', $creator->id)->with(['user'])->get();
             foreach ($tipPayments as $tp) {
-                $vatPercent = $creator->vat_amount_percentage ?? 0;
-                $vatAmount = ($tp->amount * $vatPercent) / 100;
+                $vatAmount = $tp->vat_amount ?? 0;
                 $events[] = [
                     'type' => 'gift_tip',
                     'source' => 'tip_goals_payments',
@@ -2150,7 +2157,8 @@ class ProfileController extends Controller
                     'source_id' => $sp->id,
                     'category' => 'received',
                     'amount' => $sp->amount,
-                    'tax' => ($sp->tax_amount ?? 0) + ($sp->vat_tax_amount ?? 0),
+                    'tax' => $sp->tax_amount ?? 0,
+                    'vat_amount' => $sp->vat_tax_amount ?? 0,
                     'currency' => $sp->currency,
                     'created_at' => Carbon::parse($sp->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => $creator->id,
@@ -2183,7 +2191,8 @@ class ProfileController extends Controller
                     'source_id' => $tpur->id,
                     'category' => 'received',
                     'amount' => $tpur->amount,
-                    'tax' => $tpur->vat_amount ?? 0,
+                    'tax' => 0,
+                    'vat_amount' => $tpur->vat_amount ?? 0,
                     'currency' => 'gbp',
                     'created_at' => Carbon::parse($tpur->created_at)->format('Y-m-d H:i:s'),
                     'creator_id' => $creator->id,

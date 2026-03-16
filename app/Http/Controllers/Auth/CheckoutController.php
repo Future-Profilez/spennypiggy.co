@@ -956,6 +956,8 @@ class CheckoutController extends Controller
                 'amount_subtotal' => $stripeid->amount_subtotal ?? 'NULL'
             ]);
             foreach ($getdata as $dd) {
+                $vatPercent = $dd->owner->vat_amount_percentage ?? 0;
+                $vatAmount = ((float) ($dd->amount ?? 0) * (float) $vatPercent) / 100;
                 $payment_data = StripePaymentItems::create([
                     'uuid' => Uuid::uuid4(),
                     'stripe_payment_detail_id' => $stripeid->id,
@@ -966,6 +968,7 @@ class CheckoutController extends Controller
                     'media_type' => ($dd->wish && !empty($dd->wish->reward)) ? 'image' : null,
                     'thank_you_approved' => ($dd->wish && !empty($dd->wish->reward)) ? 1 : 0,
                     'tax' => $dd->tax,
+                    'vat_amount' => $vatAmount,
                     'quantity' => $dd->quantity,
                     'anonymous' => $dd->anonymous ?? false,
                     'message' => $dd->message ?? null

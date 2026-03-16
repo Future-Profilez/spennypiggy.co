@@ -26,6 +26,7 @@ class StripePaymentItems extends Model
         'media_type',
         'thank_you_approved',
         'tax',
+        'vat_amount',
         'deleted_at',
         'quantity',
         'twitter_response',

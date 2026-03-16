@@ -24,6 +24,8 @@ class  TipGoalsPayment extends Model
         'currency',
         'amount',
         'tax',
+        'vat_amount',
+        'total_paid',
         'message',
         'anonymous',
         'twitter_response',
