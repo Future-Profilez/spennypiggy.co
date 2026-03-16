@@ -3,6 +3,8 @@ import { Head, Link } from '@inertiajs/react';
 import { Printer, ArrowLeft, Calendar, Mail, Tag } from 'lucide-react';
 
 export default function Statement({ summary, dates, profile, user }) {
+    const brandLogoUrl = 'https://ucarecdn.com/be168cd5-43f9-4eee-8663-e2cc79bae5d5/-/preview/1000x287/';
+
     const handlePrint = () => {
         window.print();
     };
@@ -49,7 +51,18 @@ export default function Statement({ summary, dates, profile, user }) {
             </div>
 
             {/* Document Container */}
-            <div className="max-w-4xl mx-auto bg-white shadow-sm rounded-lg p-8 md:p-12 print:shadow-none print:max-w-none print:w-full print:rounded-none print-container">
+            <div className="max-w-4xl mx-auto bg-white shadow-sm rounded-lg p-8 md:p-12 print:shadow-none print:max-w-none print:w-full print:rounded-none print-container relative overflow-hidden">
+
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <img
+                        src={brandLogoUrl}
+                        alt="Spenny Piggy"
+                        crossOrigin="anonymous"
+                        className="w-[78%] max-w-[760px] opacity-[0.05] object-contain"
+                    />
+                </div>
+
+                <div className="relative">
                 
                 {/* Header Section */}
                 <table className="w-full mb-12 border-collapse">
@@ -60,7 +73,7 @@ export default function Statement({ summary, dates, profile, user }) {
                                     <tbody>
                                         <tr>
                                             <td className="w-20 pr-6 align-middle">
-                                                <img src="/img/logo.png" alt="Spenny Piggy Logo" className="w-20 h-auto object-contain" />
+                                                <img src={brandLogoUrl} alt="Spenny Piggy Logo" crossOrigin="anonymous" className="w-24 h-auto object-contain" />
                                             </td>
                                             <td className="align-middle">
                                                 <h1 className="text-2xl font-extrabold text-[#0F172A] uppercase tracking-tight m-0">Income Statement</h1>
@@ -219,6 +232,7 @@ export default function Statement({ summary, dates, profile, user }) {
                     <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">
                         &copy; {new Date().getFullYear()} Spenny Piggy Ltd. All rights reserved.
                     </p>
+                </div>
                 </div>
             </div>
         </div>

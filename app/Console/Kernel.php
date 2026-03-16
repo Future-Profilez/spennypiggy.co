@@ -44,6 +44,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('subscription:sync --all')
                  ->cron('*/12 * * * *')
                  ->withoutOverlapping();
+
+        $schedule->command('finance:sync-transactions')
+                 ->everyThirtyMinutes()
+                 ->withoutOverlapping();
                  
         //
         $appUrl = env('APP_URL'); // e.g. https://dev.spennypiggy.co

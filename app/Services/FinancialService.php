@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\FinancialTransaction;
 use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorExpense;
+use App\Models\Currency;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -36,35 +37,103 @@ class FinancialService
 
     public function getSummary(User $user, $startDate, $endDate)
     {
-        $income = FinancialTransaction::where('user_id', $user->id)
+        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+
+        $incomeTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->select(
-                DB::raw('SUM(gross_amount) as total_gross'),
-                DB::raw('SUM(platform_fee) as total_platform_fee'),
-                DB::raw('SUM(stripe_fee) as total_stripe_fee'),
-                DB::raw('SUM(vat_amount) as total_vat'),
-                DB::raw('SUM(net_amount) as total_net')
-            )->first();
+            ->get(['gross_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency']);
 
-        $expenses = CreatorExpense::where('user_id', $user->id)
+        $grossDisplay = 0;
+        $feesDisplay = 0;
+        $vatDisplay = 0;
+        $netDisplay = 0;
+
+        $grossGbp = 0;
+        $feesGbp = 0;
+        $vatGbp = 0;
+        $netGbp = 0;
+
+        $expensesCollection = CreatorExpense::where('user_id', $user->id)
             ->whereBetween('expense_date', [$startDate, $endDate])
-            ->sum('amount');
+            ->get(['amount', 'currency']);
 
-        $totalGross = $income->total_gross ?? 0;
-        $totalVat = $income->total_vat ?? 0;
-        $totalFees = ($income->total_platform_fee ?? 0) + ($income->total_stripe_fee ?? 0);
-        
-        // Calculate net income dynamically to ensure consistency with gross - fees - vat
-        $totalNet = $totalGross - $totalFees - $totalVat;
+        $allCurrencies = $incomeTx
+            ->pluck('currency')
+            ->merge($expensesCollection->pluck('currency'))
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $rates = Currency::whereIn('ISO', $allCurrencies)->pluck('conversion_rate', 'ISO');
+
+        if (!isset($rates[$displayCurrency]) || (float) $rates[$displayCurrency] <= 0) {
+            $displayCurrency = 'GBP';
+        }
+
+        $convert = function (string $from, float $amount, string $to) use ($rates) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+
+            if ($from === $to) {
+                return $amount;
+            }
+
+            if (!isset($rates[$from]) || !isset($rates[$to])) {
+                return null;
+            }
+
+            $fromRate = (float) $rates[$from];
+            $toRate = (float) $rates[$to];
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
+
+            $gbp = $amount / $fromRate;
+            return $gbp * $toRate;
+        };
+
+        foreach ($incomeTx as $tx) {
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $gross = (float) ($tx->gross_amount ?? 0);
+            $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
+            $vat = (float) ($tx->vat_amount ?? 0);
+            $net = $gross - $fees - $vat;
+
+            $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
+            $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);
+            $vatDisplay += $from === $displayCurrency ? $vat : ($convert($from, $vat, $displayCurrency) ?? $vat);
+            $netDisplay += $from === $displayCurrency ? $net : ($convert($from, $net, $displayCurrency) ?? $net);
+
+            $grossGbp += $from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross);
+            $feesGbp += $from === 'GBP' ? $fees : ($convert($from, $fees, 'GBP') ?? $fees);
+            $vatGbp += $from === 'GBP' ? $vat : ($convert($from, $vat, 'GBP') ?? $vat);
+            $netGbp += $from === 'GBP' ? $net : ($convert($from, $net, 'GBP') ?? $net);
+        }
+
+        $expensesDisplay = 0;
+        $expensesGbp = 0;
+        foreach ($expensesCollection as $expense) {
+            $from = strtoupper($expense->currency ?? 'GBP');
+            $amount = (float) ($expense->amount ?? 0);
+            $expensesDisplay += $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
+            $expensesGbp += $from === 'GBP' ? $amount : ($convert($from, $amount, 'GBP') ?? $amount);
+        }
 
         return [
-            'gross_income' => $totalGross,
-            'fees' => $totalFees,
-            'vat_collected' => $totalVat,
-            'net_income' => $totalNet,
-            'expenses' => $expenses,
-            'profit' => $totalNet - $expenses
+            'currency' => $displayCurrency,
+            'gross_income' => $grossDisplay,
+            'fees' => $feesDisplay,
+            'vat_collected' => $vatDisplay,
+            'net_income' => $netDisplay,
+            'expenses' => $expensesDisplay,
+            'profit' => $netDisplay - $expensesDisplay,
+
+            'profit_gbp' => $netGbp - $expensesGbp,
         ];
     }
 
@@ -119,10 +188,43 @@ class FinancialService
         $endDate = Carbon::now();
         $startDate = Carbon::now()->subMonths(12);
 
-        $rollingRevenue = FinancialTransaction::where('user_id', $user->id)
+        $revenueTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
+            ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->sum('gross_amount');
+            ->get(['gross_amount', 'currency']);
+
+        $currencies = $revenueTx
+            ->pluck('currency')
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $rates = Currency::whereIn('ISO', $currencies)->pluck('conversion_rate', 'ISO');
+
+        $rollingRevenue = $revenueTx->sum(function ($tx) use ($rates) {
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $amount = (float) ($tx->gross_amount ?? 0);
+
+            if ($from === 'GBP') {
+                return $amount;
+            }
+
+            if (!isset($rates[$from]) || !isset($rates['GBP'])) {
+                return $amount;
+            }
+
+            $fromRate = (float) $rates[$from];
+            $gbpRate = (float) $rates['GBP'];
+            if ($fromRate <= 0 || $gbpRate <= 0) {
+                return $amount;
+            }
+
+            $gbp = $amount / $fromRate;
+            return $gbp * $gbpRate;
+        });
             
         // Update profile
         $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);

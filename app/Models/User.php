@@ -51,6 +51,7 @@ class User extends Authenticatable
         'is_founder',
         'show_piggy_bank',
         'referral_code',
+        'default_currency',
     ];
 
     protected $hidden = [

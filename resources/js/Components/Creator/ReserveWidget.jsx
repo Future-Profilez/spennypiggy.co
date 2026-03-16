@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BiLockAlt, BiTime } from 'react-icons/bi';
+import { route } from 'ziggy-js';
 
 export default function ReserveWidget({ className = '' }) {
     const [loading, setLoading] = useState(true);
@@ -8,7 +9,7 @@ export default function ReserveWidget({ className = '' }) {
     const [expanded, setExpanded] = useState(false);
 
     useEffect(() => {
-        axios.get(route('payouts.reserves'))
+        axios.get(route('creator.payouts.reserves'))
             .then(res => {
                 setData(res.data);
                 setLoading(false);

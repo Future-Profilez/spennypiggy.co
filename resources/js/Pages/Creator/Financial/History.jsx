@@ -41,7 +41,7 @@ export default function History({ auth, transactions }) {
                 <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 overflow-hidden shadow-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-gray-900/50">
+                            <thead className="bg-gray-500/10">
                                 <tr className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">
                                     <th className="px-6 py-4">Date</th>
                                     <th className="px-6 py-4">Supporter</th>

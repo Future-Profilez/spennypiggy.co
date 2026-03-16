@@ -37,6 +37,8 @@ class CreatorExpenseController extends Controller
             'receipt_url' => 'nullable|string|url'
         ]);
 
+        $validated['currency'] = strtoupper(Auth::user()->default_currency ?? 'GBP');
+
         $expense = new CreatorExpense($validated);
         $expense->user_id = Auth::id();
         $expense->save();
@@ -58,6 +60,8 @@ class CreatorExpenseController extends Controller
             'description' => 'nullable|string|max:255',
             'receipt_url' => 'nullable|string|url'
         ]);
+
+        $validated['currency'] = strtoupper(Auth::user()->default_currency ?? 'GBP');
 
         $expense->update($validated);
 

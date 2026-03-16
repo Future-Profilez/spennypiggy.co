@@ -564,6 +564,7 @@ Route::middleware('auth')->group(function () {
         // Creator Financial Tools
         Route::prefix('financial')->name('financial.')->group(function () {
             Route::get('/dashboard', [\App\Http\Controllers\CreatorFinancialController::class, 'index'])->name('dashboard');
+            Route::post('/refresh', [\App\Http\Controllers\CreatorFinancialController::class, 'refresh'])->name('refresh');
             Route::get('/history', [\App\Http\Controllers\CreatorFinancialController::class, 'history'])->name('history');
             Route::post('/profile', [\App\Http\Controllers\CreatorFinancialController::class, 'updateProfile'])->name('profile.update');
             Route::get('/export/csv', [\App\Http\Controllers\CreatorFinancialController::class, 'exportCsv'])->name('export.csv');
@@ -814,6 +815,11 @@ Route::middleware(['auth', 'verified'])->prefix('task')->name('task.')->group(fu
     Route::get('/{uuid}/edit', [\App\Http\Controllers\TaskController::class, 'edit'])->name('edit');
     Route::post('/{uuid}/update', [\App\Http\Controllers\TaskController::class, 'update'])->name('update');
 });
+
+Route::get('/task/{uuid}/purchase', function ($uuid) {
+    return redirect()->route('task.show', $uuid);
+})->name('task.purchase.redirect');
+
 Route::get('/task/{uuid}', [\App\Http\Controllers\TaskController::class, 'show'])->name('task.show');
 
 // Route::get('/user_info/{username}/{category?}', [AuthenticatedSessionController::class, 'user_info'])->name('user.info');

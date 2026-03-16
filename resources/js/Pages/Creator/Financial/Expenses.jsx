@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { 
@@ -21,10 +21,21 @@ export default function Expenses({ auth, expenses, filters }) {
         category: '',
         description: '',
         amount: '',
-        currency: 'GBP',
+        currency: auth?.user?.default_currency || 'GBP',
         expense_date: new Date().toISOString().split('T')[0],
         receipt_url: ''
     });
+
+    useEffect(() => {
+        setData('currency', auth?.user?.default_currency || 'GBP');
+    }, [auth?.user?.default_currency]);
+
+    const formatCurrency = (amount, currency) => {
+        return new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: currency || 'GBP',
+        }).format(Number(amount || 0));
+    };
 
     const [search, setSearch] = useState(filters.search || '');
 
@@ -87,7 +98,7 @@ export default function Expenses({ auth, expenses, filters }) {
 
                 {/* Add Expense Form */}
                 {isAdding && (
-                    <div className="bg-[#1e1e1e] p-6 rounded-2xl border border-gray-800 animate-fading shadow-xl">
+                    <div className="bg-[#444444]/10 p-8 rounded-[30px] border border-gray-800 animate-fading shadow-xl">
                         <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                             <div className="bg-[#F94F96]/10 p-2 rounded-lg text-[#F94F96]">
                                 <FileText size={20} />
@@ -95,18 +106,18 @@ export default function Expenses({ auth, expenses, filters }) {
                             New Expense Details
                         </h3>
                         <form onSubmit={submitExpense} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                                 <div className="space-y-2">
                                     <label className="block text-xs uppercase text-gray-500 font-bold">Date</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Calendar size={18} className="text-gray-500" />
+                                            <Calendar size={18} className="text-gray-400" />
                                         </div>
                                         <input 
                                             type="date" 
                                             value={data.expense_date}
                                             onChange={e => setData('expense_date', e.target.value)}
-                                            className="w-full bg-[#2a2a2a] border-gray-700 rounded-xl text-white pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3"
+                                            className="w-full bg-[#2a2a2a] border-gray-700 rounded-[20px] text-white pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3"
                                             required
                                         />
                                     </div>
@@ -120,7 +131,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                         <select 
                                             value={data.category}
                                             onChange={e => setData('category', e.target.value)}
-                                            className="w-full bg-[#2a2a2a] border-gray-700 rounded-xl text-white pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3 appearance-none"
+                                            className="w-full bg-[#2a2a2a] border-gray-700 rounded-[20px] text-white pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3 appearance-none"
                                             required
                                         >
                                             <option value="">Select Category</option>
@@ -130,19 +141,9 @@ export default function Expenses({ auth, expenses, filters }) {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="block text-xs uppercase text-gray-500 font-bold">Description</label>
-                                    <input 
-                                        type="text" 
-                                        value={data.description}
-                                        onChange={e => setData('description', e.target.value)}
-                                        className="w-full bg-[#2a2a2a] border-gray-700 rounded-xl text-white focus:ring-[#F94F96] focus:border-[#F94F96] p-3"
-                                        placeholder="E.g. Camera lens, Adobe subscription, Train tickets..."
-                                        required
-                                    />
-                                </div>
+
                                 <div className="space-y-2">
-                                    <label className="block text-xs uppercase text-gray-500 font-bold">Amount (£)</label>
+                                    <label className="block text-xs uppercase text-gray-500 font-bold">Amount ({data.currency})</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <PoundSterling size={18} className="text-gray-500" />
@@ -152,15 +153,28 @@ export default function Expenses({ auth, expenses, filters }) {
                                             step="0.01"
                                             value={data.amount}
                                             onChange={e => setData('amount', e.target.value)}
-                                            className="w-full bg-[#2a2a2a] border-gray-700 rounded-xl text-white pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3 font-mono text-lg"
+                                            className="w-full bg-[#2a2a2a] border-gray-700 rounded-[20px] text-white pl-10 focus:ring-[#F94F96] focus:border-[#F94F96] p-3 font-mono text-lg"
                                             placeholder="0.00"
                                             required
                                         />
                                     </div>
                                 </div>
+
+                                <div className="md:col-span-3 space-y-2">
+                                    <label className="block text-xs uppercase text-gray-500 font-bold">Description</label>
+                                    <input 
+                                        type="text" 
+                                        value={data.description}
+                                        onChange={e => setData('description', e.target.value)}
+                                        className="w-full bg-[#2a2a2a] border-gray-700 rounded-[20px] text-white focus:ring-[#F94F96] focus:border-[#F94F96] p-3"
+                                        placeholder="E.g. Camera lens, Adobe subscription, Train tickets..."
+                                        required
+                                    />
+                                </div>
+                                
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
+                            <div className="flex justify-end gap-3 pt-4">
                                 <button 
                                     type="button" 
                                     onClick={() => setIsAdding(false)}
@@ -199,10 +213,10 @@ export default function Expenses({ auth, expenses, filters }) {
                 </div>
 
                 {/* Expense List */}
-                <div className="bg-[#1e1e1e] rounded-2xl border border-gray-800 overflow-hidden shadow-lg">
+                <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 overflow-hidden shadow-lg">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-gray-900/50">
+                            <thead className="bg-gray-500/10">
                                 <tr className="text-gray-400 text-xs uppercase tracking-wider">
                                     <th className="px-6 py-4 font-medium">Date</th>
                                     <th className="px-6 py-4 font-medium">Category</th>
@@ -224,7 +238,7 @@ export default function Expenses({ auth, expenses, filters }) {
                                         </td>
                                         <td className="px-6 py-4 text-gray-300 text-sm font-medium">{expense.description}</td>
                                         <td className="px-6 py-4 text-right text-white font-mono font-bold">
-                                            £{Number(expense.amount).toFixed(2)}
+                                            {formatCurrency(expense.amount, expense.currency || (auth?.user?.default_currency || 'GBP'))}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button 

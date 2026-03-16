@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Artisan;
 
 class CreatorFinancialController extends Controller
 {
@@ -34,25 +35,46 @@ class CreatorFinancialController extends Controller
         $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end']);
         
         // Calculate Tax
-        $estimatedTax = $this->financialService->calculateEstimatedTax($summary['profit']);
+        $estimatedTaxGbp = $this->financialService->calculateEstimatedTax($summary['profit_gbp'] ?? 0);
+        $estimatedTax = $summary['currency'] === 'GBP'
+            ? $estimatedTaxGbp
+            : \App\Helpers::priceFormat('GBP', $estimatedTaxGbp, $summary['currency']);
 
         // Analytics Data
-        $monthlyStats = FinancialTransaction::where('user_id', $user->id)
-            ->where('type', 'income')
-            ->whereBetween('transaction_date', [now()->subMonths(6), now()])
-            ->selectRaw('DATE_FORMAT(transaction_date, "%Y-%m") as month, SUM(gross_amount) as total')
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+        $displayCurrency = $summary['currency'] ?? 'GBP';
 
-        $tributeTypes = FinancialTransaction::where('user_id', $user->id)
+        $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->selectRaw('source_type, SUM(gross_amount) as total, COUNT(*) as count')
+            ->where('status', 'completed')
+            ->whereBetween('transaction_date', [now()->subMonths(6), now()])
+            ->get(['transaction_date', 'gross_amount', 'currency', 'source_type', 'supporter_id']);
+
+        $monthlyStats = $incomeForAnalytics
+            ->groupBy(function ($tx) {
+                return optional($tx->transaction_date)->format('Y-m');
+            })
+            ->map(function ($items, $month) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
+                    $from = strtoupper($tx->currency ?? 'GBP');
+                    $amount = (float) ($tx->gross_amount ?? 0);
+                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                });
+                return (object) ['month' => $month, 'total' => $total];
+            })
+            ->sortBy('month')
+            ->values();
+
+        $tributeTypes = $incomeForAnalytics
             ->groupBy('source_type')
-            ->orderByDesc('total')
-            ->get()
-            ->map(function ($type) {
-                $base = class_basename($type->source_type);
+            ->map(function ($items, $sourceType) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
+                    $from = strtoupper($tx->currency ?? 'GBP');
+                    $amount = (float) ($tx->gross_amount ?? 0);
+                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                });
+                $count = $items->count();
+
+                $base = class_basename($sourceType);
                 $label = match($base) {
                     'StripePaymentItems' => 'Wish Gift',
                     'ShopPayment' => 'Shop Purchase',
@@ -62,9 +84,16 @@ class CreatorFinancialController extends Controller
                     'BillPayment' => 'Bill',
                     default => str_replace(['Payment', 'Purchase'], '', $base)
                 };
-                $type->label = $label;
-                return $type;
-            });
+
+                return (object) [
+                    'source_type' => $sourceType,
+                    'total' => $total,
+                    'count' => $count,
+                    'label' => $label,
+                ];
+            })
+            ->sortByDesc('total')
+            ->values();
 
         // Recent Transactions (Income & Expenses)
         $income = FinancialTransaction::where('user_id', $user->id)
@@ -116,24 +145,33 @@ class CreatorFinancialController extends Controller
             ->values();
 
         // Top Supporters with Category Breakdown
-        $topSupporters = FinancialTransaction::where('user_id', $user->id)
+        $supporterTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
+            ->where('status', 'completed')
+            ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
-            ->selectRaw('supporter_id, SUM(gross_amount) as total_spent')
             ->with(['supporter:id,name,username,avatar'])
+            ->get(['supporter_id', 'gross_amount', 'currency', 'source_type', 'transaction_date']);
+
+        $topSupporters = $supporterTx
             ->groupBy('supporter_id')
-            ->orderByDesc('total_spent')
-            ->take(5)
-            ->get()
-            ->map(function ($supporter) use ($user) {
-                $breakdown = FinancialTransaction::where('user_id', $user->id)
-                    ->where('supporter_id', $supporter->supporter_id)
-                    ->where('type', 'income')
-                    ->selectRaw('source_type, SUM(gross_amount) as amount')
+            ->map(function ($items) use ($displayCurrency) {
+                $total = $items->sum(function ($tx) use ($displayCurrency) {
+                    $from = strtoupper($tx->currency ?? 'GBP');
+                    $amount = (float) ($tx->gross_amount ?? 0);
+                    return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
+                });
+
+                $breakdown = $items
                     ->groupBy('source_type')
-                    ->get()
-                    ->mapWithKeys(function ($item) {
-                        $base = class_basename($item->source_type);
+                    ->mapWithKeys(function ($group, $sourceType) use ($displayCurrency) {
+                        $amount = $group->sum(function ($tx) use ($displayCurrency) {
+                            $from = strtoupper($tx->currency ?? 'GBP');
+                            $value = (float) ($tx->gross_amount ?? 0);
+                            return $from === $displayCurrency ? $value : \App\Helpers::priceFormat($from, $value, $displayCurrency);
+                        });
+
+                        $base = class_basename($sourceType);
                         $label = match($base) {
                             'StripePaymentItems' => 'Wish',
                             'ShopPayment' => 'Shop',
@@ -143,12 +181,20 @@ class CreatorFinancialController extends Controller
                             'BillPayment' => 'Bill',
                             default => str_replace(['Payment', 'Purchase'], '', $base)
                         };
-                        return [$label => $item->amount];
+
+                        return [$label => $amount];
                     });
-                
-                $supporter->breakdown = $breakdown;
-                return $supporter;
+
+                $first = $items->first();
+                return (object) [
+                    'supporter_id' => $first->supporter_id,
+                    'total_spent' => $total,
+                    'supporter' => $first->supporter,
+                    'breakdown' => $breakdown,
+                ];
             })
+            ->sortByDesc('total_spent')
+            ->take(5)
             ->values();
 
         return Inertia::render('Creator/Financial/Dashboard', [
@@ -156,6 +202,7 @@ class CreatorFinancialController extends Controller
             'tax_estimate' => $estimatedTax,
             'vat_status' => $vatStatus,
             'tax_year' => $dates['label'],
+            'display_currency' => $displayCurrency,
             'profile' => $profile,
             'recent_transactions' => $recentTransactions,
             'top_supporters' => $topSupporters,
@@ -230,6 +277,17 @@ class CreatorFinancialController extends Controller
         return Inertia::render('Creator/Financial/History', [
             'transactions' => $transactions
         ]);
+    }
+
+    public function refresh(Request $request)
+    {
+        $user = Auth::user();
+
+        Artisan::call('finance:sync-transactions', [
+            '--user_id' => $user->id,
+        ]);
+
+        return back()->with('success', 'Financial records refreshed.');
     }
 
     public function certificate(Request $request)

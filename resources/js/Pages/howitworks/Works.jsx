@@ -159,7 +159,7 @@ export default function Works(props) {
                 {/* Tab Section */}
                 <div className="relative z-10 px-4 max-w-7xl mx-auto">
                     <Tab.Group>
-                        <Tab.List className="flex p-2 space-x-4 bg-gray-900/50 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-2xl" data-aos="zoom-in" data-aos-delay="400">
+                        <Tab.List className="flex p-2 space-x-4 bg-gray-500/10 backdrop-blur-xl rounded-[25px] max-w-md mx-auto mb-20 border-2 border-white/10 shadow-2xl" data-aos="zoom-in" data-aos-delay="400">
                             <Tab as={Fragment}>
                                 {({ selected }) => (
                                     <button

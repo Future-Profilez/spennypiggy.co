@@ -1,8 +1,9 @@
-import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Printer, ArrowLeft, ShieldCheck, QrCode } from 'lucide-react';
 
 export default function Certificate({ profile, user, metrics }) {
+    const brandLogoUrl = 'https://ucarecdn.com/be168cd5-43f9-4eee-8663-e2cc79bae5d5/-/preview/1000x287/';
+
     const handlePrint = () => {
         window.print();
     };
@@ -12,7 +13,7 @@ export default function Certificate({ profile, user, metrics }) {
             <Head title="Verified Proof of Income" />
             <style>{`
                 @media print {
-                    @page { margin: 0; size: landscape; }
+                    @page { margin: 0.4cm; size: landscape; }
                     html, body { 
                         width: 100%;
                         height: 100%;
@@ -20,30 +21,35 @@ export default function Certificate({ profile, user, metrics }) {
                         padding: 0 !important;
                         -webkit-print-color-adjust: exact !important; 
                         print-color-adjust: exact !important; 
-                        background: white !important;
+                        background: #fffdf5 !important;
                     }
                     .print\\:hidden { display: none !important; }
                     /* Make certificate responsive to print page */
                     .print-content { 
                         position: absolute !important;
-                        top: 0 !important;
-                        left: 0 !important;
-                        width: 100% !important;
-                        height: 100% !important;
+                        top: 0.4cm !important;
+                        left: 0.4cm !important;
+                        right: 0.4cm !important;
+                        bottom: 0.4cm !important;
+                        width: auto !important;
+                        height: auto !important;
                         margin: 0 !important;
-                        border: none !important;
+                        max-width: none !important;
+                        aspect-ratio: auto !important;
+                        border: 8px double #0f172a !important;
                         box-shadow: none !important;
-                        background: white !important;
+                        background: #fffdf5 !important;
                         display: block !important;
+                    }
+                    .print-content, .print-content * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                     /* Adjust padding for print to avoid clipping */
                     .print-content > .relative.z-10 {
                         padding: 40px !important;
                     }
-                    /* Hide gray background elements in print */
-                    .print\\:bg-transparent { background-color: transparent !important; }
-                    .print\\:text-slate-900 { color: #0f172a !important; }
-                    .print\\:border-slate-900 { border-color: #0f172a !important; }
+                    .print-watermark { opacity: 0.06 !important; }
                 }
             `}</style>
             
@@ -61,19 +67,28 @@ export default function Certificate({ profile, user, metrics }) {
             </div>
 
             {/* Certificate Container */}
-            <div className="bg-[#fffdf5] w-full max-w-4xl aspect-[1.414/1] shadow-2xl shadow-slate-900/20 relative print:shadow-none print:w-full print:h-screen print:m-0 print:border-none overflow-hidden text-slate-900 print-content border-8 border-double border-slate-900 print:border-none">
+            <div className="bg-[#fffdf5] w-full max-w-4xl aspect-[1.414/1] shadow-2xl shadow-slate-900/20 relative print:shadow-none print:w-full print:h-screen print:m-0 overflow-hidden text-slate-900 print-content border-8 border-double border-slate-900">
                 
                 {/* Decorative Corners */}
-                <div className="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-slate-900 print:hidden"></div>
-                <div className="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-slate-900 print:hidden"></div>
-                <div className="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-slate-900 print:hidden"></div>
-                <div className="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-slate-900 print:hidden"></div>
+                <div className="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-slate-900"></div>
+                <div className="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-slate-900"></div>
+                <div className="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-slate-900"></div>
+                <div className="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-slate-900"></div>
 
                 {/* Background Pattern - Subtle Guilloche Effect */}
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center overflow-hidden print-watermark">
                      <div className="w-[120%] h-[120%] border-[60px] border-slate-900 rounded-full opacity-10"></div>
                      <div className="absolute w-[90%] h-[90%] border-[30px] border-slate-900 rounded-full opacity-10"></div>
                      <div className="absolute w-[60%] h-[60%] border-[15px] border-slate-900 rounded-full opacity-10"></div>
+                </div>
+
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center print-watermark">
+                    <img
+                        src={brandLogoUrl}
+                        alt="Spenny Piggy"
+                        crossOrigin="anonymous"
+                        className="w-[70%] max-w-[700px] opacity-[0.06] object-contain"
+                    />
                 </div>
 
                 {/* Content - Table Based Layout */}
@@ -87,7 +102,7 @@ export default function Certificate({ profile, user, metrics }) {
                                         <tbody>
                                             <tr>
                                                 <td className="pr-3 align-middle">
-                                                    <img src="/img/logo.png" alt="Spenny Piggy Logo" className="w-8 h-auto object-contain" />
+                                                    <img src={brandLogoUrl} alt="Spenny Piggy Logo" crossOrigin="anonymous" className="w-20 h-auto object-contain" />
                                                 </td>
                                                 <td className="align-middle">
                                                     <span className="font-sans font-bold tracking-[0.2em] uppercase text-xs text-slate-700">Spenny Piggy Financial</span>
@@ -96,7 +111,7 @@ export default function Certificate({ profile, user, metrics }) {
                                         </tbody>
                                     </table>
                                     
-                                    <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-widest mb-2 text-slate-900 font-serif text-center">Certificate of Income</h1>
+                                    <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-widest mb-2 text-slate-900 font-serif text-center">Certificate of Income</h1>
                                     
                                     <table className="mx-auto mb-1" style={{ margin: '0 auto' }}>
                                         <tbody>
@@ -115,37 +130,52 @@ export default function Certificate({ profile, user, metrics }) {
                             {/* Body Row */}
                             <tr className="h-2/4">
                                 <td className="align-middle text-center">
-                                    <div className="flex flex-col justify-center items-center space-y-4">
-                                        <p className="text-lg text-slate-500 italic font-serif text-center">This document formally certifies that</p>
-                                        
-                                        <div className="py-2 px-4 text-center w-full">
-                                            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 font-serif inline-block border-b-2 border-slate-900 pb-2 max-w-full break-words text-center">
-                                                {profile?.business_name || user.name}
-                                            </h2>
-                                        </div>
-                                        
-                                        <p className="text-base text-slate-600 font-serif max-w-2xl mx-auto leading-relaxed px-8 text-center">
-                                            has been an active creator on the <strong className="text-slate-900">Spenny Piggy</strong> platform since <strong className="text-slate-900">{metrics.member_since}</strong> and has generated verified income through digital content sales, subscriptions, and supporter contributions.
-                                        </p>
+                                    <table className="mx-auto" style={{ margin: '0 auto' }}>
+                                        <tbody>
+                                            <tr>
+                                                <td className="text-center pb-4">
+                                                    <p className="text-lg text-slate-500 italic font-serif text-center">This document formally certifies that</p>
+                                                </td>
+                                            </tr>
 
-                                        {/* Metrics Box - Compact Table */}
-                                        <div className="max-w-xl mx-auto mt-6 w-full flex justify-center">
-                                            <table className="w-full bg-slate-100 border border-slate-200 border-collapse">
-                                                <tbody>
-                                                    <tr>
-                                                        <td className="w-1/2 bg-white/50 p-4 text-center border-r border-slate-200">
-                                                            <p className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1">Average Monthly</p>
-                                                            <p className="text-2xl font-bold text-slate-900 font-mono">£{Number(metrics.average_monthly).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                                        </td>
-                                                        <td className="w-1/2 bg-white/50 p-4 text-center">
-                                                            <p className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1">Total Lifetime</p>
-                                                            <p className="text-2xl font-bold text-slate-900 font-mono">£{Number(metrics.total_earnings).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+                                            <tr>
+                                                <td className="text-center pb-4">
+                                                    <div className="py-2 px-4 text-center w-full">
+                                                        <h2 className="text-4xl md:text-3xl font-bold text-slate-900 font-serif inline-block border-b-2 border-slate-900 pb-2 max-w-full break-words text-center">
+                                                            {profile?.business_name || user.name}
+                                                        </h2>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td className="text-center pb-6">
+                                                    <p className="text-base text-slate-600 font-serif max-w-2xl mx-auto leading-relaxed px-8 text-center">
+                                                        has been an active creator on the <strong className="text-slate-900">Spenny Piggy</strong> platform since <strong className="text-slate-900">{metrics.member_since}</strong> and has generated verified income through digital content sales, subscriptions, and supporter contributions.
+                                                    </p>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td className="text-center">
+                                                    <table className="mx-auto w-full max-w-xl bg-slate-100 border border-slate-200 border-collapse" style={{ margin: '0 auto' }}>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td className="w-1/2 bg-white/50 p-4 text-center border-r border-slate-200">
+                                                                    <p className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1">Average Monthly</p>
+                                                                    <p className="text-2xl font-bold text-slate-900 font-mono">£{Number(metrics.average_monthly).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                                </td>
+                                                                <td className="w-1/2 bg-white/50 p-4 text-center">
+                                                                    <p className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1">Total Lifetime</p>
+                                                                    <p className="text-2xl font-bold text-slate-900 font-mono">£{Number(metrics.total_earnings).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </td>
                             </tr>
 
@@ -158,7 +188,7 @@ export default function Certificate({ profile, user, metrics }) {
                                                 <tr>
                                                     <td className="w-1/3 align-bottom text-center">
                                                         <div className="mb-2 h-12 flex items-end justify-center">
-                                                            <span className="font-serif text-2xl italic text-slate-600 transform -rotate-3 font-bold opacity-80 inline-block">Spenny Piggy Team</span>
+                                                            <span className="font-serif text-xl italic text-slate-600 transform -rotate-3 font-bold opacity-80 inline-block">Spenny Piggy Team</span>
                                                         </div>
                                                         <div className="w-40 h-px bg-slate-900 mb-1 mx-auto"></div>
                                                         <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest text-center">Authorized Signature</p>

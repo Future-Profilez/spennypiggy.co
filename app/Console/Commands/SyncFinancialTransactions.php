@@ -7,47 +7,64 @@ use App\Models\FinancialTransaction;
 use App\Models\MembershipPayment;
 use App\Models\TaskPurchase;
 use App\Models\BillPayment;
-use Illuminate\Support\Str;
+use App\Models\ShopPayment;
+use App\Models\StripePaymentItems;
+use App\Models\TipGoalsPayment;
 
 class SyncFinancialTransactions extends Command
 {
-    protected $signature = 'finance:sync-transactions {--force : Force sync all transactions}';
+    protected $signature = 'finance:sync-transactions {--force : Force sync all transactions} {--user_id= : Only sync transactions for this creator user_id}';
     protected $description = 'Sync all payment records to the financial_transactions table';
 
     public function handle()
     {
         $this->info('Starting financial transaction sync...');
 
+        $userId = $this->option('user_id');
+
         if ($this->option('force')) {
-            FinancialTransaction::truncate();
-            $this->info('Truncated existing transactions.');
+            if ($userId) {
+                FinancialTransaction::where('user_id', $userId)->delete();
+                $this->info("Cleared existing transactions for user_id={$userId}.");
+            } else {
+                FinancialTransaction::truncate();
+                $this->info('Truncated existing transactions.');
+            }
         }
 
         // 1. Sync Memberships
-        $this->syncMemberships();
+        $this->syncMemberships($userId);
 
         // 2. Sync Tasks
-        $this->syncTasks();
+        $this->syncTasks($userId);
 
         // 3. Sync Bills
-        $this->syncBills();
+        $this->syncBills($userId);
 
         // 4. Sync Wishes
-        $this->syncWishes();
+        $this->syncWishes($userId);
 
         // 5. Sync Shops
-        $this->syncShops();
+        $this->syncShops($userId);
 
         // 6. Sync Tips
-        $this->syncTips();
+        $this->syncTips($userId);
 
         $this->info('Sync completed successfully!');
     }
 
-    private function syncMemberships()
+    private function syncMemberships($userId = null)
     {
         $this->info('Syncing Memberships...');
-        MembershipPayment::with('membership')->chunk(100, function ($payments) {
+
+        $query = MembershipPayment::with('membership');
+        if ($userId) {
+            $query->whereHas('membership', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
+        }
+
+        $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
                 if (!$payment->membership) continue;
                 
@@ -57,13 +74,12 @@ class SyncFinancialTransactions extends Command
                 $stripeFee = $payment->stripe_fee_actual ?? 0;
                 $net = $amount - $vat - $stripeFee;
 
-                FinancialTransaction::firstOrCreate(
+                FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => MembershipPayment::class,
                         'source_id' => $payment->id,
                     ],
                     [
-                        'uuid' => (string) Str::uuid(),
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
@@ -82,10 +98,16 @@ class SyncFinancialTransactions extends Command
         });
     }
 
-    private function syncTasks()
+    private function syncTasks($userId = null)
     {
         $this->info('Syncing Tasks...');
-        TaskPurchase::chunk(100, function ($purchases) {
+
+        $query = TaskPurchase::query();
+        if ($userId) {
+            $query->where('creator_id', $userId);
+        }
+
+        $query->chunk(100, function ($purchases) {
             foreach ($purchases as $purchase) {
                 // TaskPurchase has creator_id directly
                 $amount = $purchase->amount;
@@ -95,13 +117,12 @@ class SyncFinancialTransactions extends Command
                 $stripeFee = 0; // Placeholder
                 $net = $amount - $vat - $platformFee - $stripeFee;
 
-                FinancialTransaction::firstOrCreate(
+                FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => TaskPurchase::class,
                         'source_id' => $purchase->id,
                     ],
                     [
-                        'uuid' => (string) Str::uuid(),
                         'user_id' => $purchase->creator_id,
                         'supporter_id' => $purchase->supporter_id,
                         'type' => 'income',
@@ -120,10 +141,18 @@ class SyncFinancialTransactions extends Command
         });
     }
 
-    private function syncBills()
+    private function syncBills($userId = null)
     {
         $this->info('Syncing Bills...');
-        BillPayment::with('bill')->chunk(100, function ($payments) {
+
+        $query = BillPayment::with('bill');
+        if ($userId) {
+            $query->whereHas('bill', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
+        }
+
+        $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
                 if (!$payment->bill) continue;
 
@@ -133,13 +162,12 @@ class SyncFinancialTransactions extends Command
                 $vat = 0; 
                 $net = $amount;
 
-                FinancialTransaction::firstOrCreate(
+                FinancialTransaction::updateOrCreate(
                     [
                         'source_type' => BillPayment::class,
                         'source_id' => $payment->id,
                     ],
                     [
-                        'uuid' => (string) Str::uuid(),
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
@@ -158,11 +186,23 @@ class SyncFinancialTransactions extends Command
         });
     }
 
-    private function syncWishes()
+    private function syncWishes($userId = null)
     {
         $this->info('Syncing Wishes...');
         // StripePaymentItems linked to StripePaymentDetail linked to Owner (Creator)
-        \App\Models\StripePaymentItems::with(['payment', 'wish'])->chunk(100, function ($items) {
+
+        $query = StripePaymentItems::with(['payment', 'wish']);
+        if ($userId) {
+            $query->where(function ($q) use ($userId) {
+                $q->whereHas('payment', function ($p) use ($userId) {
+                    $p->where('owner_id', $userId);
+                })->orWhereHas('wish', function ($w) use ($userId) {
+                    $w->where('user_id', $userId);
+                });
+            });
+        }
+
+        $query->chunk(100, function ($items) {
             foreach ($items as $item) {
                 if (!$item->payment) continue;
 
@@ -181,13 +221,12 @@ class SyncFinancialTransactions extends Command
                 $stripeFee = 0;
                 $net = $amount - $vat - $platformFee - $stripeFee;
 
-                FinancialTransaction::firstOrCreate(
+                FinancialTransaction::updateOrCreate(
                     [
-                        'source_type' => \App\Models\StripePaymentItems::class,
+                        'source_type' => StripePaymentItems::class,
                         'source_id' => $item->id,
                     ],
                     [
-                        'uuid' => (string) Str::uuid(),
                         'user_id' => $creatorId,
                         'supporter_id' => $item->payment->user_id,
                         'type' => 'income',
@@ -206,10 +245,18 @@ class SyncFinancialTransactions extends Command
         });
     }
 
-    private function syncShops()
+    private function syncShops($userId = null)
     {
         $this->info('Syncing Shops...');
-        \App\Models\ShopPayment::with('shop')->chunk(100, function ($payments) {
+
+        $query = ShopPayment::with('shop');
+        if ($userId) {
+            $query->whereHas('shop', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            });
+        }
+
+        $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
                 if (!$payment->shop) continue;
 
@@ -218,13 +265,12 @@ class SyncFinancialTransactions extends Command
                 $vat = $payment->vat_tax_amount ?? 0;
                 $net = $amount - $vat;
 
-                FinancialTransaction::firstOrCreate(
+                FinancialTransaction::updateOrCreate(
                     [
-                        'source_type' => \App\Models\ShopPayment::class,
+                        'source_type' => ShopPayment::class,
                         'source_id' => $payment->id,
                     ],
                     [
-                        'uuid' => (string) Str::uuid(),
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
@@ -243,10 +289,16 @@ class SyncFinancialTransactions extends Command
         });
     }
 
-    private function syncTips()
+    private function syncTips($userId = null)
     {
         $this->info('Syncing Tips...');
-        \App\Models\TipGoalsPayment::chunk(100, function ($payments) {
+
+        $query = TipGoalsPayment::query();
+        if ($userId) {
+            $query->where('creator_id', $userId);
+        }
+
+        $query->chunk(100, function ($payments) {
             foreach ($payments as $payment) {
                 $creatorId = $payment->creator_id;
                 if (!$creatorId) continue;
@@ -255,13 +307,12 @@ class SyncFinancialTransactions extends Command
                 $vat = $payment->tax ?? 0;
                 $net = $amount - $vat;
 
-                FinancialTransaction::firstOrCreate(
+                FinancialTransaction::updateOrCreate(
                     [
-                        'source_type' => \App\Models\TipGoalsPayment::class,
+                        'source_type' => TipGoalsPayment::class,
                         'source_id' => $payment->id,
                     ],
                     [
-                        'uuid' => (string) Str::uuid(),
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
