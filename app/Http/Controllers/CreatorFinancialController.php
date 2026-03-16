@@ -250,6 +250,7 @@ class CreatorFinancialController extends Controller
                 $tx->description = $exp->description;
                 $tx->type = 'expense';
                 $tx->gross_amount = $exp->amount;
+                $tx->vat_amount = 0;
                 $tx->status = 'completed';
                 $tx->source_type = $exp->category; 
                 $tx->currency = $exp->currency;

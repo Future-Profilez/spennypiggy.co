@@ -459,19 +459,28 @@ Route::middleware('auth')->group(function () {
             Route::post('/refer-and-earn/create-link', [ReferAndEarnController::class, 'createReferralLink'])->name('create-referral-link');
             Route::post('/refer-and-earn/redeem', [ReferAndEarnController::class, 'requestRedeem'])->name('referral.redeem');
 
-
-
             Route::get('/scanning/check-adult-content/{uuid}', [ProfileController::class, 'checkAdultContent'])->name('check-adult-content');
+            
             Route::get('auto-tweet-setting', [WishitemController::class, 'enableAutoTweet'])->name('auto-tweet-setting');
+            
             Route::get('unlink-twitter', [AuthenticatedSessionController::class, 'unlinkTwitter'])->name('unlink-twitter');
+            
             Route::get('user-tips', [WishitemController::class, 'userTips'])->name('user-tips');
+            
             Route::get('bill-tracker', [WishitemController::class, 'billTracker'])->name('bill-tracker');
+            
             Route::get('membership-tracker', [WishitemController::class, 'membershipTracker'])->name('membership.tracker');
+            
             Route::get('shop-tracker', [WishitemController::class, 'shopTracker'])->name('shop.tracker');
+            
             Route::get('subscriptions', [WishitemController::class, 'creatorSubscriptions'])->name('subscriptions');
+            
             Route::get('subscribed', [WishitemController::class, 'userSubscribed'])->name('subscribed');
+            
             Route::get('cancel-subscription/{subscription_id}', [WishitemController::class, 'cancelSubscription'])->name('cancel-subscription');
+            
             Route::get('/read-status/{payment_id}/{type}', [WishitemController::class, 'readStatus'])->name('read-status');
+            
             Route::get('/stripe', function (Request $request) {
                 $auth = Auth::user();
                 $bills = Bills::where('user_id', $auth->id)->where('approved', 1)->count();
@@ -497,6 +506,7 @@ Route::middleware('auth')->group(function () {
                     'mor_consent_details' => $morConsentDetails,
                 ]);
             })->middleware(['auth', 'verified'])->name('stripe');
+            
             Route::get('/pin-item/{wish_id}/', [WishitemController::class, 'pinItem'])->name('pin-item');
 
             // Twitter
@@ -506,31 +516,44 @@ Route::middleware('auth')->group(function () {
                 Route::get('share/{uuid}/{type}', [WishitemController::class, 'shareOnTwitter'])->name('share');
                 // Route::get('authorize', [TwitterController::class, 'handleOauth1'])->name('handle');
             });
+
             Route::post('add-goal', [WishitemController::class, 'addTipGoal'])->name('add-goal');
+            
             Route::get('mark-complete-goal/{uuid}', [WishitemController::class, 'markJarComplete'])->name('mark-goal');
+            
             Route::get('all-goals', [WishitemController::class, 'allGoalsCreators'])->name('all-goals');
 
             // Intro video
             Route::post('/update/intro/video', [ProfileController::class, 'saveIntroVideo'])->name('save');
+            
             Route::prefix("intro")->name("intro.")->group(function () {
                 Route::post('save', [ProfileController::class, 'saveIntroVideo'])->name('save');
                 Route::get('list', [ProfileController::class, 'getIntroVideo'])->name('list');
                 Route::get('remove', [ProfileController::class, 'removeIntro'])->name('remove');
                 // Route::get('/{uuid}', [ProfileController::class, 'getIntroById'])->name('get-intro-id');
             });
+
             Route::prefix("deliveries")->name("deliveries.")->group(function () {
                 Route::get('dashboard', [DeliveriesController::class, 'index'])->name('dashboard');
                 Route::get('stats', [DeliveriesController::class, 'getDeliveryStats'])->name('stats');
             });
+
             Route::match(['get', 'delete'], 'delete-stripe-account/{accountid}', [StripeController::class, 'deleteStripeAccount'])->name('deleteStripeAccount');
+            
             Route::match(['get', 'post'], 'wish-subscribe/checkout/{uuid}/{reccure?}', [StripeController::class, 'wishItemSubscribe'])->name('wish.subscribe.checkout');
+            
             Route::get('mandatory-checkout/', [StripeController::class, 'payMonthlyCharge'])->name("mandatory.checkout");
+            
             Route::get('/handle/{uuid}/{status}', [StripeController::class, 'handleMandatorySubscription'])->name('mandatory.handle');
+            
             Route::get('/activate-subscription', function () {
                 return Inertia::render('Profile/ActivateSubscription');
             })->name('activate-subscription');
+            
             Route::post('/dalle-image', [ProfileController::class, 'getImageGenerateAI'])->name('dalle.image');
+            
             Route::post('/upload-dalle-image', [ProfileController::class, 'uploadDalleImage'])->name('upload.dalle.image');
+        
         });
 
         // stripe identity verification routes
