@@ -403,7 +403,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </p>
 
                         {slinks?.status == 2 ? (
-                            <p className="text-lg text-red-500 text-sm mt-2">
+                            <p className="text-red-500 text-sm mt-2">
                                 Social Media Handle Update Request : Rejected
                                 due to {slinks?.reason ? slinks?.reason : ""}
                             </p>
