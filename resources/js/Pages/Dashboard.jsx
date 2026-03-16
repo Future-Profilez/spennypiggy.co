@@ -631,7 +631,7 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
                                                                     {IsloggedIn && auth?.user && auth?.user?.role == 1 && 
-                                                                    auth?.user?.subscription_status == 0 && auth?.user?.profile_status_lock == 1 ? (
+                                                                    auth?.user?.subscription_status == 0 ? (
                                                                         <SiteSubscription 
                                                                             auth={auth}
                                                                             subscription_status={auth?.user?.subscription_status}
@@ -644,7 +644,7 @@ export default function Dashboard(props) {
                                                                     )}
 
                                                                     
-                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
+                                                                    {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                         <div className="mb-6 relative group">
                                                                             {/* <div className="absolute  -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
                                                                             <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] md:rounded-[40px] bg-[#0b0c12]/70 backdrop-blur-2xl border border-white/10 min-h-[120px] md:min-h-[140px] border-2 !border-pink-500">

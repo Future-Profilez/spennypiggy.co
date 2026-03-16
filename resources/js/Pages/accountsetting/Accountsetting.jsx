@@ -173,7 +173,12 @@ export default function Accountsetting(props) {
                                     />
                                 }
                             >
-                                <SiteSubscription site_subscription={site_subscription} />
+                                <SiteSubscription
+                                    auth={auth}
+                                    subscription_status={subscription_status}
+                                    user={auth?.user}
+                                    site_subscription={site_subscription}
+                                />
                             </Popup>
 
                             {subscription_history && subscription_history.length > 0 && (
