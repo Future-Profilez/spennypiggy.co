@@ -94,13 +94,19 @@ export default function Transactions(props) {
   });
 
   const amountFor = (e) => {
-    if (e.type === 'gift_tip') {
-      const total = Number(e.amount || 0) + Number(e.vat_amount || 0);
-      return formatMultiPrice(total, e.currency || 'gbp');
+    const amount = Number(e.amount || 0);
+    const vat = Number(e.vat_amount || 0) + Number(e.vat_tax_amount || 0);
+    const fee = Number(e.tax || 0);
+
+    if (e.category === 'sent') {
+      const paid = (e.paid_total !== null && e.paid_total !== undefined && Number(e.paid_total) > 0)
+        ? Number(e.paid_total)
+        : (amount + vat + fee);
+      return formatMultiPrice(paid, e.currency || 'gbp');
     }
 
-    const total = Number(e.amount || 0) + Number(e.tax || 0) + Number(e.vat_amount || 0) + Number(e.vat_tax_amount || 0);
-    return formatMultiPrice(total, e.currency || 'gbp');
+    const creatorPayout = amount + vat;
+    return formatMultiPrice(creatorPayout, e.currency || 'gbp');
   };
 
   const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';

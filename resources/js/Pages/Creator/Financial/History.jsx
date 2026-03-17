@@ -25,7 +25,7 @@ export default function History({ auth, transactions }) {
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Full History</h1>
                             <p className="text-sm md:text-base text-gray-400 mt-1">All income and expenses ledger.</p>
-                            <p className="text-xs text-gray-500 mt-1">Income amounts show the creator amount; VAT is shown separately (fees are not included).</p>
+                            <p className="text-xs text-gray-500 mt-1 font-bold">You keep 100% of what you earn. Supporters cover all fees.</p>
                         </div>
                     </div>
                     <a 
@@ -47,8 +47,7 @@ export default function History({ auth, transactions }) {
                                     <th className="px-6 py-4">Date</th>
                                     <th className="px-6 py-4">Supporter</th>
                                     <th className="px-6 py-4">Description</th>
-                                    <th className="px-6 py-4 text-right">Creator Amount</th>
-                                    <th className="px-6 py-4 text-right">VAT</th>
+                                    <th className="px-6 py-4 text-right">Earned</th>
                                     <th className="px-6 py-4 text-right">Status</th>
                                 </tr>
                             </thead>
@@ -75,10 +74,7 @@ export default function History({ auth, transactions }) {
                                             </div>
                                         </td>
                                         <td className={`px-4 md:px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                                            {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.gross_amount, tx.currency)}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap text-gray-300">
-                                            {(Number(tx.vat_amount || 0) > 0) ? formatCurrency(tx.vat_amount, tx.currency) : '—'}
+                                            {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-right">
                                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
@@ -91,7 +87,7 @@ export default function History({ auth, transactions }) {
                                 ))}
                                 {transactions.data.length === 0 && (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                                             No transactions found.
                                         </td>
                                     </tr>

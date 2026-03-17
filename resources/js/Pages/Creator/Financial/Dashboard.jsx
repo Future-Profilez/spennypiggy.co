@@ -34,7 +34,7 @@ import {
     Area
 } from 'recharts';
 
-export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax_year, display_currency, profile, recent_transactions, analytics, top_supporters }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     const { post: refreshPost, processing: refreshProcessing } = useForm({});
@@ -82,6 +82,8 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                             <div className='w-full lg:w-auto'>
                                 <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Financial Hub</h1>
                                 <p className="text-sm md:text-base text-gray-400 mt-1">Real-time tax tracking and business insights.</p>
+                                <p className="text-xs text-gray-500 mt-2 font-bold">You keep 100% of what you earn. Supporters cover all fees.</p>
+                                <p className="text-xs text-gray-500 mt-1 font-bold">Payouts are sent every Friday.</p>
                             </div>
                             <div className="md:flex w-full  lg:w-auto gap-3">
                                 <button
@@ -111,24 +113,6 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                         </div>
                     </div>
 
-                    {/* VAT Alert */}
-                    {vat_status.status !== 'ok' && (
-                        <div className={`p-4 rounded-[20px] md:rounded-[30px] border ${vat_status.status === 'breached' ? 'bg-red-500/10 border-red-500/50 text-red-200' : 'bg-yellow-500/10 border-yellow-500/50 text-yellow-200'}`}>
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle className={`mt-0.5 ${vat_status.status === 'breached' ? 'text-red-500' : 'text-yellow-500'}`} />
-                                <div>
-                                    <h3 className="font-bold text-lg">VAT Threshold Alert</h3>
-                                    <p className="mt-1 opacity-90 text-sm">
-                                        Your rolling 12-month revenue is <strong className="font-mono">{formatCurrency(vat_status.revenue, 'GBP')}</strong>. 
-                                        {vat_status.status === 'breached' 
-                                            ? " You have exceeded the £90,000 threshold. You must register for VAT immediately." 
-                                            : " You are approaching the £90,000 VAT threshold."}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-gray-600 transition-colors shadow-xl">
@@ -138,9 +122,10 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                             <div className="relative z-10">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
                                     <TrendingUp size={14} className="text-green-400" />
-                                    Gross ({tax_year})
+                                    Gross Earnings ({tax_year})
                                 </div>
                                 <div className="text-2xl md:text-3xl font-bold text-white mt-2">{formatCurrency(summary.gross_income, displayCurrency)}</div>
+                                <div className="text-[12px] text-gray-500 mt-2 font-bold">Total sent to you by supporters.</div>
                             </div>
                         </div>
 
@@ -151,9 +136,10 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                             <div className="relative z-10">
                                 <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full bg-[#05EFB8]"></div>
-                                    Net Profit
+                                    Net Earnings
                                 </div>
                                 <div className="text-2xl md:text-3xl font-bold text-[#05EFB8] mt-2">{formatCurrency(summary.profit, displayCurrency)}</div>
+                                <div className="text-[12px] text-gray-500 mt-2 font-bold">What you keep after expenses.</div>
                             </div>
                         </div>
 
@@ -167,6 +153,7 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                                     Expenses
                                 </div>
                                 <div className="text-2xl md:text-3xl font-bold text-red-400 mt-2">{formatCurrency(summary.expenses, displayCurrency)}</div>
+                                <div className="text-[12px] text-gray-500 mt-2 font-bold">Optional costs you track for your own records.</div>
                             </div>
                         </div>
 
@@ -184,9 +171,9 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                                     <div className="text-[14px] text-gray-500 bg-yellow-500/10 text-yellow-500 font-bold inline-block px-2 py-1 rounded uppercase w-fit">
                                         Set aside {formatCurrency(tax_estimate/12, displayCurrency)}/mo
                                     </div>
-                                    <div className="text-[12px] text-gray-400 italic">
-                                        Based on UK Tax Bands 2024/25
-                                    </div>
+                                <div className="text-[12px] text-gray-400 italic">
+                                    Based on UK Tax Bands {tax_band_label || '2024/25'}
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -373,12 +360,9 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                                                             
                                                         </div>
                                                     </td>
-                                                    <td className={`px-4 md:px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                                                        <div>{tx.type === 'income' ? '+' : ''}{formatCurrency(tx.gross_amount, tx.currency)}</div>
-                                                        {Number(tx.vat_amount || 0) > 0 && (
-                                                            <div className="text-[10px] text-gray-500 font-sans font-bold">VAT: {formatCurrency(tx.vat_amount, tx.currency)}</div>
-                                                        )}
-                                                    </td>
+                                                <td className={`px-4 md:px-6 py-4 text-sm text-right font-mono font-bold whitespace-nowrap ${tx.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {tx.type === 'income' ? '+' : ''}{formatCurrency(tx.type === 'income' ? tx.net_amount : tx.gross_amount, tx.currency)}
+                                                </td>
                                                     <td className="px-6 py-4 text-sm text-right">
                                                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                                                             tx.status === 'completed' ? 'bg-green-500/10 text-green-400' : 
@@ -422,26 +406,6 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                                                 placeholder="Legal Name or Trading As"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-[10px] uppercase text-gray-500 font-bold mb-1.5">VAT Number (Optional)</label>
-                                            <input 
-                                                type="text" 
-                                                value={data.vat_registration_number}
-                                                onChange={e => setData('vat_registration_number', e.target.value)}
-                                                className="w-full bg-[#2a2a2a] border-gray-700 rounded-lg text-white text-sm focus:ring-[#F94F96] focus:border-[#F94F96] p-2.5"
-                                                placeholder="GB123456789"
-                                            />
-                                        </div>
-                                        <div className="bg-[#2a2a2a] p-3 rounded-lg flex items-center gap-3">
-                                            <input 
-                                                type="checkbox" 
-                                                id="vat_registered"
-                                                checked={data.vat_registered}
-                                                onChange={e => setData('vat_registered', e.target.checked)}
-                                                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#F94F96] focus:ring-[#F94F96] focus:ring-offset-gray-900"
-                                            />
-                                            <label htmlFor="vat_registered" className="text-xs text-gray-300 font-bold cursor-pointer select-none">VAT Registered</label>
-                                        </div>
                                         <div className="flex gap-2 justify-end pt-2">
                                             <button type="button" onClick={() => setIsEditingProfile(false)} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-white transition-colors">
                                                 Cancel
@@ -457,15 +421,6 @@ export default function Dashboard({ auth, summary, tax_estimate, vat_status, tax
                                             <div>
                                                 <span className="block text-[13px] text-gray-500 uppercase font-bold mb-1">Entity Name</span>
                                                 <span className="text-gray-100 font-bold block">{profile?.business_name || auth.user.name}</span>
-                                            </div>
-                                            <div>
-                                                <span className="block text-[13px] text-gray-500 uppercase font-bold mb-1">VAT Status</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${profile?.vat_registered ? "bg-[#05EFB8]" : "bg-gray-600"}`}></div>
-                                                    <span className={`text-xs font-bold ${profile?.vat_registered ? "text-[#05EFB8]" : "text-gray-500"}`}>
-                                                        {profile?.vat_registered ? `Registered (${profile.vat_registration_number})` : 'Not Registered'}
-                                                    </span>
-                                                </div>
                                             </div>
                                             <div className="pt-2">
                                                 <Link 

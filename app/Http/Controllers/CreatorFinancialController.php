@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CreatorFinancialProfile;
 use App\Models\FinancialTransaction;
+use App\Models\UkTaxSetting;
 use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -39,6 +40,10 @@ class CreatorFinancialController extends Controller
         $estimatedTax = $summary['currency'] === 'GBP'
             ? $estimatedTaxGbp
             : \App\Helpers::priceFormat('GBP', $estimatedTaxGbp, $summary['currency']);
+        
+        $taxSettings = UkTaxSetting::where('tax_year_start', (int) $year)->first()
+            ?: UkTaxSetting::orderByDesc('tax_year_start')->first();
+        $taxBandLabel = $taxSettings?->tax_year_label;
 
         // Analytics Data
         $displayCurrency = $summary['currency'] ?? 'GBP';
@@ -47,7 +52,7 @@ class CreatorFinancialController extends Controller
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [now()->subMonths(6), now()])
-            ->get(['transaction_date', 'gross_amount', 'currency', 'source_type', 'supporter_id']);
+            ->get(['transaction_date', 'net_amount', 'currency', 'source_type', 'supporter_id']);
 
         $monthlyStats = $incomeForAnalytics
             ->groupBy(function ($tx) {
@@ -56,7 +61,7 @@ class CreatorFinancialController extends Controller
             ->map(function ($items, $month) use ($displayCurrency) {
                 $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->gross_amount ?? 0);
+                    $amount = (float) ($tx->net_amount ?? 0);
                     return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
                 });
                 return (object) ['month' => $month, 'total' => $total];
@@ -69,7 +74,7 @@ class CreatorFinancialController extends Controller
             ->map(function ($items, $sourceType) use ($displayCurrency) {
                 $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->gross_amount ?? 0);
+                    $amount = (float) ($tx->net_amount ?? 0);
                     return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
                 });
                 $count = $items->count();
@@ -130,6 +135,7 @@ class CreatorFinancialController extends Controller
                 $tx->description = $exp->description;
                 $tx->type = 'expense';
                 $tx->gross_amount = $exp->amount;
+                $tx->net_amount = $exp->amount;
                 $tx->vat_amount = 0;
                 $tx->status = 'completed';
                 $tx->source_type = $exp->category; 
@@ -152,14 +158,14 @@ class CreatorFinancialController extends Controller
             ->whereBetween('transaction_date', [$dates['start'], $dates['end']])
             ->whereNotNull('supporter_id')
             ->with(['supporter:id,name,username,avatar'])
-            ->get(['supporter_id', 'gross_amount', 'currency', 'source_type', 'transaction_date']);
+            ->get(['supporter_id', 'net_amount', 'currency', 'source_type', 'transaction_date']);
 
         $topSupporters = $supporterTx
             ->groupBy('supporter_id')
             ->map(function ($items) use ($displayCurrency) {
                 $total = $items->sum(function ($tx) use ($displayCurrency) {
                     $from = strtoupper($tx->currency ?? 'GBP');
-                    $amount = (float) ($tx->gross_amount ?? 0);
+                    $amount = (float) ($tx->net_amount ?? 0);
                     return $from === $displayCurrency ? $amount : \App\Helpers::priceFormat($from, $amount, $displayCurrency);
                 });
 
@@ -168,7 +174,7 @@ class CreatorFinancialController extends Controller
                     ->mapWithKeys(function ($group, $sourceType) use ($displayCurrency) {
                         $amount = $group->sum(function ($tx) use ($displayCurrency) {
                             $from = strtoupper($tx->currency ?? 'GBP');
-                            $value = (float) ($tx->gross_amount ?? 0);
+                            $value = (float) ($tx->net_amount ?? 0);
                             return $from === $displayCurrency ? $value : \App\Helpers::priceFormat($from, $value, $displayCurrency);
                         });
 
@@ -201,8 +207,8 @@ class CreatorFinancialController extends Controller
         return Inertia::render('Creator/Financial/Dashboard', [
             'summary' => $summary,
             'tax_estimate' => $estimatedTax,
-            'vat_status' => $vatStatus,
             'tax_year' => $dates['label'],
+            'tax_band_label' => $taxBandLabel,
             'display_currency' => $displayCurrency,
             'profile' => $profile,
             'recent_transactions' => $recentTransactions,
@@ -362,11 +368,8 @@ class CreatorFinancialController extends Controller
                     'type' => $transaction->type,
                     'category' => 'Income',
                     'description' => $transaction->description,
-                    'gross_amount' => $transaction->gross_amount,
-                    'platform_fee' => $transaction->platform_fee,
-                    'stripe_fee' => $transaction->stripe_fee,
-                    'vat_amount' => $transaction->vat_amount,
-                    'net_amount' => $transaction->net_amount,
+                    'gross_amount' => $transaction->type === 'income' ? $transaction->net_amount : $transaction->gross_amount,
+                    'net_amount' => $transaction->type === 'income' ? $transaction->net_amount : $transaction->gross_amount,
                     'currency' => $transaction->currency,
                     'status' => $transaction->status,
                 ];
@@ -382,9 +385,6 @@ class CreatorFinancialController extends Controller
                     'category' => $expense->category,
                     'description' => $expense->description,
                     'gross_amount' => $expense->amount,
-                    'platform_fee' => 0,
-                    'stripe_fee' => 0,
-                    'vat_amount' => 0,
                     'net_amount' => $expense->amount,
                     'currency' => $expense->currency,
                     'status' => 'completed',
@@ -402,7 +402,7 @@ class CreatorFinancialController extends Controller
             "Expires"             => "0"
         ];
 
-        $columns = ['Date', 'Type', 'Category', 'Description', 'Gross Amount', 'Platform Fee', 'Stripe Fee', 'VAT', 'Net Amount', 'Currency', 'Status'];
+        $columns = ['Date', 'Type', 'Category', 'Description', 'Amount', 'Currency', 'Status'];
 
         $callback = function() use($merged, $columns) {
             $file = fopen('php://output', 'w');
@@ -415,10 +415,6 @@ class CreatorFinancialController extends Controller
                     $row['category'],
                     $row['description'],
                     $row['gross_amount'],
-                    $row['platform_fee'],
-                    $row['stripe_fee'],
-                    $row['vat_amount'],
-                    $row['net_amount'],
                     $row['currency'],
                     $row['status']
                 ]);

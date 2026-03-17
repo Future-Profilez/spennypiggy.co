@@ -147,7 +147,7 @@ export default function Statement({ summary, dates, profile, user }) {
                 {/* Revenue Section */}
                 <div className="mb-16 break-inside-avoid">
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-6">
-                        Revenue Breakdown
+                        Earnings Summary
                     </h3>
                     
                     <table className="w-full text-sm border-collapse">
@@ -159,22 +159,8 @@ export default function Statement({ summary, dates, profile, user }) {
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             <tr>
-                                <td className="py-4 font-bold text-[#0F172A]">Gross Earnings (Sales, Tips, Subscriptions)</td>
+                                <td className="py-4 font-bold text-[#0F172A]">Gross Earnings</td>
                                 <td className="py-4 text-right font-bold text-[#0F172A]">£{Number(summary.gross_income).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
-                            </tr>
-                            <tr>
-                                <td className="py-4 pl-6 text-slate-400 italic">Less: Platform & Processing Fees</td>
-                                <td className="py-4 text-right text-slate-400 italic">-£{Number(summary.fees).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
-                            </tr>
-                            {summary.vat_collected > 0 && (
-                                <tr>
-                                    <td className="py-4 pl-6 text-slate-400 italic">Less: VAT Collected (Liability)</td>
-                                    <td className="py-4 text-right text-slate-400 italic">-£{Number(summary.vat_collected).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
-                                </tr>
-                            )}
-                            <tr className="border-t-2 border-[#0F172A]">
-                                <td className="py-5 font-bold text-[#0F172A] uppercase text-xs tracking-wider">Net Revenue</td>
-                                <td className="py-5 text-right font-bold text-[#0F172A] text-lg">£{Number(summary.net_income).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -209,8 +195,8 @@ export default function Statement({ summary, dates, profile, user }) {
                 {/* Net Profit Summary */}
                 <div className="mb-16 break-inside-avoid">
                     <div className="bg-slate-50 rounded-2xl p-10 text-center border border-slate-100">
-                        <h3 className="text-lg font-bold text-[#0F172A] mb-1">Net Profit</h3>
-                        <p className="text-slate-400 text-xs mb-6 font-medium">Taxable Income before personal allowance</p>
+                        <h3 className="text-lg font-bold text-[#0F172A] mb-1">Net Earnings</h3>
+                        <p className="text-slate-400 text-xs mb-6 font-medium">Gross Earnings minus Expenses</p>
                         <p className="text-6xl font-bold text-[#0F172A] tracking-tighter">
                             £{Number(summary.profit).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
                         </p>

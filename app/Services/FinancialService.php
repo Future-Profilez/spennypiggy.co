@@ -7,6 +7,7 @@ use App\Models\FinancialTransaction;
 use App\Models\CreatorFinancialProfile;
 use App\Models\CreatorExpense;
 use App\Models\Currency;
+use App\Models\UkTaxSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -43,7 +44,7 @@ class FinancialService
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->get(['gross_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency']);
+            ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency']);
 
         $grossDisplay = 0;
         $feesDisplay = 0;
@@ -99,17 +100,17 @@ class FinancialService
 
         foreach ($incomeTx as $tx) {
             $from = strtoupper($tx->currency ?? 'GBP');
-            $gross = (float) ($tx->gross_amount ?? 0);
+            $creatorEarned = (float) ($tx->net_amount ?? 0);
             $fees = (float) (($tx->platform_fee ?? 0) + ($tx->stripe_fee ?? 0));
             $vat = (float) ($tx->vat_amount ?? 0);
-            $net = $gross - $fees;
+            $net = $creatorEarned;
 
-            $grossDisplay += $from === $displayCurrency ? $gross : ($convert($from, $gross, $displayCurrency) ?? $gross);
+            $grossDisplay += $from === $displayCurrency ? $creatorEarned : ($convert($from, $creatorEarned, $displayCurrency) ?? $creatorEarned);
             $feesDisplay += $from === $displayCurrency ? $fees : ($convert($from, $fees, $displayCurrency) ?? $fees);
             $vatDisplay += $from === $displayCurrency ? $vat : ($convert($from, $vat, $displayCurrency) ?? $vat);
             $netDisplay += $from === $displayCurrency ? $net : ($convert($from, $net, $displayCurrency) ?? $net);
 
-            $grossGbp += $from === 'GBP' ? $gross : ($convert($from, $gross, 'GBP') ?? $gross);
+            $grossGbp += $from === 'GBP' ? $creatorEarned : ($convert($from, $creatorEarned, 'GBP') ?? $creatorEarned);
             $feesGbp += $from === 'GBP' ? $fees : ($convert($from, $fees, 'GBP') ?? $fees);
             $vatGbp += $from === 'GBP' ? $vat : ($convert($from, $vat, 'GBP') ?? $vat);
             $netGbp += $from === 'GBP' ? $net : ($convert($from, $net, 'GBP') ?? $net);
@@ -139,15 +140,16 @@ class FinancialService
 
     public function calculateEstimatedTax($profit)
     {
-        // Simple UK Tax Bands (2024/25 rates)
-        // Personal Allowance: £12,570
-        // Basic Rate (20%): £12,571 to £50,270
-        // Higher Rate (40%): £50,271 to £125,140
-        // Additional Rate (45%): over £125,140
+        $taxYearStart = $this->getCurrentTaxYear();
+        $settings = UkTaxSetting::where('tax_year_start', $taxYearStart)->first()
+            ?: UkTaxSetting::orderByDesc('tax_year_start')->first();
 
-        $personalAllowance = 12570;
-        $basicRateLimit = 50270;
-        $higherRateLimit = 125140;
+        $personalAllowance = (float) ($settings->personal_allowance ?? 12570);
+        $basicRateLimit = (float) ($settings->basic_rate_limit ?? 50270);
+        $higherRateLimit = (float) ($settings->higher_rate_limit ?? 125140);
+        $basicRate = (float) ($settings->basic_rate ?? 0.20);
+        $higherRate = (float) ($settings->higher_rate ?? 0.40);
+        $additionalRate = (float) ($settings->additional_rate ?? 0.45);
 
         $tax = 0;
 
@@ -161,21 +163,21 @@ class FinancialService
         // Basic Rate
         $basicBand = $basicRateLimit - $personalAllowance;
         if ($taxable <= $basicBand) {
-            $tax += $taxable * 0.20;
+            $tax += $taxable * $basicRate;
         } else {
-            $tax += $basicBand * 0.20;
+            $tax += $basicBand * $basicRate;
             $remaining = $taxable - $basicBand;
 
             // Higher Rate
             $higherBand = $higherRateLimit - $basicRateLimit;
             if ($remaining <= $higherBand) {
-                $tax += $remaining * 0.40;
+                $tax += $remaining * $higherRate;
             } else {
-                $tax += $higherBand * 0.40;
+                $tax += $higherBand * $higherRate;
                 $remaining -= $higherBand;
 
                 // Additional Rate
-                $tax += $remaining * 0.45;
+                $tax += $remaining * $additionalRate;
             }
         }
         
@@ -192,7 +194,7 @@ class FinancialService
             ->where('type', 'income')
             ->where('status', 'completed')
             ->whereBetween('transaction_date', [$startDate, $endDate])
-            ->get(['gross_amount', 'currency']);
+            ->get(['net_amount', 'currency']);
 
         $currencies = $revenueTx
             ->pluck('currency')
@@ -206,7 +208,7 @@ class FinancialService
 
         $rollingRevenue = $revenueTx->sum(function ($tx) use ($rates) {
             $from = strtoupper($tx->currency ?? 'GBP');
-            $amount = (float) ($tx->gross_amount ?? 0);
+            $amount = (float) ($tx->net_amount ?? 0);
 
             if ($from === 'GBP') {
                 return $amount;

@@ -83,11 +83,7 @@ export default function Header({ classMagicword }) {
             "cartCounterRefreshed",
             handleCartCounterRefresh,
         );
-
-        // Initial fetch
         fetchCounter();
-
-        // Cleanup event listener
         return () => {
             window.removeEventListener(
                 "cartCounterRefreshed",
@@ -98,6 +94,7 @@ export default function Header({ classMagicword }) {
     return (
         <>
             {/* <ReactDebugTest /> */}
+            
             <div className="blackbg headermain fixed top-0 left-0 w-full z-40 py-4 ">
                 <div className="container mx-auto px-4">
                     <div className="header flex w-full items-center  justify-between ">
@@ -362,11 +359,11 @@ export default function Header({ classMagicword }) {
                                             </li>
                                         </>
                                     ) :""}
+                                    
 
                                     {auth &&
                                     auth.user &&
-                                    auth.user.stripe_details_submitted ==
-                                        "1" ? (
+                                    auth.user.role ==1 ? (
                                         <>
                                             <li>
                                                 <Link
@@ -447,7 +444,7 @@ export default function Header({ classMagicword }) {
                                                             color="#fff"
                                                             size={"1.2rem"}
                                                         />
-                                                    </span>
+                                                    </span> 
                                                     <span className="ml-2 text-[17px] tracking-wide truncate text-white">
                                                         Finance & Tax
                                                     </span>

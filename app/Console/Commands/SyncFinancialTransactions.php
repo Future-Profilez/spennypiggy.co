@@ -71,8 +71,10 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $payment->membership->user_id;
                 $amount = $payment->amount;
                 $vat = $payment->vat_tax_amount ?? 0;
+                $platformFee = $payment->tax ?? 0;
                 $stripeFee = $payment->stripe_fee_actual ?? 0;
-                $net = $amount - $vat - $stripeFee;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -83,11 +85,11 @@ class SyncFinancialTransactions extends Command
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
-                        'gross_amount' => $amount,
-                        'platform_fee' => 0, // Need logic
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
-                        'net_amount' => $net,
+                        'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => 'completed',
                         'description' => 'Membership Payment',
@@ -112,10 +114,10 @@ class SyncFinancialTransactions extends Command
                 // TaskPurchase has creator_id directly
                 $amount = $purchase->amount;
                 $vat = $purchase->vat_amount ?? 0;
-                $platformFee = $purchase->platform_fee ?? 0;
-                // Stripe fee usually deducted from payout or calculated
-                $stripeFee = 0; // Placeholder
-                $net = $amount - $vat - $platformFee - $stripeFee;
+                $platformFee = ($purchase->platform_fee ?? 0) + ($purchase->admin_fee ?? 0);
+                $stripeFee = 0;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -126,11 +128,11 @@ class SyncFinancialTransactions extends Command
                         'user_id' => $purchase->creator_id,
                         'supporter_id' => $purchase->supporter_id,
                         'type' => 'income',
-                        'gross_amount' => $amount,
+                        'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
-                        'net_amount' => $net,
+                        'net_amount' => $creatorAmount,
                         'currency' => 'GBP', // Task usually GBP?
                         'status' => $purchase->status === 'paid' ? 'completed' : $purchase->status,
                         'description' => 'Task Purchase',
@@ -161,7 +163,8 @@ class SyncFinancialTransactions extends Command
                 $vat = $payment->vat_tax_amount ?? 0;
                 $platformFee = $payment->tax ?? 0;
                 $stripeFee = $payment->stripe_fee_actual ?? 0;
-                $net = $amount - $vat - $platformFee - $stripeFee;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -172,11 +175,11 @@ class SyncFinancialTransactions extends Command
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
-                        'gross_amount' => $amount,
+                        'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
-                        'net_amount' => $net,
+                        'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => 'completed',
                         'description' => 'Bill Payment',
@@ -217,10 +220,10 @@ class SyncFinancialTransactions extends Command
 
                 $amount = $item->amount;
                 $vat = $item->vat_amount ?? ($item->tax ?? 0);
-                // Platform fee logic would go here
-                $platformFee = 0; 
+                $platformFee = $item->tax ?? 0;
                 $stripeFee = 0;
-                $net = $amount - $vat - $platformFee - $stripeFee;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -231,11 +234,11 @@ class SyncFinancialTransactions extends Command
                         'user_id' => $creatorId,
                         'supporter_id' => $item->payment->user_id,
                         'type' => 'income',
-                        'gross_amount' => $amount,
+                        'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
-                        'net_amount' => $net,
+                        'net_amount' => $creatorAmount,
                         'currency' => strtoupper($item->payment->currency ?? 'GBP'),
                         'status' => $item->payment->payment_status === 'paid' ? 'completed' : 'pending',
                         'description' => 'Wish Gift: ' . ($item->wish->name ?? 'Item'),
@@ -264,7 +267,10 @@ class SyncFinancialTransactions extends Command
                 $creatorId = $payment->shop->user_id;
                 $amount = $payment->amount;
                 $vat = $payment->vat_tax_amount ?? 0;
-                $net = $amount - $vat;
+                $platformFee = $payment->tax_amount ?? 0;
+                $stripeFee = 0;
+                $gross = $amount + $vat + $platformFee + $stripeFee;
+                $creatorAmount = $amount;
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -275,11 +281,11 @@ class SyncFinancialTransactions extends Command
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
-                        'gross_amount' => $amount,
-                        'platform_fee' => 0,
-                        'stripe_fee' => 0,
+                        'gross_amount' => $gross,
+                        'platform_fee' => $platformFee,
+                        'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
-                        'net_amount' => $net,
+                        'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $payment->payment_status === 'paid' ? 'completed' : 'pending',
                         'description' => 'Shop Purchase: ' . ($payment->shop->name ?? 'Item'),
@@ -306,9 +312,12 @@ class SyncFinancialTransactions extends Command
 
                 $amount = $payment->amount;
                 $vat = $payment->vat_amount ?? 0;
-                $platformFee = 0;
-                $stripeFee = 0;
-                $net = $amount;
+                $platformFee = $payment->tax ?? 0;
+                $gross = $payment->total_paid && $payment->total_paid > 0
+                    ? (float) $payment->total_paid
+                    : ((float) $amount + (float) $vat + (float) $platformFee);
+                $stripeFee = max(0, $gross - $platformFee - $amount - $vat);
+                $creatorAmount = $amount;
 
                 $status = strtolower((string) ($payment->status ?? ''));
                 $normalizedStatus = in_array($status, ['paid', 'succeeded', 'completed', 'paid_out'], true) ? 'completed' : ($status ?: 'pending');
@@ -322,11 +331,11 @@ class SyncFinancialTransactions extends Command
                         'user_id' => $creatorId,
                         'supporter_id' => $payment->user_id,
                         'type' => 'income',
-                        'gross_amount' => $amount,
+                        'gross_amount' => $gross,
                         'platform_fee' => $platformFee,
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
-                        'net_amount' => $net,
+                        'net_amount' => $creatorAmount,
                         'currency' => strtoupper($payment->currency ?? 'GBP'),
                         'status' => $normalizedStatus,
                         'description' => 'Tip / Support',
