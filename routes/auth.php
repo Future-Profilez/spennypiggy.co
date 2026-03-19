@@ -604,12 +604,12 @@ Route::middleware('auth')->group(function () {
         Route::prefix('earnings')->group(function () {
             Route::get('all-data/{type?}', [LeaderBoardController::class, 'earnings'])->name('earnings');
             Route::get('graph-data/', [LeaderBoardController::class, 'graphData'])->name('graph-data');
-            Route::get('top-wishes', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
-            // Route::get('top-subscription', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
-            Route::get('top-paid-task', [LeaderBoardController::class, 'topPaidTask'])->name('top.paid.task');
-            Route::get('top-bill', [LeaderBoardController::class, 'topBill'])->name('top-bill');
-            Route::get('top-shop', [LeaderBoardController::class, 'topShop'])->name('top-shop');
-            Route::get('top-piggy-bank', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
+            Route::get('top-wishes/{type?}', [LeaderBoardController::class, 'topWishes'])->name('top-wishes');
+            Route::get('top-subscription/{type?}', [LeaderBoardController::class, 'topSubscription'])->name('top-subscription');
+            Route::get('top-paid-task/{type?}', [LeaderBoardController::class, 'topPaidTask'])->name('top.paid.task');
+            Route::get('top-bill/{type?}', [LeaderBoardController::class, 'topBill'])->name('top-bill');
+            Route::get('top-shop/{type?}', [LeaderBoardController::class, 'topShop'])->name('top-shop');
+            Route::get('top-piggy-bank/{type?}', [LeaderBoardController::class, 'topPiggyBank'])->name('top-piggy-bank');
         });
 
         Route::get('/shop', function () {
