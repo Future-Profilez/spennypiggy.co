@@ -15,7 +15,7 @@ import { useAlerts } from "@/Components/Alerts";
 function Bill(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { auth } = usePage().props;
-    const { format, formatMultiPrice } = PriceFormat();
+    const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { itm, itemid, IsloggedIn, classes, key } = props;
 
     // Helper to identify zero decimal currencies
@@ -41,7 +41,7 @@ function Bill(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

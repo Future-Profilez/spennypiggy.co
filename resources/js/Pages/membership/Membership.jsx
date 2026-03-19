@@ -55,7 +55,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   
   const {auth} = usePage().props;
-  const { formatMultiPrice } = PriceFormat();
+  const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
   const [rewards ,setrewards ] = useState(item?.rewards ? JSON.parse(item.rewards) : []);
   const getRewardTitle = (e) => {
     const item = rewards_lists.filter((item)=> item?.value == e);
@@ -109,7 +109,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
     const stripeFixedFee = isZeroDecimal ? 0 : 0.30; // 30 cents (0 for zero-decimal)
     const platformFeeRate = 0.15; // 15%
     const complianceFeeRate = 0.02; // 2%
-    const adminFee = 1.00; // Fixed admin fee
+    const adminFee = adminFeeInCurrency(curr);
 
     // 3. Gross-up formula:
     // Total = (PriceWithVAT + FixedFees) / (1 - TotalPercentageFees)

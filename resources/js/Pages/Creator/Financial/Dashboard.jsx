@@ -267,8 +267,8 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                             </div>
 
                             {/* Top Supporters Breakdown */}
-                            <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800 p-6 shadow-xl">
-                                <div className="flex justify-between items-center mb-6">
+                            <div className="bg-[#1e1e1e] rounded-[20px] md:rounded-[30px] border border-gray-800  shadow-xl">
+                                <div className="flex justify-between p-6 items-center ">
                                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                                         <Users className="text-[#05EFB8]" size={20} />
                                         Top Supporters

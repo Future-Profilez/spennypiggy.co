@@ -18,7 +18,7 @@ import { Link, usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
     const { ziggy, auth: globalAuth } = usePage().props;
-    const { format, formatMultiPrice } = PriceFormat();
+    const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const {
         imagesize,
         currency,
@@ -58,7 +58,7 @@ export default function Wishlistbox(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

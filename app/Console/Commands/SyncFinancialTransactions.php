@@ -104,7 +104,7 @@ class SyncFinancialTransactions extends Command
     {
         $this->info('Syncing Tasks...');
 
-        $query = TaskPurchase::query();
+        $query = TaskPurchase::with(['task:id,currency', 'creator:id,vat_amount_percentage']);
         if ($userId) {
             $query->where('creator_id', $userId);
         }
@@ -114,10 +114,35 @@ class SyncFinancialTransactions extends Command
                 // TaskPurchase has creator_id directly
                 $amount = $purchase->amount;
                 $vat = $purchase->vat_amount ?? 0;
-                $platformFee = ($purchase->platform_fee ?? 0) + ($purchase->admin_fee ?? 0);
+                $vatPercent = (float) ($purchase->creator?->vat_amount_percentage ?? 0);
+                if ((!$vat || $vat <= 0) && $vatPercent > 0) {
+                    $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
+                    if ($vat > 0) {
+                        $purchase->vat_amount = $vat;
+                    }
+                }
+                $currency = strtoupper($purchase->currency ?? ($purchase->task?->currency ?? 'GBP'));
+                if (!$purchase->currency && $currency) {
+                    $purchase->currency = $currency;
+                }
+
+                $expectedAdminFee = (float) \App\Helpers::administrationFeeInCurrency($currency);
+                if (!is_finite($expectedAdminFee) || $expectedAdminFee <= 0) {
+                    $expectedAdminFee = 1;
+                }
+                if (abs(((float) ($purchase->admin_fee ?? 0)) - $expectedAdminFee) > 0.001) {
+                    $purchase->admin_fee = $expectedAdminFee;
+                }
+
+                $adminFee = (float) ($purchase->admin_fee ?? $expectedAdminFee);
+
+                $platformFee = (float) ($purchase->platform_fee ?? 0) + $adminFee;
                 $stripeFee = 0;
                 $gross = $amount + $vat + $platformFee + $stripeFee;
                 $creatorAmount = $amount;
+                if ($purchase->isDirty()) {
+                    $purchase->save();
+                }
 
                 FinancialTransaction::updateOrCreate(
                     [
@@ -133,7 +158,7 @@ class SyncFinancialTransactions extends Command
                         'stripe_fee' => $stripeFee,
                         'vat_amount' => $vat,
                         'net_amount' => $creatorAmount,
-                        'currency' => 'GBP', // Task usually GBP?
+                        'currency' => $currency,
                         'status' => $purchase->status === 'paid' ? 'completed' : $purchase->status,
                         'description' => 'Task Purchase',
                         'transaction_date' => $purchase->created_at,

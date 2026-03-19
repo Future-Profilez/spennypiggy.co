@@ -857,8 +857,21 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // Calculate amount from session amount_total (in cents/smallest unit)
-        $amount = ($session->amount_total ?? 0) / 100;
+        $currency = strtoupper($session->currency ?? ($metadata->currency ?? ($task->currency ?? 'GBP')));
+        $currencyModel = \App\Models\Currency::where('ISO', $currency)->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
+        $itemAmountMinor = $metadata->item_amount ?? null;
+        $amount = $itemAmountMinor !== null ? ((float) $itemAmountMinor / $multiplier) : ((float) ($session->amount_total ?? 0) / $multiplier);
+
+        $vat = isset($metadata->vat_amount) ? ((float) $metadata->vat_amount / $multiplier) : 0;
+        $vatPercent = (float) ($metadata->vat_percent ?? 0);
+        if ((!$vat || $vat <= 0) && $vatPercent > 0) {
+            $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
+        }
+        $adminFee = isset($metadata->admin_fee) ? ((float) $metadata->admin_fee / $multiplier) : 0;
+        $platformFee = isset($metadata->platform_fee) ? ((float) $metadata->platform_fee / $multiplier) : 0;
+        $transferAmount = isset($metadata->transfer_amount) ? ((float) $metadata->transfer_amount / $multiplier) : 0;
 
         // Try to get charge_id from payment intent if available
         $chargeId = null;
@@ -887,13 +900,14 @@ class StripeWebhookController extends Controller
             'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
             'charge_id' => $chargeId,
             'amount' => $amount,
+            'currency' => $currency,
             'status' => $initialStatus,
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'gifter_message' => $metadata->gifter_message ?? null,
-            'admin_fee' => $metadata->admin_fee ?? 0,
-            'platform_fee' => $metadata->platform_fee ?? 0,
-            'vat_amount' => $metadata->vat_amount ?? 0,
-            'transfer_amount' => $metadata->transfer_amount ?? 0,
+            'admin_fee' => $adminFee,
+            'platform_fee' => $platformFee,
+            'vat_amount' => $vat,
+            'transfer_amount' => $transferAmount,
             'dispute_status' => 'none',
         ]);
 

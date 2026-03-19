@@ -9,7 +9,7 @@ import Turnstile from "@/Components/Turnstile";
 
 export default function BillCheckout(props) {
     const turnstileRef = useRef(null);
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { bill, vat_amount, card_capabilities, creator_currency, display_currency } = props;
     const { user, auth, turnstileSiteKey } = usePage().props;
 
@@ -52,7 +52,7 @@ export default function BillCheckout(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

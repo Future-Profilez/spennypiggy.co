@@ -8,7 +8,7 @@ import Authenticated from "@/Layouts/AuthenticatedLayout";
 
 export default function SubCheckout(props) {
     const {auth, user, wish, reccure, vat_amount  } = props;
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
     const [email, setEmail] = useState(auth && auth.user && auth.user.email || '');
     const { successAlert, errorAlert, warningAlert, infoAlert } = useAlerts();
@@ -43,7 +43,7 @@ export default function SubCheckout(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

@@ -13,7 +13,7 @@ export default function SubCheckout(props) {
     const turnstileRef = useRef(null);
     const { turnstileSiteKey } = usePage().props;
     const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [username, setUserName] = useState(
         (auth && auth.user && auth.user.username) || ""
     );
@@ -56,7 +56,7 @@ export default function SubCheckout(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

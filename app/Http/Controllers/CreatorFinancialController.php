@@ -9,7 +9,6 @@ use App\Services\FinancialService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Artisan;
 
 class CreatorFinancialController extends Controller
@@ -28,9 +27,6 @@ class CreatorFinancialController extends Controller
         $dates = $this->financialService->getTaxYearDates($year);
         
         $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);
-
-        // Sync VAT Threshold
-        $vatStatus = $this->financialService->checkVatThreshold($user);
 
         // Get Summary
         $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end']);
@@ -102,6 +98,8 @@ class CreatorFinancialController extends Controller
 
         // Recent Transactions (Income & Expenses)
         $income = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
             ->take(10)
@@ -226,6 +224,8 @@ class CreatorFinancialController extends Controller
         
         // Income
         $income = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
             ->with('supporter:id,name,username,email')
             ->latest('transaction_date')
             ->get()
@@ -305,15 +305,52 @@ class CreatorFinancialController extends Controller
         
         // Calculate verified metrics for certificate
         $joinDate = $user->created_at;
-        $totalEarnings = FinancialTransaction::where('user_id', $user->id)
+        $incomeAll = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
-            ->sum('gross_amount');
+            ->where('status', 'completed')
+            ->get(['net_amount', 'currency', 'transaction_date']);
+
+        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+
+        $currencies = $incomeAll
+            ->pluck('currency')
+            ->push($displayCurrency)
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $rates = \App\Models\Currency::whereIn('ISO', $currencies)->pluck('conversion_rate', 'ISO');
+
+        $convert = function ($from, $amount, $to) use ($rates) {
+            $from = strtoupper($from ?: $to);
+            $to = strtoupper($to ?: $from);
+            $amount = (float) $amount;
+            if ($from === $to) {
+                return $amount;
+            }
+            if (!isset($rates[$from]) || !isset($rates[$to])) {
+                return $amount;
+            }
+            $fromRate = (float) $rates[$from];
+            $toRate = (float) $rates[$to];
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return $amount;
+            }
+            $gbp = $amount / $fromRate;
+            return $gbp * $toRate;
+        };
+
+        $totalEarnings = $incomeAll->sum(function ($tx) use ($convert, $displayCurrency) {
+            return $convert($tx->currency, $tx->net_amount ?? 0, $displayCurrency);
+        });
             
         // Last 12 months for average
-        $last12MonthsEarnings = FinancialTransaction::where('user_id', $user->id)
-            ->where('type', 'income')
+        $last12MonthsEarnings = $incomeAll
             ->where('transaction_date', '>=', now()->subMonths(12))
-            ->sum('gross_amount');
+            ->sum(function ($tx) use ($convert, $displayCurrency) {
+                return $convert($tx->currency, $tx->net_amount ?? 0, $displayCurrency);
+            });
             
         $activeMonths = max(1, min(12, $joinDate->diffInMonths(now()) + 1));
         $averageMonthly = $last12MonthsEarnings / $activeMonths;
@@ -324,6 +361,7 @@ class CreatorFinancialController extends Controller
             'metrics' => [
                 'total_earnings' => $totalEarnings,
                 'average_monthly' => $averageMonthly,
+                'currency' => $displayCurrency,
                 'member_since' => $joinDate->format('d M Y'),
                 'generated_at' => now()->format('d M Y'),
                 'verification_id' => strtoupper(uniqid('SP-VER-')),

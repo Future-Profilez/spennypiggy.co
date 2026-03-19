@@ -142,7 +142,7 @@ class Helpers
      * @param string $currency The currency ISO code
      * @return array Breakdown of fees and total
      */
-    public static function isZeroDecimalCurrency($currency)
+    public static function isZeroDecimalCurrency($currency): bool
     {
         $zeroDecimalCurrencies = [
             'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
@@ -150,7 +150,25 @@ class Helpers
         return in_array(strtoupper($currency), $zeroDecimalCurrencies);
     }
 
-    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'USD', $reserveRate = 0)
+    public static function administrationFeeInCurrency($currency): float
+    {
+        $feeGbp = (float) config('app.administration_fee', 1);
+        $currency = strtoupper($currency ?: 'GBP');
+
+        if ($currency === 'GBP') {
+            return $feeGbp;
+        }
+
+        $converted = (float) self::priceFormat('GBP', $feeGbp, $currency);
+        if (!is_finite($converted) || $converted <= 0) {
+            return $feeGbp;
+        }
+
+        $precision = self::isZeroDecimalCurrency($currency) ? 0 : 2;
+        return round($converted, $precision, PHP_ROUND_HALF_UP);
+    }
+
+    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'USD', $reserveRate = 0): array
     {
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);
@@ -164,7 +182,7 @@ class Helpers
         // Platform fees
         $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
         $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
-        $adminFee = config('app.administration_fee', 1);
+        $adminFee = self::administrationFeeInCurrency($currency);
 
         // Correct gross-up formula to ensure creator receives exactly listedPrice:
         // TotalAmount = (ListedPrice + StripeFixedFee + AdminFee) / (1 - StripeFeeRate - PlatformFeeRate - ComplianceFeeRate)

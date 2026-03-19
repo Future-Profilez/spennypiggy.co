@@ -3,6 +3,21 @@ import { Printer, ArrowLeft, ShieldCheck, QrCode } from 'lucide-react';
 
 export default function Certificate({ profile, user, metrics }) {
     const brandLogoUrl = 'https://ucarecdn.com/be168cd5-43f9-4eee-8663-e2cc79bae5d5/-/preview/1000x287/';
+    const currency = (metrics?.currency || 'GBP').toUpperCase();
+
+    const formatMoney = (value) => {
+        const amount = Number(value || 0);
+        try {
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(amount);
+        } catch (e) {
+            return `${currency} ${amount.toFixed(2)}`;
+        }
+    };
 
     const handlePrint = () => {
         window.print();
@@ -163,11 +178,11 @@ export default function Certificate({ profile, user, metrics }) {
                                                             <tr>
                                                                 <td className="w-1/2 bg-white/50 p-4 text-center border-r border-slate-200">
                                                                     <p className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1">Average Monthly</p>
-                                                                    <p className="text-2xl font-bold text-slate-900 font-mono">£{Number(metrics.average_monthly).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                                    <p className="text-2xl font-bold text-slate-900 font-mono">{formatMoney(metrics.average_monthly)}</p>
                                                                 </td>
                                                                 <td className="w-1/2 bg-white/50 p-4 text-center">
                                                                     <p className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest mb-1">Total Lifetime</p>
-                                                                    <p className="text-2xl font-bold text-slate-900 font-mono">£{Number(metrics.total_earnings).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                                    <p className="text-2xl font-bold text-slate-900 font-mono">{formatMoney(metrics.total_earnings)}</p>
                                                                 </td>
                                                             </tr>
                                                         </tbody>

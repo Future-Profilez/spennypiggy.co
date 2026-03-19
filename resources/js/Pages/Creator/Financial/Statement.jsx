@@ -4,6 +4,21 @@ import { Printer, ArrowLeft, Calendar, Mail, Tag } from 'lucide-react';
 
 export default function Statement({ summary, dates, profile, user }) {
     const brandLogoUrl = 'https://ucarecdn.com/be168cd5-43f9-4eee-8663-e2cc79bae5d5/-/preview/1000x287/';
+    const currency = (summary?.currency || 'GBP').toUpperCase();
+
+    const formatMoney = (value) => {
+        const amount = Number(value || 0);
+        try {
+            return new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(amount);
+        } catch (e) {
+            return `${currency} ${amount.toFixed(2)}`;
+        }
+    };
 
     const handlePrint = () => {
         window.print();
@@ -134,7 +149,7 @@ export default function Statement({ summary, dates, profile, user }) {
                                         <tr>
                                             <td className="text-slate-400 pr-8 text-right">Currency</td>
                                             <td className="text-right">
-                                                <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-xs font-bold text-[#0F172A]">GBP (£)</span>
+                                                <span className="bg-slate-50 border border-slate-100 px-2 py-0.5 rounded text-xs font-bold text-[#0F172A]">{currency}</span>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -160,7 +175,7 @@ export default function Statement({ summary, dates, profile, user }) {
                         <tbody className="divide-y divide-slate-50">
                             <tr>
                                 <td className="py-4 font-bold text-[#0F172A]">Gross Earnings</td>
-                                <td className="py-4 text-right font-bold text-[#0F172A]">£{Number(summary.gross_income).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
+                                <td className="py-4 text-right font-bold text-[#0F172A]">{formatMoney(summary.gross_income)}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -182,11 +197,11 @@ export default function Statement({ summary, dates, profile, user }) {
                         <tbody>
                             <tr>
                                 <td className="py-4 text-slate-500">Total Logged Expenses</td>
-                                <td className="py-4 text-right text-[#0F172A] font-medium">£{Number(summary.expenses).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
+                                <td className="py-4 text-right text-[#0F172A] font-medium">{formatMoney(summary.expenses)}</td>
                             </tr>
                             <tr className="border-t-2 border-[#0F172A]">
                                 <td className="py-5 font-bold text-[#0F172A] uppercase text-xs tracking-wider">Total Expenses</td>
-                                <td className="py-5 text-right font-bold text-red-600 text-lg">£{Number(summary.expenses).toLocaleString('en-GB', { minimumFractionDigits: 2 })}</td>
+                                <td className="py-5 text-right font-bold text-red-600 text-lg">{formatMoney(summary.expenses)}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -198,7 +213,7 @@ export default function Statement({ summary, dates, profile, user }) {
                         <h3 className="text-lg font-bold text-[#0F172A] mb-1">Net Earnings</h3>
                         <p className="text-slate-400 text-xs mb-6 font-medium">Gross Earnings minus Expenses</p>
                         <p className="text-6xl font-bold text-[#0F172A] tracking-tighter">
-                            £{Number(summary.profit).toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+                            {formatMoney(summary.profit)}
                         </p>
                     </div>
                 </div>

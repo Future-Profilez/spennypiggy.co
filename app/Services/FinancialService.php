@@ -134,6 +134,11 @@ class FinancialService
             'expenses' => $expensesDisplay,
             'profit' => $netDisplay - $expensesDisplay,
 
+            'gross_income_gbp' => $grossGbp,
+            'fees_gbp' => $feesGbp,
+            'vat_collected_gbp' => $vatGbp,
+            'net_income_gbp' => $netGbp,
+            'expenses_gbp' => $expensesGbp,
             'profit_gbp' => $netGbp - $expensesGbp,
         ];
     }

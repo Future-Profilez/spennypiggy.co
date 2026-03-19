@@ -356,7 +356,7 @@ class TaskController extends Controller
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
         // Fee Calculations
-        $adminFeeConfig = config('app.administration_fee', 0.50); // Default 0.50 if not set
+        $adminFeeConfig = config('app.administration_fee', 1);
         $platformFeePercent = config('app.platform_fee_percentage', 20);
         $vatPercent = $creator->vat_amount_percentage ?? 0;
 
@@ -383,6 +383,8 @@ class TaskController extends Controller
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
+        $adminFee = $breakdown['admin_fee'] ?? 0;
+        $platformFee = max(0, $applicationFeeAmount - $adminFee);
 
         // NEW: Risk Engine Evaluation
         $riskService = app(\App\Services\Risk\RiskService::class);
@@ -435,10 +437,16 @@ class TaskController extends Controller
             'task_type' => $task->type,
             'sla_hours' => (string) ($task->sla_hours ?? 0),
             'payment_type' => $paymentType,
+            'currency' => strtoupper($currency),
             'item_amount' => (string) round($price * $multiplier),
+            'vat_percent' => (string) $vatPercent,
+            'vat_amount' => (string) round($vatAmount * $multiplier),
+            'admin_fee' => (string) round($adminFee * $multiplier),
+            'platform_fee' => (string) round($platformFee * $multiplier),
             'creator_net_amount' => (string) round($creatorNet * $multiplier),
             'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
+            'transfer_amount' => (string) round($creatorNet * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
         ];
 
@@ -563,8 +571,12 @@ class TaskController extends Controller
         $buyerId = $metadata->buyer_id ?? null;
         $creatorId = $metadata->creator_id ?? $task->creator_id;
 
-        // Calculate amount from session amount_total (in cents/smallest unit)
-        $amount = ($session->amount_total ?? 0) / 100;
+        $currency = strtoupper($session->currency ?? ($task->currency ?? 'GBP'));
+        $currencyModel = \App\Models\Currency::where('ISO', $currency)->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+
+        $itemAmountMinor = $metadata->item_amount ?? null;
+        $amount = $itemAmountMinor !== null ? ((float) $itemAmountMinor / $multiplier) : ((float) ($session->amount_total ?? 0) / $multiplier);
 
         // Try to get charge_id from payment intent if available
         $chargeId = null;
@@ -580,18 +592,14 @@ class TaskController extends Controller
             }
         }
 
-        // Use consistent fee calculation for creator net amount
-        $currency = $session->currency ?? 'GBP';
-        $currencyModel = \App\Models\Currency::where('ISO', strtoupper($currency))->first();
-        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
-
-        if (isset($metadata->creator_net_amount)) {
-             $creatorNet = $metadata->creator_net_amount / $multiplier;
-        } else {
-             // Fallback (Note: this assumes amount is base price, which might be inaccurate for total paid)
-             $breakdown = Helpers::calculateStripeDirectChargeFlow($amount, $currency);
-             $creatorNet = $breakdown['net_to_creator'];
+        $vat = isset($metadata->vat_amount) ? ((float) $metadata->vat_amount / $multiplier) : 0;
+        $vatPercent = (float) ($metadata->vat_percent ?? 0);
+        if ((!$vat || $vat <= 0) && $vatPercent > 0) {
+            $vat = round(((float) $amount * $vatPercent) / 100, 2, PHP_ROUND_HALF_UP);
         }
+        $adminFee = isset($metadata->admin_fee) ? ((float) $metadata->admin_fee / $multiplier) : 0;
+        $platformFee = isset($metadata->platform_fee) ? ((float) $metadata->platform_fee / $multiplier) : 0;
+        $transferAmount = isset($metadata->transfer_amount) ? ((float) $metadata->transfer_amount / $multiplier) : 0;
 
         // Create TaskPurchase
         $purchase = TaskPurchase::create([
@@ -602,13 +610,14 @@ class TaskController extends Controller
             'payment_intent_id' => is_string($session->payment_intent) ? $session->payment_intent : ($session->payment_intent->id ?? null),
             'charge_id' => $chargeId,
             'amount' => $amount,
+            'currency' => $currency,
             'status' => 'paid', // Always paid in sync handler (and especially for local dev)
             'payment_type' => $metadata->payment_type ?? 'STANDARD',
             'gifter_message' => $metadata->gifter_message ?? null,
-            'admin_fee' => $metadata->admin_fee ?? 0,
-            'platform_fee' => $metadata->platform_fee ?? 0,
-            'vat_amount' => $metadata->vat_amount ?? 0,
-            'creator_net_amount' => $creatorNet,
+            'admin_fee' => $adminFee,
+            'platform_fee' => $platformFee,
+            'vat_amount' => $vat,
+            'transfer_amount' => $transferAmount,
             'dispute_status' => 'none',
         ]);
 
@@ -642,9 +651,7 @@ class TaskController extends Controller
             'customer_email' => $session->customer_details->email ?? null,
             'customer_name' => $session->customer_details->name ?? null,
             'metadata' => json_encode(array_merge((array)$metadata, [
-                'creator_net_amount' => $creatorNet,
-                'total_supporter_pays' => $amount,
-                'currency' => strtoupper($session->currency ?? 'GBP')
+                'currency' => $currency
             ])),
         ]);
 

@@ -13,7 +13,7 @@ export default function UserCarts(props) {
     const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart, currency } = props;
-    const { format, formatMultiPrice } = PriceFormat();
+    const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const datas = props.data;
     const card_capabilities = datas?.card_capabilities;
     
@@ -37,7 +37,7 @@ export default function UserCarts(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         if (totalDeductionRate >= 1) return priceWithVat;
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);

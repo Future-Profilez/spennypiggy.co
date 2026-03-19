@@ -99,6 +99,14 @@ export default function PriceFormat() {
     };
 
     return {
+        adminFeeInCurrency: (currency) => {
+            const upCurrency = (currency || "GBP").toUpperCase();
+            const rate = rates?.[upCurrency];
+            const digits = currencies?.[upCurrency]?.ISOdigits ?? 2;
+            const fee = upCurrency === "GBP" ? 1 : Number(rate);
+            const safeFee = !fee || !isFinite(fee) || fee <= 0 ? 1 : fee;
+            return Number(Number(safeFee).toFixed(digits));
+        },
         formatMultiPrice,
         usdtogbp,
     };

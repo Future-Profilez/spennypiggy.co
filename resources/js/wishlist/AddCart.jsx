@@ -13,7 +13,7 @@ export default function AddCart(props) {
     const { auth, card_capabilities } = usePage().props;
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const { usdtogbp, formatMultiPrice } = PriceFormat();
+    const { usdtogbp, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [cartamount, setcartamount] = useState(null);
 
     const gbpprice = usdtogbp(item.price, "GBP");
@@ -37,7 +37,7 @@ export default function AddCart(props) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

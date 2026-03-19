@@ -1669,110 +1669,219 @@ class ProfileController extends Controller
         }
 
         $user = Auth::user();
+        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
 
-        // Calculate lifetime stats
-        $lifetimeReceived = [];
-        $lifetimeSent = [];
+        $receivedAll = \App\Models\FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->get(['net_amount', 'currency']);
 
-        // Received (as creator)
-        $receivedPayments = StripePaymentDetail::where('owner_id', $user->id)->whereIn('payment_status', ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out'])->get();
-        foreach ($receivedPayments as $rp) {
-            $lifetimeReceived[$rp->currency] = ($lifetimeReceived[$rp->currency] ?? 0) + $rp->amount_total;
-        }
+        $sentAll = \App\Models\FinancialTransaction::where('supporter_id', $user->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->get(['gross_amount', 'currency']);
 
-        // Sent (as supporter)
-        $sentPayments = StripePaymentDetail::where('user_id', $user->id)->whereIn('payment_status', ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out'])->get();
-        foreach ($sentPayments as $sp) {
-            $lifetimeSent[$sp->currency] = ($lifetimeSent[$sp->currency] ?? 0) + $sp->amount_total;
-        }
+        $allCurrencies = $receivedAll
+            ->pluck('currency')
+            ->merge($sentAll->pluck('currency'))
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
 
-        // Add Membership stats
-        $receivedMems = MembershipPayment::whereHas('membership', fn($q) => $q->where('user_id', $user->id))->where('status', 'paid')->get();
-        foreach ($receivedMems as $rm) {
-            $lifetimeReceived[$rm->currency] = ($lifetimeReceived[$rm->currency] ?? 0) + $rm->amount;
-        }
-        $sentMems = MembershipPayment::where('user_id', $user->id)->where('status', 'paid')->get();
-        foreach ($sentMems as $sm) {
-            $lifetimeSent[$sm->currency] = ($lifetimeSent[$sm->currency] ?? 0) + $sm->amount;
-        }
+        $rates = \App\Models\Currency::whereIn('ISO', $allCurrencies)->pluck('conversion_rate', 'ISO');
 
-        // Add Tip stats
-        $receivedTips = TipGoalsPayment::where('creator_id', $user->id)->get();
-        foreach ($receivedTips as $rt) {
-            $lifetimeReceived[$rt->currency] = ($lifetimeReceived[$rt->currency] ?? 0) + $rt->amount;
-        }
-        $sentTips = TipGoalsPayment::where('user_id', $user->id)->get();
-        foreach ($sentTips as $st) {
-            $lifetimeSent[$st->currency] = ($lifetimeSent[$st->currency] ?? 0) + $st->amount;
+        if (!isset($rates[$displayCurrency]) || (float) $rates[$displayCurrency] <= 0) {
+            $displayCurrency = 'GBP';
         }
 
-        // Add Bill stats
-        $receivedBills = BillPayment::whereHas('bill', fn($q) => $q->where('user_id', $user->id))->where('status', 'paid')->get();
-        foreach ($receivedBills as $rb) {
-            $lifetimeReceived[$rb->currency] = ($lifetimeReceived[$rb->currency] ?? 0) + $rb->amount;
-        }
-        $sentBills = BillPayment::where('user_id', $user->id)->where('status', 'paid')->get();
-        foreach ($sentBills as $sb) {
-            $lifetimeSent[$sb->currency] = ($lifetimeSent[$sb->currency] ?? 0) + $sb->amount;
-        }
+        $convert = function (string $from, float $amount, string $to) use ($rates) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
 
-        // Add Shop stats
-        $receivedShop = ShopPayment::whereHas('shop', fn($q) => $q->where('user_id', $user->id))->get();
-        foreach ($receivedShop as $rs) {
-            $lifetimeReceived[$rs->currency] = ($lifetimeReceived[$rs->currency] ?? 0) + $rs->amount;
-        }
-        $sentShop = ShopPayment::where('user_id', $user->id)->get();
-        foreach ($sentShop as $ss) {
-            $lifetimeSent[$ss->currency] = ($lifetimeSent[$ss->currency] ?? 0) + $ss->amount;
-        }
+            if ($from === $to) {
+                return $amount;
+            }
 
-        // Add Task stats
-        $receivedTasks = TaskPurchase::where('creator_id', $user->id)->get();
-        foreach ($receivedTasks as $rta) {
-            $lifetimeReceived['gbp'] = ($lifetimeReceived['gbp'] ?? 0) + $rta->amount;
-        }
-        $sentTasks = TaskPurchase::where('supporter_id', $user->id)->get();
-        foreach ($sentTasks as $sta) {
-            $lifetimeSent['gbp'] = ($lifetimeSent['gbp'] ?? 0) + $sta->amount;
-        }
+            if (!isset($rates[$from]) || !isset($rates[$to])) {
+                return null;
+            }
 
-        $receivedResponse = $this->transactionsFeed(new Request([
-            'tab' => 'received',
-            'limit' => 20,
-        ]));
-        $sentResponse = $this->transactionsFeed(new Request([
-            'tab' => 'sent',
-            'limit' => 20,
-        ]));
+            $fromRate = (float) $rates[$from];
+            $toRate = (float) $rates[$to];
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
 
-        $received = $receivedResponse->getData(true);
-        $sent = $sentResponse->getData(true);
+            $gbp = $amount / $fromRate;
+            return $gbp * $toRate;
+        };
+
+        $receivedTotal = $receivedAll->sum(function ($tx) use ($convert, $displayCurrency) {
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $amount = (float) ($tx->net_amount ?? 0);
+            return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
+        });
+
+        $sentTotal = $sentAll->sum(function ($tx) use ($convert, $displayCurrency) {
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $amount = (float) ($tx->gross_amount ?? 0);
+            return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
+        });
+
+        $received = $this->buildFinancialTransactionsFeed($user, 'received', 20, null, $displayCurrency);
+        $sent = $this->buildFinancialTransactionsFeed($user, 'sent', 20, null, $displayCurrency);
 
         $allEvents = array_merge($received['events'] ?? [], $sent['events'] ?? []);
-        usort($allEvents, fn($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
+        usort($allEvents, fn ($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
 
         $hasMore = ($received['has_more'] ?? false) || ($sent['has_more'] ?? false);
         $nextBefore = $received['next_before'] ?? $sent['next_before'] ?? null;
 
         return Inertia::render('transactions/Transactions', [
+            'display_currency' => $displayCurrency,
             'initial' => [
                 'events' => $allEvents,
                 'has_more' => $hasMore,
                 'next_before' => $nextBefore,
                 'stats' => [
-                    'received' => $lifetimeReceived,
-                    'sent' => $lifetimeSent,
+                    'received' => [strtolower($displayCurrency) => $receivedTotal],
+                    'sent' => [strtolower($displayCurrency) => $sentTotal],
                 ]
             ],
         ]);
     }
 
+    private function buildFinancialTransactionsFeed($user, $tab, $limit, $before, $displayCurrency)
+    {
+        $tab = $tab === 'sent' ? 'sent' : 'received';
+        $limit = (int) $limit;
+        $before = $before ?: null;
+
+        $query = \App\Models\FinancialTransaction::query()
+            ->where('type', 'income')
+            ->where('status', 'completed');
+
+        if ($tab === 'sent') {
+            $query->where('supporter_id', $user->id);
+        } else {
+            $query->where('user_id', $user->id);
+        }
+
+        if (!empty($before)) {
+            $query->where('transaction_date', '<', $before);
+        }
+
+        $rows = $query
+            ->with([
+                'user:id,name,username,avatar',
+                'supporter:id,name,username,avatar',
+            ])
+            ->orderByDesc('transaction_date')
+            ->limit($limit + 1)
+            ->get();
+
+        $hasMore = $rows->count() > $limit;
+        $rows = $rows->take($limit)->values();
+
+        $currencies = $rows
+            ->pluck('currency')
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $rates = \App\Models\Currency::whereIn('ISO', $currencies)->pluck('conversion_rate', 'ISO');
+
+        $convert = function (string $from, float $amount, string $to) use ($rates) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+
+            if ($from === $to) {
+                return $amount;
+            }
+
+            if (!isset($rates[$from]) || !isset($rates[$to])) {
+                return null;
+            }
+
+            $fromRate = (float) $rates[$from];
+            $toRate = (float) $rates[$to];
+            if ($fromRate <= 0 || $toRate <= 0) {
+                return null;
+            }
+
+            $gbp = $amount / $fromRate;
+            return $gbp * $toRate;
+        };
+
+        $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert) {
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $baseAmount = $tab === 'sent' ? (float) ($tx->gross_amount ?? 0) : (float) ($tx->net_amount ?? 0);
+            $displayAmount = $from === $displayCurrency ? $baseAmount : ($convert($from, $baseAmount, $displayCurrency) ?? $baseAmount);
+
+            $base = class_basename($tx->source_type);
+            $type = match ($base) {
+                'StripePaymentItems' => 'gift_wish',
+                'MembershipPayment' => 'gift_membership',
+                'BillPayment' => 'gift_bill',
+                'TipGoalsPayment' => 'gift_tip',
+                'ShopPayment' => 'gift_shop',
+                'TaskPurchase' => 'gift_task',
+                default => 'transaction',
+            };
+
+            return [
+                'type' => $type,
+                'source' => 'financial_transactions',
+                'source_id' => $tx->id,
+                'category' => $tab,
+                'amount' => $baseAmount,
+                'display_amount' => $displayAmount,
+                'currency' => strtolower($from),
+                'display_currency' => strtolower($displayCurrency),
+                'created_at' => optional($tx->transaction_date)->format('Y-m-d H:i:s') ?? $tx->created_at->format('Y-m-d H:i:s'),
+                'creator_id' => $tx->user_id,
+                'gifter_id' => $tx->supporter_id,
+                'description' => $tx->description,
+                'gifter' => $tx->supporter ? [
+                    'name' => $tx->supporter->name,
+                    'username' => $tx->supporter->username,
+                    'avatar' => $tx->supporter->avatar_url,
+                ] : null,
+                'creator' => $tx->user ? [
+                    'name' => $tx->user->name,
+                    'username' => $tx->user->username,
+                    'avatar' => $tx->user->avatar_url,
+                ] : null,
+            ];
+        })->values()->toArray();
+
+        $nextBefore = $hasMore && !empty($events) ? end($events)['created_at'] : null;
+
+        return [
+            'status' => true,
+            'events' => $events,
+            'has_more' => $hasMore,
+            'next_before' => $nextBefore,
+        ];
+    }
+
     public function transactionsFeed(Request $request)
     {
         $user = User::findOrFail(Auth::id());
-        $tab = $request->query('tab', 'received'); // received | sent
+        $tab = $request->query('tab', 'received');
         $limit = intval($request->query('limit', 20));
         $before = $request->query('before');
+        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+
+        return response()->json(
+            $this->buildFinancialTransactionsFeed($user, $tab, $limit, $before, $displayCurrency)
+        );
         $events = [];
 
         if ($tab === 'sent') {

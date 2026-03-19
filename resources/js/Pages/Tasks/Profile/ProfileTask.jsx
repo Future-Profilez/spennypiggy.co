@@ -4,7 +4,7 @@ import { Link, useForm, usePage } from "@inertiajs/react";
 
 export default function ProfileTask({ task, IsloggedIn, profileUser }) {
     const { auth } = usePage().props;
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { post, processing } = useForm();
     const url = `/task/${task.uuid}`;
 
@@ -31,7 +31,7 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         

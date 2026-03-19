@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import LoadingScreen from '@/includes/LoadingScreen';
 import Nocontent from '@/includes/Nocontent';
-import PriceFormat from '@/includes/PriceFormat';
 import axios from 'axios';
 import Authenticated from '../../Layouts/AuthenticatedLayout';
 import ReactionsAndReply from '@/Components/ReactionsAndReply';
@@ -11,14 +10,27 @@ import Modal from '@/Components/Modal';
 import { router } from '@inertiajs/react';
 
 export default function Transactions(props) {
-  const { auth, initial } = props || {};
+  const { auth, initial, display_currency } = props || {};
+  const { currencies } = usePage().props;
   const [data, setData] = useState(() => initial || { events: [], has_more: false, next_before: null, stats: { received: {}, sent: {} } });
   const [loading, setLoading] = useState(false);
-  const { formatMultiPrice } = PriceFormat();
   const [filter, setFilter] = useState('all');
   const [direction, setDirection] = useState('all'); // all | received | sent
   const [query, setQuery] = useState('');
   const [twitterModal, setTwitterModal] = useState({ show: false, event: null });
+
+  const displayCurrency = (display_currency || auth?.user?.default_currency || 'GBP').toUpperCase();
+  const displayDigits = currencies?.[displayCurrency]?.ISOdigits ?? 2;
+
+  const formatMoney = (value) => {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: displayCurrency,
+      minimumFractionDigits: displayDigits,
+      maximumFractionDigits: displayDigits,
+    }).format(amount);
+  };
 
   const lifetimeStats = data?.stats || { received: {}, sent: {} };
 
@@ -94,19 +106,7 @@ export default function Transactions(props) {
   });
 
   const amountFor = (e) => {
-    const amount = Number(e.amount || 0);
-    const vat = Number(e.vat_amount || 0) + Number(e.vat_tax_amount || 0);
-    const fee = Number(e.tax || 0);
-
-    if (e.category === 'sent') {
-      const paid = (e.paid_total !== null && e.paid_total !== undefined && Number(e.paid_total) > 0)
-        ? Number(e.paid_total)
-        : (amount + vat + fee);
-      return formatMultiPrice(paid, e.currency || 'gbp');
-    }
-
-    const creatorPayout = amount + vat;
-    return formatMultiPrice(creatorPayout, e.currency || 'gbp');
+    return formatMoney(e.display_amount ?? 0);
   };
 
   const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
@@ -172,8 +172,8 @@ export default function Transactions(props) {
   const currencyTotals = useMemo(() => {
     const sums = {};
     filtered.forEach(e => {
-      const total = Number(e.amount || 0) + Number(e.tax || 0) + Number(e.vat_amount || 0) + Number(e.vat_tax_amount || 0);
-      const cur = e.currency || 'gbp';
+      const total = Number(e.display_amount ?? 0);
+      const cur = displayCurrency.toLowerCase();
       sums[cur] = (sums[cur] || 0) + total;
     });
     return sums;
@@ -201,9 +201,9 @@ export default function Transactions(props) {
       const cp = e.category === 'sent'
         ? (e?.creator?.username ? '@' + e.creator.username : (e?.creator?.name || ''))
         : (e?.gifter?.username ? '@' + e.gifter.username : (e?.gifter?.name || 'Supporter'));
-      const amt = Number(e.amount || 0) + Number(e.tax || 0) + Number(e.vat_amount || 0) + Number(e.vat_tax_amount || 0);
+      const amt = Number(e.display_amount ?? 0);
       rows.push([
-        e.type, e.category, title, cp, rewardChip(e) || '', amt.toFixed(2), (e.currency || 'gbp').toUpperCase(), e.created_at
+        e.type, e.category, title, cp, rewardChip(e) || '', amt.toFixed(displayDigits), displayCurrency, e.created_at
       ]);
     });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -232,7 +232,7 @@ export default function Transactions(props) {
                   {Object.keys(lifetimeStats.received).length > 0 ? (
                     Object.entries(lifetimeStats.received).map(([cur, amt]) => (
                       <span key={cur} className="text-white font-black text-2xl">
-                        {formatMultiPrice(amt, cur)}
+                        {formatMoney(amt)}
                       </span>
                     ))
                   ) : (
@@ -246,7 +246,7 @@ export default function Transactions(props) {
                   {Object.keys(lifetimeStats.sent).length > 0 ? (
                     Object.entries(lifetimeStats.sent).map(([cur, amt]) => (
                       <span key={cur} className="text-white font-black text-2xl">
-                        {formatMultiPrice(amt, cur)}
+                        {formatMoney(amt)}
                       </span>
                     ))
                   ) : (
@@ -355,7 +355,7 @@ export default function Transactions(props) {
               <div className="mt-3 flex flex-wrap gap-2">
                 {Object.entries(currencyTotals).map(([cur, amt]) => (
                   <span key={cur} className="px-4 py-2 rounded-full bg-white/5 text-white/80 text-[12px] capitalize font-poppins">
-                    {cur.toUpperCase()}: {formatMultiPrice(amt, cur)}
+                    {cur.toUpperCase()}: {formatMoney(amt)}
                   </span>
                 ))}
               </div>
@@ -482,7 +482,7 @@ export default function Transactions(props) {
                           <div className="text-[#05EFB8] font-black text-lg md:text-xl">{amountFor(e)}</div>
                           {Number(e?.vat_amount || 0) > 0 ? (
                             <div className="text-[11px] text-white/50 font-bold mt-1">
-                              VAT: {formatMultiPrice(Number(e.vat_amount || 0), e.currency || 'gbp')}
+                              VAT: {formatMoney(Number(e.vat_amount || 0))}
                             </div>
                           ) : null}
                         </div>

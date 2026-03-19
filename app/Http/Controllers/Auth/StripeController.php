@@ -1842,7 +1842,7 @@ class StripeController extends Controller
         $chargeCurrency = $wish->currency ?? $wish->user->default_currency ?? 'usd';
         $tax = (float) str_replace(',', '', $wish->tax_amount);
         $price = (float) str_replace(',', '', $wish->price);
-        $adminFee = (float) config('app.administration_fee');
+        $adminFee = (float) Helpers::administrationFeeInCurrency($chargeCurrency);
         $totalTax = $tax + $adminFee;
         $vat_percentage_amount = 0;
 

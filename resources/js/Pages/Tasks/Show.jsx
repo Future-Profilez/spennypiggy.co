@@ -14,7 +14,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         agree: false,
         cf_turnstile_response: '',
     });
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -39,7 +39,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
         const platformFeeRate = 0.15; 
         const complianceFeeRate = 0.02; 
-        const adminFee = 1.00; 
+        const adminFee = adminFeeInCurrency(curr); 
 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
