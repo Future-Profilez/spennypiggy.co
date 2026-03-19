@@ -79,6 +79,22 @@ class StripeWebhookController extends Controller
             return response()->json(['error' => 'Invalid event'], 400);
         }
 
+        // Idempotency check
+        if (isset($event->id)) {
+            $exists = \App\Models\StripeWebhookStatus::where('event_id', $event->id)->exists();
+            if ($exists) {
+                Log::info("Stripe Webhook: Event already processed", ['event_id' => $event->id]);
+                return response()->json(['status' => 'success', 'message' => 'Already processed']);
+            }
+            
+            // Record event processing started
+            \App\Models\StripeWebhookStatus::create([
+                'event_id' => $event->id,
+                'event_type' => $event->type,
+                'data' => json_encode($event->data->object)
+            ]);
+        }
+
         // Log if it's a Connect event
         if (isset($event->account)) {
             Log::info("Connect Event: {$event->type}", ['account' => $event->account]);
@@ -2436,8 +2452,14 @@ class StripeWebhookController extends Controller
         }
         
         if ($payment) {
-            $payment->update(['status' => 'succeeded']);
-            Log::info("Risk Ledger: Payment marked as succeeded", ['id' => $payment->id]);
+            $newStatus = 'succeeded';
+            // If the payment was already marked as review_hold or has it in reason codes, keep it in review_hold
+            if ($payment->status === 'review_hold' || (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes))) {
+                $newStatus = 'review_hold';
+            }
+            
+            $payment->update(['status' => $newStatus]);
+            Log::info("Risk Ledger: Payment marked as {$newStatus}", ['id' => $payment->id]);
             
             // 2. Update Identity Rollups
             if ($payment->riskIdentity) {

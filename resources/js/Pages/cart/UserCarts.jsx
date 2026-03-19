@@ -6,6 +6,7 @@ import DeviceID from "@/includes/DeviceID";
 import axios from "axios";
 import { add_to_cart } from "@/Pages/redux/UserSlice";
 import Turnstile from "@/Components/Turnstile";
+import Popup from "@/Components/Popup";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
@@ -52,6 +53,55 @@ export default function UserCarts(props) {
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
+    
+    // Step-Up Modal State
+    const [showStepUp, setShowStepUp] = useState(false);
+    const [stepUpData, setStepUpData] = useState(null);
+    const [otpCode, setOtpCode] = useState("");
+    const [typedConfirmation, setTypedConfirmation] = useState("");
+    const [verifyingOtp, setVerifyingOtp] = useState(false);
+    const { flash } = usePage().props;
+
+    // Check for flash messages indicating Step-Up is required
+    useEffect(() => {
+        if (flash?.step_up_required && flash?.step_up_data) {
+            setStepUpData(flash.step_up_data);
+            setShowStepUp(true);
+            setChecking(false);
+        }
+    }, [flash]);
+
+    const handleVerifyStepUp = async (e) => {
+        e.preventDefault();
+        setVerifyingOtp(true);
+        try {
+            const amountInCents = Math.round((fee + subtotal) * (isZeroDecimalCurrency(currency) ? 1 : 100));
+            const response = await axios.post('/api/risk/step-up/verify', {
+                otp: otpCode,
+                typed_confirmation: typedConfirmation,
+                // We also need to pass the context again so it can create the checkout session
+                amount: amountInCents,
+                currency: currency,
+                creator_id: datas?.user?.uuid || datas?.user?.id,
+                device_id: deviceid,
+                is_checkout_session: true // Flag to tell backend to create checkout session instead of PI
+            });
+            
+            if (response.data.success) {
+                toast.success("Identity verified! Proceeding to checkout...");
+                setShowStepUp(false);
+                // Call handleSubmit again, this time it will bypass STEP_UP
+                handleSubmit();
+            } else {
+                toast.error("Verification failed.");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || "OTP Verification failed.");
+        } finally {
+            setVerifyingOtp(false);
+        }
+    };
+
     const onVerify = useCallback((token) => {
         setCaptchaToken(token || "");
     }, []);
@@ -462,6 +512,62 @@ export default function UserCarts(props) {
                         </div>
                     </div>
             </div>
+
+            {/* Step-Up Verification Modal */}
+            <Popup
+                size="md"
+                action={showStepUp}
+                space="p-0"
+                modalclass="pinkmodal"
+                classes="hidden"
+            >
+                <div className="!rounded-none p-6">
+                    <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || 'Confirm Your Payment'}</h2>
+                    <p className="text-gray-600 mb-6 text-center">
+                        {stepUpData?.ui?.body || 'For your security, please confirm this payment.'}
+                    </p>
+                    <form onSubmit={handleVerifyStepUp}>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="e.g. 123456"
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="CONFIRM"
+                                value={typedConfirmation}
+                                onChange={(e) => setTypedConfirmation(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowStepUp(false)}
+                                className="w-full main-button b"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={verifyingOtp || !otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM'}
+                                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM' || verifyingOtp) ? 'disabled' : ''}`}
+                            >
+                                {verifyingOtp ? "Verifying..." : "Verify & Checkout"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Popup>
         </div>
     );
 }

@@ -44,6 +44,63 @@ class AuditExportController extends Controller
         $confLogs = \App\Models\ConfirmationLog::where('created_at', '>=', $cutoff)->get();
         $this->generateCsv($tempDir . '/step_up_logs.csv', $confLogs->toArray());
         
+        // 5. Creator Metrics
+        $creatorMetrics = \App\Models\CreatorMetric::all();
+        $this->generateCsv($tempDir . '/creator_metrics.csv', $creatorMetrics->toArray());
+        
+        // 6. Top 50 Identities by Spend
+        $topIdentities = \App\Models\IdentityRollup::orderBy('spend_30d', 'desc')
+            ->take(50)
+            ->get();
+        // Fallback: If spend_30d doesn't exist, use spend_7d or calculate from payments
+        if ($topIdentities->isEmpty() || !isset($topIdentities[0]->spend_30d)) {
+            $topIdentities = DB::select("
+                SELECT risk_identity_id, SUM(amount) as total_spend, COUNT(id) as tx_count
+                FROM payments
+                WHERE status = 'succeeded' AND created_at >= ?
+                GROUP BY risk_identity_id
+                ORDER BY total_spend DESC
+                LIMIT 50
+            ", [$cutoff]);
+        }
+        $this->generateCsv($tempDir . '/top_50_identities.csv', is_array($topIdentities) ? json_decode(json_encode($topIdentities), true) : $topIdentities->toArray());
+
+        // 7. Webhook Processing Logs
+        if (\Illuminate\Support\Facades\Schema::hasTable('stripe_webhook_status')) {
+            $webhooks = \App\Models\StripeWebhookStatus::where('created_at', '>=', $cutoff)
+                ->select('event_id', 'event_type', 'created_at')
+                ->get();
+            $this->generateCsv($tempDir . '/webhook_logs.csv', $webhooks->toArray());
+        }
+
+        // 8. Platform Summary
+        $txCount = \App\Models\Payment::where('created_at', '>=', $cutoff)->whereIn('status', ['succeeded', 'review_hold', 'refunded', 'disputed'])->count();
+        $disputeCount = \App\Models\Dispute::where('created_at', '>=', $cutoff)->count();
+        $refundCount = \App\Models\Payment::where('created_at', '>=', $cutoff)->where('status', 'refunded')->count();
+        $summary = [
+            [
+                'metric' => 'Total Transactions',
+                'value' => $txCount
+            ],
+            [
+                'metric' => 'Total Disputes',
+                'value' => $disputeCount
+            ],
+            [
+                'metric' => 'Dispute Rate (%)',
+                'value' => $txCount > 0 ? round(($disputeCount / $txCount) * 100, 3) : 0
+            ],
+            [
+                'metric' => 'Total Refunds',
+                'value' => $refundCount
+            ],
+            [
+                'metric' => 'Refund Rate (%)',
+                'value' => $txCount > 0 ? round(($refundCount / $txCount) * 100, 3) : 0
+            ]
+        ];
+        $this->generateCsv($tempDir . '/platform_summary.csv', $summary);
+        
         // Zip It
         $zipPath = storage_path("app/audit_pack_{$timestamp}.zip");
         $zip = new ZipArchive;

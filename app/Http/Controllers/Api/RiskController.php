@@ -56,27 +56,41 @@ class RiskController extends Controller
             return response()->json(['error' => 'Invalid OTP or expired.'], 400);
         }
 
-        // 3. OTP Verified -> Proceed to Create Intent
-        // We can call createPaymentIntent logic internally.
-        // But createPaymentIntent expects a Request object.
-        // Let's refactor createPaymentIntent logic to a private method or service, 
-        // or just re-call the logic here.
+        // 3. Re-evaluate Risk (to get reason codes like MARK_REVIEW_HOLD)
+        $riskResult = $this->riskEngine->evaluate($context);
+        $reasons = $riskResult['reason_codes'];
         
-        // Check Risk Again? Maybe, but we just verified step-up.
-        // The risk engine told us to step-up. Now we did.
-        // We should allow unless something else blocks it (like cooldown).
-        // But cooldown is checked in evaluate().
-        
-        // Let's manually invoke the "ALLOW" path.
-        
-        // Create Payment Record
+        // Remove STEP_UP related reasons since we just verified it
+        $reasons = array_filter($reasons, function($reason) {
+            return !in_array($reason, ['HIGH_VALUE_TX', 'FORCE_3DS', 'ACCELERATION_3_IN_10M', 'HIGH_VALUE_VELOCITY_2H']);
+        });
+        $reasons[] = 'STEP_UP_VERIFIED';
+        $reasons = array_values($reasons);
+
+        $decision = 'ALLOW';
+        if (in_array('MARK_REVIEW_HOLD', $reasons)) {
+            $decision = 'REVIEW_HOLD';
+        }
+
+        // If the request came from a checkout session flow
+        if ($request->has('is_checkout_session') && $request->is_checkout_session) {
+            // Mark the session as verified so the next call to createCheckout bypasses STEP_UP
+            session(['step_up_verified_log_id' => $log->id]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Step-Up verified successfully. Please proceed with checkout.'
+            ]);
+        }
+
+        // Create Payment Record (for Payment Intent flow)
         $payment = \App\Models\Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
             'amount' => $request->amount,
             'currency' => $request->currency,
-            'status' => 'initiated',
-            'reason_codes' => ['STEP_UP_VERIFIED'],
+            'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
+            'reason_codes' => $reasons,
             'confirmation_log_id' => $log->id,
         ]);
         
@@ -109,7 +123,7 @@ class RiskController extends Controller
 
             $payment->update([
                 'stripe_payment_intent_id' => $pi->id,
-                'status' => 'initiated',
+                'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             ]);
             
             // Link payment to confirmation log
@@ -118,7 +132,7 @@ class RiskController extends Controller
             return response()->json([
                 'client_secret' => $pi->client_secret,
                 'payment_id' => $payment->id,
-                'decision' => 'ALLOW',
+                'decision' => $decision,
             ]);
 
         } catch (\Exception $e) {

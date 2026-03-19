@@ -35,10 +35,12 @@ use Illuminate\Support\Str;
 class CheckoutController extends Controller
 {
     protected $userProfileService;
+    protected $riskEngine;
 
-    public function __construct(UserProfileService $userProfileService)
+    public function __construct(UserProfileService $userProfileService, \App\Services\Risk\RiskEngineService $riskEngine)
     {
         $this->userProfileService = $userProfileService;
+        $this->riskEngine = $riskEngine;
     }
 
     /* create checkout */
@@ -249,6 +251,56 @@ class CheckoutController extends Controller
                 ]);
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
+
+            // Risk Engine Evaluation
+            $context = [
+                'amount' => (int) round($subtotal * $multiplier), // Use subtotal for risk evaluation
+                'currency' => $chargeCurrency,
+                'creator_id' => $owner->uuid, // Pass UUID for risk engine
+                'email' => $getdata[0]->user->email ?? request()->query('email'),
+                'ip' => request()->ip(),
+                'device_id' => $device_id ?? session()->getId(),
+                'is_guest' => !Auth::check(),
+            ];
+            
+            $riskResult = $this->riskEngine->evaluate($context);
+            $decision = $riskResult['decision'];
+            
+            if ($decision === 'BLOCK') {
+                return redirect()->back()->with('error', $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.');
+            }
+            
+            if ($decision === 'COOLDOWN') {
+                return redirect()->back()->with('error', $riskResult['ui']['body'] ?? 'Please wait before trying again.');
+            }
+            
+            if ($decision === 'STEP_UP') {
+                // If we already verified STEP_UP in this session, bypass it
+                if (session()->has('step_up_verified_log_id')) {
+                    $logId = session('step_up_verified_log_id');
+                    session()->forget('step_up_verified_log_id'); // consume it
+                    Log::info('Bypassing STEP_UP due to verified log', ['log_id' => $logId]);
+                } else {
+                    // Send OTP
+                    app(\App\Services\Risk\VerificationService::class)->sendOtp(
+                        app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context),
+                        $context
+                    );
+
+                    // Store checkout payload in session to resume later
+                    session(['pending_checkout_creator' => $creator_id, 'pending_checkout_device' => $user_id_or_device]);
+
+                    return redirect()->back()->with([
+                        'step_up_required' => true,
+                        'step_up_data' => [
+                            'ui' => $riskResult['ui']
+                        ]
+                    ]);
+                }
+            }
+
+            // Check if we need to force 3DS
+            $force3ds = in_array('FORCE_3DS', $riskResult['reason_codes'] ?? []);
 
             // Build payment_intent_data based on creator's capabilities
             $paymentIntentData = [

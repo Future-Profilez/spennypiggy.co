@@ -13,6 +13,10 @@ class StripeWebhookStatus extends Model
 
 
     protected $fillable = [
-        'data'
+        'data',
+        'event_id',
+        'event_type',
+        'subscription_id',
+        'invoice_type'
     ];
 }

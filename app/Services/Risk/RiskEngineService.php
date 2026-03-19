@@ -271,17 +271,11 @@ class RiskEngineService
         if ($rollup->spend_2h >= 750000) {
             // Force 3DS + STEP UP
             if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
-                $decision = 'STEP_UP'; // Or REVIEW_HOLD if very high?
+                $decision = 'STEP_UP';
                 $reasons[] = 'HIGH_VALUE_VELOCITY_2H';
                 
-                // If repeated, maybe REVIEW_HOLD
+                // If repeated, mark for REVIEW_HOLD but still require STEP_UP first
                 if ($rollup->spend_2h > 1500000) { // Double threshold
-                    $decision = 'REVIEW_HOLD'; // But requires STEP_UP first?
-                    // Usually REVIEW_HOLD is a status applied to a SUCCESSFUL payment.
-                    // Here we are deciding "ALLOW" vs "BLOCK".
-                    // If we return "REVIEW_HOLD", the payment proceeds but is marked for review.
-                    // But we likely still want STEP_UP verification for high value.
-                    // So we can return "STEP_UP" and add a flag "mark_review_hold" in reasons/metadata.
                     $reasons[] = 'MARK_REVIEW_HOLD';
                 }
                 
