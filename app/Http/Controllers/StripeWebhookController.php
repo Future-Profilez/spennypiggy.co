@@ -738,14 +738,25 @@ class StripeWebhookController extends Controller
             ]);
 
             try {
+                // Wait briefly for the checkout controller to finish writing the payment record
+                // (Webhooks sometimes arrive milliseconds before the redirect finishes DB writes)
                 $payment = \App\Models\Payment::where('stripe_session_id', $session->id)->first();
+                
+                if (!$payment) {
+                    usleep(500000); // Wait 500ms and try again
+                    $payment = \App\Models\Payment::where('stripe_session_id', $session->id)->first();
+                }
+
                 if ($payment) {
                     $newStatus = 'succeeded';
+                    // Check if it was marked for review hold
                     if (
                         $payment->status === 'review_hold' ||
-                        (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes))
+                        (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes)) ||
+                        (is_string($payment->reason_codes) && str_contains($payment->reason_codes, 'MARK_REVIEW_HOLD'))
                     ) {
                         $newStatus = 'review_hold';
+                        Log::info("Risk Ledger: Marking payment as review_hold", ['payment_id' => $payment->id]);
                     }
 
                     $payment->update([
@@ -759,6 +770,8 @@ class StripeWebhookController extends Controller
                         'status' => $newStatus,
                         'payment_intent' => $session->payment_intent ?? null,
                     ]);
+                } else {
+                    Log::warning("Risk Ledger: No payment found for session_id: {$session->id} after delay");
                 }
             } catch (\Exception $e) {
                 Log::error("Risk Ledger: Failed mapping checkout.session.completed: " . $e->getMessage(), [

@@ -47,17 +47,6 @@ class RiskEngineLimitsTest extends TestCase
         );
 
         RiskSetting::updateOrCreate(
-            ['key' => 'global_limits'],
-            ['value' => $overrides['global_limits'] ?? [
-                'max_spend_1h' => 2000,
-                'max_spend_24h' => 100000,
-                'max_spend_7d' => 1000000,
-                'max_creators_per_day' => 1,
-                'guest_allowed' => true,
-            ]]
-        );
-
-        RiskSetting::updateOrCreate(
             ['key' => 'supporter_rules'],
             ['value' => $overrides['supporter_rules'] ?? [
                 'velocity_window_minutes' => 10,
@@ -137,6 +126,12 @@ class RiskEngineLimitsTest extends TestCase
             'state_limits' => [
                 'NORMAL' => [
                     'max_spend_1h' => 2000,
+                    'max_spend_24h' => 100000,
+                    'max_spend_7d' => 1000000,
+                    'max_new_creators_24h' => 1,
+                    'step_up_threshold' => 20000,
+                    'cooldown_minutes' => 15,
+                    'review_hold_threshold' => 250000,
                     'guest_allowed' => true,
                 ],
             ],
@@ -174,20 +169,13 @@ class RiskEngineLimitsTest extends TestCase
         $this->assertContains('LIMIT_EXCEEDED_1H', $result['reason_codes']);
     }
 
-    public function test_global_limit_caps_state_limit_in_non_normal_state(): void
+    public function test_state_limit_used_in_non_normal_state(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-19 12:00:00'));
         $this->seedSettings([
-            'global_limits' => [
-                'max_spend_1h' => 2000,
-                'max_spend_24h' => 100000,
-                'max_spend_7d' => 1000000,
-                'max_creators_per_day' => 1,
-                'guest_allowed' => true,
-            ],
             'state_limits' => [
                 'CAUTION' => [
-                    'max_spend_1h' => 999999,
+                    'max_spend_1h' => 2000,
                     'max_spend_24h' => 999999,
                     'max_spend_7d' => 999999,
                     'max_new_creators_24h' => 10,

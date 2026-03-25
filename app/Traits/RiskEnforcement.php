@@ -100,6 +100,7 @@ trait RiskEnforcement
                     }
 
                     // Record the initiated STEP_UP in the ledger so REVIEW_HOLD tags are captured
+                    // Note: We don't have stripe_session_id yet, but this captures the step_up attempt.
                     \App\Models\Payment::create([
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $identity->id,

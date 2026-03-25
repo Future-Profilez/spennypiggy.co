@@ -19,9 +19,8 @@ class EffectiveLimitsService
         $state = $stateRecord ? $stateRecord->state : 'NORMAL';
 
         // 2. Fetch Limits from Database Settings
-        // Prefer per-state limits; fall back to global_limits for NORMAL if needed.
+        // We now rely purely on state_limits as configured in the Admin UI.
         $stateLimits = RiskSetting::get('state_limits', []);
-        $globalLimits = RiskSetting::get('global_limits', []);
 
         $defaults = [
             'max_spend_1h' => 100000,
@@ -34,41 +33,9 @@ class EffectiveLimitsService
             'review_hold_threshold' => 250000,
         ];
 
-        $normalFromGlobal = [
-            'max_spend_1h' => $globalLimits['max_spend_1h'] ?? $defaults['max_spend_1h'],
-            'max_spend_24h' => $globalLimits['max_spend_24h'] ?? $defaults['max_spend_24h'],
-            'max_spend_7d' => $globalLimits['max_spend_7d'] ?? $defaults['max_spend_7d'],
-            'max_new_creators_24h' => $globalLimits['max_creators_per_day'] ?? $defaults['max_new_creators_24h'],
-            'guest_allowed' => $globalLimits['guest_allowed'] ?? $defaults['guest_allowed'],
-            'cooldown_minutes' => $defaults['cooldown_minutes'],
-            'step_up_threshold' => $defaults['step_up_threshold'],
-            'review_hold_threshold' => $defaults['review_hold_threshold'],
-        ];
-
-        $currentLimits = $stateLimits[$state] ?? ($stateLimits['NORMAL'] ?? $normalFromGlobal);
+        $currentLimits = $stateLimits[$state] ?? ($stateLimits['NORMAL'] ?? []);
 
         $currentLimits = array_merge($defaults, $currentLimits);
-        if (!isset($currentLimits['max_new_creators_24h']) && isset($currentLimits['max_creators_per_day'])) {
-            $currentLimits['max_new_creators_24h'] = $currentLimits['max_creators_per_day'];
-        }
-
-        $globalCaps = [
-            'max_spend_1h' => $globalLimits['max_spend_1h'] ?? null,
-            'max_spend_24h' => $globalLimits['max_spend_24h'] ?? null,
-            'max_spend_7d' => $globalLimits['max_spend_7d'] ?? null,
-            'max_new_creators_24h' => $globalLimits['max_creators_per_day'] ?? null,
-            'guest_allowed' => $globalLimits['guest_allowed'] ?? null,
-        ];
-
-        foreach (['max_spend_1h', 'max_spend_24h', 'max_spend_7d', 'max_new_creators_24h'] as $k) {
-            if (is_numeric($globalCaps[$k])) {
-                $currentLimits[$k] = min((int) $currentLimits[$k], (int) $globalCaps[$k]);
-            }
-        }
-
-        if (is_bool($globalCaps['guest_allowed']) && $globalCaps['guest_allowed'] === false) {
-            $currentLimits['guest_allowed'] = false;
-        }
 
         return $currentLimits;
     }
