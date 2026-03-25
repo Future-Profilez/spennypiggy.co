@@ -87,8 +87,47 @@ export default function BuyShopItem({
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
 
+    // Step-Up Modal State
+    const [showStepUp, setShowStepUp] = useState(false);
+    const [stepUpData, setStepUpData] = useState(null);
+    const [stepUpContext, setStepUpContext] = useState(null);
+    const [otpCode, setOtpCode] = useState("");
+    const [typedConfirmation, setTypedConfirmation] = useState("");
+    const [verifyingOtp, setVerifyingOtp] = useState(false);
+
     const onVerify = (token) => {
         setCaptchaToken(token || "");
+    };
+
+    const handleVerifyStepUp = async (e) => {
+        e.preventDefault();
+        setVerifyingOtp(true);
+        try {
+            const response = await axios.post('/api/risk/step-up/verify', {
+                otp: otpCode,
+                typed_confirmation: typedConfirmation,
+                amount: stepUpContext?.amount,
+                currency: stepUpContext?.currency,
+                creator_id: stepUpContext?.creator_id,
+                email: stepUpContext?.email,
+                device_id: stepUpContext?.device_id || null,
+                is_checkout_session: true,
+                risk_identity_id: stepUpContext?.risk_identity_id
+            });
+            
+            if (response.data.success) {
+                toast.success("Identity verified! Proceeding to checkout...");
+                setShowStepUp(false);
+                setCaptchaToken("verified");
+                buyItem("verified");
+            } else {
+                toast.error("Verification failed.");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || "OTP Verification failed.");
+        } finally {
+            setVerifyingOtp(false);
+        }
     };
 
     const executeCaptcha = (e) => {
@@ -118,6 +157,13 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        if (res.data.step_up_required) {
+                            setStepUpData({ ui: res.data.ui });
+                            setStepUpContext(res.data.step_up_context);
+                            setShowStepUp(true);
+                            if (turnstileRef.current) turnstileRef.current.reset();
+                            return;
+                        }
                         if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
                             const msg = res.data.msg || 'Guest checkout is disabled. Please log in.';
                             router.visit(
@@ -145,6 +191,13 @@ export default function BuyShopItem({
                 )
                 .then((res) => {
                     if (res.data.status == false) {
+                        if (res.data.step_up_required) {
+                            setStepUpData({ ui: res.data.ui });
+                            setStepUpContext(res.data.step_up_context);
+                            setShowStepUp(true);
+                            if (turnstileRef.current) turnstileRef.current.reset();
+                            return;
+                        }
                         if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
                             const msg = res.data.msg || 'Guest checkout is disabled. Please log in.';
                             router.visit(
@@ -536,6 +589,62 @@ export default function BuyShopItem({
                             </div>
                         </>
                     )}
+                </div>
+            </Popup>
+            
+            {/* Step-Up Verification Modal */}
+            <Popup
+                size="md"
+                action={showStepUp}
+                space="p-0"
+                modalclass="pinkmodal"
+                classes="hidden"
+            >
+                <div className="!rounded-none p-6">
+                    <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || 'Confirm Your Payment'}</h2>
+                    <p className="text-gray-600 mb-6 text-center">
+                        {stepUpData?.ui?.body || 'For your security, please confirm this payment.'}
+                    </p>
+                    <form onSubmit={handleVerifyStepUp}>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="e.g. 123456"
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="CONFIRM"
+                                value={typedConfirmation}
+                                onChange={(e) => setTypedConfirmation(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowStepUp(false)}
+                                className="w-full main-button b"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={verifyingOtp || !otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM'}
+                                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM' || verifyingOtp) ? 'disabled' : ''}`}
+                            >
+                                {verifyingOtp ? "Verifying..." : "Verify & Checkout"}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </Popup>
         </>

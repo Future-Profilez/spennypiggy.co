@@ -36,9 +36,11 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\CreatorSubscriptionService;
 use App\Services\UserProfileService;
 use App\Services\Risk\RiskService;
+use App\Traits\RiskEnforcement;
 
 class ShopsController extends Controller
 {
+    use RiskEnforcement;
 
     public function addShopItems(Request $request)
     {
@@ -757,31 +759,19 @@ class ShopsController extends Controller
                 $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
             }
 
-            // RISK ENGINE: Evaluate transaction
-            $riskService = app(RiskService::class);
-            $riskAmount = $amount + $vat_percentage_amount; // Base amount + VAT
-            
-            $riskEvaluation = $riskService->evaluate(
-                $shop->user, // Creator
-                (int) round($riskAmount * 100), // Amount in cents
-                $request->ip(),
-                $request->header('User-Agent') ?? 'Unknown',
-                $request->query('email'),
-                null,
+            // Unified Risk Enforcement
+            $riskData = $this->enforceRiskChecks(
+                $request,
+                $shop->user,
+                $amount + $tax + $vat_percentage_amount,
+                $shop->user->default_currency ?? 'USD',
                 'shop',
-                ['currency' => ($shop->user->default_currency ?? 'USD')]
+                true // JSON response expected
             );
 
-            if (in_array($riskEvaluation['decision'], ['BLOCK', 'COOLDOWN'], true)) {
-                return response()->json([
-                    'status' => false,
-                    'message' => $riskEvaluation['reason']
-                ]);
-            }
-
-            $requestThreeDSecure = 'automatic';
-            if ($riskEvaluation['decision'] === 'STEP_UP') {
-                $requestThreeDSecure = 'any';
+            // If it's a JSON error response (blocked, step_up, login required), return it immediately
+            if ($riskData instanceof \Illuminate\Http\JsonResponse) {
+                return $riskData;
             }
 
             $adminFee = config('app.administration_fee');
@@ -963,11 +953,6 @@ class ShopsController extends Controller
                 'line_items' => [$items],
                 'mode' => 'payment',
                 'payment_method_types' => ['card'], // Add this line
-                'payment_method_options' => [
-                    'card' => [
-                        'request_three_d_secure' => $requestThreeDSecure,
-                    ],
-                ],
                 "customer" => $customer_id,
                 'payment_intent_data' => [
                     'application_fee_amount' => $applicationFeeAmount,
@@ -984,6 +969,15 @@ class ShopsController extends Controller
 
             ];
 
+            // Check if we need to force 3DS
+            if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
+                $payload['payment_method_options'] = [
+                    'card' => [
+                        'request_three_d_secure' => 'any',
+                    ],
+                ];
+            }
+
             $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
 
             $shopPaymentDetail->session_id =  $sessionCreate->id;
@@ -994,12 +988,12 @@ class ShopsController extends Controller
                     ['stripe_session_id' => $sessionCreate->id],
                     [
                         'creator_id' => $shop->user->uuid,
-                        'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                        'risk_identity_id' => $riskData['risk_identity_id'] ?? null,
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, strtoupper($chargeCurrency)),
                         'currency' => 'gbp',
                         'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null,
                         'status' => 'initiated',
-                        'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                        'reason_codes' => $riskData['reason_codes'] ?? [],
                     ]
                 );
             } catch (\Exception $e) {

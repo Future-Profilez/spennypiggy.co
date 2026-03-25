@@ -37,9 +37,11 @@ use Inertia\Inertia;
 use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
+use App\Traits\RiskEnforcement;
 
 class MembershipController extends Controller
 {
+    use RiskEnforcement;
     protected $userProfileService;
 
     public function __construct(UserProfileService $userProfileService)
@@ -449,40 +451,23 @@ class MembershipController extends Controller
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator']; // This is what creator gets after Stripe fees
         
-        // NEW: Risk Engine Evaluation
-        $riskService = app(\App\Services\Risk\RiskService::class);
-        $riskEvaluation = $riskService->evaluate(
-            $membership->user,
-            (int) round($finalTotalAmount * 100),
-            $request->ip(),
-            $request->header('User-Agent') ?? 'Unknown',
-            $user->email ?? $request->email,
-            null,
-            'membership',
-            ['currency' => $chargeCurrency]
-        );
-
-        if (in_array($riskEvaluation['decision'], ['BLOCK', 'COOLDOWN'], true)) {
-             return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
-        }
-        
-        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
-
         // Application Fee % = (Application Fee / Total Amount) * 100
         $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
         if ($request->isMethod("POST")) {
-            // Conversion only for login threshold check (approximate)
-            $convertedAmountForCheck = Helpers::priceFormat($chargeCurrency, $price, 'gbp');
-            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $convertedAmountForCheck);
-            if (!Auth::check() && $guestRestriction) {
-                return to_route('login', [
-                    'redirect' => $request->fullUrl(),
-                    'message' => $guestRestriction['message']
-                ]);
-            }
+            // Unified Risk Enforcement
+            $riskData = $this->enforceRiskChecks(
+                $request,
+                $membership->user,
+                $finalTotalAmount,
+                $chargeCurrency,
+                'membership_checkout',
+                false // redirect response
+            );
 
-            $this->ensureTurnstileVerified($request);
+            if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+                return $riskData;
+            }
 
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
@@ -653,7 +638,7 @@ class MembershipController extends Controller
                 ];
 
                 // Risk Engine: Force 3DS if Step-Up required
-                if (isset($force3DS) && $force3DS) {
+                if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                     $payload['payment_method_options'] = [
                         'card' => [
                             'request_three_d_secure' => 'any',
@@ -716,12 +701,12 @@ class MembershipController extends Controller
                         ['stripe_session_id' => $session->id],
                         [
                             'creator_id' => $membership->user->uuid,
-                            'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                            'risk_identity_id' => $riskData['risk_identity_id'] ?? null,
                             'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($chargeCurrency)),
                             'currency' => 'gbp',
                             'stripe_payment_intent_id' => $session->payment_intent ?? null,
                             'status' => 'initiated',
-                            'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                            'reason_codes' => $riskData['reason_codes'] ?? [],
                         ]
                     );
                 } catch (\Exception $e) {

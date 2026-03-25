@@ -17,6 +17,53 @@ export default function UserCarts(props) {
     const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const datas = props.data;
     const card_capabilities = datas?.card_capabilities;
+    const debugEnabled = useMemo(() => {
+        try {
+            return window.location.search.includes('debug_cart_checkout=1');
+        } catch {
+            return false;
+        }
+    }, []);
+    const [debugEvents, setDebugEvents] = useState([]);
+    const debugStorageKey = useMemo(() => {
+        const ownerId = datas?.user?.id || 'unknown';
+        return `cart_checkout_debug:${ownerId}`;
+    }, [datas?.user?.id]);
+    const pushDebug = useCallback((label, payload = null) => {
+        if (!debugEnabled) return;
+        const entry = {
+            ts: new Date().toISOString(),
+            label,
+            payload,
+        };
+        setDebugEvents((prev) => [entry, ...prev].slice(0, 30));
+        try {
+            console.log('[CartCheckoutDebug]', entry);
+        } catch {
+        }
+    }, [debugEnabled]);
+
+    useEffect(() => {
+        if (!debugEnabled) return;
+        try {
+            const raw = sessionStorage.getItem(debugStorageKey);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    setDebugEvents(parsed);
+                }
+            }
+        } catch {
+        }
+    }, [debugEnabled, debugStorageKey]);
+
+    useEffect(() => {
+        if (!debugEnabled) return;
+        try {
+            sessionStorage.setItem(debugStorageKey, JSON.stringify(debugEvents));
+        } catch {
+        }
+    }, [debugEnabled, debugStorageKey, debugEvents]);
     
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -50,9 +97,13 @@ export default function UserCarts(props) {
     const [message, setMessage] = useState(null);
     const [name, setName] = useState((auth && auth.user && auth.user.name) || "");
     const [email, setEmail] = useState((auth && auth.user && auth.user.email) || "");
+    const [subtotal, setsubtotal] = useState(0);
+    const [fee, setFee] = useState(0);
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
+    const [skipCaptcha, setSkipCaptcha] = useState(false);
+    const lastFlashRef = useRef({ error: null, success: null, warning: null, info: null });
     
     // Step-Up Modal State
     const [showStepUp, setShowStepUp] = useState(false);
@@ -75,6 +126,26 @@ export default function UserCarts(props) {
     }, [flash]);
 
     useEffect(() => {
+        if (flash?.error && flash.error !== lastFlashRef.current.error) {
+            lastFlashRef.current.error = flash.error;
+            toast.error(flash.error, { id: 'cart-error' });
+            window.alert(flash.error);
+        }
+        if (flash?.success && flash.success !== lastFlashRef.current.success) {
+            lastFlashRef.current.success = flash.success;
+            toast.success(flash.success, { id: 'cart-success' });
+        }
+        if (flash?.warning && flash.warning !== lastFlashRef.current.warning) {
+            lastFlashRef.current.warning = flash.warning;
+            toast(flash.warning, { id: 'cart-warning' });
+        }
+        if (flash?.info && flash.info !== lastFlashRef.current.info) {
+            lastFlashRef.current.info = flash.info;
+            toast(flash.info, { id: 'cart-info' });
+        }
+    }, [flash?.error, flash?.success, flash?.warning, flash?.info]);
+
+    useEffect(() => {
         if (auth?.user) {
             setGuestAllowed(true);
             return;
@@ -88,6 +159,21 @@ export default function UserCarts(props) {
                 setGuestAllowed(true);
             });
     }, [auth?.user]);
+
+    useEffect(() => {
+        if (!debugEnabled) return;
+        pushDebug('state_snapshot', {
+            isChecked,
+            checking,
+            hasCaptcha: !!captchaToken,
+            skipCaptcha,
+            hasAuthUser: !!auth?.user,
+            guestAllowed,
+            card_capabilities: !!card_capabilities,
+            subtotal,
+            fee,
+        });
+    }, [debugEnabled, pushDebug, isChecked, checking, captchaToken, skipCaptcha, auth?.user, guestAllowed, card_capabilities, subtotal, fee]);
 
     const handleVerifyStepUp = async (e) => {
         e.preventDefault();
@@ -110,6 +196,7 @@ export default function UserCarts(props) {
             if (response.data.success) {
                 toast.success("Identity verified! Proceeding to checkout...");
                 setShowStepUp(false);
+                setSkipCaptcha(true);
                 // Call handleSubmit again, this time it will bypass STEP_UP
                 handleSubmit();
             } else {
@@ -124,16 +211,27 @@ export default function UserCarts(props) {
 
     const onVerify = useCallback((token) => {
         setCaptchaToken(token || "");
-    }, []);
+        pushDebug('turnstile_verified', { token_len: (token || '').length });
+    }, [pushDebug]);
 
     const handleSubmit = () => {
+        pushDebug('checkout_clicked', {
+            isChecked,
+            checking,
+            hasCaptcha: !!captchaToken,
+            skipCaptcha,
+            hasAuthUser: !!auth?.user,
+            creator_id: datas?.user?.id,
+        });
         if (!card_capabilities) {
              toast.error("This creator cannot accept payments at the moment.");
+             if (debugEnabled) window.alert("DEBUG: creator card_capabilities missing");
              return;
         }
         if (!auth?.user) {
             if (guestAllowed === false) {
                 const msg = "Guest checkout is currently disabled. Please log in to continue.";
+                pushDebug('blocked_guest_disabled', { msg });
                 if (window.confirm("Login Required\n\n" + msg)) {
                     window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
                 }
@@ -143,14 +241,17 @@ export default function UserCarts(props) {
             const rate = rates?.[upCurrency];
             const totalGbp = rate ? ((fee + subtotal) / rate) : (fee + subtotal);
             if (totalGbp > 50) {
+                pushDebug('blocked_guest_high_value', { totalGbp });
                 if (window.confirm("Login required\n\nLarger payments more than £50 need to login.")) {
                     window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
                 }
                 return;
             }
         }
-        if (!captchaToken) {
+        if (!captchaToken && !skipCaptcha) {
             toast.error("Please complete the CAPTCHA verification.");
+            pushDebug('blocked_missing_captcha', { turnstileSiteKey });
+            if (debugEnabled) window.alert("DEBUG: captchaToken is empty. Please complete captcha.");
             return;
         }
         setChecking(true);
@@ -161,23 +262,34 @@ export default function UserCarts(props) {
         const queryParams = {
             message: message || '',
             from: name || '',
-            email: email || '',
+            email: email || auth?.user?.email || '',
             anonymous: keepAnonmyous ? 1 : 0,
             device_id: deviceid,
-            cf_turnstile_response: captchaToken || "",
+            cf_turnstile_response: skipCaptcha ? "" : (captchaToken || ""),
+            debug_id: debugEnabled ? `${Date.now()}-${Math.random().toString(16).slice(2)}` : undefined,
         };
+        pushDebug('navigating_to_checkout', { checkoutUrl, queryParams });
         // Use Inertia navigation instead of window.location.href to properly handle flash messages
         router.visit(checkoutUrl, {
             method: 'get',
             data: queryParams,
             onError: (errors) => {
-                console.error('Checkout error:', errors);
+                const msg =
+                    (Array.isArray(errors?.cf_turnstile_response) ? errors.cf_turnstile_response[0] : errors?.cf_turnstile_response) ||
+                    errors?.message ||
+                    errors?.error ||
+                    "Checkout failed. Please try again.";
+                toast.error(msg, { id: 'cart-error-inline' });
+                // Remove window.alert(msg) here because it causes the double popup (Inertia flash error effect already catches and alerts)
+                pushDebug('checkout_onError', { errors, msg });
                 setChecking(false);
                 if (turnstileRef.current) {
                     turnstileRef.current.reset();
                 }
+                setSkipCaptcha(false);
             },
             onFinish: () => {
+                pushDebug('checkout_onFinish', {});
                 setChecking(false);
             }
         });
@@ -245,9 +357,6 @@ export default function UserCarts(props) {
         });
     };
 
-    const [subtotal, setsubtotal] = useState();
-    const [fee, setFee] = useState((window.platformFeePercentage || 20) / 100 * subtotal);
-
      function updateTotals() {
         const subtotalValue =
             items &&
@@ -286,6 +395,7 @@ export default function UserCarts(props) {
 
     return (
         <div className={`${cartCleared ? "hidden" : ""} px-2 containerbox`}>
+            <Toaster position="top-center" />
             <div className="containerbox mx-auto">
                     {/* <div className='hidden md:flex p-4 md:p-6 pinkbg !border-b-[3px] !border-t-0 !border-l-0 !border-r-0 border-black items-center '>
                         <span className=' border-black border-2 bg-red-700 mr-2 md:w-5 h-4 w-4 md:h-5 rounded-full block'></span>
@@ -303,6 +413,31 @@ export default function UserCarts(props) {
                             <p className="md:pb-4 text-lg mt-2 mb-4">
                                 You are about to send a payout to <strong> {datas?.user?.name || ""} </strong> to fund their lifestyle.
                             </p>
+                            {debugEnabled ? (
+                                <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 p-3 mb-4 rounded">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="font-semibold">Cart Checkout Debug</div>
+                                        <button
+                                            type="button"
+                                            className="border border-yellow-300 px-2 py-1 rounded text-sm"
+                                            onClick={() => {
+                                                try {
+                                                    const text = JSON.stringify(debugEvents, null, 2);
+                                                    navigator.clipboard?.writeText(text);
+                                                    window.alert('Debug copied to clipboard');
+                                                } catch {
+                                                    window.alert('Unable to copy debug');
+                                                }
+                                            }}
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <pre className="text-xs whitespace-pre-wrap mt-2 max-h-40 overflow-auto">
+                                        {JSON.stringify(debugEvents, null, 2)}
+                                    </pre>
+                                </div>
+                            ) : null}
                             {!card_capabilities && (
                                 <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r" role="alert">
                                     <p className="font-bold">Payments Unavailable</p>
@@ -372,10 +507,10 @@ export default function UserCarts(props) {
                                                     </p>
                                                     <input
                                                         required
-                                                        className={`${ auth && auth.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[12px] md:rounded-[12px] `}
-                                                        value={auth && auth.email}
-                                                        disabled={ auth && auth.email ? true : false }
-                                                        onChange={ (e) => setEmail(e.target.value) }
+                                                    className={`${ auth?.user?.email ? "disabled" : "" } border-gray-300 border rounded-[10px] p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[12px] md:rounded-[12px] `}
+                                                    value={email}
+                                                    disabled={!!auth?.user?.email}
+                                                    onChange={(e) => setEmail(e.target.value)}
                                                         type="email"
                                                         placeholder="Enter Your Email..."
                                                     />
@@ -386,11 +521,11 @@ export default function UserCarts(props) {
                                                     </label>
                                                     <input
                                                         className="border-gray-300 mt-1 border p-3 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 !rounded-[10px] "
-                                                        onChange={(e) =>setName(e.target.value)} 
-                                                        // value={name}
-                                                        defaultValue={auth && auth.name || ""}
+                                                    onChange={(e) => setName(e.target.value)}
+                                                    value={name}
                                                         type="text" placeholder="Enter Your Name..."
                                                     />
+                                                    {auth && auth.name}
                                                     {auth && auth.name}
                                                 </div>
                                             </div>
@@ -536,10 +671,10 @@ export default function UserCarts(props) {
                                         </button>
                                         <button
                                             type="button"
-                                            disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken) || !card_capabilities}
+                                            disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken && !skipCaptcha) || !card_capabilities}
                                             onClick={handleSubmit}
                                             className={`${
-                                                isChecked && !(turnstileSiteKey && !captchaToken) && !checking && card_capabilities ? "" : "disabled"
+                                                isChecked && !(turnstileSiteKey && !captchaToken && !skipCaptcha) && !checking && card_capabilities ? "" : "disabled"
                                             } main-button p w-full`}
                                         >
                                             {checking ? "Wait.." : "Checkout"}{" "}
@@ -591,7 +726,10 @@ export default function UserCarts(props) {
                         <div className="flex gap-3">
                             <button
                                 type="button"
-                                onClick={() => setShowStepUp(false)}
+                                onClick={() => {
+                                    setShowStepUp(false);
+                                    setSkipCaptcha(false);
+                                }}
                                 className="w-full main-button b"
                             >
                                 Cancel

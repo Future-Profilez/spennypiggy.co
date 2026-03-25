@@ -36,9 +36,11 @@ use Inertia\Inertia;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
+use App\Traits\RiskEnforcement;
 
 class BillsController extends Controller
 {
+    use RiskEnforcement;
     public function billSave(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -408,27 +410,6 @@ class BillsController extends Controller
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
 
-        $user = Auth::user();
-        
-        // NEW: Risk Engine Evaluation
-        $riskService = app(\App\Services\Risk\RiskService::class);
-        $riskEvaluation = $riskService->evaluate(
-            $bill->user,
-            (int) round($finalTotalAmount * 100),
-            $request->ip(),
-            $request->header('User-Agent') ?? 'Unknown',
-            $user?->email ?? $request->email,
-            null,
-            'bill',
-            ['currency' => $chargeCurrency]
-        );
-
-        if (in_array($riskEvaluation['decision'], ['BLOCK', 'COOLDOWN'], true)) {
-             return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
-        }
-        
-        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
-
         $totalTax = $applicationFeeAmount;
         // $vatAmount variable here is used for vat_tax_amount in DB which stores compliance+admin fees
         $feesAsVat = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
@@ -444,22 +425,26 @@ class BillsController extends Controller
         }
 
         $user = Auth::user();
+        
+        $user = Auth::user();
         if ($user) {
             if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
         }
 
         if ($request->isMethod("POST")) {
-            // Conversion only for login threshold check (approximate)
-            $convertedAmountForCheck = Helpers::priceFormat($chargeCurrency, $price, 'gbp');
-            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $convertedAmountForCheck);
-            if (!Auth::check() && $guestRestriction) {
-                return to_route('login', [
-                    'redirect' => $request->fullUrl(),
-                    'message' => $guestRestriction['message']
-                ]);
-            }
+            // Unified Risk Enforcement
+            $riskData = $this->enforceRiskChecks(
+                $request,
+                $bill->user,
+                $finalTotalAmount,
+                $chargeCurrency,
+                'bill_checkout',
+                false // redirect response
+            );
 
-            $this->ensureTurnstileVerified($request);
+            if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+                return $riskData;
+            }
 
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
@@ -628,7 +613,7 @@ class BillsController extends Controller
                 ];
 
                 // Risk Engine: Force 3DS if Step-Up required
-                if (isset($force3DS) && $force3DS) {
+                if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                     $payload['payment_method_options'] = [
                         'card' => [
                             'request_three_d_secure' => 'any',
@@ -650,12 +635,12 @@ class BillsController extends Controller
                         ['stripe_session_id' => $session->id],
                         [
                             'creator_id' => $bill->user->uuid,
-                            'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                            'risk_identity_id' => $riskData['risk_identity_id'] ?? null,
                             'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($chargeCurrency)),
                             'currency' => 'gbp',
                             'stripe_payment_intent_id' => $session->payment_intent ?? null,
                             'status' => 'initiated',
-                            'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                            'reason_codes' => $riskData['reason_codes'] ?? [],
                         ]
                     );
                 } catch (\Exception $e) {

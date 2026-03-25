@@ -31,9 +31,12 @@ use App\Notifications\PaymentBlockedNotification;
 use App\Notifications\SubscriptionBlockedNotification;
 use App\Services\UserProfileService;
 use Illuminate\Support\Str;
+use App\Traits\RiskEnforcement;
 
 class CheckoutController extends Controller
 {
+    use RiskEnforcement;
+
     protected $userProfileService;
     protected $riskEngine;
 
@@ -46,6 +49,18 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($creator_id, $user_id_or_device = null)
     {
+        $debugId = request()->query('debug_id');
+        if (!empty($debugId)) {
+            Log::info('Cart checkout debug start', [
+                'debug_id' => $debugId,
+                'creator_id' => $creator_id,
+                'user_id' => Auth::id(),
+                'device_id' => request()->get('device_id') ?? session()->getId(),
+                'has_turnstile' => request()->has('cf_turnstile_response'),
+                'ip' => request()->ip(),
+            ]);
+        }
+
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
         Log::info('Gifter card verification status', ['status' => $checkGifterStatus]);
         if ($checkGifterStatus == true) {
@@ -54,7 +69,17 @@ class CheckoutController extends Controller
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        $this->ensureTurnstileVerified(request());
+        try {
+            $this->ensureTurnstileVerified(request());
+        } catch (\Throwable $e) {
+            if (!empty($debugId)) {
+                Log::warning('Cart checkout debug: turnstile failed', [
+                    'debug_id' => $debugId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            throw $e;
+        }
 
         $user = Auth::user();
         try {
@@ -63,6 +88,9 @@ class CheckoutController extends Controller
                 $message = request()->query('message');
 
                 if (str_word_count($message) > $wordLimit) {
+                    if (!empty($debugId)) {
+                        Log::info('Cart checkout debug: message word limit', ['debug_id' => $debugId]);
+                    }
                     return redirect()->back()->with("error", "Max limit for message is 100 words");
                 }
             }
@@ -81,6 +109,9 @@ class CheckoutController extends Controller
                 $device_id = $user_id_or_device ?? request()->get('device_id');
 
                 if (!$device_id) {
+                    if (!empty($debugId)) {
+                        Log::info('Cart checkout debug: missing device id', ['debug_id' => $debugId]);
+                    }
 
                     return redirect()->back()->with('error', 'Device ID is required for guest checkout.');
                 }
@@ -93,15 +124,24 @@ class CheckoutController extends Controller
             }
 
             if ($getdata->isEmpty()) {
+                if (!empty($debugId)) {
+                    Log::info('Cart checkout debug: empty cart for creator', ['debug_id' => $debugId]);
+                }
                 return redirect()->back()->with('error', 'No items in cart to checkout for this creator.');
             }
 
             // Get creator by ID
             $owner = User::find($creator_id);
             if (!$owner) {
+                if (!empty($debugId)) {
+                    Log::info('Cart checkout debug: creator not found', ['debug_id' => $debugId]);
+                }
                 return redirect()->back()->with('error', 'Creator not found.');
             }
             if ($owner['is_subscribed'] !== 1) {
+                if (!empty($debugId)) {
+                    Log::info('Cart checkout debug: creator paused gifts', ['debug_id' => $debugId]);
+                }
                 return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
             }
 
@@ -255,70 +295,23 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
-            $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $grandTotalSupporterPays);
-            if ($guestRestriction) {
-                return to_route('login', [
-                    'redirect' => request()->fullUrl(),
-                    'message' => $guestRestriction['message']
-                ]);
-            }
+            // Unified Risk Enforcement
+            $riskData = $this->enforceRiskChecks(
+                request(),
+                $owner,
+                $grandTotalSupporterPays,
+                $chargeCurrency,
+                'cart_checkout',
+                false // redirect response
+            );
 
-            // Risk Engine Evaluation
-            $context = [
-                'amount' => (int) round($subtotal * $multiplier), // Use subtotal for risk evaluation
-                'currency' => $chargeCurrency,
-                'creator_id' => $owner->uuid, // Pass UUID for risk engine
-                'email' => $getdata[0]->user->email ?? request()->query('email'),
-                'ip' => request()->ip(),
-                'device_id' => $device_id,
-                'is_guest' => !Auth::check(),
-            ];
-            
-            $riskResult = $this->riskEngine->evaluate($context);
-            $decision = $riskResult['decision'];
-            
-            if ($decision === 'BLOCK') {
-                return redirect()->back()->with('error', $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.');
-            }
-            
-            if ($decision === 'COOLDOWN') {
-                return redirect()->back()->with('error', $riskResult['ui']['body'] ?? 'Please wait before trying again.');
-            }
-            
-            if ($decision === 'STEP_UP') {
-                // If we already verified STEP_UP in this session, bypass it
-                if (session()->has('step_up_verified_log_id')) {
-                    $logId = session('step_up_verified_log_id');
-                    session()->forget('step_up_verified_log_id'); // consume it
-                    Log::info('Bypassing STEP_UP due to verified log', ['log_id' => $logId]);
-                } else {
-                    $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
-                    // Send OTP
-                    $sent = app(\App\Services\Risk\VerificationService::class)->sendOtp(
-                        $identity,
-                        $context
-                    );
-                    if (!$sent) {
-                        return redirect()->back()->with('error', 'Unable to send verification code. Please check your email and try again.');
-                    }
-
-                    // Store checkout payload in session to resume later
-                    session(['pending_checkout_creator' => $creator_id, 'pending_checkout_device' => $user_id_or_device]);
-
-                    return redirect()->back()->with([
-                        'step_up_required' => true,
-                        'step_up_data' => [
-                            'ui' => $riskResult['ui']
-                        ],
-                        'step_up_context' => [
-                            'risk_identity_id' => $identity->id,
-                        ]
-                    ]);
-                }
+            // If it's a redirect (blocked, step_up, login required), return it immediately
+            if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+                return $riskData;
             }
 
             // Check if we need to force 3DS
-            $force3ds = in_array('FORCE_3DS', $riskResult['reason_codes'] ?? []);
+            $force3ds = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
             // Build payment_intent_data based on creator's capabilities
             $paymentIntentData = [
@@ -342,6 +335,14 @@ class CheckoutController extends Controller
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
+
+            if ($force3ds) {
+                $payload['payment_method_options'] = [
+                    'card' => [
+                        'request_three_d_secure' => 'any',
+                    ],
+                ];
+            }
 
             // Validate payload before sending to Stripe
             $validationError = $this->validateStripePayload($payload);
@@ -384,17 +385,16 @@ class CheckoutController extends Controller
             session(['session_id' => $sessionCreate->id]);
 
             try {
-                $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
                 $rawAmountMinor = (int) ($sessionCreate->amount_total ?? (int) round($totalCreatorNet * $multiplier));
                 \App\Models\Payment::create([
                     'creator_id' => $owner->uuid,
-                    'risk_identity_id' => $identity->id,
+                    'risk_identity_id' => $riskData['risk_identity_id'],
                     'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($rawAmountMinor, (string) strtoupper($chargeCurrency)),
                     'currency' => 'gbp',
                     'stripe_session_id' => $sessionCreate->id,
                     'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null,
                     'status' => 'initiated',
-                    'reason_codes' => $riskResult['reason_codes'] ?? [],
+                    'reason_codes' => $riskData['reason_codes'] ?? [],
                 ]);
             } catch (\Exception $e) {
                 Log::error('Risk Ledger: Failed to record checkout session payment', [

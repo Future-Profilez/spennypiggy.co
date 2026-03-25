@@ -30,9 +30,11 @@ use Illuminate\Support\Facades\Log;
 use App\Services\UserProfileService;
 use App\Services\StripeMetadataService;
 use Illuminate\Support\Facades\App;
+use App\Traits\RiskEnforcement;
 
 class TaskController extends Controller
 {
+    use RiskEnforcement;
     public function index()
     {
         $tasks = Task::where('creator_id', Auth::id())->orderBy('created_at', 'desc')->get();
@@ -361,6 +363,8 @@ class TaskController extends Controller
         $platformFeePercent = config('app.platform_fee_percentage', 20);
         $vatPercent = $creator->vat_amount_percentage ?? 0;
 
+        $this->ensureTurnstileVerified($request);
+
         $price = $task->price;
 
         // Enforce Paid Task limits in GBP (min £5, max £500)
@@ -387,22 +391,19 @@ class TaskController extends Controller
         $adminFee = $breakdown['admin_fee'] ?? 0;
         $platformFee = max(0, $applicationFeeAmount - $adminFee);
 
-        // NEW: Risk Engine Evaluation
-        $riskService = app(\App\Services\Risk\RiskService::class);
-        $riskEvaluation = $riskService->evaluate(
+        // Unified Risk Enforcement
+        $riskData = $this->enforceRiskChecks(
+            $request,
             $creator,
-            (int) round($finalTotalAmount * $multiplier),
-            $request->ip(),
-            $request->header('User-Agent'),
-            $user->email,
-            null
+            $finalTotalAmount,
+            $currency,
+            'task_purchase',
+            false // redirect response
         );
 
-        if ($riskEvaluation['decision'] === 'BLOCK') {
-             return back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
+        if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+            return $riskData;
         }
-        
-        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
 
         $lineItems = [
             [
@@ -468,8 +469,8 @@ class TaskController extends Controller
             'metadata' => $complianceMetadata,
         ];
 
-        // Risk Engine: Force 3DS if Step-Up required
-        if (isset($force3DS) && $force3DS) {
+        // Check if we need to force 3DS
+        if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
             $payload['payment_method_options'] = [
                 'card' => [
                     'request_three_d_secure' => 'any',
@@ -485,12 +486,12 @@ class TaskController extends Controller
                 ['stripe_session_id' => $session->id],
                 [
                     'creator_id' => $creator->uuid,
-                    'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                    'risk_identity_id' => $riskData['risk_identity_id'] ?? null,
                     'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($currency)),
                     'currency' => 'gbp',
                     'stripe_payment_intent_id' => $session->payment_intent ?? null,
                     'status' => 'initiated',
-                    'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                    'reason_codes' => $riskData['reason_codes'] ?? [],
                 ]
             );
         } catch (\Exception $e) {

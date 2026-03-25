@@ -92,6 +92,9 @@ class HandleInertiaRequests extends Middleware
                     "error" => $request->session()->get("error"),
                     "warning" => $request->session()->get("warning"),
                     "info" => $request->session()->get("info"),
+                    "step_up_required" => $request->session()->get("step_up_required"),
+                    "step_up_data" => $request->session()->get("step_up_data"),
+                    "step_up_context" => $request->session()->get("step_up_context"),
                 ];
             },
             'cart_count' =>  $items,

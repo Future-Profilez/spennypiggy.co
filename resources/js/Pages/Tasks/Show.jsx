@@ -3,6 +3,7 @@ import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import PriceFormat from "@/includes/PriceFormat";
 import Turnstile from "@/Components/Turnstile";
+import Popup from "@/Components/Popup";
 import toast from "react-hot-toast";
 import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
@@ -76,6 +77,78 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                 setGuestAllowed(true);
             });
     }, [auth?.user?.id]);
+
+    const { flash } = usePage().props;
+    const lastFlashRef = useRef({ error: null, success: null, warning: null, info: null });
+
+    // Step-Up Modal State
+    const [showStepUp, setShowStepUp] = useState(false);
+    const [stepUpData, setStepUpData] = useState(null);
+    const [stepUpContext, setStepUpContext] = useState(null);
+    const [otpCode, setOtpCode] = useState("");
+    const [typedConfirmation, setTypedConfirmation] = useState("");
+    const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+    useEffect(() => {
+        if (flash?.step_up_required && flash?.step_up_data) {
+            setStepUpData(flash.step_up_data);
+            setStepUpContext(flash.step_up_context || null);
+            setShowStepUp(true);
+        }
+    }, [flash]);
+
+    // The GlobalErrorBoundary or GuestLayout may already be showing toasts for flash.error.
+    // By keeping this commented out or removed, we prevent the double toast.
+    /*
+    useEffect(() => {
+        if (flash?.error && flash.error !== lastFlashRef.current.error) {
+            lastFlashRef.current.error = flash.error;
+            toast.error(flash.error, { id: 'task-error' });
+        }
+        if (flash?.success && flash.success !== lastFlashRef.current.success) {
+            lastFlashRef.current.success = flash.success;
+            toast.success(flash.success, { id: 'task-success' });
+        }
+    }, [flash?.error, flash?.success]);
+    */
+
+    const handleVerifyStepUp = async (e) => {
+        e.preventDefault();
+        setVerifyingOtp(true);
+        try {
+            const finalTotalAmount = calculateTotalSupporterPays(
+                task.price, 
+                task.currency || 'USD',
+                ((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100)
+            );
+            
+            const response = await axios.post('/api/risk/step-up/verify', {
+                otp: otpCode,
+                typed_confirmation: typedConfirmation,
+                amount: Math.round(finalTotalAmount * (isZeroDecimalCurrency(task?.currency) ? 1 : 100)),
+                currency: task?.currency,
+                creator_id: task?.creator?.uuid || task?.creator_id,
+                email: auth?.user?.email,
+                device_id: stepUpContext?.device_id || null,
+                is_checkout_session: true,
+                risk_identity_id: stepUpContext?.risk_identity_id
+            });
+            
+            if (response.data.success) {
+                toast.success("Identity verified! Proceeding to checkout...");
+                setShowStepUp(false);
+                setVerified(true);
+                setData("cf_turnstile_response", "verified");
+                handlePurchase();
+            } else {
+                toast.error("Verification failed.");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || "OTP Verification failed.");
+        } finally {
+            setVerifyingOtp(false);
+        }
+    };
 
     const handlePurchase = () => {
         if (!data.agree) {
@@ -384,6 +457,62 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                     </div>
                 </div>
             </div>
+
+            {/* Step-Up Verification Modal */}
+            <Popup
+                size="md"
+                action={showStepUp}
+                space="p-0"
+                modalclass="pinkmodal"
+                classes="hidden"
+            >
+                <div className="!rounded-none p-6">
+                    <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || 'Confirm Your Payment'}</h2>
+                    <p className="text-gray-600 mb-6 text-center">
+                        {stepUpData?.ui?.body || 'For your security, please confirm this payment.'}
+                    </p>
+                    <form onSubmit={handleVerifyStepUp}>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="e.g. 123456"
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="CONFIRM"
+                                value={typedConfirmation}
+                                onChange={(e) => setTypedConfirmation(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowStepUp(false)}
+                                className="w-full main-button b"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={verifyingOtp || !otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM'}
+                                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM' || verifyingOtp) ? 'disabled' : ''}`}
+                            >
+                                {verifyingOtp ? "Verifying..." : "Verify & Checkout"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Popup>
         </Guest>
     );
 }

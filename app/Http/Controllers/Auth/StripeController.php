@@ -56,9 +56,11 @@ use App\Notifications\SubscriptionBlockedNotification;
 use App\Notifications\StripeAccountMigrationNotification;
 use App\Services\UserProfileService;
 use Illuminate\Support\Facades\Http;
+use App\Traits\RiskEnforcement;
 
 class StripeController extends Controller
 {
+    use RiskEnforcement;
     protected $userProfileService;
 
     public function __construct(UserProfileService $userProfileService)
@@ -3087,23 +3089,6 @@ class StripeController extends Controller
             }
 
             $ConvertedAmount = Helpers::priceFormat($creator->default_currency, $amount, 'gbp');
-            // return response()->json([
-            //     'creator->default_currency' => $creator->default_currency,
-            //     'amount' => $amount,
-            //     'ConvertedAmount' => $ConvertedAmount,
-            //     'cookies_currency' => $currency,
-            // ]);
-
-            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $ConvertedAmount);
-            if (!Auth::check() && $guestRestriction) {
-                return response()->json([
-                    'status' => false,
-                    'code' => 'AUTH_REQUIRED',
-                    'reason_code' => $guestRestriction['code'],
-                    'message' => 'Login required',
-                    'msg' => $guestRestriction['message']
-                ]);
-            }
             
             // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
             $vatPercent = $creator->vat_amount_percentage ?? 0;
@@ -3117,71 +3102,19 @@ class StripeController extends Controller
             $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
             $creatorNet = $breakdown['net_to_creator']; // This is in supporter currency
 
-            $context = [
-                'amount' => $unitAmount,
-                'currency' => strtoupper($creator->default_currency),
-                'creator_id' => $creator->uuid,
-                'email' => $user->email ?? $request->email,
-                'ip' => $request->ip(),
-                'device_id' => $request->device_id ?? session()->getId(),
-                'is_guest' => !Auth::check(),
-            ];
+            // Unified Risk Enforcement
+            $riskData = $this->enforceRiskChecks(
+                $request,
+                $creator,
+                $breakdown['total_supporter_pays'],
+                $creator->default_currency,
+                'tip_jar',
+                true // JSON response expected
+            );
 
-            $riskResult = app(\App\Services\Risk\RiskEngineService::class)->evaluate($context);
-            $decision = $riskResult['decision'] ?? 'ALLOW';
-
-            if ($decision === 'BLOCK' || $decision === 'COOLDOWN') {
-                return response()->json([
-                    'status' => false,
-                    'msg' => $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.',
-                    'decision' => $decision,
-                    'reason_codes' => $riskResult['reason_codes'] ?? [],
-                ]);
-            }
-
-            if ($decision === 'STEP_UP') {
-                if (session()->has('step_up_verified_log_id')) {
-                    session()->forget('step_up_verified_log_id');
-                } else {
-                    try {
-                        $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
-                        $sent = app(\App\Services\Risk\VerificationService::class)->sendOtp($identity, $context);
-                        if (!$sent) {
-                            return response()->json([
-                                'status' => false,
-                                'msg' => 'Unable to send verification code. Please check your email and try again.',
-                            ]);
-                        }
-                        \App\Models\Payment::create([
-                            'creator_id' => $creator->uuid,
-                            'risk_identity_id' => $identity->id,
-                            'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
-                            'currency' => 'gbp',
-                            'status' => 'step_up',
-                            'reason_codes' => $riskResult['reason_codes'] ?? [],
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('Tip jar: Failed to start STEP_UP', ['error' => $e->getMessage()]);
-                    }
-
-                    return response()->json([
-                        'status' => false,
-                        'step_up_required' => true,
-                        'decision' => 'STEP_UP',
-                        'ui' => $riskResult['ui'] ?? [
-                            'title' => 'Confirm Your Payment',
-                            'body' => 'For your security, please confirm this payment.',
-                        ],
-                        'step_up_context' => [
-                            'risk_identity_id' => $identity->id,
-                            'amount' => $unitAmount,
-                            'currency' => strtoupper($creator->default_currency),
-                            'creator_id' => $creator->uuid,
-                            'email' => $user->email ?? $request->email,
-                            'device_id' => $context['device_id'] ?? null,
-                        ],
-                    ]);
-                }
+            // If it's a JSON error response (blocked, step_up, login required), return it immediately
+            if ($riskData instanceof \Illuminate\Http\JsonResponse) {
+                return $riskData;
             }
 
             // Values for DB in creator's currency
@@ -3262,22 +3195,30 @@ class StripeController extends Controller
                 'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];
 
+            // Check if we need to force 3DS
+            if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
+                $payload['payment_method_options'] = [
+                    'card' => [
+                        'request_three_d_secure' => 'any',
+                    ],
+                ];
+            }
+
             try {
                 // Create session on CONNECTED account
                 $session = StripeControl::createCheckoutSession($payload, $creator->account_id);
                 $pay->update(['session_id' => $session->id]);
 
                 try {
-                    $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
                     \App\Models\Payment::create([
                         'creator_id' => $creator->uuid,
-                        'risk_identity_id' => $identity->id,
+                        'risk_identity_id' => $riskData['risk_identity_id'],
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
                         'currency' => 'gbp',
                         'stripe_session_id' => $session->id,
                         'stripe_payment_intent_id' => $session->payment_intent ?? null,
                         'status' => 'initiated',
-                        'reason_codes' => $riskResult['reason_codes'] ?? [],
+                        'reason_codes' => $riskData['reason_codes'] ?? [],
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Risk Ledger: Failed to record tip jar payment', [
