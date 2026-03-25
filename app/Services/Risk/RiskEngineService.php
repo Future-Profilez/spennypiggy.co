@@ -5,6 +5,7 @@ namespace App\Services\Risk;
 use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\RiskIdentity;
+use App\Models\RiskSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -52,8 +53,14 @@ class RiskEngineService
 
         // 3. Get Effective Limits
         $limits = $this->limitsService->getEffectiveLimits($identity);
+
+        $supporterRules = RiskSetting::get('supporter_rules', []);
+        $creatorRules = RiskSetting::get('creator_rules', []);
+        $highVelocityRules = RiskSetting::get('high_velocity_rules', []);
+        $crossCreatorRules = RiskSetting::get('cross_creator_rules', []);
         
         $amount = $context['amount'] ?? 0;
+        $amountGbp = app(MoneyNormalizer::class)->toGbpMinor((int) $amount, (string) ($context['currency'] ?? 'GBP'));
         $creatorId = $context['creator_id'] ?? null;
         
         $decision = 'ALLOW';
@@ -89,7 +96,7 @@ class RiskEngineService
 
         // --- RULE 2: SPEND LIMITS (1H, 24H, 7D) ---
         // Check 1 Hour Limit
-        if (($rollup->spend_1h + $amount) > $limits['max_spend_1h']) {
+        if (($rollup->spend_1h + $amountGbp) > $limits['max_spend_1h']) {
             $decision = 'BLOCK';
             $reasons[] = 'LIMIT_EXCEEDED_1H';
             $ui = [
@@ -102,7 +109,7 @@ class RiskEngineService
         }
 
         // Check 24 Hour Limit
-        if (($rollup->spend_24h + $amount) > $limits['max_spend_24h']) {
+        if (($rollup->spend_24h + $amountGbp) > $limits['max_spend_24h']) {
             $decision = 'BLOCK';
             $reasons[] = 'LIMIT_EXCEEDED_24H';
             $ui = [
@@ -115,7 +122,7 @@ class RiskEngineService
         }
 
         // Check 7 Day Limit
-        if (($rollup->spend_7d + $amount) > $limits['max_spend_7d']) {
+        if (($rollup->spend_7d + $amountGbp) > $limits['max_spend_7d']) {
             $decision = 'BLOCK';
             $reasons[] = 'LIMIT_EXCEEDED_7D';
             $ui = [
@@ -127,24 +134,38 @@ class RiskEngineService
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
-        // --- RULE 3: SINGLE TRANSACTION LIMIT (> $200 -> STEP_UP) ---
-        if ($amount > 20000) { // $200.00
+        // --- RULE 3: SINGLE TRANSACTION LIMIT (> threshold -> STEP_UP) ---
+        $singleTxStepUpAmount = (int)($limits['step_up_threshold'] ?? ($supporterRules['single_tx_step_up_amount'] ?? 20000));
+        $singleTxReviewHoldAmount = (int)($limits['review_hold_threshold'] ?? 0);
+
+        if ($singleTxStepUpAmount > 0 && $amountGbp > $singleTxStepUpAmount) {
             if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
                 $decision = 'STEP_UP';
                 $reasons[] = 'HIGH_VALUE_TX';
                 $reasons[] = 'FORCE_3DS';
+
+                if ($singleTxReviewHoldAmount > 0 && $amountGbp > $singleTxReviewHoldAmount) {
+                    $reasons[] = 'MARK_REVIEW_HOLD';
+                }
+
                 $ui = [
                     'key' => 'STEP_UP_REQUIRED',
                     'title' => 'Confirm Your Payment',
                     'body' => 'For your security, please confirm this payment.',
                 ];
             }
+        } elseif ($singleTxReviewHoldAmount > 0 && $amountGbp > $singleTxReviewHoldAmount) {
+            if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
+                $reasons[] = 'MARK_REVIEW_HOLD';
+            }
         }
 
-        // --- RULE 4: NEW CREATOR ACCOUNT PROTECTION (< 30 Days Old -> Max $500/day) ---
+        // --- RULE 4: NEW CREATOR ACCOUNT PROTECTION (< age_days -> daily cap) ---
+        $newCreatorAgeDays = (int)($creatorRules['new_creator_age_days'] ?? 30);
+        $newCreatorDailyCap = (int)($creatorRules['new_creator_daily_cap'] ?? 50000);
         if ($creatorId) {
             $creator = \App\Models\User::where('uuid', $creatorId)->first();
-            if ($creator && $creator->created_at->diffInDays(now()) < 30) {
+            if ($creator && $newCreatorAgeDays > 0 && $creator->created_at->diffInDays(now()) < $newCreatorAgeDays) {
                  // Calculate creator's total volume today (all payers)
                  // This query might be heavy if not indexed on creator_id + created_at
                  $dailyVolume = Payment::where('creator_id', $creatorId)
@@ -152,7 +173,7 @@ class RiskEngineService
                      ->whereIn('status', ['succeeded', 'step_up', 'review_hold'])
                      ->sum('amount');
                  
-                 if (($dailyVolume + $amount) > 50000) { // $500.00
+                 if ($newCreatorDailyCap > 0 && ($dailyVolume + $amountGbp) > $newCreatorDailyCap) {
                      $decision = 'BLOCK';
                      $reasons[] = 'NEW_CREATOR_VOLUME_LIMIT';
                      $ui = [
@@ -166,9 +187,11 @@ class RiskEngineService
             }
         }
         
-        // --- RULE 6: 3 PAYMENTS IN 10 MIN -> STEP_UP ---
-        // --- RULE 7: 5 PAYMENTS IN 10 MIN -> COOLDOWN ---
-        if ($rollup->payment_count_10m >= 5) {
+        // --- RULE 6/7: VELOCITY (counts are computed on a 10m window in rollups) ---
+        $velocityStepUpCount = (int)($supporterRules['velocity_step_up_count'] ?? 3);
+        $velocityCooldownCount = (int)($supporterRules['velocity_cooldown_count'] ?? 5);
+
+        if ($velocityCooldownCount > 0 && $rollup->payment_count_10m >= $velocityCooldownCount) {
             $decision = 'COOLDOWN';
             $reasons[] = 'VELOCITY_5_IN_10M';
             $ui = [
@@ -182,7 +205,7 @@ class RiskEngineService
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
-        if ($rollup->payment_count_10m >= 3) {
+        if ($velocityStepUpCount > 0 && $rollup->payment_count_10m >= $velocityStepUpCount) {
             $decision = 'STEP_UP';
             $reasons[] = 'ACCELERATION_3_IN_10M';
             $ui = [
@@ -236,12 +259,20 @@ class RiskEngineService
              }
         }
         
-        // --- RULE 10: CROSS-CREATOR SPEND > 5K IN 48H -> RESTRICT NEW ---
-        // If spend_48h > 500000 AND creators_paid_48h >= 2
-        if ($rollup->spend_48h > 500000 && $rollup->creators_paid_48h >= 2) {
+        // --- RULE 10: CROSS-CREATOR HOPPING -> RESTRICT NEW ---
+        $spend48hRestrictAmount = (int)($crossCreatorRules['spend_48h_restrict_amount'] ?? 500000);
+        $creatorsPaid48hMin = (int)($crossCreatorRules['creators_paid_48h_min'] ?? 2);
+        $restrictDurationHours = (int)($crossCreatorRules['restrict_duration_hours'] ?? 24);
+
+        if (
+            $spend48hRestrictAmount > 0 &&
+            $creatorsPaid48hMin > 0 &&
+            $rollup->spend_48h > $spend48hRestrictAmount &&
+            $rollup->creators_paid_48h >= $creatorsPaid48hMin
+        ) {
             // Trigger restriction if not already set
             if (!$identity->new_creator_restrict_until || Carbon::now()->greaterThan($identity->new_creator_restrict_until)) {
-                 $identity->update(['new_creator_restrict_until' => Carbon::now()->addHours(24)]); // Default 24h
+                 $identity->update(['new_creator_restrict_until' => Carbon::now()->addHours(max(1, $restrictDurationHours))]);
                  // Log trigger
                  AuditLog::create([
                      'actor' => 'system',
@@ -267,20 +298,26 @@ class RiskEngineService
             }
         }
 
-        // --- RULE 8: HIGH VELOCITY SPEND (2H > 7500) ---
-        if ($rollup->spend_2h >= 750000) {
+        // --- RULE 8: HIGH VELOCITY SPEND (2H window) ---
+        $spend2hStepUpAmount = (int)($highVelocityRules['spend_2h_step_up_amount'] ?? 750000);
+        $spend2hReviewHoldAmount = (int)($highVelocityRules['spend_2h_review_hold_amount'] ?? 1500000);
+        $force3dsOnHighVelocity = (bool)($highVelocityRules['force_3ds_on_high_velocity'] ?? true);
+
+        if ($spend2hStepUpAmount > 0 && $rollup->spend_2h >= $spend2hStepUpAmount) {
             // Force 3DS + STEP UP
             if ($decision !== 'BLOCK' && $decision !== 'COOLDOWN') {
                 $decision = 'STEP_UP';
                 $reasons[] = 'HIGH_VALUE_VELOCITY_2H';
                 
                 // If repeated, mark for REVIEW_HOLD but still require STEP_UP first
-                if ($rollup->spend_2h > 1500000) { // Double threshold
+                if ($spend2hReviewHoldAmount > 0 && $rollup->spend_2h > $spend2hReviewHoldAmount) {
                     $reasons[] = 'MARK_REVIEW_HOLD';
                 }
                 
                 // Add 3DS requirement flag
-                $reasons[] = 'FORCE_3DS';
+                if ($force3dsOnHighVelocity) {
+                    $reasons[] = 'FORCE_3DS';
+                }
                 
                 $ui = [
                     'key' => 'STEP_UP_REQUIRED',
@@ -303,7 +340,7 @@ class RiskEngineService
         // "New" usually means "never paid before".
         return !Payment::where('risk_identity_id', $identity->id)
             ->where('creator_id', $creatorId)
-            ->where('status', 'succeeded')
+            ->whereIn('status', ['succeeded', 'review_hold'])
             ->exists();
     }
 

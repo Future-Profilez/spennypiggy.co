@@ -75,6 +75,7 @@ class CheckoutController extends Controller
                     ->where('status', 1)
                     ->with(['wish', 'owner'])
                     ->get();
+                $device_id = request()->get('device_id') ?? session()->getId();
             } else {
                 // For guests, filter by device_id AND owner_id (creator_id)
                 $device_id = $user_id_or_device ?? request()->get('device_id');
@@ -122,7 +123,7 @@ class CheckoutController extends Controller
                 // Return user-friendly error to fan
                 return redirect()->back()->with(
                     'error',
-                    'This creator is temporarily unavailable. Please try again later.'
+                    app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
                 );
             }
 
@@ -136,7 +137,7 @@ class CheckoutController extends Controller
                 // Return user-friendly error to fan
                 return redirect()->back()->with(
                     'error',
-                    'This creator is temporarily unavailable. Please try again later.'
+                    app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
                 );
             }
             if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
@@ -189,6 +190,7 @@ class CheckoutController extends Controller
             $subtotal = 0;
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
+            $grandTotalSupporterPays = 0;
 
             foreach ($getdata as $dd) {
                 // Skip cart items without valid wish relationship
@@ -240,6 +242,7 @@ class CheckoutController extends Controller
                 $subtotal += $itemAmount * $dd->quantity;
                 $totalApplicationFee += $applicationFeeAmount * $dd->quantity;
                 $totalCreatorNet += $creatorNet * $dd->quantity;
+                $grandTotalSupporterPays += $finalTotalAmount * $dd->quantity;
             }
 
             // Check if we have any valid line items after processing
@@ -252,6 +255,14 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Your cart contains no valid items. Please add items and try again.');
             }
 
+            $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $grandTotalSupporterPays);
+            if ($guestRestriction) {
+                return to_route('login', [
+                    'redirect' => request()->fullUrl(),
+                    'message' => $guestRestriction['message']
+                ]);
+            }
+
             // Risk Engine Evaluation
             $context = [
                 'amount' => (int) round($subtotal * $multiplier), // Use subtotal for risk evaluation
@@ -259,7 +270,7 @@ class CheckoutController extends Controller
                 'creator_id' => $owner->uuid, // Pass UUID for risk engine
                 'email' => $getdata[0]->user->email ?? request()->query('email'),
                 'ip' => request()->ip(),
-                'device_id' => $device_id ?? session()->getId(),
+                'device_id' => $device_id,
                 'is_guest' => !Auth::check(),
             ];
             
@@ -281,11 +292,15 @@ class CheckoutController extends Controller
                     session()->forget('step_up_verified_log_id'); // consume it
                     Log::info('Bypassing STEP_UP due to verified log', ['log_id' => $logId]);
                 } else {
+                    $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
                     // Send OTP
-                    app(\App\Services\Risk\VerificationService::class)->sendOtp(
-                        app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context),
+                    $sent = app(\App\Services\Risk\VerificationService::class)->sendOtp(
+                        $identity,
                         $context
                     );
+                    if (!$sent) {
+                        return redirect()->back()->with('error', 'Unable to send verification code. Please check your email and try again.');
+                    }
 
                     // Store checkout payload in session to resume later
                     session(['pending_checkout_creator' => $creator_id, 'pending_checkout_device' => $user_id_or_device]);
@@ -294,6 +309,9 @@ class CheckoutController extends Controller
                         'step_up_required' => true,
                         'step_up_data' => [
                             'ui' => $riskResult['ui']
+                        ],
+                        'step_up_context' => [
+                            'risk_identity_id' => $identity->id,
                         ]
                     ]);
                 }
@@ -364,6 +382,26 @@ class CheckoutController extends Controller
 
             session()->forget('session_id');
             session(['session_id' => $sessionCreate->id]);
+
+            try {
+                $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
+                $rawAmountMinor = (int) ($sessionCreate->amount_total ?? (int) round($totalCreatorNet * $multiplier));
+                \App\Models\Payment::create([
+                    'creator_id' => $owner->uuid,
+                    'risk_identity_id' => $identity->id,
+                    'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($rawAmountMinor, (string) strtoupper($chargeCurrency)),
+                    'currency' => 'gbp',
+                    'stripe_session_id' => $sessionCreate->id,
+                    'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null,
+                    'status' => 'initiated',
+                    'reason_codes' => $riskResult['reason_codes'] ?? [],
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Risk Ledger: Failed to record checkout session payment', [
+                    'session_id' => $sessionCreate->id ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // Store device_id for guest checkouts to enable cart retrieval in success callback
             if (!Auth::check() && isset($device_id)) {

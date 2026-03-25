@@ -930,7 +930,7 @@ class WishitemController extends Controller
             ? strtolower(request()->cookie('currency'))
             : 'gbp';
 
-        $amount = round($amount, 2, PHP_ROUND_HALF_UP);
+        $amount = round((float) $amount, 2, PHP_ROUND_HALF_UP);
         $wishitem = WishItem::where('uuid', $uuid)->firstOrFail();
 
         // ✅ Prevent user from buying own item
@@ -962,6 +962,48 @@ class WishitemController extends Controller
             ->when(Auth::check(), fn($q) => $q->where('user_id', Auth::id())->whereNull('device_id'))
             ->when(!Auth::check(), fn($q) => $q->where('device_id', $device_id)->whereNull('user_id'))
             ->first();
+
+        if (!Auth::check()) {
+            $ownerCurrency = strtoupper($wishitem->user->default_currency ?: 'GBP');
+            $vatPercent = (float) ($wishitem->user->vat_amount_percentage ?? 0);
+
+            $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
+                $amountWithVat = $amount + (($amount * $vatPercent) / 100);
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency);
+                return (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
+            };
+
+            $newItemAmount = (float) $wishitem->price;
+            if ((int) $wishitem->subscription === 2) {
+                $newItemAmount = (float) Helpers::priceFormat($currency, $amount, $ownerCurrency);
+            }
+
+            $existingItems = UserCart::where('owner_id', $wishitem->user_id)
+                ->where('country', 'global')
+                ->where('status', 1)
+                ->where('wish_item_id', '!=', $wishitem->id)
+                ->where('device_id', $device_id)
+                ->whereNull('user_id')
+                ->get(['amount', 'quantity']);
+
+            $existingTotal = 0.0;
+            foreach ($existingItems as $it) {
+                $existingTotal += $supporterPays((float) $it->amount) * (int) ($it->quantity ?? 1);
+            }
+
+            $totalAfterAdd = $existingTotal + $supporterPays($newItemAmount);
+
+            $guestRestriction = Helpers::guestCheckoutRestriction($ownerCurrency, $totalAfterAdd);
+            if ($guestRestriction) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'AUTH_REQUIRED',
+                    'reason_code' => $guestRestriction['code'],
+                    'message' => 'Login required',
+                    'msg' => $guestRestriction['message'],
+                ]);
+            }
+        }
 
         // ✅ Calculate product details (refactored block)
         $calculateProduct = function ($wishitem, $currency, $amount, $accountId = null) {
@@ -1446,7 +1488,7 @@ class WishitemController extends Controller
                 // Return user-friendly error to fan
                 return response()->json([
                     'status' => false,
-                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                    'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
                 ]);
             }
 
@@ -2855,7 +2897,48 @@ class WishitemController extends Controller
         try {
             $cart = UserCart::whereUuid($uuid)->first();
             if (!empty($cart)) {
-                $cart->quantity = $quantity ?? 1;
+                $quantity = max(1, (int) $quantity);
+
+                if (!Auth::check() && !empty($cart->device_id) && empty($cart->user_id) && !empty($cart->owner_id)) {
+                    $owner = User::find($cart->owner_id);
+                    if ($owner) {
+                        $ownerCurrency = strtoupper($owner->default_currency ?: 'GBP');
+                        $vatPercent = (float) ($owner->vat_amount_percentage ?? 0);
+
+                        $supporterPays = function (float $amount) use ($ownerCurrency, $vatPercent): float {
+                            $amountWithVat = $amount + (($amount * $vatPercent) / 100);
+                            $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $ownerCurrency);
+                            return (float) ($breakdown['total_supporter_pays'] ?? $amountWithVat);
+                        };
+
+                        $existingItems = UserCart::where('owner_id', $cart->owner_id)
+                            ->where('country', 'global')
+                            ->where('status', 1)
+                            ->where('device_id', $cart->device_id)
+                            ->whereNull('user_id')
+                            ->where('id', '!=', $cart->id)
+                            ->get(['amount', 'quantity']);
+
+                        $existingTotal = 0.0;
+                        foreach ($existingItems as $it) {
+                            $existingTotal += $supporterPays((float) $it->amount) * (int) ($it->quantity ?? 1);
+                        }
+
+                        $totalAfterUpdate = $existingTotal + ($supporterPays((float) $cart->amount) * $quantity);
+                        $guestRestriction = Helpers::guestCheckoutRestriction($ownerCurrency, $totalAfterUpdate);
+                        if ($guestRestriction) {
+                            return response()->json([
+                                'success' => false,
+                                'code' => 'AUTH_REQUIRED',
+                                'reason_code' => $guestRestriction['code'],
+                                'message' => 'Login required',
+                                'msg' => $guestRestriction['message'],
+                            ]);
+                        }
+                    }
+                }
+
+                $cart->quantity = $quantity;
                 $cart->save();
                 // return back()->with('success', 'Quantity updated successfully.');
                 return response()->json([

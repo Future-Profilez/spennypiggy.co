@@ -36,9 +36,9 @@ class FinancialService
         return $now->year;
     }
 
-    public function getSummary(User $user, $startDate, $endDate)
+    public function getSummary(User $user, $startDate, $endDate, $displayCurrency = null)
     {
-        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+        $displayCurrency = strtoupper($displayCurrency ?: ($user->default_currency ?? 'GBP'));
 
         $incomeTx = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
@@ -70,13 +70,15 @@ class FinancialService
             ->unique()
             ->values();
 
-        $rates = Currency::whereIn('ISO', $allCurrencies)->pluck('conversion_rate', 'ISO');
+        $currencyMeta = Currency::whereIn('ISO', $allCurrencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits'])
+            ->keyBy('ISO');
 
-        if (!isset($rates[$displayCurrency]) || (float) $rates[$displayCurrency] <= 0) {
+        if (!isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
             $displayCurrency = 'GBP';
         }
 
-        $convert = function (string $from, float $amount, string $to) use ($rates) {
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
 
@@ -84,18 +86,20 @@ class FinancialService
                 return $amount;
             }
 
-            if (!isset($rates[$from]) || !isset($rates[$to])) {
+            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) {
                 return null;
             }
 
-            $fromRate = (float) $rates[$from];
-            $toRate = (float) $rates[$to];
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
             if ($fromRate <= 0 || $toRate <= 0) {
                 return null;
             }
 
             $gbp = $amount / $fromRate;
-            return $gbp * $toRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
         foreach ($incomeTx as $tx) {

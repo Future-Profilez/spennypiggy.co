@@ -4,6 +4,7 @@ namespace App\Services\Risk;
 
 use App\Models\AuditLog;
 use App\Models\PlatformRiskState;
+use App\Models\RiskSetting;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -19,15 +20,14 @@ class CreatorActivationService
         $stateRecord = PlatformRiskState::latest('started_at')->first();
         $state = $stateRecord ? $stateRecord->state : 'NORMAL';
 
-        // 2. Define Limits
-        $limits = [
+        $limits = RiskSetting::get('onboarding_limits', [
             'NORMAL' => 25,
             'CAUTION' => 10,
-            'THROTTLE' => 0,
+            'THROTTLE' => 5,
             'FREEZE' => 0,
-        ];
-        
-        $dailyLimit = $limits[$state];
+        ]);
+
+        $dailyLimit = (int)($limits[$state] ?? 0);
 
         if ($dailyLimit === 0) {
             return [

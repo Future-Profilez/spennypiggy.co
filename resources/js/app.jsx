@@ -50,6 +50,10 @@ if (window.location.hostname === 'spennypiggy.co' || window.location.hostname ==
 function setupGlobalCartFunctions(props) {
     const auth = props?.page?.props?.auth;
     const deviceid = DeviceID();
+
+    if (typeof document !== 'undefined' && deviceid) {
+        document.cookie = `device_id=${encodeURIComponent(deviceid)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    }
     
     
     // Anonymous cart refresh function

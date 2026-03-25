@@ -69,7 +69,7 @@ Route::middleware('web')->group(function () {
 // Risk Engine Routes
 Route::prefix('risk')->group(function () {
     Route::post('/evaluate', [\App\Http\Controllers\Api\RiskController::class, 'evaluate']);
-    Route::post('/step-up/verify', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUp']);
+    Route::post('/step-up/verify', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUp'])->middleware('web');
     Route::get('/limits', [\App\Http\Controllers\Api\RiskController::class, 'getEffectiveLimits']);
 });
 

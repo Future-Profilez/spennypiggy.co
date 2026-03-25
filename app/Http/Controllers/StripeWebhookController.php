@@ -79,20 +79,36 @@ class StripeWebhookController extends Controller
             return response()->json(['error' => 'Invalid event'], 400);
         }
 
-        // Idempotency check
+        $webhookStatus = null;
         if (isset($event->id)) {
-            $exists = \App\Models\StripeWebhookStatus::where('event_id', $event->id)->exists();
-            if ($exists) {
+            $webhookStatus = \App\Models\StripeWebhookStatus::where('event_id', $event->id)->first();
+
+            if ($webhookStatus && ($webhookStatus->status === 'processed' || $webhookStatus->processed_at)) {
                 Log::info("Stripe Webhook: Event already processed", ['event_id' => $event->id]);
                 return response()->json(['status' => 'success', 'message' => 'Already processed']);
             }
-            
-            // Record event processing started
-            \App\Models\StripeWebhookStatus::create([
-                'event_id' => $event->id,
-                'event_type' => $event->type,
-                'data' => json_encode($event->data->object)
-            ]);
+
+            if ($webhookStatus && $webhookStatus->status === 'processing' && $webhookStatus->updated_at && $webhookStatus->updated_at->gt(now()->subMinutes(5))) {
+                Log::info("Stripe Webhook: Event already processing", ['event_id' => $event->id]);
+                return response()->json(['status' => 'success', 'message' => 'Already processing']);
+            }
+
+            if ($webhookStatus) {
+                $webhookStatus->update([
+                    'event_type' => $event->type,
+                    'data' => json_encode($event->data->object),
+                    'status' => 'processing',
+                    'processed_at' => null,
+                    'last_error' => null,
+                ]);
+            } else {
+                $webhookStatus = \App\Models\StripeWebhookStatus::create([
+                    'event_id' => $event->id,
+                    'event_type' => $event->type,
+                    'data' => json_encode($event->data->object),
+                    'status' => 'processing',
+                ]);
+            }
         }
 
         // Log if it's a Connect event
@@ -106,7 +122,8 @@ class StripeWebhookController extends Controller
 
         Log::info("Handling Stripe Event: " . $type);
 
-        switch ($type) {
+        try {
+            switch ($type) {
             // --- Identity Verification Events ---
             case 'identity.verification_session.requires_input':
             case 'identity.verification_session.verified':
@@ -207,6 +224,23 @@ class StripeWebhookController extends Controller
 
             default:
                 Log::info("Unhandled event type: " . $type);
+            }
+        } catch (\Throwable $e) {
+            if ($webhookStatus) {
+                $webhookStatus->update([
+                    'status' => 'failed',
+                    'last_error' => $e->getMessage(),
+                ]);
+            }
+            throw $e;
+        }
+
+        if ($webhookStatus) {
+            $webhookStatus->update([
+                'status' => 'processed',
+                'processed_at' => now(),
+                'last_error' => null,
+            ]);
         }
 
         return response()->json(['status' => 'success']);
@@ -702,6 +736,35 @@ class StripeWebhookController extends Controller
                 'session_id' => $session->id,
                 'metadata' => $metadata
             ]);
+
+            try {
+                $payment = \App\Models\Payment::where('stripe_session_id', $session->id)->first();
+                if ($payment) {
+                    $newStatus = 'succeeded';
+                    if (
+                        $payment->status === 'review_hold' ||
+                        (is_array($payment->reason_codes) && in_array('MARK_REVIEW_HOLD', $payment->reason_codes))
+                    ) {
+                        $newStatus = 'review_hold';
+                    }
+
+                    $payment->update([
+                        'stripe_payment_intent_id' => $session->payment_intent ?? $payment->stripe_payment_intent_id,
+                        'status' => $newStatus,
+                    ]);
+
+                    Log::info("Risk Ledger: Checkout session mapped to payment", [
+                        'session_id' => $session->id,
+                        'payment_id' => $payment->id,
+                        'status' => $newStatus,
+                        'payment_intent' => $session->payment_intent ?? null,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error("Risk Ledger: Failed mapping checkout.session.completed: " . $e->getMessage(), [
+                    'session_id' => $session->id,
+                ]);
+            }
 
             // Check if this is a wish item purchase
             if (isset($metadata->deliverable_type) && $metadata->deliverable_type === 'media_bundle') {
@@ -2495,14 +2558,56 @@ class StripeWebhookController extends Controller
             
             // Find related payment
             $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
-            
+            $existing = \App\Models\EarlyFraudWarning::where('stripe_efw_id', $efw->id)->exists();
+            if ($existing) {
+                Log::info("Early Fraud Warning already recorded", ['efw_id' => $efw->id]);
+                return;
+            }
+
             \App\Models\EarlyFraudWarning::create([
                 'payment_id' => $payment ? $payment->id : null,
                 'stripe_efw_id' => $efw->id,
                 'stripe_charge_id' => $chargeId,
+                'created_at' => now(),
             ]);
-            
-            Log::info("Early Fraud Warning recorded", ['efw_id' => $efw->id]);
+
+            if ($payment) {
+                try {
+                    $reasons = is_array($payment->reason_codes) ? $payment->reason_codes : [];
+                    if (!in_array('EFW_RECEIVED', $reasons, true)) {
+                        $reasons[] = 'EFW_RECEIVED';
+                    }
+                    $payment->update(['reason_codes' => $reasons]);
+                } catch (\Throwable $e) {
+                }
+
+                try {
+                    \App\Models\AuditLog::create([
+                        'actor' => 'system',
+                        'action_type' => 'EARLY_FRAUD_WARNING',
+                        'reference_id' => (string) $payment->id,
+                        'metadata_json' => [
+                            'stripe_efw_id' => $efw->id,
+                            'stripe_charge_id' => $chargeId,
+                            'stripe_payment_intent_id' => $paymentIntentId,
+                            'creator_id' => $payment->creator_id,
+                        ],
+                    ]);
+                } catch (\Throwable $e) {
+                }
+
+                try {
+                    $creator = \App\Models\User::where('uuid', $payment->creator_id)->first();
+                    if ($creator) {
+                        $title = "Refund Recommended";
+                        $content = "A payment received an Early Fraud Warning. Consider refunding to reduce chargeback risk.";
+                        \App\Helpers::sendNotification($title, $content, $creator->email);
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+
+            Log::info("Early Fraud Warning recorded", ['efw_id' => $efw->id, 'pi' => $paymentIntentId]);
             
         } catch (\Exception $e) {
             Log::error("Failed to handle EFW: " . $e->getMessage());

@@ -1,10 +1,11 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Guest from '@/Layouts/GuestLayout';
 import PriceFormat from "@/includes/PriceFormat";
 import Turnstile from "@/Components/Turnstile";
 import toast from "react-hot-toast";
 import userphoto from "../../../assets/siteicon.png";
+import axios from "axios";
 
 export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
     const { turnstileSiteKey } = usePage().props;
@@ -51,6 +52,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     };
 
     const [verified, setVerified] = useState(false);
+    const [guestAllowed, setGuestAllowed] = useState(null);
     const onVerify = useCallback((token) => {
         if(token !== null && token !== "" && token !== undefined){
             setData("cf_turnstile_response", token || "");
@@ -60,6 +62,21 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         }
     }, [setData]);
 
+    useEffect(() => {
+        if (auth?.user) {
+            setGuestAllowed(true);
+            return;
+        }
+        axios.get("/api/risk/limits")
+            .then((res) => {
+                const allowed = res?.data?.guest_allowed !== false;
+                setGuestAllowed(allowed);
+            })
+            .catch(() => {
+                setGuestAllowed(true);
+            });
+    }, [auth?.user?.id]);
+
     const handlePurchase = () => {
         if (!data.agree) {
             toast.error("Please accept the Paid Tasks terms");
@@ -67,6 +84,20 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         }
         if (!verified) {
             toast.error("Please verify the captcha");
+            return;
+        }
+        if (!auth?.user) {
+            const msg = guestAllowed === false
+                ? "Guest checkout is disabled. Please log in."
+                : "Please log in to purchase this task.";
+            toast.error(msg);
+            window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+            return;
+        }
+        if (!auth?.user?.email_verified_at) {
+            const msg = "Please verify your email to continue.";
+            toast.error(msg);
+            window.location = route("verification.notice");
             return;
         }
 

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\PlatformRiskState;
 use App\Models\Admin;
+use App\Models\RiskSetting;
 use App\Mail\PlatformRiskAlert;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,14 @@ class MonitorPlatformRiskState extends Command
     {
         $this->info('Checking platform risk metrics...');
 
+        $triggers = RiskSetting::get('platform_state_triggers', []);
+        $freezeDisputeRate = (float)($triggers['platform_dispute_rate_freeze'] ?? 0.007);
+        $dailyGmvCautionMultiplier = (float)($triggers['daily_gmv_caution_multiplier'] ?? 1.5);
+        $dailyGmvThrottleMultiplier = (float)($triggers['daily_gmv_throttle_multiplier'] ?? 2.0);
+        $weeklyGmvSpikeMultiplier = (float)($triggers['weekly_gmv_spike_multiplier'] ?? 1.3);
+        $creatorDisputeRateTrigger = (float)($triggers['creator_dispute_rate_trigger'] ?? 0.008);
+        $creatorsOverTriggerCount = (int)($triggers['creators_over_trigger_count'] ?? 5);
+
         // 1. Calculate Dispute Rate (30d)
         // Spec: If dispute_rate_pct >= 0.7% -> FREEZE
         
@@ -58,7 +67,7 @@ class MonitorPlatformRiskState extends Command
         $disputeRate = $disputeStats->dispute_rate_pct ?? 0;
         $this->info("Current Dispute Rate (30d): {$disputeRate}%");
 
-        if ($disputeRate >= 0.7) {
+        if ($disputeRate >= ($freezeDisputeRate * 100)) {
             $this->transitionState('FREEZE', ['PLATFORM_DISPUTE_FREEZE'], [
                 'dispute_rate' => $disputeRate,
                 'total_tx' => $disputeStats->total_tx,
@@ -68,7 +77,6 @@ class MonitorPlatformRiskState extends Command
         }
 
         // 2. Daily GMV Spike (24h vs 7d avg)
-        // Spec: If ratio >= 1.5 -> CAUTION, >= 2.0 -> THROTTLE
         
         $gmvStats = DB::selectOne("
             WITH last_24h AS (
@@ -94,7 +102,7 @@ class MonitorPlatformRiskState extends Command
         $gmvRatio = $gmvStats->ratio ?? 0;
         $this->info("GMV Spike Ratio: {$gmvRatio}");
 
-        if ($gmvRatio >= 2.0) {
+        if ($gmvRatio >= $dailyGmvThrottleMultiplier) {
             $this->transitionState('THROTTLE', ['GMV_SPIKE_THROTTLE'], [
                 'gmv_ratio' => $gmvRatio,
                 'gmv_24h' => $gmvStats->gmv_24h,
@@ -103,7 +111,7 @@ class MonitorPlatformRiskState extends Command
             return;
         }
 
-        if ($gmvRatio >= 1.5) {
+        if ($gmvRatio >= $dailyGmvCautionMultiplier) {
             $this->transitionState('CAUTION', ['GMV_SPIKE_CAUTION'], [
                 'gmv_ratio' => $gmvRatio,
                 'gmv_24h' => $gmvStats->gmv_24h,
@@ -113,7 +121,6 @@ class MonitorPlatformRiskState extends Command
         }
 
         // 3. Weekly GMV Spike
-        // Spec: If ratio >= 1.3 -> THROTTLE
         
         $weeklyStats = DB::selectOne("
             WITH this_week AS (
@@ -140,7 +147,7 @@ class MonitorPlatformRiskState extends Command
         $weeklyRatio = $weeklyStats->ratio ?? 0;
         $this->info("Weekly GMV Ratio: {$weeklyRatio}");
 
-        if ($weeklyRatio >= 1.3) {
+        if ($weeklyRatio >= $weeklyGmvSpikeMultiplier) {
             $this->transitionState('THROTTLE', ['WEEKLY_GMV_SPIKE'], [
                 'weekly_ratio' => $weeklyRatio,
                 'gmv_this_week' => $weeklyStats->gmv_this_week,
@@ -150,20 +157,19 @@ class MonitorPlatformRiskState extends Command
         }
 
         // 4. Creator Clusters (High Disputes)
-        // Spec: If >= 5 creators have dispute_rate >= 0.8% -> THROTTLE
         
         $badCreators = DB::selectOne("
             WITH creator_tx AS (
                 SELECT creator_id, COUNT(*) AS tx
                 FROM payments
-                WHERE created_at >= NOW() - INTERVAL '30 days'
+                WHERE created_at >= NOW() - INTERVAL '7 days'
                 AND status IN ('succeeded','review_hold','refunded','disputed')
                 GROUP BY creator_id
             ),
             creator_dp AS (
                 SELECT creator_id, COUNT(*) AS disputes
                 FROM disputes
-                WHERE created_at >= NOW() - INTERVAL '30 days'
+                WHERE created_at >= NOW() - INTERVAL '7 days'
                 GROUP BY creator_id
             ),
             rates AS (
@@ -173,15 +179,15 @@ class MonitorPlatformRiskState extends Command
                 FROM creator_tx t
                 LEFT JOIN creator_dp d ON d.creator_id = t.creator_id
             )
-            SELECT COUNT(*) AS creators_over_08
+            SELECT COUNT(*) AS creators_over_threshold
             FROM rates
-            WHERE dispute_rate_pct >= 0.8
-        ");
+            WHERE dispute_rate_pct >= ?
+        ", [($creatorDisputeRateTrigger * 100)]);
 
-        $badCreatorCount = $badCreators->creators_over_08 ?? 0;
+        $badCreatorCount = $badCreators->creators_over_threshold ?? 0;
         $this->info("Creators with High Disputes: {$badCreatorCount}");
 
-        if ($badCreatorCount >= 5) {
+        if ($badCreatorCount >= $creatorsOverTriggerCount) {
             $this->transitionState('THROTTLE', ['CREATOR_CLUSTER_RISK'], [
                 'bad_creator_count' => $badCreatorCount
             ]);

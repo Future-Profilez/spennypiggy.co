@@ -11,6 +11,7 @@ use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Logs;
 use App\Models\MembershipPayment;
+use App\Models\Payment;
 use App\Models\Shop;
 use App\Models\ShopCategory;
 use App\Models\ShopPayment;
@@ -671,7 +672,7 @@ class ShopsController extends Controller
                 // Return user-friendly error to fan
                 return response()->json([
                     'status' => false,
-                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                    'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
                 ]);
             }
 
@@ -695,7 +696,7 @@ class ShopsController extends Controller
                 // Return user-friendly error to fan
                 return response()->json([
                     'status' => false,
-                    'message' => 'This creator is temporarily unavailable. Please try again later.'
+                    'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
                 ]);
             }
 
@@ -713,17 +714,6 @@ class ShopsController extends Controller
             $amount = $shop->price;
             
             // $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
-
-            if (!Auth::check() && $amount > 50) { // Assuming 50 in creator currency or similar check
-                 // Ideally convert to GBP for consistent safety check
-                 $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
-                 if ($ConvertedAmount > 50) {
-                    return response()->json([
-                        'status' => false,
-                        'msg' => 'Larger payments more than £50 need to login.',
-                    ]);
-                 }
-            }
 
             if ($shop->type == 'physical') {
                 $request->validate([
@@ -776,10 +766,13 @@ class ShopsController extends Controller
                 (int) round($riskAmount * 100), // Amount in cents
                 $request->ip(),
                 $request->header('User-Agent') ?? 'Unknown',
-                $request->query('email')
+                $request->query('email'),
+                null,
+                'shop',
+                ['currency' => ($shop->user->default_currency ?? 'USD')]
             );
 
-            if ($riskEvaluation['decision'] === 'BLOCK') {
+            if (in_array($riskEvaluation['decision'], ['BLOCK', 'COOLDOWN'], true)) {
                 return response()->json([
                     'status' => false,
                     'message' => $riskEvaluation['reason']
@@ -886,6 +879,16 @@ class ShopsController extends Controller
                     $reserveRate = $metrics->reserve_percent ?? 0;
 
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
+                    $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
+                    if ($guestRestriction) {
+                        return response()->json([
+                            'status' => false,
+                            'code' => 'AUTH_REQUIRED',
+                            'reason_code' => $guestRestriction['code'],
+                            'message' => 'Login required',
+                            'msg' => $guestRestriction['message'],
+                        ]);
+                    }
                     
                     $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
                     $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
@@ -914,6 +917,16 @@ class ShopsController extends Controller
                     $reserveRate = $metrics->reserve_percent ?? 0;
 
                     $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
+                    $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
+                    if ($guestRestriction) {
+                        return response()->json([
+                            'status' => false,
+                            'code' => 'AUTH_REQUIRED',
+                            'reason_code' => $guestRestriction['code'],
+                            'message' => 'Login required',
+                            'msg' => $guestRestriction['message'],
+                        ]);
+                    }
                     $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
                     $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
                     $creatorNet = $breakdown['net_to_creator'];
@@ -975,6 +988,26 @@ class ShopsController extends Controller
 
             $shopPaymentDetail->session_id =  $sessionCreate->id;
             $shopPaymentDetail->save();
+
+            try {
+                Payment::firstOrCreate(
+                    ['stripe_session_id' => $sessionCreate->id],
+                    [
+                        'creator_id' => $shop->user->uuid,
+                        'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, strtoupper($chargeCurrency)),
+                        'currency' => 'gbp',
+                        'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null,
+                        'status' => 'initiated',
+                        'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::warning('Risk Ledger: Failed to record shop payment', [
+                    'session_id' => $sessionCreate->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'status' => true,

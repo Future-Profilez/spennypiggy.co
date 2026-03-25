@@ -16,7 +16,6 @@ class RiskIdentity extends Model
         'device_id_hash',
         'ip_hash',
         'is_guest',
-        'trust_tier',
         'cooldown_until',
         'is_blocked',
         'new_creator_restrict_until',

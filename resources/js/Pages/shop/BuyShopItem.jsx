@@ -119,8 +119,9 @@ export default function BuyShopItem({
                 .then((res) => {
                     if (res.data.status == false) {
                         if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
+                            const msg = res.data.msg || 'Guest checkout is disabled. Please log in.';
                             router.visit(
-                                `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
+                                `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`
                             );
                         } else {
                             errorAlert(res.data.message || res.data.msg || "Transaction declined.");
@@ -145,8 +146,9 @@ export default function BuyShopItem({
                 .then((res) => {
                     if (res.data.status == false) {
                         if (res.data.message === 'Login required' || res.data.code === 'AUTH_REQUIRED') {
+                            const msg = res.data.msg || 'Guest checkout is disabled. Please log in.';
                             router.visit(
-                                `/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`
+                                `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`
                             );
                         } else {
                             errorAlert(res.data.message || res.data.msg || "Transaction declined.");

@@ -1579,7 +1579,7 @@ class StripeController extends Controller
                     // Return user-friendly error to fan
                     return redirect()->back()->with(
                         'error',
-                        'This creator is temporarily unavailable. Please try again later.'
+                        app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
                     );
                 }
 
@@ -1771,6 +1771,14 @@ class StripeController extends Controller
         if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
         if (!$wish->user) return redirect()->back()->with('error', 'Creator not found!');
 
+        $guestRestriction = Helpers::guestCheckoutRestriction('GBP', 0);
+        if (!Auth::check() && $guestRestriction) {
+            return to_route('login', [
+                'redirect' => $request->fullUrl(),
+                'message' => $guestRestriction['message']
+            ]);
+        }
+
         // NEW: Check creator activity eligibility
         $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($wish->user);
 
@@ -1791,7 +1799,7 @@ class StripeController extends Controller
             // Return user-friendly error to fan
             return redirect()->back()->with(
                 'error',
-                'This creator is temporarily unavailable. Please try again later.'
+                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
             );
         }
 
@@ -1816,18 +1824,19 @@ class StripeController extends Controller
 
         // NEW: Risk Engine Evaluation
         $riskService = app(\App\Services\Risk\RiskService::class);
+        $payerEmail = $user->email ?? $request->input('email') ?? $request->query('email');
         $riskEvaluation = $riskService->evaluate(
             $wish->user,
             (int) round($totalAmount * 100), // Amount in cents
             $request->ip(),
-            $request->header('User-Agent'),
-            $user->email,
+            $request->header('User-Agent') ?? 'Unknown',
+            $payerEmail,
             null // Card fingerprint not available before payment
         );
 
         if ($riskEvaluation['decision'] === 'BLOCK') {
             Log::warning('Risk Engine BLOCKED payment', [
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? null,
                 'creator_id' => $wish->user->id,
                 'reason' => $riskEvaluation['reason']
             ]);
@@ -1851,8 +1860,12 @@ class StripeController extends Controller
         }
 
         if ($request->isMethod("POST")) {
-            if (!Auth::check() && $subtotals > 50) {
-                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $subtotals);
+            if (!Auth::check() && $guestRestriction) {
+                return to_route('login', [
+                    'redirect' => $request->fullUrl(),
+                    'message' => $guestRestriction['message']
+                ]);
             }
             $request->validate([
                 'name' => ['nullable', 'sometimes', 'string', 'max:50'],
@@ -2972,7 +2985,7 @@ class StripeController extends Controller
             // Return user-friendly error to fan
             return response()->json([
                 'status' => false,
-                'msg' => 'This creator is temporarily unavailable. Please try again later.'
+                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
             ]);
         }
 
@@ -2995,7 +3008,7 @@ class StripeController extends Controller
             // Return user-friendly error to fan
             return response()->json([
                 'status' => false,
-                'msg' => 'This creator is temporarily unavailable. Please try again later.'
+                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
             ]);
         }
 
@@ -3056,7 +3069,8 @@ class StripeController extends Controller
                 'email' => 'required|email:dns',
                 'amount' => 'required|numeric',
                 'anonymous' => 'required',
-                'message' => 'sometimes|nullable|string|max:800'
+                'message' => 'sometimes|nullable|string|max:800',
+                'device_id' => 'sometimes|nullable|string|max:255',
             ]);
 
             $this->ensureTurnstileVerified($request);
@@ -3080,10 +3094,14 @@ class StripeController extends Controller
             //     'cookies_currency' => $currency,
             // ]);
 
-            if (!Auth::check() && $ConvertedAmount > 50) {
+            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $ConvertedAmount);
+            if (!Auth::check() && $guestRestriction) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "Larger payments more than £50 need to login."
+                    'code' => 'AUTH_REQUIRED',
+                    'reason_code' => $guestRestriction['code'],
+                    'message' => 'Login required',
+                    'msg' => $guestRestriction['message']
                 ]);
             }
             
@@ -3098,6 +3116,73 @@ class StripeController extends Controller
             $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
             $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
             $creatorNet = $breakdown['net_to_creator']; // This is in supporter currency
+
+            $context = [
+                'amount' => $unitAmount,
+                'currency' => strtoupper($creator->default_currency),
+                'creator_id' => $creator->uuid,
+                'email' => $user->email ?? $request->email,
+                'ip' => $request->ip(),
+                'device_id' => $request->device_id ?? session()->getId(),
+                'is_guest' => !Auth::check(),
+            ];
+
+            $riskResult = app(\App\Services\Risk\RiskEngineService::class)->evaluate($context);
+            $decision = $riskResult['decision'] ?? 'ALLOW';
+
+            if ($decision === 'BLOCK' || $decision === 'COOLDOWN') {
+                return response()->json([
+                    'status' => false,
+                    'msg' => $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.',
+                    'decision' => $decision,
+                    'reason_codes' => $riskResult['reason_codes'] ?? [],
+                ]);
+            }
+
+            if ($decision === 'STEP_UP') {
+                if (session()->has('step_up_verified_log_id')) {
+                    session()->forget('step_up_verified_log_id');
+                } else {
+                    try {
+                        $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
+                        $sent = app(\App\Services\Risk\VerificationService::class)->sendOtp($identity, $context);
+                        if (!$sent) {
+                            return response()->json([
+                                'status' => false,
+                                'msg' => 'Unable to send verification code. Please check your email and try again.',
+                            ]);
+                        }
+                        \App\Models\Payment::create([
+                            'creator_id' => $creator->uuid,
+                            'risk_identity_id' => $identity->id,
+                            'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
+                            'currency' => 'gbp',
+                            'status' => 'step_up',
+                            'reason_codes' => $riskResult['reason_codes'] ?? [],
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Tip jar: Failed to start STEP_UP', ['error' => $e->getMessage()]);
+                    }
+
+                    return response()->json([
+                        'status' => false,
+                        'step_up_required' => true,
+                        'decision' => 'STEP_UP',
+                        'ui' => $riskResult['ui'] ?? [
+                            'title' => 'Confirm Your Payment',
+                            'body' => 'For your security, please confirm this payment.',
+                        ],
+                        'step_up_context' => [
+                            'risk_identity_id' => $identity->id,
+                            'amount' => $unitAmount,
+                            'currency' => strtoupper($creator->default_currency),
+                            'creator_id' => $creator->uuid,
+                            'email' => $user->email ?? $request->email,
+                            'device_id' => $context['device_id'] ?? null,
+                        ],
+                    ]);
+                }
+            }
 
             // Values for DB in creator's currency
             $price = $amount;
@@ -3181,6 +3266,25 @@ class StripeController extends Controller
                 // Create session on CONNECTED account
                 $session = StripeControl::createCheckoutSession($payload, $creator->account_id);
                 $pay->update(['session_id' => $session->id]);
+
+                try {
+                    $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity($context);
+                    \App\Models\Payment::create([
+                        'creator_id' => $creator->uuid,
+                        'risk_identity_id' => $identity->id,
+                        'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
+                        'currency' => 'gbp',
+                        'stripe_session_id' => $session->id,
+                        'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                        'status' => 'initiated',
+                        'reason_codes' => $riskResult['reason_codes'] ?? [],
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Risk Ledger: Failed to record tip jar payment', [
+                        'session_id' => $session->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 
                 return response()->json([
                     'status' => true,

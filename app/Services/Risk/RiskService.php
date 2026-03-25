@@ -12,12 +12,8 @@ use App\Models\MembershipPayment;
 use App\Models\BillPayment;
 use App\Models\ShopPayment;
 use App\Models\TipGoalsPayment;
-use App\Models\RiskIdentity;
-use App\Models\IdentityRollup;
-use App\Models\PlatformRiskState;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\DB;
 use App\Helpers;
 use App\Mail\RiskLevelChanged;
 
@@ -46,105 +42,55 @@ class RiskService
      * @param array $metadata (optional)
      * @return array ['decision' => 'ALLOW'|'STEP_UP'|'BLOCK'|'REVIEW', 'reason' => string, 'risk_identity_id' => string]
      */
-    public function evaluate(User $creator, int $amount, string $ip, string $userAgent, ?string $email = null, ?string $cardFingerprint = null, string $paymentType = 'unknown', array $metadata = []): array
-    {
-        // 1. Resolve Identity
-        $identity = $this->identityService->resolveIdentity([
-            'ip' => $ip,
-            'user_agent' => $userAgent, // Note: RiskIdentityService doesn't use UA yet but we pass it for future
+    public function evaluate(User $creator, int $amount, string $ip, string $userAgent, ?string $email = null, ?string $cardFingerprint = null, string $paymentType = 'unknown', array $metadata = []): array {
+        $currency = strtoupper((string) ($metadata['currency'] ?? 'GBP'));
+        $deviceId = (string) ($metadata['device_id'] ?? session()->getId());
+        $context = [
+            'amount' => $amount,
+            'currency' => $currency,
+            'creator_id' => $creator->uuid,
             'email' => $email,
+            'ip' => $ip,
+            'device_id' => $deviceId,
             'card_fingerprint' => $cardFingerprint,
-            'is_guest' => auth()->guest()
-        ]);
-
-        // Helper to log and return
-        $decide = function($decision, $reason) use ($identity, $creator, $amount, $ip, $userAgent, $email, $paymentType, $metadata) {
-            if ($decision === 'BLOCK' || $decision === 'STEP_UP') {
-                try {
-                     \App\Models\BlockedPayment::logBlockedPayment([
-                        'creator_id' => $creator->id,
-                        'payer_id' => auth()->id(), 
-                        'amount' => $amount / 100, // Convert cents to decimal
-                        'currency' => $metadata['currency'] ?? 'USD',
-                        'payment_type' => $paymentType,
-                        'payment_method' => 'stripe',
-                        'blocked_reason' => $reason,
-                        'activity_data' => ['decision' => $decision, 'risk_identity_id' => $identity->id],
-                        'payer_info' => ['email' => $email, 'ip' => $ip, 'ua' => $userAgent],
-                        'payment_metadata' => $metadata,
-                        'ip_address' => $ip,
-                        'user_agent' => $userAgent
-                     ]);
-                } catch (\Exception $e) {
-                     Log::error("Failed to log blocked payment: " . $e->getMessage());
-                }
-            }
-            return ['decision' => $decision, 'reason' => $reason, 'risk_identity_id' => $identity->id];
-        };
-
-        // 2. Get Effective Limits
-        $limits = $this->limitsService->getEffectiveLimits($identity);
-
-        // 3. Check Platform State (Global Freeze)
-        $platformState = PlatformRiskState::latest('started_at')->first();
-        if ($platformState && $platformState->state === 'FREEZE') {
-            return $decide('BLOCK', 'PLATFORM_FREEZE');
-        }
-
-        // 4. Check Identity Block
-        if ($identity->is_blocked) {
-            return $decide('BLOCK', 'IDENTITY_BLOCKED');
-        }
-
-        // 5. Check Velocity (Rule: > 3 payments in 10 mins -> STEP_UP)
-        // We need to check the rollup.
-        $rollup = $identity->rollup;
-        if (!$rollup) {
-            // Should exist as resolveIdentity creates it, but safety check
-            $rollup = $identity->rollup()->create([]);
-        }
-
-        if ($rollup->payment_count_10m >= 3) {
-            // 3 payments in 10m is the trigger for Step-Up (3DS)
-            return $decide('STEP_UP', 'VELOCITY_HIGH');
-        }
-
-        // 6. Check Spend Limits (Global & Tiered)
-        if ($rollup->spend_24h + $amount > $limits['max_spend_24h']) {
-            return $decide('BLOCK', 'DAILY_LIMIT_EXCEEDED');
-        }
-        
-        if ($rollup->spend_1h + $amount > $limits['max_spend_1h']) {
-             return $decide('BLOCK', 'HOURLY_LIMIT_EXCEEDED');
-        }
-
-        // 7. Check Value (Rule: > $200 -> STEP_UP)
-        if ($amount > 20000) { // $200.00
-            return $decide('STEP_UP', 'HIGH_VALUE_TX');
-        }
-
-        // 8. New Creator Limits (Rule: < 30 days old -> $500/day cap)
-        // This limit is on the CREATOR, not the buyer.
-        if ($creator->created_at->diffInDays(now()) < 30) {
-            // Check creator's total volume today
-            $dailyVolume = Payment::where('creator_id', $creator->uuid) // Assuming UUID
-                ->where('created_at', '>=', now()->subDay())
-                ->whereIn('status', ['succeeded', 'step_up', 'review_hold'])
-                ->sum('amount');
-            
-            if (($dailyVolume + $amount) > 50000) { // $500.00
-                return $decide('BLOCK', 'NEW_CREATOR_LIMIT');
+            'is_guest' => auth()->guest(),
+        ];
+        $riskResult = app(RiskEngineService::class)->evaluate($context);
+        $decision = $riskResult['decision'] ?? 'ALLOW';
+        $reason = $riskResult['ui']['body'] ?? (($riskResult['reason_codes'][0] ?? null) ?: 'OK');
+        $reasonCodes = $riskResult['reason_codes'] ?? [];
+        $identity = $this->identityService->resolveIdentity($context);
+        if (in_array($decision, ['BLOCK', 'COOLDOWN', 'STEP_UP'], true)) {
+            try {
+                \App\Models\BlockedPayment::logBlockedPayment([
+                    'creator_id' => $creator->id,
+                    'payer_id' => auth()->id(),
+                    'amount' => $amount / 100,
+                    'currency' => $currency,
+                    'payment_type' => $paymentType,
+                    'payment_method' => 'stripe',
+                    'blocked_reason' => $reason,
+                    'activity_data' => ['decision' => $decision, 'risk_identity_id' => $identity->id],
+                    'payer_info' => ['email' => $email, 'ip' => $ip, 'ua' => $userAgent],
+                    'payment_metadata' => $metadata,
+                    'ip_address' => $ip,
+                    'user_agent' => $userAgent,
+                ]);
+            } catch (\Exception $e) {
+                Log::error("Failed to log blocked payment: " . $e->getMessage());
             }
         }
-
-        // 9. Cooldown Check
-        if ($identity->cooldown_until && $identity->cooldown_until->isFuture()) {
-             return $decide('BLOCK', 'COOLDOWN_ACTIVE');
-        }
-
-        return $decide('ALLOW', 'OK');
+        return [
+            'decision' => $decision,
+            'reason' => $reason,
+            'risk_identity_id' => $identity->id,
+            'reason_codes' => $reasonCodes,
+        ];
     }
 
+
+
+    
     /**
      * Log a payment attempt and update risk counters.
      * MUST be called AFTER PaymentIntent creation/confirmation.

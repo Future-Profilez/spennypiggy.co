@@ -30,7 +30,6 @@ class DisputeSeeder extends Seeder
             'email_hash' => hash('sha256', 'test@example.com'),
             'ip_hash' => hash('sha256', '127.0.0.1'),
             'is_guest' => true,
-            'trust_tier' => 1, // Using integer 1 for 'trusted'
         ]);
 
         // Create a dummy payment if none exist

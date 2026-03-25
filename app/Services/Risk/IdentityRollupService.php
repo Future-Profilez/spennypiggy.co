@@ -6,7 +6,6 @@ use App\Models\IdentityRollup;
 use App\Models\Payment;
 use App\Models\RiskIdentity;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class IdentityRollupService
 {
@@ -29,42 +28,44 @@ class IdentityRollupService
             '30d' => $now->copy()->subDays(30),
         ];
 
-        // Query payments for this identity
-        // We include 'succeeded', 'review_hold', 'initiated' (if we want to count attempted spend?)
-        // Spec implies we check velocity of *attempts* for some rules (like 3 in 10m).
-        // But spend limits usually apply to *succeeded* or *pending* spend.
-        // Let's count 'succeeded', 'review_hold' for spend.
-        // For 'payment_count_10m' (Rule 6: 3 payments in 10m), it likely implies *attempts* or successful ones?
-        // "3 payments in 10 minutes -> STEP-UP". If I try 3 times and fail, does it count?
-        // Usually velocity checks count *attempts* to block brute force or rapid fire.
-        // Let's count 'initiated', 'step_up', 'review_hold', 'succeeded' for counts.
-        // For spend, usually only 'succeeded' and 'review_hold'.
-
         $query = Payment::where('risk_identity_id', $identity->id);
 
-        // We can do optimized aggregation here
-        // But for clarity and maintainability, let's do separate counts or a comprehensive query.
-        // Given we need distinct creators for some rules, a single query might be complex.
-        
-        // Let's fetch relevant payments once? Or use DB aggregates.
-        // DB aggregates are better for performance.
-
         $stats = $query->selectRaw("
-            SUM(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN amount ELSE 0 END) as spend_10m,
-            SUM(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN amount ELSE 0 END) as spend_1h,
-            SUM(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN amount ELSE 0 END) as spend_2h,
-            SUM(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN amount ELSE 0 END) as spend_24h,
-            SUM(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN amount ELSE 0 END) as spend_48h,
-            SUM(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN amount ELSE 0 END) as spend_7d,
             COUNT(CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold', 'initiated', 'step_up') THEN 1 END) as payment_count_10m,
             COUNT(DISTINCT CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN creator_id END) as creators_paid_24h,
             COUNT(DISTINCT CASE WHEN created_at >= ? AND status IN ('succeeded', 'review_hold') THEN creator_id END) as creators_paid_48h
         ", [
-            $windows['10m'], $windows['1h'], $windows['2h'], $windows['24h'], $windows['48h'], $windows['7d'],
             $windows['10m'],
             $windows['24h'],
             $windows['48h']
         ])->first();
+
+        $spendPayments = Payment::where('risk_identity_id', $identity->id)
+            ->where('created_at', '>=', $windows['7d'])
+            ->whereIn('status', ['succeeded', 'review_hold', 'initiated'])
+            ->get(['amount', 'currency', 'created_at']);
+
+        $spend = [
+            '10m' => 0,
+            '1h' => 0,
+            '2h' => 0,
+            '24h' => 0,
+            '48h' => 0,
+            '7d' => 0,
+        ];
+
+        $normalizer = app(MoneyNormalizer::class);
+        foreach ($spendPayments as $p) {
+            $amountGbp = $normalizer->toGbpMinor((int) $p->amount, (string) $p->currency);
+            $createdAt = $p->created_at;
+
+            if ($createdAt >= $windows['7d']) $spend['7d'] += $amountGbp;
+            if ($createdAt >= $windows['48h']) $spend['48h'] += $amountGbp;
+            if ($createdAt >= $windows['24h']) $spend['24h'] += $amountGbp;
+            if ($createdAt >= $windows['2h']) $spend['2h'] += $amountGbp;
+            if ($createdAt >= $windows['1h']) $spend['1h'] += $amountGbp;
+            if ($createdAt >= $windows['10m']) $spend['10m'] += $amountGbp;
+        }
 
         // For new_creators_24h, we need to know if the creators paid in last 24h were *ever* paid before by this identity.
         // This is harder to do in a single aggregation.
@@ -112,12 +113,12 @@ class IdentityRollupService
         $rollup = $identity->rollup ?: new IdentityRollup(['risk_identity_id' => $identity->id]);
         
         $rollup->fill([
-            'spend_10m' => $stats->spend_10m ?? 0,
-            'spend_1h' => $stats->spend_1h ?? 0,
-            'spend_2h' => $stats->spend_2h ?? 0,
-            'spend_24h' => $stats->spend_24h ?? 0,
-            'spend_48h' => $stats->spend_48h ?? 0,
-            'spend_7d' => $stats->spend_7d ?? 0,
+            'spend_10m' => $spend['10m'] ?? 0,
+            'spend_1h' => $spend['1h'] ?? 0,
+            'spend_2h' => $spend['2h'] ?? 0,
+            'spend_24h' => $spend['24h'] ?? 0,
+            'spend_48h' => $spend['48h'] ?? 0,
+            'spend_7d' => $spend['7d'] ?? 0,
             'payment_count_10m' => $stats->payment_count_10m ?? 0,
             'creators_paid_24h' => $stats->creators_paid_24h ?? 0,
             'creators_paid_48h' => $stats->creators_paid_48h ?? 0,

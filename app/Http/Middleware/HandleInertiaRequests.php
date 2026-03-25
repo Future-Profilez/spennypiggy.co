@@ -99,8 +99,17 @@ class HandleInertiaRequests extends Middleware
             'rates'     =>  Cache::remember('currency_rates', 86400, fn() => Currency::rates()),
             'currencies' => Cache::remember('all_currencies_iso', 86400, fn() => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),
             'global_currency'   =>  Cookie::get('currency'),
-            'turnstileSiteKey' => config('services.turnstile.site_key') ?: env('TRUNSTILE_SITE_KEY') ?: env('TURNSTILE_SITE_KEY'),
+            'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
             'intercom' => app(IntercomService::class)->buildSettings($user)
         ];
+    }
+
+    private function resolveTurnstileSiteKey(Request $request): ?string
+    {
+        $host = strtolower((string) $request->getHost());
+        if (app()->environment('local') && in_array($host, ['localhost', '127.0.0.1'], true)) {
+            return '1x00000000000000000000AA';
+        }
+        return config('services.turnstile.site_key') ?: env('TRUNSTILE_SITE_KEY') ?: env('TURNSTILE_SITE_KEY');
     }
 }

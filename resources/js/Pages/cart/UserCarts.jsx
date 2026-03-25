@@ -57,19 +57,37 @@ export default function UserCarts(props) {
     // Step-Up Modal State
     const [showStepUp, setShowStepUp] = useState(false);
     const [stepUpData, setStepUpData] = useState(null);
+    const [stepUpContext, setStepUpContext] = useState(null);
     const [otpCode, setOtpCode] = useState("");
     const [typedConfirmation, setTypedConfirmation] = useState("");
     const [verifyingOtp, setVerifyingOtp] = useState(false);
-    const { flash } = usePage().props;
+    const { flash, rates } = usePage().props;
+    const [guestAllowed, setGuestAllowed] = useState(null);
 
     // Check for flash messages indicating Step-Up is required
     useEffect(() => {
         if (flash?.step_up_required && flash?.step_up_data) {
             setStepUpData(flash.step_up_data);
+            setStepUpContext(flash.step_up_context || null);
             setShowStepUp(true);
             setChecking(false);
         }
     }, [flash]);
+
+    useEffect(() => {
+        if (auth?.user) {
+            setGuestAllowed(true);
+            return;
+        }
+        axios.get("/api/risk/limits")
+            .then((res) => {
+                const allowed = res?.data?.guest_allowed !== false;
+                setGuestAllowed(allowed);
+            })
+            .catch(() => {
+                setGuestAllowed(true);
+            });
+    }, [auth?.user]);
 
     const handleVerifyStepUp = async (e) => {
         e.preventDefault();
@@ -83,8 +101,10 @@ export default function UserCarts(props) {
                 amount: amountInCents,
                 currency: currency,
                 creator_id: datas?.user?.uuid || datas?.user?.id,
+                email: email || auth?.user?.email,
                 device_id: deviceid,
-                is_checkout_session: true // Flag to tell backend to create checkout session instead of PI
+                is_checkout_session: true, // Flag to tell backend to create checkout session instead of PI
+                risk_identity_id: stepUpContext?.risk_identity_id
             });
             
             if (response.data.success) {
@@ -111,6 +131,24 @@ export default function UserCarts(props) {
              toast.error("This creator cannot accept payments at the moment.");
              return;
         }
+        if (!auth?.user) {
+            if (guestAllowed === false) {
+                const msg = "Guest checkout is currently disabled. Please log in to continue.";
+                if (window.confirm("Login Required\n\n" + msg)) {
+                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+                }
+                return;
+            }
+            const upCurrency = (currency || "GBP").toUpperCase();
+            const rate = rates?.[upCurrency];
+            const totalGbp = rate ? ((fee + subtotal) / rate) : (fee + subtotal);
+            if (totalGbp > 50) {
+                if (window.confirm("Login required\n\nLarger payments more than £50 need to login.")) {
+                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
+                }
+                return;
+            }
+        }
         if (!captchaToken) {
             toast.error("Please complete the CAPTCHA verification.");
             return;
@@ -125,6 +163,7 @@ export default function UserCarts(props) {
             from: name || '',
             email: email || '',
             anonymous: keepAnonmyous ? 1 : 0,
+            device_id: deviceid,
             cf_turnstile_response: captchaToken || "",
         };
         // Use Inertia navigation instead of window.location.href to properly handle flash messages

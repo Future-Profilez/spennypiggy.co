@@ -3,15 +3,15 @@
 namespace App\Services\Risk;
 
 use App\Models\ConfirmationLog;
-use App\Models\Payment;
 use App\Models\RiskIdentity;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 
 class VerificationService
 {
+    private string $otpStore = 'file';
+
     /**
      * Generate and send OTP for a payment/identity context.
      * For now, we'll simulate sending (log it) or use a simple mailer if available.
@@ -25,20 +25,33 @@ class VerificationService
         // Store in Cache with 10 min expiry
         // Key: risk_otp_{identity_id}
         $key = 'risk_otp_' . $identity->id;
-        Cache::put($key, $otp, 600);
+        Cache::store($this->otpStore)->put($key, $otp, 600);
         
-        // Log for debugging/development (remove in prod or use safe logging)
-        Log::info("Generated OTP for Identity {$identity->id}: {$otp}");
-        
-        // TODO: Send via Email/SMS based on available contact info in Identity or User linked
-        // If guest, we might need email passed in context
-        $email = $context['email'] ?? null;
-        if ($email) {
-            // \Mail::to($email)->send(new \App\Mail\RiskOtpMail($otp));
-            Log::info("Simulating OTP email to {$email}");
+        $email = $context['email'] ?? auth()->user()?->email;
+        if (!$email) {
+            Log::warning('Risk OTP send skipped (missing email)', [
+                'risk_identity_id' => $identity->id,
+            ]);
+            return false;
         }
-        
-        return true;
+
+        try {
+            Mail::send('email.risk-otp', ['otp' => $otp], function ($message) use ($email) {
+                $message->to($email)
+                    ->from(env('MAIL_FROM_ADDRESS', 'Noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'SPENNY PIGGY'))
+                    ->subject('Confirm Your Payment - OTP Code');
+            });
+            Log::info('Risk OTP email sent', [
+                'risk_identity_id' => $identity->id,
+            ]);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Risk OTP email failed', [
+                'risk_identity_id' => $identity->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -46,15 +59,20 @@ class VerificationService
      */
     public function verifyOtp(RiskIdentity $identity, $otp, $typedConfirmation, $paymentId = null)
     {
+        $otp = trim((string) $otp);
         $key = 'risk_otp_' . $identity->id;
-        $cachedOtp = Cache::get($key);
+        $cachedOtp = Cache::store($this->otpStore)->get($key);
         
-        if (!$cachedOtp || (string)$cachedOtp !== (string)$otp) {
-            return false;
+        if (!$cachedOtp) {
+            return ['ok' => false, 'error' => 'OTP expired. Please request a new code.'];
+        }
+
+        if ((string) $cachedOtp !== (string) $otp) {
+            return ['ok' => false, 'error' => 'Incorrect OTP. Please try again.'];
         }
         
         // Clear OTP after success to prevent replay
-        Cache::forget($key);
+        Cache::store($this->otpStore)->forget($key);
         
         // Create Confirmation Log
         $log = ConfirmationLog::create([
@@ -67,6 +85,6 @@ class VerificationService
             'spend_snapshot' => $identity->rollup ? $identity->rollup->toArray() : [],
         ]);
         
-        return $log;
+        return ['ok' => true, 'log' => $log];
     }
 }

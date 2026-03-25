@@ -5,6 +5,7 @@ namespace App\Services\Risk;
 use App\Models\AuditLog;
 use App\Models\CreatorMetric;
 use App\Models\Payment;
+use App\Models\PlatformRiskState;
 use App\Models\PayoutRun;
 use App\Models\User;
 use Carbon\Carbon;
@@ -21,9 +22,11 @@ class PayoutService
     {
         $runDate = $runDate ? Carbon::parse($runDate) : Carbon::now();
         
-        // 1. Get creators with pending payments
-        $creators = Payment::where('status', 'succeeded')
-            ->whereNull('payout_run_id')
+        $platformState = PlatformRiskState::latest('started_at')->first();
+        $state = $platformState ? $platformState->state : 'NORMAL';
+
+        $creators = Payment::whereNull('payout_run_id')
+            ->whereIn('status', ['succeeded', 'refunded', 'disputed', 'review_hold'])
             ->distinct()
             ->pluck('creator_id');
 
@@ -37,8 +40,10 @@ class PayoutService
             // Fetch Metrics
             $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
             
-            // Payout Delay Check (THROTTLE/FREEZE)
-            $delayDays = $metrics->payout_delay_days;
+            $delayDays = 0;
+            if (in_array($state, ['THROTTLE', 'FREEZE'], true)) {
+                $delayDays = (int) $metrics->payout_delay_days;
+            }
             $cutoff = $runDate->copy()->subDays($delayDays);
 
             // Fetch Eligible Payments
@@ -48,25 +53,67 @@ class PayoutService
                 ->where('created_at', '<=', $cutoff)
                 ->get();
 
-            if ($payments->isEmpty()) continue;
+            $adjustments = Payment::where('creator_id', $creatorId)
+                ->whereIn('status', ['refunded', 'disputed'])
+                ->whereNull('payout_run_id')
+                ->where('created_at', '<=', $cutoff)
+                ->get();
 
-            $grossAmount = $payments->sum('amount');
+            $reviewHold = Payment::where('creator_id', $creatorId)
+                ->where('status', 'review_hold')
+                ->whereNull('payout_run_id')
+                ->where('created_at', '<=', $cutoff)
+                ->get();
+
+            $grossAmount = (int) $payments->sum('amount');
+            $refundDisputeAmount = (int) $adjustments->sum('amount');
+            $reviewHoldAmount = (int) $reviewHold->sum('amount');
+
+            $eligibleBase = $grossAmount - $refundDisputeAmount;
+
+            $reservePercent = (int) $metrics->reserve_percent;
+            $reserveAmount = $eligibleBase > 0 ? (int) floor(($eligibleBase * $reservePercent) / 100) : 0;
+
+            $netBeforeBalance = $eligibleBase - $reserveAmount;
+            $negativeBalance = (int) ($metrics->negative_balance_minor ?? 0);
+            $negativeBalanceDelta = 0;
+
+            if ($netBeforeBalance < 0) {
+                $negativeBalanceDelta = abs($netBeforeBalance);
+                $netPayout = 0;
+            } elseif ($negativeBalance > 0) {
+                if ($netBeforeBalance >= $negativeBalance) {
+                    $netPayout = $netBeforeBalance - $negativeBalance;
+                    $negativeBalanceDelta = -$negativeBalance;
+                } else {
+                    $netPayout = 0;
+                    $negativeBalanceDelta = -$netBeforeBalance;
+                }
+            } else {
+                $netPayout = $netBeforeBalance;
+            }
             
-            // Reserve Logic
-            $reservePercent = $metrics->reserve_percent; // e.g. 10
-            $reserveAmount = ($grossAmount * $reservePercent) / 100;
-            
-            $netPayout = $grossAmount - $reserveAmount;
-            
+            if ($payments->isEmpty() && $adjustments->isEmpty() && $reviewHold->isEmpty() && $negativeBalance === 0) {
+                continue;
+            }
+
             $payouts[$creatorId] = [
                 'creator_name' => $creator->name, // Assuming name exists
                 'gross_amount' => $grossAmount,
+                'refund_dispute_amount' => $refundDisputeAmount,
                 'reserve_amount' => $reserveAmount,
+                'review_hold_amount' => $reviewHoldAmount,
                 'net_payout' => $netPayout,
                 'payment_count' => $payments->count(),
                 'payment_ids' => $payments->pluck('id')->toArray(),
+                'adjustment_ids' => $adjustments->pluck('id')->toArray(),
                 'reserve_held' => true, // Flag to track reserve holding
-                'reserve_release_date' => $runDate->copy()->addDays(90)->toDateString() // Rolling 90 days
+                'reserve_release_date' => $runDate->copy()->addDays(90)->toDateString(), // Rolling 90 days
+                'negative_balance_before' => $negativeBalance,
+                'negative_balance_delta' => $negativeBalanceDelta,
+                'negative_balance_after' => max(0, $negativeBalance + $negativeBalanceDelta),
+                'state' => $state,
+                'cutoff_date' => $cutoff->toDateTimeString(),
             ];
             
             $platformTotal += $netPayout;
@@ -94,7 +141,6 @@ class PayoutService
         
         $oldRuns = PayoutRun::where('run_date', '<=', $cutoffDate)
             ->where('status', 'executed')
-            ->whereJsonContains('totals->payouts', ['reserve_held' => true]) // Check if any payout had reserve
             ->get();
 
         $releasedTotal = 0;
@@ -176,20 +222,41 @@ class PayoutService
     /**
      * Execute Payouts (Mark as Paid)
      */
-    public function executePayouts($previewData)
+    public function executePayouts($previewData, $runId = null)
     {
         DB::beginTransaction();
         try {
-            $run = PayoutRun::create([
-                'run_date' => $previewData['run_date'],
-                'status' => 'executed',
-                'totals' => $previewData,
-            ]);
+            if ($runId) {
+                $run = PayoutRun::where('id', $runId)->lockForUpdate()->firstOrFail();
+                $run->update([
+                    'run_date' => $previewData['run_date'],
+                    'status' => 'executed',
+                    'totals' => $previewData,
+                ]);
+            } else {
+                $run = PayoutRun::create([
+                    'run_date' => $previewData['run_date'],
+                    'status' => 'executed',
+                    'totals' => $previewData,
+                ]);
+            }
 
             foreach ($previewData['payouts'] as $creatorId => $data) {
                 // Mark payments as paid
                 Payment::whereIn('id', $data['payment_ids'])
                     ->update(['payout_run_id' => $run->id]);
+
+                if (!empty($data['adjustment_ids'])) {
+                    Payment::whereIn('id', $data['adjustment_ids'])
+                        ->update(['payout_run_id' => $run->id]);
+                }
+
+                if (isset($data['negative_balance_after'])) {
+                    CreatorMetric::where('creator_id', $creatorId)->update([
+                        'negative_balance_minor' => (int) $data['negative_balance_after'],
+                        'updated_at' => now(),
+                    ]);
+                }
                 
                 // TODO: Trigger Stripe Transfer (if not Direct Charge)
                 // If Direct Charge, money is already there?

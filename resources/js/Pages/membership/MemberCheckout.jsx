@@ -232,30 +232,27 @@ export default function SubCheckout(props) {
                                             ) : (
                                                 ""
                                             )} */}
-                                            <li className="flex justify-between">
-                                                <span className="min-w-[100px] text-lg block">Total :</span>
+                                            <li className="flex justify-between mb-3">
+                                                <span className="min-w-[100px] text-xl block">Total :</span>
                                                 <div className="text-right">
-                                                    <strong className="block">
-                                                        {formatMultiPrice(
-                                                            finalTotalAmount,
-                                                            membership && membership?.currency
-                                                        )}
+                                                    <strong className="block text-xl">
+                                                        {formatMultiPrice(finalTotalAmount, (membership && membership?.currency))}
                                                     </strong>
-                                                    
-                                                    {/* Show estimated price if display currency differs from charge currency */}
-                                                    {display_currency && display_currency !== membership?.currency && (
-                                                        <div className="text-sm text-gray-500 font-medium mt-1">
-                                                            ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
-                                                        </div>
-                                                    )}
-
-                                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                                        * Includes all fees. You will be charged in {membership?.currency}.
-                                                    </span>
                                                 </div>
                                             </li>
                                         </ul>
                                     </div>
+
+                                    {display_currency && display_currency !== membership?.currency && (
+                                        <div className="text-normal text-gray-500 font-medium mt-1">
+                                            ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
+                                        </div>
+                                    )}
+
+                                    <span className="text-normal text-gray-500 font-normal mt-1 leading-tight block">
+                                        * Includes all fees. You will be charged in {membership?.currency}.
+                                    </span>
+                                    
                                 </div>
                                 
                             </div>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers;
 use App\Http\Controllers\Controller;
+use App\Models\Currency;
 use App\Models\Payment;
 use App\Services\Risk\RiskEngineService;
 use App\Services\Risk\VerificationService;
@@ -34,6 +36,7 @@ class RiskController extends Controller
             'amount' => 'required|integer',
             'creator_id' => 'required|string',
             'email' => 'nullable|email',
+            'risk_identity_id' => 'nullable',
             'card_fingerprint' => 'nullable|string',
             'device_id' => 'nullable|string',
             'currency' => 'required|string|size:3',
@@ -42,19 +45,29 @@ class RiskController extends Controller
         $context = $this->buildContext($request);
         
         // 1. Resolve Identity
-        $identityService = app(\App\Services\Risk\RiskIdentityService::class);
-        $identity = $identityService->resolveIdentity($context);
+        if ($request->filled('risk_identity_id')) {
+            $riskIdentityId = $request->risk_identity_id;
+            $identity = \App\Models\RiskIdentity::find($riskIdentityId);
+            if (!$identity) {
+                return response()->json(['error' => 'Session expired. Please request a new verification code.'], 400);
+            }
+        } else {
+            $identityService = app(\App\Services\Risk\RiskIdentityService::class);
+            $identity = $identityService->resolveIdentity($context);
+        }
 
         // 2. Verify OTP
-        $log = $this->verificationService->verifyOtp(
+        $otpResult = $this->verificationService->verifyOtp(
             $identity, 
             $request->otp, 
             $request->typed_confirmation
         );
 
-        if (!$log) {
-            return response()->json(['error' => 'Invalid OTP or expired.'], 400);
+        if (!($otpResult['ok'] ?? false)) {
+            return response()->json(['error' => $otpResult['error'] ?? 'OTP verification failed.'], 400);
         }
+        
+        $log = $otpResult['log'];
 
         // 3. Re-evaluate Risk (to get reason codes like MARK_REVIEW_HOLD)
         $riskResult = $this->riskEngine->evaluate($context);
@@ -84,11 +97,12 @@ class RiskController extends Controller
         }
 
         // Create Payment Record (for Payment Intent flow)
+        $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
         $payment = \App\Models\Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
-            'amount' => $request->amount,
-            'currency' => $request->currency,
+            'amount' => $amountGbp,
+            'currency' => 'gbp',
             'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             'reason_codes' => $reasons,
             'confirmation_log_id' => $log->id,
@@ -199,6 +213,20 @@ class RiskController extends Controller
             'device_id' => 'nullable|string', // From fingerprinting lib
         ]);
 
+        $currency = strtoupper($request->currency);
+        $currencyModel = Currency::where('ISO', $currency)->first();
+        $divisor = ($currencyModel && ($currencyModel->ISOdigits ?? 2) == 0) ? 1 : 100;
+        $amountMajor = ((float) $request->amount) / $divisor;
+
+        $guestRestriction = !$request->user() ? Helpers::guestCheckoutRestriction($currency, $amountMajor) : null;
+        if ($guestRestriction) {
+            return response()->json([
+                'error' => $guestRestriction['message'],
+                'requires_login' => true,
+                'reason_code' => $guestRestriction['code'],
+            ], 401);
+        }
+
         // 1. Evaluate Risk
         $context = $this->buildContext($request);
         $riskResult = $this->riskEngine->evaluate($context);
@@ -238,12 +266,14 @@ class RiskController extends Controller
         // For now, I'll re-resolve (it's fast/idempotent).
         $identityService = app(\App\Services\Risk\RiskIdentityService::class);
         $identity = $identityService->resolveIdentity($context);
+
+        $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
         
         $payment = Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
-            'amount' => $request->amount,
-            'currency' => $request->currency,
+            'amount' => $amountGbp,
+            'currency' => 'gbp',
             'status' => 'initiated',
             'reason_codes' => $reasons,
         ]);

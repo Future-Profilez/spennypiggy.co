@@ -5,6 +5,7 @@ import cartproductimg from '../../../assets/img/cartproductimg.png';
 import { useAlerts } from "@/Components/Alerts";
 import { Toaster } from "react-hot-toast";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
+import axios from "axios";
 
 export default function SubCheckout(props) {
     const {auth, user, wish, reccure, vat_amount  } = props;
@@ -66,6 +67,23 @@ export default function SubCheckout(props) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!auth?.user) {
+            if (guestAllowed === false) {
+                const msg = "Guest checkout is disabled. Please log in.";
+                errorAlert(msg);
+                window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+                return;
+            }
+            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, vat_amount);
+            const wishCurrency = (wish?.currency || "GBP").toUpperCase();
+            const rate = rates?.[wishCurrency];
+            const totalGbp = rate ? total / rate : total;
+            if (totalGbp > 50) {
+                errorAlert("Larger payments more than £50 need to login.");
+                window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`;
+                return;
+            }
+        }
         post(route(`wish.subscribe.checkout`,{
             uuid:wish.uuid,
             reccure:reccure
@@ -75,7 +93,8 @@ export default function SubCheckout(props) {
         });
     }
 
-    const { flash, global_currency } = usePage().props;
+    const { flash, global_currency, rates } = usePage().props;
+    const [guestAllowed, setGuestAllowed] = useState(null);
     useEffect(() => {
         if(flash?.error){
             errorAlert(flash.error);
@@ -91,12 +110,32 @@ export default function SubCheckout(props) {
         }
     },[flash]);
 
+    useEffect(() => {
+        if (auth?.user) {
+            setGuestAllowed(true);
+            return;
+        }
+        axios.get("/api/risk/limits")
+            .then((res) => {
+                const allowed = res?.data?.guest_allowed !== false;
+                setGuestAllowed(allowed);
+                if (!allowed) {
+                    const msg = "Guest checkout is disabled. Please log in.";
+                    errorAlert(msg);
+                    window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+                }
+            })
+            .catch(() => {
+                setGuestAllowed(true);
+            });
+    }, [auth?.user?.id]);
+
     return (
         <>
         <Authenticated auth={auth.user} user={user}>
             <Head title={`Subscribe -${wish?.wishname}`}/>
-            <div className={`px-0 pb-3 lg:px-2`}>
-                <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 border-pink shadow-pink border-pink rounded-[30px] md:rounded-[40px]  ">
+            <div className={`px-0 pb-3 lg:px-2 bg-white py-12`}>
+                <div className="my-4 cartsub cartPage bg-white p-4 md:p-5 ">
                     <div className="cartMain">
                         <h2 className="pb-1 wishtitle">
                             Wish Basket for {wish?.user?.name || " "}
@@ -133,28 +172,28 @@ export default function SubCheckout(props) {
                             </div>
                         </div>
 
-                        <div className="cartTotal px-0 py-3">
-                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                        <div className="cartTotal justify-end px-0 py-3">
+                            <div className="cartSubTotal  mt-1 mb-4 !text-sm">
                                 <span> Amount :</span>
-                                <strong className="text-right">
+                                <strong className="">
                                     {formatMultiPrice(wish.price || "", wish && wish.currency)}
                                 </strong>
                             </div>
-                            <div className="cartSubTotal text-right mt-1 !text-sm">
+                            <div className="cartSubTotal  mt-1 mb-4 !text-sm">
                                 <span>VAT Applicable : </span>
-                                <strong className="text-right">
+                                <strong className="">
                                     {formatMultiPrice(vat_amount || "", wish && wish.currency)}
                                 </strong>
                             </div>
-                            {/* <div className="cartSubTotal text-right mt-1 !text-sm">
+                            {/* <div className="cartSubTotal  mt-1 !text-sm">
                                 <span>Platform Fee :</span>
-                                <strong className="text-right">
+                                <strong className="">
                                     {formatMultiPrice(wish.tax_amount || "", wish && wish.currency, 'adminFee')}
                                 </strong>
                             </div> */}
-                            <div className="cartSubTotal text-right mt-1">
+                            <div className="cartSubTotal mt-1 mb-4">
                                 <strong className="text-gray-900">Total :</strong>
-                                <div className="text-right text-black">
+                                <span className=" text-black">
                                     <strong className="block">
                                         {formatMultiPrice(
                                             calculateTotalSupporterPays(wish.price, wish?.currency, vat_amount),
@@ -169,20 +208,20 @@ export default function SubCheckout(props) {
                                             )} (estimated)
                                         </div>
                                     )}
-                                    <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
-                                        * Includes all fees. You will be charged in {wish?.currency}.
-                                    </span>
-                                </div>
+                                </span>
                             </div>
+                            <span className="text-[10px] mb-4 text-gray-500 font-normal mt-1 leading-tight block">
+                                * Includes all fees. You will be charged in {wish?.currency}.
+                            </span>
                         </div>
 
                         <div className="addMessage">
                             <form onSubmit={handleSubmit}>
                                 <ul className="flex flex-wrap">
-                                    <li>
+                                    <li className="w-full">
                                         <label>Add Message </label>
                                         <textarea
-                                            className="border-gray-300 border rounded-[30px] md:rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
+                                            className="w-full border-gray-300 border rounded-[30px] md:rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] md:rounded-[40px] "
                                             onKeyUp={(e) =>
                                                 setData('message',e.target.value)
                                             }
@@ -194,7 +233,7 @@ export default function SubCheckout(props) {
                                     <li className="w-full mt-3">
                                         <div className="flex flex-wrap">
                                             <div className="w-full mb-4">
-                                                <label className="block text-left">
+                                                <label className="block !text-start w-full">
                                                     From
                                                 </label>
                                                 <input
@@ -208,7 +247,7 @@ export default function SubCheckout(props) {
                                                 <span className="text-xs text-red-600">{errors.name}</span>
                                             </div>
                                             <div className="w-full mb-4">
-                                                <label className="block text-left">Email </label>
+                                                <label className="block !text-start w-full">Email </label>
                                                 <p className="text-sm text-gray-500 mb-1">Your e-mail remains private.</p>
                                                 <input className={`${auth && auth.user && auth.user.email ? 'disabled' : ''} border-gray-300 border rounded-[30px] md:rounded-[40px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500`}
                                                     value={data.email}
@@ -221,7 +260,6 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                     <li className="cheklistbox">
-
                                     <label
                                         htmlFor="anonymous"
                                         className="text-left" >

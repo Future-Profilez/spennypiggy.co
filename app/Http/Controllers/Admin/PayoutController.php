@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\PayoutRun;
 use App\Services\Risk\PayoutService;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,12 @@ class PayoutController extends Controller
         $runDate = $request->input('run_date'); // Optional override
         
         $result = $this->payoutService->calculatePayouts($runDate);
+
+        $run = PayoutRun::create([
+            'run_date' => $result['run_date'],
+            'status' => 'preview',
+            'totals' => $result,
+        ]);
         
         // Log Access
         AuditLog::create([
@@ -34,7 +41,7 @@ class PayoutController extends Controller
             'metadata_json' => ['run_date' => $result['run_date']]
         ]);
 
-        return response()->json($result);
+        return response()->json(array_merge($result, ['run_id' => $run->id]));
     }
 
     /**
@@ -44,9 +51,22 @@ class PayoutController extends Controller
     {
         // Add Authorization here
         
+        $runId = $request->input('run_id');
         $previewData = $request->input('preview_data');
         
-        if (!$previewData || !isset($previewData['payouts'])) {
+        if (!$runId) {
+            return response()->json(['error' => 'Missing run_id'], 400);
+        }
+
+        $run = PayoutRun::where('id', $runId)->first();
+        if (!$run) {
+            return response()->json(['error' => 'Payout run not found'], 404);
+        }
+        if ($run->status === 'executed') {
+            return response()->json(['error' => 'Payout run already executed'], 409);
+        }
+        $preview = $previewData ?: ($run->totals ?: null);
+        if (!$preview || !isset($preview['payouts'])) {
             return response()->json(['error' => 'Invalid preview data'], 400);
         }
         
@@ -56,14 +76,14 @@ class PayoutController extends Controller
         // Or just execute based on current state.
         // Let's re-run calculation to be safe against stale preview.
         
-        $currentCalculation = $this->payoutService->calculatePayouts($previewData['run_date']);
+        $currentCalculation = $this->payoutService->calculatePayouts($preview['run_date']);
         
         // Compare totals (basic check)
-        if (abs($currentCalculation['platform_total'] - $previewData['platform_total']) > 100) { // 1 pound tolerance?
+        if (abs($currentCalculation['platform_total'] - $preview['platform_total']) > 100) { // 1 pound tolerance?
             return response()->json(['error' => 'Data changed since preview. Please re-preview.'], 409);
         }
         
-        $run = $this->payoutService->executePayouts($currentCalculation);
+        $run = $this->payoutService->executePayouts($currentCalculation, $run->id);
         
         AuditLog::create([
             'actor' => $request->user() ? $request->user()->id : 'admin',

@@ -5,7 +5,9 @@ namespace App;
 use App\Jobs\SendReferralQualifiedEmailJob;
 use App\Models\CreatorReferral;
 use App\Models\Currency;
+use App\Models\RiskIdentity;
 use App\Models\UserPayment;
+use App\Services\Risk\EffectiveLimitsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -297,6 +299,52 @@ class Helpers
         }
 
         return $result;
+    }
+
+    public static function guestRequiresLoginForHighValuePayment($currency, $amount, float $thresholdGbp = 50.0): bool
+    {
+        if (Auth::check()) {
+            return false;
+        }
+
+        if (self::guestCheckoutRestriction($currency, $amount, $thresholdGbp) !== null) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function guestCheckoutRestriction($currency, $amount, float $thresholdGbp = 50.0): ?array
+    {
+        if (Auth::check()) {
+            return null;
+        }
+
+        try {
+            $identity = new RiskIdentity(['is_guest' => true]);
+            $limits = app(EffectiveLimitsService::class)->getEffectiveLimits($identity);
+            if (isset($limits['guest_allowed']) && $limits['guest_allowed'] === false) {
+                return [
+                    'code' => 'GUEST_CHECKOUT_DISABLED',
+                    'message' => 'Guest checkout is disabled. Please log in.',
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error checking guest allowed limits in Helpers: ' . $e->getMessage());
+        }
+
+        $currency = strtoupper($currency ?: 'GBP');
+        $amount = (float) $amount;
+
+        $convertedGbp = self::priceFormat($currency, $amount, 'GBP');
+        if ($convertedGbp > $thresholdGbp) {
+            return [
+                'code' => 'HIGH_VALUE_GUEST',
+                'message' => 'Larger payments more than £50 need to login.',
+            ];
+        }
+
+        return null;
     }
 
     public static function checkUnsafeContent($uuid)

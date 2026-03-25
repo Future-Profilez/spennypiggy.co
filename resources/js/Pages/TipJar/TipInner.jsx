@@ -1,18 +1,21 @@
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm, usePage, router } from "@inertiajs/react";
 import PriceFormat from '@/includes/PriceFormat';
+import DeviceID from "@/includes/DeviceID";
 import {piggynose, piggyface, tipheading, leftleg, rightleg} from '@/includes/Icons';
 import { useEffect } from 'react';
 import axios from 'axios';
 import { useAlerts } from '@/Components/Alerts';
 import toast from 'react-hot-toast';
 import Turnstile from "@/Components/Turnstile";
+import Popup from "@/Components/Popup";
 
 export default function TipInner({classes, idd}) {
   const { rates, global_currency, auth, user, turnstileSiteKey, card_capabilities } = usePage().props;
   const checkRef = useRef();
   const turnstileRef = useRef(null);
+  const deviceid = useMemo(() => DeviceID(), []);
   const { formatMultiPrice } = PriceFormat();
   const [defaultAmount, setdefaultAmount] = useState(25);
   const [amount, setAmount] = useState(defaultAmount);
@@ -28,6 +31,7 @@ export default function TipInner({classes, idd}) {
     amount: amount,
     currency: user?.default_currency || 'GBP', // Default to creator currency
     cf_turnstile_response: "",
+    device_id: deviceid,
   });
 
   const customAmountTag = (e) => {
@@ -55,6 +59,12 @@ export default function TipInner({classes, idd}) {
   },[amount, setData]);
 
   const [loading, setLoading] = useState(false);
+  const [showStepUp, setShowStepUp] = useState(false);
+  const [stepUpUi, setStepUpUi] = useState(null);
+  const [stepUpContext, setStepUpContext] = useState(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [typedConfirmation, setTypedConfirmation] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const usdToGbp = (amount, currency) => {
         const upCorrency = currency && currency.toUpperCase() || global_currency && global_currency.toUpperCase();
         const conversion_rate = rates[upCorrency];
@@ -62,11 +72,38 @@ export default function TipInner({classes, idd}) {
         return gbpamount
   }
 
+  const startTipPayment = useCallback(async (payload) => {
+    const tipRes = await axios.post(`/tip-jar/pay/${user.uuid}`, payload);
+    if (tipRes.data && (tipRes.data.message === "Login required" || tipRes.data.code === "AUTH_REQUIRED")) {
+      const msg = tipRes.data.msg || "Guest checkout is disabled. Please log in.";
+      errorAlert(msg);
+      router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`);
+      return;
+    }
+    if (tipRes.data.step_up_required) {
+      setStepUpUi(tipRes.data.ui || null);
+      setStepUpContext(tipRes.data.step_up_context || null);
+      setShowStepUp(true);
+      // Reset Turnstile so if they cancel the modal, they can verify again
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
+      setVerified(false);
+      setData("cf_turnstile_response", "");
+      return;
+    }
+    if (tipRes.data.status) {
+      window.location.href = tipRes.data.url;
+      return;
+    }
+    errorAlert(tipRes.data.msg || "Something went wrong.");
+  }, [errorAlert, user?.uuid]);
+
   const onVerify = useCallback((token) => {
     setData("cf_turnstile_response", token || "");
     setVerified(!!token);
   }, [setData]);
-
+  
   const send = (e) => {
     e.preventDefault();
     if(data.email === "" || data.name === "" ){
@@ -77,10 +114,7 @@ export default function TipInner({classes, idd}) {
         errorAlert("This creator cannot accept payments at the moment.");
         return false;
     }
-    if (!checkRef.current?.checked) {
-        errorAlert("This creator cannot accept payments at the moment.");
-        return false;
-    }
+   
     if (!checkRef.current?.checked) {
         errorAlert("Please accept the terms to continue.");
         return false;
@@ -91,17 +125,14 @@ export default function TipInner({classes, idd}) {
     }
     if(auth && !auth.user && usdToGbp(data.amount) > 50){
         errorAlert("Larger payments more than £50 need to login.");
-        router.visit(`/login?redirect=${window.location.pathname}&message=Larger payments more than £50 need to login.`);
+        router.visit(`/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent("Larger payments more than £50 need to login.")}`);
         return false;
     }
+    if (deviceid) {
+      data.device_id = deviceid;
+    }
     setLoading(true);
-    const tipresp = axios.post(`/tip-jar/pay/${user.uuid}`, data);
-    tipresp.then((res) => {
-      if(res.data.status){
-        window.location.href = res.data.url
-      } else {
-        errorAlert(res.data.msg);
-      }
+    startTipPayment({ ...data }).then(() => {
       setLoading(false);
     }).catch((err) => {
       const responseErrors = err?.response?.data?.errors;
@@ -117,6 +148,53 @@ export default function TipInner({classes, idd}) {
       setLoading(false);
     });
   }
+
+  const handleVerifyStepUp = async (e) => {
+    e.preventDefault();
+    setVerifyingOtp(true);
+    try {
+      const payload = {
+        otp: otpCode,
+        typed_confirmation: typedConfirmation,
+        amount: stepUpContext?.amount,
+        currency: stepUpContext?.currency,
+        creator_id: stepUpContext?.creator_id,
+        email: stepUpContext?.email || data.email,
+        device_id: stepUpContext?.device_id || deviceid,
+        is_checkout_session: true,
+      };
+      const riskIdentityId = stepUpContext?.risk_identity_id;
+      if (riskIdentityId) {
+        payload.risk_identity_id = riskIdentityId;
+      }
+      const res = await axios.post('/api/risk/step-up/verify', payload);
+
+      if (res.data.success) {
+        toast.success("Verified. Please continue.");
+        setShowStepUp(false);
+        setOtpCode("");
+        setTypedConfirmation("");
+        setStepUpContext(null);
+        setLoading(true);
+        startTipPayment({ ...data })
+          .catch((err) => {
+            const responseErrors = err?.response?.data?.errors;
+            const firstError =
+              responseErrors &&
+              Object.values(responseErrors).flat().filter(Boolean)[0];
+            errorAlert(firstError || err?.response?.data?.message || "Something went wrong.");
+          })
+          .finally(() => setLoading(false));
+      } else {
+        toast.error("Verification failed.");
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error(err?.response?.data?.error || "OTP Verification failed.");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   return <>
       <div className='tip-wrapper'>
@@ -142,15 +220,15 @@ export default function TipInner({classes, idd}) {
               </div> */}
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 mt-2">
-                  <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, global_currency || "GBP")}</button>
-                  <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, global_currency || "GBP")}</button>
+                  <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
                   {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px] md:rounded-[40px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
@@ -250,5 +328,59 @@ export default function TipInner({classes, idd}) {
             </div>
         </div>
       </div>
+      <Popup
+        size="md"
+        action={showStepUp}
+        space="p-0"
+        modalclass="pinkmodal"
+        classes="hidden"
+      >
+        <div className="!rounded-none p-6">
+          <h2 className="text-xl font-bold mb-2 text-center">{stepUpUi?.title || 'Confirm Your Payment'}</h2>
+          <p className="text-gray-600 mb-6 text-center">
+            {stepUpUi?.body || 'For your security, please confirm this payment.'}
+          </p>
+          <form onSubmit={handleVerifyStepUp}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                placeholder="e.g. 123456"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value)}
+                required
+              />
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                placeholder="CONFIRM"
+                value={typedConfirmation}
+                onChange={(e) => setTypedConfirmation(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowStepUp(false)}
+                className="w-full main-button b"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={verifyingOtp || !otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM'}
+                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM' || verifyingOtp) ? 'disabled' : ''}`}
+              >
+                {verifyingOtp ? "Verifying..." : "Verify"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Popup>
   </>
 }

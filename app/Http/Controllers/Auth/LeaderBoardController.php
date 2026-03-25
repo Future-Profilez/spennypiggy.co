@@ -11,6 +11,8 @@ use App\Models\StripePaymentDetail;
 use App\Models\StripePaymentItems;
 use App\Models\TaskPurchase;
 use App\Models\TipGoalsPayment;
+use App\Models\FinancialTransaction;
+use App\Models\Currency;
 use App\Models\User;
 use App\Models\WishItemSubscription;
 use Carbon\Carbon;
@@ -1115,233 +1117,210 @@ class LeaderBoardController extends Controller
      */
     public function earnings($type = 'today')
     {
-        $user = User::where('id', Auth::id())
-            ->firstOrFail();
-
+        $user = User::where('id', Auth::id())->firstOrFail();
         $now = Carbon::now();
 
-        /* ---------------------------------
-     | Date Range
-     |----------------------------------*/
         [$start, $end] = match ($type) {
-            'week' => [
-                $now->copy()->startOfWeek(),
-                $now->copy()->endOfWeek(),
-            ],
-            'month' => [
-                $now->copy()->startOfMonth(),
-                $now->copy()->endOfMonth(),
-            ],
-            'all' => [
-                null,
-                null,
-            ],
-            default => [
-                $now->copy()->startOfDay(),
-                $now->copy()->endOfDay(),
-            ],
+            'week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+            'all' => [null, null],
+            default => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
         };
 
-        /* ---------------------------------
-     | Base Queries
-     |----------------------------------*/
+        $displayCurrency = strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'));
 
-        $applyRange = fn($query) => $type !== 'all' ? $query->whereBetween('created_at', [$start, $end]) : $query;
-
-        $singleWishQuery = $applyRange(StripePaymentItems::query())
-            ->whereHas('payment', fn($q) => $q->where('owner_id', $user->id)->where('payment_status', 'paid'))
-            ->whereHas(
-                'wish',
-                fn($q) =>
-                $q->whereNotNull('stripe_product_id')
-            );
-
-        $subscriptionQuery = $applyRange(WishItemSubscription::query())
-            ->where('status', 'paid')
-            ->whereHas(
-                'wish_item',
-                fn($q) =>
-                $q->where('user_id', $user->id)
-            );
-
-        $taskQuery = $applyRange(TaskPurchase::query())
-            ->where('creator_id', $user->id)
+        $incomeTx = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
             ->where('status', 'completed');
 
-        $tipGoalQuery = $applyRange(TipGoalsPayment::query())
-            ->where('creator_id', $user->id)
-            ->where('status', 'paid');
+        if ($type !== 'all') {
+            $incomeTx->whereBetween('transaction_date', [$start, $end]);
+        }
 
-        $membershipQuery = $applyRange(MembershipPayment::query())
-            ->where('status', 'paid')
-            ->whereHas(
-                'membership',
-                fn($q) =>
-                $q->where('user_id', $user->id)
-            );
+        $incomeTx = $incomeTx->get(['net_amount', 'currency', 'source_type']);
 
-        $billQuery = $applyRange(BillPayment::query())
-            ->where('status', 'paid')
-            ->whereHas(
-                'bill',
-                fn($q) =>
-                $q->where('user_id', $user->id)
-            );
+        $allCurrencies = $incomeTx
+            ->pluck('currency')
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
 
-        $shopQuery = $applyRange(ShopPayment::query())
-            ->where('payment_status', 'paid')
-            ->whereHas(
-                'shop',
-                fn($q) =>
-                $q->where('user_id', $user->id)
-            );
+        $currencyMeta = Currency::whereIn('ISO', $allCurrencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits'])
+            ->keyBy('ISO');
 
-        /* ---------------------------------
-     | Sums (CALCULATED ONCE)
-     |----------------------------------*/
-        $singleWishAmount = (float) $singleWishQuery->sum('amount');
-        $subscriptionAmount = (float) $subscriptionQuery->sum('amount');
-        $paidTaskAmount = (float) $taskQuery->sum('amount');
-        $tipGoalAmount = (float) $tipGoalQuery->sum('amount');
-        $membershipAmount = (float) $membershipQuery->sum('amount');
-        $billAmount = (float) $billQuery->sum('amount');
-        $shopAmount = (float) $shopQuery->sum('amount');
+        if (!isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
+            $displayCurrency = 'GBP';
+        }
 
-        $gross = round(
-            $singleWishAmount +
-                $subscriptionAmount +
-                $paidTaskAmount +
-                $tipGoalAmount +
-                $membershipAmount +
-                $billAmount +
-                $shopAmount,
-            2,
-            PHP_ROUND_HALF_UP
-        );
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) return $amount;
+            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) return null;
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
+            if ($fromRate <= 0 || $toRate <= 0) return null;
+            $gbp = $amount / $fromRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
+        };
 
-        $percent = fn($amount) =>
-        $gross > 0 ? round(($amount * 100) / $gross, 2, PHP_ROUND_HALF_UP) : 0;
+        $labelForSource = function (?string $sourceType) {
+            $base = class_basename((string) $sourceType);
+            return match ($base) {
+                'StripePaymentItems' => ['title' => 'wish gifts', 'tag' => 'single_wish'],
+                'ShopPayment' => ['title' => 'shop items', 'tag' => 'shops'],
+                'TipGoalsPayment' => ['title' => 'piggy bank', 'tag' => 'tip_goal'],
+                'MembershipPayment' => ['title' => 'memberships', 'tag' => 'memberships'],
+                'TaskPurchase' => ['title' => 'paid task', 'tag' => 'task'],
+                'BillPayment' => ['title' => 'bills', 'tag' => 'bills'],
+                'WishItemSubscription' => ['title' => 'subscriptions', 'tag' => 'subscriptions'],
+                default => ['title' => strtolower(str_replace(['Payment', 'Purchase'], '', $base ?: 'other')), 'tag' => 'other'],
+            };
+        };
 
-        /* ---------------------------------
-     | Response
-     |----------------------------------*/
-        $resp = [
-            'gross' => $gross,
-            'earnings' => [
-                [
-                    'amount' => $singleWishAmount,
-                    'percent' => $percent($singleWishAmount),
-                    'title' => 'single wish',
-                    'tag' => 'single_wish',
-                ],
-                [
-                    'amount' => $subscriptionAmount,
-                    'percent' => $percent($subscriptionAmount),
-                    'title' => 'subscriptions',
-                    'tag' => 'subscriptions',
-                ],
-                [
-                    'amount' => $tipGoalAmount,
-                    'percent' => $percent($tipGoalAmount),
-                    'title' => 'piggy bank',
-                    'tag' => 'tip_goal',
-                ],
-                [
-                    'amount' => $billAmount,
-                    'percent' => $percent($billAmount),
-                    'title' => 'bills',
-                    'tag' => 'bills',
-                ],
-                [
-                    'amount' => $paidTaskAmount,
-                    'percent' => $percent($paidTaskAmount),
-                    'title' => 'paid task',
-                    'tag' => 'task',
-                ],
-                [
-                    'amount' => $membershipAmount,
-                    'percent' => $percent($membershipAmount),
-                    'title' => 'memberships',
-                    'tag' => 'memberships',
-                ],
-                [
-                    'amount' => $shopAmount,
-                    'percent' => $percent($shopAmount),
-                    'title' => 'shop items',
-                    'tag' => 'shops',
-                ],
-            ],
-        ];
+        $buckets = [];
+        foreach ($incomeTx as $tx) {
+            $meta = $labelForSource($tx->source_type);
+            $tag = $meta['tag'];
+            if (!isset($buckets[$tag])) {
+                $buckets[$tag] = [
+                    'title' => $meta['title'],
+                    'tag' => $tag,
+                    'amount' => 0,
+                ];
+            }
 
-        return response()->json($resp, 200);
+            $from = strtoupper($tx->currency ?? 'GBP');
+            $amount = (float) ($tx->net_amount ?? 0);
+            $buckets[$tag]['amount'] += $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
+        }
+
+        $total = array_sum(array_map(fn ($x) => (float) ($x['amount'] ?? 0), $buckets));
+        $total = round($total, 2, PHP_ROUND_HALF_UP);
+
+        $earnings = [];
+        foreach ($buckets as $bucket) {
+            $amt = round((float) $bucket['amount'], 2, PHP_ROUND_HALF_UP);
+            $earnings[] = [
+                'amount' => $amt,
+                'percent' => $total > 0 ? round(($amt * 100) / $total, 2, PHP_ROUND_HALF_UP) : 0,
+                'title' => $bucket['title'],
+                'tag' => $bucket['tag'],
+            ];
+        }
+
+        usort($earnings, fn ($a, $b) => ($b['amount'] <=> $a['amount']));
+
+        return response()->json([
+            'currency' => strtolower($displayCurrency),
+            'total' => $total,
+            'earnings' => $earnings,
+        ], 200);
     }
 
     public function graphData()
     {
-        $user = User::where('id', Auth::id())
-            ->first();
+        $user = User::where('id', Auth::id())->firstOrFail();
+        $displayCurrency = strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'));
 
         $currentYear = Carbon::now()->year;
+        $start = Carbon::create($currentYear, 1, 1)->startOfDay();
+        $end = Carbon::create($currentYear, 12, 31)->endOfDay();
 
-        // User default currency
-        $default_currency = strtolower($user->default_currency ?? 'usd');
-        $currency_symbol = Helpers::getCurrency($default_currency);
+        $tx = FinancialTransaction::where('user_id', $user->id)
+            ->where('type', 'income')
+            ->where('status', 'completed')
+            ->whereBetween('transaction_date', [$start, $end])
+            ->get(['transaction_date', 'net_amount', 'currency', 'source_type']);
+
+        $allCurrencies = $tx
+            ->pluck('currency')
+            ->push($displayCurrency)
+            ->push('GBP')
+            ->filter()
+            ->map(fn ($c) => strtoupper($c))
+            ->unique()
+            ->values();
+
+        $currencyMeta = Currency::whereIn('ISO', $allCurrencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits', 'symbol'])
+            ->keyBy('ISO');
+
+        if (!isset($currencyMeta[$displayCurrency]) || (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0) {
+            $displayCurrency = 'GBP';
+        }
+
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
+            $from = strtoupper($from ?: 'GBP');
+            $to = strtoupper($to ?: 'GBP');
+            if ($from === $to) return $amount;
+            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) return null;
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
+            if ($fromRate <= 0 || $toRate <= 0) return null;
+            $gbp = $amount / $fromRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
+        };
+
+        $labelKey = function (?string $sourceType) {
+            $base = class_basename((string) $sourceType);
+            return match ($base) {
+                'StripePaymentItems' => 'Wishes',
+                'ShopPayment' => 'Shops',
+                'TipGoalsPayment' => 'Piggy_Bank',
+                'MembershipPayment' => 'Memberships',
+                'TaskPurchase' => 'PaidTask',
+                'BillPayment' => 'Bills',
+                'WishItemSubscription' => 'Subscriptions',
+                default => 'Other',
+            };
+        };
 
         $data = [];
-
         for ($month = 1; $month <= 12; $month++) {
-
             $date = Carbon::create($currentYear, $month, 1);
-
-            $queries = [
-                'Wishes'      => clone $this->initialQuery($user, "wish"),
-                'PaidTask'    => clone $this->initialQuery($user, "task"),
-                'Piggy_Bank'   => clone $this->initialQuery($user, "tip"),
-                'Memberships' => clone $this->initialQuery($user, "mem"),
-                'Bills'       => clone $this->initialQuery($user, "bill"),
-                'Shops'       => clone $this->initialQuery($user, "shop"),
+            $monthData = [
+                'Wishes' => 0,
+                'PaidTask' => 0,
+                'Piggy_Bank' => 0,
+                'Memberships' => 0,
+                'Bills' => 0,
+                'Shops' => 0,
+                'Subscriptions' => 0,
+                'Other' => 0,
             ];
 
-            $monthData = [];
+            foreach ($tx as $row) {
+                if (!$row->transaction_date) continue;
+                if ((int) $row->transaction_date->format('n') !== $month) continue;
 
-            foreach ($queries as $key => $query) {
+                $from = strtoupper($row->currency ?? 'GBP');
+                $amount = (float) ($row->net_amount ?? 0);
+                $amt = $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
 
-                $records = $query
-                    ->whereYear('created_at', $currentYear)
-                    ->whereMonth('created_at', $month)
-                    ->get();
-
-                $total = 0;
-
-                foreach ($records as $row) {
-
-                    // Currency source per type
-                    if ($key === 'PaidTask') {
-                        $rowCurrency = $row->task?->currency ?? 'gbp';
-                    } else {
-                        $rowCurrency = $row->currency ?? 'gbp';
-                    }
-
-                    $total += Helpers::priceFormat(
-                        strtolower($rowCurrency),
-                        $row->amount,
-                        $default_currency
-                    );
-                }
-
-                $monthData[$key] = round($total, 2);
+                $key = $labelKey($row->source_type);
+                $monthData[$key] = round(((float) $monthData[$key]) + $amt, 2, PHP_ROUND_HALF_UP);
             }
 
             $monthData['month'] = $date->format('F');
-
             $data[] = $monthData;
         }
 
+        $symbol = $currencyMeta[$displayCurrency]->symbol ?? Helpers::getCurrency(strtolower($displayCurrency));
+
         return response()->json([
             'status' => true,
-            'currency' => $default_currency,
-            'currency_symbol' => $currency_symbol,
-            'data' => $data
+            'currency' => strtolower($displayCurrency),
+            'currency_symbol' => $symbol,
+            'data' => $data,
         ]);
     }
 

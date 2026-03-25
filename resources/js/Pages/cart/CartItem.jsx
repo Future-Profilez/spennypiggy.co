@@ -13,6 +13,21 @@ export default function CartItem({data, removeCart, quantityUpdate, currency, is
 
     const updatequantity = (quantity) => {
         axios.get(`cart-update-quantity/${data && data.uuid}/${quantity}`).then(resp => {
+            if (
+                resp?.data?.success === false &&
+                (resp?.data?.message === "Login required" || resp?.data?.code === "AUTH_REQUIRED") &&
+                !isLoggedIn
+            ) {
+                setQuantity(intialItem);
+                const msg = resp?.data?.msg || "Larger payments more than £50 need to login.";
+                errorAlert(msg);
+                window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
+                return;
+            }
+            if (resp?.data?.success === false) {
+                errorAlert(resp?.data?.message || "Unable to update quantity.");
+                setQuantity(intialItem);
+            }
         }).catch(_err => {
             console.error("error", _err);
             errorAlert("Unable to update quantity.")

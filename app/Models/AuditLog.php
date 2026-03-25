@@ -10,6 +10,8 @@ class AuditLog extends Model
 {
     use HasFactory, HasUuids;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'actor',
         'action_type',

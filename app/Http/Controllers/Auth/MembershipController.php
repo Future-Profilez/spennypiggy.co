@@ -20,6 +20,7 @@ use App\Models\Deliverable;
 use App\Models\Logs;
 use App\Models\Membership;
 use App\Models\MembershipPayment;
+use App\Models\Payment;
 use App\Models\SocialLinks;
 use App\Models\User;
 use App\Models\UserPayment;
@@ -401,7 +402,7 @@ class MembershipController extends Controller
 
             return redirect()->back()->with(
                 'error',
-                'This creator is temporarily unavailable. Please try again later.'
+                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
             );
         }
 
@@ -413,7 +414,7 @@ class MembershipController extends Controller
 
             return redirect()->back()->with(
                 'error',
-                'This creator is temporarily unavailable. Please try again later.'
+                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
             );
         }
 
@@ -454,12 +455,14 @@ class MembershipController extends Controller
             $membership->user,
             (int) round($finalTotalAmount * 100),
             $request->ip(),
-            $request->header('User-Agent'),
+            $request->header('User-Agent') ?? 'Unknown',
             $user->email ?? $request->email,
-            null
+            null,
+            'membership',
+            ['currency' => $chargeCurrency]
         );
 
-        if ($riskEvaluation['decision'] === 'BLOCK') {
+        if (in_array($riskEvaluation['decision'], ['BLOCK', 'COOLDOWN'], true)) {
              return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
         }
         
@@ -471,8 +474,12 @@ class MembershipController extends Controller
         if ($request->isMethod("POST")) {
             // Conversion only for login threshold check (approximate)
             $convertedAmountForCheck = Helpers::priceFormat($chargeCurrency, $price, 'gbp');
-            if (!Auth::check() && $convertedAmountForCheck > 50) {
-                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $convertedAmountForCheck);
+            if (!Auth::check() && $guestRestriction) {
+                return to_route('login', [
+                    'redirect' => $request->fullUrl(),
+                    'message' => $guestRestriction['message']
+                ]);
             }
 
             $this->ensureTurnstileVerified($request);
@@ -703,6 +710,26 @@ class MembershipController extends Controller
                     'price_id' => $priceId,
                     'customer_id' => $customer_id,
                 ]);
+
+                try {
+                    Payment::firstOrCreate(
+                        ['stripe_session_id' => $session->id],
+                        [
+                            'creator_id' => $membership->user->uuid,
+                            'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                            'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($chargeCurrency)),
+                            'currency' => 'gbp',
+                            'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                            'status' => 'initiated',
+                            'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('Risk Ledger: Failed to record membership payment', [
+                        'session_id' => $session->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 
                 return Inertia::location($session->url);
             } catch (\Exception $e) {

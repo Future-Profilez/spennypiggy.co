@@ -75,6 +75,15 @@ export default function ToCart({
         setLoading(true);
         axios.get(`/add-to-cart/${uuid}/${deviceID}${sub ? `/${sub}` : "/onetime"}${amount ? `/${amount}/` : ""}`)
             .then((resp) => {
+                if (resp.data && (resp.data.message === "Login required" || resp.data.code === "AUTH_REQUIRED")) {
+                    const msg = resp.data.msg || "Larger payments more than £50 need to login.";
+                    errorAlert(msg);
+                    router.visit(
+                        `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`
+                    );
+                    setLoading(false);
+                    return;
+                }
                 if (resp.data.success) {
                     if (resp.data.added == true) {
                         successAlert(resp.data.msg);

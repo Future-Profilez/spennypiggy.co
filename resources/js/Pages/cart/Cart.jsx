@@ -146,7 +146,7 @@ export default function Cart(props) {
                                                     return (
                                                         <>
                                                             {i > 0 ? <div className="w-full h-1 bg-gray-200 my-22 "></div> : ''}
-                                                            <UserCarts auth={auth && auth.user} key={`user-cart-${i}`} data={c} currency={carts[0]?.user?.currency} /> 
+                                                            <UserCarts auth={auth} key={`user-cart-${i}`} data={c} currency={carts[0]?.user?.currency} /> 
                                                         </>
                                                     );
                                                 })}

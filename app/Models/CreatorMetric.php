@@ -22,6 +22,7 @@ class CreatorMetric extends Model
         'refund_rate_30d',
         'reserve_percent',
         'payout_delay_days',
+        'negative_balance_minor',
         'top_buyer_percent',
         'volatility_score',
         'risk_level',

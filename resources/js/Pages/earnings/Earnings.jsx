@@ -15,7 +15,7 @@ import ReserveWidget from '@/Components/Creator/ReserveWidget';
 export default function Earnings(props) {
   const colors = [ '#F94F96', '#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444' ];
   const { formatMultiPrice } = PriceFormat();
-  const { auth } = usePage().props;
+  const { auth, global_currency } = usePage().props;
 
   const [lists, setLists] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -83,7 +83,7 @@ export default function Earnings(props) {
     <div className="relative z-10">
       <h2 className="text-lg md:text-xl font-bold text-gray-400 uppercase tracking-wider mb-0.5">{data.title}</h2>
       <p className="text-3xl lg:text-3xl font-black text-gray-900 tabular-nums tracking-tight">
-        {formatMultiPrice((data && data.amount), (auth && auth.user && auth.user.default_currency || 'gbp'))}
+        {formatMultiPrice((data && data.amount), (global_currency || 'gbp'))}
       </p>
     </div>
   </article>
@@ -139,7 +139,7 @@ export default function Earnings(props) {
                     </div>
                 </div>
 
-                {/* Total Gross Revenue Banner */}
+                {/* Total Earnings Banner */}
                 <div className={`relative group transition-all duration-500 ${isChanging ? 'opacity-50 blur-sm' : 'opacity-100'}`}>
                     {/* Decorative Background Glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-brandPink/20 to-brandYellow/20 rounded-[32px] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
@@ -160,13 +160,13 @@ export default function Earnings(props) {
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em] mb-2">Total Gross Revenue</p>
+                                    <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em] mb-2">Total Earnings</p>
                                     <div className="flex items-center gap-4">
                                         {loading || isChanging ? (
                                             <div className="h-14 w-64 bg-white/5 rounded-2xl animate-pulse"></div>
                                         ) : (
                                             <h2 className="text-white mt-3 text-3xl md:text-4xl font-black tabular-nums font-poppins tracking-tighter bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent leading-none">
-                                                {formatMultiPrice(grossTotal, (auth && auth.user && auth.user.default_currency || 'gbp'))}
+                                                {formatMultiPrice(grossTotal, (global_currency || 'gbp'))}
                                             </h2>
                                         )}
                                         {!loading && !isChanging && (
@@ -190,7 +190,7 @@ export default function Earnings(props) {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1">Currency</p>
-                                    <p className="text-brandYellow text-2xl font-black tracking-tight uppercase">{(auth && auth.user && auth.user.default_currency) || 'GBP'}</p>
+                                    <p className="text-brandYellow text-2xl font-black tracking-tight uppercase">{(global_currency || auth?.user?.default_currency || 'GBP')}</p>
                                 </div>
                             </div>
                         </div>

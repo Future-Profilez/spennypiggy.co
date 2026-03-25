@@ -29,7 +29,8 @@ class CreatorFinancialController extends Controller
         $profile = CreatorFinancialProfile::firstOrCreate(['user_id' => $user->id]);
 
         // Get Summary
-        $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end']);
+        $displayCurrency = strtoupper($request->cookie('currency', $user->default_currency ?? 'GBP'));
+        $summary = $this->financialService->getSummary($user, $dates['start'], $dates['end'], $displayCurrency);
         
         // Calculate Tax
         $estimatedTaxGbp = $this->financialService->calculateEstimatedTax($summary['profit_gbp'] ?? 0);
@@ -42,7 +43,7 @@ class CreatorFinancialController extends Controller
         $taxBandLabel = $taxSettings?->tax_year_label;
 
         // Analytics Data
-        $displayCurrency = $summary['currency'] ?? 'GBP';
+        $displayCurrency = $summary['currency'] ?? $displayCurrency ?? 'GBP';
 
         $incomeForAnalytics = FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')

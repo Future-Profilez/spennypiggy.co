@@ -20,6 +20,15 @@ class Controller extends BaseController
             return;
         }
 
+        $host = strtolower((string) $request->getHost());
+        if (app()->environment('local') && in_array($host, ['localhost', '127.0.0.1'], true)) {
+            return;
+        }
+
+        if (session()->has('step_up_verified_log_id')) {
+            return;
+        }
+
         $token = $request->input('cf_turnstile_response');
         if (empty($token)) {
             throw ValidationException::withMessages([

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\TaskPurchase;
 use App\Models\Deliverable;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -478,6 +479,26 @@ class TaskController extends Controller
 
         // Create session on CONNECTED account
         $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+
+        try {
+            Payment::firstOrCreate(
+                ['stripe_session_id' => $session->id],
+                [
+                    'creator_id' => $creator->uuid,
+                    'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                    'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($currency)),
+                    'currency' => 'gbp',
+                    'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                    'status' => 'initiated',
+                    'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::warning('Risk Ledger: Failed to record task purchase payment', [
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return Inertia::location($session->url);
     }

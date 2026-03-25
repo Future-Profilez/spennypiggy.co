@@ -15,6 +15,7 @@ class Payment extends Model
         'risk_identity_id',
         'amount',
         'currency',
+        'stripe_session_id',
         'stripe_payment_intent_id',
         'status',
         'confirmation_log_id',

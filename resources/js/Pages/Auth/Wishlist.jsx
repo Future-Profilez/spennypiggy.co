@@ -18,6 +18,7 @@ import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import { FaRegHeart, FaChevronUp } from "react-icons/fa";
 import { RiCloseLine, RiCheckDoubleLine } from "react-icons/ri";
 import ContentFilePreview from "@/Components/ContentFilePreview";
+
 const imageLinks = [
     "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
     "6d5506b2-7361-4c58-8f1b-dfe1e196885a",

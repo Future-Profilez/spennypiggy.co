@@ -1669,7 +1669,21 @@ class ProfileController extends Controller
         }
 
         $user = Auth::user();
-        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+        $displayCurrency = strtoupper(request()->cookie('currency', $user->default_currency ?? 'GBP'));
+
+        $limitsMinor = null;
+        try {
+            $deviceId = request()->cookie('device_id') ?: request()->header('X-Device-ID');
+            $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity([
+                'email' => $user->email,
+                'ip' => request()->ip(),
+                'device_id' => $deviceId,
+                'is_guest' => false,
+            ]);
+            $limitsMinor = app(\App\Services\Risk\EffectiveLimitsService::class)->getEffectiveLimits($identity);
+        } catch (\Throwable $e) {
+            $limitsMinor = null;
+        }
 
         $receivedAll = \App\Models\FinancialTransaction::where('user_id', $user->id)
             ->where('type', 'income')
@@ -1691,13 +1705,18 @@ class ProfileController extends Controller
             ->unique()
             ->values();
 
-        $rates = \App\Models\Currency::whereIn('ISO', $allCurrencies)->pluck('conversion_rate', 'ISO');
+        $currencyMeta = \App\Models\Currency::whereIn('ISO', $allCurrencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits'])
+            ->keyBy('ISO');
 
-        if (!isset($rates[$displayCurrency]) || (float) $rates[$displayCurrency] <= 0) {
+        if (
+            !isset($currencyMeta[$displayCurrency]) ||
+            (float) ($currencyMeta[$displayCurrency]->conversion_rate ?? 0) <= 0
+        ) {
             $displayCurrency = 'GBP';
         }
 
-        $convert = function (string $from, float $amount, string $to) use ($rates) {
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
 
@@ -1705,18 +1724,20 @@ class ProfileController extends Controller
                 return $amount;
             }
 
-            if (!isset($rates[$from]) || !isset($rates[$to])) {
+            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) {
                 return null;
             }
 
-            $fromRate = (float) $rates[$from];
-            $toRate = (float) $rates[$to];
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
             if ($fromRate <= 0 || $toRate <= 0) {
                 return null;
             }
 
             $gbp = $amount / $fromRate;
-            return $gbp * $toRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
         $receivedTotal = $receivedAll->sum(function ($tx) use ($convert, $displayCurrency) {
@@ -1731,6 +1752,62 @@ class ProfileController extends Controller
             return $from === $displayCurrency ? $amount : ($convert($from, $amount, $displayCurrency) ?? $amount);
         });
 
+        $spendSummary = null;
+        try {
+            $deviceId = request()->cookie('device_id') ?: request()->header('X-Device-ID');
+            $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity([
+                'email' => $user->email,
+                'ip' => request()->ip(),
+                'device_id' => $deviceId,
+                'is_guest' => false,
+            ]);
+
+            app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($identity);
+            $rollup = $identity->rollup;
+
+            $gbpDigits = (int) ($currencyMeta['GBP']->ISOdigits ?? 2);
+            $minorToMajorGbp = function ($minor) use ($gbpDigits) {
+                return ((float) ((int) ($minor ?? 0))) / pow(10, $gbpDigits);
+            };
+
+            $spend1hMajor = $minorToMajorGbp($rollup->spend_1h ?? 0);
+            $spend24hMajor = $minorToMajorGbp($rollup->spend_24h ?? 0);
+            $spend7dMajor = $minorToMajorGbp($rollup->spend_7d ?? 0);
+
+            if ($displayCurrency !== 'GBP') {
+                $spend1hMajor = $convert('GBP', $spend1hMajor, $displayCurrency) ?? $spend1hMajor;
+                $spend24hMajor = $convert('GBP', $spend24hMajor, $displayCurrency) ?? $spend24hMajor;
+                $spend7dMajor = $convert('GBP', $spend7dMajor, $displayCurrency) ?? $spend7dMajor;
+            }
+
+            $limit1hMajor = null;
+            $limit24hMajor = null;
+            $limit7dMajor = null;
+            if (is_array($limitsMinor)) {
+                $limit1hMajor = ((float) ($limitsMinor['max_spend_1h'] ?? 0)) / 100;
+                $limit24hMajor = ((float) ($limitsMinor['max_spend_24h'] ?? 0)) / 100;
+                $limit7dMajor = ((float) ($limitsMinor['max_spend_7d'] ?? 0)) / 100;
+
+                if ($displayCurrency !== 'GBP') {
+                    $limit1hMajor = $convert('GBP', $limit1hMajor, $displayCurrency) ?? $limit1hMajor;
+                    $limit24hMajor = $convert('GBP', $limit24hMajor, $displayCurrency) ?? $limit24hMajor;
+                    $limit7dMajor = $convert('GBP', $limit7dMajor, $displayCurrency) ?? $limit7dMajor;
+                }
+            }
+
+            $spendSummary = [
+                'spend_1h' => $spend1hMajor,
+                'spend_24h' => $spend24hMajor,
+                'spend_7d' => $spend7dMajor,
+                'limit_1h' => $limit1hMajor,
+                'limit_24h' => $limit24hMajor,
+                'limit_7d' => $limit7dMajor,
+                'currency' => strtoupper($displayCurrency),
+            ];
+        } catch (\Throwable $e) {
+            $spendSummary = null;
+        }
+
         $received = $this->buildFinancialTransactionsFeed($user, 'received', 20, null, $displayCurrency);
         $sent = $this->buildFinancialTransactionsFeed($user, 'sent', 20, null, $displayCurrency);
 
@@ -1742,6 +1819,7 @@ class ProfileController extends Controller
 
         return Inertia::render('transactions/Transactions', [
             'display_currency' => $displayCurrency,
+            'spend_summary' => $spendSummary,
             'initial' => [
                 'events' => $allEvents,
                 'has_more' => $hasMore,
@@ -1795,9 +1873,11 @@ class ProfileController extends Controller
             ->unique()
             ->values();
 
-        $rates = \App\Models\Currency::whereIn('ISO', $currencies)->pluck('conversion_rate', 'ISO');
+        $currencyMeta = \App\Models\Currency::whereIn('ISO', $currencies)
+            ->get(['ISO', 'conversion_rate', 'ISOdigits'])
+            ->keyBy('ISO');
 
-        $convert = function (string $from, float $amount, string $to) use ($rates) {
+        $convert = function (string $from, float $amount, string $to) use ($currencyMeta) {
             $from = strtoupper($from ?: 'GBP');
             $to = strtoupper($to ?: 'GBP');
 
@@ -1805,18 +1885,20 @@ class ProfileController extends Controller
                 return $amount;
             }
 
-            if (!isset($rates[$from]) || !isset($rates[$to])) {
+            if (!isset($currencyMeta[$from]) || !isset($currencyMeta[$to])) {
                 return null;
             }
 
-            $fromRate = (float) $rates[$from];
-            $toRate = (float) $rates[$to];
+            $fromRate = (float) ($currencyMeta[$from]->conversion_rate ?? 0);
+            $toRate = (float) ($currencyMeta[$to]->conversion_rate ?? 0);
             if ($fromRate <= 0 || $toRate <= 0) {
                 return null;
             }
 
             $gbp = $amount / $fromRate;
-            return $gbp * $toRate;
+            $converted = $gbp * $toRate;
+            $decimalPlaces = (int) ($currencyMeta[$to]->ISOdigits ?? 2);
+            return round($converted, $decimalPlaces, PHP_ROUND_HALF_UP);
         };
 
         $events = $rows->map(function ($tx) use ($tab, $displayCurrency, $convert) {
@@ -1877,7 +1959,11 @@ class ProfileController extends Controller
         $tab = $request->query('tab', 'received');
         $limit = intval($request->query('limit', 20));
         $before = $request->query('before');
-        $displayCurrency = strtoupper($user->default_currency ?? 'GBP');
+        $displayCurrency = strtoupper($request->cookie('currency', $user->default_currency ?? 'GBP'));
+        $rate = \App\Models\Currency::where('ISO', $displayCurrency)->value('conversion_rate');
+        if (!$rate || (float) $rate <= 0) {
+            $displayCurrency = 'GBP';
+        }
 
         return response()->json(
             $this->buildFinancialTransactionsFeed($user, $tab, $limit, $before, $displayCurrency)

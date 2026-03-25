@@ -3,7 +3,6 @@
 namespace App\Services\Risk;
 
 use App\Models\RiskIdentity;
-use Illuminate\Support\Str;
 
 class RiskIdentityService
 {
@@ -30,12 +29,12 @@ class RiskIdentityService
             $identity = RiskIdentity::where('card_fingerprint', $cardFingerprint)->first();
         }
 
-        if (!$identity && $emailHash) {
-            $identity = RiskIdentity::where('email_hash', $emailHash)->first();
-        }
-
         if (!$identity && $deviceIdHash) {
             $identity = RiskIdentity::where('device_id_hash', $deviceIdHash)->first();
+        }
+
+        if (!$identity && $emailHash) {
+            $identity = RiskIdentity::where('email_hash', $emailHash)->first();
         }
 
         // IP is too broad to link identities solely on it usually, but for guest throttling it might be used.
@@ -54,7 +53,6 @@ class RiskIdentityService
                 'device_id_hash' => $deviceIdHash,
                 'ip_hash' => $ipHash,
                 'is_guest' => $context['is_guest'] ?? true,
-                'trust_tier' => 0,
             ]);
             
             // Create empty rollup
@@ -68,6 +66,9 @@ class RiskIdentityService
             if ($emailHash && !$identity->email_hash) $updates['email_hash'] = $emailHash;
             if ($deviceIdHash && !$identity->device_id_hash) $updates['device_id_hash'] = $deviceIdHash;
             if ($ipHash && !$identity->ip_hash) $updates['ip_hash'] = $ipHash; // Always update IP? or just fill if empty?
+            if (($context['is_guest'] ?? null) === false && ($identity->is_guest ?? true) === true) {
+                $updates['is_guest'] = false;
+            }
             // IP changes frequently, so maybe we don't "lock" it. But the spec says "store hashes".
             // Let's just fill if empty for now to build the profile.
             

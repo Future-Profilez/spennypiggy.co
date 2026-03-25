@@ -16,6 +16,7 @@ use App\Models\ConnectedAccountCustomer;
 use App\Models\Currency;
 use App\Models\Deliverable;
 use App\Models\Logs;
+use App\Models\Payment;
 use App\Models\User;
 use App\Models\UserPayment;
 use App\StripeControl;
@@ -374,7 +375,7 @@ class BillsController extends Controller
             // Return user-friendly error to fan
             return redirect()->back()->with(
                 'error',
-                'This creator is temporarily unavailable. Please try again later.'
+                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
             );
         }
 
@@ -406,6 +407,8 @@ class BillsController extends Controller
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
+
+        $user = Auth::user();
         
         // NEW: Risk Engine Evaluation
         $riskService = app(\App\Services\Risk\RiskService::class);
@@ -413,12 +416,14 @@ class BillsController extends Controller
             $bill->user,
             (int) round($finalTotalAmount * 100),
             $request->ip(),
-            $request->header('User-Agent'),
-            $user->email ?? $request->email,
-            null
+            $request->header('User-Agent') ?? 'Unknown',
+            $user?->email ?? $request->email,
+            null,
+            'bill',
+            ['currency' => $chargeCurrency]
         );
 
-        if ($riskEvaluation['decision'] === 'BLOCK') {
+        if (in_array($riskEvaluation['decision'], ['BLOCK', 'COOLDOWN'], true)) {
              return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
         }
         
@@ -446,8 +451,12 @@ class BillsController extends Controller
         if ($request->isMethod("POST")) {
             // Conversion only for login threshold check (approximate)
             $convertedAmountForCheck = Helpers::priceFormat($chargeCurrency, $price, 'gbp');
-            if (!Auth::check() && $convertedAmountForCheck > 50) {
-                return to_route('login', ['message' => 'Larger payments more than £50 need to login']);
+            $guestRestriction = Helpers::guestCheckoutRestriction('GBP', $convertedAmountForCheck);
+            if (!Auth::check() && $guestRestriction) {
+                return to_route('login', [
+                    'redirect' => $request->fullUrl(),
+                    'message' => $guestRestriction['message']
+                ]);
             }
 
             $this->ensureTurnstileVerified($request);
@@ -635,6 +644,26 @@ class BillsController extends Controller
                     // 'price_id' => $priceId,
                     // 'customer_id' => $customer_id ?? null,
                 ]);
+
+                try {
+                    Payment::firstOrCreate(
+                        ['stripe_session_id' => $session->id],
+                        [
+                            'creator_id' => $bill->user->uuid,
+                            'risk_identity_id' => $riskEvaluation['risk_identity_id'] ?? null,
+                            'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) round($finalTotalAmount * $multiplier), strtoupper($chargeCurrency)),
+                            'currency' => 'gbp',
+                            'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                            'status' => 'initiated',
+                            'reason_codes' => $riskEvaluation['reason_codes'] ?? [],
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('Risk Ledger: Failed to record bill payment', [
+                        'session_id' => $session->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 
                 return Inertia::location($session->url);
             } catch (Exception $e) {

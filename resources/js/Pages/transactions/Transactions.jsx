@@ -10,7 +10,7 @@ import Modal from '@/Components/Modal';
 import { router } from '@inertiajs/react';
 
 export default function Transactions(props) {
-  const { auth, initial, display_currency } = props || {};
+  const { auth, initial, display_currency, spend_summary } = props || {};
   const { currencies } = usePage().props;
   const [data, setData] = useState(() => initial || { events: [], has_more: false, next_before: null, stats: { received: {}, sent: {} } });
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,11 @@ export default function Transactions(props) {
         const a = await r1.json(); const b = await r2.json();
         const all = [...(a.events || []), ...(b.events || [])].sort((x, y) => new Date(y.created_at) - new Date(x.created_at));
         const mergedResp = { events: all, has_more: (a.has_more || b.has_more), next_before: a.next_before || b.next_before };
-        if (!append) setData(mergedResp); else setData({ ...(mergedResp || {}), events: [...(data.events || []), ...all] });
+        setData(prev => {
+          const stats = prev?.stats || initial?.stats || { received: {}, sent: {} };
+          if (!append) return { ...mergedResp, stats };
+          return { ...(mergedResp || {}), stats, events: [...(prev?.events || []), ...all] };
+        });
       })
       .catch(() => { setData({ events: [] }); })
       .finally(() => setLoading(false));
@@ -255,6 +259,29 @@ export default function Transactions(props) {
                 </div>
               </div>
             </div>
+
+            {spend_summary && (
+              <div className="mt-4 p-5 rounded-[20px] md:rounded-[30px] bg-gradient-to-br from-white/5 to-transparent border border-white/10">
+                <p className="text-white text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Your Spend (Security Limits)</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-[16px] bg-white/5 border border-white/10">
+                    <p className="text-white/60 text-xs mb-1">Last 1 hour</p>
+                    <p className="text-white font-black text-xl">{formatMoney(spend_summary.spend_1h)}</p>
+                    <p className="text-white/40 text-xs">Limit: {formatMoney(spend_summary.limit_1h)}</p>
+                  </div>
+                  <div className="p-4 rounded-[16px] bg-white/5 border border-white/10">
+                    <p className="text-white/60 text-xs mb-1">Last 24 hours</p>
+                    <p className="text-white font-black text-xl">{formatMoney(spend_summary.spend_24h)}</p>
+                    <p className="text-white/40 text-xs">Limit: {formatMoney(spend_summary.limit_24h)}</p>
+                  </div>
+                  <div className="p-4 rounded-[16px] bg-white/5 border border-white/10">
+                    <p className="text-white/60 text-xs mb-1">Last 7 days</p>
+                    <p className="text-white font-black text-xl">{formatMoney(spend_summary.spend_7d)}</p>
+                    <p className="text-white/40 text-xs">Limit: {formatMoney(spend_summary.limit_7d)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {auth?.user?.role === 1 && (
               <div className="mt-4 p-4 rounded-[20px] md:rounded-[30px] bg-[#1DA1F2]/5 border border-[#1DA1F2]/20">
