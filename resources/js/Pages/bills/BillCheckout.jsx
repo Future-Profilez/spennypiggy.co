@@ -151,7 +151,7 @@ export default function BillCheckout(props) {
     }, [captchaToken, setData]);
 
     const handleSubmit = () => {
-        if (turnstileSiteKey && !captchaToken) {
+        if (turnstileSiteKey && !data.cf_turnstile_response) {
             errorAlert("Please verify the captcha");
             return;
         }
@@ -566,7 +566,6 @@ export default function BillCheckout(props) {
                                                 !data.agree ||
                                                 processing ||
                                                 checking ||
-                                                (turnstileSiteKey && !captchaToken) ||
                                                 !card_capabilities
                                                     ? "disabled"
                                                     : ""
@@ -575,7 +574,6 @@ export default function BillCheckout(props) {
                                                 !data.agree ||
                                                 processing ||
                                                 checking ||
-                                                (turnstileSiteKey && !captchaToken) ||
                                                 !card_capabilities
                                             }
                                             onClick={handleSubmit}

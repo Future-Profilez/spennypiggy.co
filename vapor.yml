@@ -76,16 +76,16 @@ environments:
       # - "rd /s /q package-lock.json"
       - "rm -rf package-lock.json" 
       - "rm -rf node_modules" # Windows
-
-    deploy:
-      - "php artisan migrations:fix-state"
-      - "php artisan migrate --force"
       - "php artisan config:clear"
       - "php artisan config:cache"
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
       - "php artisan cache:clear"
+
+    deploy:
+      - "php artisan migrations:fix-state"
+      - "php artisan migrate --force"
 
 # - "php artisan app:notifications-pending-approval"
 # - "php artisan subscription:sync --all"

@@ -88,10 +88,7 @@ export default function SubCheckout(props) {
     const [verified, setVerified] = useState(false);
     const handleSubmit = (e) => {
         e && e.preventDefault();
-        if (turnstileRef.current) {
-            turnstileRef.current.execute();
-        }
-        if (turnstileSiteKey && !verified) {
+        if (turnstileSiteKey && !verified && !data.cf_turnstile_response) {
             toast.error("Please complete the CAPTCHA verification.");
             return false;
         }
@@ -178,6 +175,7 @@ export default function SubCheckout(props) {
                 toast.success("Identity verified! Proceeding to checkout...");
                 setShowStepUp(false);
                 setVerified(true);
+                setData("cf_turnstile_response", "verified");
                 handleSubmit();
             } else {
                 toast.error("Verification failed.");
@@ -545,7 +543,6 @@ export default function SubCheckout(props) {
                                             !data.agree ||
                                             processing ||
                                             checking ||
-                                            (turnstileSiteKey && !verified) ||
                                             !card_capabilities
                                                 ? "disabled"
                                                 : ""
@@ -554,7 +551,6 @@ export default function SubCheckout(props) {
                                             !data.agree ||
                                             processing ||
                                             checking ||
-                                            (turnstileSiteKey && !verified) ||
                                             !card_capabilities
                                         }
                                     >

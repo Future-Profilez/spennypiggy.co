@@ -119,7 +119,7 @@ export default function TipInner({classes, idd}) {
         errorAlert("Please accept the terms to continue.");
         return false;
     }
-    if (turnstileSiteKey && !verified) {
+    if (turnstileSiteKey && !verified && !data.cf_turnstile_response) {
         toast.error("Please verify the captcha");
         return false;
     }

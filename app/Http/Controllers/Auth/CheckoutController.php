@@ -69,18 +69,6 @@ class CheckoutController extends Controller
             return to_route('user.show', ['username' => $user->username])->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
 
-        try {
-            $this->ensureTurnstileVerified(request());
-        } catch (\Throwable $e) {
-            if (!empty($debugId)) {
-                Log::warning('Cart checkout debug: turnstile failed', [
-                    'debug_id' => $debugId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-            throw $e;
-        }
-
         $user = Auth::user();
         try {
             if (!empty(request()->query('message'))) {

@@ -155,7 +155,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             toast.error("Please accept the Paid Tasks terms");
             return;
         }
-        if (!verified) {
+        if (!verified && !data.cf_turnstile_response) {
             toast.error("Please verify the captcha");
             return;
         }

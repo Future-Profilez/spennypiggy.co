@@ -144,8 +144,12 @@ export default function BuyShopItem({
             errorAlert("Please enter your name and email");
             return false;
         }
-        const captchaQuery = (token || captchaToken)
-            ? `&cf_turnstile_response=${encodeURIComponent(token || captchaToken)}`
+        
+        // If token is passed directly (e.g. from verify), use it, otherwise use state
+        const currentToken = typeof token === 'string' ? token : captchaToken;
+        
+        const captchaQuery = currentToken
+            ? `&cf_turnstile_response=${encodeURIComponent(currentToken)}`
             : "";
         if (shop.type === "physical") {
             axios
@@ -576,10 +580,10 @@ export default function BuyShopItem({
                             )}
 
                             <button
-                                disabled={checking || (turnstileSiteKey && !captchaToken) || !card_capabilities}
+                                disabled={checking || !card_capabilities}
                                 onClick={executeCaptcha}
                                 className={`${
-                                    checking || (turnstileSiteKey && !captchaToken) || !card_capabilities ? "opacity-[0.5] disabled" : ""
+                                    checking || !card_capabilities ? "opacity-[0.5] disabled" : ""
                                 }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
                             >
                                 {checking ? "Buying.." : "Pay"}

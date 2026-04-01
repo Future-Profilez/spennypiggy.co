@@ -23,9 +23,24 @@ trait RiskEnforcement
         bool $isJsonResponse = false
     ) {
         // 1. Turnstile Captcha Check
-        if (method_exists($this, 'ensureTurnstileVerified')) {
-            $this->ensureTurnstileVerified($request);
-        }
+        // if (method_exists($this, 'ensureTurnstileVerified')) {
+        //     try {
+        //         $this->ensureTurnstileVerified($request);
+        //     } catch (\Illuminate\Validation\ValidationException $e) {
+        //         // Get the exact error message from the validation bag (e.g. "Please verify you are not a robot.")
+        //         $errors = $e->validator->errors()->all();
+        //         $msg = !empty($errors) ? $errors[0] : 'Captcha verification failed. Please try again.';
+                
+        //         if ($isJsonResponse) {
+        //             return response()->json([
+        //                 'status' => false,
+        //                 'message' => $msg,
+        //                 'msg' => $msg
+        //             ]);
+        //         }
+        //         return redirect()->back()->with('error', $msg);
+        //     }
+        // }
 
         // 2. Guest Checkout Restriction
         $guestRestriction = Helpers::guestCheckoutRestriction(

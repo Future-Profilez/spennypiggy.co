@@ -15,7 +15,8 @@ class Controller extends BaseController
 
     protected function ensureTurnstileVerified(Request $request): void
     {
-        $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
+        // ALWAYS use config() instead of env() to support Vapor's config:cache
+        $turnstileSecret = config('services.turnstile.secret_key');
         if (empty($turnstileSecret)) {
             return;
         }
@@ -44,6 +45,13 @@ class Controller extends BaseController
 
         $verifyJson = $verifyResponse->json();
         if (!$verifyResponse->ok() || empty($verifyJson['success'])) {
+            \Illuminate\Support\Facades\Log::error('Turnstile verification failed', [
+                'response' => $verifyJson,
+                'status' => $verifyResponse->status(),
+                'ip' => $request->ip(),
+                'token_length' => strlen($token),
+                'secret_set' => !empty($turnstileSecret),
+            ]);
             throw ValidationException::withMessages([
                 'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
             ]);
