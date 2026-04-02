@@ -223,7 +223,7 @@ export default function Discover(props) {
         <Authenticated auth={auth?.user || ''} >
             <Head title={"Seek & Search"} />
             
-            <div className="min-h-screen bg-gray-50 ">
+            <div className="min-h-screen bg-[#A2E4B8] ">
                 
                 <TopBar 
                     onSearch={handleSearch}

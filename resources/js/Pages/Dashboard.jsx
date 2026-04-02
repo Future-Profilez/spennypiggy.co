@@ -263,15 +263,20 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer  p-1 "
-                            dangerouslySetInnerHTML={{ __html: addicon }}
-                        ></div>
+                            className="addoption-action cursor-pointer p-2 
+                            bg-pink-400 border-4 border-black !rounded-[20px] 
+                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
+                            hover:translate-x-[2px] hover:translate-y-[2px] 
+                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] 
+                            transition-all z-50"
+                            // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
+                        ><b className="!text-xl md:!text-2xl px-4">+</b></div>
                         {showAdd ? (
-                            <div className="bg-[#0001] rounded-[30px] md:rounded-[40px]  fixed shadow-lg z-[99999999999999999999] flex justify-center items-center top-[50%] left-[50%] transform -translate-x-[50%] -translate-y-[50%] w-full h-full">
+                            <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
                                 <div className="w-full max-w-[550px]  px-3">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-gray-100 w-full p-6 md:p-10 rounded-[30px] md:rounded-[40px]   shadow-lg z-10">
-                                            <h2 className="  text-black font-gulfs uppercase text-xl md:text-2xl mb-4 text-center m-auto ">
+                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-10 rounded-3xl z-10 max-h-[70vh] overflow-y-auto">
+                                            <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-4 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
                                            
@@ -280,7 +285,7 @@ export default function Dashboard(props) {
                                                      Please complete your Stripe account setup to add your wishlist.
                                                     </p>
                                                     : ""} 
-                                            <div className="max-h-[55vh]  sm:max-h-[50vh] overflow-y-auto">
+                                            <div className="!max-h-[40vh] p-4 overflow-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -295,21 +300,21 @@ export default function Dashboard(props) {
                                                                     : false
                                                             }
                                                         />
-                                                        <div className="w-full font-bold disabled addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center">
+                                                        <div className="w-full font-bold disabled addop bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[30px] p-3 mb-4 text-center">
                                                             <div className=" flex items-center">
-                                                                <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                <div className="p-1 rounded-[30px] border-2 border-black bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                                                                     <CiGift
-                                                                        color="var(--pink)"
+                                                                        color="#000"
                                                                         size="1.5rem"
                                                                     />
                                                                 </div>
                                                                 <div className="pl-3 text-left">
-                                                                    <h2 className="text-md font-normal font-GillSans uppercase">
+                                                                    <h2 className="font-gulfs font-light text-md font-black uppercase text-black">
                                                                         Add
                                                                         Surprise
                                                                         Gift
                                                                     </h2>
-                                                                    <p className="text-sm font-poppins">
+                                                                    <p className="text-sm font-bold text-gray-700">
                                                                         Lets
                                                                         supporters
                                                                         pick
@@ -343,57 +348,43 @@ export default function Dashboard(props) {
                                                                             true,
                                                                         )
                                                                     }
-                                                                    className="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                 >
                                                                     <div className=" flex items-center">
-                                                                        <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                        <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                             <FaRegHeart
-                                                                                color="var(--pink)"
-                                                                                size="1.5rem"
+                                                                                color="#F94F97"
+                                                                                size="1.6rem"
                                                                             />
                                                                         </div>
-                                                                        <div className="pl-3 text-left">
-                                                                            <h2 className="text-md font-normal font-GillSans uppercase">
-                                                                                Add
-                                                                                Wish
+                                                                        <div className="pl-4 text-left">
+                                                                            <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
+                                                                                Add Wish
                                                                             </h2>
-                                                                            <p className="text-sm font-poppins">
-                                                                                Let
-                                                                                fans
-                                                                                fund
-                                                                                your
-                                                                                lifestyle
-                                                                                for
-                                                                                a
-                                                                                reward.
+                                                                            <p className="text-sm font-bold text-gray-700">
+                                                                                Let fans fund your lifestyle for a reward.
                                                                             </p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
                                                                 <Link
-                                                                    className="w-full block font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center cursor-pointer"
+                                                                    className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                     href="/task/create"
                                                                 >
                                                                     <div className=" flex items-center">
-                                                                        <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                                                                        <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                             <BiTask
-                                                                                color="var(--pink)"
-                                                                                size="1.5rem"
+                                                                                color="#F94F97"
+                                                                                size="1.6rem"
                                                                             />
                                                                         </div>
-                                                                        <div className="pl-3 text-left">
-                                                                            <h2 className="text-md font-normal font-GillSans uppercase">
-                                                                                Create
-                                                                                Task
+                                                                        <div className="pl-4 text-left">
+                                                                            <h2 className="font-gulfs text-xl !font-light font-black text-black uppercase tracking-wide">
+                                                                                Create Task
                                                                             </h2>
-                                                                            <p className="text-sm font-poppins">
-                                                                                Offer
-                                                                                something
-                                                                                unique
-                                                                                to
-                                                                                your
-                                                                                supporters.
+                                                                            <p className="text-sm font-bold text-gray-700">
+                                                                                Offer something unique to your supporters.
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -403,7 +394,7 @@ export default function Dashboard(props) {
                                                                     classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
                                                                     product_type="digital_products"
                                                                 /> */}
-                                                                <AddPost classes="font-bold py-3 px-3 mb-2 text-center" />
+                                                                <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
                                                                 {/* <AddGift
                                                                     text="Add Gift "
                                                                     classes="font-bold py-3 px-3 mb-2 text-center"
@@ -415,8 +406,8 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                <AddMembership />
-                                                                <AddBills />
+                                                                <AddMembership classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
+                                                                <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
                                                             </div>
                                                         </div>
                                                     </>
@@ -427,7 +418,7 @@ export default function Dashboard(props) {
                                                     setShowAdd(false);
                                                     setWishOptions(false);
                                                 }}
-                                                className="w-full rounded-full !bg-gray-200 mx-auto block p-2 mt-3"
+                                                className="w-[80%] mx-auto rounded-full bg-gray-200 border-[3px] border-black font-black uppercase tracking-widest block p-3 mt-6 hover:bg-gray-300 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                             >
                                                 Cancel
                                             </button>
@@ -462,64 +453,42 @@ export default function Dashboard(props) {
     }, [auth?.user?.stripe_details_submitted]);
 
     return (
-        <>
-            <Guest auth={auth.user} user={user}>
-                <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
-                <div className="wishlistPage blackbg !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
+            <>
+                <Guest auth={auth.user} user={user}>
+                    <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
+                    <div className="wishlistPage bg-[#A2E4B8] min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                            {/* Removed glowing orbs to fit brutalism style better, or kept them minimal */}
+                        </div>
 
-                        <div className="absolute top-40  left-10  w-[100px] h-[100px] bg-yellow-500 rounded-full mix-blend-multiply filter blur-[20px]  opacity-60 floating-shape animate-pulse"></div>
-        
-                        <div className="absolute top-10 md:top-0 right-2 md:right-10 w-[200px] h-[200px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter blur-[10px] md:blur-[100px]  opacity-80 floating-shape"></div>
-
-                        <div className="absolute top-[50vh] md:top-[70vh] left-10 md:left-10 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-yellow-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
-
-                        <div className="absolute top-[1000px] right-10 md:right-0 w-[100px] h-[100px] lg:w-[300px] lg:h-[300px] bg-pink-500 rounded-full mix-blend-multiply filter  blur-[50px] md:blur-[100px] opacity-[0.5] floating-shape" style={{animationDelay: '1s'}}></div>
-
-                        {/* <div className="absolute top-100 right-90 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-2xl opacity-30 floating-shape" style={{animationDelay: '2s'}}></div> */}
-                    </div>
-
-
-
-
-
-
-
-
-
-
-
-
-                    
-
-                    <div className="containerbox">
-                        <VersionUpdate />
-                        <OfferAnnouncement variant="default" />
-                        <div className="wishbanner relative ">
-                            <div className="relative">
-                                {user?.is_founder ? (
-                                    <div className="absolute top-4 left-4 flex justify-center shadow-xl lg:justify-start mb-2">
-                                        <FounderBadge size="md" />
-                                    </div>
-                                ) : (
-                                    ""
-                                )}
-                                <img
-                                    alt={`${user?.name} - Cover Image`}
-                                    height={400}
-                                    width={1200}
-                                    className="w-full wishimagebanner border-black border-2 shadow-mints rounded-[30px] md:rounded-[40px] "
-                                    src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
-                                    loading="eager"
-                                    fetchPriority="high"
-                                />
-                                {IsloggedIn &&
-                                auth &&
-                                auth?.user.cover_url &&
-                                auth?.user?.cover_approved == 0 ? (
-                                    <div className="absolute right-8 bottom-4 mx-auto">
-                                        <button className="tooltipbtn">
+                        <div className="containerbox relative z-10">
+                            <VersionUpdate />
+                            <OfferAnnouncement variant="default" />
+                            <div className="wishbanner relative ">
+                                <div className="relative border-b-4 border-black rounded-[40px] overflow-hidden">
+                                    {user?.is_founder ? (
+                                        <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-2xl p-1">
+                                            <FounderBadge size="md" />
+                                        </div>
+                                    ) : (
+                                        ""
+                                    )}
+                                    <img
+                                        alt={`${user?.name} - Cover Image`}
+                                        height={400}
+                                        width={1200}
+                                        className="w-full h-[250px] md:h-[350px] object-cover "
+                                        src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
+                                        loading="eager"
+                                        fetchPriority="high"
+                                    />
+                                    {IsloggedIn &&
+                                    auth &&
+                                    auth?.user.cover_url &&
+                                    auth?.user?.cover_approved == 0 ? (
+                                        <div className="absolute right-8 bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-2">
+                                        <button className="flex items-center gap-2">
                                             <svg
                                                 width="20"
                                                 height="20"
@@ -565,7 +534,7 @@ export default function Dashboard(props) {
 
 
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 ">
+                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto px-4 md:px-6">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
                                 {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>
@@ -575,7 +544,7 @@ export default function Dashboard(props) {
                                         </Suspense>
                                     )} */}
 
-                                <div className="userManageRt mt-4 ">
+                                <div className="userManageRt mt-4 mb-10">
                                     <div
                                         className={`tabs-container ${IsloggedIn ? "IsloggedIn" : ""}`}
                                     >
@@ -647,14 +616,14 @@ export default function Dashboard(props) {
                                                                     
 
 
-                                                                    <div className="bg-white border-2 border-voilet rounded-[40px] mb-4">
-                                                                        <div className="p-4 md:p-6">
-                                                                            <h2 className="text-large  font-GillSans uppercase text-black  ">
+                                                                    <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
+                                                                        <div className="p-6 md:p-8">
+                                                                            <h2 className="text-2xl font-black text-black uppercase tracking-wider">
                                                                                 About
                                                                                 Me
                                                                             </h2>
                                                                             <p
-                                                                                className={`text-gray-500  text-lg text-left mt-2 ${
+                                                                                className={`text-gray-700 font-bold text-lg text-left mt-4 ${
                                                                                     user &&
                                                                                     !user.bio
                                                                                         ? "hidden"
@@ -667,7 +636,7 @@ export default function Dashboard(props) {
                                                                             </p>
 
                                                                             {user?.creator_category && (
-                                                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                                                <div className="mt-6 flex flex-wrap gap-2">
                                                                                     {(() => {
                                                                                         try {
                                                                                             const tags = typeof user.creator_category === 'string' 
@@ -679,7 +648,7 @@ export default function Dashboard(props) {
                                                                                             return tags.map((tag, index) => (
                                                                                                 <span 
                                                                                                     key={index} 
-                                                                                                    className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-sm font-medium border border-pink-100"
+                                                                                                    className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
                                                                                                 >
                                                                                                     {tag}
                                                                                                 </span>
@@ -773,7 +742,7 @@ export default function Dashboard(props) {
                                                                                                         user.username
                                                                                                     }
                                                                                                     classes={
-                                                                                                        "flex ml-auto"
+                                                                                                        "flex ml-auto font-black uppercase text-pink-600 hover:text-pink-800 transition-colors tracking-widest text-sm"
                                                                                                     }
                                                                                                     custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
@@ -796,15 +765,15 @@ export default function Dashboard(props) {
 
                                                                                     {auth.user && auth .user .role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
-                                                                                            classes="shadow-none mt-6 text-white !p-3 w-full btn-shadow !border-0 !bg-pink-600 hover:!bg-pink-900 font-medium px-4 py-2 3 transition-all duration-200"
+                                                                                            classes="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200"
                                                                                             text="Creator Payment Dashboard"
                                                                                         />
                                                                                     ) : (
                                                                                         <>
                                                                                             {auth?.user?.identity_status == 1 ? 
                                                                                             <div className="finish mt-4 block">
-                                                                                                <p className="mb-4 text-lg"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="btn-pink text-sm btn-shadow w-full block text-center bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 3 transition-all duration-200" > Finish Setup
+                                                                                                <p className="mb-4 text-lg font-bold text-black"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
+                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center" > Finish Setup
                                                                                                 </Link>
                                                                                             </div> 
                                                                                             : ''}
@@ -832,41 +801,37 @@ export default function Dashboard(props) {
                                                                     {!IsloggedIn && auth?.user?.username && auth?.user?.username !== user?.username ? (
                                                                         <div className="mb-6 !mt-6 relative group">
                                                                             {/* <div className="absolute -inset-1 bg-gradient-to-r from-[#8C52FF] via-[#F94F97] to-[#05EFB8] rounded-[34px] md:rounded-[44px] blur opacity-20 group-hover:opacity-40 transition duration-700"></div> */}
-                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] md:rounded-[40px] bg-[#0b0c12]/70 backdrop-blur-2xl border border-white/10 min-h-[120px] md:min-h-[140px] border-2 !border-pink-500">
-                                                                                <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-[#8C52FF]/70 to-transparent blur-2xl"></div>
-                                                                                <div className="pointer-events-none absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-gradient-to-tr from-[#05EFB8]/70 to-transparent blur-2xl"></div>
-                                                                                <div className="items-stretch md:items-center justify-between gap-5">
+                                                                            <div className="relative overflow-hidden p-5 md:p-6 rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-h-[120px] md:min-h-[140px]">
+                                                                                <div className="items-stretch md:items-center justify-between gap-5 relative z-10">
                                                                                     <div className="flex items-center gap-4 order-1 w-full md:w-auto justify-center md:justify-start">
                                                                                         <div className="relative">
                                                                                             <img
                                                                                                 src={(auth?.user?.avatar_url) || ""}
                                                                                                 alt="you"
-                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-[20px] object-cover border border-white/10"
+                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                                                             />
-                                                                                            <div className="absolute -inset-[2px] rounded-[22px] md:rounded-[22px] bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] opacity-20 -z-10"></div>
                                                                                         </div>
-                                                                                        <div className="text-white/60 text-sm font-black tracking-widest">×</div>
+                                                                                        <div className="text-black text-xl font-black tracking-widest">+</div>
                                                                                         <div className="relative">
                                                                                             <img
                                                                                                 src={(user?.avatar_url) || ""}
                                                                                                 alt="creator"
-                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-[20px] object-cover border border-white/10"
+                                                                                                className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                                                                                             />
-                                                                                            <div className="absolute -inset-[2px] rounded-[22px] md:rounded-[22px] bg-gradient-to-r from-[#F94F97] to-[#8C52FF] opacity-20 -z-10"></div>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="flex-1 order-2 text-center md:text-left mt-6">
-                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-white/60 mb-1">Support Story</p>
-                                                                                        <p className="text-white font-black text-xl md:text-2xl leading-snug">
+                                                                                        <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">Support Story</p>
+                                                                                        <p className="text-black font-black uppercase tracking-wider text-xl md:text-2xl leading-snug">
                                                                                             Relive your moments with {user?.name || '@'+user?.username}
                                                                                         </p>
-                                                                                        <p className="text-white/60 text-sm md:text-sm mt-1">
+                                                                                        <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">
                                                                                             Gifts, thank‑yous and milestones — beautifully in one place.
                                                                                         </p>
                                                                                     </div>
-                                                                                    <div className="order-3 w-full md:w-auto md:shrink-0 mt-4">
+                                                                                    <div className="order-3 w-full md:w-auto md:shrink-0 mt-6">
                                                                                         <Link href={`/support/${user?.username}/${auth?.user?.username}`}
-                                                                                            className="w-full md:w-auto block text-center px-5 py-3 font-bold rounded-[30px] md:rounded-[40px] text-[13px] uppercase tracking-widest bg-pink-500 hover:bg-pink-700 text-white transition-all duration-200 " >
+                                                                                            className="w-full md:w-auto block text-center px-6 py-3 font-black rounded-xl text-sm uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 " >
                                                                                             View Your Story
                                                                                         </Link> 
                                                                                     </div>
@@ -961,7 +926,7 @@ export default function Dashboard(props) {
                                                                         {wish_categories &&
                                                                         wish_categories.length ? (
                                                                             <>
-                                                                                <div className="new-wish-cats flex mb-2">
+                                                                                <div className="new-wish-cats flex mb-6 gap-2 flex-wrap p-2">
                                                                                     <Link
                                                                                         preserveScroll
                                                                                         href={route(
@@ -972,12 +937,12 @@ export default function Dashboard(props) {
                                                                                                 page: "wishes",
                                                                                             },
                                                                                         )}
-                                                                                        className={`${
+                                                                                        className={` ${
                                                                                             selectedCategory ==
                                                                                             ""
-                                                                                                ? "active"
-                                                                                                : ""
-                                                                                        } mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
+                                                                                                ? "bg-pink-400 text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+                                                                                                : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                        } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
                                                                                     >
                                                                                         All
                                                                                     </Link>
@@ -987,27 +952,29 @@ export default function Dashboard(props) {
                                                                                             i,
                                                                                         ) => {
                                                                                             return (
-                                                                                                <>
-                                                                                                    <Link
-                                                                                                        preserveScroll
-                                                                                                        href={route(
-                                                                                                            "user.show",
-                                                                                                            {
-                                                                                                                username:
-                                                                                                                    user.username,
-                                                                                                                page: "wishes",
-                                                                                                                category:
-                                                                                                                    c.id,
-                                                                                                            },
-                                                                                                        )}
-                                                                                                        className={`${selectedCategory == c.id ? "active" : ""} mr-2  mb-2  wish-tags cursor-pointer focus:bg-pink`}
-                                                                                                        key={`cats-${i}`}
-                                                                                                    >
+                                                                                                <Link
+                                                                                                    preserveScroll
+                                                                                                    href={route(
+                                                                                                        "user.show",
                                                                                                         {
-                                                                                                            c.category
-                                                                                                        }
-                                                                                                    </Link>
-                                                                                                </>
+                                                                                                            username:
+                                                                                                                user.username,
+                                                                                                            page: "wishes",
+                                                                                                            category:
+                                                                                                                c.id,
+                                                                                                        },
+                                                                                                    )}
+                                                                                                    className={`${
+                                                                                                        selectedCategory == c.id 
+                                                                                                            ? "bg-pink-400 text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]" 
+                                                                                                            : "bg-[#1c1c24] text-white border-[3px] border-black hover:bg-gray-800"
+                                                                                                    } px-4 py-1 rounded-xl font-black uppercase tracking-widest text-sm transition-all`}
+                                                                                                    key={`cats-${i}`}
+                                                                                                >
+                                                                                                    {
+                                                                                                        c.category
+                                                                                                    }
+                                                                                                </Link>
                                                                                             );
                                                                                         },
                                                                                     )}

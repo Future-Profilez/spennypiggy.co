@@ -123,9 +123,9 @@ function Bill(props) {
             <div
                 key={key}
                 style={IsloggedIn ? style : stylenone}
-                className={` relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""}`}
+                className={` relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
             >
-                <div className="wishlistcntbox mb-3 sm:mb-4 bg-white relative !rounded-[25px] md:rounded-[30px] !border-2  overflow-hidden w-full">
+                <div className=" mb-3 sm:mb-4 bg-white relative !rounded-[25px] md:!rounded-[30px] !border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden w-full">
                     {IsloggedIn && itm && itm.approved === 0 ? (
                         <div className="approvalmessge membership m-3 rounded-[30px] md:rounded-[40px]   p-3 py-2 mb-2 ">
                             Bill item waiting for approval. Currently only you
@@ -135,31 +135,29 @@ function Bill(props) {
                         ""
                     )}
 
-                    <div className="wishlistimg cursor-pointer relative">
+                    <div className=" cursor-pointer  relative bg-[#1c1c24]  ">
                         <LazyLoadImage
                             alt="image"
                             effect="blur"
                             height={193}
                             src={imageSrc}
-                            className="object-cover w-full"
+                            className="object-cover w-full h-[180px] mx-auto"
                             width={220}
                         />
 
-                        {/* Badge */}
-                        <div
-                            className="
-                          absolute bottom-3 left-1/2 -translate-x-1/2
-                          bg-yellow-400 text-black text-xs font-semibold
-                          px-3 py-1 rounded-full capitalize
-                          shadow-md
-                          whitespace-nowrap
-                        "
-                        >
+                        <div className="
+                          absolute bottom-[20px] left-1/2 -translate-x-1/2
+                          bg-yellow-400 text-black text-xs font-black
+                          px-4 py-1.5 rounded-xl capitalize
+                          shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]
+                          border-2 border-black
+                          whitespace-nowrap z-10
+                        " >
                             {periodDisplay} Subscribable
                         </div>
 
                         {IsloggedIn && (
-                            <Menu as="div" className="absolute top-2 right-3 z-10 inline-block text-left">
+                            <Menu as="div" className="absolute top-4 right-4 z-10 inline-block text-left">
                                 <div>
                                     <Menu.Button className="edit-post pr-0 bg-transparent border-0 p-0 flex items-center">
                                         <div className="dots">
@@ -200,16 +198,16 @@ function Bill(props) {
 
                     <div
                         onClick={openAddtocart}
-                        className="wishlistdetial cursor-pointer relative"
+                        className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-5 flex-grow"
                     >
                         <div>
                             <h4
-                                className={`text-lg  !text-gray-800 text-center el1 `}
+                                className={`text-xl font-black text-black text-center el1 uppercase tracking-wide `}
                             >
                                 {itm.name}
                             </h4>
 
-                            <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
+                            <h5 className="text-center font-black text-2xl  text-black mt-3 mb-1 titleprice">
                                 {isCreator ? (
                                     formatMultiPrice(itm.price, itm?.currency || "GBP")
                                 ) : (
@@ -222,20 +220,20 @@ function Bill(props) {
                                             ), 
                                             itm?.currency || "GBP"
                                         )}
-                                        <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-center">
+                                        <div className="text-[10px] text-gray-600 font-bold mt-1 leading-tight text-center">
                                             * Includes all fees
                                         </div>
                                     </div>
                                 )}
                             </h5>
                         </div>
-                        <p className=" text-[12px] mt-3 text-center">
+                        <p className=" text-xs mt-3 text-center font-bold text-gray-800">
                             Pay bill and gain access to member only posts
                         </p>
-                        <div className="flex justify-center mt-2">
+                        <div className="flex justify-center mt-5 mb-2">
                             {IsloggedIn ? (
                                 <AddBills
-                                    classes="bg-[var(--pink)] hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow"
+                                    classes="bg-pink-400 border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                                     text="Update Bill"
                                     item={itm}
                                     isEdit={true}
@@ -247,17 +245,17 @@ function Bill(props) {
                                     href={route("bill.checkout", {
                                         uuid: itm.uuid,
                                     })}
-                                    className="bg-[var(--pink)] hover:opacity-[0.8] text-white text-[13px] md:text-normal py-2 px-4 rounded-full shadow"
+                                    className="bg-pink-400 border-[3px] border-black text-black font-black uppercase text-[13px] md:text-sm py-2 px-6 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                                 >
                                     Pay Bill
                                 </Link>
                             )}
                         </div>
                         {itm.user ? (
-                            <div className="flex items-center justify-center mt-2">
+                            <div className="flex items-center justify-center mt-3">
                                 {itm?.user ? (
                                     <>
-                                        <span className="text-xs text-gray-700 font-medium">
+                                        <span className="text-xs text-black font-black uppercase">
                                             by
                                         </span>
                                         <Link
@@ -266,13 +264,13 @@ function Bill(props) {
                                             href={route("user.show", {
                                                 username: itm.user.username,
                                             })}
-                                            className="ml-1 text-xs text-[#F94F97] underline hover:opacity-90"
+                                            className="ml-1 text-xs font-black uppercase text-pink-600 underline hover:opacity-90"
                                         >
                                             @{itm.user.username}
                                         </Link>
                                     </>
                                 ) : (
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs font-black uppercase text-gray-500">
                                         Creator Unavailable
                                     </span>
                                 )}

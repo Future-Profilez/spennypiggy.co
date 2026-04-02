@@ -79,17 +79,17 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
     ];
 
     return (
-        <div className="sticky top-[100px] z-10 bg-gray-50 backdrop-blur-sm border-b border-gray-100 transition-all">
+        <div className="sticky top-[100px] z-10 bg-[#A2E4B8] backdrop-blur-sm  transition-all">
             <div className="container max-w-7xl mx-auto px-4 py-3">
                 {/* Search Bar */}
-                <div className="relative mb-3">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <RiSearchLine className="text-gray-400" size={20} />
+                <div className="relative mb-4">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <RiSearchLine className="text-black font-black" size={24} />
                     </div>
                     <input
                         ref={inputRef}
                         type="text"
-                        className="w-full pl-10 pr-4 py-3 rounded-full border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all shadow-sm text-base"
+                        className="w-full pl-12 pr-4 py-3 rounded-2xl border-[3px] border-black bg-[#fdfbf7] focus:bg-white focus:ring-0 focus:outline-none transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-lg font-black text-black placeholder-gray-600"
                         placeholder="Search creators and wishes..."
                         value={query}
                         onChange={(e) => {
@@ -200,18 +200,18 @@ export default function TopBar({ onSearch, onFilterToggle, activeFilters, onQuic
                 </div>
 
                 {onQuickFilter && Array.isArray(activeFilters) && (
-                    <div className="flex items-center ps-2 gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <div className="flex items-center ps-2 gap-3 overflow-x-auto no-scrollbar pb-3 pt-2 px-1">
                         {onFilterToggle && (
                             <button 
                                 onClick={onFilterToggle}
-                                className="flex-shrink-0 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors" >
-                                <RiFilter3Line size={20} />
+                                className="flex-shrink-0 p-2 rounded-xl bg-white border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-300 hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all" >
+                                <RiFilter3Line size={24} className="text-black font-black" />
                             </button>
                         )}
                         {quickFilters.map(filter => (
                             <button key={filter.id} onClick={() => onQuickFilter(filter.id)}
-                                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                                    activeFilters.includes(filter.id) ? 'bg-pink-500 text-white shadow-md transform scale-105' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                className={`flex-shrink-0 px-5 py-2 rounded-xl text-sm md:text-base font-black uppercase tracking-widest transition-all whitespace-nowrap border-[3px] border-black ${
+                                    activeFilters.includes(filter.id) ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'bg-[#fdfbf7] text-black shadow-none hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-100 hover:translate-x-[-1px] hover:translate-y-[-1px]'
                                 }`} > {filter.label} 
                             </button>
                         ))}

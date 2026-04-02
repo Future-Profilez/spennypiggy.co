@@ -22,17 +22,17 @@ export default function Userprofile({ IsloggedIn }) {
     const opponantUser = auth?.opposite_user;
     
     return (
-        <div className="userprofilesec mb-2 ">
-            <div className="userPr px-4 py-0 md:py-4 lg:flex items-center justify-center lg:justify-between mt-[-80px] md:mt-[-30px]">
+        <div className="userprofilesec mb-6 relative">
+            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-50px] md:mt-[-20px] relative z-auto mx-auto ">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
-                    <div className="fading userphoto relative !flex items-center justify-center mb-4 ">
-                        <img
+                    <div className="fading  relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-130px] md:!mt-[-200px] lg:!mt-[-80px]">
+                        <img 
                             alt={`${user?.name || "User"} - Profile Avatar`}
                             src={IsloggedIn ? user?.avatar_url || userphoto : user?.avatar_url && user?.avatar_approved === 1 ? user?.avatar_url : userphoto}
                             height={150}
                             width={150}
                             loading="eager"
-                            className="rounded-[30px] md:rounded-[40px]  !border-[3px] md:mt-[-40px] !border-[var(--mint)] !h-[130px] !w-[130px] min-w-[130px] !min-h-[130px] !max-w-[130px] !max-h-[130px] md:!h-[170px] md:!w-[170px] md:min-w-[170px] md:!min-h-[170px] md:!max-w-[170px] md:!max-h-[170px]"
+                            className="rounded-[40px] !border-[4px] !border-black bg-white !h-[140px] !w-[140px] min-w-[140px] !min-h-[140px] md:!h-[140px] md:!w-[170px] md:min-w-[170px] md:!min-h-[170px] object-cover"
                         />
 
                         {/* Waiting for approval (ORANGE) */}
@@ -86,8 +86,8 @@ export default function Userprofile({ IsloggedIn }) {
                             )}
                     </div>
 
-                    <div className="ps-[20px]">
-                        <h1 className="font-GillSans flex items-center  justify-center lg:justify-start text-center lg:text-left">
+                    <div className="ps-[20px] pt-[20px] lg:pt-[0px] lg:mt-0">
+                        <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl flex items-center justify-center lg:justify-start text-center lg:text-left !text-black">
                             {user?.name}
                             {(user?.role == 1 &&
                                 user?.profile_status_lock == 2 && (
@@ -95,14 +95,14 @@ export default function Userprofile({ IsloggedIn }) {
                                         {user?.is_founder ? (
                                             <div className="mb-1">
                                                 <FounderBadge
-                                                    classes="w-6 h-6 ml-2"
+                                                    classes="w-8 h-8 ml-3"
                                                     icon={true}
                                                 />
                                             </div>
                                         ) : (
                                             <RiVerifiedBadgeFill
-                                                size="1.5rem"
-                                                className="ml-2 mt-[-2px] text-pink"
+                                                size="2rem"
+                                                className="ml-3 text-blue-600"
                                             />
                                         )}
                                     </>
@@ -110,46 +110,40 @@ export default function Userprofile({ IsloggedIn }) {
                                 ""}
                         </h1>
 
-                        <div className="userId mb-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
+                        <div className="userId mt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <ShareProfile
                                 username={user?.name}
-                                classes="flex text-gray-300 mr-4 items-center"
+                                classes="flex text-black font-black text-normal transition-all mr-4 items-center"
                                 custom={`${window.location.origin}/${user?.username}`}
                             >
                                 @{user?.username}
-                                <MdOutlineContentCopy className="ml-2  font-bold text-gray-300 mt-0" />
+                                <MdOutlineContentCopy className="ml-2 font-black text-black" />
                             </ShareProfile>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex lg:block justify-center mt-4 lg:mt-0">
+                <div className="flex lg:block justify-center mt-6 lg:mt-0">
                     <div>
                         {user && user?.role == 1 ? (
-                            <div className=" mt-8 flex mb-4 justify-center md:mb-2">
-                                <p className="md:flex text-center font-poppins mt-1 text-white">
-                                    <span className="!w-auto !h-auto block md:inline-block pr-1 ">
-                                        👥 {user?.followers_count}
-                                    </span>
-                                    Followers
-                                </p>
-                                <p className="md:flex text-center font-poppins mt-1 ml-3 text-white">
-                                    <span className="!w-auto !h-auto block md:inline-block pr-1 ">
-                                        🤝 {user?.following_count}
-                                    </span>{" "}
-                                    Following
-                                </p>
-                                <p className="md:flex text-center font-poppins mt-1 ml-3 text-white">
-                                    <span className="!w-auto !h-auto block md:inline-block pr-1 ">
-                                        🐷 {supporters}
-                                    </span>{" "}
-                                    Supporters
-                                </p>
+                            <div className="flex mb-4 justify-center md:mb-4 gap-2 md:gap-3">
+                                <div className="md:flex items-center gap-3 text-center bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black block">👥 {user?.followers_count}</span>
+                                    <p className="font-black text-black text-[10px] md:text-sm uppercase">Followers</p>
+                                </div>
+                                <div className="md:flex items-center gap-3 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black block">🤝 {user?.following_count}</span>
+                                    <p className="font-black text-black text-[10px] md:text-sm uppercase">Following</p>
+                                </div>
+                                <div className="md:flex items-center gap-3 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black block">🐷 {supporters}</span>
+                                    <p className="font-black text-black text-[10px] md:text-sm uppercase">Supporters</p>
+                                </div>
                             </div>
                         ) : (
                             ""
                         )}
-                        <div className=" mt-4 flex items-center justify-center mb-2">
+                        <div className="mt-4 flex items-center justify-center gap-3">
                             {!IsloggedIn ? (
                                 <div className="">
                                     <FollowButton
@@ -160,24 +154,20 @@ export default function Userprofile({ IsloggedIn }) {
                             ) : (
                                 ""
                             )}
-                            {!IsloggedIn
-                                ? user &&
-                                  user.stripe_details_submitted == 1 && (
+                            {!IsloggedIn ? user && user.stripe_details_submitted == 1 && (
                                       <div>
-                                          {user && user.role == 1 ? (
-                                              <SendTip card_capabilities={card_capabilities} />
-                                          ) : (
-                                              ""
-                                          )}
+                                        {user && user.role == 1 ? 
+                                            <SendTip card_capabilities={card_capabilities} />
+                                        :  "" }
                                       </div>
                                   )
                                 : (
-                                      <EditProfile
-                                          user={user}
-                                          classes={"pinkbg btn-shadow uppercase text-lg text-white text-sm !font-light font-gulfs rounded-full px-4 py-2"}
-                                          global_currency={global_currency}
-                                      />
-                                  ) || ""}
+                                    <EditProfile
+                                        user={user}
+                                        classes={"bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-full tracking-widest"}
+                                        global_currency={global_currency}
+                                    />
+                                ) || ""}
                         </div>
                     </div>
                 </div>

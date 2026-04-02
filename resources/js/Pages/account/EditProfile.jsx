@@ -344,31 +344,31 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     }
 
     const renderTabs = () => (
-        <div className="flex gap-6 border-b border-gray-200 mb-6">
+        <div className="flex gap-4 border-b-4 border-black mb-6 overflow-x-auto no-scrollbar pb-2">
             <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-2 px-1 text-normal font-medium border-b-2 transition-colors duration-200 ${
-                    activeTab === 'profile' ? 'border-pink-500 text-pink-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                className={`py-2 px-6 text-sm md:text-base font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
+                    activeTab === 'profile' ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
+                        : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                 }`} >Profile Info
             </button>
 
             <button
                 onClick={() => setActiveTab('appearance')}
-                className={`py-2 px-1 text-normal font-medium border-b-2 transition-colors duration-200 ${
+                className={`py-2 px-6 text-sm md:text-base font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
                     activeTab === 'appearance'
-                        ? 'border-pink-500 text-pink-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
+                        : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                 }`}
             >
                 Appearance
             </button>
             <button
                 onClick={() => setActiveTab('settings')}
-                className={`py-2 px-1 text-normal font-medium border-b-2 transition-colors duration-200 ${
+                className={`py-2 px-6 text-sm md:text-base font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
                     activeTab === 'settings'
-                        ? 'border-pink-500 text-pink-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
+                        : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                 }`}
             >
                 Settings
@@ -663,19 +663,19 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                 </ul>
                             </div>
 
-                            <div className="mt-8 pb-8 pt-4 border-t border-gray-100 flex gap-4 items-center">
+                            <div className="mt-8 pb-8 pt-4 border-t-4 border-black flex gap-4 items-center">
                                 <button 
                                     type="button" 
                                     onClick={() => setClose(false)} 
-                                    className="!px-6 font-gulfs uppercase !py-2 text-gray-600 hover:bg-gray-100 !text-sm border-0 rounded-full bg-gray-200 transition-colors w-full"
+                                    className="w-full rounded-xl bg-gray-200 border-[3px] border-black font-black uppercase tracking-widest block p-3 hover:bg-gray-300 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                 >
                                     Cancel
                                 </button>
                                 <LoaderButton 
                                     type='submit' 
                                     disabled={processing} 
-                                    className='!bg-pink-600 hover:bg-pink-700 text-white !px-6 !py-2 rounded-full !text-sm !border-0 hover:!bg-pink-700  transition-all w-full'
-                                    spinnerclass='fill-white'
+                                    className='w-full rounded-xl bg-yellow-300 border-[3px] border-black font-black uppercase tracking-widest block p-3 hover:bg-yellow-400 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black'
+                                    spinnerclass='fill-black'
                                 >
                                     {loading || processing ? "Saving..." : "Save Changes"}
                                 </LoaderButton>

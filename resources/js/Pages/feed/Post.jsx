@@ -65,21 +65,21 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className=" post-wrap bg-white rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  p-[15px] xl:p-6 !mb-3 md:!mb-[22px] border-2 border-[#F94F97]">
+      <div className=" post-wrap bg-[#fdfbf7] rounded-[40px] p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
-                <img alt='spenny piggy' className="fading author-img" src={item?.user?.avatar_url || userphoto} />
+                <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={item?.user?.avatar_url || userphoto} />
                 <div>
-                  <p className="authors text-gray-900 !capitalize"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
-                  <p className="authors text-gray-500 text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
+                  <p className="authors text-black font-black !capitalize tracking-wider"> <b> {item?.user?.name || "SPENNY PIGGY"} </b> </p>
+                  <p className="authors text-gray-700 font-bold text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
                 </div>
             </Link>
             :
             <Link href={`${user && user.username}`} className="headerpost mb-0 head w-auto" >
-                <img alt='spenny piggy' className="fading author-img" src={user && user.avatar_url || userphoto} />
+                <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={user && user.avatar_url || userphoto} />
               <div>
-                <p className="fading authors text-gray-900 !capitalize"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
-                <p className="fading authors text-gray-500 text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
+                <p className="fading authors text-black font-black !capitalize tracking-wider"> <b> {user && user.name || "SPENNY PIGGY"} </b> </p>
+                <p className="fading authors text-gray-700 font-bold text-sm"> <TimeFormat dateString={item?.updated_at || ''} />   </p>
               </div>
             </Link> }
 
@@ -126,29 +126,28 @@ export default function Post({item}) {
                 </Menu>
             ) : ''}
         </div>
+
         {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-[30px] md:rounded-[40px]   mb-2 border !border-yellow-500' >
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
 
         {item && item.type =='image' || item && item.type == 'support_thanks' ?
-          <div className='fading post-images lazywrap relative w-full' >
+          <div className='fading post-images lazywrap relative w-full border-[3px] border-black rounded-[20px] overflow-hidden' >
               
               {posturl() ?<>
-                <span className='rounded-[30px] md:rounded-[40px]  pinkbg absolute py-1 px-2 top-3 right-3 uppercase text-[10px] text-white ' >{postBadge()}</span>
+                <span className='bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-black absolute py-2 px-4 top-3 right-3 uppercase text-xs text-black rounded-xl' >{postBadge()}</span>
                 <LazyLoadImage
                 effect="blur"
                 width='400' height='400' alt='spenny piggy'
-                className="post-img rounded-[30px] md:rounded-[40px]   md:!rounded-[30px] md:rounded-[40px]  w-full max-h-[400px] object-cover"
+                className="post-img w-full max-h-[400px] object-cover"
                  src={posturl()} />
-                <div className='absolute bottom-3 right-3 z-1 bg-[color:var(--pink)] shadow-sm rounded-[30px] md:rounded-[40px]  px-2 py-1 text-[10px] text-white'>
+                <div className='absolute bottom-3 right-3 z-1 bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl px-3 py-1 text-xs font-black uppercase text-black'>
                   {item && item.for_module === 'public' ? "Shoutout" : ""}
                   {item && item.for_module === 'membership' ? "Members Only" : ""}
                   {item && item.for_module === 'subscription' ? "Subscriber Only" : ""}
                   {item && item.for_module === 'support' ? "Supporters Only" : ""}
                 </div>
               </> : ''}
-
-              
               
               {item.ai_generated == 1 ? 
               <div className='absolute bottom-3 left-3 z-10 bg-black shadow-sm rounded-[30px] md:rounded-[40px]  px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
@@ -157,18 +156,18 @@ export default function Post({item}) {
         : ''}
 
         <div>
-          <p className="fading  description text-gray-900 mt-3 mb-1 pr-5"><b>{item?.title || ''}</b></p>
-          <p className="fading  description text-gray-500">{item?.content || ''}</p>
+          <p className="fading description text-black font-black text-lg mt-4 mb-2 pr-5 uppercase tracking-wide"><b>{item?.title || ''}</b></p>
+          <p className="fading description text-gray-800 font-bold">{item?.content || ''}</p>
         </div>
 
-        <div className=" interactions flex items-center"  >
+        <div className="interactions flex items-center mt-4 pt-4 "  >
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
-          <div onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
+          <div className="cursor-pointer hover:scale-110 transition-transform ml-4" onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
         </div>
 
-        <div className='flex '  >
-          <p className="fading like-count text-gray-900 mr-3"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
-          <p className="fading like-count text-gray-900"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
+        <div className='flex mt-3'  >
+          <p className="fading like-count text-black mr-4 font-black uppercase text-sm border-[3px] border-black bg-[#A2E4B8] px-3 py-1 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"><b><span id="like-number">{lcount || 0}</span> likes</b></p>
+          <p className="fading like-count text-black font-black uppercase text-sm border-[3px] border-black bg-[#b892ff] px-3 py-1 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"><b><span id="like-number">{ccount || 0}</span> Comments</b></p>
         </div>
 
         {showComments ? <CommentList updateComments={updateComments}  post_uuid={item.uuid} /> : ''}

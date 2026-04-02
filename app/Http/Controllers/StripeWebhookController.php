@@ -1135,6 +1135,14 @@ class StripeWebhookController extends Controller
                     }
                 }
 
+                // Resolve UUID if we got an integer ID
+                if ($creatorId && is_numeric($creatorId)) {
+                    $cUser = \App\Models\User::find($creatorId);
+                    if ($cUser) {
+                        $creatorId = $cUser->uuid;
+                    }
+                }
+
                 if ($creatorId) {
                     try {
                         $payment = \App\Models\Payment::create([
@@ -1156,68 +1164,75 @@ class StripeWebhookController extends Controller
                 }
             }
 
-            $dbDispute = \App\Models\Dispute::create([
-                'payment_id' => $payment ? $payment->id : null,
-                'creator_id' => $creatorId,
-                'stripe_dispute_id' => $dispute->id,
-                'amount' => $dispute->amount,
-                'currency' => $dispute->currency,
-                'reason' => $dispute->reason,
-                'status' => $dispute->status,
-                'evidence_due_by' => isset($dispute->evidence_details->due_by) ? Carbon::createFromTimestamp($dispute->evidence_details->due_by) : null,
-            ]);
+            $dbDispute = \App\Models\Dispute::firstOrCreate(
+                ['stripe_dispute_id' => $dispute->id],
+                [
+                    'payment_id' => $payment ? $payment->id : null,
+                    'creator_id' => $creatorId,
+                    'amount' => $dispute->amount,
+                    'currency' => $dispute->currency,
+                    'reason' => $dispute->reason,
+                    'status' => $dispute->status,
+                    'evidence_due_by' => isset($dispute->evidence_details->due_by) ? Carbon::createFromTimestamp($dispute->evidence_details->due_by) : null,
+                ]
+            );
             
-            Log::info("Risk Engine: Dispute model created", [
-                'db_dispute_id' => $dbDispute->id ?? null,
-                'creator_id' => $dbDispute->creator_id ?? $creatorId,
-                'payment_id' => $dbDispute->payment_id ?? ($payment->id ?? null),
-            ]);
+            if (!$dbDispute->wasRecentlyCreated) {
+                Log::info("Risk Engine: Dispute already exists", ['dispute_id' => $dispute->id]);
+                // Still update TaskPurchase status just in case
+            } else {
+                Log::info("Risk Engine: Dispute model created", [
+                    'db_dispute_id' => $dbDispute->id ?? null,
+                    'creator_id' => $dbDispute->creator_id ?? $creatorId,
+                    'payment_id' => $dbDispute->payment_id ?? ($payment->id ?? null),
+                ]);
 
-            // Update Identity Rollups (Dispute Count)
-            if ($payment && $payment->riskIdentity) {
-                app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($payment->riskIdentity);
-            }
-            
-            // Update Payment Status
-            if ($payment) {
-                $payment->update(['status' => 'disputed']);
-            }
-
-            // Recalculate Risk Metrics (Always, if we know the creator)
-            if ($creatorId) {
-                try {
-                    $this->riskService->recalculateMetrics($creatorId);
-                } catch (\Exception $e) {
-                    Log::error("Risk Engine: Failed to recalculate metrics on dispute: " . $e->getMessage());
+                // Update Identity Rollups (Dispute Count)
+                if ($payment && $payment->riskIdentity) {
+                    app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($payment->riskIdentity);
                 }
-            }
-
-            if ($payment || $creatorId) {
-                // Notify Creator
-                $creator = null;
-                if ($payment && $payment->creator) {
-                    $creator = $payment->creator;
-                } elseif ($creatorId) {
-                    $creator = \App\Models\User::find($creatorId);
+                
+                // Update Payment Status
+                if ($payment) {
+                    $payment->update(['status' => 'disputed']);
                 }
 
-                if ($creator) {
-                    $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
-                    $formattedAmount = number_format($dispute->amount / 100, 2);
-                    
-                    $title = "⚠️ Dispute Opened: We Are Handling It";
-                    $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened by a supporter. No action is required from you—Spenny Piggy is automatically submitting evidence on your behalf. The amount is temporarily reserved.";
-                    
+                // Recalculate Risk Metrics (Always, if we know the creator)
+                if ($creatorId) {
                     try {
-                        \App\Helpers::sendNotification($title, $content, $creator->email);
-                        Log::info("Dispute notification sent to creator: " . $creator->email);
+                        $this->riskService->recalculateMetrics($creatorId);
                     } catch (\Exception $e) {
-                        Log::error("Failed to send dispute notification: " . $e->getMessage());
+                        Log::error("Risk Engine: Failed to recalculate metrics on dispute: " . $e->getMessage());
                     }
                 }
+
+                if ($payment || $creatorId) {
+                    // Notify Creator
+                    $creator = null;
+                    if ($payment && $payment->creator) {
+                        $creator = $payment->creator;
+                    } elseif ($creatorId) {
+                        $creator = \App\Models\User::find($creatorId);
+                    }
+
+                    if ($creator) {
+                        $currencySymbol = \App\Helpers::getCurrency($dispute->currency);
+                        $formattedAmount = number_format($dispute->amount / 100, 2);
+                        
+                        $title = "⚠️ Dispute Opened: We Are Handling It";
+                        $content = "A dispute for {$currencySymbol}{$formattedAmount} has been opened by a supporter. No action is required from you—Spenny Piggy is automatically submitting evidence on your behalf. The amount is temporarily reserved.";
+                        
+                        try {
+                            \App\Helpers::sendNotification($title, $content, $creator->email);
+                            Log::info("Dispute notification sent to creator: " . $creator->email);
+                        } catch (\Exception $e) {
+                            Log::error("Failed to send dispute notification: " . $e->getMessage());
+                        }
+                    }
+                }
+                
+                Log::info("Risk Engine: Dispute recorded", ['dispute_id' => $dispute->id]);
             }
-            
-            Log::info("Risk Engine: Dispute recorded", ['dispute_id' => $dispute->id]);
         } catch (\Exception $e) {
             Log::error("Risk Engine: Failed to record dispute: " . $e->getMessage());
         }
@@ -1245,7 +1260,7 @@ class StripeWebhookController extends Controller
         // --- Risk Engine: Update Dispute Status ---
         try {
             $riskDispute = \App\Models\Dispute::where('stripe_dispute_id', $dispute->id)->with('creator')->first();
-            if ($riskDispute) {
+            if ($riskDispute && $riskDispute->status !== $dispute->status) {
                 $riskDispute->update([
                     'status' => $dispute->status,
                     'resolved_at' => now(),
@@ -2359,18 +2374,30 @@ class StripeWebhookController extends Controller
 
         // --- Risk Engine: Handle Refund ---
         try {
+            $creatorId = null;
             $payment = \App\Models\Payment::where('stripe_payment_intent_id', $paymentIntentId)->first();
             if ($payment) {
                 $payment->update(['status' => 'refunded']);
-                
+                $creatorId = $payment->creator_id;
+                Log::info("Risk Engine: Payment marked as refunded", ['payment_id' => $payment->id]);
+            } else {
+                // Check legacy tables for creator ID to trigger recalculation
+                $taskPurchase = TaskPurchase::where('payment_intent_id', $paymentIntentId)->first();
+                if ($taskPurchase) {
+                    $cUser = \App\Models\User::find($taskPurchase->creator_id);
+                    if ($cUser) {
+                        $creatorId = $cUser->uuid;
+                    }
+                }
+            }
+            
+            if ($creatorId) {
                 // Recalculate Risk Metrics
                 try {
-                    $this->riskService->recalculateMetrics($payment->creator_id);
+                    $this->riskService->recalculateMetrics($creatorId);
                 } catch (\Exception $e) {
                     Log::error("Risk Engine: Failed to recalculate metrics on refund: " . $e->getMessage());
                 }
-                
-                Log::info("Risk Engine: Payment marked as refunded", ['payment_id' => $payment->id]);
             }
         } catch (\Exception $e) {
             Log::error("Risk Engine: Failed to process refund: " . $e->getMessage());

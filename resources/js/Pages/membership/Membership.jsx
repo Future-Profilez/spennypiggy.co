@@ -67,25 +67,25 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   },[item]);
 
   const membershipclasses = {
-    'gold' : '!border-[#F94F97] !bg-yellow-500',
-    'silver' : '!border-[#A6A6A6] !bg-[#A6A6A6]',
-    'bronze' : '!border-[#CD7F32] !bg-[#CD7F32]',
-    'platinum' : '!border-gray-300 !bg-gray-300',
-    'lifetime' : '!border-[#F94F97] !bg-green-500',
+    'gold' : '!bg-[#FFD700]',
+    'silver' : '!bg-[#A6A6A6]',
+    'bronze' : '!bg-[#CD7F32]',
+    'platinum' : '!bg-[#D3D8E0]',
+    'lifetime' : '!bg-[#22c55e]',
   }
   const btnclasses = {
-    'gold' : 'bg-yellow-100 !text-yellow-600',
-    'silver' : '!bg-gray-500 !text-white',
-    'bronze' : '!bg-yellow-800 !text-white',
-    'platinum' : '!bg-[#E5E4E2] !text-black',
-    'lifetime' : '!bg-green-600 !text-white',
+    'gold' : '!bg-yellow-400 !text-black hover:!bg-yellow-500',
+    'silver' : '!bg-gray-400 !text-black hover:!bg-gray-500',
+    'bronze' : '!bg-[#8B4513] !text-white hover:!bg-[#654321]',
+    'platinum' : '!bg-[#E5E4E2] !text-black hover:!bg-[#C0C0C0]',
+    'lifetime' : '!bg-[#16a34a] !text-white hover:!bg-[#15803d]',
   }
   const borderclasses = {
-    'gold' : '!border-yellow-600',
-    'silver' : '!border-[#A6A6A6]',
-    'bronze' : '!border-[#CD7F32]',
-    'platinum' : '!border-[#E5E4E2]',
-    'lifetime' : '!border-green-500',
+    'gold' : '!border-[3px] !border-black',
+    'silver' : '!border-[3px] !border-black',
+    'bronze' : '!border-[3px] !border-black',
+    'platinum' : '!border-[3px] !border-black',
+    'lifetime' : '!border-[3px] !border-black',
   }
 
   const isZeroDecimalCurrency = (curr) => {
@@ -130,10 +130,10 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   const vatPercentage = item?.user?.vat_amount_percentage || 0;
 
   return (
-    <>
-          <div className={`bg-opacity-90 relative rounded-[25px] md:rounded-[30px]  
-            border-[3px] md:border-2 ${borderclasses[item?.level || 'default']} 
-            h-full bg-white `}>
+    <div className={`${item?.status == 0 ? 'inactive-item' : ''} h-full`}>
+       <div className={`shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] 
+        hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all rounded-[40px] relative 
+        border-[3px] border-black bg-white overflow-hidden w-full h-full flex flex-col`}>
                   {IsloggedIn && item && item?.approved === 0 ?
                     <div className='absolute top-8 z-10 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[25px] md:rounded-[30px] ' >Membership waiting for approval. Currently only you can see this membership.</div>
                   : ''}
@@ -171,20 +171,20 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                       </Menu>
                     : ''}
                     <div className={`${membershipclasses[item?.level || 'default']} 
-                      rounded-tl-[25px] rounded-tr-[25px] text-white pt-6`}>
-                        <div className='m-auto w-16 h-16 !rounded-full overflow-hidden relative' >
-                          <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-[30px] md:rounded-[40px]   w-full h-full object-cover  ' />
+                      rounded-tl-[20px]  rounded-tr-[20px] text-black pt-6 !border-b-[3px] !border-r-0 !border-l-0 !border-t-0 border-black`}>
+                        <div className='m-auto w-20 h-20 !rounded-full overflow-hidden relative border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' >
+                          <img src={item && item?.perma_link || dummy } alt='image' className='!rounded-full w-full h-full object-cover bg-white' />
                         </div>
-                        <div className="flex justify-center ">
-                          <h2 className={`${btnclasses[item?.level || 'default']} 
-                            rounded-[30px] md:rounded-[40px]  px-3 text-sm py-2 text-white uppercase mt-2`}>
+                        <div className="flex justify-center mt-4">
+                          <h2 className={`
+                            rounded-full border-[3px] border-black px-4 text-sm font-black py-1 text-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white`}>
                             {item && item?.level}
                           </h2>
                         </div>
 
-                        <div className="flex flex-col items-center justify-center py-4 pt-2 ">
+                        <div className="flex flex-col items-center justify-center py-4 pt-4 ">
                           <div className="flex items-baseline">
-                            <h2 className={`font-bold text-xl`}>
+                            <h2 className={`font-black text-2xl`}>
                               {isCreator ? (
                                 formatMultiPrice(item && item?.price, item && item?.currency)
                               ) : (
@@ -199,39 +199,37 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                               )}
                             </h2>
                             <div className="pl-1">
-                              <p className="text-[17px]">/month</p>
+                              <p className="text-[17px] font-bold">/month</p>
                             </div>
                           </div>
                           {!isCreator && (
-                            <div className="text-[10px] text-white/80 font-normal mt-1 leading-tight text-center">
+                            <div className="text-[10px] text-black font-bold mt-1 leading-tight text-center">
                               * Includes all fees
                             </div>
                           )}
                         </div>
                     </div>
-                    <div className='p-3'>
+
+                    <div className='p-5  flex-grow'>
                      
-                      <p className="font-bold mb-2 ">What's Included</p>
-                      <ul className="space-y-1 text-black">
+                      <p className="font-black text-lg mb-3 text-black">What's Included</p>
+                      <ul className="space-y-2 text-black font-bold">
                           {rewards && rewards.map((r, i)=>{
-                            return <li key={`reward-${i} `} className=' flex items-center' >
-                                ✅ <span className="ml-2 text-sm">{getRewardTitle(r)}</span>
+                            return <li key={`reward-${i} `} className=' flex items-start' >
+                                <span className="bg-green-400 text-black border-2 border-black rounded-md w-5 h-5 flex items-center justify-center text-xs shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] shrink-0 mt-0.5">✓</span> <span className="ml-3 text-sm">{getRewardTitle(r)}</span>
                             </li>
                           })}
-                          {/* <li key={`reward-`} className='flex items-center' >
-                                ✅ <span className="ml-2 text-sm">Access to Member only posts</span>
-                          </li> */}
                       </ul>
                     </div>
                   
                 {hidebtn ? '' : <>
-                  <div className='flex p-3 pt-0 justify-center items-center'>
+                  <div className='flex p-5 pt-0  rounded-bl-[20px] rounded-br-[20px] justify-center items-center mt-auto'>
                     {IsloggedIn ? 
-                      <EditMembership  classes='btn-pink block text-center !w-full'  item={item} /> 
+                      <EditMembership  classes='bg-yellow-300 border-[3px] border-black text-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all block text-center !w-full py-3 rounded-xl'  item={item} /> 
                     :
                       <Link method='get' as="button"
                         href={route('membership.checkout',{uuid: item?.uuid})}
-                        className={`${btnclasses[item?.level || 'default']}  block text-center !w-full py-2 rounded-[30px] md:rounded-[40px]  font-bold uppercase shadow-sm hover:opacity-90`}
+                        className={`${btnclasses[item?.level || 'default']} border-[3px] border-black block text-center !w-full py-3 rounded-xl font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all`}
                       >
                         Join {item?.level}
                       </Link>
@@ -243,25 +241,25 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                 <div className="flex px-2 mb-3 justify-center">
                   {item?.user ? (
                     <>
-                      <p className="text-xs font-semibold text-black mr-1">
+                      <p className="text-xs font-black text-black mr-1 uppercase">
                         By
                       </p>
                       <Link method="get" as="button"
                         href={route('user.show', { username: item.user.username })}
-                        className="text-xs text-[#F94F97] underline hover:opacity-90" >
+                        className="text-xs text-pink-600 font-black uppercase underline hover:opacity-90" >
                         @{item.user.username}
                       </Link>
                     </>
                   ) : (
                     <>
-                      <p className="text-xs font-semibold text-black mr-1">
-                        By @Unavailable
+                      <p className="text-xs font-black text-gray-500 uppercase">
+                        Creator Unavailable
                       </p>
                     </>
                   )}
                 </div> : ''
                 }
             </div>
-    </>
+    </div>
   )
 }

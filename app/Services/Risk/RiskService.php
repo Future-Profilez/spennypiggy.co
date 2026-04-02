@@ -207,23 +207,23 @@ class RiskService
         }
         
         // 7. Calculate Disputes
-        $disputeCount = 0;
-        if ($user) {
-            $disputeCount = Dispute::where('creator_id', $user->id)
-                ->where('created_at', '>=', $thirtyDaysAgo)
-                ->count();
-        } else {
-             $disputeCount = Payment::whereIn('creator_id', $creatorIds)
-                ->where('status', 'disputed')
-                ->where('created_at', '>=', $thirtyDaysAgo)
-                ->count();
-        }
+        $disputeCount = Dispute::whereIn('creator_id', $creatorIds)
+            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->count();
 
         // 8. Calculate Refunds
         $refundCount = Payment::whereIn('creator_id', $creatorIds)
             ->where('status', 'refunded')
             ->where('created_at', '>=', $thirtyDaysAgo)
             ->count();
+
+        if ($user) {
+             $legacyRefundCount = TaskPurchase::where('creator_id', $user->id)
+                ->where('status', 'refunded')
+                ->where('created_at', '>=', $thirtyDaysAgo)
+                ->count();
+             $refundCount = max($refundCount, $legacyRefundCount);
+        }
 
         // 9. Update Metric Stats
         $disputeRate = ($txCount > 0) ? ($disputeCount / $txCount) : 0;
@@ -242,7 +242,7 @@ class RiskService
         // 11. SYNC: If integer record exists (legacy), update it too
         if ($user && $user->id) {
              $intMetric = CreatorMetric::where('creator_id', (string)$user->id)->first();
-             if ($intMetric && $intMetric->id !== $metric->id) {
+             if ($intMetric && $intMetric->creator_id !== $metric->creator_id) {
                  $intMetric->fill([
                     'tx_30d' => $metric->tx_30d,
                     'disputes_30d' => $metric->disputes_30d,

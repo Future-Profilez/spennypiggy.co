@@ -171,12 +171,12 @@ export default function AddMembership({updateState, item, text, classes}) {
         });
     };
     const AddItem = () => {
-      return <div className=" flex items-center">
-          <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
+      return <div className="flex items-center w-full">
+          <div className="p-1 !rounded-[30px] bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]" >
               <FaHouseChimneyUser color="var(--pink)"  size="1.5rem" />
           </div>
           <div className="pl-3 text-left">
-              <h2 className="text-md font-normal font-GillSans uppercase">Add Membership Tier</h2>
+              <h2 className="text-lg font-normal font-GillSans uppercase">Add Membership Tier</h2>
               <p className="text-sm font-poppins">Let fans support you monthly</p>
           </div>
       </div>

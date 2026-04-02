@@ -38,7 +38,7 @@ export default function VersionUpdate(){
   `}</style>
    {isUpdateAvailable
    ?
-      <div className="newVer box !rounded-[20px] !p-4 flex justify-between mb-3 bg-white " >
+      <div className="newVer box !rounded-[20px] !p-4 flex justify-between mb-3 bg-white bg-[#ff6b6b] !border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]" >
           <p className="pe-3" >New version 1.1.0 of app is available.</p>
           <button className="updatever uppercase me-3 hover:text-black" onClick={updateApp}>Update</button>
       </div>

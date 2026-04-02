@@ -56,62 +56,55 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
     };
 
     return (
-        <li className="bg-white rounded-[35px] mb-4 p-6 hover:bg-gray-100 transition-colors !border-2 !border-voilet ">
-                <div className="md:flex justify-between items-center hover:!text-pink-500">
+        <li className="bg-[#fdfbf7] rounded-[35px] mb-4 p-6 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all border-[3px] !border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <div className="md:flex justify-between items-center">
                     <div className="">
-                        <Link href={url} className="text-xl text-gray-900 line-clamp-1 font-bold font-poppins">
+                        <Link href={url} className="text-2xl text-black line-clamp-1 font-black capitalize tracking-wide">
                             {task.title}
                         </Link>
-                        <p className="text-sm text-gray-600 !my-3 line-clamp-2">
+                        <p className="text-sm text-gray-700 font-bold !my-3 line-clamp-2">
                             {task.description}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className={`uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                                task.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                            <span className={`uppercase inline-flex items-center px-3 py-1 rounded-xl text-xs font-black border-[3px] border-black ${
+                                task.status === 'active' ? 'bg-[#A2E4B8] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                             }`}>{task.status}
                             </span>
-                            <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-blue-100 text-blue-800 !border-blue-200">
+                            <span className="uppercase inline-flex items-center px-3 py-1 rounded-xl text-xs font-black border-[3px] border-black bg-blue-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 {task.type} Delivery
                             </span>
                             {task?.sla_hours ? 
-                                <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-yellow-100 text-yellow-800 !border-yellow-200">
+                                <span className="uppercase inline-flex items-center px-3 py-1 rounded-xl text-xs font-black border-[3px] border-black bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     {task.sla_hours} Hours
                                 </span>
                             : ''}
-                            <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-pink-100 text-pink-800 !border-pink-200">
+                            <span className="uppercase inline-flex items-center px-3 py-1 rounded-xl text-xs font-black border-[3px] border-black bg-[#b892ff] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 {task.category || 'Paid Task'}
-                            </span>
-                            <span className="uppercase inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border !bg-gray-200 text-gray-800 !border-gray-400">
-                                Created: {new Date(task.created_at).toLocaleDateString()}
                             </span>
                         </div>
                     </div>
-                    <div className="text-start ps-0 md:!ps-6">
-                        <div className="mt-4 md:mt-0  min-w-[100px] gap-4 flex flex-wrap md:!flex-nowrap items-center">
+                    <div className="text-start ps-0 md:!ps-6 mt-6 md:mt-0">
+                        <div className="min-w-[100px] gap-4 flex flex-wrap md:!flex-nowrap items-center justify-end">
                             <div className="flex flex-col items-end">
-                                <p className="text-xl sm:text-2xl font-black text-voilet font-poppins">
+                                <p className="text-2xl sm:text-2xl font-black text-black">
                                     {isCreator ? (
                                         formatMultiPrice(task.price, task.currency || 'USD')
                                     ) : (
                                         formatMultiPrice(
-                                            calculateTotalSupporterPays(
-                                                task.price, 
-                                                task.currency || 'USD',
-                                                vatAmount
-                                            ), 
+                                            calculateTotalSupporterPays( task.price,  task.currency || 'USD', vatAmount ), 
                                             task.currency || 'USD'
                                         )
                                     )}
                                 </p> 
                                 {!isCreator && (
-                                    <span className="block text-xs text-gray-500 font-normal mt-0 leading-tight text-right">
+                                    <span className="block text-xs text-gray-500 font-bold mt-0 leading-tight text-right">
                                         * Includes all fees
                                     </span>
                                 )}
                             </div>
                             {!IsloggedIn ?  
                                 <div className="">
-                                    <Link href={`/task/${task.uuid}`} className="whitespace-nowrap text-sm sm:text-normal inline-block px-6 py-2 bg-voilet text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-colors">
+                                    <Link href={`/task/${task.uuid}`} className="whitespace-nowrap text-sm sm:text-base inline-block px-6 py-3 bg-yellow-300 border-[3px] border-black text-black font-black uppercase tracking-wider rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
                                         <>{task.type === 'instant' ? 'Pay to Access 🔓' : 'Pay to Assign 📝'} </> 
                                     </Link> 
                                 </div>

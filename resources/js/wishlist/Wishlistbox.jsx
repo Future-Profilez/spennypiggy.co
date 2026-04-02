@@ -117,9 +117,9 @@ export default function Wishlistbox(props) {
             style={IsloggedIn ? style : stylenone}
             className={`wish-item-box !p-0 ${classes} ${
                 isDragging ? "dragging" : ""
-            }`}
+            } cursor-pointer hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
         >
-            <div className=" rounded-[25px] md:rounded-[30px]   overflow-hidden   relative border-[3px] md:border-2 border-[#F94F97] w-full ">
+            <div className="bg-[#fdfbf7] rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
                     <div className="approvalmessge membership m-2 md:mt-3 rounded-[25px]  p-3 py-2 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
@@ -207,13 +207,12 @@ export default function Wishlistbox(props) {
                 )}
                 <div
                     onClick={openAddtocart}
-                    className={`h-[110px] sm:h-[150px] md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize}`}
-                >
+                    className={`h-[110px] sm:h-[150px]  md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize} p-3`} >
                     <LazyLoadImage
                         alt={"image"}
                         effect="blur"
                         height={193}
-                        className={`block w-full h-full object-cover `}
+                        className={`block w-full h-full object-cover rounded-[20px] overflow-hidden border-[3px] border-black`}
                         src={itm?.perma_link ? itm?.perma_link : uploadedimg}
                         width={243}
                     />
@@ -221,14 +220,13 @@ export default function Wishlistbox(props) {
 
                 <div
                     onClick={openAddtocart}
-                    className="wishlistdetial cursor-pointer relative bg-white" >
-                    <div>
-                        <h4 className={`text-lg  !text-gray-800 text-center capitalize ${
+                    className="wishlistdetial cursor-pointer relative bg-[#fdfbf7]" >
+                    <div className="px-3">
+                        <h4 className={`text-xl font-black !text-black uppercase text-center ${
                                 itm.subscription !== "0" ? "el1" : "el2"
                             }`} > {itm.wishname}
                         </h4>
                         <h5 className="text-center font-bold font-poppins  text-black my-2 titleprice">
-                            {/* Price Display Logic: Logged-in users (including Creator) see listed price, Guests see total with fees */}
                             {IsloggedIn ? (
                                 <>
                                     {formatMultiPrice(
@@ -271,7 +269,7 @@ export default function Wishlistbox(props) {
                     )}
 
                     {itm && itm.subscription == 1 ? (
-                        <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-35px] right-2">
+                        <div className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full absolute top-[-55px] right-6">
                             Subscribable
                         </div>
                     ) : (
@@ -280,11 +278,11 @@ export default function Wishlistbox(props) {
 
                     <div className="absolute top-1 left-1 text-xl">👀</div>
                     <div className="absolute bottom-2 right-2 text-xl">⭐</div>
-                    <div className="flex justify-center items-center mt-3 ">
+                    <div className="flex justify-center items-center mt-3 pb-3">
                         <ShareProfile
                             username={itm.wishname}
                             custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
-                            <div className=" bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-[13px] md:text-normal py-2 px-4 rounded-full shadow">
+                            <div className=" bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[13px] md:text-normal py-2 px-4 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
                                 Share Link
                             </div>
                         </ShareProfile>
@@ -293,7 +291,7 @@ export default function Wishlistbox(props) {
                         <div className="flex px-2 mt-3 justify-center">
                             {itm?.user ? (
                                 <>
-                                    <p className="text-xs font-semibold text-black mr-1">
+                                    <p className="text-xs font-black text-black mr-1 uppercase">
                                         By
                                     </p>
                                     <Link
@@ -302,7 +300,7 @@ export default function Wishlistbox(props) {
                                         href={route("user.show", {
                                             username: itm.user.username,
                                         })}
-                                        className="text-xs text-[#F94F97] underline hover:opacity-90"
+                                        className="text-xs font-black text-pink-600 underline hover:opacity-90 uppercase"
                                     >
                                         @{itm.user.username}
                                     </Link>

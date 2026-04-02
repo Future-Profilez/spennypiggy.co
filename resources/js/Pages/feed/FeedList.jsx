@@ -123,10 +123,10 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
           onFilterChange={handleFilterChange}
         />
         <div className="text-center py-8">
-          <p className="text-red-600 mb-4">Error: {error}</p>
+          <p className="text-red-600 mb-4 font-black">Error: {error}</p>
           <button 
             onClick={() => fetchPosts(filter, 1, false)}
-            className="bg-pink-600 text-white px-4 py-2 rounded-[30px] md:rounded-[40px]   hover:bg-pink-700"
+            className="bg-yellow-300 text-black border-2 border-black font-black uppercase tracking-wider px-6 py-3 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             Try Again
           </button>
@@ -156,7 +156,7 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
               ) : (
                 <button
                   onClick={handleLoadMore}
-                  className="bg-pink-600 text-white px-6 py-3 rounded-[30px] md:rounded-[40px]   hover:bg-pink-700 font-medium transition-colors duration-200"
+                  className="bg-yellow-300 text-black border-[3px] border-black font-black uppercase tracking-widest px-6 py-3 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]duration-200"
                   disabled={isLoadingMore}
                 >
                   Load More Posts
@@ -179,16 +179,16 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
 // Filter tabs component
 function PostFilterTabs({ filters, activeFilter, onFilterChange, disabled = false }) {
   return (
-    <div className="flex gap-2 mb-6 overflow-auto hideScroll ">
+    <div className="flex gap-3 mb-6 overflow-auto hideScroll pb-2 pt-1 px-1">
       {filters.map(({ key, label }) => (
         <button 
           key={key}
           onClick={() => onFilterChange(key)}
           disabled={disabled}
-          className={`px-4 py-2 text-sm rounded-[30px] md:rounded-[40px]  font-medium transition-all duration-200 ${
+          className={`px-5 py-2 text-sm md:text-base font-black uppercase tracking-widest border-2 border-black rounded-full transition-all duration-200 whitespace-nowrap ${
             activeFilter === key
-              ? 'bg-pink-600 text-white shadow-sm'
-              : 'bg-gray-700 text-gray-100 hover:bg-white hover:text-black hover:shadow-sm'
+              ? 'bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+              : 'bg-white text-black hover:bg-yellow-100 shadow-none hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
           } ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
           }`}

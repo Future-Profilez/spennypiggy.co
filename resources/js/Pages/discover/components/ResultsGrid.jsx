@@ -113,7 +113,7 @@ export default function ResultsGrid({auth, global_currency, results, mode, setMo
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
                 {renderedItems}
             </div>
             {/* <div className="mt-6 text-center">

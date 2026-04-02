@@ -389,8 +389,9 @@ console.log("Function triggered");
 
     const AddItem = () => {
         return (
-            <div className=" flex items-center">
-                <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+            <div className=" flex items-center p-3 rounded-[30px] border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
+border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="p-1 !rounded-[30px] bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                     <FaRegHeart color="var(--pink)" size="1.5rem" />
                 </div>
                 <div className="ps-3 text-start">
