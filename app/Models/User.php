@@ -15,10 +15,11 @@ use Ramsey\Uuid\Uuid;
 use Stripe\Subscription;
 use Carbon\Carbon;
 use App\Models\MonthlyCharge;
+use Laragear\WebAuthn\WebAuthnAuthentication;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, WebAuthnAuthentication;
 
     protected $dates = ['deleted_at'];
 

@@ -17,6 +17,13 @@
       0 => 'Intervention\\Image\\ImageServiceProvider',
     ),
   ),
+  'laragear/webauthn' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laragear\\WebAuthn\\WebAuthnServiceProvider',
+    ),
+  ),
   'laravel/breeze' => 
   array (
     'providers' => 

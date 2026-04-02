@@ -1026,7 +1026,7 @@ class CheckoutController extends Controller
                 throw new \Exception("Payment record not found for session: " . $sessionId);
             }
 
-            
+
             Log::info("Retrieved StripePaymentDetail", [
                 'id' => $stripeid->id,
                 'session_id' => $stripeid->session_id,
@@ -1053,7 +1053,7 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
 
-                
+
                 // Update GMV for creator
                 Helpers::addGmv($stripeid->owner_id, (float) $stripeid->amount_subtotal, $dd->owner->default_currency);
 
@@ -1153,18 +1153,18 @@ class CheckoutController extends Controller
                 if ($dd->user_id && !empty($dd->user->email)) {
                     Log::info("Creating UserPayment for user", ['user_id' => $dd->user_id]);
                     $total_amount = $dd->amount * $dd->quantity;
-                $creatorCurrency = strtoupper($dd->owner->default_currency ?? ($dd->wish->currency ?? 'GBP'));
-                $chargeCurrency = strtoupper($stripeid->currency ?? $creatorCurrency);
-                $displayCurrency = strtoupper(request()->cookie('currency', 'GBP'));
+                    $creatorCurrency = strtoupper($dd->owner->default_currency ?? ($dd->wish->currency ?? 'GBP'));
+                    $chargeCurrency = strtoupper($stripeid->currency ?? $creatorCurrency);
+                    $displayCurrency = strtoupper(request()->cookie('currency', 'GBP'));
                     $userPayment = new UserPayment();
                     $userPayment->from_user_id = $dd->user_id ?? null;
                     $userPayment->to_user_id = $dd->owner_id;
                     $userPayment->product_type = 'wish item';
                     $userPayment->amount = $total_amount;
-                $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
-                $userPayment->creator_currency = $creatorCurrency;
-                $userPayment->charge_currency = $chargeCurrency;
-                $userPayment->display_currency = $displayCurrency;
+                    $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
+                    $userPayment->creator_currency = $creatorCurrency;
+                    $userPayment->charge_currency = $chargeCurrency;
+                    $userPayment->display_currency = $displayCurrency;
                     $userPayment->payment_method = 'stripe';
                     $userPayment->payment_details = json_encode($sessionId, true);
                     $userPayment->paid_at = Carbon::now();
@@ -1239,7 +1239,7 @@ class CheckoutController extends Controller
 
             // Clear user cache for the creator
             if ($stripeid->owner) {
-                 $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
+                $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
             }
 
             Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);

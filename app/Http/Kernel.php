@@ -79,4 +79,9 @@ class Kernel extends HttpKernel
         'membership' => \App\Http\Middleware\RequireActiveMembership::class,
         'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
     ];
+
+    protected $except = [
+        // Existing exceptions...
+        'webauthn/*', // Add this line
+    ];
 }
