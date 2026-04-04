@@ -16,6 +16,7 @@ import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
+import ManagePasskey from '@/Components/ManagePasskey';
 import { Switch } from "@headlessui/react";
 import {
     User,
@@ -296,7 +297,7 @@ export default function Accountsetting(props) {
         <Authenticated user={user} auth={auth.user}>
             <Head title={"My Account"} />
             <div className="min-h-screen bg-gray-200 py-6 md:py-16">
-                <div className="max-w-3xl mx-auto px-4 pt-8">
+                <div className="max-w-3xl mx-auto px-6 pt-8">
                     <div className="md:text-center mb-10">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-gulfs text-gray-900 uppercase tracking-wide mb-2">
                             Account{" "}
@@ -613,41 +614,7 @@ export default function Accountsetting(props) {
                             />
                         </Link>
 
-                        <div className="block w-full">
-                            <SettingItem
-                                icon={Fingerprint}
-                                title={getDeviceLabel()}
-                                subtitle="Login using device security"
-                                value={hasPasskey ? "Enabled" : "Setup Passkey"}
-                                onClick={
-                                    hasPasskey ? null : registerFingerprint
-                                }
-                                action={
-                                    hasPasskey && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-
-                                                deleteFingerprint();
-                                            }}
-                                            className="
-                                            text-red-500
-                                            font-semibold
-                                            text-sm
-                                            border hidden
-                                            border-red-300
-                                            px-3
-                                            py-1
-                                            rounded-lg
-                                            hover:bg-red-50
-                                            "
-                                        >
-                                            Delete
-                                        </button>
-                                    )
-                                }
-                            />
-                        </div>
+                        <ManagePasskey email={auth.user.email} />
                     </div>
 
                     {/* SUPPORT SECTION */}

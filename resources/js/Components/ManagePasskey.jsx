@@ -57,6 +57,7 @@ function base64urlToUint8Array(base64url) {
 export default function ManagePasskey({ email }) {
     const [loading, setLoading] = useState(false);
     const [hasPasskey, setHasPasskey] = useState(null);
+    const [passkeys, setPasskeys] = useState([]);
     const { successAlert, errorAlert } = useAlerts();
 
     const isWebAuthnSupported = () => {
@@ -68,9 +69,11 @@ export default function ManagePasskey({ email }) {
         try {
             const response = await axios.post("/webauthn/check", { email });
             setHasPasskey(response.data.has_passkey || false);
+            setPasskeys(response.data.passkeys || []);
         } catch (error) {
             console.error("Error checking passkey:", error);
             setHasPasskey(false);
+            setPasskeys([]);
         }
     };
 
@@ -92,6 +95,15 @@ export default function ManagePasskey({ email }) {
             const publicKey = options.publicKey ?? options;
             publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
             publicKey.user.id = base64urlToUint8Array(publicKey.user.id);
+
+            if (publicKey.excludeCredentials) {
+                publicKey.excludeCredentials = publicKey.excludeCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    })
+                );
+            }
 
             const credential = await navigator.credentials.create({
                 publicKey,
@@ -122,15 +134,15 @@ export default function ManagePasskey({ email }) {
         }
     };
 
-    const handleRemove = async () => {
-        if (!window.confirm("Are you sure you want to remove your passkey? You will need to login with your password next time.")) {
+    const handleRemove = async (id = null) => {
+        if (!window.confirm("Are you sure you want to remove this passkey?")) {
             return;
         }
 
         try {
             setLoading(true);
-            // Wait, does delete route exist? We saw it in auth.php
-            const response = await axios.delete(route("webauthn.delete"));
+            const url = id ? route("webauthn.delete", { id }) : route("webauthn.delete");
+            const response = await axios.delete(url);
             if (response.data.success) {
                 successAlert("Passkey removed successfully.");
                 checkPasskeyStatus();
@@ -149,40 +161,89 @@ export default function ManagePasskey({ email }) {
         return null;
     }
 
+    const getDeviceName = (pk) => {
+        if (pk.platform && pk.platform !== 'Unknown' && pk.browser && pk.browser !== 'Unknown') {
+            return `${pk.platform} (${pk.browser})`;
+        }
+        if (pk.platform && pk.platform !== 'Unknown') return pk.platform;
+        if (pk.browser && pk.browser !== 'Unknown') return pk.browser;
+        return 'Unknown Device';
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Unknown';
+        let date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            // Fix for Safari: convert "YYYY-MM-DD HH:MM:SS" to "YYYY/MM/DD HH:MM:SS"
+            const safeString = dateString.replace(/-/g, "/");
+            date = new Date(safeString);
+        }
+        if (isNaN(date.getTime())) {
+            // If still invalid, just return the date part
+            return dateString.split('T')[0].split(' ')[0];
+        }
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
     return (
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[20px] border border-gray-200 mb-4">
-            <div>
-                <h4 className="font-medium text-gray-800">Passkey / FaceID Login</h4>
-                <p className="text-xs text-gray-500 mt-1">
-                    {hasPasskey 
-                        ? "You have a passkey configured for instant login."
-                        : "Set up a passkey to login instantly without a password."}
-                </p>
-            </div>
-            
-            <div>
-                {hasPasskey === true ? (
-                    <button 
-                        type="button"
-                        onClick={handleRemove}
-                        disabled={loading}
-                        className="px-4 py-2 bg-red-100 text-red-600 rounded-full text-sm font-medium hover:bg-red-200 transition disabled:opacity-50"
-                    >
-                        {loading ? "Removing..." : "Remove"}
-                    </button>
-                ) : hasPasskey === false ? (
+        <div className="bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden">
+            <div className="p-4 flex items-center justify-between border-b border-gray-200">
+                <div>
+                    <h4 className="font-medium text-gray-800">Passkeys / FaceID</h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Register multiple devices to login instantly without a password.
+                    </p>
+                </div>
+                
+                <div>
                     <button 
                         type="button"
                         onClick={handleRegister}
                         disabled={loading}
-                        className="px-4 py-2 bg-pink-100 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50"
+                        className="px-4 py-2 bg-pink-100 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
                     >
-                        {loading ? "Setting up..." : "Setup"}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        {loading ? "Adding..." : "Add Device"}
                     </button>
-                ) : (
-                    <span className="text-sm text-gray-400">Loading...</span>
-                )}
+                </div>
             </div>
+
+            {passkeys.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                    {passkeys.map((pk) => (
+                        <div key={pk.id} className="p-4 flex items-center justify-between hover:bg-gray-100 transition-colors">
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center mr-3 shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-800">
+                                        {getDeviceName(pk)}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        Added: {formatDate(pk.created_at)}
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => handleRemove(pk.id)}
+                                disabled={loading}
+                                className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-full transition disabled:opacity-50"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="p-8 text-center">
+                    <p className="text-sm text-gray-500">No passkeys registered yet.</p>
+                </div>
+            )}
         </div>
     );
 }

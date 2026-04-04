@@ -74,6 +74,15 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
             publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
             publicKey.user.id = base64urlToUint8Array(publicKey.user.id);
 
+            if (publicKey.excludeCredentials) {
+                publicKey.excludeCredentials = publicKey.excludeCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    })
+                );
+            }
+
             // Request browser to create credential
             const credential = await navigator.credentials.create({
                 publicKey,

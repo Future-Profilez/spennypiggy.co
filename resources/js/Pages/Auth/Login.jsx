@@ -71,6 +71,7 @@ export default function Login({ status, canResetPassword }) {
     const [passkeyLoading, setPasskeyLoading] = useState(false);
     const [hasPasskey, setHasPasskey] = useState(null); // null = unknown, true = has passkey, false = no passkey
     const [showSetupPrompt, setShowSetupPrompt] = useState(false);
+    const [promptEmail, setPromptEmail] = useState("");
     const [pendingRedirectUrl, setPendingRedirectUrl] = useState(null);
     const [abortController, setAbortController] = useState(null);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
@@ -98,7 +99,7 @@ export default function Login({ status, canResetPassword }) {
         };
     }, []);
 
-    const handleOTPSuccess = (redirectUrl) => {
+    const handleOTPSuccess = async (redirectUrl) => {
         let targetUrl = null;
         if (paramValue) {
             targetUrl = paramValue;
@@ -106,11 +107,18 @@ export default function Login({ status, canResetPassword }) {
             targetUrl = redirectUrl;
         }
 
-        if (isWebAuthnSupported() && hasPasskey === false) {
+        let userHasPasskey = hasPasskey;
+        if (userHasPasskey === null && data.email && isWebAuthnSupported()) {
+            userHasPasskey = await checkUserHasPasskey(data.email);
+            setHasPasskey(userHasPasskey);
+        }
+
+        if (isWebAuthnSupported() && userHasPasskey === false) {
             // Abort conditional UI before showing prompt
             if (abortController) {
                 abortController.abort("Showing setup prompt");
             }
+            setPromptEmail(data.email);
             setPendingRedirectUrl(targetUrl);
             setShowSetupPrompt(true);
         } else {
@@ -389,7 +397,7 @@ export default function Login({ status, canResetPassword }) {
                     "Content-Type": "application/json",
                 },
             })
-            .then((response) => {
+            .then(async (response) => {
                 localStorage.removeItem("cart");
                 
                 let targetUrl = null;
@@ -398,12 +406,19 @@ export default function Login({ status, canResetPassword }) {
                 } else if (response.data && response.data.redirect_url) {
                     targetUrl = response.data.redirect_url;
                 }
+
+                let userHasPasskey = hasPasskey;
+                if (userHasPasskey === null && data.email && isWebAuthnSupported()) {
+                    userHasPasskey = await checkUserHasPasskey(data.email);
+                    setHasPasskey(userHasPasskey);
+                }
                 
-                if (isWebAuthnSupported() && hasPasskey === false) {
+                if (isWebAuthnSupported() && userHasPasskey === false) {
                     // Abort conditional UI before showing prompt
                     if (abortController) {
                         abortController.abort("Showing setup prompt");
                     }
+                    setPromptEmail(data.email);
                     setPendingRedirectUrl(targetUrl);
                     setShowSetupPrompt(true);
                     setLoading(false);
@@ -701,7 +716,7 @@ export default function Login({ status, canResetPassword }) {
             <EnterOTP action={open} user={data} onSuccess={handleOTPSuccess} />
             <SetupPasskeyPrompt 
                 isOpen={showSetupPrompt} 
-                email={data.email} 
+                email={promptEmail} 
                 onSkip={handlePromptClose} 
                 onSuccess={handlePromptClose} 
             />

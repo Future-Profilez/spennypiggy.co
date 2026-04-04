@@ -161,7 +161,7 @@ Route::prefix('webauthn')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::post('/register/options', [WebAuthnRegisterController::class, 'options'])->name('webauthn.register.options');
         Route::post('/register', [WebAuthnRegisterController::class, 'register'])->name('webauthn.register');
-        Route::delete('/delete', [WebAuthnCheckController::class, 'delete'])->name('webauthn.delete');
+        Route::delete('/delete/{id?}', [WebAuthnCheckController::class, 'delete'])->name('webauthn.delete');
     });
 });
 

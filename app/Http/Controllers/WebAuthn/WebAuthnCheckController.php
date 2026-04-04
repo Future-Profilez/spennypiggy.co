@@ -5,6 +5,7 @@ namespace App\Http\Controllers\WebAuthn;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WebAuthnCheckController extends Controller
 {
@@ -25,14 +26,28 @@ class WebAuthnCheckController extends Controller
             }
 
             $hasPasskey = $user->webAuthnCredentials()->exists();
+            $passkeys = $user->webAuthnCredentials()
+                ->select('id', 'platform', 'browser', 'created_at', 'last_used_at')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($pk) {
+                    return [
+                        'id' => $pk->id,
+                        'platform' => $pk->platform,
+                        'browser' => $pk->browser,
+                        'created_at' => $pk->created_at,
+                        'last_used_at' => $pk->last_used_at,
+                    ];
+                });
 
             return response()->json([
                 'has_passkey' => $hasPasskey,
+                'passkeys' => $passkeys,
                 'user_exists' => true,
                 'user_id' => $user->id
             ]);
         } catch (\Exception $e) {
-            \Log::error('WebAuthn check error: ' . $e->getMessage());
+            Log::error('WebAuthn check error: ' . $e->getMessage());
             return response()->json([
                 'has_passkey' => false,
                 'error' => $e->getMessage()
@@ -40,7 +55,7 @@ class WebAuthnCheckController extends Controller
         }
     }
 
-    public function delete(Request $request)
+    public function delete(Request $request, $id = null)
     {
         try {
             $user = $request->user();
@@ -52,18 +67,24 @@ class WebAuthnCheckController extends Controller
                 ], 401);
             }
 
-            // Delete all WebAuthn credentials for the user
-            $deleted = $user->webAuthnCredentials()->delete();
+            $query = $user->webAuthnCredentials();
+            
+            if ($id) {
+                $query->where('id', $id);
+            }
+
+            $deleted = $query->delete();
 
             if ($deleted) {
-                \Log::info('WebAuthn credentials deleted', [
+                Log::info('WebAuthn credential(s) deleted', [
                     'user_id' => $user->id,
+                    'credential_id' => $id,
                     'count' => $deleted
                 ]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Passkey(s) removed successfully'
+                    'message' => 'Passkey removed successfully'
                 ]);
             }
 
@@ -72,7 +93,7 @@ class WebAuthnCheckController extends Controller
                 'message' => 'No passkeys found to delete'
             ], 404);
         } catch (\Exception $e) {
-            \Log::error('WebAuthn delete error: ' . $e->getMessage());
+            Log::error('WebAuthn delete error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete passkey: ' . $e->getMessage()

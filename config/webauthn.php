@@ -4,11 +4,11 @@ return [
 
     'relying_party' => [
         'name' => config('app.name'),
-        'id' => 'localhost',
+        'id' => env('WEBAUTHN_RPID', 'localhost'),
     ],
 
     'origins' => [
-        'http://localhost:8000',
+        env('WEBAUTHN_ORIGIN', 'http://localhost:8000'),
     ],
 
     'challenge' => [

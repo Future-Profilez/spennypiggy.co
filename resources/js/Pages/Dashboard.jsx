@@ -478,7 +478,7 @@ export default function Dashboard(props) {
                                         alt={`${user?.name} - Cover Image`}
                                         height={400}
                                         width={1200}
-                                        className="w-full h-[250px] md:h-[350px] object-cover "
+                                        className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
                                         src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
                                         loading="eager"
                                         fetchPriority="high"
@@ -487,7 +487,7 @@ export default function Dashboard(props) {
                                     auth &&
                                     auth?.user.cover_url &&
                                     auth?.user?.cover_approved == 0 ? (
-                                        <div className="absolute right-8 bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-2">
+                                        <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
                                         <button className="flex items-center gap-2">
                                             <svg
                                                 width="20"
