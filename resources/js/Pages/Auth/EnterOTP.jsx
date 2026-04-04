@@ -7,7 +7,7 @@ import Popup from "@/Components/Popup";
 import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
 
-export default function EnterOTP({user, action}) {
+export default function EnterOTP({user, action, onSuccess}) {
 
    const [open, setOpen] = useState(false);
    useEffect(() => {
@@ -60,7 +60,9 @@ export default function EnterOTP({user, action}) {
       .then(resp => {
            setLoading(false);
            if (resp.data.status) {
-               if (resp.data.redirect_url) {
+               if (onSuccess) {
+                   onSuccess(resp.data.redirect_url);
+               } else if (resp.data.redirect_url) {
                    window.location.href = resp.data.redirect_url;
                }
            } else {

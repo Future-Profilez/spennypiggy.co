@@ -23,7 +23,7 @@ export default function Userprofile({ IsloggedIn }) {
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-50px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none bg-[#fdfbf7] border-[3px] border-black rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-50px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none rounded-3xl">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-80px]">
                         <img

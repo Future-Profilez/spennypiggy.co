@@ -12,6 +12,7 @@ import socialbg from "../../../assets/social-bg.png";
 import axios from 'axios';
 import { Switch } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
+import ManagePasskey from '@/Components/ManagePasskey';
 
 export default function EditProfile({ user, text, classes, updateProfileSteps, global_currency }) {
 
@@ -616,6 +617,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                             </li> */}
                                         </>
                                     )}
+
+                                    <li className="mb-4">
+                                        <ManagePasskey email={user?.email} />
+                                    </li>
 
                                     <li className="mb-4">
                                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[20px] border border-gray-200">

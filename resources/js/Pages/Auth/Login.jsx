@@ -5,6 +5,7 @@ import LoaderButton from "@/Components/LoaderButton";
 import { useAlerts } from "@/Components/Alerts";
 import InputError from "@/Components/InputError";
 import EnterOTP from "./EnterOTP";
+import SetupPasskeyPrompt from "@/Components/SetupPasskeyPrompt";
 import axios from "axios";
 import DeviceID from "@/includes/DeviceID";
 import { FaCircleUser } from "react-icons/fa6";
@@ -25,6 +26,43 @@ function base64urlToUint8Array(base64url) {
     return bytes;
 }
 
+// Helper function to encode ArrayBuffer to base64
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+}
+
+// Helper function to format WebAuthn credential for the server
+function formatCredentialForServer(credential) {
+    const formatted = {
+        id: credential.id,
+        rawId: arrayBufferToBase64(credential.rawId),
+        type: credential.type,
+        response: {
+            clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+        },
+    };
+
+    if (credential.response.authenticatorData) {
+        formatted.response.authenticatorData = arrayBufferToBase64(credential.response.authenticatorData);
+    }
+    if (credential.response.signature) {
+        formatted.response.signature = arrayBufferToBase64(credential.response.signature);
+    }
+    if (credential.response.userHandle) {
+        formatted.response.userHandle = arrayBufferToBase64(credential.response.userHandle);
+    }
+    if (credential.response.attestationObject) {
+        formatted.response.attestationObject = arrayBufferToBase64(credential.response.attestationObject);
+    }
+
+    return formatted;
+}
+
 export default function Login({ status, canResetPassword }) {
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get("redirect");
@@ -32,6 +70,9 @@ export default function Login({ status, canResetPassword }) {
     const [open, setOpen] = useState(false);
     const [passkeyLoading, setPasskeyLoading] = useState(false);
     const [hasPasskey, setHasPasskey] = useState(null); // null = unknown, true = has passkey, false = no passkey
+    const [showSetupPrompt, setShowSetupPrompt] = useState(false);
+    const [pendingRedirectUrl, setPendingRedirectUrl] = useState(null);
+    const [abortController, setAbortController] = useState(null);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -56,6 +97,30 @@ export default function Login({ status, canResetPassword }) {
             reset("password");
         };
     }, []);
+
+    const handleOTPSuccess = (redirectUrl) => {
+        let targetUrl = null;
+        if (paramValue) {
+            targetUrl = paramValue;
+        } else if (redirectUrl) {
+            targetUrl = redirectUrl;
+        }
+
+        if (isWebAuthnSupported() && hasPasskey === false) {
+            // Abort conditional UI before showing prompt
+            if (abortController) {
+                abortController.abort("Showing setup prompt");
+            }
+            setPendingRedirectUrl(targetUrl);
+            setShowSetupPrompt(true);
+        } else {
+            if (targetUrl) {
+                router.visit(targetUrl);
+            } else {
+                window.location.reload();
+            }
+        }
+    };
 
     const { flash } = usePage().props;
 
@@ -99,6 +164,74 @@ export default function Login({ status, canResetPassword }) {
         return () => clearTimeout(debounceTimer);
     }, [data.email]);
 
+    // Setup Conditional UI (Autofill) for Passkeys
+    useEffect(() => {
+        let controller = new AbortController();
+        setAbortController(controller);
+
+        const setupConditionalUI = async () => {
+            if (
+                !isWebAuthnSupported() ||
+                !window.PublicKeyCredential.isConditionalMediationAvailable
+            ) {
+                return;
+            }
+
+            const isCMAvailable =
+                await window.PublicKeyCredential.isConditionalMediationAvailable();
+            if (!isCMAvailable) {
+                return;
+            }
+
+            try {
+                const { data: options } = await axios.post(
+                    route("webauthn.login.userless.options"),
+                );
+
+                const publicKey = options.publicKey ?? options;
+                publicKey.challenge = base64urlToUint8Array(
+                    publicKey.challenge,
+                );
+
+                const credential = await navigator.credentials.get({
+                    publicKey,
+                    mediation: "conditional",
+                    signal: controller.signal,
+                });
+
+                if (credential) {
+                    setPasskeyLoading(true);
+                    const response = await axios.post(
+                        route("webauthn.login"),
+                        formatCredentialForServer(credential),
+                    );
+
+                    if (response.data.success) {
+                        const redirectUrl = response.data.redirect_url || "/";
+                        router.visit(redirectUrl);
+                    } else {
+                        errorAlert(response.data.message || "Passkey login failed");
+                        setPasskeyLoading(false);
+                    }
+                }
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    console.error("Conditional UI error:", error);
+                    if (error.response?.data?.message) {
+                        errorAlert(error.response.data.message);
+                    }
+                }
+                setPasskeyLoading(false);
+            }
+        };
+
+        setupConditionalUI();
+
+        return () => {
+            controller.abort("Component unmounted");
+        };
+    }, []);
+
     const loginWithWindowsHello = async () => {
         const { data } = await axios.post(
             route("webauthn.login.userless.options"),
@@ -112,7 +245,7 @@ export default function Login({ status, canResetPassword }) {
             publicKey,
         });
 
-        const response = await axios.post(route("webauthn.login"), credential);
+        const response = await axios.post(route("webauthn.login"), formatCredentialForServer(credential));
 
         if (response.data.success) {
             window.location.href = response.data.redirect_url;
@@ -121,6 +254,11 @@ export default function Login({ status, canResetPassword }) {
 
     // Handle passkey action (login with email, register, or userless login)
     const handlePasskeyAction = async () => {
+        // Abort any pending conditional UI request first
+        if (abortController) {
+            abortController.abort("Starting manual passkey action");
+        }
+
         try {
             setPasskeyLoading(true);
 
@@ -142,7 +280,7 @@ export default function Login({ status, canResetPassword }) {
 
                     const response = await axios.post(
                         route("webauthn.login"),
-                        credential,
+                        formatCredentialForServer(credential),
                     );
 
                     console.log("Login response:", response.data);
@@ -156,7 +294,14 @@ export default function Login({ status, canResetPassword }) {
                     return;
                 } catch (routeError) {
                     console.error("Userless route error:", routeError);
-                    errorAlert("Please enter your email first");
+                    
+                    if (routeError.response?.data?.message) {
+                        errorAlert(routeError.response.data.message);
+                    } else if (routeError.name === "NotAllowedError" || routeError.name === "AbortError") {
+                        errorAlert("Authentication cancelled.");
+                    } else {
+                        errorAlert("Please enter your email first");
+                    }
                     return;
                 }
             }
@@ -164,51 +309,11 @@ export default function Login({ status, canResetPassword }) {
             // First, check if user has a passkey
             const hasPasskey = await checkUserHasPasskey(data.email);
 
-            // If user has no passkey, register one
+            // If user has no passkey, they need to login with password first
             if (!hasPasskey) {
-                try {
-                    const { data: options } = await axios.post(
-                        route("webauthn.register.options"),
-                        { email: data.email },
-                    );
-
-                    const publicKey = options.publicKey ?? options;
-                    publicKey.challenge = base64urlToUint8Array(
-                        publicKey.challenge,
-                    );
-                    publicKey.user.id = base64urlToUint8Array(
-                        publicKey.user.id,
-                    );
-
-                    const credential = await navigator.credentials.create({
-                        publicKey,
-                    });
-
-                    const response = await axios.post(
-                        route("webauthn.register"),
-                        credential,
-                    );
-
-                    if (response.data.success) {
-                        successAlert(
-                            "Passkey registered successfully! You can now login.",
-                        );
-                        // Reload to show passkey as enabled
-                        setTimeout(() => window.location.reload(), 1500);
-                    } else {
-                        errorAlert(
-                            response.data.message || "Registration failed",
-                        );
-                    }
-                    return;
-                } catch (error) {
-                    console.error("Registration error:", error);
-                    errorAlert(
-                        "Failed to register passkey: " +
-                            (error.message || "Unknown error"),
-                    );
-                    return;
-                }
+                errorAlert("No passkey found. Please login with your password first.");
+                document.getElementById('password').focus();
+                return;
             }
 
             // If user has passkey, login
@@ -238,7 +343,7 @@ export default function Login({ status, canResetPassword }) {
 
                 const response = await axios.post(
                     route("webauthn.login"),
-                    credential,
+                    formatCredentialForServer(credential),
                 );
 
                 console.log("Login response:", response.data);
@@ -286,15 +391,30 @@ export default function Login({ status, canResetPassword }) {
             })
             .then((response) => {
                 localStorage.removeItem("cart");
-                reset();
+                
+                let targetUrl = null;
                 if (paramValue) {
-                    router.visit(paramValue);
-                    setAnimate("animate-pulse");
+                    targetUrl = paramValue;
                 } else if (response.data && response.data.redirect_url) {
-                    router.visit(response.data.redirect_url);
-                } else {
-                    window.location.reload();
+                    targetUrl = response.data.redirect_url;
                 }
+                
+                if (isWebAuthnSupported() && hasPasskey === false) {
+                    // Abort conditional UI before showing prompt
+                    if (abortController) {
+                        abortController.abort("Showing setup prompt");
+                    }
+                    setPendingRedirectUrl(targetUrl);
+                    setShowSetupPrompt(true);
+                    setLoading(false);
+                } else {
+                    if (targetUrl) {
+                        router.visit(targetUrl);
+                    } else {
+                        window.location.reload();
+                    }
+                }
+                reset();
             })
             .catch((error) => {
                 setLoading(false);
@@ -371,8 +491,7 @@ export default function Login({ status, canResetPassword }) {
     const getPasskeyButtonText = () => {
         if (passkeyLoading) return "PROCESSING...";
         if (hasPasskey === true) return "LOGIN WITH PASSKEY";
-        if (hasPasskey === false) return "REGISTER PASSKEY";
-        return "SETUP PASSKEY";
+        return "CHECKING PASSKEY...";
     };
 
     // Get button styling based on state
@@ -380,8 +499,19 @@ export default function Login({ status, canResetPassword }) {
         if (hasPasskey === true) {
             return "hover:!bg-green-500"; // Green for login
         }
-        return "hover:!bg-purple-500"; // Purple for registration
+        return "hover:!bg-gray-500"; // Default
     };
+
+    const handlePromptClose = () => {
+        setShowSetupPrompt(false);
+        if (pendingRedirectUrl) {
+            router.visit(pendingRedirectUrl);
+        } else {
+            window.location.reload();
+        }
+    };
+
+    console.log("hasPasskey:", isWebAuthnSupported());
 
     return (
         <GuestLayout>
@@ -437,29 +567,10 @@ export default function Login({ status, canResetPassword }) {
                                 )}
 
                                 {/* Quick Login with Fingerprint/Face/Windows Hello Button */}
-                                {isWebAuthnSupported() && (
-                                    <div>
-                                        <LoaderButton
-                                            type="button"
-                                            onClick={handlePasskeyAction}
-                                            disabled={passkeyLoading}
-                                            className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-green-500 hover:!text-white pr-6 !text-black w-full"
-                                            spinnerclass="fill-white"
-                                        >
-                                            {passkeyLoading
-                                                ? "CHECKING DEVICE..."
-                                                : "LOGIN WITH FACE / FINGERPRINT / WINDOWS HELLO"}
-                                        </LoaderButton>
-                                        <p className="text-xs text-gray-500 text-center mt-2">
-                                            Use biometrics, Windows Hello, or
-                                            security key to login instantly
-                                            without typing email or password
-                                        </p>
-                                    </div>
-                                )}
+                                 
 
                                 {/* OR Divider */}
-                                <div className="relative">
+                                {/* <div className="relative">
                                     <div className="absolute inset-0 flex items-center">
                                         <div className="w-full border-t border-gray-600"></div>
                                     </div>
@@ -468,7 +579,7 @@ export default function Login({ status, canResetPassword }) {
                                             OR LOGIN WITH EMAIL
                                         </span>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 <div>
                                     <label
@@ -490,7 +601,7 @@ export default function Login({ status, canResetPassword }) {
                                             name="email"
                                             value={data.email}
                                             className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
-                                            autoComplete="username"
+                                            autoComplete="username webauthn"
                                             autoFocus={true}
                                             placeholder="you@example.com"
                                             onChange={(e) =>
@@ -524,7 +635,7 @@ export default function Login({ status, canResetPassword }) {
                                             name="password"
                                             value={data.password}
                                             className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
-                                            autoComplete="current-password"
+                                            autoComplete="current-password webauthn"
                                             placeholder="••••••••"
                                             onChange={(e) =>
                                                 setData(
@@ -556,48 +667,44 @@ export default function Login({ status, canResetPassword }) {
                                 <div>
                                     <LoaderButton
                                         disabled={loading}
-                                        className={`${animate} ${loading ? "!animate-pulse" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full`}
+                                        className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full`}
                                         spinnerclass="fill-white"
-                                    >
-                                        {loading ? "Logging In..." : "LOG IN"}
+                                    >   
+                                        {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
                                     </LoaderButton>
                                 </div>
 
                                 {/* Single Smart Passkey Button for Email Users */}
-                                {isWebAuthnSupported() && (
+                                {/* {isWebAuthnSupported() && hasPasskey === true && (
                                     <div className="space-y-2">
                                         <LoaderButton
                                             type="button"
                                             onClick={handlePasskeyAction}
-                                            disabled={
-                                                passkeyLoading ||
-                                                (hasPasskey === null &&
-                                                    data.email === "")
-                                            }
+                                            disabled={passkeyLoading}
                                             className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-white pr-6 !text-black w-full ${passkeyLoading ? "opacity-70 cursor-not-allowed" : ""}`}
                                             spinnerclass="fill-white"
                                         >
                                             {passkeyLoading
-                                                ? hasPasskey === true
-                                                    ? "LOGGING WITH PASSKEY..."
-                                                    : "REGISTERING PASSKEY..."
+                                                ? "LOGGING WITH PASSKEY..."
                                                 : getPasskeyButtonText()}
                                         </LoaderButton>
                                         <p className="text-xs text-gray-500 text-center">
-                                            {hasPasskey === true
-                                                ? "Use your fingerprint, face ID, or security key to login instantly"
-                                                : hasPasskey === false
-                                                  ? "Register your fingerprint, face ID, or security key for faster login"
-                                                  : "Enter email to check passkey availability"}
+                                            Use your fingerprint, face ID, or security key to login instantly
                                         </p>
                                     </div>
-                                )}
+                                )} */}
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
-            <EnterOTP action={open} user={data} />
+            <EnterOTP action={open} user={data} onSuccess={handleOTPSuccess} />
+            <SetupPasskeyPrompt 
+                isOpen={showSetupPrompt} 
+                email={data.email} 
+                onSkip={handlePromptClose} 
+                onSuccess={handlePromptClose} 
+            />
         </GuestLayout>
     );
 }

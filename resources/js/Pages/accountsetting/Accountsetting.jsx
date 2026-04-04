@@ -618,7 +618,7 @@ export default function Accountsetting(props) {
                                 icon={Fingerprint}
                                 title={getDeviceLabel()}
                                 subtitle="Login using device security"
-                                value={hasPasskey ? "Enabled" : "Setup"}
+                                value={hasPasskey ? "Enabled" : "Setup Passkey"}
                                 onClick={
                                     hasPasskey ? null : registerFingerprint
                                 }
@@ -634,7 +634,7 @@ export default function Accountsetting(props) {
                                             text-red-500
                                             font-semibold
                                             text-sm
-                                            border
+                                            border hidden
                                             border-red-300
                                             px-3
                                             py-1
