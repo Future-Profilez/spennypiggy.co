@@ -9,7 +9,21 @@ import axios from "axios";
 import DeviceID from "@/includes/DeviceID";
 import { FaCircleUser } from "react-icons/fa6";
 import { RiLockPasswordLine } from "react-icons/ri";
-import * as webauthn from "@github/webauthn-json";
+
+// Helper function to convert base64url to Uint8Array for WebAuthn
+function base64urlToUint8Array(base64url) {
+    const base64 = base64url
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), "=");
+
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
 
 export default function Login({ status, canResetPassword }) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -85,61 +99,169 @@ export default function Login({ status, canResetPassword }) {
         return () => clearTimeout(debounceTimer);
     }, [data.email]);
 
-    const handlePasskeyAction = async () => {
-        if (!data.email) {
-            errorAlert("Enter email first");
-            return;
+    const loginWithWindowsHello = async () => {
+        const { data } = await axios.post(
+            route("webauthn.login.userless.options"),
+        );
+
+        const publicKey = data.publicKey ?? data;
+
+        publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
+
+        const credential = await navigator.credentials.get({
+            publicKey,
+        });
+
+        const response = await axios.post(route("webauthn.login"), credential);
+
+        if (response.data.success) {
+            window.location.href = response.data.redirect_url;
         }
+    };
 
-        setPasskeyLoading(true);
-
+    // Handle passkey action (login with email, register, or userless login)
+    const handlePasskeyAction = async () => {
         try {
-            /*
-        LOGIN FLOW
-        */
+            setPasskeyLoading(true);
 
-            if (hasPasskey === true) {
-                const options = await axios.post("/webauthn/login/options", {
-                    email: data.email,
+            // USERNAME-LESS LOGIN (no email entered)
+            if (!data.email) {
+                try {
+                    const { data: options } = await axios.post(
+                        route("webauthn.login.userless.options"),
+                    );
+
+                    const publicKey = options.publicKey ?? options;
+                    publicKey.challenge = base64urlToUint8Array(
+                        publicKey.challenge,
+                    );
+
+                    const credential = await navigator.credentials.get({
+                        publicKey,
+                    });
+
+                    const response = await axios.post(
+                        route("webauthn.login"),
+                        credential,
+                    );
+
+                    console.log("Login response:", response.data);
+
+                    if (response.data.success) {
+                        const redirectUrl = response.data.redirect_url || "/";
+                        router.visit(redirectUrl);
+                    } else {
+                        errorAlert(response.data.message || "Login failed");
+                    }
+                    return;
+                } catch (routeError) {
+                    console.error("Userless route error:", routeError);
+                    errorAlert("Please enter your email first");
+                    return;
+                }
+            }
+
+            // First, check if user has a passkey
+            const hasPasskey = await checkUserHasPasskey(data.email);
+
+            // If user has no passkey, register one
+            if (!hasPasskey) {
+                try {
+                    const { data: options } = await axios.post(
+                        route("webauthn.register.options"),
+                        { email: data.email },
+                    );
+
+                    const publicKey = options.publicKey ?? options;
+                    publicKey.challenge = base64urlToUint8Array(
+                        publicKey.challenge,
+                    );
+                    publicKey.user.id = base64urlToUint8Array(
+                        publicKey.user.id,
+                    );
+
+                    const credential = await navigator.credentials.create({
+                        publicKey,
+                    });
+
+                    const response = await axios.post(
+                        route("webauthn.register"),
+                        credential,
+                    );
+
+                    if (response.data.success) {
+                        successAlert(
+                            "Passkey registered successfully! You can now login.",
+                        );
+                        // Reload to show passkey as enabled
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        errorAlert(
+                            response.data.message || "Registration failed",
+                        );
+                    }
+                    return;
+                } catch (error) {
+                    console.error("Registration error:", error);
+                    errorAlert(
+                        "Failed to register passkey: " +
+                            (error.message || "Unknown error"),
+                    );
+                    return;
+                }
+            }
+
+            // If user has passkey, login
+            if (hasPasskey) {
+                const { data: options } = await axios.post(
+                    route("webauthn.login.options"),
+                    { email: data.email },
+                );
+
+                const publicKey = options.publicKey ?? options;
+                publicKey.challenge = base64urlToUint8Array(
+                    publicKey.challenge,
+                );
+
+                if (publicKey.allowCredentials) {
+                    publicKey.allowCredentials = publicKey.allowCredentials.map(
+                        (item) => ({
+                            ...item,
+                            id: base64urlToUint8Array(item.id),
+                        }),
+                    );
+                }
+
+                const credential = await navigator.credentials.get({
+                    publicKey,
                 });
 
-                const credential = await webauthn.get(options.data);
-
                 const response = await axios.post(
-                    "/webauthn/login",
+                    route("webauthn.login"),
                     credential,
                 );
 
-                if (response.data?.redirect_url) {
-                    router.visit(response.data.redirect_url);
+                console.log("Login response:", response.data);
+
+                if (response.data.success) {
+                    const redirectUrl = response.data.redirect_url || "/";
+                    router.visit(redirectUrl);
                 } else {
-                    window.location.reload();
+                    errorAlert(response.data.message || "Passkey login failed");
                 }
-            } else {
-
-            /*
-        REGISTER FLOW
-        */
-                const options = await axios.post("/webauthn/register/options", {
-                    email: data.email,
-                });
-                console.log("Registration options:", options.data);
-
-                const credential = await webauthn.create(options.data);
-
-                await axios.post("/webauthn/register", credential);
-
-                successAlert("Fingerprint / Face ID registered successfully");
-
-                setHasPasskey(true);
+                return;
             }
         } catch (error) {
-            console.log(error);
+            console.error("Passkey error:", error);
 
-            if (hasPasskey) {
-                errorAlert("Fingerprint login failed");
+            if (error.response?.data?.message) {
+                errorAlert(error.response.data.message);
+            } else if (error.name === "NotAllowedError") {
+                errorAlert("Authentication cancelled. Please try again.");
+            } else if (error.name === "InvalidStateError") {
+                errorAlert("This device already has a passkey registered.");
             } else {
-                errorAlert("Passkey registration failed");
+                errorAlert("Unable to authenticate. Please try again.");
             }
         } finally {
             setPasskeyLoading(false);
@@ -314,6 +436,40 @@ export default function Login({ status, canResetPassword }) {
                                     </p>
                                 )}
 
+                                {/* Quick Login with Fingerprint/Face/Windows Hello Button */}
+                                {isWebAuthnSupported() && (
+                                    <div>
+                                        <LoaderButton
+                                            type="button"
+                                            onClick={handlePasskeyAction}
+                                            disabled={passkeyLoading}
+                                            className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-green-500 hover:!text-white pr-6 !text-black w-full"
+                                            spinnerclass="fill-white"
+                                        >
+                                            {passkeyLoading
+                                                ? "CHECKING DEVICE..."
+                                                : "LOGIN WITH FACE / FINGERPRINT / WINDOWS HELLO"}
+                                        </LoaderButton>
+                                        <p className="text-xs text-gray-500 text-center mt-2">
+                                            Use biometrics, Windows Hello, or
+                                            security key to login instantly
+                                            without typing email or password
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* OR Divider */}
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-gray-600"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-sm">
+                                        <span className="px-2 bg-black/20 text-gray-400 backdrop-blur-sm">
+                                            OR LOGIN WITH EMAIL
+                                        </span>
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label
                                         className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
@@ -407,19 +563,7 @@ export default function Login({ status, canResetPassword }) {
                                     </LoaderButton>
                                 </div>
 
-                                {/* OR Divider */}
-                                <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-gray-600"></div>
-                                    </div>
-                                    <div className="relative flex justify-center text-sm">
-                                        <span className="px-2 bg-black/20 text-gray-400 backdrop-blur-sm">
-                                            OR
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Single Smart Passkey Button */}
+                                {/* Single Smart Passkey Button for Email Users */}
                                 {isWebAuthnSupported() && (
                                     <div className="space-y-2">
                                         <LoaderButton
@@ -427,8 +571,8 @@ export default function Login({ status, canResetPassword }) {
                                             onClick={handlePasskeyAction}
                                             disabled={
                                                 passkeyLoading ||
-                                                !data.email ||
-                                                hasPasskey === null
+                                                (hasPasskey === null &&
+                                                    data.email === "")
                                             }
                                             className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-white pr-6 !text-black w-full ${passkeyLoading ? "opacity-70 cursor-not-allowed" : ""}`}
                                             spinnerclass="fill-white"

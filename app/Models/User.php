@@ -15,9 +15,10 @@ use Ramsey\Uuid\Uuid;
 use Stripe\Subscription;
 use Carbon\Carbon;
 use App\Models\MonthlyCharge;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
 use Laragear\WebAuthn\WebAuthnAuthentication;
 
-class User extends Authenticatable
+class User extends Authenticatable implements WebAuthnAuthenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, WebAuthnAuthentication;
 
@@ -225,11 +226,11 @@ class User extends Authenticatable
                     }
                     return 1;
                 }
-                
+
                 // PERFORMANCE OPTIMIZATION: Rely on local database state only.
                 // Do NOT call Stripe API during model serialization as it causes timeouts and page load failures.
                 // Webhooks should handle status updates.
-                
+
                 if ($subscription->status === 'trialing') {
                     // Check trial dates
                     if ($subscription->current_start_trial_date && $subscription->current_end_trial_date) {
@@ -241,10 +242,10 @@ class User extends Authenticatable
                     }
                     return 0; // Trial expired
                 }
-                
+
                 // Default to active if status is paid/renew/active
                 return 1;
-                
+
                 /* 
                 // REMOVED STRIPE API CALL TO PREVENT TIMEOUTS
                 try {
@@ -682,7 +683,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(ReferralCode::class, 'creator_id');
     }
-    
+
     /**
      * Get the merchant of record consents for the user
      */

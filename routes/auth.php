@@ -40,9 +40,9 @@ use App\Models\MonthlyCharge;
 use App\Models\MorConsent;
 use App\Models\SocialLinks;
 use App\Models\TipGoalsPayment;
-use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
-use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Http\Controllers\WebAuthn\WebAuthnCheckController;
+use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
+use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
 use Laragear\WebAuthn\Http\Routes as WebAuthnRoutes;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
@@ -77,19 +77,101 @@ Route::middleware('guest')->group(function () {
 | WebAuthn Passkey Routes
 |--------------------------------------------------------------------------
 */
+// debug route
+Route::get('/debug/webauthn-credentials', function () {
 
-Route::post('/webauthn/register/options', [WebAuthnRegisterController::class, 'options']);
-Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register']);
+    return \App\Models\User::with('webAuthnCredentials')->get()
+        ->map(function ($user) {
 
-Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options']);
-Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login']);
+            return [
+                'email' => $user->email,
 
-// Route::withoutMiddleware([
-//     VerifyCsrfToken::class
-// ])->group(function () {
+                'credentials' => $user->webAuthnCredentials->map(function ($cred) {
 
-//     WebAuthnRoutes::register();
+                    return [
+                        'device' => $cred->device_name,
+                        'browser' => $cred->browser,
+                        'platform' => $cred->platform,
+                        'last_used' => $cred->last_used_at
+                    ];
+                })
+
+            ];
+        });
+})->middleware('auth');
+
+
+// delete single device
+// Route::delete('/webauthn/device/{id}', function ($id) {
+
+//     auth()->user()
+//         ->webAuthnCredentials()
+//         ->where('id', $id)
+//         ->update([
+//             'disabled_at' => now()
+//         ]);
+
+//     return response()->json([
+//         'success' => true
+//     ]);
 // });
+
+
+
+// ========== WEBAUTHN ROUTES ==========
+Route::get('/debug-webauthn-credential', function () {
+    if (!auth()->check()) {
+        return response()->json(['error' => 'Not authenticated'], 401);
+    }
+
+    $user = auth()->user();
+    $credential = $user->webAuthnCredentials()->first();
+
+    if (!$credential) {
+        return response()->json(['error' => 'No passkey found for user'], 404);
+    }
+
+    return response()->json([
+        'user_id' => $user->id,
+        'user_email' => $user->email,
+        'credential_exists' => true,
+        'credential_id' => $credential->id,
+        'rp_id' => $credential->rp_id,
+        'origin' => $credential->origin,
+        'counter' => $credential->counter,
+        'last_used' => $credential->last_used_at
+    ]);
+})->middleware('auth');
+Route::prefix('webauthn')->group(function () {
+
+    // CHECK ROUTE - Check if user has passkey
+    Route::post('/check', [WebAuthnCheckController::class, 'check'])->name('webauthn.check');
+
+    // LOGIN ROUTES
+    // Email-based login
+    Route::post('/login/options', [WebAuthnLoginController::class, 'options'])->name('webauthn.login.options');
+
+    // Userless login (THIS IS THE MISSING ROUTE)
+    Route::post('/login/options-userless', [WebAuthnLoginController::class, 'optionsUserless'])->name('webauthn.login.userless.options');
+
+    // Complete login
+    Route::post('/login', [WebAuthnLoginController::class, 'login'])->name('webauthn.login');
+
+    // REGISTER ROUTES (require authentication)
+    Route::middleware('auth')->group(function () {
+        Route::post('/register/options', [WebAuthnRegisterController::class, 'options'])->name('webauthn.register.options');
+        Route::post('/register', [WebAuthnRegisterController::class, 'register'])->name('webauthn.register');
+        Route::delete('/delete', [WebAuthnCheckController::class, 'delete'])->name('webauthn.delete');
+    });
+});
+
+
+
+Route::withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
+    ->group(function () {
+
+        WebAuthnRoutes::register();
+    });
 
 // Public routes (no middleware)
 Route::get('/check-referral-code/{code}', [ReferAndEarnController::class, 'checkCreatorReferral']);
@@ -334,6 +416,7 @@ Route::middleware('auth')->group(function () {
                         'subscription_history' => $subscription_history,
                         'pwa_notification_details' => $pwaNotificationDetails ?? null,
                         'subscription_status' => $user->subscription_status, // Add numeric status for debugging
+                        'webAuthnCredentials' => Auth::user()->webAuthnCredentials()->exists(), // Add WebAuthn credentials existence for debugging
                     ]);
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::error('Account page error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
