@@ -23,16 +23,16 @@ export default function Userprofile({ IsloggedIn }) {
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-50px] md:mt-[-20px] relative z-auto mx-auto ">
+            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-50px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none bg-[#fdfbf7] border-[3px] border-black rounded-3xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
-                    <div className="fading  relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-130px] md:!mt-[-200px] lg:!mt-[-80px]">
-                        <img 
+                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-80px]">
+                        <img
                             alt={`${user?.name || "User"} - Profile Avatar`}
                             src={IsloggedIn ? user?.avatar_url || userphoto : user?.avatar_url && user?.avatar_approved === 1 ? user?.avatar_url : userphoto}
                             height={150}
                             width={150}
                             loading="eager"
-                            className="rounded-[40px] !border-[4px] !border-black bg-white !h-[140px] !w-[140px] min-w-[140px] !min-h-[140px] md:!h-[140px] md:!w-[170px] md:min-w-[170px] md:!min-h-[170px] object-cover"
+                            className="rounded-[30px] !border-[3px] !border-black bg-white !h-[120px] !w-[120px] min-w-[120px] !min-h-[120px] md:!h-[140px] md:!w-[140px] md:min-w-[140px] md:!min-h-[140px] object-cover shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                         />
 
                         {/* Waiting for approval (ORANGE) */}

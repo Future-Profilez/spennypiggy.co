@@ -6,7 +6,7 @@ import FounderBadge from "@/Components/FounderBadge";
 
 const defaultAvatar = 'https://ucarecdn.com/2c6afc02-8ae1-4e8b-8f53-d71f6066dd77/-/preview/600x600/';
 
-export default function Avatar({ hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
+export default function Avatar({ imgclass,hidename, namecolor, src, role, profile_status_lock, imageSrc, name, username, subhead, url, link, is_founder, onClick }) {
 
   return (
     <>
@@ -70,7 +70,7 @@ export default function Avatar({ hidename, namecolor, src, role, profile_status_
         <div className="avatar-wrap">
           <Link href={url || `/${link || username}`} className="useravatar" onClick={onClick}
           >
-            <div className="avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ">
+            <div className={`avatar !border-2 !border-white !overflow-visible relative rounded-[20px] ${imgclass}`}>
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
@@ -120,7 +120,7 @@ export default function Avatar({ hidename, namecolor, src, role, profile_status_
       ) : (
         <div className="avatar-wrap">
           <div className="useravatar">
-            <div className="avatar">
+            <div className={`avatar ${imgclass}`}>
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"

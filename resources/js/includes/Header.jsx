@@ -288,16 +288,15 @@ export default function Header({ classMagicword }) {
                     ${isActive ? "translate-x-0" : "-translate-x-full"}
                     flex flex-col p-8 select-none${isActive ? "Open" : null}`}
             >
-                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 pinkbg max-h-screen overflow-auto w-full sm:max-w-[320px] h-full border-r">
+                <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7]  shadow-[10px_0px_0px_0px_rgba(0,0,0,1)] max-h-screen overflow-auto w-full sm:max-w-[320px] h-full">
                     <button
                         onClick={toggleClass}
-                        className="absolute top-3 right-4"
-                    >
-                        <MdClose color="#fff" size={"2rem"} />
+                        className="absolute top-4 right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
+                        <MdClose color="#000" size={"2rem"} />
                     </button>
                     <div className="overflow-y-auto overflow-x-hidden   flex-grow">
-                        <div className="pb-[100px]">
-                            <ul className=" flex flex-col pt-8 space-y-1 ">
+                        <div className="pb-[100px] px-2">
+                            <ul className=" flex flex-col pt-6 space-y-4 ">
                                 <>
                                     {auth?.user?.username ? (
                                         <>
@@ -305,15 +304,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={"/account"}
-                                                    className={getNavLinkClass("/account")}
+                                                    className={`${getNavLinkClass("/account")} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <IoSettingsOutline
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         My Account
                                                     </span>
                                                 </Link>
@@ -327,15 +326,15 @@ export default function Header({ classMagicword }) {
                                                                 ?.username) ||
                                                         ""
                                                     }`}
-                                                    className={getNavLinkClass(`/${(auth && auth?.user?.username) || ""}`)}
+                                                    className={`${getNavLinkClass(`/${(auth && auth?.user?.username) || ""}`)} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <FaHeart
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         {auth?.user?.role == 1
                                                             ? "My Wishlist"
                                                             : "My Profile"}
@@ -345,14 +344,14 @@ export default function Header({ classMagicword }) {
                                             <li>
                                                 <a
                                                     href="https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk"
-                                                    className={getNavLinkClass("https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk")}>
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    className={`${getNavLinkClass("https://billing.stripe.com/p/login/4gw3eK9Za0sDf045kk")} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}>
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <SlCalender
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Subscription Billing
                                                     </span>
                                                 </a>
@@ -369,15 +368,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/shop`}
-                                                    className={getNavLinkClass('/shop')}
+                                                    className={`${getNavLinkClass('/shop')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <FaBasketShopping
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px]  tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Shop
                                                     </span>
                                                 </Link>
@@ -394,7 +393,7 @@ export default function Header({ classMagicword }) {
                                                                     size={"1.2rem"}
                                                                 />
                                                             </span>
-                                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                            <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                                 Gift Store
                                                             </span>
                                                         </Link>
@@ -403,15 +402,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/earnings`}
-                                                    className={getNavLinkClass('/earnings')}
+                                                    className={`${getNavLinkClass('/earnings')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <GiTwoCoins
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Earnings
                                                     </span>
                                                 </Link>
@@ -420,15 +419,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={route('creator.disputes.index')}
-                                                    className={getNavLinkClass(route('creator.disputes.index'))}
+                                                    className={`${getNavLinkClass(route('creator.disputes.index'))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <BiShield
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Disputes Center
                                                     </span>
                                                 </Link>
@@ -437,15 +436,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={route('financial.dashboard')}
-                                                    className={getNavLinkClass(route('financial.dashboard'))}
+                                                    className={`${getNavLinkClass(route('financial.dashboard'))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <SlCalculator
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span> 
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Finance & Tax
                                                     </span>
                                                 </Link>
@@ -454,15 +453,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/membership-dashboard`}
-                                                    className={getNavLinkClass('/membership-dashboard')}
+                                                    className={`${getNavLinkClass('/membership-dashboard')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <FaHouseChimneyUser
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Membership Dashboard
                                                     </span>
                                                 </Link>
@@ -494,15 +493,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/history`}
-                                                    className={getNavLinkClass('/history')}
+                                                    className={`${getNavLinkClass('/history')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <SiBuymeacoffee
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Support History
                                                     </span>
                                                 </Link>
@@ -511,15 +510,15 @@ export default function Header({ classMagicword }) {
                                                 <Link
                                                     onClick={toggleClass}
                                                     href={`/task/dashboard`}
-                                                    className={getNavLinkClass('/task/dashboard')}
+                                                    className={`${getNavLinkClass('/task/dashboard')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                                 >
-                                                    <span className="inline-flex justify-center items-center ml-4">
+                                                    <span className="inline-flex justify-center items-center ml-2">
                                                         <BiTask
-                                                            color="#fff"
-                                                            size={"1.2rem"}
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
                                                         />
                                                     </span>
-                                                    <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Tasks
                                                     </span>
                                                 </Link>
@@ -538,15 +537,15 @@ export default function Header({ classMagicword }) {
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("register")}
-                                                className={getNavLinkClass(route("register"))}
+                                                className={`${getNavLinkClass(route("register"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                             >
-                                                <span className="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-2">
                                                     <FaUserAlt
-                                                        color="#fff"
-                                                        size={"1.2rem"}
+                                                        className="text-gray-800 group-hover:text-black transition-colors"
+                                                        size={"1.5rem"}
                                                     />
                                                 </span>
-                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                     Sign Up
                                                 </span>
                                             </Link>
@@ -555,15 +554,15 @@ export default function Header({ classMagicword }) {
                                             <Link
                                                 onClick={toggleClass}
                                                 href={route("login")}
-                                                className={getNavLinkClass(route("login"))}
+                                                className={`${getNavLinkClass(route("login"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                             >
-                                                <span className="inline-flex justify-center items-center ml-4">
+                                                <span className="inline-flex justify-center items-center ml-2">
                                                     <IoIosUnlock
-                                                        color="#fff"
-                                                        size={"1.2rem"}
+                                                        className="text-gray-800 group-hover:text-black transition-colors"
+                                                        size={"1.5rem"}
                                                     />
                                                 </span>
-                                                <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                                <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                     Login
                                                 </span>
                                             </Link>
@@ -575,15 +574,15 @@ export default function Header({ classMagicword }) {
                                     <Link
                                         onClick={toggleClass}
                                         href={route("leaderboard")}
-                                        className={getNavLinkClass(route("leaderboard"))}
+                                        className={`${getNavLinkClass(route("leaderboard"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <FaRegStar
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
-                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Leaderboard
                                         </span>
                                     </Link>
@@ -592,15 +591,15 @@ export default function Header({ classMagicword }) {
                                     <Link
                                         onClick={toggleClass}
                                         href={"/giftstore"}
-                                        className={getNavLinkClass('/giftstore')}
+                                        className={`${getNavLinkClass('/giftstore')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <FiGift
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
-                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Gift Store
                                         </span>
                                     </Link>
@@ -610,15 +609,15 @@ export default function Header({ classMagicword }) {
                                         <Link
                                             onClick={toggleClass}
                                             href={`/refer-and-earn`}
-                                            className={getNavLinkClass('/refer-and-earn')}
+                                            className={`${getNavLinkClass('/refer-and-earn')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                         >
-                                            <span className="inline-flex justify-center items-center ml-4">
+                                            <span className="inline-flex justify-center items-center ml-2">
                                                 <GiTwoCoins
-                                                    color="#fff"
-                                                    size={"1.2rem"}
+                                                    className="text-gray-800 group-hover:text-black transition-colors"
+                                                    size={"1.5rem"}
                                                 />
                                             </span>
-                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                            <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                 Refer & Earn
                                             </span>
                                         </Link>
@@ -629,15 +628,15 @@ export default function Header({ classMagicword }) {
                                     <Link
                                         onClick={toggleClass}
                                         href={route("how-it-works")}
-                                        className={getNavLinkClass(route("how-it-works"))}
+                                        className={`${getNavLinkClass(route("how-it-works"))} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <TbSettingsCog
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
-                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             How it works
                                         </span>
                                     </Link>
@@ -646,36 +645,36 @@ export default function Header({ classMagicword }) {
                                 <li>
                                     <Link
                                         onClick={toggleClass}
-                                        className={`livechat ${getNavLinkClass()}`}
+                                        className={`livechat ${getNavLinkClass()} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <MdOutlineSupportAgent
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
-                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Need help ?
                                         </span>
                                     </Link>
                                 </li>
-                                <li className="bg-[#ff87b8] h-[1px] w-full max-w-[85%] m-auto mt-3"></li>
+                                <li className="bg-black h-[3px] w-full max-w-[85%] m-auto mt-3"></li>
                             </ul>
-                            <ul className="pt-3 text-white ">
+                            <ul className="pt-3 text-black space-y-2">
                                 <li>
                                     <a
                                         target="_blank"
                                         onClick={toggleClass}
                                         href="https://blog.spennypiggy.co"
-                                        className={getNavLinkClass("https://blog.spennypiggy.co")}
+                                        className={`${getNavLinkClass("https://blog.spennypiggy.co")} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <ImBlog
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
-                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Blog
                                         </span>
                                     </a>
@@ -685,17 +684,16 @@ export default function Header({ classMagicword }) {
                                         onClick={toggleClass}
                                         target="_blank"
                                         href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <MdOutlinePrivacyTip
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
                                         <span
-                                            className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
+                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
                                         >
                                             Privacy Policy
                                         </span>
@@ -706,17 +704,16 @@ export default function Header({ classMagicword }) {
                                         onClick={toggleClass}
                                         target="_blank"
                                         href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <BsCookie
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
                                         <span
-                                            className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
+                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
                                         >
                                             Cookies Policy
                                         </span>
@@ -728,17 +725,16 @@ export default function Header({ classMagicword }) {
                                         onClick={toggleClass}
                                         target="_blank"
                                         href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <LuBookMinus
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
                                         <span
-                                            className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
+                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
                                         >
                                             Acceptable Use Policy
                                         </span>
@@ -749,17 +745,16 @@ export default function Header({ classMagicword }) {
                                         onClick={toggleClass}
                                         target="_blank"
                                         href={route("terms-and-conditions")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <GiInjustice
-                                                color="#fff"
-                                                size={"1.2rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
                                         <span
-                                            className="ml-2 text-[17px]
-                                        tracking-wide truncate text-white"
+                                            className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black"
                                         >
                                             Terms
                                         </span>
@@ -770,15 +765,15 @@ export default function Header({ classMagicword }) {
                                         onClick={toggleClass}
                                         target="_blank"
                                         href={route("promotion-terms")}
-                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                        className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
-                                        <span className="inline-flex justify-center items-center ml-4">
+                                        <span className="inline-flex justify-center items-center ml-2">
                                             <CiDiscount1
-                                                color="#fff"
-                                                size={"1.4rem"}
+                                                className="text-gray-800 group-hover:text-black transition-colors"
+                                                size={"1.5rem"}
                                             />
                                         </span>
-                                        <span className="ml-2 text-[17px] tracking-wide truncate text-white">
+                                        <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Promotion Terms
                                         </span>
                                     </Link>
@@ -791,16 +786,16 @@ export default function Header({ classMagicword }) {
                                             method="post"
                                             href={route("logout")}
                                             as="button"
-                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6"
+                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                         >
-                                            <span className="inline-flex justify-center items-center ml-4">
+                                            <span className="inline-flex justify-center items-center ml-2">
                                                 <AiOutlineLogout
-                                                    color="#fff"
-                                                    size={"1.4rem"}
+                                                    className="text-gray-800 group-hover:text-black transition-colors"
+                                                    size={"1.5rem"}
                                                 />
                                             </span>
-                                            <span className="ml-2 text-[17px] tracking-wide truncate text-white">
-                                                Logout
+                                            <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
+                                                    Logout
                                             </span>
                                         </Link>
                                     </li>

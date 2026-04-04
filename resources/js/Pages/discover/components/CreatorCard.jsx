@@ -20,7 +20,7 @@ export default function CreatorCard({auth, item}) {
                     profile_status_lock={item.profile_status_lock == 2 ? true : false}
                     name={item.name} link={item.username || null} src={item.avatar_url}
                     subhead={`@${item.username || "anonymous"}`} username={item.username || ""}
-                    className="border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                    imgclass="!border-[2px] !border-[black] "
                     // onClick={() => trackSearchClick(item.id, item.username)}
                     />
                 </div>
