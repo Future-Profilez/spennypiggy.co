@@ -206,7 +206,7 @@ return [
     'administration_fee' => 1,
     'platform_fee_percentage' => env('PLATFORM_FEE_PERCENTAGE', 15),
     'transaction_fee_percentage' => env('TRANSACTION_FEE_PERCENTAGE', 2),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Debug Token for Production Log Access
@@ -217,7 +217,7 @@ return [
     | Access logs with: /debug/logs?debug_token=YOUR_TOKEN
     |
     */
-    
+
     'debug_token' => env('LOG_DEBUG_TOKEN'),
 
     // 'surprise_tax' => 10,

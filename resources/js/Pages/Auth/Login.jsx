@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import GuestLayout from "@/Layouts/GuestLayout";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/react";
 import LoaderButton from "@/Components/LoaderButton";
@@ -6,17 +6,32 @@ import { useAlerts } from "@/Components/Alerts";
 import InputError from "@/Components/InputError";
 import EnterOTP from "./EnterOTP";
 import axios from "axios";
-import { useState } from "react";
 import DeviceID from "@/includes/DeviceID";
 import { FaCircleUser } from "react-icons/fa6";
-
 import { RiLockPasswordLine } from "react-icons/ri";
+
+// Helper function to convert base64url to Uint8Array for WebAuthn
+function base64urlToUint8Array(base64url) {
+    const base64 = base64url
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), "=");
+
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
 
 export default function Login({ status, canResetPassword }) {
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get("redirect");
     const redirectmessage = urlParams.get("message");
     const [open, setOpen] = useState(false);
+    const [passkeyLoading, setPasskeyLoading] = useState(false);
+    const [hasPasskey, setHasPasskey] = useState(null); // null = unknown, true = has passkey, false = no passkey
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -43,29 +58,218 @@ export default function Login({ status, canResetPassword }) {
     }, []);
 
     const { flash } = usePage().props;
-    // useEffect(() => {
-    //     if(errors){
-    //         Object.entries(errors).forEach(([key, value]) => {
-    //             errorAlert(value);
-    //         });
-    //     }
-    //     if (flash?.error) {
-    //         errorAlert(flash.error);
-    //     }
-    //     if (flash?.success) {
-    //         successAlert(flash.success);
-    //     }
-    //     if (flash?.warning) {
-    //         warningAlert(flash.warning);
-    //     }
-    //     if (flash?.info) {
-    //         successAlert(flash.info);
-    //     }
-    // },[]);
 
-    const [animate, setAnimate] = useState('');
+    const [animate, setAnimate] = useState("");
+
+    // Check if WebAuthn is supported
+    const isWebAuthnSupported = () => {
+        return window.PublicKeyCredential !== undefined;
+    };
+
+    // Check if user has passkey registered
+    const checkUserHasPasskey = async (email) => {
+        if (!email) return false;
+
+        try {
+            const response = await axios.post("/webauthn/check", {
+                email: email,
+            });
+            return response.data.has_passkey || false;
+        } catch (error) {
+            console.error("Error checking passkey:", error);
+            return false;
+        }
+    };
+
+    // Check passkey status when email changes
+    useEffect(() => {
+        const checkPasskeyStatus = async () => {
+            if (data.email && isWebAuthnSupported()) {
+                const hasKey = await checkUserHasPasskey(data.email);
+                setHasPasskey(hasKey);
+            } else {
+                setHasPasskey(null);
+            }
+        };
+
+        const debounceTimer = setTimeout(() => {
+            checkPasskeyStatus();
+        }, 500); // Debounce to avoid too many requests
+
+        return () => clearTimeout(debounceTimer);
+    }, [data.email]);
+
+    const loginWithWindowsHello = async () => {
+        const { data } = await axios.post(
+            route("webauthn.login.userless.options"),
+        );
+
+        const publicKey = data.publicKey ?? data;
+
+        publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
+
+        const credential = await navigator.credentials.get({
+            publicKey,
+        });
+
+        const response = await axios.post(route("webauthn.login"), credential);
+
+        if (response.data.success) {
+            window.location.href = response.data.redirect_url;
+        }
+    };
+
+    // Handle passkey action (login with email, register, or userless login)
+    const handlePasskeyAction = async () => {
+        try {
+            setPasskeyLoading(true);
+
+            // USERNAME-LESS LOGIN (no email entered)
+            if (!data.email) {
+                try {
+                    const { data: options } = await axios.post(
+                        route("webauthn.login.userless.options"),
+                    );
+
+                    const publicKey = options.publicKey ?? options;
+                    publicKey.challenge = base64urlToUint8Array(
+                        publicKey.challenge,
+                    );
+
+                    const credential = await navigator.credentials.get({
+                        publicKey,
+                    });
+
+                    const response = await axios.post(
+                        route("webauthn.login"),
+                        credential,
+                    );
+
+                    console.log("Login response:", response.data);
+
+                    if (response.data.success) {
+                        const redirectUrl = response.data.redirect_url || "/";
+                        router.visit(redirectUrl);
+                    } else {
+                        errorAlert(response.data.message || "Login failed");
+                    }
+                    return;
+                } catch (routeError) {
+                    console.error("Userless route error:", routeError);
+                    errorAlert("Please enter your email first");
+                    return;
+                }
+            }
+
+            // First, check if user has a passkey
+            const hasPasskey = await checkUserHasPasskey(data.email);
+
+            // If user has no passkey, register one
+            if (!hasPasskey) {
+                try {
+                    const { data: options } = await axios.post(
+                        route("webauthn.register.options"),
+                        { email: data.email },
+                    );
+
+                    const publicKey = options.publicKey ?? options;
+                    publicKey.challenge = base64urlToUint8Array(
+                        publicKey.challenge,
+                    );
+                    publicKey.user.id = base64urlToUint8Array(
+                        publicKey.user.id,
+                    );
+
+                    const credential = await navigator.credentials.create({
+                        publicKey,
+                    });
+
+                    const response = await axios.post(
+                        route("webauthn.register"),
+                        credential,
+                    );
+
+                    if (response.data.success) {
+                        successAlert(
+                            "Passkey registered successfully! You can now login.",
+                        );
+                        // Reload to show passkey as enabled
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        errorAlert(
+                            response.data.message || "Registration failed",
+                        );
+                    }
+                    return;
+                } catch (error) {
+                    console.error("Registration error:", error);
+                    errorAlert(
+                        "Failed to register passkey: " +
+                            (error.message || "Unknown error"),
+                    );
+                    return;
+                }
+            }
+
+            // If user has passkey, login
+            if (hasPasskey) {
+                const { data: options } = await axios.post(
+                    route("webauthn.login.options"),
+                    { email: data.email },
+                );
+
+                const publicKey = options.publicKey ?? options;
+                publicKey.challenge = base64urlToUint8Array(
+                    publicKey.challenge,
+                );
+
+                if (publicKey.allowCredentials) {
+                    publicKey.allowCredentials = publicKey.allowCredentials.map(
+                        (item) => ({
+                            ...item,
+                            id: base64urlToUint8Array(item.id),
+                        }),
+                    );
+                }
+
+                const credential = await navigator.credentials.get({
+                    publicKey,
+                });
+
+                const response = await axios.post(
+                    route("webauthn.login"),
+                    credential,
+                );
+
+                console.log("Login response:", response.data);
+
+                if (response.data.success) {
+                    const redirectUrl = response.data.redirect_url || "/";
+                    router.visit(redirectUrl);
+                } else {
+                    errorAlert(response.data.message || "Passkey login failed");
+                }
+                return;
+            }
+        } catch (error) {
+            console.error("Passkey error:", error);
+
+            if (error.response?.data?.message) {
+                errorAlert(error.response.data.message);
+            } else if (error.name === "NotAllowedError") {
+                errorAlert("Authentication cancelled. Please try again.");
+            } else if (error.name === "InvalidStateError") {
+                errorAlert("This device already has a passkey registered.");
+            } else {
+                errorAlert("Unable to authenticate. Please try again.");
+            }
+        } finally {
+            setPasskeyLoading(false);
+        }
+    };
+
     const submit = (e) => {
-        setAnimate('');
+        setAnimate("");
         const deviceId = DeviceID();
         const loginData = {
             ...data,
@@ -73,7 +277,6 @@ export default function Login({ status, canResetPassword }) {
         };
         setLoading(true);
 
-        // axios will automatically handle CSRF token from cookie
         axios
             .post(route("login-user"), loginData, {
                 headers: {
@@ -86,17 +289,16 @@ export default function Login({ status, canResetPassword }) {
                 reset();
                 if (paramValue) {
                     router.visit(paramValue);
-                    setAnimate('animate-pulse');
+                    setAnimate("animate-pulse");
                 } else if (response.data && response.data.redirect_url) {
                     router.visit(response.data.redirect_url);
-                    // window.location.href = response.data.redirect_url;
                 } else {
                     window.location.reload();
                 }
             })
             .catch((error) => {
                 setLoading(false);
-                setAnimate('animate-shake');
+                setAnimate("animate-shake");
                 reset("password");
 
                 if (error.response) {
@@ -116,28 +318,6 @@ export default function Login({ status, canResetPassword }) {
                         );
                     }
                 }
-
-                // if (error.response) {
-                //     if (error.response.status === 422 || error.response.status === 429) {
-                //         const errorData = error.response.data;
-                //         if (errorData.message) {
-                //             errorAlert(errorData.message);
-                //         }
-                //         if (errorData.errors) {
-                //             Object.entries(errorData.errors).forEach(([field, messages]) => {
-                //                 if (Array.isArray(messages)) {
-                //                     messages.forEach(message => errorAlert(message));
-                //                 }
-                //             });
-                //         }
-                //     } else {
-                //         errorAlert('An unexpected error occurred. Please try again.');
-                //     }
-                // } else if (error.request) {
-                //     errorAlert('Network error. Please check your connection and try again.');
-                // } else {
-                //     errorAlert('An error occurred. Please try again.');
-                // }
             });
     };
 
@@ -187,6 +367,22 @@ export default function Login({ status, canResetPassword }) {
             });
     };
 
+    // Get button text based on state
+    const getPasskeyButtonText = () => {
+        if (passkeyLoading) return "PROCESSING...";
+        if (hasPasskey === true) return "LOGIN WITH PASSKEY";
+        if (hasPasskey === false) return "REGISTER PASSKEY";
+        return "SETUP PASSKEY";
+    };
+
+    // Get button styling based on state
+    const getPasskeyButtonStyle = () => {
+        if (hasPasskey === true) {
+            return "hover:!bg-green-500"; // Green for login
+        }
+        return "hover:!bg-purple-500"; // Purple for registration
+    };
+
     return (
         <GuestLayout>
             <Head title="Log in" description="Log in to your account" />
@@ -199,12 +395,12 @@ export default function Login({ status, canResetPassword }) {
                 </div>
 
                 {status && (
-                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] md:rounded-[40px]   border border-green-500/30 backdrop-blur-sm relative z-20">
+                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] md:rounded-[40px] border border-green-500/30 backdrop-blur-sm relative z-20">
                         {status}
                     </div>
                 )}
 
-                <div className="relative  w-full ">
+                <div className="relative w-full">
                     <div className="text-center mb-10">
                         <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome{" "}
@@ -224,7 +420,7 @@ export default function Login({ status, canResetPassword }) {
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[30px] md:rounded-[40px]   shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[30px] md:rounded-[40px] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div className="!bg-[#121212]/20 border-b border-pink-500/30 flex items-center p-4 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -235,10 +431,44 @@ export default function Login({ status, canResetPassword }) {
                         <div className="p-6 sm:p-8 bg-black/20 rounded-b-xl">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
-                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] md:rounded-[40px]   border border-red-500/20 animate-pulse">
+                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] md:rounded-[40px] border border-red-500/20 animate-pulse">
                                         {redirectmessage}
                                     </p>
                                 )}
+
+                                {/* Quick Login with Fingerprint/Face/Windows Hello Button */}
+                                {isWebAuthnSupported() && (
+                                    <div>
+                                        <LoaderButton
+                                            type="button"
+                                            onClick={handlePasskeyAction}
+                                            disabled={passkeyLoading}
+                                            className="relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-green-500 hover:!text-white pr-6 !text-black w-full"
+                                            spinnerclass="fill-white"
+                                        >
+                                            {passkeyLoading
+                                                ? "CHECKING DEVICE..."
+                                                : "LOGIN WITH FACE / FINGERPRINT / WINDOWS HELLO"}
+                                        </LoaderButton>
+                                        <p className="text-xs text-gray-500 text-center mt-2">
+                                            Use biometrics, Windows Hello, or
+                                            security key to login instantly
+                                            without typing email or password
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* OR Divider */}
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-gray-600"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-sm">
+                                        <span className="px-2 bg-black/20 text-gray-400 backdrop-blur-sm">
+                                            OR LOGIN WITH EMAIL
+                                        </span>
+                                    </div>
+                                </div>
 
                                 <div>
                                     <label
@@ -247,10 +477,11 @@ export default function Login({ status, canResetPassword }) {
                                     >
                                         Email Address
                                     </label>
-                                    <div className="relative group  ">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] md:rounded-[40px]  opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                    <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] md:rounded-[40px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <FaCircleUser
-                                            size="24" color="#000000"
+                                            size="24"
+                                            color="#000000"
                                             className="absolute top-[15px] left-3 z-1 login-icon"
                                         />
                                         <input
@@ -258,7 +489,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px]  focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
                                             autoComplete="username"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -281,16 +512,18 @@ export default function Login({ status, canResetPassword }) {
                                         Password
                                     </label>
                                     <div className="relative group relative">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] md:rounded-[40px]  opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
-                                        <RiLockPasswordLine color="#000000"
-                                            size="24" className="absolute top-[14px] left-3 z-1 login-icon"
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] md:rounded-[40px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <RiLockPasswordLine
+                                            color="#000000"
+                                            size="24"
+                                            className="absolute top-[14px] left-3 z-1 login-icon"
                                         />
                                         <input
                                             id="password"
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px]  focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
                                             autoComplete="current-password"
                                             placeholder="••••••••"
                                             onChange={(e) =>
@@ -319,15 +552,46 @@ export default function Login({ status, canResetPassword }) {
                                     )}
                                 </div>
 
-                                <div className="">
+                                {/* Login Button */}
+                                <div>
                                     <LoaderButton
                                         disabled={loading}
-                                        className={` ${animate} ${loading ? '!animate-pulse' : ''} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none  text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full`}
+                                        className={`${animate} ${loading ? "!animate-pulse" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full`}
                                         spinnerclass="fill-white"
                                     >
-                                        {loading ? "Logging In..." : "Log In"}
+                                        {loading ? "Logging In..." : "LOG IN"}
                                     </LoaderButton>
                                 </div>
+
+                                {/* Single Smart Passkey Button for Email Users */}
+                                {isWebAuthnSupported() && (
+                                    <div className="space-y-2">
+                                        <LoaderButton
+                                            type="button"
+                                            onClick={handlePasskeyAction}
+                                            disabled={
+                                                passkeyLoading ||
+                                                (hasPasskey === null &&
+                                                    data.email === "")
+                                            }
+                                            className={`relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent ${getPasskeyButtonStyle()} hover:!text-white pr-6 !text-black w-full ${passkeyLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+                                            spinnerclass="fill-white"
+                                        >
+                                            {passkeyLoading
+                                                ? hasPasskey === true
+                                                    ? "LOGGING WITH PASSKEY..."
+                                                    : "REGISTERING PASSKEY..."
+                                                : getPasskeyButtonText()}
+                                        </LoaderButton>
+                                        <p className="text-xs text-gray-500 text-center">
+                                            {hasPasskey === true
+                                                ? "Use your fingerprint, face ID, or security key to login instantly"
+                                                : hasPasskey === false
+                                                  ? "Register your fingerprint, face ID, or security key for faster login"
+                                                  : "Enter email to check passkey availability"}
+                                        </p>
+                                    </div>
+                                )}
                             </form>
                         </div>
                     </div>
