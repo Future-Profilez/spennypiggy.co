@@ -51,9 +51,8 @@ export default function Popup(props) {
                 enterTo="opacity-100 scale-100"
                 leave="ease-in duration-200"
                 leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-3xl bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}>
+                leaveTo="opacity-0 scale-95" >
+                <Dialog.Panel className={`w-full ${fullscreen ? 'w-full h-full max-w-none' : maxWidthClass} transform overflow-hidden rounded-2xl bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-left align-middle transition-all ${modalclass}  mymodal`}>
                   <div className={`p-0 ${bodyclass} `} >
                     {!hidecontrols ?
                     <div className='p-4 bg-pink-400 flex  border-b-[3px] border-black items-center '>

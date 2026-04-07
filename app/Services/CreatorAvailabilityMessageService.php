@@ -4,8 +4,12 @@ namespace App\Services;
 
 class CreatorAvailabilityMessageService
 {
-    public function supporterMessage(?array $subscriptionCheck = null, ?array $activityCheck = null): string
+    public function supporterMessage(?array $subscriptionCheck = null, ?array $activityCheck = null, ?array $stripeCheck = null): string
     {
+        if (is_array($stripeCheck) && ($stripeCheck['eligible'] ?? true) === false) {
+            return "This creator can’t receive payments right now due to an account status issue. Please try again later.";
+        }
+
         if (is_array($subscriptionCheck) && ($subscriptionCheck['eligible'] ?? true) === false) {
             $status = $subscriptionCheck['status'] ?? null;
             if ($status === 'no_subscription') {

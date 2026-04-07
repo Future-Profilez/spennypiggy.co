@@ -221,77 +221,80 @@ export default function Transactions(props) {
   };
 
   return (
-    <Authenticated>
-      <div className="max-w-[980px] mx-auto px-4 md:px-8 py-8">
-        <div className="relative mb-6">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/40 to-[#05EFB8]/40 rounded-[30px] md:rounded-[40px] blur opacity-10"></div>
-          <div className="relative rounded-[30px] md:rounded-[40px] bg-[#000]/40 backdrop-blur-3xl border border-white/10 p-6 md:p-8">
-            <h2 className="text-white font-black text-2xl">Support History</h2>
-            <p className="text-white/60">Your complete history — received and sent — with rewards and access.</p>
+    <Authenticated auth={auth.user} user={auth.user}>
+      <div className="bg-[#A2E4B8] min-h-screen py-8 md:py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className=" mb-8 mx-auto w-full">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+              <div>
+                <h1 className="font-bold text-2xl md:text-3xl font-black text-black uppercase">Support History</h1>
+                <p className="text-gray-700 font-bold mt-2">Your complete history — received and sent — with rewards and access.</p>
+              </div>
+            </div>
 
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-5 rounded-[20px] md:rounded-[30px] bg-gradient-to-br from-[#05EFB8]/10 to-transparent border border-[#05EFB8]/20">
-                <p className="text-[#05EFB8] text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Lifetime Received</p>
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-green-100 rounded-[25px] md:rounded-[30px] p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Received</p>
+                <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.received).length > 0 ? (
                     Object.entries(lifetimeStats.received).map(([cur, amt]) => (
-                      <span key={cur} className="text-white font-black text-2xl">
+                      <span key={cur} className="text-black font-black text-2xl md:text-3xl">
                         {formatMoney(amt)}
                       </span>
                     ))
                   ) : (
-                    <span className="text-white/20 font-black text-2xl">—</span>
+                    <span className="text-gray-400 font-black text-2xl md:text-3xl">—</span>
                   )}
                 </div>
               </div>
-              <div className="p-5 rounded-[20px] md:rounded-[30px] bg-gradient-to-br from-[#8C52FF]/10 to-transparent border border-[#8C52FF]/20">
-                <p className="text-[#8C52FF] text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Lifetime Sent</p>
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <div className="bg-blue-100 rounded-[25px] md:rounded-[30px] p-5 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-black text-xs font-black uppercase tracking-[0.2em] mb-2">Lifetime Sent</p>
+                <div className="flex items-center gap-2 flex-wrap">
                   {Object.keys(lifetimeStats.sent).length > 0 ? (
                     Object.entries(lifetimeStats.sent).map(([cur, amt]) => (
-                      <span key={cur} className="text-white font-black text-2xl">
+                      <span key={cur} className="text-black font-black text-2xl md:text-3xl">
                         {formatMoney(amt)}
                       </span>
                     ))
                   ) : (
-                    <span className="text-white/20 font-black text-2xl">—</span>
+                    <span className="text-gray-400 font-black text-2xl md:text-3xl">—</span>
                   )}
                 </div>
               </div>
             </div>
 
             {spend_summary && (
-              <div className="mt-4 p-5 rounded-[20px] md:rounded-[30px] bg-gradient-to-br from-white/5 to-transparent border border-white/10">
-                <p className="text-white text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Your Spend (Security Limits)</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="p-4 rounded-[16px] bg-white/5 border border-white/10">
-                    <p className="text-white/60 text-xs mb-1">Last 1 hour</p>
-                    <p className="text-white font-black text-xl">{formatMoney(spend_summary.spend_1h)}</p>
-                    <p className="text-white/40 text-xs">Limit: {formatMoney(spend_summary.limit_1h)}</p>
+              <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-black text-sm font-black uppercase tracking-widest mb-4">Your Spend (Security Limits)</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                    <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 1 hour</p>
+                    <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_1h)}</p>
+                    <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_1h)}</p>
                   </div>
-                  <div className="p-4 rounded-[16px] bg-white/5 border border-white/10">
-                    <p className="text-white/60 text-xs mb-1">Last 24 hours</p>
-                    <p className="text-white font-black text-xl">{formatMoney(spend_summary.spend_24h)}</p>
-                    <p className="text-white/40 text-xs">Limit: {formatMoney(spend_summary.limit_24h)}</p>
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                    <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 24 hours</p>
+                    <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_24h)}</p>
+                    <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_24h)}</p>
                   </div>
-                  <div className="p-4 rounded-[16px] bg-white/5 border border-white/10">
-                    <p className="text-white/60 text-xs mb-1">Last 7 days</p>
-                    <p className="text-white font-black text-xl">{formatMoney(spend_summary.spend_7d)}</p>
-                    <p className="text-white/40 text-xs">Limit: {formatMoney(spend_summary.limit_7d)}</p>
+                  <div className="p-4 rounded-[20px] md:!rounded-[30px] bg-gray-50 border-2 border-black">
+                    <p className="text-gray-600 font-bold text-xs mb-1 uppercase">Last 7 days</p>
+                    <p className="text-black font-black text-xl">{formatMoney(spend_summary.spend_7d)}</p>
+                    <p className="text-gray-500 font-bold text-xs mt-1">Limit: {formatMoney(spend_summary.limit_7d)}</p>
                   </div>
                 </div>
               </div>
             )}
             
             {auth?.user?.role === 1 && (
-              <div className="mt-4 p-4 rounded-[20px] md:rounded-[30px] bg-[#1DA1F2]/5 border border-[#1DA1F2]/20">
-                <div className="flex items-center gap-2 text-[#1DA1F2] mb-1">
-                  <FaTwitter size={16} />
-                  <span className="font-bold text-xs uppercase tracking-widest">Creator Feature: Announce on X</span>
+              <div className="mt-6 p-5 rounded-[25px] md:rounded-[30px] bg-[#E1F5FE] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
+                  <FaTwitter size={20} className="text-black" />
+                  <span className="font-black text-black text-sm uppercase tracking-widest">Creator Feature: Announce on X</span>
                 </div>
-                <p className="text-white/60 text-[13px] leading-relaxed">
+                <p className="text-gray-800 font-bold text-sm leading-relaxed">
                   Easily share your received gifts and support on your X (Twitter) profile! Use the bird icon on any transaction to post a pre-formatted announcement. 
-                  <span className="block mt-1 text-white/40">Note: Requires <Link href="/account" className="text-[#1DA1F2]/80 hover:text-[#1DA1F2] underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
+                  <span className="block mt-2 text-gray-600">Note: Requires <Link href="/account" className="text-pink-600 hover:text-pink-800 underline transition-colors">Auto Tweet</Link> to be enabled in your settings.</span>
                 </p>
               </div>
             )}
@@ -344,56 +347,50 @@ export default function Transactions(props) {
               </div>
             </Modal>
 
-            <div className="mt-6 flex items-center gap-2">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by user, wish, shop, membership level, task…"
-                className="flex-1 bg-white/5 border border-white/10 rounded-[20px] px-3 py-2 text-white/80 placeholder-white/30"
-              />
-              <button onClick={toCSV} className="px-4 py-2 rounded-[20px] text-[11px] uppercase tracking-widest bg-white/10 text-white/80 hover:bg-white/20">Export CSV</button>
-            </div>
-            {/* <div className="mt-4 flex flex-wrap gap-2">
-              {[
-                { key: 'all', label: 'All' },
-                { key: 'received', label: 'Received' },
-                { key: 'sent', label: 'Sent' },
-              ].map(t => (
-                <button key={t.key} onClick={() => setDirection(t.key)} className={`px-3 py-1 rounded-[30px] md:rounded-[40px] text-[11px] uppercase tracking-widest ${direction === t.key ? 'bg-pink-600 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>{t.label}</button>
-              ))}
-            </div> */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              {[
-                { key: 'all', label: 'All' },
-                { key: 'gift_wish', label: 'Wishes' },
-                { key: 'gift_membership', label: 'Memberships' },
-                { key: 'gift_bill', label: 'Bills' },
-                { key: 'gift_tip', label: 'Support' },
-                { key: 'gift_shop', label: 'Shop' },
-                { key: 'gift_task', label: 'Tasks' },
-              ].map(f => (
-                <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-[30px] md:rounded-[40px] 
-                  text-[14px] uppercase tracking-widest 
-                  ${filter === f.key ? 'bg-white text-black' 
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>{f.label}</button>
-              ))}
-            </div>
-            {Object.keys(currencyTotals).length ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(currencyTotals).map(([cur, amt]) => (
-                  <span key={cur} className="px-4 py-2 rounded-full bg-white/5 text-white/80 text-[12px] capitalize font-poppins">
-                    {cur.toUpperCase()}: {formatMoney(amt)}
-                  </span>
+            <div className="mt-6 p-6 rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by user, wish, shop, membership level, task…"
+                  className="flex-1 w-full bg-white border-[3px] border-black rounded-full px-4 py-3 text-black font-bold placeholder-gray-500 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:ring-0 focus:outline-none"
+                />
+                <button onClick={toCSV} className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-white border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Export CSV</button>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'gift_wish', label: 'Wishes' },
+                  { key: 'gift_membership', label: 'Memberships' },
+                  { key: 'gift_bill', label: 'Bills' },
+                  { key: 'gift_tip', label: 'Support' },
+                  { key: 'gift_shop', label: 'Shop' },
+                  { key: 'gift_task', label: 'Tasks' },
+                ].map(f => (
+                  <button key={f.key} onClick={() => setFilter(f.key)} className={`px-5 py-2 rounded-[15px] md:rounded-[20px] 
+                    text-sm font-black uppercase tracking-widest border-[3px] border-black transition-all
+                    ${filter === f.key ? 'bg-yellow-300 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' 
+                    : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'}`}>{f.label}</button>
                 ))}
               </div>
-            ) : null}
+              {Object.keys(currencyTotals).length ? (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {Object.entries(currencyTotals).map(([cur, amt]) => (
+                    <span key={cur} className="px-4 py-2 rounded-lg bg-gray-100 border-2 border-black text-black font-black text-xs uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      {cur.toUpperCase()}: {formatMoney(amt)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
         {loading && !data.events?.length ? (
           <LoadingScreen />
         ) : filtered.length ? (
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-4xl mx-auto px-4 sm:px-6">
             {filtered.map((e, i) => {
               const icon = iconFor(e.type);
               const cp = e.category === 'sent'
@@ -402,120 +399,119 @@ export default function Transactions(props) {
               const avatar = e.category === 'sent' ? (e?.creator?.avatar || '') : (e?.gifter?.avatar || '');
               return (
                 <FadeIn key={`tx-${i}`}>
-                  <div className="rounded-[20px] md:rounded-[30px] bg-[#1A1B23]/40 border border-white/10 p-4 md:p-6 hover:bg-[#1A1B23]/60 transition-all">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        {/* <div className="flex-shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-full bg-gradient-to-r from-[#05EFB8] to-[#8C52FF] border border-white/10 flex items-center justify-center text-[16px] md:text-[20px] text-white/90">
-                          {icon}
-                        </div> */}
+                  <div className="rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 md:px-6 md:py-4 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 w-full md:w-auto">
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-white font-bold text-base md:text-lg truncate">{titleFor(e)}</p>
-                            {isNew(e.created_at) ? (
-                              <span className="px-1.5 py-0.5 rounded bg-pink-600 text-[9px] font-bold text-white uppercase tracking-tighter animate-pulse">New</span>
-                            ) : null}
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest ${e.category === 'sent' ? 'bg-pink-600 text-white' : 'bg-white/10 text-white/70'}`}>
-                              {e.category}
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${e.category === 'sent' ? 'bg-pink-400 text-black' : 'bg-white text-black'}`}>
+                              {e.category === 'sent' ? 'Support Payment' : 'Support Received'}
                             </span>
+                            <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
+                                {e.category === 'sent' ? 'SENT' : 'RECEIVED'}
+                            </span>
+                            {isNew(e.created_at) ? (
+                              <span className="px-2 py-0.5 rounded-md bg-yellow-300 border-2 border-black text-[9px] font-black text-black uppercase tracking-widest animate-pulse shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">New</span>
+                            ) : null}
                           </div>
-                          <div className="mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full border border-white/10 object-cover" />
-                              <p className="text-white/40 text-[14px] uppercase tracking-widest truncate max-w-[120px] sm:max-w-none">
+                          <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                            <div className="flex items-center gap-2">
+                              <img src={avatar || defaultAvatar} alt="" className="h-8 w-8 rounded-full border-2 border-black object-cover shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />
+                              <p className="text-black font-black text-xs uppercase tracking-widest truncate max-w-[150px] sm:max-w-none">
                                 {e.category === 'sent'
-                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-white/70 hover:text-white">@{e.creator.username}</Link> : cp)
-                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-white/70 hover:text-white">@{e.gifter.username}</Link> : cp)
+                                  ? (e?.creator?.username ? <Link href={`/${e.creator.username}`} className="text-pink-600 hover:text-pink-800 underline transition-colors">@{e.creator.username}</Link> : cp)
+                                  : (e?.gifter?.username ? <Link href={`/${e.gifter.username}`} className="text-pink-600 hover:text-pink-800 underline transition-colors">@{e.gifter.username}</Link> : cp)
                                 }
                               </p>
                             </div>
-                            <span className="hidden sm:inline text-white/20">•</span>
-                            <p className="text-white/30 text-[14px] uppercase">
+                            <span className="hidden sm:inline text-black font-black">•</span>
+                            <p className="text-gray-500 font-bold text-xs uppercase tracking-widest">
                               {e.created_at}
                             </p>
                           </div>
 
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-4 flex flex-wrap gap-2">
                             {rewardChip(e) ? (
-                              <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/60 uppercase tracking-widest font-medium">
+                              <span className="px-3 py-1.5 rounded-full bg-white border-2 border-black text-[10px] text-black uppercase tracking-widest font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 {rewardChip(e)}
                               </span>
                             ) : null}
                             {e?.wish?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-white/80 underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
+                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.wish.name}”</Link>
                             ) : null}
                             {e?.membership?.level && e.open_link ? (
-                              <Link href={e.open_link} className="text-white/80 underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
+                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">Level “{e.membership.level}”</Link>
                             ) : null}
                             {e?.bill?.name && e.open_link ? (
-                              <Link href={e.open_link} className="text-white/80 underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
+                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.bill.name}”</Link>
                             ) : null}
                             {e?.shop?.name && e.open_link ? (
                               <div className="text-sm truncate block max-w-full italic">
                                 {e.open_link.startsWith('http') ? (
-                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-white/80 underline">“{e.shop.name}”</a>
+                                  <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-800 font-bold underline">“{e.shop.name}”</a>
                                 ) : (
-                                  <Link href={e.open_link} className="text-white/80 underline">“{e.shop.name}”</Link>
+                                  <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline">“{e.shop.name}”</Link>
                                 )}
                               </div>
                             ) : null}
                             {e?.task?.title && e.open_link ? (
-                              <Link href={e.open_link} className="text-white/80 underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
+                              <Link href={e.open_link} className="text-pink-600 hover:text-pink-800 font-bold underline text-sm truncate block max-w-full italic">“{e.task.title}”</Link>
                             ) : null}
                           </div>
 
                           {(e?.task?.reward_file || e?.wish?.reward_file || e.certificate_url || e?.task?.reward_note) && (
-                            <div className="mt-4 flex flex-col gap-2">
+                            <div className="mt-4 flex flex-col gap-3">
                               <div className="flex flex-wrap gap-2">
                                 {e?.task?.reward_file ? (
-                                  <a href={e.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600/30 transition-colors">Download Reward</a>
+                                  <a href={e.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
                                 ) : null}
                                 {e?.wish?.reward_file ? (
-                                  <a href={e.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-pink-600/20 text-pink-500 border border-pink-500/30 hover:bg-pink-600/30 transition-colors">Download Reward</a>
+                                  <a href={e.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
                                 ) : null}
                                 {e.certificate_url ? (
-                                  <a href={e.certificate_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white/10 text-white/70 border border-white/10 hover:bg-white/20 transition-colors">Certificate</a>
+                                  <a href={e.certificate_url} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Certificate</a>
                                 ) : null}
                               </div>
                               {e?.task?.reward_note ? (
-                                <p className="text-white/50 text-[11px] italic leading-relaxed bg-white/5 p-2 rounded-lg border-l-2 border-purple-500/50">Note: {e.task.reward_note}</p>
+                                <p className="text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">Note: {e.task.reward_note}</p>
                               ) : null}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-center md:flex-col md:items-end justify-between md:justify-start gap-3 mt-2 md:mt-0 pt-3 md:pt-0 border-t border-white/5 md:border-t-0">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center md:justify-end gap-4   ">
+                        <div className="flex items-center gap-3">
                           {auth?.user?.role === 1 && (
                             <button
                               onClick={() => handleTwitterClick(e)}
-                              className="p-2 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] border border-[#1DA1F2]/20 hover:bg-[#1DA1F2]/20 transition-all group"
+                              className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
                               title="Share on X" >
-                              <FaTwitter size={14} className="group-hover:scale-110 transition-transform" />
+                              <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
                             </button>
                           )}
                           {e.open_link ? (
                             e.open_link.startsWith('http') ? (
-                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white/10 text-white/70 border border-white/10 hover:bg-white/20 transition-all">Open</a>
+                              <a href={e.open_link} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</a>
                             ) : (
-                              <Link href={e.open_link} className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white/10 text-white/70 border border-white/10 hover:bg-white/20 transition-all">Open</Link>
+                              <Link href={e.open_link} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Open</Link>
                             )
                           ) : null}
                           {storyUrlFor(e) ? (
-                            <Link href={storyUrlFor(e)} className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-pink-600/10 text-pink-500 border border-pink-500/20 hover:bg-pink-600/20 transition-all">View Story</Link>
+                            <Link href={storyUrlFor(e)} className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">View Story</Link>
                           ) : null}
                         </div>
                         <div className="text-right">
-                          <div className="text-[#05EFB8] font-black text-lg md:text-xl">{amountFor(e)}</div>
+                          <div className="text-green-600 font-black text-xl md:text-2xl">{amountFor(e)}</div>
                           {Number(e?.vat_amount || 0) > 0 ? (
-                            <div className="text-[11px] text-white/50 font-bold mt-1">
+                            <div className="text-xs text-gray-600 font-black uppercase mt-1">
                               VAT: {formatMoney(Number(e.vat_amount || 0))}
                             </div>
                           ) : null}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-6">
+                    <div className="pt-0">
                       <ReactionsAndReply ev={e} viewer={auth?.user} />
                     </div>
                   </div>
@@ -523,8 +519,8 @@ export default function Transactions(props) {
               );
             })}
             {data?.has_more ? (
-              <div className="text-center">
-                <button onClick={() => fetchFeed(data?.next_before || null, true)} className="px-5 py-2 rounded-[30px] md:rounded-[40px] text-[11px] uppercase tracking-widest bg-white/10 text-white/80 hover:bg-white/20">Load More</button>
+              <div className="text-center mt-8">
+                <button onClick={() => fetchFeed(data?.next_before || null, true)} className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">Load More</button>
               </div>
             ) : null}
           </div>

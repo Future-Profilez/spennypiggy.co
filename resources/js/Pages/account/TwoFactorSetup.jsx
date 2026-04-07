@@ -95,7 +95,7 @@ export default function TwoFactorSetup({ auth }) {
                         </Link>
                     </div>
 
-                    <div className="bg-white rounded-[30px] md:rounded-[40px] p-4 ">
+                    <div className="bg-white rounded-[30px] p-4 ">
                         <h1 className="text-3xl font-gulfs mb-6 text-center uppercase">Multi-Step Verification</h1>
                         
                         {isTFA == 1 && backupCodes.length === 0 ? (

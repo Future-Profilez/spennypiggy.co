@@ -22,7 +22,7 @@ import sharlinkimg from "../../../assets/img/sharlinkimg.png";
 const StepCard = ({ step, title, description, img, icon: Icon, color, shadowColor, index }) => {
     return (
         <div 
-            className={`group bg-gray-900 border-2 border-${color} rounded-[30px] md:rounded-[40px] p-6 md:p-8 relative hover:-translate-y-3 transition-all duration-300 shadow-[8px_8px_0px_0px_${shadowColor}] h-full flex flex-col`}
+            className={`group bg-gray-900 border-2 border-${color} rounded-[30px] p-6 md:p-8 relative hover:-translate-y-3 transition-all duration-300 shadow-[8px_8px_0px_0px_${shadowColor}] h-full flex flex-col`}
             data-aos="fade-up"
             data-aos-delay={index * 100}
         >

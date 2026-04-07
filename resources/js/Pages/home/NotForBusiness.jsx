@@ -50,8 +50,8 @@ export default function NotForBusiness() {
                             </div>
 
                             <div className="w-full mb-8 relative max-w-[300px]">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px] md:rounded-[40px]  transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
-                                <div className="bg-black rounded-[30px] md:rounded-[40px]  transition-all duration-300  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]   relative overflow-hidden transition-all duration-300">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-pink-500 to-yellow-500 rounded-[30px]  transform rotate-3 scale-105 opacity-0 group-hover:opacity-30 transition-all duration-500 blur-xl"></div>
+                                <div className="bg-black rounded-[30px]  transition-all duration-300  border border-gray-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]   relative overflow-hidden transition-all duration-300">
                                      <LazyLoadImage
                                         alt={item.title}
                                         effect="blur"

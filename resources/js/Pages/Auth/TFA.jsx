@@ -107,11 +107,11 @@ export default function TFA({text}) {
                                     <h2 className="font-bold text-xl mb-1">Backup Codes</h2>
                                     <p className="text-gray-700 mb-4"> Please use the following backup codes to sign in to your account if you lose access to your authenticator app or phone.</p>
                                     <p className="text-gray-700 font-bold mb-4 ">Please take a screenshot or copy these code and store them in a safe place. These are one time generated.</p>
-                                    <div className="codes bg-gray-100 p-4 rounded-[30px] md:rounded-[40px]  relative">
+                                    <div className="codes bg-gray-100 p-4 rounded-[30px]  relative">
                                         {backupCodes && backupCodes.map((code, index) => (
                                             <p key={index} className="mb-2 text-lg">{code}</p>
                                         ))}
-                                        <button className="absolute top-2 right-3 text-[14px] bg-gray-200 px-3 py-1 rounded-[30px] md:rounded-[40px]  " onClick={()=>copyCodes(backupCodes)} >Copy</button>
+                                        <button className="absolute top-2 right-3 text-[14px] bg-gray-200 px-3 py-1 rounded-[30px]  " onClick={()=>copyCodes(backupCodes)} >Copy</button>
                                     </div>
                                 </div>
                                 </>
@@ -154,7 +154,7 @@ export default function TFA({text}) {
                                                 <span> Download google authenticator or other similar app to scan the QR code to get security codes.</span>
                                             </p>
                                             <div
-                                                className="rounded-[30px] md:rounded-[40px]  max-w-[200px] mx-auto block my-3"
+                                                className="rounded-[30px]  max-w-[200px] mx-auto block my-3"
                                                 dangerouslySetInnerHTML={{ __html: qr }}
                                             ></div>
                                             <div className="flex justify-center">
@@ -163,7 +163,7 @@ export default function TFA({text}) {
                                                         <input
                                                             key={index}
                                                             type="text"
-                                                            className="border-gray-300  text-center bg-gray-200 text-black rounded-[30px] md:rounded-[40px]  w-full max-w-[40px] min-h-[40px] otp-input mx-1 px-1 py-1 "
+                                                            className="border-gray-300  text-center bg-gray-200 text-black rounded-[30px]  w-full max-w-[40px] min-h-[40px] otp-input mx-1 px-1 py-1 "
                                                             maxLength="1"
                                                             value={data}
                                                             onChange={(e) => handleChange(e.target,index)}
@@ -175,7 +175,7 @@ export default function TFA({text}) {
                                             </div>
 
                                             <button onClick={verify}
-                                                className="border-0 pinkbg rounded-[30px] md:rounded-[40px]   px-3 py-2 text-lg text-white mx-auto block w-full mt-4 ">{verifying ? "VERIFYING..." : "VERIFY"}
+                                                className="border-0 pinkbg rounded-[30px]   px-3 py-2 text-lg text-white mx-auto block w-full mt-4 ">{verifying ? "VERIFYING..." : "VERIFY"}
                                             </button>
                                             {/* <button className="text-center text-primary my-3 cursor-pointer w-75 m-auto d-table font-normal">Verify with backup code.</button> */}
                                         </div>
@@ -187,7 +187,7 @@ export default function TFA({text}) {
                     <div className="backcodes">
                         <h2 className="font-bold text-xl mb-1">Two Factor Authentication</h2>
                         <p className="text-gray-700 mb-4"> Two-step verification adds an extra layer of protection to your account. After you've turned it on,we'll ask you to enter an additional security code when you sign in. We'll provide this security code only to you. </p>
-                            <button onClick={disable2fa} className="bg-red-600 text-white m-auto px-3 py-2 rounded-[30px] md:rounded-[40px] " >Disable 2FA</button>
+                            <button onClick={disable2fa} className="bg-red-600 text-white m-auto px-3 py-2 rounded-[30px] " >Disable 2FA</button>
                      </div>
                 }
             </Popup>

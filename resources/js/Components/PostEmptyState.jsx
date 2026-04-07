@@ -73,7 +73,7 @@ export default function PostEmptyState({ filter = 'all', onFilterChange = null, 
                 
                 {/* Additional context for filtered views */}
                 {filter !== 'all' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-[30px] md:rounded-[40px]   max-w-md">
+                    <div className="mt-6 p-4 bg-gray-50 rounded-[30px]   max-w-md">
                         <p className="text-sm text-gray-700">
                             <strong>Tip:</strong> {filter === 'supporters' && 'Send a tip'} 
                             {filter === 'members' && 'Purchase a membership'} 

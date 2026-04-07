@@ -13,7 +13,7 @@ export default function IntercomDebug({ scenarios, config, users }) {
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Configuration */}
-                        <div className="bg-white rounded-[30px] md:rounded-[40px]   shadow-md p-6">
+                        <div className="bg-white rounded-[30px]   shadow-md p-6">
                             <h2 className="text-xl font-semibold mb-4 text-green-800">Configuration</h2>
                             <div className="space-y-2 text-sm">
                                 <div>
@@ -32,7 +32,7 @@ export default function IntercomDebug({ scenarios, config, users }) {
                         </div>
 
                         {/* Test Users */}
-                        <div className="bg-white rounded-[30px] md:rounded-[40px]   shadow-md p-6">
+                        <div className="bg-white rounded-[30px]   shadow-md p-6">
                             <h2 className="text-xl font-semibold mb-4 text-blue-800">Available Test Users</h2>
                             <div className="space-y-3 text-sm">
                                 {Object.entries(users).map(([key, user]) => (
@@ -54,7 +54,7 @@ export default function IntercomDebug({ scenarios, config, users }) {
                     {/* Scenarios */}
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {Object.entries(scenarios).map(([scenario, settings]) => (
-                            <div key={scenario} className="bg-white rounded-[30px] md:rounded-[40px]   shadow-md p-6">
+                            <div key={scenario} className="bg-white rounded-[30px]   shadow-md p-6">
                                 <h3 className="text-lg font-semibold mb-3 capitalize text-purple-800">
                                     {scenario.replace('_', ' ')} Scenario
                                 </h3>

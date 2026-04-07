@@ -62,13 +62,13 @@ export default function RecentSupporters() {
   return (
     <>
     {loading ? (
-      <div className="bg-gray-100 rounded-[30px] md:rounded-[40px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
+      <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '200px'}}>
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
     ) : error ? (
-      <div className="bg-gray-100 rounded-[30px] md:rounded-[40px]  p-4 mb-6 text-center">
+      <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 text-center">
         <div className="alert alert-danger" role="alert">
           {error}
           <button 
@@ -79,7 +79,7 @@ export default function RecentSupporters() {
           </button>
         </div>
       </div>
-    ) : data.length > 0 ? <div className="bg-gray-100 rounded-[30px] md:rounded-[40px]  p-4 mb-6">
+    ) : data.length > 0 ? <div className="bg-gray-100 rounded-[30px]  p-4 mb-6">
       <h2 className="text-bls font-GillSans text-start text-2xl uppercase text-dark ">Recent Supporters</h2>
       <p className='text-gray-500  mb-3'>Latest supporters who have shown their love.</p>
       

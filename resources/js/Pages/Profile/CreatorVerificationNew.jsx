@@ -274,7 +274,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     return (
         <>
-            <div className="bg-white rounded-[30px] md:rounded-[40px]  ">
+            <div className="bg-white rounded-[30px]  ">
                 <div className="relative p-8 text-white">
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-6">
@@ -365,11 +365,11 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             </div>
                                         )}
                                         {areBasicStepsCompleted() && auth?.user?.profile_status_lock == 0 && (
-                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px] md:rounded-[40px]   mt-3">
+                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px]   mt-3">
                                                 <p className="text-sm font-medium mb-1">🚀 Next Steps:</p>
                                                 <p className="text-sm">Your profile will be automatically submitted for admin review within a few minutes</p>
                                                 <Link
-                                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-[30px] md:rounded-[40px]   hover:bg-blue-700 transition-colors font-medium text-sm mt-2"
+                                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-[30px]   hover:bg-blue-700 transition-colors font-medium text-sm mt-2"
                                                     href="/update-profile-lock-status"
                                                 >
                                                     Submit for Review Now
@@ -378,7 +378,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         )}
 
                                         {isFullyVerified() && (
-                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px] md:rounded-[40px]   mt-3">
+                                            <div className="bg-white bg-opacity-50 p-3 rounded-[30px]   mt-3">
                                                 <p className="text-sm font-medium mb-1">🎯 What's Next:</p>
                                                 <div className="space-y-1 text-sm">
                                                     <p>• Create wish items and set up memberships</p>
@@ -386,7 +386,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     <p>• Start receiving payments and support</p>
                                                 </div>
                                                 <Link
-                                                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-[30px] md:rounded-[40px]   hover:bg-green-700 transition-colors font-medium text-sm mt-2"
+                                                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-[30px]   hover:bg-green-700 transition-colors font-medium text-sm mt-2"
                                                     href="/dashboard"
                                                 >
                                                     Go to Dashboard
@@ -409,12 +409,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         Profile Verification Rejected
                                     </h3>
                                     <p className="text-red-700 mb-4">{user?.profile_reject_reason}</p>
-                                    <div className="bg-white bg-opacity-50 p-3 rounded-[30px] md:rounded-[40px]   mb-4">
+                                    <div className="bg-white bg-opacity-50 p-3 rounded-[30px]   mb-4">
                                         <p className="text-sm font-medium mb-1">📝 How to Fix:</p>
                                         <p className="text-sm">Review the rejection reason above, make necessary changes to your profile, then resubmit for review.</p>
                                     </div>
                                     <Link
-                                        className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-[30px] md:rounded-[40px]   hover:bg-red-700 transition-colors font-medium"
+                                        className="inline-flex items-center px-6 py-3 bg-red-600 text-white rounded-[30px]   hover:bg-red-700 transition-colors font-medium"
                                         href="/update-profile-lock-status"
                                     >
                                         Submit Re-verification Request
@@ -438,7 +438,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             return (
                                 <div
                                     key={step.id}
-                                    className={`step-card rounded-[30px] md:rounded-[40px]  p-6 transition-all duration-300 step-${status}`}
+                                    className={`step-card rounded-[30px]  p-6 transition-all duration-300 step-${status}`}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-start flex-1">
@@ -486,7 +486,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                                     if (step.isPending) {
                                                         return (
-                                                            <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-[30px] md:rounded-[40px]  ">
+                                                            <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-[30px]  ">
                                                                 <div className="flex items-center mb-2">
                                                                     <FaClock className="mr-2 text-yellow-600" size={16} />
                                                                     <span className="font-medium text-yellow-800">Under Review</span>
@@ -503,7 +503,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                                     if (step.isCompleted) {
                                                         return (
-                                                            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-[30px] md:rounded-[40px]  ">
+                                                            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-[30px]  ">
                                                                 <div className="flex items-center mb-2">
                                                                     <FaCheckCircle className="mr-2 text-green-600" size={16} />
                                                                     <span className="font-medium text-green-800">Completed Successfully</span>
@@ -518,7 +518,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     // Show validation requirements for incomplete steps
                                                     return (
                                                         <div className="mt-3">
-                                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-[30px] md:rounded-[40px]  ">
+                                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-[30px]  ">
                                                                 <div className="flex items-center mb-3">
                                                                     <BsInfoCircle className="mr-2 text-blue-600" size={16} />
                                                                     <span className="font-medium text-blue-800">Requirements</span>
@@ -547,7 +547,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <div className="ml-6">
                                             {step.id === 'subscription' && !step.isCompleted && (
                                                 <Link
-                                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px] md:rounded-[40px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/activate-subscription"
                                                 >
                                                     Start Free Trial
@@ -565,7 +565,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     text="Upload Photo"
                                                     updateProfileSteps={updateProfileSteps}
                                                     user={user}
-                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px] md:rounded-[40px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     global_currency={global_currency}
                                                 />
                                             )}
@@ -575,13 +575,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                     text="Write Bio"
                                                     updateProfileSteps={updateProfileSteps}
                                                     user={user}
-                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px] md:rounded-[40px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     global_currency={global_currency}
                                                 />
                                             )}
 
                                             {step.isCompleted && (
-                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px] md:rounded-[40px]   font-medium">
+                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px]   font-medium">
                                                     ✓ Complete
                                                 </div>
                                             )}
@@ -606,7 +606,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             return (
                                 <div
                                     key={step.id}
-                                    className={`step-card rounded-[30px] md:rounded-[40px]  p-6 transition-all duration-300 step-${status}`}
+                                    className={`step-card rounded-[30px]  p-6 transition-all duration-300 step-${status}`}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-start flex-1">
@@ -637,26 +637,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                                 {/* Status Messages */}
                                                 {status === 'locked' && (
-                                                    <div className="flex items-center mt-3 text-gray-500 bg-gray-100 px-3 py-2 rounded-[30px] md:rounded-[40px]  ">
+                                                    <div className="flex items-center mt-3 text-gray-500 bg-gray-100 px-3 py-2 rounded-[30px]  ">
                                                         <FaLock className="mr-2" size={16} />
                                                         <span>{step.id === 'stripe' && auth?.user?.profile_status_lock == 2 ? 'Waiting for admin identity approval' : 'Complete profile approval first'}</span>
                                                     </div>
                                                 )}
                                                 {step.isCompleted && (
-                                                    <div className="flex items-center mt-3 text-green-700 bg-green-50 px-3 py-2 rounded-[30px] md:rounded-[40px]  ">
+                                                    <div className="flex items-center mt-3 text-green-700 bg-green-50 px-3 py-2 rounded-[30px]  ">
                                                         <FaCheckCircle className="mr-2" size={16} />
                                                         <span className="font-medium">Completed ✓</span>
                                                     </div>
                                                 )}
                                                 {step.id === 'identity' && status === 'pending' && (
-                                                    <div className="flex items-center mt-3 text-yellow-700 bg-yellow-50 px-3 py-2 rounded-[30px] md:rounded-[40px]  ">
+                                                    <div className="flex items-center mt-3 text-yellow-700 bg-yellow-50 px-3 py-2 rounded-[30px]  ">
                                                         <BsClockFill className="mr-2" size={16} />
                                                         <span className="font-medium">Submitted. Waiting for admin review.</span>
                                                     </div>
                                                 )}
                                                 {step.id === 'identity' && auth?.user?.identity_admin_status == 2 && (
                                                     <div className="mt-3">
-                                                        <div className="flex items-center text-red-700 bg-red-50 px-3 py-2 rounded-[30px] md:rounded-[40px]  ">
+                                                        <div className="flex items-center text-red-700 bg-red-50 px-3 py-2 rounded-[30px]  ">
                                                             <BsXCircleFill className="mr-2" size={16} />
                                                             <span className="font-medium">Rejected by admin</span>
                                                         </div>
@@ -674,7 +674,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <div className="ml-6">
                                             {step.id === 'identity' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && (
                                                 <Link
-                                                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-[30px] md:rounded-[40px]   hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-[30px]   hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/stripe/identity-verification"
                                                 >
                                                     {auth?.user?.identity_status == 2 ? 'Reverify Identity' : 'Verify Identity'}
@@ -683,7 +683,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                             {step.id === 'stripe' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && auth?.user?.identity_status == 1 && (
                                                 <Link
-                                                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-[30px] md:rounded-[40px]   hover:from-green-700 hover:to-green-800 transition-all font-medium whitespace-nowrap shadow-lg"
+                                                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-[30px]   hover:from-green-700 hover:to-green-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                     href="/stripe"
                                                 >
                                                     Connect Stripe
@@ -691,13 +691,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             )}
 
                                             {step.isCompleted && (
-                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px] md:rounded-[40px]   font-medium">
+                                                <div className="px-4 py-2 bg-green-100 text-green-700 rounded-[30px]   font-medium">
                                                     ✓ Complete
                                                 </div>
                                             )}
 
                                             {status === 'locked' && (
-                                                <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-[30px] md:rounded-[40px]   font-medium">
+                                                <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-[30px]   font-medium">
                                                     Locked
                                                 </div>
                                             )}
@@ -710,7 +710,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                     {/* Help Section */}
                     {!isFullyVerified() && (
-                        <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[30px] md:rounded-[40px]  border border-blue-200">
+                        <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[30px]  border border-blue-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                                 <span className="text-2xl mr-2">💡</span>
                                 Need Help?

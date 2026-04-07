@@ -126,12 +126,7 @@ class CheckoutController extends Controller
                 }
                 return redirect()->back()->with('error', 'Creator not found.');
             }
-            if ($owner['is_subscribed'] !== 1) {
-                if (!empty($debugId)) {
-                    Log::info('Cart checkout debug: creator paused gifts', ['debug_id' => $debugId]);
-                }
-                return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please try again later when gift payments are active.');
-            }
+            
 
             // Client Requirement: Always charge in Creator's Currency
             $chargeCurrency = strtolower($owner->default_currency ?? 'gbp');
@@ -204,7 +199,8 @@ class CheckoutController extends Controller
 
             // Check if creator has card_payments capability
             if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
-                return redirect()->back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+                $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+            return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
             // Log the connected account ID for debugging
@@ -324,14 +320,6 @@ class CheckoutController extends Controller
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
-            if ($force3ds) {
-                $payload['payment_method_options'] = [
-                    'card' => [
-                        'request_three_d_secure' => 'any',
-                    ],
-                ];
-            }
-
             // Validate payload before sending to Stripe
             $validationError = $this->validateStripePayload($payload);
             if ($validationError) {
@@ -342,7 +330,7 @@ class CheckoutController extends Controller
             try {
                 // For Direct Charges, we pass the connectedAccountId as the second parameter
                 // This adds the 'stripe_account' => $connectedAccountId header to the request
-                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3ds);
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage(), [
                     'error_body' => $e->getJsonBody(),
@@ -1026,7 +1014,7 @@ class CheckoutController extends Controller
                 throw new \Exception("Payment record not found for session: " . $sessionId);
             }
 
-            
+
             Log::info("Retrieved StripePaymentDetail", [
                 'id' => $stripeid->id,
                 'session_id' => $stripeid->session_id,
@@ -1053,7 +1041,7 @@ class CheckoutController extends Controller
                 ]);
                 $payment_data->refresh();
 
-                
+
                 // Update GMV for creator
                 Helpers::addGmv($stripeid->owner_id, (float) $stripeid->amount_subtotal, $dd->owner->default_currency);
 
@@ -1153,18 +1141,18 @@ class CheckoutController extends Controller
                 if ($dd->user_id && !empty($dd->user->email)) {
                     Log::info("Creating UserPayment for user", ['user_id' => $dd->user_id]);
                     $total_amount = $dd->amount * $dd->quantity;
-                $creatorCurrency = strtoupper($dd->owner->default_currency ?? ($dd->wish->currency ?? 'GBP'));
-                $chargeCurrency = strtoupper($stripeid->currency ?? $creatorCurrency);
-                $displayCurrency = strtoupper(request()->cookie('currency', 'GBP'));
+                    $creatorCurrency = strtoupper($dd->owner->default_currency ?? ($dd->wish->currency ?? 'GBP'));
+                    $chargeCurrency = strtoupper($stripeid->currency ?? $creatorCurrency);
+                    $displayCurrency = strtoupper(request()->cookie('currency', 'GBP'));
                     $userPayment = new UserPayment();
                     $userPayment->from_user_id = $dd->user_id ?? null;
                     $userPayment->to_user_id = $dd->owner_id;
                     $userPayment->product_type = 'wish item';
                     $userPayment->amount = $total_amount;
-                $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
-                $userPayment->creator_currency = $creatorCurrency;
-                $userPayment->charge_currency = $chargeCurrency;
-                $userPayment->display_currency = $displayCurrency;
+                    $userPayment->currency = $dd->wish ? $dd->wish->currency : 'GBP';
+                    $userPayment->creator_currency = $creatorCurrency;
+                    $userPayment->charge_currency = $chargeCurrency;
+                    $userPayment->display_currency = $displayCurrency;
                     $userPayment->payment_method = 'stripe';
                     $userPayment->payment_details = json_encode($sessionId, true);
                     $userPayment->paid_at = Carbon::now();
@@ -1239,7 +1227,7 @@ class CheckoutController extends Controller
 
             // Clear user cache for the creator
             if ($stripeid->owner) {
-                 $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
+                $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
             }
 
             Log::info("About to redirect to thank-you page", ['username' => $stripeid->owner->username]);

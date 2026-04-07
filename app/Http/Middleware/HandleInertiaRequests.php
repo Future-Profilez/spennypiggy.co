@@ -88,13 +88,13 @@ class HandleInertiaRequests extends Middleware
             ],
             "flash" => function () use ($request) {
                 return [
-                    "success" => $request->session()->get("success"),
-                    "error" => $request->session()->get("error"),
-                    "warning" => $request->session()->get("warning"),
-                    "info" => $request->session()->get("info"),
-                    "step_up_required" => $request->session()->get("step_up_required"),
-                    "step_up_data" => $request->session()->get("step_up_data"),
-                    "step_up_context" => $request->session()->get("step_up_context"),
+                    "success" => $request->session()->pull("success"),
+                    "error" => $request->session()->pull("error"),
+                    "warning" => $request->session()->pull("warning"),
+                    "info" => $request->session()->pull("info"),
+                    "step_up_required" => $request->session()->pull("step_up_required"),
+                    "step_up_data" => $request->session()->pull("step_up_data"),
+                    "step_up_context" => $request->session()->pull("step_up_context"),
                 ];
             },
             'cart_count' =>  $items,

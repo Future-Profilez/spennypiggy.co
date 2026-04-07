@@ -68,9 +68,9 @@ export default function Index() {
                       ].map((item, i) => {
                         const [title, desc] = item.split("—");
                         return (
-                          <div key={i} className="bg-white p-3 md:p-6 rounded-[30px] md:rounded-[40px]   border border-gray-100 shadow-lg hover:border-pink-500 transition-colors group">
+                          <div key={i} className="bg-white p-3 md:p-6 rounded-[30px]   border border-gray-100 shadow-lg hover:border-pink-500 transition-colors group">
                             <div className="flex gap-2 md:!gap-4">
-                              <div className="bg-pink-100 text-pink-600 p-2 rounded-[30px] md:rounded-[40px]   h-fit shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
+                              <div className="bg-pink-100 text-pink-600 p-2 rounded-[30px]   h-fit shrink-0 group-hover:bg-pink-600 group-hover:text-white transition-colors">
                                 <Check size={20} strokeWidth={3} />
                               </div>
                               <div>
@@ -84,7 +84,7 @@ export default function Index() {
                     </div>
                     
                     {/* Founder Bonuses Block embedded in grid */}
-                    <div className="bg-black text-white p-8 rounded-[30px] md:rounded-[40px]  relative overflow-hidden flex flex-col justify-center shadow-2xl">
+                    <div className="bg-black text-white p-8 rounded-[30px]  relative overflow-hidden flex flex-col justify-center shadow-2xl">
                       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-yellow-400 to-pink-500 rounded-full blur-3xl opacity-20 -mr-16 -mt-16"></div>
                       <div className="relative z-1">
                           <h2 className="text-2xl sm:text-4xl lg:text-4xl  font-gulfs uppercase mb-6 leading-none">
@@ -126,7 +126,7 @@ export default function Index() {
                   </div>
 
                   {/* Toolkit */}
-                  <div className="md:bg-white  md:p-10 rounded-[30px] md:rounded-[40px]  shadow-xl md:border border-gray-100">
+                  <div className="md:bg-white  md:p-10 rounded-[30px]  shadow-xl md:border border-gray-100">
                     <h2 className="text-2xl md:text-3xl font-gulfs uppercase mb-8 text-black">
                       Your Full <br/> Monetisation Toolkit
                     </h2>
@@ -172,7 +172,7 @@ export default function Index() {
                             "Sends monthly reminders to creators",
                             "Keeps transaction records Stripe expects"
                           ].map((item, i) => (
-                            <div key={i} className="bg-gray-100 p-4 md:p-6 rounded-[30px] md:rounded-[40px]   text-center flex flex-col items-center justify-center border border-gray-100 hover:border-pink-500 transition-colors hover:shadow-lg">
+                            <div key={i} className="bg-gray-100 p-4 md:p-6 rounded-[30px]   text-center flex flex-col items-center justify-center border border-gray-100 hover:border-pink-500 transition-colors hover:shadow-lg">
                                 <p className="font-bold text-gray-80 text-lg">{item}</p>
                             </div>
                           ))}
@@ -181,7 +181,7 @@ export default function Index() {
                     </div>
 
                     {/* Disputes */}
-                    <div className="bg-black text-white rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  
+                    <div className="bg-black text-white rounded-[30px]  md:rounded-[30px]  
                      p-4 md:!p-16 relative overflow-hidden shadow-2xl">
                       <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                       
@@ -208,7 +208,7 @@ export default function Index() {
                           </div>
 
                           {/* Why Creators Lose Money on Other Apps */}
-                          <div className="md:bg-white/10 md:p-8 rounded-[30px] md:rounded-[40px]  md:border md:border-white/10 backdrop-blur-sm">
+                          <div className="md:bg-white/10 md:p-8 rounded-[30px]  md:border md:border-white/10 backdrop-blur-sm">
                             <h3 className="text-[16px] md:text-xl font-bold uppercase mb-6 text-red-400 flex items-center gap-2">
                                 <AlertTriangle  /> Why Creators Lose Money on Other Payment Apps
                             </h3>
@@ -224,7 +224,7 @@ export default function Index() {
                                   </li>
                                 ))}
                             </ul>
-                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px] md:rounded-[40px] ">
+                            <p className="text-black font-bold text-sm md:text-lg text-center bg-white py-3 px-4 rounded-[30px] ">
                                 Spenny Piggy exists to remove that risk.
                             </p>
                           </div>

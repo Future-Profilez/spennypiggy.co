@@ -17,6 +17,24 @@
       0 => 'Intervention\\Image\\ImageServiceProvider',
     ),
   ),
+  'jenssegers/agent' => 
+  array (
+    'aliases' => 
+    array (
+      'Agent' => 'Jenssegers\\Agent\\Facades\\Agent',
+    ),
+    'providers' => 
+    array (
+      0 => 'Jenssegers\\Agent\\AgentServiceProvider',
+    ),
+  ),
+  'laragear/webauthn' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laragear\\WebAuthn\\WebAuthnServiceProvider',
+    ),
+  ),
   'laravel/breeze' => 
   array (
     'providers' => 

@@ -12,6 +12,7 @@ import socialbg from "../../../assets/social-bg.png";
 import axios from 'axios';
 import { Switch } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
+import ManagePasskey from '@/Components/ManagePasskey';
 
 export default function EditProfile({ user, text, classes, updateProfileSteps, global_currency }) {
 
@@ -344,10 +345,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     }
 
     const renderTabs = () => (
-        <div className="flex gap-4 border-b-4 border-black mb-6 overflow-x-auto no-scrollbar pb-2">
+        <div className="flex ps-2 py-3 gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
             <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-2 px-6 text-sm md:text-base font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
+                className={`py-2 px-6 text-sm  font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
                     activeTab === 'profile' ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
                         : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
                 }`} >Profile Info
@@ -355,7 +356,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
 
             <button
                 onClick={() => setActiveTab('appearance')}
-                className={`py-2 px-6 text-sm md:text-base font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
+                className={`py-2 px-6 text-sm   font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
                     activeTab === 'appearance'
                         ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
                         : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
@@ -365,7 +366,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
             </button>
             <button
                 onClick={() => setActiveTab('settings')}
-                className={`py-2 px-6 text-sm md:text-base font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
+                className={`py-2 px-6 text-sm  font-black uppercase tracking-widest border-[3px] border-black rounded-xl transition-all whitespace-nowrap ${
                     activeTab === 'settings'
                         ? 'bg-yellow-300 text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]'
                         : 'bg-white text-black shadow-none hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'
@@ -618,6 +619,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                     )}
 
                                     <li className="mb-4">
+                                        <ManagePasskey email={user?.email} />
+                                    </li>
+
+                                    <li className="mb-4">
                                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-[20px] border border-gray-200">
                                             <div>
                                                 <h4 className="font-medium text-gray-800">Show Piggy Bank Earnings</h4>
@@ -663,18 +668,29 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                 </ul>
                             </div>
 
-                            <div className="mt-8 pb-8 pt-4 border-t-4 border-black flex gap-4 items-center">
+                            <div className="mt-8 pb-8 pt-4 flex gap-4 items-center">
                                 <button 
                                     type="button" 
                                     onClick={() => setClose(false)} 
-                                    className="w-full rounded-xl bg-gray-200 border-[3px] border-black font-black uppercase tracking-widest block p-3 hover:bg-gray-300 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                                    className="w-full rounded-xl bg-gray-200 border-[3px]
+                                    border-black font-black uppercase tracking-widest block p-3 
+                                    hover:bg-gray-300 transition-colors 
+                                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
+                                    hover:translate-x-[-2px] hover:translate-y-[-2px] 
+                                    hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                 >
                                     Cancel
                                 </button>
                                 <LoaderButton 
                                     type='submit' 
                                     disabled={processing} 
-                                    className='w-full rounded-xl bg-yellow-300 border-[3px] border-black font-black uppercase tracking-widest block p-3 hover:bg-yellow-400 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-black'
+                                    className='w-full rounded-xl bg-yellow-300 
+                                    border-[3px] border-black font-black 
+                                    uppercase font-poppins tracking-widest block p-3 hover:bg-yellow-400 
+                                    transition-colors font-bold !mt-0
+                                    shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
+                                    hover:translate-x-[-2px] hover:translate-y-[-2px] 
+                                    hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !text-black '
                                     spinnerclass='fill-black'
                                 >
                                     {loading || processing ? "Saving..." : "Save Changes"}

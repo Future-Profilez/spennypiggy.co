@@ -44,7 +44,7 @@ export default function GifterMembership(props) {
   const Item = ({key, w}) => { 
 
     const amount =(w && +w.amount) + ( w && +w.tax)
-    return <div className='wish-grant my-3 pb-3 box rounded-[30px] md:rounded-[40px]   p-3' key={key} >
+    return <div className='wish-grant my-3 pb-3 box rounded-[30px]   p-3' key={key} >
         <div className='flex justify-between items-center' >
           <Avatar 
           role={w && w.owner && w.owner.role}
@@ -70,7 +70,7 @@ export default function GifterMembership(props) {
 
   return (
     <div className={data && data.length < 1 && !loading ? 'd-none' : ''  } >
-      <div className='box rounded-[30px] md:rounded-[40px]   p-4 mt-4 mb-4' >
+      <div className='box rounded-[30px]   p-4 mt-4 mb-4' >
         <h3 className='text-large text-dark title mb-2' >Active Memberships </h3>
           {data && data.map((d, i)=>{ 
             return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

@@ -114,7 +114,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                                 <input 
                                     type="number" 
                                     placeholder="Min" 
-                                    className="w-full pl-6 pr-2 py-2 rounded-[30px] md:rounded-[40px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-pink-500"
+                                    className="w-full pl-6 pr-2 py-2 rounded-[30px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-pink-500"
                                     value={filters.minPrice || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
                                 />
@@ -125,7 +125,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                                 <input 
                                     type="number" 
                                     placeholder="Max" 
-                                    className="w-full pl-6 pr-2 py-2 rounded-[30px] md:rounded-[40px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-pink-500"
+                                    className="w-full pl-6 pr-2 py-2 rounded-[30px]   border border-gray-200 text-sm focus:ring-pink-500 focus:border-pink-500"
                                     value={filters.maxPrice || ''}
                                     onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
                                 />
@@ -137,7 +137,7 @@ export default function FiltersPanel({ isOpen, onClose, filters, setFilters, var
                     <div className="mb-8 border-t border-gray-100 pt-6">
                         <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wider">Sort By</h3>
                         <select 
-                            className="w-full rounded-[30px] md:rounded-[40px]   border-gray-200 text-gray-700 focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full rounded-[30px]   border-gray-200 text-gray-700 focus:ring-pink-500 focus:border-pink-500"
                             value={filters.sortBy || 'Trending'}
                             onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
                         >

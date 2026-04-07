@@ -20,7 +20,7 @@ export default function Comment({c, update, updateComments}) {
             </div>
             <div className="flex items-center justify-center space-x-2">
               <div className="block">
-                <div className="w-auto rounded-[30px] md:rounded-[40px]  px-2 ps-0  pb-2">
+                <div className="w-auto rounded-[30px]  px-2 ps-0  pb-2">
                   <div className="font-medium">
                     <a href="#" className="hover:underline text-sm">
                       <p className='text-base font-bold capitalize' >{item.user?.name || ''}</p>
@@ -60,7 +60,7 @@ export default function Comment({c, update, updateComments}) {
 
           <div className="items-center w-full ">
             <div className="block">
-              <div className="w-auto rounded-[30px] md:rounded-[40px]  px-2 ps-0  pb-2">
+              <div className="w-auto rounded-[30px]  px-2 ps-0  pb-2">
                 <div className="font-medium">
                   <a href="#" className="hover:underline text-sm">
                     <p className='text-base font-bold capitalize' >{c?.user?.name || ''}</p>

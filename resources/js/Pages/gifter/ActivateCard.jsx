@@ -38,7 +38,7 @@ export default function ActivateCard() {
                 <div className="mb-6 mx-auto border-mints swhbg shadow-mints rounded-[20px] md:rounded-[30px] ">
                     {(auth?.user?.profile_status_lock == 1 || auth?.user?.profile_status_lock == 0) 
                     && auth?.user?.is_500_limit_exceeded == 1 && auth?.user?.is_subscribed !== 1  ? (
-                        <div className="dark2 rounded-[30px] md:rounded-[40px]  p-3">
+                        <div className="dark2 rounded-[30px]  p-3">
                             <div className="stripNote p-3 p-md-4">
                                 <h4 className="text-[30px] font-GillSans text-white text-center uppercase mb-3">
                                    {auth?.user?.profile_reject_reason ? 'Retry Card Verification' : 'Card Verification' }
@@ -92,7 +92,7 @@ export default function ActivateCard() {
                     )}
 
                     {auth?.user?.profile_status_lock == 1 && auth?.user?.is_subscribed == 1 ? (
-                        <div className="dark2 rounded-[30px] md:rounded-[40px]  p-3">
+                        <div className="dark2 rounded-[30px]  p-3">
                             <div className="stripNote p-3 p-md-4">
                                 <h4 className="text-[25px] font-GillSans text-yellow-400 text-center uppercase mb-3">
                                     Verification Pending

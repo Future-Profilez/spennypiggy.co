@@ -5,7 +5,7 @@ export default function UpgradeStripeAccount() {
     const [loading, setLoading] = useState(false);
   return (
     <>
-        <div className="w-full finishs  mb-4 rounded-[30px] md:rounded-[40px]   bg-white !border-voilet  shadow-voilet  ">
+        <div className="w-full finishs  mb-4 rounded-[30px]   bg-white !border-voilet  shadow-voilet  ">
             <div className='border-bottom border-voilet' >
                 <h2 className='text-large font-GillSans uppercase lightpink p-3 goaltitle'>Action Required</h2>
             </div>

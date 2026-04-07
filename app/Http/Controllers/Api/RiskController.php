@@ -27,6 +27,69 @@ class RiskController extends Controller
      * POST /risk/step-up/verify
      * Verify OTP and proceed with payment intent creation if successful.
      */
+    public function verifyStepUpPasskey(\Laragear\WebAuthn\Http\Requests\AssertedRequest $request)
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'amount' => 'required|integer',
+            'creator_id' => 'required|string',
+            'email' => 'nullable|email',
+            'risk_identity_id' => 'nullable',
+            'card_fingerprint' => 'nullable|string',
+            'device_id' => 'nullable|string',
+            'currency' => 'required|string|size:3',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        $user = $request->login();
+
+        if (!$user) {
+            return response()->json(['error' => 'Passkey verification failed. Device may not be registered.'], 400);
+        }
+
+        // Update credential last used
+        $credentialId = $request->input('id');
+        $credential = \Laragear\WebAuthn\Models\WebAuthnCredential::where('credential_id', $credentialId)
+            ->orWhere('id', $credentialId)->first();
+        
+        if ($credential) {
+            $credential->update([
+                'last_used_at' => now(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        }
+
+        $context = $this->buildContext($request);
+        
+        // 1. Resolve Identity
+        if ($request->filled('risk_identity_id')) {
+            $riskIdentityId = $request->risk_identity_id;
+            $identity = \App\Models\RiskIdentity::find($riskIdentityId);
+            if (!$identity) {
+                return response()->json(['error' => 'Session expired. Please request a new verification code.'], 400);
+            }
+        } else {
+            $identityService = app(\App\Services\Risk\RiskIdentityService::class);
+            $identity = $identityService->resolveIdentity($context);
+        }
+
+        // 2. Bypass OTP by creating a log
+        $log = \App\Models\ConfirmationLog::create([
+            'payment_id' => null,
+            'risk_identity_id' => $identity->id,
+            'ip_hash' => $identity->ip_hash,
+            'device_id_hash' => $identity->device_id_hash,
+            'otp_verified' => true,
+            'typed_confirmation' => 'PASSKEY_VERIFIED',
+            'spend_snapshot' => $identity->rollup ? $identity->rollup->toArray() : [],
+        ]);
+
+        return $this->processVerifiedStepUp($request, $context, $identity, $log);
+    }
+
     public function verifyStepUp(Request $request)
     {
         $request->validate([
@@ -69,6 +132,11 @@ class RiskController extends Controller
         
         $log = $otpResult['log'];
 
+        return $this->processVerifiedStepUp($request, $context, $identity, $log);
+    }
+
+    protected function processVerifiedStepUp($request, $context, $identity, $log)
+    {
         // 3. Re-evaluate Risk (to get reason codes like MARK_REVIEW_HOLD)
         $riskResult = $this->riskEngine->evaluate($context);
         $reasons = $riskResult['reason_codes'];

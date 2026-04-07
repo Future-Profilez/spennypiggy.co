@@ -469,6 +469,8 @@ class MembershipController extends Controller
                 return $riskData;
             }
 
+            $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
+
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
@@ -498,7 +500,8 @@ class MembershipController extends Controller
 
                 // Check if creator has card_payments capability
                 if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
-                    return back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+                    $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+            return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
                 }
 
                 $customerRecord = ConnectedAccountCustomer::where([
@@ -687,7 +690,7 @@ class MembershipController extends Controller
                 }
 
                 // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS);
 
                 $sub->update([
                     'session_id' => $session->id,

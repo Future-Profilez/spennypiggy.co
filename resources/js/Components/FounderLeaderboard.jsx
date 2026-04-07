@@ -77,7 +77,7 @@ export default function FounderLeaderboard({ currentUser }) {
 
     if (loading) {
         return (
-            <div className="bg-white rounded-[30px] md:rounded-[40px]  shadow-lg p-6">
+            <div className="bg-white rounded-[30px]  shadow-lg p-6">
                 <div className="animate-pulse">
                     <div className="h-6 bg-gray-200 rounded mb-4"></div>
                     <div className="space-y-3">
@@ -92,7 +92,7 @@ export default function FounderLeaderboard({ currentUser }) {
 
     if (error) {
         return (
-            <div className="bg-white rounded-[30px] md:rounded-[40px]  shadow-lg p-6">
+            <div className="bg-white rounded-[30px]  shadow-lg p-6">
                 <div className="text-center text-red-600">
                     <p>{error}</p>
                     <button 
@@ -108,7 +108,7 @@ export default function FounderLeaderboard({ currentUser }) {
 
     if (!leaderboardData || !leaderboardData.leaderboard || leaderboardData.leaderboard.length === 0) {
         return (
-            <div className="bg-white rounded-[30px] md:rounded-[40px]  shadow-lg p-6">
+            <div className="bg-white rounded-[30px]  shadow-lg p-6">
                 <div className="text-center text-gray-500">
                     <FaCrown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                     <p>No leaderboard data available for {leaderboardData?.current_month || 'this month'}.</p>
@@ -118,7 +118,7 @@ export default function FounderLeaderboard({ currentUser }) {
     }
 
     return (
-        <div className="bg-white rounded-[30px] md:rounded-[40px]  shadow-lg overflow-hidden">
+        <div className="bg-white rounded-[30px]  shadow-lg overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
                 <div className="flex items-center justify-between">

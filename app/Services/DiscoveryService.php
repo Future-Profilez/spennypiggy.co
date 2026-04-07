@@ -93,9 +93,16 @@ class DiscoveryService
     public function getSearchCreators($filters, $limit = 24)
     {
         $query = User::query()
-            ->where('suspended_account', 0)
-            ->where('role', 1)
-            ->where('profile_status_lock', 2);
+            ->where('suspended_account', 0);
+            
+        // Only restrict to role 1 if not explicitly searching
+        if (empty($filters['search'])) {
+            $query->where('role', 1)
+                  ->where('profile_status_lock', 2);
+        } else {
+            // When searching, include both creators and gifters (role 0 and 1)
+            $query->whereIn('role', [0, 1]);
+        }
         
         $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
         $offset = ($page - 1) * $limit;

@@ -1,5 +1,3 @@
-import React from 'react'
-
 export default function Maintaince() {
   return (
     <>
@@ -7,7 +5,7 @@ export default function Maintaince() {
          body {padding-bottom: 0px !important;}
       `}</style>
       <div className="min-h-screen md:py-12 overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#F94F96] via-[#EFEA7B] to-white p-6">
-         <div className="max-w-2xl w-full bg-[#fff] md:bg-white rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  shadow-xl p-6 sm:p-8 md:p-12 text-center relative">
+         <div className="max-w-2xl w-full bg-[#fff] md:bg-white rounded-[30px]  md:rounded-[30px]  shadow-xl p-6 sm:p-8 md:p-12 text-center relative">
             <div className="absolute inset-x-0 -bottom-10 opacity-10 pointer-events-none">
                   <div className="h-24 bg-repeat-x bg-[radial-gradient(circle_at_1px_1px,#F94F96_1px,transparent_0)]" />
             </div>

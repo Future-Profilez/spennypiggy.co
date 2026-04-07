@@ -117,7 +117,7 @@ export default function Allwishes(props) {
                                 onChange={(e) => setType(e.target.value)}
                                 id="types"
                                 className=" filter-select bg-gray-50 border border-gray-300 text-gray-900
-                        text-sm rounded-[30px] md:rounded-[40px]  focus:ring-blue-500 focus:border-blue-500
+                        text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500
                         block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
                         dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             >
@@ -134,7 +134,7 @@ export default function Allwishes(props) {
                                 onChange={(e) => setprice(e.target.value)}
                                 id="prices"
                                 className="filter-select bg-gray-50 border border-gray-300 text-gray-900
-                            text-sm rounded-[30px] md:rounded-[40px]  focus:ring-blue-500 focus:border-blue-500
+                            text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500
                             block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
                             dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             >
@@ -153,13 +153,13 @@ export default function Allwishes(props) {
 
                 <div className="mt-3 mb-2 tagsfilterbar flex flex-wrap">
                     <button onClick={() => fetch_wishes(page, "")}
-                        className={` me-2 mb-2  rounded-[30px] md:rounded-[40px]  text-[14px] p-2 px-3 ${ tag == "" ? "bluebg text-white" : "bg-gray-300"}`}>All</button>
+                        className={` me-2 mb-2  rounded-[30px]  text-[14px] p-2 px-3 ${ tag == "" ? "bluebg text-white" : "bg-gray-300"}`}>All</button>
                     {lists &&
                         lists.map((l, i) => {
                             return (
                                 <button
                                     onClick={() => fetch_wishes(page, l)}
-                                    className={` me-2 mb-2  rounded-[30px] md:rounded-[40px]  text-[14px] p-2 px-3 ${
+                                    className={` me-2 mb-2  rounded-[30px]  text-[14px] p-2 px-3 ${
                                         tag == l? "bluebg text-white": "bg-gray-300"}`} >
                                     {l}
                                 </button>

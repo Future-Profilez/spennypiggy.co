@@ -32,25 +32,25 @@ export default function Gifter({ IsloggedIn,  sLinks }){
   const AboutScreen = () => {
     return (
         <div className="about-sec m-auto max-w-4xl">
-            <div className="relative mb-10 rounded-[30px] md:rounded-[40px]  overflow-hidden bg-[#1A1B23]/40 border border-white/10 shadow-2xl group">
-                <div className="p-12 relative">
+            <div className="relative mb-10 rounded-3xl overflow-hidden bg-[#78a883] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group">
+                <div className="p-8 md:p-12 relative">
                     <div className="">
-                        <h3 className="text-[17px] font-black text-white/30 tracking-[0.25em] uppercase mb-4 flex items-center gap-4">
+                        <h3 className="text-sm font-black text-white/70 tracking-widest uppercase mb-4 flex items-center gap-4">
                             About Me
                         </h3>
-                        <p className="text-white/80 text-lg md:text-xl leading-relaxed font-medium">
-                            {user && user.bio ? user.bio : "Supporting incredible creators and being part of amazing journeys. 💖"}
+                        <p className="text-white text-lg md:text-xl leading-relaxed font-bold">
+                            {user && user.bio ? user.bio : "The overall effect is both humbling and inspiring in its clarity."}
                         </p>
                         
-                        <div className="mt-8 pt-8 border-t border-white/5">
-                            <SocialLinks textcolor="text-white/40 hover:text-[#8C52FF] transition-all duration-300" links={sLinks} />
+                        <div className="mt-8 pt-8 border-t-[3px] border-black/20">
+                            <SocialLinks textcolor="text-white hover:text-black transition-all duration-300" links={sLinks} />
                         </div>
                     </div>
 
                     {IsloggedIn && user?.edit_bio_reason ? (
-                        <div className="mt-10 p-6 rounded-[30px] md:rounded-[40px]  bg-red-500/5 border border-red-500/10">
-                            <p className="text-red-400 font-black text-xs tracking-widest uppercase mb-2">Review Required</p>
-                            <p className="text-red-400/70 text-sm leading-relaxed">{user?.edit_bio_reason}</p>
+                        <div className="mt-10 p-6 rounded-xl bg-red-400 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <p className="text-black font-black text-xs tracking-widest uppercase mb-2">Review Required</p>
+                            <p className="text-gray-900 font-bold text-sm leading-relaxed">{user?.edit_bio_reason}</p>
                         </div>
                     ) : null}
                 </div>
@@ -58,15 +58,14 @@ export default function Gifter({ IsloggedIn,  sLinks }){
 
             {/* Supporter Offerings Card */}
             <div className="relative group mb-10">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/80 to-[#F94F97]/80 rounded-[30px] md:rounded-[40px]  blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
-                <div className="relative p-8 md:p-12 rounded-[30px] md:rounded-[40px]  bg-[#000]/50 backdrop-blur-3xl border border-white/10 shadow-2xl">
+                <div className="relative p-8 md:p-12 rounded-3xl bg-[#5d6a59] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                         <div>
-                            <h3 className="text-sm font-black text-white/40 tracking-[0.25em] uppercase mb-4 flex items-center gap-4">
-                                <div className="w-8 h-[1px] bg-gradient-to-r from-[#F94F97] to-transparent"></div>
+                            <h3 className="text-xs font-black text-white/60 tracking-widest uppercase mb-4 flex items-center gap-4">
+                                <div className="w-8 h-[3px] bg-pink-400 border border-black"></div>
                                 Your Exclusive Benefits
                             </h3>
-                            <p className="text-white text-2xl font-black">As a SpennyPiggy Supporter, you enjoy:</p>
+                            <p className="text-white text-2xl font-black tracking-wide">As a SpennyPiggy Supporter, you enjoy:</p>
                         </div>
                     </div>
 
@@ -79,10 +78,10 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                             { title: "Private Feed", desc: "A unified feed of all creators you support.", icon: "📱" },
                             { title: "Custom Flair", desc: "Unique visual styles for your profile and comments.", icon: "✨" },
                         ].map((benefit, i) => (
-                            <div key={i} className="p-6 rounded-[30px] md:rounded-[40px]  bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-                                <div className="text-3xl mb-4">{benefit.icon}</div>
+                            <div key={i} className="p-6 rounded-2xl bg-white/5 border-[3px] border-black/20 hover:bg-white/10 hover:border-black/40 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-300">
+                                <div className="text-3xl mb-4 drop-shadow-md">{benefit.icon}</div>
                                 <h4 className="text-white font-black text-sm uppercase tracking-widest mb-2">{benefit.title}</h4>
-                                <p className="text-white/50 text-xs leading-relaxed">{benefit.desc}</p>
+                                <p className="text-white/60 font-bold text-xs leading-relaxed">{benefit.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -93,20 +92,20 @@ export default function Gifter({ IsloggedIn,  sLinks }){
   }
 
   return (
-    <div className={` relative z-1 min-h-screen pb-20 ${IsloggedIn ? "IsloggedIn" : ""}`} >
+    <div className={`relative z-1 min-h-screen pb-20 bg-[#A2E4B8] ${IsloggedIn ? "IsloggedIn" : ""}`} >
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-8">
           {IsloggedIn ? (
             <div className="inlinetab ">
                 <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-                    <Tab.List className="flex items-center justify-center  gap-2 mb-12  overflow-x-auto scrollbar-hide rounded-full p-2">
+                    <Tab.List className="flex items-center justify-center gap-3 md:gap-4 mb-12 overflow-x-auto scrollbar-hide p-2 pt-1">
                         {['About', 'Feed', 'Memberships', 'Gifts', 'Tips', 'Media'].map((category, idx) => (
                             <Tab key={category} as={Fragment} >
                                 {({ selected }) => (
                                     <button
-                                        className={`relative focus:border-0 focus:outline-none text-sm 
-                                            font-black tracking-[0.2em] uppercase transition-all duration-300 whitespace-nowrap
-                                            py-[10px] px-6 bg-gray-300 rounded-xl 
-                                            ${selected ? 'text-white bg-pink-600' : ''} hover:opacity-70
+                                        className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
+                                            font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap
+                                            py-2 px-6 border-[3px] border-black rounded-2xl 
+                                            ${selected ? 'text-black bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'text-black bg-white hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'} 
                                         `}
                                     >
                                         {category}
