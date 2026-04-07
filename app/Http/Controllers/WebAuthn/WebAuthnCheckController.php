@@ -25,8 +25,11 @@ class WebAuthnCheckController extends Controller
                 ]);
             }
 
-            $hasPasskey = $user->webAuthnCredentials()->exists();
-            $passkeys = $user->webAuthnCredentials()
+            // Get passkeys specific to the current device (using browser/platform approximation)
+            // or just return all passkeys and let the frontend figure it out
+            $passkeysQuery = $user->webAuthnCredentials();
+            $hasPasskey = $passkeysQuery->exists();
+            $passkeys = $passkeysQuery
                 ->select('id', 'platform', 'browser', 'created_at', 'last_used_at')
                 ->orderBy('created_at', 'desc')
                 ->get()
@@ -40,8 +43,33 @@ class WebAuthnCheckController extends Controller
                     ];
                 });
 
+            // Also check if there's a passkey specifically for this exact device
+            $agent = request()->userAgent();
+            $ip = request()->ip();
+            
+            // This is a rough heuristic - WebAuthn doesn't provide a guaranteed way 
+            // to link a specific browser instance to a credential before the challenge
+            // so we rely on the browser/platform fingerprint
+            $parsedAgent = new \Jenssegers\Agent\Agent();
+            $parsedAgent->setUserAgent($agent);
+            
+            $browser = $parsedAgent->browser() . ' ' . $parsedAgent->version($parsedAgent->browser());
+            $platform = $parsedAgent->platform() . ' ' . $parsedAgent->version($parsedAgent->platform());
+            
+            $hasDevicePasskey = $user->webAuthnCredentials()
+                ->where(function($query) use ($browser, $platform) {
+                    $query->where('browser', 'like', explode(' ', $browser)[0] . '%')
+                          ->where('platform', 'like', explode(' ', $platform)[0] . '%');
+                })
+                ->exists();
+
+            // If we don't have a device-specific passkey, we shouldn't prompt for auto-login
+            // but we can still show the manual passkey button
+            $canAutoLogin = $hasDevicePasskey;
+
             return response()->json([
-                'has_passkey' => $hasPasskey,
+                'has_passkey' => $canAutoLogin, // Frontend expects this to mean "can I use a passkey right now on this device"
+                'has_any_passkey' => $hasPasskey, // True if they have a passkey on ANY device
                 'passkeys' => $passkeys,
                 'user_exists' => true,
                 'user_id' => $user->id
@@ -50,6 +78,7 @@ class WebAuthnCheckController extends Controller
             Log::error('WebAuthn check error: ' . $e->getMessage());
             return response()->json([
                 'has_passkey' => false,
+                'has_any_passkey' => false,
                 'error' => $e->getMessage()
             ], 500);
         }

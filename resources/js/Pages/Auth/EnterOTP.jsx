@@ -8,14 +8,15 @@ import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
 
-// Helper function to encode ArrayBuffer to base64
+// Helper function to encode ArrayBuffer to base64url (important for Android/Chrome)
 function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = "";
     for (let i = 0; i < bytes.byteLength; i++) {
         binary += String.fromCharCode(bytes[i]);
     }
-    return window.btoa(binary);
+    // Return base64url encoded string (replace + with -, / with _, remove =)
+    return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 // Helper function to format WebAuthn credential for the server

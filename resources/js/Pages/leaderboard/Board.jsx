@@ -117,7 +117,7 @@ export default function Board(props) {
                                 </div>
                             </div>
                             <div className="profile-content">
-                                <h2 className="!text-sm sm:!text-lg font-bold pt-2 capitalize  justify-center">
+                                <h2 className="!text-[12px] sm:!text-lg font-bold pt-2 capitalize  justify-center">
                                     {(p && p.name) || "Anonymous"}  
                                     {p?.role == 1 && p?.profile_status_lock === 2 ? 
                                         <RiVerifiedBadgeFill  size={'1.2rem'} className="ml-1 inline-block text-pink" />
@@ -126,31 +126,31 @@ export default function Board(props) {
                                 <h2 className="!text-[10px] sm:!text-sm capitalize text-gray-500 mb-3 flex justify-center">
                                     @{p && p.username} 
                                 </h2>
-                                <p className="toppercentage text-center font-gulfs">
+                                <p className="toppercentage !text-[12px] sm:!text-lg text-center font-gulfs">
                                     {p && p.top}%{" "}
                                 </p>
                                 {/* Display engagement metrics if available */}
                                 { p?.supporters > 0 ? (
-                                    <p className="text-xs text-gray-600 text-center mt-1">
+                                    <p className="!text-[12px] md:!text-xs text-gray-600 text-center mt-1">
                                         👥 {p.supporters} supporters
                                     </p>
                                 ) : null}
                             </div>
                             {position === 1 ? 
-                                <div className={`fading rank-position p-1  `}>
-                                    <h2 className="font-gulfs !text-[80px] md:!text-[95px] xl:!text-[130px]">{position}</h2>
+                                <div className={`fading rank-position  `}>
+                                    <h2 className="font-gulfs !text-[50px] md:!text-[95px] xl:!text-[130px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 2 ? 
                                 <div className={`fading rank-position p-1`}>
-                                    <h2 className="font-gulfs  !text-[45px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
+                                    <h2 className="font-gulfs  !text-[35px] md:!text-[60px] xl:!text-[80px]">{position}</h2>
                                 </div>
                                 : ''
                             }
                             {position === 3 ? 
                                 <div className={`fading rank-position p-1  `}>
-                                    <h2 className="font-gulfs  !text-[30px] md:!text-[35px] xl:!text-[50px]">{position}</h2>
+                                    <h2 className="font-gulfs  !text-[20px] md:!text-[35px] xl:!text-[50px]">{position}</h2>
                                 </div>
                                 : ''
                             }
@@ -244,7 +244,7 @@ export default function Board(props) {
                                     <div
                                         className={`${
                                             loading ? "opacity-50 pointer-events-none" : ""
-                                        }  postions grid grid-cols-3 !gap-2 md:!gap-4 pt-[10px] md:pt-[50px] `}
+                                        }  postions grid grid-cols-3 !gap-1 md:!gap-4 pt-[10px] md:pt-[50px] `}
                                     >
                                         {positions && positions[1] ? (
                                             <Position

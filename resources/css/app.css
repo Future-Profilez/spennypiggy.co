@@ -100,7 +100,7 @@ body{position:relative;font-family:var(--para-font)}
 .toppercentage{font-size:21px;color:var(--voilet)}
 .toppercentage.income{color:green;font-size:16px;background:#05efb83b;padding:5px 15px;border-radius:10px}
 .postions{display:flex;align-items:flex-end}
-.postions .position{margin:0 5px;width:100%}
+.postions .position{ width:100%}
 .profile-image{padding:5px;background:linear-gradient( 2.92deg,var(--mint) -4.71%,var(--voilet) 28.23%,var(--yellow) 56%,var(--pink) 83.76% );width:130px;height:130px;max-height:130px;margin:auto;margin-top:-80px;border-radius:50%;overflow:hidden}
 .profile-image img{max-height:100%;max-width:100%;width:100%;height:100%;object-fit:cover;border-radius:50%}
 .rank-position h2{text-shadow:2px 2px 1px #e6ea82;-webkit-text-stroke:1px #e6ea82;color:var(--pink);font-size:25px}
@@ -124,7 +124,6 @@ body{position:relative;font-family:var(--para-font)}
 .profile-content h2{font-size:16px}
 .profile-content p{font-size:15px}
 .profile.p-3{padding:10px !important;padding-bottom:0 !important}
-.rank-position{padding:10px}
 .text-bl{text-align:center !important}
 .trust-pilot{display:flex;justify-content:center}
 }
