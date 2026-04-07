@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import LoaderButton from "@/Components/LoaderButton";
@@ -56,36 +56,44 @@ function base64urlToUint8Array(base64url) {
 
 export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess }) {
     const [loading, setLoading] = useState(false);
+    const [publicKeyOptions, setPublicKeyOptions] = useState(null);
     const { successAlert, errorAlert } = useAlerts();
+
+    useEffect(() => {
+        if (isOpen && email) {
+            axios.post(route("webauthn.register.options"), { email })
+                .then(res => {
+                    const options = res.data.publicKey ?? res.data;
+                    options.challenge = base64urlToUint8Array(options.challenge);
+                    options.user.id = base64urlToUint8Array(options.user.id);
+                    if (options.excludeCredentials) {
+                        options.excludeCredentials = options.excludeCredentials.map(
+                            (item) => ({
+                                ...item,
+                                id: base64urlToUint8Array(item.id),
+                            })
+                        );
+                    }
+                    setPublicKeyOptions(options);
+                })
+                .catch(err => console.error("Failed to preload passkey options", err));
+        }
+    }, [isOpen, email]);
 
     if (!isOpen) return null;
 
     const handleSetup = async () => {
+        if (!publicKeyOptions) {
+            errorAlert("Loading secure options, please wait a moment and try again.");
+            return;
+        }
+
         try {
             setLoading(true);
 
-            // Fetch registration options
-            const { data: options } = await axios.post(
-                route("webauthn.register.options"),
-                { email: email }
-            );
-
-            const publicKey = options.publicKey ?? options;
-            publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
-            publicKey.user.id = base64urlToUint8Array(publicKey.user.id);
-
-            if (publicKey.excludeCredentials) {
-                publicKey.excludeCredentials = publicKey.excludeCredentials.map(
-                    (item) => ({
-                        ...item,
-                        id: base64urlToUint8Array(item.id),
-                    })
-                );
-            }
-
-            // Request browser to create credential
+            // Request browser to create credential directly (no delay for Safari)
             const credential = await navigator.credentials.create({
-                publicKey,
+                publicKey: publicKeyOptions,
             });
 
             // Send credential back to server
@@ -121,8 +129,8 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md px-4">
-            <div className="bg-[#1a1a1a] border border-pink-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md px-6 ">
+            <div className="bg-[#1a1a1a] border border-pink-500/30 rounded-xl md:rounded-3xl p-4 md:p-8 max-w-[400px] w-full shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div>
                 
                 <div className="text-center mb-8">
@@ -131,7 +139,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
                         </svg>
                     </div>
-                    <h3 className="text-2xl text-white mb-2 font-gulfs uppercase tracking-wider">Faster Login Next Time?</h3>
+                    <h3 className="text-xl md:text-2xl text-white mb-2  uppercase font-bold">Faster Login Next Time?</h3>
                     <p className="text-gray-400">
                         Set up a Passkey to use FaceID, Fingerprint, or Windows Hello for instant login instead of typing your password.
                     </p>
@@ -142,7 +150,7 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
                         type="button"
                         onClick={handleSetup}
                         disabled={loading}
-                        className="w-full !border-0  !bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white tracking-wider py-3 px-6 rounded-full transition-all transform hover:scale-[1.02] shadow-lg flex justify-center items-center"
+                        className="w-full !border-0  !bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white tracking-wider py-3 px-6 rounded-full transition-all transform hover:scale-[1.02] shadow-lg text-sm md:text-normal flex justify-center items-center"
                         spinnerclass="fill-white"
                     >
                         {loading ? "SETTING UP..." : "SET UP PASSKEY"}

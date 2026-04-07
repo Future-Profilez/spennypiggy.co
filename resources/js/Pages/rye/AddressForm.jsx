@@ -475,7 +475,7 @@ export default function AddressForm({
                             value={formData.first_name}
                             name="first_name"
                             placeholder="First Name"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -488,7 +488,7 @@ export default function AddressForm({
                             value={formData.last_name}
                             name="last_name"
                             placeholder="Last Name"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -510,7 +510,7 @@ export default function AddressForm({
                             type="text"
                             maxLength="10"
                             placeholder="Phone"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -523,7 +523,7 @@ export default function AddressForm({
                             value={formData.address_1}
                             name="address_1"
                             placeholder="Address 1"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -536,7 +536,7 @@ export default function AddressForm({
                             value={formData.address_2}
                             name="address_2"
                             placeholder="Address 2"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -549,7 +549,7 @@ export default function AddressForm({
                             value={formData.city}
                             name="city"
                             placeholder="City"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -566,7 +566,7 @@ export default function AddressForm({
                             value={formData.province_code}
                             name="province_code"
                             placeholder="Province Code"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -578,7 +578,7 @@ export default function AddressForm({
                             onChange={getCountry}
                             name="country_code"
                             value={formData.country_code}
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         >
                             <option value="" disabled>
@@ -603,7 +603,7 @@ export default function AddressForm({
                             value={formData.postal_code}
                             name="postal_code"
                             placeholder="Postal Code"
-                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px] md:rounded-[40px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
+                            className="flex-1 text-normal border-gray-300 border px-4 py-3 w-full rounded-[30px]  focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-gray-900 text-post-content"
                             required
                         />
                     </div>
@@ -640,7 +640,7 @@ export default function AddressForm({
                             you are record.
                         </p>
                         <button
-                            className="cursor-pointer m-auto flex items-center pinkbg text-white p-2 rounded-[30px] md:rounded-[40px]  px-3 my-3"
+                            className="cursor-pointer m-auto flex items-center pinkbg text-white p-2 rounded-[30px]  px-3 my-3"
                             onClick={() => setShowDetails(!showDetails)}
                         >
                             {" "}

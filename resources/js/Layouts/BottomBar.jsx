@@ -27,10 +27,9 @@ export default function BottomBar(){
 
    return <>
          {auth && auth.user ?
-            <div className="fixed md:hidden bottom-0 left-0 z-50 w-full h-16 retro-bottom-bar pb-[env(safe-area-inset-bottom)]">
+            <div className="fixed md:hidden bottom-[-1px] left-0 z-50 w-full h-16 retro-bottom-bar pb-[env(safe-area-inset-bottom)]">
                {/* Retro scanline effect */}
                {/* <div className="scanline"></div> */}
-               
                <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium relative z-10 !pb-[10px]">
                   {/* Home Button */}
                   <Link 

@@ -5,9 +5,9 @@
 const ImageEditor = ({ image, onSave, className = '' }) => {
     return (
         <div className={`image-editor-container ${className}`}>
-            <div className="bg-white p-6 rounded-[30px] md:rounded-[40px]   shadow-sm">
+            <div className="bg-white p-6 rounded-[30px]   shadow-sm">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Image Editor</h3>
-                <div className="border-2 border-dashed border-gray-300 rounded-[30px] md:rounded-[40px]   p-8 text-center">
+                <div className="border-2 border-dashed border-gray-300 rounded-[30px]   p-8 text-center">
                     {image ? (
                         <img 
                             src={image} 

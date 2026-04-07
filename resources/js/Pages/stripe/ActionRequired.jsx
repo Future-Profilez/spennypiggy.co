@@ -97,7 +97,7 @@ export default function ActionRequired({ requirements = [] }) {
                 return (
                     <div 
                         key={index}
-                        className={`mb-6 w-full bg-white rounded-[30px] md:rounded-[40px]  shadow-sm border-2 ${reqColors.border} overflow-hidden`}
+                        className={`mb-6 w-full bg-white rounded-[30px]  shadow-sm border-2 ${reqColors.border} overflow-hidden`}
                     >
                         <div className="flex">
                             {/* Accent Bar */}
@@ -133,7 +133,7 @@ export default function ActionRequired({ requirements = [] }) {
                                 </p>
 
                                 {/* Action Box */}
-                                <div className="bg-gray-50 rounded-[30px] md:rounded-[40px] p-4 md:p-6 mb-6 border border-gray-100">
+                                <div className="bg-gray-50 rounded-[30px] p-4 md:p-6 mb-6 border border-gray-100">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div className="flex-1">
                                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Required Action</span>

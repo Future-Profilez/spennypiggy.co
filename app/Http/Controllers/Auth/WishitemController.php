@@ -1539,7 +1539,7 @@ class WishitemController extends Controller
             if (!$hasCardPayments) {
                 return response()->json([
                     'status' => false,
-                    'message' => "This creator cannot accept payments at the moment (Card Payments capability missing)."
+                    'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
                 ], 422);
             }
 

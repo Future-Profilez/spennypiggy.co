@@ -68,7 +68,7 @@ export default function GrowthTrends() {
     }, []);
 
     const TrendCard = ({ title, value, change, icon: Icon, type = 'positive' }) => (
-        <div className="trend-card bg-white rounded-[30px] md:rounded-[40px]   p-4 shadow-sm">
+        <div className="trend-card bg-white rounded-[30px]   p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
                 <Icon size={24} className={`${type === 'positive' ? 'text-green-500' : 'text-red-500'}`} />
                 <span className={`text-sm font-medium ${type === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
@@ -81,7 +81,7 @@ export default function GrowthTrends() {
     );
 
     const CreatorCard = ({ creator, rank, badge }) => (
-        <div className="creator-growth-card bg-white rounded-[30px] md:rounded-[40px]   p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="creator-growth-card bg-white rounded-[30px]   p-4 mb-3 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="relative">
@@ -125,7 +125,7 @@ export default function GrowthTrends() {
 
     if (loading) {
         return (
-            <div className="bg-gray-100 rounded-[30px] md:rounded-[40px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '300px'}}>
+            <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 flex justify-center items-center" style={{minHeight: '300px'}}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -135,7 +135,7 @@ export default function GrowthTrends() {
 
     if (error) {
         return (
-            <div className="bg-gray-100 rounded-[30px] md:rounded-[40px]  p-4 mb-6 text-center">
+            <div className="bg-gray-100 rounded-[30px]  p-4 mb-6 text-center">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     {error}
                     <button 
@@ -150,7 +150,7 @@ export default function GrowthTrends() {
     }
 
     return (
-        <div className="bg-gray-100 rounded-[30px] md:rounded-[40px]  p-4 mb-6">
+        <div className="bg-gray-100 rounded-[30px]  p-4 mb-6">
             <h2 className="font-GillSans text-2xl uppercase text-dark text-left mb-4">📈 Growth & Momentum</h2>
             <p className="text-gray-500 mb-6">Creators with the fastest growth and momentum</p>
 

@@ -412,7 +412,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             action={close}
             space="4"
             size="lg"
-            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"}`}
+            classes={`${editpop ? "editpop" : "w-full font-bold addop bg-white rounded-[30px]  p-3 mb-2 text-center"}`}
             text={customtext || <AddItem />}
         >
             <div className="editprofileModal  wishlistModal  ">

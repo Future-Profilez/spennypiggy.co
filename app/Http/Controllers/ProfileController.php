@@ -2670,9 +2670,12 @@ class ProfileController extends Controller
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
         $qrCode = null;
 
-        if (!empty($user->tfa_key)) {
-            $qrCode = $this->google2FA->getQRCodeInline("SpennyPiggy", $user->email, $user->tfa_key);
+        if (empty($user->tfa_key)) {
+            $user->tfa_key = $this->google2FA->generateSecretKey();
+            $user->save();
         }
+
+        $qrCode = $this->google2FA->getQRCodeInline("SpennyPiggy", $user->email, $user->tfa_key);
 
         return response()->json([
             'status' => true,

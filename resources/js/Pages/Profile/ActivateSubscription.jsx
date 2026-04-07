@@ -19,8 +19,8 @@ export default function ActivateSubscription(props) {
             <div className="blackbg py-10 px-4">
               <div className="max-w-5xl mx-auto">
                 <div className="relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/40 to-[#05EFB8]/40 rounded-[30px] md:rounded-[40px] blur opacity-20"></div>
-                  <div className="relative rounded-[30px] md:rounded-[40px] bg-[#000]/40 backdrop-blur-3xl border border-white/10 overflow-hidden">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/40 to-[#05EFB8]/40 rounded-[30px] blur opacity-20"></div>
+                  <div className="relative rounded-[30px] bg-[#000]/40 backdrop-blur-3xl border border-white/10 overflow-hidden">
                     <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="border border-white/20 bg-red-600/90 w-3.5 h-3.5 rounded-full block"></span>
@@ -76,7 +76,7 @@ export default function ActivateSubscription(props) {
                       </div>
 
                       <div className="lg:pl-6">
-                        <div className="p-6 rounded-[30px] md:rounded-[40px] bg-white/5 border border-white/10">
+                        <div className="p-6 rounded-[30px] bg-white/5 border border-white/10">
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <p className="text-white/60 text-xs uppercase tracking-widest">Plan Total</p>

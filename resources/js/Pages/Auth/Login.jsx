@@ -136,7 +136,7 @@ export default function Login({ status, canResetPassword }) {
 
     // Check if WebAuthn is supported
     const isWebAuthnSupported = () => {
-        return window.PublicKeyCredential !== undefined;
+        return typeof window !== 'undefined' && window.PublicKeyCredential !== undefined;
     };
 
     // Check if user has passkey registered
@@ -540,7 +540,7 @@ export default function Login({ status, canResetPassword }) {
                 </div>
 
                 {status && (
-                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] md:rounded-[40px] border border-green-500/30 backdrop-blur-sm relative z-20">
+                    <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] border border-green-500/30 backdrop-blur-sm relative z-20">
                         {status}
                     </div>
                 )}
@@ -565,7 +565,7 @@ export default function Login({ status, canResetPassword }) {
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[30px] md:rounded-[40px] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
+                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[30px] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         <div className="!bg-[#121212]/20 border-b border-pink-500/30 flex items-center p-4 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
@@ -576,7 +576,7 @@ export default function Login({ status, canResetPassword }) {
                         <div className="p-6 sm:p-8 bg-black/20 rounded-b-xl">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
-                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] md:rounded-[40px] border border-red-500/20 animate-pulse">
+                                    <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] border border-red-500/20 animate-pulse">
                                         {redirectmessage}
                                     </p>
                                 )}
@@ -604,7 +604,7 @@ export default function Login({ status, canResetPassword }) {
                                         Email Address
                                     </label>
                                     <div className="relative group">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] md:rounded-[40px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <FaCircleUser
                                             size="24"
                                             color="#000000"
@@ -615,7 +615,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
                                             autoComplete="username webauthn"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -638,7 +638,7 @@ export default function Login({ status, canResetPassword }) {
                                         Password
                                     </label>
                                     <div className="relative group relative">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] md:rounded-[40px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <RiLockPasswordLine
                                             color="#000000"
                                             size="24"
@@ -649,7 +649,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] md:rounded-[40px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
                                             autoComplete="current-password webauthn"
                                             placeholder="••••••••"
                                             onChange={(e) =>
@@ -713,7 +713,7 @@ export default function Login({ status, canResetPassword }) {
                     </div>
                 </div>
             </div>
-            <EnterOTP action={open} user={data} onSuccess={handleOTPSuccess} />
+            <EnterOTP action={open} user={data} hasPasskey={hasPasskey} onSuccess={handleOTPSuccess} />
             <SetupPasskeyPrompt 
                 isOpen={showSetupPrompt} 
                 email={promptEmail} 

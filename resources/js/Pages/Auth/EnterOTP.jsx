@@ -6,8 +6,60 @@ import { useRef } from "react";
 import Popup from "@/Components/Popup";
 import { useEffect } from "react";
 import { useAlerts } from "@/Components/Alerts";
+import LoaderButton from "@/Components/LoaderButton";
 
-export default function EnterOTP({user, action, onSuccess}) {
+// Helper function to encode ArrayBuffer to base64
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+}
+
+// Helper function to format WebAuthn credential for the server
+function formatCredentialForServer(credential) {
+    const formatted = {
+        id: credential.id,
+        rawId: arrayBufferToBase64(credential.rawId),
+        type: credential.type,
+        response: {
+            clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+        },
+    };
+
+    if (credential.response.authenticatorData) {
+        formatted.response.authenticatorData = arrayBufferToBase64(credential.response.authenticatorData);
+    }
+    if (credential.response.signature) {
+        formatted.response.signature = arrayBufferToBase64(credential.response.signature);
+    }
+    if (credential.response.userHandle) {
+        formatted.response.userHandle = arrayBufferToBase64(credential.response.userHandle);
+    }
+    if (credential.response.attestationObject) {
+        formatted.response.attestationObject = arrayBufferToBase64(credential.response.attestationObject);
+    }
+
+    return formatted;
+}
+
+function base64urlToUint8Array(base64url) {
+    const base64 = base64url
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), "=");
+
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+export default function EnterOTP({user, action, hasPasskey, onSuccess}) {
 
    const [open, setOpen] = useState(false);
    useEffect(() => {
@@ -48,6 +100,66 @@ export default function EnterOTP({user, action, onSuccess}) {
     };
 
     const [loading, setLoading] = useState(false);
+    const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+    const handlePasskeyAction = async () => {
+        try {
+            setPasskeyLoading(true);
+
+            const { data: options } = await axios.post(
+                route("webauthn.login.options"),
+                { email: user.email },
+            );
+
+            const publicKey = options.publicKey ?? options;
+            publicKey.challenge = base64urlToUint8Array(
+                publicKey.challenge,
+            );
+
+            if (publicKey.allowCredentials) {
+                publicKey.allowCredentials = publicKey.allowCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    }),
+                );
+            }
+
+            const credential = await navigator.credentials.get({
+                publicKey,
+            });
+
+            const response = await axios.post(
+                route("webauthn.login"),
+                formatCredentialForServer(credential),
+            );
+
+            if (response.data.success) {
+                if (onSuccess) {
+                    onSuccess(response.data.redirect_url);
+                } else if (response.data.redirect_url) {
+                    window.location.href = response.data.redirect_url;
+                }
+            } else {
+                errorAlert(response.data.message || "Passkey login failed");
+            }
+        } catch (error) {
+            console.error("Passkey error:", error);
+
+            if (error.response?.data?.message) {
+                errorAlert(error.response.data.message);
+            } else if (error.name === "NotAllowedError") {
+                errorAlert("Authentication cancelled. Please try again.");
+            } else if (error.name === "InvalidStateError") {
+                errorAlert("This device already has a passkey registered.");
+            } else {
+                errorAlert("Unable to authenticate. Please try again.");
+            }
+        } finally {
+            setPasskeyLoading(false);
+        }
+    };
+
    const verify = (e) => {
       e.preventDefault();
       setLoading(true);
@@ -95,13 +207,13 @@ export default function EnterOTP({user, action, onSuccess}) {
                <form  >
                   {backup ? <>
                      <div className="flex items-center justify-center gap-3">
-                           <input type="text" className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-[30px] md:rounded-[40px]  p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
+                           <input type="text" className="w-full  text-center text-md text-slate-900 bg-slate-100 border border-transparent hover:border-slate-200 appearance-none rounded-[30px]  p-3 max-w-[85%] outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"
                               pattern="\d*" onChange={enterBCode} placeholder="Enter backup code..." />
                      </div>
                      <div className="max-w-[260px] mx-auto mt-4">
-                           <button  onClick={verify} className="pinkbg-i text-white px-3 py-2 rounded-[30px] md:rounded-[40px] ">{ processing ? "processing..." : "Verify"}</button>
+                           <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-3 py-2 w-full rounded-[30px] ">{ processing || loading ? "processing..." : "Verify"}</button>
                      </div>
-                     <div className="text-sm text-slate-500 mt-4"> Don't have backup code ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)}  >Use Authenticator app</button></div>
+                     <div className="text-sm text-slate-500 mt-4"> Don't have backup code ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(false)} type="button" >Use Authenticator app</button></div>
                   </>
                      :
                      <> <div className="flex items-center justify-center  gap-1">
@@ -122,11 +234,30 @@ export default function EnterOTP({user, action, onSuccess}) {
                               ))}
                         </div>
                         <div className="max-w-[260px] mx-auto mt-4">
-                              <button disabled={loading} onClick={verify} className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-[30px] md:rounded-[40px] ">{ loading ? "processing..." : "Verify & Login"}</button>
+                              <button type="button" disabled={loading} onClick={verify} className="pinkbg-i text-white px-6 w-full py-3 my-3 rounded-[30px] ">{ loading ? "processing..." : "Verify & Login"}</button>
                         </div>
-                        <div className="text-sm text-slate-500 mt-4"> Don't have phone ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(true)} >Use Backup code</button></div>
+                        <div className="text-sm text-slate-500 mt-4"> Don't have phone ? <button className="font-medium text-indigo-500 hover:text-indigo-600" onClick={()=>setBackup(true)} type="button" >Use Backup code</button></div>
                      </>
                   }
+
+                  {hasPasskey && (
+                     <div className="mt-6 border-t border-gray-200 pt-6">
+                        <LoaderButton
+                           type="button"
+                           onClick={handlePasskeyAction}
+                           disabled={passkeyLoading || loading}
+                           className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto"
+                           spinnerclass="fill-pink-500"
+                        >
+                           {passkeyLoading
+                                 ? "Checking device..."
+                                 : "Use Face ID / Fingerprint"}
+                        </LoaderButton>
+                        <p className="text-xs text-gray-500 text-center mt-2">
+                           Bypass OTP by verifying your identity with a saved passkey.
+                        </p>
+                     </div>
+                  )}
                </form>
             </div>
          </Popup>

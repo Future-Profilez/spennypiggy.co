@@ -1816,39 +1816,32 @@ class StripeController extends Controller
             ]);
         }
 
-        if ($wish->user['is_subscribed'] !== 1) {
-            return redirect()->back()->with('error', 'Currently creator has paused gift payments. Please again later when gift payments are active.');
-        }
+        
 
 
         $subtotals = 0;
         $totalAmount = $wish->price;
 
-        // NEW: Risk Engine Evaluation
-        $riskService = app(\App\Services\Risk\RiskService::class);
-        $payerEmail = $user->email ?? $request->input('email') ?? $request->query('email');
-        $riskEvaluation = $riskService->evaluate(
-            $wish->user,
-            (int) round($totalAmount * 100), // Amount in cents
-            $request->ip(),
-            $request->header('User-Agent') ?? 'Unknown',
-            $payerEmail,
-            null // Card fingerprint not available before payment
-        );
-
-        if ($riskEvaluation['decision'] === 'BLOCK') {
-            Log::warning('Risk Engine BLOCKED payment', [
-                'user_id' => $user->id ?? null,
-                'creator_id' => $wish->user->id,
-                'reason' => $riskEvaluation['reason']
-            ]);
-            return redirect()->back()->with('error', 'Payment declined by security system. Reason: ' . $riskEvaluation['reason']);
-        }
-        
-        $force3DS = ($riskEvaluation['decision'] === 'STEP_UP');
-
         $ConvertedToGBpAmount = Helpers::priceFormat($wish->currency, $totalAmount, 'gbp');
         $subtotals += $ConvertedToGBpAmount;
+
+        // NEW: Risk Engine Evaluation
+        $riskData = $this->enforceRiskChecks(
+            $request,
+            $wish->user,
+            $subtotals, // Pass the total amount in GBP or use original currency? The trait expects minor units. Wait, let's use the actual price.
+            $wish->currency ?? 'gbp',
+            'wish_subscription',
+            false // Redirect response expected
+        );
+
+        // If risk enforcement returned a redirect, return it immediately
+        if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
+            return $riskData;
+        }
+
+        $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
+
 
         $chargeCurrency = $wish->currency ?? $wish->user->default_currency ?? 'usd';
         $tax = (float) str_replace(',', '', $wish->tax_amount);
@@ -2066,7 +2059,8 @@ class StripeController extends Controller
             $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
             if (!$hasCardPayments) {
-                return back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+                $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+            return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
             }
 
             $payload = [
@@ -2152,7 +2146,7 @@ class StripeController extends Controller
 
             try {
                 // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, current(compact('force3DS')));
                 $sub->update(['session_id' => $session->id]);
                 return Inertia::location($session->url);
             } catch (Exception $e) {
@@ -2953,18 +2947,14 @@ class StripeController extends Controller
                 'msg' => "Creator not found."
             ]);
         }
-        if ($creator['is_subscribed'] !== 1) {
-            return response()->json([
-                'status' => false,
-                'msg' => "Currently creator has paused gift payments. Please try again later when gift payments are active."
-            ]);
-        }
+        
 
         // Check if creator has card_payments capability
         if (!StripeControl::hasCardPaymentsCapability($creator->account_id)) {
+            $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
             return response()->json([
                 'status' => false,
-                'msg' => "This creator cannot accept payments at the moment (Card Payments capability missing)."
+                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck)
             ]);
         }
 
@@ -3117,6 +3107,8 @@ class StripeController extends Controller
                 return $riskData;
             }
 
+            $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
+
             // Values for DB in creator's currency
             $price = $amount;
             $creatorBreakdown = $breakdown;
@@ -3158,7 +3150,7 @@ class StripeController extends Controller
             if (!$hasCardPayments) {
                 return response()->json([
                     'status' => false,
-                    'msg' => "This creator cannot accept payments at the moment (Card Payments capability missing)."
+                    'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
                 ]);
             }
 

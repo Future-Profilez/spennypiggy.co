@@ -449,7 +449,7 @@ export default function AddItem(props) {
         const AddItem = () => {
             return (
                 <div className=" flex items-center">
-                    <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
+                    <div className="p-1 rounded-[30px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px]">
                         <AiOutlineShop color="var(--pink)" size="1.5rem" />
                     </div>
                     <div className="pl-3 text-left">
@@ -489,9 +489,9 @@ export default function AddItem(props) {
                     <div className="flex items-center justify-center py-3 bg-white sticky -top-4 w-full mb-6">
                         <h2 className="text-[22px]">What are you offering?</h2>
                     </div>
-                    <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[30px] md:rounded-[40px] ">
+                    <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[30px] ">
                         {/* Basic Information Section */}
-                        <div className="bg-white p-6 rounded-[30px] md:rounded-[40px]   mb-6 shadow-sm">
+                        <div className="bg-white p-6 rounded-[30px]   mb-6 shadow-sm">
                             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
                                 Basic Information
                             </h3>
@@ -529,7 +529,7 @@ export default function AddItem(props) {
                                     name="name"
                                     defaultValue={pre_title}
                                     onChange={handelInputs}
-                                    className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px] md:rounded-[40px]  p-3 px-3.5"
+                                    className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-3 px-3.5"
                                     type="text"
                                     placeholder="What are you offering ?"
                                 />
@@ -543,7 +543,7 @@ export default function AddItem(props) {
                                     name="description"
                                     defaultValue={pre_description}
                                     onChange={handelInputs}
-                                    className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px] md:rounded-[40px]  p-3 px-3.5"
+                                    className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-3 px-3.5"
                                     type="text"
                                     placeholder="Describe what you’re selling ?"
                                 />
@@ -561,7 +561,7 @@ export default function AddItem(props) {
                                         name="price"
                                         defaultValue={pre_price}
                                         onChange={handelInputs}
-                                        className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px] md:rounded-[40px]  p-[12px] px-[20px] "
+                                        className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] "
                                         type="number"
                                         placeholder="Enter the price of your item"
                                     />
@@ -585,7 +585,7 @@ export default function AddItem(props) {
                             {isEdit ? (
                                 <img
                                     alt="image-profile"
-                                    className="w-full max-h-[500px] object-cover h-auto rounded-[30px] md:rounded-[40px] "
+                                    className="w-full max-h-[500px] object-cover h-auto rounded-[30px] "
                                     src={item && item.perma_link}
                                 />
                             ) : (
@@ -628,7 +628,7 @@ export default function AddItem(props) {
                                             <div className="flex items-center justify-between my-2">
                                                 <input
                                                     type="text"
-                                                    className="shop-forms-input bg-gray-200 w-full border-0 rounded-[30px] md:rounded-[40px]  p-[12px] px-[20px] mr-2"
+                                                    className="shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[12px] px-[20px] mr-2"
                                                     name={`variantName${index}`}
                                                     placeholder="Variant Name"
                                                     onChange={(e) =>
@@ -646,7 +646,7 @@ export default function AddItem(props) {
                                                     </span>
                                                     <input
                                                         type="text"
-                                                        className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px] md:rounded-[40px]  p-[12px] px-[20px] "
+                                                        className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] "
                                                         name={`variantValue${index}`}
                                                         placeholder="Variant Price"
                                                         onChange={(e) =>
@@ -660,7 +660,7 @@ export default function AddItem(props) {
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    className="text-black shop-forms-input bg-gray-200 w-full  text-[20px] border-0 rounded-[30px] md:rounded-[40px]  p-[8px] px-[20px] max-w-[50px]"
+                                                    className="text-black shop-forms-input bg-gray-200 w-full  text-[20px] border-0 rounded-[30px]  p-[8px] px-[20px] max-w-[50px]"
                                                     onClick={() =>
                                                         handleRemoveVariant(
                                                             index,
@@ -690,7 +690,7 @@ export default function AddItem(props) {
                                     <input
                                         type="text"
                                         className="shop-forms-input bg-gray-200 w-full border-0
-                            mb-6 rounded-[30px] md:rounded-[40px]  p-[12px] px-[20px]"
+                            mb-6 rounded-[30px]  p-[12px] px-[20px]"
                                         name={`shipping-information`}
                                         placeholder="Shipping information.."
                                         onChange={(e) =>
@@ -761,7 +761,7 @@ export default function AddItem(props) {
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="mt-2 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px] md:rounded-[40px]  p-3 px-3.5"
+                                                className="mt-2 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-3 px-3.5"
                                                 placeholder="Enter confirmation message here !!"
                                             ></textarea>
                                             <h2 className="text-md font-normal mb-3 mt-2">
@@ -778,7 +778,7 @@ export default function AddItem(props) {
                                                     "image" ? (
                                                     <img
                                                         alt="image-profile"
-                                                        className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-[30px] md:rounded-[40px] "
+                                                        className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-[30px] "
                                                         src={
                                                             item &&
                                                             item.reward_file_url
@@ -795,7 +795,7 @@ export default function AddItem(props) {
                                                     <video
                                                         controls
                                                         playsInline
-                                                        className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-[30px] md:rounded-[40px] "
+                                                        className=" mb-4 w-full max-h-[500px] object-cover h-auto rounded-[30px] "
                                                         src={
                                                             item &&
                                                             item.reward_file_url
@@ -812,7 +812,7 @@ export default function AddItem(props) {
                                                     <audio
                                                         controls
                                                         playsInline
-                                                        className=" mb-4 w-full object-cover h-[50px] rounded-[30px] md:rounded-[40px] "
+                                                        className=" mb-4 w-full object-cover h-[50px] rounded-[30px] "
                                                         src={
                                                             item &&
                                                             item.reward_file_url
@@ -826,7 +826,7 @@ export default function AddItem(props) {
                                                 item.reward_file_type ==
                                                     "application" ? (
                                                     <iframe
-                                                        className=" mb-4 w-full  max-h-[500px] object-cover h-full rounded-[30px] md:rounded-[40px] "
+                                                        className=" mb-4 w-full  max-h-[500px] object-cover h-full rounded-[30px] "
                                                         src={
                                                             item &&
                                                             item.reward_file_url
@@ -839,7 +839,7 @@ export default function AddItem(props) {
                                                 {IsAiImage ? (
                                                     <img
                                                         alt="image-profile"
-                                                        className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-[30px] md:rounded-[40px] "
+                                                        className=" mb-2 mt-1 w-full max-h-[500px] object-cover h-auto rounded-[30px] "
                                                         src={IsAiImage}
                                                     />
                                                 ) : (
@@ -873,7 +873,7 @@ export default function AddItem(props) {
                                             onChange={(e) =>
                                                 setpageUrl(e.target.value)
                                             }
-                                            className="mt-2 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px] md:rounded-[40px]  p-3 px-3.5"
+                                            className="mt-2 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-3 px-3.5"
                                             type="text"
                                             placeholder="https://"
                                         />
@@ -913,7 +913,7 @@ export default function AddItem(props) {
                                                         type="checkbox"
                                                         name="categories-items"
                                                         value={c.uuid}
-                                                        className="h-5 w-5 rounded-[30px] md:rounded-[40px]   border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                                                        className="h-5 w-5 rounded-[30px]   border-gray-300 focus:ring-2 focus:ring-blue-300 cursor-pointer"
                                                     />
                                                     <label
                                                         htmlFor={`category-item-${c.uuid}`}
@@ -929,13 +929,13 @@ export default function AddItem(props) {
                                 <div className="add-shop-cat-input relative flex items-center mt-3">
                                     <input
                                         ref={inputRef}
-                                        className="shop-forms-input bg-gray-200 w-full border-0 rounded-[30px] md:rounded-[40px]  p-[13px] px-4"
+                                        className="shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
                                         type="text"
                                         placeholder="Enter new category"
                                     />
                                     <button
                                         onClick={addCategory}
-                                        className="bg-gray-200 rounded-[30px] md:rounded-[40px]  ml-3 p-[13px] px-4 whitespace-nowrap"
+                                        className="bg-gray-200 rounded-[30px]  ml-3 p-[13px] px-4 whitespace-nowrap"
                                     >
                                         {" "}
                                         + Add
@@ -1014,7 +1014,7 @@ export default function AddItem(props) {
                                         onChange={(e) =>
                                             setQuestion(e.target.value)
                                         }
-                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px] md:rounded-[40px]  p-[13px] px-4"
+                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
                                         type="text"
                                         placeholder="e.g What would like to learn next ?"
                                     />
@@ -1052,7 +1052,7 @@ export default function AddItem(props) {
                                             setSlots(e.target.value)
                                         }
                                         defaultValue={slots || ""}
-                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px] md:rounded-[40px]  p-[13px] px-4"
+                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
                                         type="text"
                                     />
                                 ) : (
@@ -1070,7 +1070,7 @@ export default function AddItem(props) {
                                             >
                                                 <input
                                                     type="checkbox"
-                                                    className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-[30px] md:rounded-[40px]  border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                                                    className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-[30px]  border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
                                                     id="check3"
                                                     onChange={handleSpPrice}
                                                     checked={haveSpPrice}
@@ -1105,7 +1105,7 @@ export default function AddItem(props) {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px] md:rounded-[40px]  p-[13px] px-4"
+                                                    className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-[13px] px-4"
                                                     type="text"
                                                     defaultValue={spPrice || ""}
                                                 />
@@ -1170,7 +1170,7 @@ export default function AddItem(props) {
                                     type="checkbox"
                                     id="agreeterm"
                                     name="agreeterm"
-                                    className="mr-2 rounded-[30px] md:rounded-[40px]   cursor-pointer"
+                                    className="mr-2 rounded-[30px]   cursor-pointer"
                                     value="agreeterm"
                                 ></input>
                                 By adding shop item you agree to our{" "}
@@ -1221,11 +1221,11 @@ export default function AddItem(props) {
     return (
         <>
             {/*
-        <button onClick={(e)=>setOpen(true)} className={classes ? classes : 'w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[30px] md:rounded-[40px] '} >
+        <button onClick={(e)=>setOpen(true)} className={classes ? classes : 'w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[30px] '} >
             <h2 className='md:text-[19px]' >{title}</h2>
         </button>
         */}
-            <AddForm classes="w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[30px] md:rounded-[40px] " />
+            <AddForm classes="w-full shop-start-box px-6 py-6 md:px-8 md:py-12 text-center bg-white rounded-[30px] " />
         </>
     );
 }

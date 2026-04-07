@@ -53,12 +53,12 @@ export default function FounderBonus() {
 
                <div className="grid lg:grid-cols-2 gap-3 md:gap-8 max-w-5xl mx-auto">
                   
-                  <div className="bg-white p-4 md:!p-8 lg:!p-10 rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  shadow-xl border border-gray-100 relative overflow-hidden group hover:border-yellow-400 transition-colors"> 
+                  <div className="bg-white p-4 md:!p-8 lg:!p-10 rounded-[30px]  md:rounded-[30px]  shadow-xl border border-gray-100 relative overflow-hidden group hover:border-yellow-400 transition-colors"> 
                      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                         <Award size={150} />
                      </div>
                      <div className="relative z-10 text-left">
-                        <div className="bg-yellow-100 w-12 h-12 md:w-16 md:h-16 rounded-[30px] md:rounded-[40px]   flex items-center justify-center mb-6 text-yellow-600">
+                        <div className="bg-yellow-100 w-12 h-12 md:w-16 md:h-16 rounded-[30px]   flex items-center justify-center mb-6 text-yellow-600">
                            <Award size={32} />
                         </div>
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-gulfs uppercase mb-2 md:mb-6 text-black">What Founders Get</h2>
@@ -75,12 +75,12 @@ export default function FounderBonus() {
                      </div>
                   </div>
 
-                  <div className="bg-black text-white p-4 md:!p-8 lg:!p-10 rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]  shadow-xl relative overflow-hidden group">
+                  <div className="bg-black text-white p-4 md:!p-8 lg:!p-10 rounded-[30px]  md:rounded-[30px]  shadow-xl relative overflow-hidden group">
                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Clock size={150} />
                      </div>
                      <div className="relative z-10 text-left">
-                        <div className="bg-white/10 w-12 h-12 md:w-16 md:h-16 rounded-[30px] md:rounded-[40px]   flex items-center justify-center mb-6 text-pink-500">
+                        <div className="bg-white/10 w-12 h-12 md:w-16 md:h-16 rounded-[30px]   flex items-center justify-center mb-6 text-pink-500">
                            <AlertCircle size={32} />
                         </div>
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-gulfs uppercase mb-2 md:mb-6">Key Rules</h2>

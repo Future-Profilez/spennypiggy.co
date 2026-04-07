@@ -112,7 +112,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
     }
     return (
     <Popup modalclass='' space="6" size='md' action={close}
-    classes={` w-full addop bg-white rounded-[30px] md:rounded-[40px]  py-2 px-3 ${classes}`}
+    classes={` w-full addop bg-white rounded-[30px]  py-2 px-3 ${classes}`}
     text={text ? text : <AddItem />} >
         {/* <form onSubmit={submitPost} > */}
             <div className="flex items-center" >

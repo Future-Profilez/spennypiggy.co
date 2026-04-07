@@ -70,6 +70,7 @@ Route::middleware('web')->group(function () {
 Route::prefix('risk')->group(function () {
     Route::post('/evaluate', [\App\Http\Controllers\Api\RiskController::class, 'evaluate']);
     Route::post('/step-up/verify', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUp'])->middleware('web');
+    Route::post('/step-up/verify-passkey', [\App\Http\Controllers\Api\RiskController::class, 'verifyStepUpPasskey'])->middleware('web');
     Route::get('/limits', [\App\Http\Controllers\Api\RiskController::class, 'getEffectiveLimits']);
 });
 

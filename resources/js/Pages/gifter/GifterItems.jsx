@@ -66,7 +66,7 @@ export default function GifterItems(props) {
       const ownerUsername = w && w.owner && w.owner.username;
       const wishname  = w && w.wish && w.wish.wishname;
       const s = w && w.wish && w.wish.subscription;
-      return <div className='box rounded-[30px] md:rounded-[40px]   px-3 py-3  '>
+      return <div className='box rounded-[30px]   px-3 py-3  '>
        <div className='flex align-items-start '>
 
         <div className={`gift-icon mt-2 me-2 ${s == '0' ? 'mint' : s == '1' ? 'pink' : s == '2' ? 'voilet' : 'grey' }`} 
@@ -96,7 +96,7 @@ export default function GifterItems(props) {
       </div>
         {IsloggedIn && w && w.media_url ? <MessageMedia w={w} /> : ''}
         <div className='mt-3'>
-          <Link href={`/support/${ownerUsername || ''}/${uname || ''}`} className="button rounded-[30px] md:rounded-[40px] px-3 text-[11px] uppercase">
+          <Link href={`/support/${ownerUsername || ''}/${uname || ''}`} className="button rounded-[30px] px-3 text-[11px] uppercase">
             View Story
           </Link>
         </div>
@@ -109,7 +109,7 @@ export default function GifterItems(props) {
 
   return (
     <div className={data && data.length < 1 && !loading ? 'd-none' : ''  } >
-      <div className='box rounded-[30px] md:rounded-[40px]   p-4 ' >
+      <div className='box rounded-[30px]   p-4 ' >
         <h3 className='text-large text-dark title mb-3' >Wish Granted </h3>
           {data && data.map((d, i)=>{ 
             return <div key={`wishes-items-${i}`} ><Item  w={d} /></div>

@@ -215,7 +215,7 @@ export default function SupportStory({ creator, gifter }) {
                       href={openUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1 rounded-[30px] md:rounded-[40px] text-[11px] uppercase tracking-widest bg-white/10 text-white/70 hover:bg-white/20"
+                      className="px-3 py-1 rounded-[30px] text-[11px] uppercase tracking-widest bg-white/10 text-white/70 hover:bg-white/20"
                     >
                       {label}
                     </a>
@@ -224,7 +224,7 @@ export default function SupportStory({ creator, gifter }) {
                 return (
                   <Link
                     href={openUrl}
-                    className="px-3 py-1 rounded-[30px] md:rounded-[40px] text-[11px] uppercase tracking-widest bg-white/10 text-white/70 hover:bg-white/20"
+                    className="px-3 py-1 rounded-[30px] text-[11px] uppercase tracking-widest bg-white/10 text-white/70 hover:bg-white/20"
                   >
                     {label}
                   </Link>
@@ -306,8 +306,8 @@ export default function SupportStory({ creator, gifter }) {
       <div className={`relative z-1 min-h-screen pb-20`}>
         <div className="max-w-[900px] mx-auto px-4 md:px-8 pt-8">
           <div className="relative mb-6">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/40 to-[#05EFB8]/40 rounded-[30px] md:rounded-[40px] blur opacity-10"></div>
-            <div className="relative rounded-[30px] md:rounded-[40px] bg-[#000]/40 backdrop-blur-3xl border border-white/10 p-6 md:p-8">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/40 to-[#05EFB8]/40 rounded-[30px] blur opacity-10"></div>
+            <div className="relative rounded-[30px] bg-[#000]/40 backdrop-blur-3xl border border-white/10 p-6 md:p-8">
               
               <h2 className="text-white font-black text-2xl mb-2">Support Story with {data?.creator?.name || creator}</h2>
               <p className="text-white/60 text-normal mt-2 !mb-6">Your shared journey of gifts, thank‑yous and progress.</p>
@@ -376,7 +376,7 @@ export default function SupportStory({ creator, gifter }) {
                   <button
                     key={f.key}
                     onClick={() => setActiveType(f.key)}
-                    className={`px-4 py-2 rounded-[30px] md:rounded-[40px] text-[12px] uppercase tracking-widest ${
+                    className={`px-4 py-2 rounded-[30px] text-[12px] uppercase tracking-widest ${
                       activeType === f.key ? 'bg-pink-600 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
                     }`}
                   >
@@ -388,7 +388,7 @@ export default function SupportStory({ creator, gifter }) {
               <div className='pt-6'>
                 <Link
                     href={`/${data?.creator?.username || creator}`}
-                    className="!w-full md:!w-auto button rounded-[30px] md:rounded-[40px] px-4 text-[11px] uppercase" >
+                    className="!w-full md:!w-auto button rounded-[30px] px-4 text-[11px] uppercase" >
                       View Creator Profile
                 </Link>
               </div>
@@ -414,7 +414,7 @@ export default function SupportStory({ creator, gifter }) {
                 <div className="text-center mt-6">
                   <button
                     onClick={() => fetchStory(data?.next_before || null, true)}
-                    className="px-5 py-2 rounded-[30px] md:rounded-[40px] text-[11px] uppercase tracking-widest bg-white/10 text-white/80 hover:bg-white/20"
+                    className="px-5 py-2 rounded-[30px] text-[11px] uppercase tracking-widest bg-white/10 text-white/80 hover:bg-white/20"
                   >
                     Load More
                   </button>

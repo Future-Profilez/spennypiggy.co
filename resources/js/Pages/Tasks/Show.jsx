@@ -112,6 +112,152 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
     }, [flash?.error, flash?.success]);
     */
 
+    
+    const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+    // Helper function to encode ArrayBuffer to base64
+    const arrayBufferToBase64 = (buffer) => {
+        const bytes = new Uint8Array(buffer);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    };
+
+    const formatCredentialForServer = (credential) => {
+        const formatted = {
+            id: credential.id,
+            rawId: arrayBufferToBase64(credential.rawId),
+            type: credential.type,
+            response: {
+                clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+            },
+        };
+
+        if (credential.response.authenticatorData) {
+            formatted.response.authenticatorData = arrayBufferToBase64(credential.response.authenticatorData);
+        }
+        if (credential.response.signature) {
+            formatted.response.signature = arrayBufferToBase64(credential.response.signature);
+        }
+        if (credential.response.userHandle) {
+            formatted.response.userHandle = arrayBufferToBase64(credential.response.userHandle);
+        }
+        if (credential.response.attestationObject) {
+            formatted.response.attestationObject = arrayBufferToBase64(credential.response.attestationObject);
+        }
+
+        return formatted;
+    };
+
+    const base64urlToUint8Array = (base64url) => {
+        const base64 = base64url
+            .replace(/-/g, "+")
+            .replace(/_/g, "/")
+            .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), "=");
+
+        const binary = window.atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    };
+
+    const isWebAuthnSupported = () => {
+        return window.PublicKeyCredential !== undefined;
+    };
+
+    
+    const [hasPasskey, setHasPasskey] = React.useState(false);
+    
+    React.useEffect(() => {
+        const checkPasskey = async () => {
+            const userEmail = (typeof email !== 'undefined' ? email : null) || (typeof data !== 'undefined' && data?.email ? data.email : null) || auth?.user?.email;
+            if (userEmail && isWebAuthnSupported()) {
+                try {
+                    const res = await axios.post('/webauthn/check', { email: userEmail });
+                    setHasPasskey(res.data.has_passkey);
+                } catch (e) {
+                    setHasPasskey(false);
+                }
+            }
+        };
+        if (typeof showStepUp !== 'undefined' && showStepUp) {
+            checkPasskey();
+        }
+    }, [typeof showStepUp !== 'undefined' ? showStepUp : false]);
+
+    const handlePasskeyStepUp = async () => {
+        try {
+            setPasskeyLoading(true);
+            const userEmail = (typeof email !== 'undefined' ? email : null) || (typeof data !== 'undefined' && data?.email ? data.email : null) || auth?.user?.email;
+
+            if (!userEmail) {
+                toast.error("Email required for passkey verification.");
+                setPasskeyLoading(false);
+                return;
+            }
+
+            const { data: options } = await axios.post(
+                route("webauthn.login.options"),
+                { email: userEmail },
+            );
+
+            const publicKey = options.publicKey ?? options;
+            publicKey.challenge = base64urlToUint8Array(
+                publicKey.challenge,
+            );
+
+            if (publicKey.allowCredentials) {
+                publicKey.allowCredentials = publicKey.allowCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    }),
+                );
+            }
+
+            const credential = await navigator.credentials.get({
+                publicKey,
+            });
+
+            const payload = {
+                ...formatCredentialForServer(credential),
+                amount: stepUpContext?.amount || Math.round((parseFloat(String(task.price || 0).replace(/,/g, '')) + parseFloat(String(task.tax_amount || 0).replace(/,/g, ''))) * (task?.creator?.vat_amount_percentage || 0) / 100 * (isZeroDecimalCurrency(task?.currency) ? 1 : 100)),
+                currency: stepUpContext?.currency || task?.currency,
+                creator_id: stepUpContext?.creator_id || task?.creator?.uuid || task?.creator_id,
+                email: stepUpContext?.email || auth?.user?.email,
+                device_id: stepUpContext?.device_id || null,
+                is_checkout_session: true,
+                risk_identity_id: stepUpContext?.risk_identity_id
+            };
+
+            const response = await axios.post('/api/risk/step-up/verify-passkey', payload);
+            
+            if (response.data.success) {
+                toast.success("Identity verified! Proceeding to checkout...");
+                setShowStepUp(false);
+                if (typeof setSkipCaptcha !== 'undefined') setSkipCaptcha(true);
+                handlePurchase();
+            } else {
+                toast.error("Passkey verification failed.");
+            }
+        } catch (error) {
+            console.error("Passkey error:", error);
+            if (error.response?.data?.error) {
+                toast.error(error.response.data.error);
+            } else if (error.name === "NotAllowedError") {
+                toast.error("Authentication cancelled.");
+            } else {
+                toast.error("Unable to authenticate. Please try again.");
+            }
+        } finally {
+            setPasskeyLoading(false);
+        }
+    };
+
     const handleVerifyStepUp = async (e) => {
         e.preventDefault();
         setVerifyingOtp(true);
@@ -298,7 +444,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             
                             <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
                                 {isCreator ? (
-                                    <div className="text-center  rounded-[30px] md:rounded-[40px]  py-6">
+                                    <div className="text-center  rounded-[30px]  py-6">
                                         <p className="mb-4 text-gray-600 font-medium">You are the creator of this task.</p>
                                         <a href={route('task.dashboard')} className="button b">
                                             Manage Orders
@@ -309,19 +455,19 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                         {/* Instant Delivery Section - Only if access granted */}
                                         {task.type === 'instant' && deliverableUrl && (
                                             <div className="mb-8">
-                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[30px] md:rounded-[40px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
+                                                <div className="bg-green-100 text-green-800 px-4 py-3 rounded-[30px]  border-2 border-green-300 mb-6 font-bold text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,0)] text-center">
                                                     ✓ Purchased Successfully
                                                 </div>
                                                 <div className="space-y-4">
                                                     {task.deliverable_note && (
-                                                        <div className="bg-white border-2 border-black rounded-[30px] md:rounded-[40px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                                        <div className="bg-white border-2 border-black rounded-[30px]  p-6 text-left shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                                             <h4 className="font-black text-gray-900 mb-3 uppercase tracking-wide">Note from Creator:</h4>
                                                             <p className="whitespace-pre-wrap text-gray-700 font-medium">{task.deliverable_note}</p>
                                                         </div>
                                                     )}
                                                     <a 
                                                         href={deliverableUrl} 
-                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[30px] md:rounded-[40px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
+                                                        className="block w-full text-center bg-gray-300 text-black px-4 py-3 rounded-[30px]  hover:bg-gray-100 cursor-pointer font-black uppercase tracking-widest text-sm border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                     >
@@ -354,7 +500,7 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                                                                  </a>
                                                              </div>
                                                              {historyItem.gifter_message && (
-                                                                 <div className="bg-gray-50 p-3 rounded-[30px] md:rounded-[40px]   text-sm italic text-gray-600 border border-gray-100">
+                                                                 <div className="bg-gray-50 p-3 rounded-[30px]   text-sm italic text-gray-600 border border-gray-100">
                                                                      "{historyItem.gifter_message}"
                                                                  </div>
                                                              )}
@@ -511,6 +657,31 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
                             </button>
                         </div>
                     </form>
+                    
+                    {isWebAuthnSupported() && hasPasskey && (
+                        <div className="mt-6 border-t border-gray-200 pt-6">
+                            <button
+                                type="button"
+                                onClick={handlePasskeyStepUp}
+                                disabled={passkeyLoading || (typeof verifyingOtp !== 'undefined' ? verifyingOtp : false)}
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                            >
+                                {passkeyLoading ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-pink-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Checking device...
+                                    </>
+                                ) : "Use Face ID / Fingerprint"}
+                            </button>
+                            <p className="text-xs text-gray-500 text-center mt-2">
+                                Bypass OTP by verifying your identity with a saved passkey.
+                            </p>
+                        </div>
+                    )}
+
                 </div>
             </Popup>
         </Guest>

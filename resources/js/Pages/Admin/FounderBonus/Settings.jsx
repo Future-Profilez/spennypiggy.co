@@ -104,7 +104,7 @@ export default function FounderBonusSettings() {
             
             <div className="min-h-screen bg-gray-50 py-8">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white shadow rounded-[30px] md:rounded-[40px]  ">
+                    <div className="bg-white shadow rounded-[30px]  ">
                         <div className="px-6 py-4 border-b border-gray-200">
                             <h1 className="text-2xl font-bold text-gray-900">Founder Bonus Settings</h1>
                             <p className="mt-1 text-sm text-gray-600">
@@ -113,13 +113,13 @@ export default function FounderBonusSettings() {
                         </div>
 
                         {message && (
-                            <div className="mx-6 mt-4 p-4 bg-green-50 border border-green-200 rounded-[30px] md:rounded-[40px] ">
+                            <div className="mx-6 mt-4 p-4 bg-green-50 border border-green-200 rounded-[30px] ">
                                 <p className="text-green-800">{message}</p>
                             </div>
                         )}
 
                         {error && (
-                            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-[30px] md:rounded-[40px] ">
+                            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-[30px] ">
                                 <p className="text-red-800">{error}</p>
                             </div>
                         )}
@@ -139,7 +139,7 @@ export default function FounderBonusSettings() {
                                             min="0"
                                             value={settings.thresholds.min_first_30d_earnings}
                                             onChange={(e) => handleInputChange('thresholds', 'min_first_30d_earnings', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
@@ -152,7 +152,7 @@ export default function FounderBonusSettings() {
                                             min="0"
                                             value={settings.thresholds.min_monthly_earnings}
                                             onChange={(e) => handleInputChange('thresholds', 'min_monthly_earnings', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
@@ -165,7 +165,7 @@ export default function FounderBonusSettings() {
                                             min="0"
                                             value={settings.thresholds.max_monthly_earnings}
                                             onChange={(e) => handleInputChange('thresholds', 'max_monthly_earnings', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                 </div>
@@ -185,7 +185,7 @@ export default function FounderBonusSettings() {
                                             max="365"
                                             value={settings.calculation.qualification_days}
                                             onChange={(e) => handleInputChange('calculation', 'qualification_days', parseInt(e.target.value) || 30)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
@@ -198,7 +198,7 @@ export default function FounderBonusSettings() {
                                             max="365"
                                             value={settings.calculation.monthly_calculation_days}
                                             onChange={(e) => handleInputChange('calculation', 'monthly_calculation_days', parseInt(e.target.value) || 30)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
@@ -212,7 +212,7 @@ export default function FounderBonusSettings() {
                                             max="1"
                                             value={settings.calculation.bonus_percentage}
                                             onChange={(e) => handleInputChange('calculation', 'bonus_percentage', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                 </div>
@@ -231,7 +231,7 @@ export default function FounderBonusSettings() {
                                             min="1"
                                             value={settings.limits.max_founder_seats}
                                             onChange={(e) => handleInputChange('limits', 'max_founder_seats', parseInt(e.target.value) || 150)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
@@ -244,7 +244,7 @@ export default function FounderBonusSettings() {
                                             min="0"
                                             value={settings.limits.max_bonus_per_month}
                                             onChange={(e) => handleInputChange('limits', 'max_bonus_per_month', parseFloat(e.target.value) || 1000)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px] md:rounded-[40px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-[30px]  focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                 </div>
@@ -297,7 +297,7 @@ export default function FounderBonusSettings() {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-[30px] md:rounded-[40px]  hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-6 py-2 bg-blue-600 text-white rounded-[30px]  hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {saving ? 'Saving...' : 'Save Settings'}
                                 </button>

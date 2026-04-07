@@ -94,7 +94,7 @@ export default function ContentFilePreview({
     const isAudioFile = isAudio || (fileType && fileType.toLowerCase().includes('audio'));
 
     return (
-        <div className={`content-file-preview bg-white border border-gray-200 rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  p-3 shadow-sm ${className}`}>
+        <div className={`content-file-preview bg-white border border-gray-200 rounded-[30px]  lg:rounded-[30px]  p-3 shadow-sm ${className}`}>
             <div className="flex items-start space-x-4">
                 {/* File preview based on type */}
                 <div className="flex-shrink-0">
@@ -103,13 +103,13 @@ export default function ContentFilePreview({
                             <img 
                                 src={fileUrl} 
                                 alt={fileName || "Content preview"}
-                                className="w-20 h-20 object-cover rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  border shadow-sm"
+                                className="w-20 h-20 object-cover rounded-[30px]  lg:rounded-[30px]  border shadow-sm"
                                 onError={(e) => {
                                     e.target.style.display = 'none';
                                     e.target.nextSibling.style.display = 'flex';
                                 }}
                             />
-                            <div className="w-20 h-20 bg-gray-100 border rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  flex items-center justify-center" style={{display: 'none'}}>
+                            <div className="w-20 h-20 bg-gray-100 border rounded-[30px]  lg:rounded-[30px]  flex items-center justify-center" style={{display: 'none'}}>
                                 <FaFileImage className="text-gray-500" size="1.5rem" />
                             </div>
                         </div>
@@ -117,7 +117,7 @@ export default function ContentFilePreview({
                         <div className="relative">
                             <video 
                                 src={fileUrl}
-                                className="w-20 h-20 object-cover rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  border shadow-sm"
+                                className="w-20 h-20 object-cover rounded-[30px]  lg:rounded-[30px]  border shadow-sm"
                                 controls={false}
                                 muted
                                 preload="metadata"
@@ -126,7 +126,7 @@ export default function ContentFilePreview({
                                     e.target.nextSibling.style.display = 'flex';
                                 }}
                             />
-                            <div className="w-20 h-20 bg-blue-50 border rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  flex items-center justify-center" style={{display: 'none'}}>
+                            <div className="w-20 h-20 bg-blue-50 border rounded-[30px]  lg:rounded-[30px]  flex items-center justify-center" style={{display: 'none'}}>
                                 <FaFileVideo className="text-blue-600" size="1.5rem" />
                             </div>
                             {/* Play icon overlay */}
@@ -137,12 +137,12 @@ export default function ContentFilePreview({
                             </div>
                         </div>
                     ) : isAudioFile ? (
-                        <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 border rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  flex flex-col items-center justify-center">
+                        <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 border rounded-[30px]  lg:rounded-[30px]  flex flex-col items-center justify-center">
                             <FaFileAudio className="text-purple-600" size="1.5rem" />
                             <div className="text-xs text-purple-700 mt-1">♪</div>
                         </div>
                     ) : (
-                        <div className="w-20 h-20 bg-gray-50 border rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  flex items-center justify-center">
+                        <div className="w-20 h-20 bg-gray-50 border rounded-[30px]  lg:rounded-[30px]  flex items-center justify-center">
                             {getFileIcon(fileType)}
                         </div>
                     )}
@@ -204,7 +204,7 @@ export default function ContentFilePreview({
                         href={fileUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-flex text-center items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                        className="inline-flex text-center items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-[30px]  lg:rounded-[30px]  text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                     >
                         {isImageFile || isVideoFile ? 'View' : 'Download'}
                     </a> */}
@@ -212,7 +212,7 @@ export default function ContentFilePreview({
                         <a 
                             href={`${fileUrl}/-/format/auto/-/quality/best/`}
                             download
-                            className="text-center inline-flex items-center px-3 py-1.5 border border-pink-300 text-sm font-medium rounded-[30px] md:rounded-[40px]  lg:rounded-[30px] md:rounded-[40px]  text-pink-700 bg-pink-50 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                            className="text-center inline-flex items-center px-3 py-1.5 border border-pink-300 text-sm font-medium rounded-[30px]  lg:rounded-[30px]  text-pink-700 bg-pink-50 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                         >
                             View
                         </a>

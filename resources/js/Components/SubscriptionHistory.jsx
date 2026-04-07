@@ -74,7 +74,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
 
     if (!subscriptionHistory || subscriptionHistory.length === 0) {
         return (
-            <div className="bg-white rounded-[30px] md:rounded-[40px]   shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-[30px]   shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription History</h3>
                 <div className="text-center py-8">
                     <div className="text-gray-400 mb-2">
@@ -90,7 +90,7 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     }
 
     return (
-        <div className="bg-white rounded-[30px] md:rounded-[40px]   ">
+        <div className="bg-white rounded-[30px]   ">
             <div className="py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Subscription History</h3>
                 <p className="text-sm text-gray-600 mt-1">Complete history of your Spenny Piggy subscription payments</p>

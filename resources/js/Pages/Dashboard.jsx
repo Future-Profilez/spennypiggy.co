@@ -329,6 +329,10 @@ export default function Dashboard(props) {
                                                                 </div>
                                                             </div>
                                                         </div>
+
+                                                        <div className="flex justify-center">
+                                                            <button className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <>
@@ -348,10 +352,10 @@ export default function Dashboard(props) {
                                                                             true,
                                                                         )
                                                                     }
-                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    className="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                 >
                                                                     <div className=" flex items-center">
-                                                                        <div className="p-1 rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
+                                                                        <div className="p-1 !rounded-[30px] bg-pink-100 flex items-center justify-center w-[50px] h-[50px] min-w-[50px] min-h-[50px] ml-2">
                                                                             <FaRegHeart
                                                                                 color="#F94F97"
                                                                                 size="1.6rem"
@@ -369,7 +373,7 @@ export default function Dashboard(props) {
                                                                 </div>
 
                                                                 <Link
-                                                                    className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
+                                                                    className="w-full block font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                     href="/task/create"
                                                                 >
                                                                     <div className=" flex items-center">
@@ -391,7 +395,7 @@ export default function Dashboard(props) {
                                                                 </Link>
 
                                                                 {/* <AddItem
-                                                                    classes="w-full font-bold addop bg-white rounded-[30px] md:rounded-[40px]  p-3 mb-2 text-center"
+                                                                    classes="w-full font-bold addop bg-white rounded-[30px]  p-3 mb-2 text-center"
                                                                     product_type="digital_products"
                                                                 /> */}
                                                                 <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
@@ -406,22 +410,22 @@ export default function Dashboard(props) {
                                                                             ?.is_creator_address_found
                                                                     }
                                                                 /> */}
-                                                                <AddMembership classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
+                                                                <AddMembership classes=" font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] !w-full" />
                                                                 <AddBills classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
                                                             </div>
                                                         </div>
                                                     </>
                                                 )}
                                             </div>
-                                            <button
+                                            {!wishOptions ? <button
                                                 onClick={() => {
                                                     setShowAdd(false);
-                                                    setWishOptions(false);
+                                                    // setWishOptions(false);
                                                 }}
                                                 className="w-[80%] mx-auto rounded-full bg-gray-200 border-[3px] border-black font-black uppercase tracking-widest block p-3 mt-6 hover:bg-gray-300 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                             >
                                                 Cancel
-                                            </button>
+                                            </button> : ""}
                                         </div>
                                     </Suspense>
                                 </div>
@@ -518,7 +522,7 @@ export default function Dashboard(props) {
                         {/* Stripe Account Migration Warning */}
 
                         {/* {user && user?.role == 1 && AuthUserStripeConnected == 1 && IsloggedIn && showAlert ?
-                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px] md:rounded-[40px]  ">
+                                <div className="flex p-3 mb-4 text-sm text-blue-700 relative bg-blue-100 border border-blue-300 rounded-[30px]  ">
                                     <div>
                                         <span className="font-medium">Stripe Policy Notice:</span> To comply with Stripe's requirements, you must regularly post content related to memberships, billing, and subscriptions. Accounts that do not may be suspended.
                                         Please contact <a target="_blank" href="https://spennypiggy.co" className="underline font-medium text-blue-800 hover:text-blue-900 livechat intercom-dud02y e11rlguj1 cursor-pointer">support</a> for more information.
@@ -765,7 +769,7 @@ export default function Dashboard(props) {
 
                                                                                     {auth.user && auth .user .role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
-                                                                                            classes="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200"
+                                                                                            classes="  font-poppins tracking-wider  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase text-sm transition-all duration-200"
                                                                                             text="Creator Payment Dashboard"
                                                                                         />
                                                                                     ) : (
@@ -822,7 +826,7 @@ export default function Dashboard(props) {
                                                                                     </div>
                                                                                     <div className="flex-1 order-2 text-center md:text-left mt-6">
                                                                                         <p className="text-[11px] font-black tracking-[0.25em] uppercase text-gray-700 mb-1">Support Story</p>
-                                                                                        <p className="text-black font-black uppercase tracking-wider text-xl md:text-2xl leading-snug">
+                                                                                        <p className="text-black font-black uppercase   text-xl md:text-xl leading-snug">
                                                                                             Relive your moments with {user?.name || '@'+user?.username}
                                                                                         </p>
                                                                                         <p className="text-gray-700 font-bold text-sm md:text-sm mt-1">

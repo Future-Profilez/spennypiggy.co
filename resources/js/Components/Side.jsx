@@ -9,7 +9,7 @@ const Side = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle sidebar"
-        className="fixed top-5 left-5 z-50 px-4 py-2 bg-black text-white rounded-[30px] md:rounded-[40px]   shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition"
+        className="fixed top-5 left-5 z-50 px-4 py-2 bg-black text-white rounded-[30px]   shadow-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition"
       >
         {isOpen ? 'Close' : 'Menu'}
       </button>

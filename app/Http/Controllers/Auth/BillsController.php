@@ -352,7 +352,8 @@ class BillsController extends Controller
         // Check if creator has card_payments capability
         if (!StripeControl::hasCardPaymentsCapability($bill->user->account_id)) {
             DB::rollBack();
-            return redirect()->back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+            $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+            return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
         // NEW: Check creator subscription eligibility first
@@ -445,6 +446,8 @@ class BillsController extends Controller
             if ($riskData instanceof \Illuminate\Http\RedirectResponse) {
                 return $riskData;
             }
+
+            $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
             $request->validate([
                 'name' => ['nullable', 'string', 'max:50'],
@@ -621,7 +624,7 @@ class BillsController extends Controller
                     ];
                 }
 
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId); // Create session on CONNECTED account
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS); // Create session on CONNECTED account
 
                 $sub->update([
                     'session_id' => $session->id,

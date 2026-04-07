@@ -117,11 +117,11 @@ export default function FollowersBulkNotification({ trigger }) {
                         Notification History
                     </h3>
 
-                    <div className=" rounded-[30px] md:rounded-[40px]   ">
+                    <div className=" rounded-[30px]   ">
                         {pwa_notification_details &&
                             pwa_notification_details?.map((value, key) => {
                                 return (
-                                    <div className="p-3 rounded-[30px] md:rounded-[40px]  border border-gray-400 shadow-sm mb-2">
+                                    <div className="p-3 rounded-[30px]  border border-gray-400 shadow-sm mb-2">
                                         <h2 className="line-clamp-1 font-bold text-black text-[15px]">
                                             {value?.title}
                                         </h2>

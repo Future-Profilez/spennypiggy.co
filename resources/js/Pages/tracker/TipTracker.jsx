@@ -39,7 +39,7 @@ export default function TipTracker({auth}) {
       const [open, setOpen] = useState(false);
       const openState = () => { setOpen(!open) }
       return <>
-         <div onClick={openState} className='box shadow-pink rounded-[30px] md:rounded-[40px]   mb-4 p-3' >
+         <div onClick={openState} className='box shadow-pink rounded-[30px]   mb-4 p-3' >
             <div  aria-controls="example-collapse-text "
             aria-expanded={open} className="cursor-pointer trackbar " >
                   <div className='flex tip items-center justify-between' >

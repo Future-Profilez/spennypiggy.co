@@ -25,7 +25,7 @@ export default function ReserveWidget({ className = '' }) {
     if (!data || data.total_held <= 0) return null;
 
     return (
-        <div className={`bg-white rounded-[30px] md:rounded-[40px] shadow p-6 border-2 border-yellow-100 ${className}`}>
+        <div className={`bg-white rounded-[30px] shadow p-6 border-2 border-yellow-100 ${className}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="bg-yellow-100 p-3 rounded-full text-yellow-600">

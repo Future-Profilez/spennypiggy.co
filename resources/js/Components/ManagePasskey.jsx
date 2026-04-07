@@ -105,6 +105,8 @@ export default function ManagePasskey({ email }) {
                 );
             }
 
+            // Safari requires this to be called directly after user gesture if possible,
+            // but for Management it's less strict than after a long login flow. 
             const credential = await navigator.credentials.create({
                 publicKey,
             });
@@ -188,7 +190,7 @@ export default function ManagePasskey({ email }) {
     return (
         <div className="bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden">
             <div className="p-4 flex items-center justify-between border-b border-gray-200">
-                <div>
+                <div className="pe-4">
                     <h4 className="font-medium text-gray-800">Passkeys / FaceID</h4>
                     <p className="text-xs text-gray-500 mt-1">
                         Register multiple devices to login instantly without a password.
@@ -200,7 +202,7 @@ export default function ManagePasskey({ email }) {
                         type="button"
                         onClick={handleRegister}
                         disabled={loading}
-                        className="px-4 py-2 bg-pink-100 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
+                        className=" whitespace-nowrap px-4 py-2 bg-pink-100 text-pink-600 rounded-full text-sm font-medium hover:bg-pink-200 transition disabled:opacity-50 flex items-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

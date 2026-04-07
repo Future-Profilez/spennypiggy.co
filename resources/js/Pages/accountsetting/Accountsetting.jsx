@@ -241,7 +241,7 @@ export default function Accountsetting(props) {
     }) => (
         <div
             onClick={onClick}
-            className={`relative group w-full w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-pink-500"}  !rounded-[30px] md:rounded-[40px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
+            className={`relative group w-full w-full md:flex items-center justify-between p-4 bg-gray-100 border-2 ${bordercolor || "border-pink-500"}  !rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all cursor-pointer mb-3 ${isDestructive ? "hover:bg-red-50 hover:border-red-200" : ""} ${className}`}
         >
             <div className="flex !items-center gap-4 text-left">
                 <div

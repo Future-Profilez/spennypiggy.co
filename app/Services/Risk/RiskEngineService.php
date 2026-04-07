@@ -68,13 +68,14 @@ class RiskEngineService
         $ui = [];
 
         // --- RULE 0: COOLDOWN CHECK ---
-        if ($identity->cooldown_until && Carbon::now()->lessThan($identity->cooldown_until)) {
+        if ($identity->cooldown_until && $identity->cooldown_until->isFuture()) {
             $decision = 'COOLDOWN';
-            $reasons[] = 'COOLDOWN_ACTIVE';
+            $reasons[] = 'ACTIVE_COOLDOWN';
+            $minutesLeft = max(1, $identity->cooldown_until->diffInMinutes(Carbon::now()));
             $ui = [
                 'key' => 'COOLDOWN_ACTIVE',
                 'title' => 'Please Wait',
-                'body' => 'You are paying too fast. Please wait ' . $limits['cooldown_minutes'] . ' minutes and try again.',
+                'body' => 'You are paying too fast. Please wait ' . $minutesLeft . ' minute' . ($minutesLeft > 1 ? 's' : '') . ' and try again.',
             ];
             
             $this->logDecision($identity, $context, $decision, $reasons);
@@ -194,14 +195,17 @@ class RiskEngineService
         if ($velocityCooldownCount > 0 && $rollup->payment_count_10m >= $velocityCooldownCount) {
             $decision = 'COOLDOWN';
             $reasons[] = 'VELOCITY_5_IN_10M';
+            $minutes = $limits['cooldown_minutes'];
             $ui = [
                 'key' => 'COOLDOWN_ACTIVE',
                 'title' => 'Please Wait',
-                'body' => 'You are paying too fast. Please wait ' . $limits['cooldown_minutes'] . ' minutes and try again.',
+                'body' => $minutes > 0 ? 'You are paying too fast. Please wait ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '') . ' and try again.' : 'You are paying too fast. Please try again in a moment.',
             ];
             $this->logDecision($identity, $context, $decision, $reasons);
             // Trigger cooldown on identity
-            $identity->update(['cooldown_until' => Carbon::now()->addMinutes($limits['cooldown_minutes'])]);
+            if ($minutes > 0) {
+                $identity->update(['cooldown_until' => Carbon::now()->addMinutes($minutes)]);
+            }
             return $this->formatResponse($decision, $reasons, $limits, $ui);
         }
 
@@ -222,17 +226,19 @@ class RiskEngineService
         // Spec: "If identity triggered STEP_UP within last 15 minutes AND continues to attempt new payments rapidly."
         // Or "if payment_count_10m continues above threshold after step-up".
         // Simplified: If count > 5 (really fast) -> COOLDOWN.
-        if ($rollup->payment_count_10m > 5) { // Threshold for cooldown
-             $decision = 'COOLDOWN';
-             $reasons[] = 'COOLDOWN_AFTER_STEP_UP';
+        if ($velocityStepUpCount > 0 && $rollup->payment_count_10m >= ($velocityStepUpCount + 2)) {
+            $decision = 'COOLDOWN';
+            $reasons[] = 'RAPID_AFTER_STEP_UP';
              
-             // Set Cooldown
-             $identity->update(['cooldown_until' => Carbon::now()->addMinutes($limits['cooldown_minutes'])]);
-             
-             $ui = [
+            $minutes = $limits['cooldown_minutes'];
+            if ($minutes > 0) {
+                $identity->update(['cooldown_until' => Carbon::now()->addMinutes($minutes)]);
+            }
+              
+            $ui = [
                 'key' => 'COOLDOWN_ACTIVE',
                 'title' => 'Please Wait',
-                'body' => 'You are paying too fast. Please wait ' . $limits['cooldown_minutes'] . ' minutes.',
+                'body' => $minutes > 0 ? 'You are paying too fast. Please wait ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '') . '.' : 'You are paying too fast. Please try again in a moment.', 
             ];
             
             $this->logDecision($identity, $context, $decision, $reasons);

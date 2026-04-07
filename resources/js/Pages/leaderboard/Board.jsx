@@ -93,7 +93,7 @@ export default function Board(props) {
                     <Link
                         href={`/${p.username}`}
                         onClick={() => trackSearchClick(p?.id, p?.username)}
-                        className={` position-${position} position text-center rounded-[30px] md:rounded-[40px]  md:rounded-[30px] md:rounded-[40px]   
+                        className={` position-${position} position text-center rounded-[30px]  md:rounded-[30px]   
                               border-[#F94F97] !shadow-none shadow-pink bg-white m-0`}
                     > {p.id}
                         <div className="profile p-2 sm:p-3 pb-0">
@@ -158,7 +158,7 @@ export default function Board(props) {
                     </Link>
                 ) : (
                     <div
-                        className={`position-${position} position text-center rounded-[30px] md:rounded-[40px]   shadow-pink bg-white`}
+                        className={`position-${position} position text-center rounded-[30px]   shadow-pink bg-white`}
                     >
                         <div className="profile p-3 pb-0">
                             <div className=" relative">
@@ -204,7 +204,7 @@ export default function Board(props) {
                 <div className="flex flex-wrap -mx-4">
                     <div className="w-full xl:w-2/3 px-4 mb-4">
                         <div className=" ">
-                            <div className="p-2  md:!p-6 pinkbg rounded-[30px] md:rounded-[40px]  mb-6">
+                            <div className="p-2  md:!p-6 pinkbg rounded-[30px]  mb-6">
                                 <div className="pt-4 md:pt-0  mt-6   mb-4 pb-4">
                                     <h1 className="btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
                                         Top Creators Getting <br></br> the Most Love
@@ -277,7 +277,7 @@ export default function Board(props) {
                                     <div
                                     className={`${
                                         loading ? "opacity-50 pointer-events-none" : ""
-                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px] md:rounded-[40px]  `}
+                                        }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px]  `}
                                         >
                                         <h2 className=" font-GillSans text-left text-2xl uppercase text-gray-900 ">🔥 Rising Creators</h2>
                                         <p className="mb-6">New creators gaining support fast</p>

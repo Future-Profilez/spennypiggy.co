@@ -104,18 +104,18 @@ export default function Post({item}) {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-[30px] md:rounded-[40px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-[30px]  bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                       <div className="px-1 py-1">
                         <Menu.Item>
                           {({ active }) => (
-                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[30px] md:rounded-[40px]  text-sm`}>
+                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[30px]  text-sm`}>
                               <AddPost title="Edit Post" text={"Edit Post"} classes={`text-left w-full px-4 py-2`} item={item} isEdit={true} />
                             </div>
                           )}
                         </Menu.Item>
                         <Menu.Item>
                           {({ active }) => (
-                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[30px] md:rounded-[40px]  text-sm`}>
+                            <div className={`${active ? 'bg-gray-100' : ''} group flex w-full items-center rounded-[30px]  text-sm`}>
                               <RemovePost classes={`px-4 py-2 text-left w-full`} uuid={item.uuid} text="Remove Post" />
                             </div>
                           )}
@@ -127,7 +127,7 @@ export default function Post({item}) {
             ) : ''}
         </div>
 
-        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-[30px] md:rounded-[40px]   mb-2 border !border-yellow-500' >
+        {IsloggedIn && item && item.approved == 0 ?  <div className='bg-yellow-50 text-yellow-500 p-2 text-sm rounded-[30px]   mb-2 border !border-yellow-500' >
           Post waiting for approval. Currently only you can see this post.
         </div> : ''}
 
@@ -150,7 +150,7 @@ export default function Post({item}) {
               </> : ''}
               
               {item.ai_generated == 1 ? 
-              <div className='absolute bottom-3 left-3 z-10 bg-black shadow-sm rounded-[30px] md:rounded-[40px]  px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
+              <div className='absolute bottom-3 left-3 z-10 bg-black shadow-sm rounded-[30px]  px-2 py-1 text-[8px] text-white'>MADE WITH AI </div>
                : ""}
           </div>
         : ''}

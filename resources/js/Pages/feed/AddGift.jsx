@@ -103,7 +103,7 @@ export default function AddGift({
 
     const AddItem = () => (
         <div className="flex items-center">
-            <div className="p-1 rounded-[30px] md:rounded-[40px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] min-w-[50px] h-[50px]">
+            <div className="p-1 rounded-[30px]   bg-[#ffe8f2] flex items-center justify-center w-[50px] min-w-[50px] h-[50px]">
                 <CiGift color="var(--pink)" size="1.5rem" />
             </div>
             <div className="pl-3 text-left">
@@ -121,7 +121,7 @@ export default function AddGift({
             space="4"
             size={hasAdded ? "md" : "lg"}
             action={close}
-            classes={`w-full addop bg-white rounded-[30px] md:rounded-[40px]  py-2 px-3 ${classes}`}
+            classes={`w-full addop bg-white rounded-[30px]  py-2 px-3 ${classes}`}
             text={<AddItem />}
         >
             {!hasAdded ? (
@@ -144,7 +144,7 @@ export default function AddGift({
                         name="title"
                         required
                         placeholder="Example - https://www.amazon.com/Gaming-Headphone-Controller-Holder-Organizer-Black/dp/B0BPSP3BQH"
-                        className="text-normal border-gray-300 border px-3 py-3 text-gray-900 rounded-[30px] md:rounded-[40px]  w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                        className="text-normal border-gray-300 border px-3 py-3 text-gray-900 rounded-[30px]  w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
                     />
                     <LoaderButton
                         type="submit"

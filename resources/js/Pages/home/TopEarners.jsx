@@ -29,7 +29,7 @@ export default function TopEarners({ creators, periodLabel }) {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {creators.map((c, idx) => (
-            <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-[30px] md:rounded-[40px]   p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
+            <Link key={c.id} href={`/${c.username}`} className="fading group relative bg-gray-900 rounded-[30px]   p-4 border-2 border-pink-500 hover:scale-[1.02] transition-all duration-300 shadow-[4px_4px_0_0_#ec4899] hover:shadow-[6px_6px_0_0_#ec4899] text-white">
             {c.is_number_one ? (
               <div className="absolute top-[-13px] left-[-13px] bg-[#F94F96] text-white text-xs font-bold px-2 py-1 rounded-full">#1 {periodLabel ? ` — ${periodLabel}` : ''}</div>
             ) : null}

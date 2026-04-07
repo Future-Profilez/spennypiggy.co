@@ -26,7 +26,7 @@ export default function SiteSubscription({ auth, subscription_status, user, card
     const canActivate = isExpiredOrInactive || isEnabled;
 
     return (
-        <div className="w-full finishs mb-6 p-6 rounded-[30px] md:rounded-[40px]   bg-white  border-2 !border-pink-500  ">
+        <div className="w-full finishs mb-6 p-6 rounded-[30px]   bg-white  border-2 !border-pink-500  ">
 
             <h2 className="text-xl font-bold capitalize pb-3 goaltitle text-black  ">
                 Subscription Status

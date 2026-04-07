@@ -425,7 +425,8 @@ class TaskController extends Controller
         $hasCardPayments = StripeControl::hasCardPaymentsCapability($connectedAccountId);
 
         if (!$hasCardPayments) {
-            return redirect()->back()->with('error', "This creator cannot accept payments at the moment (Card Payments capability missing).");
+            $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
+            return redirect()->back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
         }
 
         $appUrl = rtrim(config('app.url'), '/');
@@ -469,8 +470,10 @@ class TaskController extends Controller
             'metadata' => $complianceMetadata,
         ];
 
+        $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
+
         // Check if we need to force 3DS
-        if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
+        if ($force3DS) {
             $payload['payment_method_options'] = [
                 'card' => [
                     'request_three_d_secure' => 'any',

@@ -244,7 +244,7 @@ export default function Header({ classMagicword }) {
                                 </div>
                             )}
                             <div
-                                className="block md:hidden menu-toggle cursor-pointer cartLink relative"
+                                className="block ps-2 md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -780,13 +780,13 @@ export default function Header({ classMagicword }) {
                                 </li>
 
                                 {auth && auth?.user?.username ? (
-                                    <li className="block">
+                                    <li className="block pe-3">
                                         <Link
                                             onClick={toggleClass}
                                             method="post"
                                             href={route("logout")}
                                             as="button"
-                                            className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
+                                            className="relative  w-full flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#ff6b6b] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                         >
                                             <span className="inline-flex justify-center items-center ml-2">
                                                 <AiOutlineLogout

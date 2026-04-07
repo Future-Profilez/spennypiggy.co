@@ -194,6 +194,23 @@ class MonitorPlatformRiskState extends Command
             return;
         }
 
+        // 5. EFW Spike Trigger
+        $efwSpikeThreshold = (int)($triggers['efw_spike_threshold'] ?? 10);
+        $efwCount24h = \App\Models\EarlyFraudWarning::where('created_at', '>=', now()->subHours(24))->count();
+        $this->info("EFW Count (24h): {$efwCount24h}");
+
+        if ($efwCount24h >= $efwSpikeThreshold * 2) {
+            $this->transitionState('THROTTLE', ['EFW_SPIKE_THROTTLE'], [
+                'efw_count_24h' => $efwCount24h
+            ]);
+            return;
+        } elseif ($efwCount24h >= $efwSpikeThreshold) {
+            $this->transitionState('CAUTION', ['EFW_SPIKE_CAUTION'], [
+                'efw_count_24h' => $efwCount24h
+            ]);
+            return;
+        }
+
         // If all checks pass, consider recovering to NORMAL
         // We should check if we are currently in a high risk state set by SYSTEM
         // and if metrics have cooled down.

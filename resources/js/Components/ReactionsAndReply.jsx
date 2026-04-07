@@ -89,8 +89,8 @@ export default function ReactionsAndReply({
             <button  
               key={e} onClick={() => react(e)}
               disabled={sending} title="React"  
-              className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 text-sm transition-colors" >
-              {e} {counts?.[e] ? <span className="text-white/60 text-xs"> {counts[e]}</span> : null}
+              className="px-2 py-1  bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 text-[26px] transition-colors" >
+              {e} {counts?.[e] ? <span className="text-black text-xs"> {counts[e]}</span> : null}
             </button>
           ) : (
             <span key={e} className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-sm">
@@ -112,8 +112,8 @@ export default function ReactionsAndReply({
                   if (error) setError('');
                 }}
                 placeholder={ev.type === 'thankyou' ? "Say thanks back…" : "Send a quick thank‑you…"}
-                className={`flex-1 bg-white/5 border ${isOverLimit ? 'border-red-500' : 'border-white/10'} rounded-[20px] px-3 py-2 text-white/80 placeholder-white/30 resize-none 
-                   w-full outline-none focus:border-white/20 transition-colors`}
+                className={`flex-1 bg-gray-200  border ${isOverLimit ? 'border-red-500' : 'border-white/10'} rounded-[20px] p-4 text-black placeholder-gray-500 resize-none 
+                   w-full outline-none focus:border-white/20 transition-colors border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}
               />
               <button
                 onClick={submitReply}
@@ -127,7 +127,7 @@ export default function ReactionsAndReply({
             <div className="text-[10px] uppercase tracking-widest text-red-500">
               {error || (isOverLimit ? (charCount > 250 ? 'Character limit exceeded' : 'Word limit exceeded') : '')}
             </div>
-            <div className={`text-[10px] uppercase tracking-widest ${isOverLimit ? 'text-red-500' : 'text-white/30'}`}>
+            <div className={`text-[10px] uppercase tracking-widest ${isOverLimit ? 'text-red-500' : 'text-gray-600'}`}>
               {charCount}/250 chars • {wordCount}/90 words
             </div>
           </div>

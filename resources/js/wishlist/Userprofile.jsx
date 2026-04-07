@@ -23,7 +23,7 @@ export default function Userprofile({ IsloggedIn }) {
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-50px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none rounded-3xl">
+            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none rounded-3xl">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-80px]">
                         <img
@@ -127,16 +127,16 @@ export default function Userprofile({ IsloggedIn }) {
                     <div>
                         {user && user?.role == 1 ? (
                             <div className="flex mb-4 justify-center md:mb-4 gap-2 md:gap-3">
-                                <div className="md:flex items-center gap-3 text-center bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="font-black block">👥 {user?.followers_count}</span>
+                                <div className="md:flex items-center gap-3 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">👥 {user?.followers_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Followers</p>
                                 </div>
-                                <div className="md:flex items-center gap-3 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="font-black block">🤝 {user?.following_count}</span>
+                                <div className="md:flex items-center gap-3 text-center  bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">🤝 {user?.following_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Following</p>
                                 </div>
-                                <div className="md:flex items-center gap-3 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="font-black block">🐷 {supporters}</span>
+                                <div className="md:flex items-center gap-3 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">🐷 {supporters}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Supporters</p>
                                 </div>
                             </div>
@@ -162,12 +162,14 @@ export default function Userprofile({ IsloggedIn }) {
                                       </div>
                                   )
                                 : (
-                                    <EditProfile
+                                    ''
+                                ) || ""}
+
+                                {/* <EditProfile
                                         user={user}
                                         classes={"bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-full tracking-widest"}
                                         global_currency={global_currency}
-                                    />
-                                ) || ""}
+                                    /> */}
                         </div>
                     </div>
                 </div>

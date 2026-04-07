@@ -478,9 +478,14 @@ class StripeControl
      * @param array $payload Payment Payload
      * @return Throwable|\Stripe\PaymentIntent
      */
-    public static function createPaymentIntent(array $payload, $connectedAccountId = null)
+    public static function createPaymentIntent(array $payload, $connectedAccountId = null, bool $force3DS = false)
     {
         self::setClient();
+        
+        if ($force3DS) {
+            $payload['payment_method_options']['card']['request_three_d_secure'] = 'any';
+        }
+        
         try {
             if ($connectedAccountId) {
                 // Set the Stripe Account context
@@ -508,9 +513,14 @@ class StripeControl
      * @param array $payload Payment Payload
      * @return Throwable|\Stripe\Checkout\Session
      */
-    public static function createCheckoutSession(array $payload, $connectedAccountId = null)
+    public static function createCheckoutSession(array $payload, $connectedAccountId = null, bool $force3DS = false)
     {
         self::setClient();
+        
+        if ($force3DS) {
+            $payload['payment_method_options']['card']['request_three_d_secure'] = 'any';
+        }
+
         try {
             if ($connectedAccountId) {
                 // Set the Stripe Account context
