@@ -68,13 +68,26 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
                     options.challenge = base64urlToUint8Array(options.challenge);
                     options.user.id = base64urlToUint8Array(options.user.id);
                     if (options.excludeCredentials) {
-                        options.excludeCredentials = options.excludeCredentials.map(
-                            (item) => ({
-                                ...item,
-                                id: base64urlToUint8Array(item.id),
-                            })
-                        );
+                        if (options.excludeCredentials.length === 0) {
+                            delete options.excludeCredentials; // Chrome sometimes fails on empty array
+                        } else {
+                            options.excludeCredentials = options.excludeCredentials.map(
+                                (item) => ({
+                                    ...item,
+                                    id: base64urlToUint8Array(item.id),
+                                })
+                            );
+                        }
                     }
+                    
+                    // Android Chrome prefers platform attachment explicitly
+                    if (!options.authenticatorSelection) {
+                        options.authenticatorSelection = {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required"
+                        };
+                    }
+                    
                     setPublicKeyOptions(options);
                 })
                 .catch(err => console.error("Failed to preload passkey options", err));

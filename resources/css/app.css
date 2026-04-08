@@ -115,21 +115,20 @@ body{position:relative;font-family:var(--para-font)}
 .time-hrs button{background:#ededed;width:100%;text-align:center;border-radius:11px;padding:8px;margin:0 8px}
 .time-hrs button.active,.time-hrs button:hover{background:#777;color:#fff}
 @media (max-width:767px){
-   
-.wishbanner .cover {
-    height: 200px !important ;
-}
-
-.profile-image{width:70px;height:70px;padding:3px;margin-top:-50px}
-.profile-content h2{font-size:16px}
-.profile-content p{font-size:15px}
-.profile.p-3{padding:10px !important;padding-bottom:0 !important}
-.text-bl{text-align:center !important}
-.trust-pilot{display:flex;justify-content:center}
+    .wishbanner .cover {
+        height: 200px !important ;
+    }
+    .profile-image{width:70px;height:70px;padding:3px;margin-top:-50px}
+    .profile-content h2{font-size:16px}
+    .profile-content p{font-size:15px}
+    .profile.p-3{padding:10px !important;padding-bottom:0 !important}
+    .text-bl{text-align:center !important}
+    .trust-pilot{display:flex;justify-content:center}
 }
 .tooltipbtn p{font-weight:100 !important}
-@media (max-width:575px){.tooltipbtn p{max-width:153px !important}
-.tooltipbtn p:after{left:58px !important}
+@media (max-width:575px){
+    .tooltipbtn p{max-width:153px !important}
+    .tooltipbtn p:after{left:58px !important}
 }
 @media (max-width:400px){.profile-image{width:50px;height:50px;padding:2px;margin-top:-30px}
 .rank_lists a:last-child{border:0}
