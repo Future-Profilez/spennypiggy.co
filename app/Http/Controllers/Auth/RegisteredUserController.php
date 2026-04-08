@@ -119,23 +119,25 @@ class RegisteredUserController extends Controller
             'promo'    => ['nullable', 'string'], // referral code
         ]);
 
-        $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
-        if (!empty($turnstileSecret)) {
-            $request->validate([
-                'cf_turnstile_response' => ['required', 'string'],
-            ]);
-
-            $verifyResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-                'secret' => $turnstileSecret,
-                'response' => $request->input('cf_turnstile_response'),
-                'remoteip' => $request->ip(),
-            ]);
-
-            $verifyBody = $verifyResponse->json();
-            if (!($verifyBody['success'] ?? false)) {
-                throw ValidationException::withMessages([
-                    'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
+        if (config('app.url') === 'https://spennypiggy.co') {
+            $turnstileSecret = config('services.turnstile.secret_key') ?: env('TRUNSTILE_SECRET_KEY') ?: env('TURNSTILE_SECRET_KEY');
+            if (!empty($turnstileSecret)) {
+                $request->validate([
+                    'cf_turnstile_response' => ['required', 'string'],
                 ]);
+
+                $verifyResponse = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                    'secret' => $turnstileSecret,
+                    'response' => $request->input('cf_turnstile_response'),
+                    'remoteip' => $request->ip(),
+                ]);
+
+                $verifyBody = $verifyResponse->json();
+                if (!($verifyBody['success'] ?? false)) {
+                    throw ValidationException::withMessages([
+                        'cf_turnstile_response' => 'Captcha verification failed. Please try again.',
+                    ]);
+                }
             }
         }
 
@@ -378,9 +380,9 @@ class RegisteredUserController extends Controller
 
         // Use new gross-up flow
         $breakdown = Helpers::calculateStripeDirectChargeFlow($baseAmount, 'GBP');
-        
+
         $finalTotalAmount = $breakdown['total_supporter_pays'];
-        
+
         // Convert final amount to selected currency if not GBP
         if ($currency !== 'GBP') {
             $convertedAmount = Helpers::priceFormat('gbp', $finalTotalAmount, $currency);
