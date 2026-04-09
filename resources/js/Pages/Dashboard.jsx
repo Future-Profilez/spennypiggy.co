@@ -574,11 +574,9 @@ export default function Dashboard(props) {
 
 
                                             <div className="tabs-containers min-height">
-                                                {page === "about" ||
-                                                page === false ? (
+                                                {page === "about" || page === false ? (
                                                     <Suspense fallback={ <LoadingScreen /> } >
                                                         {IsloggedIn && <CreatorRiskBanner />}
-
                                                         <div className="flex flex-wrap about-sec self-start ">
                                                             <div className="w-full lg:w-1/2 h-auto ">
                                                                 <div className="!sticky !top-[100px]">
@@ -590,14 +588,7 @@ export default function Dashboard(props) {
                                                                         <ActionRequired requirements={stripe_requirements.requirements} />
                                                                     ) : ''}
 
-                                                                    {IsloggedIn &&
-                                                                    auth?.user &&
-                                                                    auth?.user
-                                                                        ?.role ==
-                                                                        1 &&
-                                                                    !card_capabilities &&
-                                                                    !isNeedToUpgrade &&
-                                                                    !hasPendingCardPayments &&
+                                                                    {IsloggedIn && auth?.user && auth?.user?.role == 1 && !card_capabilities && !isNeedToUpgrade && !hasPendingCardPayments && 
                                                                     (AuthUserStripeConnected || has_stripe_account) ? (
                                                                         <EnableCardCapabilities />
                                                                     ) : (
@@ -767,7 +758,7 @@ export default function Dashboard(props) {
                                                                                 <MyGoal IsloggedIn={IsloggedIn} />
                                                                             ) :  "" }
 
-                                                                                    {auth.user && auth .user .role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
                                                                                             classes="  font-poppins tracking-wider  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase text-sm transition-all duration-200"
                                                                                             text="Creator Payment Dashboard"

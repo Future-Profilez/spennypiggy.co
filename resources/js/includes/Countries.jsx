@@ -510,11 +510,11 @@ export default function Countries({ send, selectClassName = "" }) {
   const updated = data.sort((a, b) => a.label.localeCompare(b.label));
   return <>
     <div className="custom-country-select" >
-      <select className={selectClassName} onChange={(e)=>send(e.target.value )} >
-        <option value={null} disabled selected >Choose Your Country</option>
+      <select className={`${selectClassName} appearance-none`} onChange={(e)=>send(e.target.value )} >
+        <option className="bg-[#020617] text-gray-400" value={null} disabled selected >Choose Your Country</option>
         {updated && updated.map((c, i)=>{ 
           return <>
-            <option key={`country-${i}`} value={JSON.stringify(c)} >{c.label}</option>
+            <option  className="bg-[#020617] text-white" key={`country-${i}`} value={JSON.stringify(c)} >{c.label}</option>
           </> 
         })}
       </select>
