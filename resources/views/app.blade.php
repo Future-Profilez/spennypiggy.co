@@ -164,6 +164,32 @@
     <meta name="theme-color" content="#05EFB8">
     <meta name="application-name" content="Spenny Piggy">
     
+    {{-- Prevent rubber-banding and zooming for native app feel --}}
+    <style>
+        html, body {
+            background-color: #000000 !important;
+        }
+        @media all and (display-mode: standalone) {
+            html, body {
+                background-color: #05EFB8 !important;
+            }
+            body {
+                overscroll-behavior-y: none;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+            input, textarea, [contenteditable] {
+                -webkit-user-select: auto;
+                user-select: auto;
+            }
+            a, button {
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+    </style>
+    
     {{-- Optimized favicon loading --}}
     <link rel="icon" href="{{ URL::asset('/favicon.ico') }}" sizes="any">
     <link rel="icon" href="{{ URL::asset('/favicon.svg') }}" type="image/svg+xml">
@@ -212,7 +238,6 @@
             "padding:30px 30px",
         ];
         
-        // PWA detection and behavior
         (function() {
             // Detect if running as PWA
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
@@ -223,6 +248,59 @@
             if (isStandalone) {
                 document.addEventListener('DOMContentLoaded', function() {
                     document.body.classList.add('pwa-mode');
+                    
+                    // Add safe area padding specifically for header if not already handled
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @supports (padding-top: env(safe-area-inset-top)) {
+                            body.pwa-mode {
+                                padding-top: env(safe-area-inset-top) !important;
+                                padding-bottom: env(safe-area-inset-bottom) !important;
+                            }
+                            
+                            /* Adjust header if it's fixed */
+                            body.pwa-mode header, body.pwa-mode .header, body.pwa-mode nav {
+                                padding-top: env(safe-area-inset-top) !important;
+                            }
+                            
+                            /* Fix for bottom bar */
+                            body.pwa-mode .retro-bottom-bar, body.pwa-mode .bottom-navigation {
+                                position: fixed !important;
+                                bottom: 0 !important;
+                                left: 0 !important;
+                                padding-bottom: env(safe-area-inset-bottom) !important;
+                                box-sizing: content-box !important;
+                                display: flex !important;
+                                z-index: 999999 !important;
+                                height: 60px !important;
+                                width: 100vw !important;
+                                margin: 0 !important;
+                                transform: none !important;
+                            }
+                            
+                            /* Ensure main content doesn't push bottom bar */
+                            body.pwa-mode {
+                                min-height: 100vh;
+                                min-height: -webkit-fill-available;
+                                display: block;
+                            }
+                            
+                            body.pwa-mode main {
+                                padding-bottom: calc(60px + env(safe-area-inset-bottom));
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // Prevent context menu (long press popup) except on inputs/images
+                    document.addEventListener('contextmenu', function(e) {
+                        if (e.target.tagName !== 'INPUT' && 
+                            e.target.tagName !== 'TEXTAREA' && 
+                            e.target.tagName !== 'IMG' && 
+                            !e.target.isContentEditable) {
+                            e.preventDefault();
+                        }
+                    });
                 });
             }
             
@@ -234,21 +312,10 @@
                     if (viewport) {
                         viewport.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
                     }
-                    
-                    // Add iOS PWA specific styling
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        body.pwa-mode {
-                            padding-top: env(safe-area-inset-top);
-                            padding-bottom: env(safe-area-inset-bottom);
-                        }
-                    `;
-                    document.head.appendChild(style);
                 });
             }
         })();
         
-        // Global platform fee configuration
         window.platformFeePercentage = {{ config('app.platform_fee_percentage', 20) }};
     </script>
     <script nonce="{{ $cspNonce ?? '' }}" type="application/ld+json">
@@ -295,40 +362,42 @@
     </script>
     <script async type="application/ld+json">
         {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": "What is Spenny Piggy?",
-                "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Spenny Piggy is your one-stop party platform for every type of creator out there! Get those financial love taps, whip up a wishlist, dish out free and exclusive goodies, and even roll out bespoke memberships and custom commissions. It's the ultimate creator playground! 🚀"
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": "What is Spenny Piggy?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Spenny Piggy is your one-stop party platform for every type of creator out there! Get those financial love taps, whip up a wishlist, dish out free and exclusive goodies, and even roll out bespoke memberships and custom commissions. It's the ultimate creator playground! 🚀"
+                    }
+                }, 
+                {
+                    "@type": "Question",
+                    "name": "How do I get paid?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Bag those bucks effortlessly with automatic Stripe payments! Your payment dashboard lets you be the money maestro, changing payout details on a whim. Initial payouts may take 7-14 days but are usually quick. In the United States/Aus, it's a snappy 2-day roll—charge Monday, party Wednesday. UK/European pals, enjoy a slick 7-day roll—the Monday magic. Keep in mind, payout dates may change based on your account status. If in doubt, reach out to Stripe and us for help! 💰"
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "How much does it cost?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Creators, listen up! The best part? It won't cost you a dime! You pocket the whole 100%. Sure, there might be some tiny conversion costs, but fear not—US, CAD, and UK creators, you're in the clear! Now, here's the scoop for Supporters: there's a service fee, starting at just 8%. But, for those creators craving extra perks, drop £29.99 per month for exclusive features and no service fees for supporters. They just handle the processing fees, making each transaction way cheaper. More money in your pocket, less in fees—win-win! 💸"
+                    }
+                },
+                {
+                    "@type": "Question",
+                    "name": "What currencies do you offer?",
+                    "acceptedAnswer": {
+                    "@type": "Answer",
+                        "text": "Pick your currency! Creators, you've got the choice between USD or GBP. If you're based in the UK, GBP; for the rest of the world, USD is the go-to. Customize your display currency, and supporters can do the same when making payments. Keeping it simple for everyone! 💲"
+                    }
                 }
-            }, {
-                "@type": "Question",
-                "name": "How do I get paid?",
-                "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Bag those bucks effortlessly with automatic Stripe payments! Your payment dashboard lets you be the money maestro, changing payout details on a whim. Initial payouts may take 7-14 days but are usually quick. In the United States/Aus, it's a snappy 2-day roll—charge Monday, party Wednesday. UK/European pals, enjoy a slick 7-day roll—the Monday magic. Keep in mind, payout dates may change based on your account status. If in doubt, reach out to Stripe and us for help! 💰"
-                }
-            }, {
-                "@type": "Question",
-                "name": "How much does it cost?",
-                "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Creators, listen up! The best part? It won't cost you a dime! You pocket the whole 100%. Sure, there might be some tiny conversion costs, but fear not—US, CAD, and UK creators, you're in the clear! Now, here's the scoop for Supporters: there's a service fee, starting at just 8%. But, for those creators craving extra perks, drop £29.99 per month for exclusive features and no service fees for supporters. They just handle the processing fees, making each transaction way cheaper. More money in your pocket, less in fees—win-win! 💸"
-                }
-            },
-            {
-            "@type": "Question",
-            "name": "What currencies do you offer?",
-            "acceptedAnswer": {
-            "@type": "Answer",
-                "text": "Pick your currency! Creators, you've got the choice between USD or GBP. If you're based in the UK, GBP; for the rest of the world, USD is the go-to. Customize your display currency, and supporters can do the same when making payments. Keeping it simple for everyone! 💲"
-            }
-            }
-        ]
+            ]
         }
     </script>
 
@@ -454,6 +523,7 @@
         .app-loaded #initial-loading-screen {
             opacity: 0;
             pointer-events: none;
+            display: none !important;
         }
     </style>
 
@@ -468,6 +538,12 @@
         if (!@json($isMarketingRoute) && isPWA()) {
             document.getElementById('initial-loading-screen').style.display = 'flex';
         }
+        
+        // Failsafe: hide loading screen after 5 seconds no matter what
+        setTimeout(() => {
+            const ls = document.getElementById('initial-loading-screen');
+            if (ls) ls.style.display = 'none';
+        }, 5000);
     </script>
     @endunless
     <script nonce="{{ $cspNonce ?? '' }}" type="speculationrules">

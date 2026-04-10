@@ -33,6 +33,7 @@ export default function Header({ classMagicword }) {
     const { global_currency, auth } = usePage().props;
     const { url } = usePage();
 
+
     const getNavLinkClass = (path) => {
         let pathName = path;
         if (typeof path === 'string' && path.startsWith('http')) {
@@ -244,7 +245,7 @@ export default function Header({ classMagicword }) {
                                 </div>
                             )}
                             <div
-                                className="block ps-2 md:hidden menu-toggle cursor-pointer cartLink relative"
+                                className="block ps-2 me-[-10px] md:hidden menu-toggle cursor-pointer cartLink relative"
                                 onClick={toggleClass}
                             >
                                 <svg
@@ -286,17 +287,16 @@ export default function Header({ classMagicword }) {
                 className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-xl
                     transform transition-transform duration-500 ease-in-out
                     ${isActive ? "translate-x-0" : "-translate-x-full"}
-                    flex flex-col p-8 select-none${isActive ? "Open" : null}`}
-            >
+                    flex flex-col p-8 select-none${isActive ? "Open" : null}`} >
                 <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7]  shadow-[10px_0px_0px_0px_rgba(0,0,0,1)] max-h-screen overflow-auto w-full sm:max-w-[320px] h-full">
                     <button
                         onClick={toggleClass}
-                        className="absolute top-4 right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
+                        className="absolute top-[60px] md:top-4 right-[30px] md:right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
                         <MdClose color="#000" size={"2rem"} />
                     </button>
                     <div className="overflow-y-auto overflow-x-hidden   flex-grow">
-                        <div className="pb-[100px] px-2">
-                            <ul className=" flex flex-col pt-6 space-y-4 ">
+                        <div className="pb-[110px] px-2">
+                            <ul className=" flex flex-col pt-[60px] space-y-4 ">
                                 <>
                                     {auth?.user?.username ? (
                                         <>

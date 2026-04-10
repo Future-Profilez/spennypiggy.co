@@ -211,7 +211,8 @@ registerRoute(
         cacheName: 'pages-v1',
       }).handle(args);
     } catch (error) {
-      return caches.match('/offline.html');
+      const { matchPrecache } = workbox.precaching;
+      return (await matchPrecache('/offline.html')) || caches.match('/offline.html');
     }
   }
 );

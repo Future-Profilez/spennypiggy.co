@@ -69,7 +69,7 @@ export default defineConfig((env) => {
             'Access-Control-Allow-Origin': '*',
         },
         hmr: {
-            host: 'localhost',
+            host: '192.168.1.25', // Update this to your local IP address for phone testing
             overlay: false,
         } 
     },

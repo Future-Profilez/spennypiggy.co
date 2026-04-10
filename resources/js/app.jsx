@@ -226,6 +226,7 @@ createInertiaApp({
             setTimeout(() => {
                 const loadingScreen = document.getElementById('initial-loading-screen');
                 if (loadingScreen) {
+                    loadingScreen.style.display = 'none';
                     loadingScreen.remove();
                 }
             }, 500); // Wait for CSS transition to complete
@@ -238,7 +239,7 @@ createInertiaApp({
         color: "var(--pink)",
         delay: 100,
         includeCSS: true,
-        showSpinner: false,
+        showSpinner: true,
     },
 });
 

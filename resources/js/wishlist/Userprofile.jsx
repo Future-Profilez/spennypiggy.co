@@ -114,8 +114,7 @@ export default function Userprofile({ IsloggedIn }) {
                             <ShareProfile
                                 username={user?.name}
                                 classes="flex text-black font-black text-normal transition-all mr-4 items-center"
-                                custom={`${window.location.origin}/${user?.username}`}
-                            >
+                                custom={`${window.location.origin}/${user?.username}`} >
                                 @{user?.username}
                                 <MdOutlineContentCopy className="ml-2 font-black text-black" />
                             </ShareProfile>
@@ -145,11 +144,10 @@ export default function Userprofile({ IsloggedIn }) {
                         )}
                         <div className="mt-4 flex items-center justify-center gap-3">
                             {!IsloggedIn ? (
-                                <div className="">
-                                    <FollowButton
-                                        targetUserId={opponantUser?.id}
-                                        isInitiallyFollowing={follow_status}
-                                    />
+                                <div className=""> 
+                                    <FollowButton 
+                                    targetUserId={opponantUser?.id} 
+                                    isInitiallyFollowing={follow_status} />
                                 </div>
                             ) : (
                                 ""
@@ -169,7 +167,8 @@ export default function Userprofile({ IsloggedIn }) {
                                         user={user}
                                         classes={"bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-full tracking-widest"}
                                         global_currency={global_currency}
-                                    /> */}
+                                    /> 
+                                */}
                         </div>
                     </div>
                 </div>

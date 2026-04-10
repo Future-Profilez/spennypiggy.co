@@ -1,6 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
 import { route } from 'ziggy-js';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import spennypiggy from "../../assets/img/logo.png";
 import risk from "../../assets/risk_intolerant_vanguard_sharing_mint.png";
@@ -70,6 +70,13 @@ export default function Footer(props) {
     }, []);
 
     const date = new Date();
+    const [IsPWA, setIsPWA] = useState(false);
+    useEffect(() => {
+        // Check is website is opened in PWA app or not
+        if(navigator){
+            setIsPWA(navigator.standalone);
+        }
+    }, []);
 
 
     return (
@@ -77,7 +84,7 @@ export default function Footer(props) {
             <Head>
                 {/* Google Analytics now loaded dynamically via lazy loading */}
             </Head>
-            <footer className="bg-[#924DFF] text-white pt-10 pb-3 px-6">
+            <footer className={`bg-[#924DFF] text-white pt-10 pb-3 px-6 ${IsPWA ? "hidden" : null}`}>
                 <div className="max-w-5xl mx-auto">
                     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
                         <div>

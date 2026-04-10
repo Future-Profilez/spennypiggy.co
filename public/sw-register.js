@@ -7,6 +7,7 @@ if ('serviceWorker' in navigator) {
         updateViaCache: 'none' // Always check for updates
       });
 
+
       // Handle updates
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
@@ -22,7 +23,6 @@ if ('serviceWorker' in navigator) {
       // Listen for messages from SW
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'CACHE_UPDATED') {
-          console.log('💾 Cache updated:', event.data.payload);
         }
       });
 

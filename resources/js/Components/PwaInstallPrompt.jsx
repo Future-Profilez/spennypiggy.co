@@ -69,22 +69,6 @@ export default function PwaInstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
     
-    // For localhost testing: Try to trigger service worker registration
-    // This can help Chrome recognize the site as a PWA
-    if (isChrome && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      // Force service worker registration check
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          if (registrations.length === 0) {
-            // Try to register service worker
-            navigator.serviceWorker.register('/service-worker.js').catch(err => {
-              console.log('Service worker registration failed:', err);
-            });
-          }
-        });
-      }
-    }
-
     // Debug utilities for development/testing
     window.PwaPromptDebug = {
       getLastShownDate: () => {

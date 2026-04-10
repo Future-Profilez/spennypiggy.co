@@ -16,6 +16,8 @@ import ManagePasskey from '@/Components/ManagePasskey';
 
 export default function EditProfile({ user, text, classes, updateProfileSteps, global_currency }) {
 
+    console.log(user);
+    
     // utils/checkName.js
     function hasFullName(name) {
         if (!name || typeof name !== "string") return false;
@@ -379,7 +381,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
 
     return (
         <Popup modalclass='pinkmodal editprofile full' size='xl' action={close}
-            text={text||<> Update Profile </>}
+            text={text ||<> Update Profile </>}
             classes={`${classes ? classes : "button bg-pink block sm:flex m-auto sm:m-0"}`} >
             <div className='editForm mt-4'>
                 {UploadingStart ? <div className='p-4 '>

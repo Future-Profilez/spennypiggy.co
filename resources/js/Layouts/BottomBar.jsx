@@ -27,10 +27,12 @@ export default function BottomBar(){
 
    return <>
          {auth && auth.user ?
-            <div className="fixed md:hidden bottom-[-1px] left-0 z-50 w-full h-16 retro-bottom-bar pb-[env(safe-area-inset-bottom)]">
+            <div className="fixed md:hidden bottom-0 left-0 w-full h-[60px] retro-bottom-bar flex flex-col justify-center" 
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box', zIndex: 999999 }}
+            >
                {/* Retro scanline effect */}
                {/* <div className="scanline"></div> */}
-               <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium relative z-10 !pb-[10px]">
+               <div className="flex w-full h-full  max-w-lg justify-around items-center mx-auto font-medium relative z-10 !pb-[10px]">
                   {/* Home Button */}
                   <Link 
                      href={`/${auth && auth.user && auth.user.username}`} 

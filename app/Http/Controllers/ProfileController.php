@@ -284,7 +284,9 @@ class ProfileController extends Controller
                 }
             }
             $this->userProfileService->clearUserCaches($user->username, $user->id);
-            return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+            // return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+            return back()->with('success', 'Profile updated successfully.');
+
         }
         } catch (\Throwable $e) {
             Log::error('Profile update error', ['user_id' => Auth::id(), 'error' => $e->getMessage()]);
