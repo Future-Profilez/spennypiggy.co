@@ -3,6 +3,7 @@ import { route } from 'ziggy-js';
 import { useSelector } from "react-redux";
 import { RetroHomeIcon, RetroCartIcon, RetroSearchIcon, RetroUserIcon } from '../Components/RetroIcons';
 import { useState, useEffect } from 'react';
+import '../../css/retro-bottombar.css';
 
 export default function BottomBar(){
    const count = useSelector((state) => state.data.cart.cart);
@@ -27,7 +28,7 @@ export default function BottomBar(){
 
    return <>
          {auth && auth.user ?
-            <div className="fixed md:hidden bottom-0 left-0 w-full h-[60px] retro-bottom-bar flex flex-col justify-center" 
+            <div className="fixed md:hidden bottom-0 left-0 w-full h-[60px] retro-bottom-bar flex flex-col justify-center bg-[#A2E4B8] border-t-[3px]" 
             style={{ paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box', zIndex: 999999 }}
             >
                {/* Retro scanline effect */}

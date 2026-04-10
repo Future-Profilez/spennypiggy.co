@@ -612,13 +612,13 @@ export default function Dashboard(props) {
 
 
                                                                     <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
-                                                                        <div className="p-6 md:p-8">
-                                                                            <h2 className="text-2xl font-black text-black uppercase tracking-wide">
+                                                                        <div className="p-4 md:p-8">
+                                                                            <h2 className="text-xl sm:text-2xl font-black text-black uppercase tracking-wide">
                                                                                 About
                                                                                 Me
                                                                             </h2>
                                                                             <p
-                                                                                className={`text-gray-700 font-bold text-lg text-left mt-4 ${
+                                                                                className={`text-gray-700 font-bold text-md md:text-lg text-left mt-4 ${
                                                                                     user &&
                                                                                     !user.bio
                                                                                         ? "hidden"
@@ -631,7 +631,7 @@ export default function Dashboard(props) {
                                                                             </p>
 
                                                                             {user?.creator_category && (
-                                                                                <div className="mt-6 flex flex-wrap gap-2">
+                                                                                <div className="mt-6 flex flex-wrap gap-1 md:gap-2">
                                                                                     {(() => {
                                                                                         try {
                                                                                             const tags = typeof user.creator_category === 'string' 
@@ -643,7 +643,7 @@ export default function Dashboard(props) {
                                                                                             return tags.map((tag, index) => (
                                                                                                 <span 
                                                                                                     key={index} 
-                                                                                                    className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
+                                                                                                    className="px-4 py-1.5 bg-pink-100 text-pink-700 rounded-xl text-[12px] md:text-sm font-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase"
                                                                                                 >
                                                                                                     {tag}
                                                                                                 </span>
@@ -758,7 +758,7 @@ export default function Dashboard(props) {
 
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
-                                                                                            classes="!tracking-wider !text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
+                                                                                            classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
                                                                                             text="Creator Payment Dashboard"
                                                                                         />
                                                                                     ) : (
