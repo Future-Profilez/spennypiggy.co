@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Head, Link, router } from "@inertiajs/react";
+import { lazy } from "react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
 import Popup from "@/Components/Popup";
@@ -11,6 +12,7 @@ import ChangeCurrency from "@/Components/ChangeCurrency";
 import LinkTwitter from "../twitter/LinkTwitter";
 import { useAlerts } from "@/Components/Alerts";
 import ChangeVat from "../account/ChangeVat";
+const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
 import DeleteStripeAccount from "../Profile/DeleteStripeAccount";
 import SiteSubscription from "../Profile/SiteSubscription";
 import AddressForm from "../rye/AddressForm";
@@ -58,7 +60,7 @@ export default function Accountsetting(props) {
         site_subscription,
         subscription_history,
         subscription_status,
-    } = props;
+    } = usePage().props;
 
     const [emailPopupAction, setEmailPopupAction] = useState(null);
     const [emailEnabled, setSetEnabled] = useState(
@@ -313,6 +315,20 @@ export default function Accountsetting(props) {
                         <div className="mb-10 animate-fade-in-up">
                             <SectionTitle title="Creator Studio" />
 
+                            <EditProfile
+                                user={auth?.user}
+                                text={
+                                    <SettingItem
+                                        icon={Users}
+                                        title="My Profile"
+                                        subtitle="Manage your earnings and payouts"
+                                        value={auth?.user?.name}
+                                    />
+                                }
+                                classes="w-full"
+                                global_currency={global_currency}
+                            /> 
+                           
                             {stripeSubmitted && (
                                 <PaymentDashboard
                                     classes="w-full"
