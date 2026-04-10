@@ -86,7 +86,7 @@ class BillsController extends Controller
 
         // Use new gross-up flow for consistent fee calculation
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
-        
+
         $createPriceId = $breakdown['total_supporter_pays'];
         $taxAmount = $breakdown['application_fee'];
 
@@ -149,7 +149,8 @@ class BillsController extends Controller
         ]);
     }
 
-    public function billEdit(Request $request, $id) {
+    public function billEdit(Request $request, $id)
+    {
         Log::info("from start request->period: $request->period");
 
         $validator = Validator::make($request->all(), [
@@ -194,7 +195,7 @@ class BillsController extends Controller
 
         // Use new gross-up flow for consistent fee calculation
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
-        
+
         $taxamount = $breakdown['application_fee'];
         $totalAmount = $breakdown['total_supporter_pays'];
 
@@ -308,7 +309,7 @@ class BillsController extends Controller
             }
 
             $bill->delete();
-            
+
             // Clear user caches
             $user = $bill->user;
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
@@ -334,6 +335,12 @@ class BillsController extends Controller
      */
     public function buyBill(Request $request, $uuid, $reccure = 'continue')
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus === true) {
+            $user = Auth::user();
+            return to_route('user.show', ['username' => $user->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        }
         DB::beginTransaction();
         $bill = Bills::with('user')->whereUuid($uuid)->first();
         // if (!in_array($bill->user->subscription_status, [1, 2])) {
@@ -395,18 +402,18 @@ class BillsController extends Controller
         $chargeCurrency = $bill->currency;
         // Supporter's display currency for estimation
         $displayCurrency = strtolower($request->cookie("currency", "GBP"));
-        
+
         // Calculate VAT in Creator's Currency
         $vatPercent = $bill->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
-        
+
         // Fetch creator risk metrics for reserve calculation
         $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $bill->user->uuid]);
         $reserveRate = $metrics->reserve_percent ?? 0;
-        
+
         // Gross-up calculation in Creator's Currency (No FX conversion)
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
-        
+
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
@@ -414,7 +421,7 @@ class BillsController extends Controller
         $totalTax = $applicationFeeAmount;
         // $vatAmount variable here is used for vat_tax_amount in DB which stores compliance+admin fees
         $feesAsVat = $breakdown['compliance_fee'] + $breakdown['admin_fee'];
-        
+
         // Calculate actual VAT amount for display
         $actualVatAmount = $price * $vatPercent / 100;
 
@@ -426,7 +433,7 @@ class BillsController extends Controller
         }
 
         $user = Auth::user();
-        
+
         $user = Auth::user();
         if ($user) {
             if ($bill->user_id === $user->id) return redirect()->back()->with('error', "You can't buy your own bill!");
@@ -492,7 +499,7 @@ class BillsController extends Controller
                 ])->whereNotNull('price_id')->first();
 
                 $customer_id = $storeCustomer ? $storeCustomer->stripe_customer_id : null;
-                
+
                 $existingSubscription = null;
                 if (isset($storeCustomer->stripe_customer_id)) {
                     $existingSubscription = StripeControl::getActiveSubscriptionByCustomer(
@@ -811,22 +818,22 @@ class BillsController extends Controller
             $paymentIntentId = null;
             if ($session && isset($session->id)) {
                 try {
-            $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
-            $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
-            $paymentIntentId = $retrievedSession->payment_intent ?? null;
-            Log::info('BillsController: Retrieved payment intent from session', [
-                'session_id' => $session->id,
-                'payment_intent_id' => $paymentIntentId
-            ]);
-        } catch (Exception $e) {
-            Log::warning('BillsController: Failed to retrieve payment intent from session', [
-                'session_id' => $session->id ?? 'unknown',
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
+                    $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
+                    $retrievedSession = $stripe->checkout->sessions->retrieve($session->id);
+                    $paymentIntentId = $retrievedSession->payment_intent ?? null;
+                    Log::info('BillsController: Retrieved payment intent from session', [
+                        'session_id' => $session->id,
+                        'payment_intent_id' => $paymentIntentId
+                    ]);
+                } catch (Exception $e) {
+                    Log::warning('BillsController: Failed to retrieve payment intent from session', [
+                        'session_id' => $session->id ?? 'unknown',
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
-    // Create deliverable entry for tracking (similar to wish subscriptions)
+            // Create deliverable entry for tracking (similar to wish subscriptions)
             $deliverable = Deliverable::create([
                 'uuid' => (string) Str::uuid(),
                 'product_id' => $bill->product_id ?? 'bill_' . $bill->id,

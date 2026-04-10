@@ -338,6 +338,12 @@ class TaskController extends Controller
 
     public function purchase(Request $request, $uuid)
     {
+        $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        if ($checkGifterStatus === true) {
+            $user = Auth::user();
+            return to_route('user.show', ['username' => $user->username])
+                ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
+        }
         $task = Task::where('uuid', $uuid)->firstOrFail();
 
         // Prevent purchasing unapproved tasks
@@ -384,7 +390,7 @@ class TaskController extends Controller
         $priceWithVat = $price + $vatAmount;
 
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency);
-        
+
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator'];
