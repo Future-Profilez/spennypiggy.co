@@ -55,7 +55,7 @@ function base64urlToUint8Array(base64url) {
     return bytes;
 }
 
-export default function ManagePasskey({ email }) {
+export default function ManagePasskey({ email, className }) {
     const [loading, setLoading] = useState(false);
     const [hasPasskey, setHasPasskey] = useState(null);
     const [passkeys, setPasskeys] = useState([]);
@@ -189,7 +189,7 @@ export default function ManagePasskey({ email }) {
     };
 
     return (
-        <div className="bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden">
+        <div className={`bg-gray-50 rounded-[20px] border border-gray-200 mb-4 overflow-hidden ${className || ""}`}>
             <div className="p-4 flex items-center justify-between border-b border-gray-200">
                 <div className="pe-4">
                     <h4 className="font-medium text-gray-800">Passkeys / FaceID</h4>

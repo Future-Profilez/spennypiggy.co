@@ -513,9 +513,17 @@ export default function Accountsetting(props) {
                                     />
                                 </Popup>
 
-                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-2xl hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                                <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-[20px] md:rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                                     <div className="flex items-center gap-4 text-left">
-                                        <div className="p-2.5 rounded-xl bg-pink-50 text-pink-600">
+                                        {/* <div className="p-2.5 rounded-[10px] md:rounded-[20px]  bg-pink-50 text-pink-600">
+                                            <PiggyBank
+                                                size={20}
+                                                strokeWidth={2.5}
+                                            />
+                                        </div> */}
+                                        <div
+                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
+                                        >
                                             <PiggyBank
                                                 size={20}
                                                 strokeWidth={2.5}
@@ -543,11 +551,17 @@ export default function Accountsetting(props) {
                             </>
                         )}
 
-                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-2xl hover:border-pink-200 hover:shadow-sm transition-all mb-3">
+                        <div className="group w-full flex items-center justify-between p-4 bg-white border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all mb-3">
                             <div className="flex items-center gap-4 text-left">
-                                <div className="p-2.5 rounded-xl bg-pink-50 text-pink-600">
-                                    <Bell size={20} strokeWidth={2.5} />
-                                </div>
+                              
+                                <div
+                                            className={`p-2.5 !rounded-[15px] md:rounded-[20px] w-[60px] h-[60px] md:w-[50px] md:h-[50px] md:min-w-[50px] md:min-h-[50px] flex items-center justify-center bg-pink-200 text-pink-600`}
+                                        >
+                                            <Bell
+                                                size={20}
+                                                strokeWidth={2.5}
+                                            />
+                                        </div>
                                 <div>
                                     <h3 className="font-bold text-base text-gray-800">
                                         Email Notifications
@@ -575,6 +589,8 @@ export default function Accountsetting(props) {
                         style={{ animationDelay: "0.2s" }}
                     >
                         <SectionTitle title="Security" />
+                        
+                        <ManagePasskey className="w-full border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all" email={auth.user.email} />
 
                         <Popup
                             action={emailPopupAction}
@@ -630,7 +646,6 @@ export default function Accountsetting(props) {
                             />
                         </Link>
 
-                        <ManagePasskey email={auth.user.email} />
                     </div>
 
                     {/* SUPPORT SECTION */}

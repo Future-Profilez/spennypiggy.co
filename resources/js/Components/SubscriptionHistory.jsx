@@ -109,7 +109,9 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
-                           
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Period
+                            </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Expires
                             </th>
@@ -136,28 +138,28 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     {getStatusBadge(subscription.status)}
                                 </td>
-                                {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <div className="flex flex-col">
                                         {subscription.current_start_subscription_date && subscription.current_end_subscription_date ? (
                                             <>
-                                                <span>Subscription</span>
+                                                <span className="text-gray-900 font-medium">Subscription</span>
                                                 <span className="text-xs">
                                                     {formatDate(subscription.current_start_subscription_date)} - {formatDate(subscription.current_end_subscription_date)}
                                                 </span>
                                             </>
                                         ) : subscription.current_start_trial_date && subscription.current_end_trial_date ? (
                                             <>
-                                                <span>Trial Period</span>
+                                                <span className="text-yellow-600 font-medium">Trial Period</span>
                                                 <span className="text-xs">
                                                     {formatDate(subscription.current_start_trial_date)} - {formatDate(subscription.current_end_trial_date)}
                                                 </span>
                                             </>
                                         ) : (
-                                            <span>Monthly</span>
+                                            <span className="text-gray-900 font-medium">Monthly</span>
                                         )}
                                     </div>
-                                </td> */}
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
                                     {getExpiryDate(subscription)}
                                 </td>
                             </tr>
