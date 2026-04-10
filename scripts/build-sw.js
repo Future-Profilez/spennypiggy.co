@@ -15,9 +15,9 @@ async function buildServiceWorker() {
       swDest: 'public/service-worker.js',
       globDirectory: 'public/',
       globPatterns: [
-        '**/*.{css,js,woff,woff2,ttf,otf,eot,svg,png,jpg,jpeg,gif,webp,avif,ico}',
+        '**/*.{css,js,html,woff,woff2,ttf,otf,eot,svg,png,jpg,jpeg,gif,webp,avif,ico}',
         // Include built assets
-        'build/**/*.{css,js,woff,woff2,ttf,otf,eot,svg,png,jpg,jpeg,gif,webp,avif,ico}',
+        'build/**/*.{css,js,html,woff,woff2,ttf,otf,eot,svg,png,jpg,jpeg,gif,webp,avif,ico}',
       ],
       maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
       

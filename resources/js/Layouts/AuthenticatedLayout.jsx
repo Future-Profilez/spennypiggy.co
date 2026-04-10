@@ -15,6 +15,7 @@ export default function Authenticated(props){
     return <>
         <Header auth={auth} user={user}  />
         <main>
+            <PullToRefresh />
             {children}
             <Toaster
                 reverseOrder={false}
@@ -25,6 +26,7 @@ export default function Authenticated(props){
                 style: {
                 background: '#363636',
                 color: '#fff',
+                marginTop: 'env(safe-area-inset-top)',
                 },
                 success: {
                 duration: 3000,
@@ -39,7 +41,6 @@ export default function Authenticated(props){
         <Footer auth={auth} />
         <BottomBar />
         <PwaInstallPrompt />
-        <PullToRefresh />
         <FlashMessenger />
         {/* <IntercomProviderFixed /> */}
     </>
