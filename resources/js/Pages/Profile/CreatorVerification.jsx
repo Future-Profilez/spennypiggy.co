@@ -19,7 +19,10 @@ const CustomProgressBar = ({ now, max }) => {
     const percentage = Math.round((now / max) * 100);
     return (
         <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4 overflow-hidden">
-            <div className="bg-pink-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+            <div
+                className="bg-pink-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${percentage}%` }}
+            ></div>
         </div>
     );
 };
@@ -33,7 +36,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         slinks &&
         Object.values(slinks).some((value) => value !== null && value !== "");
     const updateProfileSteps = () => {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
             window.location.reload(false);
         }
     };
@@ -110,11 +113,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 )}
 
                 {/* Step 1: Social Handles */}
-                <div className="profile-steps border border-gray-200 rounded-[25px]  p-4 mt-3">
+                <div className="profile-steps border border-gray-200 rounded-[25px] p-4 mt-3">
                     <div className="md:flex items-center justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
-                                className={`check-icon mr-2 pt-1 ${slinks?.status == 1 ? "checked" : ""}`}
+                                className={`check-icon mr-2 pt-1 ${
+                                    slinks?.status == 1 ? "checked" : ""
+                                }`}
                             >
                                 <div
                                     dangerouslySetInnerHTML={{
@@ -122,37 +127,65 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                     }}
                                 />
                             </div>
+
                             <div>
                                 <h2 className="text-gray-900 font-bold">
                                     Add Social Handles
                                 </h2>
+
                                 <p className="text-gray-500 text-[14px]">
                                     Update at least one social media handle to
-                                    help fans connect with you.{" "}
-                                    {slinks?.status !== 1 ? (
+                                    help fans connect with you.
+                                    {slinks?.status !== 1 && (
                                         <span className="text-pink text-[14px]">
-                                            It must show an active account.
-                                            Older than 6 months.
+                                            {" "}
+                                            It must show an active account older
+                                            than 6 months.
                                         </span>
-                                    ) : (
-                                        ""
                                     )}
                                 </p>
                             </div>
                         </div>
-                        {slinks?.status !== 1 && <Social 
-                        classes="
-                        bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm md:ms-[30px]
-                        "
-                         className links={slinks} />}
+
+                        {slinks?.status !== 1 && (
+                            <Social
+                                classes="bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm md:ms-[30px]"
+                                links={slinks}
+                            />
+                        )}
                     </div>
 
-                    {hasAnySocialMedia && slinks?.status == 0 ? (
-                        <p className="px-3 text-yellow-500 text-sm mt-2">
-                            <strong>Verification</strong> : Social Media Handle
-                            are under review. Please move to the next step.
-                        </p>
-                    ) : null}
+                    {/* 🟡 UNDER REVIEW */}
+                    {hasAnySocialMedia && slinks?.status == 0 && (
+                        <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
+                            <p className="text-yellow-600 text-sm">
+                                <strong>Verification Pending:</strong> Your
+                                social media handle is under review.
+                            </p>
+                        </div>
+                    )}
+
+                    {slinks?.status == 2 && (
+                        <div className="mt-3 px-3 py-3 bg-red-50 border border-red-200 rounded-[18px]">
+                            <p className="text-red-700 font-semibold text-sm">
+                                Social Media Edit Request Rejected
+                            </p>
+
+                            {slinks?.reason && (
+                                <p className="text-gray-600 text-sm mt-1">
+                                    <span className="font-medium text-gray-700">
+                                        Reason:
+                                    </span>{" "}
+                                    {slinks.reason}
+                                </p>
+                            )}
+
+                            <p className="text-red-500 text-xs mt-2">
+                                Please update your social links as per the
+                                requested changes.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Step 2: Avatar */}
@@ -369,11 +402,12 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </p>
                         </div>
                     </div>
-                     
+
                     {auth?.user?.avatar_approved &&
                     auth?.user?.bio_approved &&
                     auth?.user?.is_subscribed == 0 &&
-                    hasAnySocialMedia && slinks?.status == 1 ? (
+                    hasAnySocialMedia &&
+                    slinks?.status == 1 ? (
                         <Link
                             className="bg-pink-500 my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
                             href="/activate-subscription"

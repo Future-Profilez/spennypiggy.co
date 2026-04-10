@@ -90,7 +90,7 @@ class MembershipController extends Controller
 
         $price = $request->month_price;
         $currency = $user->default_currency ?? 'USD';
-        
+
         // Calculate VAT in Creator's Currency
         $vatPercent = $user->vat_amount_percentage ?? 0;
         $vatAmount = $price * $vatPercent / 100;
@@ -213,7 +213,7 @@ class MembershipController extends Controller
 
                 $price = $request->month_price;
                 $currency = $user->default_currency ?? 'USD';
-                
+
                 // Calculate VAT in Creator's Currency
                 $vatPercent = $user->vat_amount_percentage ?? 0;
                 $vatAmount = $price * $vatPercent / 100;
@@ -369,12 +369,12 @@ class MembershipController extends Controller
     public function buyLevel(Request $request, $uuid, $reccure = 'continue')
     {
         $checkGifterStatus = Helpers::checkGifterCardVerificationStatus();
+        $user = Auth::user();
         if ($checkGifterStatus === true) {
-            $user = Auth::user();
+            // $user = Auth::user();
             return to_route('user.show', ['username' => $user->username])
                 ->with("error", "⚠️ Please complete your card verification payment and wait for admin approval before making further payments.");
         }
-        $user = Auth::user();
         if ($user) {
             $isSocilAdded = SocialLinks::where('user_id', $user->id)
                 ->where(function ($query) {
@@ -433,24 +433,24 @@ class MembershipController extends Controller
         $chargeCurrency = $membership->currency;
         // Supporter's display currency for estimation
         $displayCurrency = strtolower($request->cookie("currency", "GBP"));
-        
+
         $price = $membership->price;
 
         // Calculate VAT in Creator's Currency
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
-        
+
         // Fetch creator risk metrics for reserve calculation
         $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $membership->user->uuid]);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
         $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $chargeCurrency, $reserveRate);
-        
+
         $finalTotalAmount = $breakdown['total_supporter_pays'];
         $applicationFeeAmount = $breakdown['application_fee'];
         $creatorNet = $breakdown['net_to_creator']; // This is what creator gets after Stripe fees
-        
+
         // Application Fee % = (Application Fee / Total Amount) * 100
         $applicationFeePercent = round(($applicationFeeAmount / $finalTotalAmount) * 100, 2);
 
@@ -501,7 +501,7 @@ class MembershipController extends Controller
                 // Check if creator has card_payments capability
                 if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
                     $stripeCheck = ['eligible' => false, 'status' => 'stripe_disabled'];
-            return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
+                    return back()->with('error', app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, $stripeCheck));
                 }
 
                 $customerRecord = ConnectedAccountCustomer::where([
@@ -551,7 +551,7 @@ class MembershipController extends Controller
                     } catch (\Exception $e) {
                         // Product not found or other error - recreate it
                         Log::info("Product not found for membership checkout, recreating: " . $membership->product_id);
-                        
+
                         $productPayload = [
                             "name"  => "Membership: {$membership->level} (Total value including all fees)",
                             "images" => [$membership->perma_link],
@@ -561,12 +561,12 @@ class MembershipController extends Controller
                                 'creator_id' => $membership->user->id,
                             ]
                         ];
-                        
+
                         try {
                             $product = StripeControl::createProduct($productPayload, $connectedAccountId);
                             $membership->product_id = $product->id;
                             $membership->save();
-                            
+
                             // Update customer record if it exists
                             if ($customerRecord) {
                                 $customerRecord->product_id = $product->id;
@@ -667,7 +667,7 @@ class MembershipController extends Controller
                         ]),
                         'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
                     ];
-                    
+
                     $payload['payment_intent_data'] = $paymentIntentData;
                 } else {
                     $payload['mode'] = 'subscription';
@@ -732,15 +732,15 @@ class MembershipController extends Controller
         // Client Rule: VAT must be added BEFORE all other fees when calculating
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
         $vatAmount = $membership->price * $vatPercent / 100;
-        
+
         $priceWithVat = $membership->price + $vatAmount;
-        
+
         // Fetch creator risk metrics for reserve calculation
         $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $membership->user->uuid]);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate);
-        
+
         // Update membership object for view (this doesn't save to DB)
         // We include both application fee and stripe fee in the "tax_amount" for display so the total is closer to reality
         // Note: The Stripe fee isn't "set" by us (it's variable), but we include the estimated amount here 
@@ -779,7 +779,7 @@ class MembershipController extends Controller
             // We need to pass the connected account ID because the session was created on that account
             $connectedAccountId = $mem->membership->user->account_id;
             $session = StripeControl::getCheckoutSession($mem->session_id, $connectedAccountId);
-            
+
             $mem->status = $session->payment_status;
             if ($session->payment_status == 'paid') {
                 $mem->stripe_id = $session->subscription;
