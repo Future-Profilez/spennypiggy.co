@@ -39,7 +39,7 @@ export default function MyGoal({  IsloggedIn}) {
             <div className="relative w-full h-[12px] bg-[#F3F4F6] rounded-full overflow-visible mb-6">
                  <div className="h-full bg-[#F94F97] rounded-full relative shadow-[0_0_20px_rgba(249,79,150,0.3)] transition-all duration-1000" 
                     style={{ width: `${percentage}%` }} >
-                     <div className="absolute mt-2 top-1/2 right-[-20px] -translate-y-1/2 w-[45px] h-[45px] bg-contain bg-no-repeat pointer-events-none drop-shadow-xl hover:scale-110 transition-transform"
+                     <div className="absolute mt-2 top-1/2 right-[-40px] -translate-y-1/2 w-[45px] h-[45px] bg-contain bg-no-repeat pointer-events-none drop-shadow-xl hover:scale-110 transition-transform"
                         style={{ backgroundImage: `url('${mouse}')` }} ></div>
                  </div>
             </div>

@@ -84,7 +84,7 @@ export default function Footer(props) {
             <Head>
                 {/* Google Analytics now loaded dynamically via lazy loading */}
             </Head>
-            <footer className={`bg-[#924DFF] text-white pt-10 pb-3 px-6 ${IsPWA ? "hidden" : null}`}>
+        <footer className={`bg-[#924DFF] text-white pt-10 pb-3 px-6 ${IsPWA ? "hidden" : null}`}>
                 <div className="max-w-5xl mx-auto">
                     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
                         <div>

@@ -343,10 +343,10 @@ export default function Accountsetting(props) {
                                 />
                             )}
 
-                            <Popup
-                                space="4"
-                                modalclass="pinkmodal"
-                                classes="w-full"
+                            <Popup  
+                                space="4" size='lg' 
+                                modalclass="pinkmodal" 
+                                classes="w-full" 
                                 text={
                                     <SettingItem
                                         icon={Gift}
@@ -366,10 +366,16 @@ export default function Accountsetting(props) {
                                     subscription_status={subscription_status}
                                     user={auth?.user}
                                     site_subscription={site_subscription}
-                                />
+                                >
+                                    <SubscriptionHistory
+                                        subscriptionHistory={
+                                            subscription_history
+                                        }
+                                    />
+                                </SiteSubscription>
                             </Popup>
 
-                            {subscription_history &&
+                            {/* {subscription_history &&
                                 subscription_history.length > 0 && (
                                     <Popup
                                         space="4"
@@ -393,7 +399,7 @@ export default function Accountsetting(props) {
                                             }
                                         />
                                     </Popup>
-                                )}
+                                )} */}
 
                             <Popup
                                 action={passClose}
@@ -589,7 +595,7 @@ export default function Accountsetting(props) {
                         style={{ animationDelay: "0.2s" }}
                     >
                         <SectionTitle title="Security" />
-                        
+
                         <ManagePasskey className="w-full border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all" email={auth.user.email} />
 
                         <Popup

@@ -1,3 +1,10 @@
+.font-cera-medium { 
+    font-family: 'CeraGRMedium', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+}
+.font-cera-bold { 
+    font-family: 'CeraGRBold', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+}
+
 @import "react-lazy-load-image-component/src/effects/blur.css";@import "./retro-bottombar.css";@import "./retro-enhancements.css";@keyframes fading-effect{from{opacity:0;box-shadow:none;transform:scale(.9) translateY(8vh);}
 }
 @media (prefers-reduced-motion:no-preference){@supports (animation-timeline:view()){.animate-fading{animation:fading-effect both;animation-timeline:view();animation-range:contain 0% contain 30%;}

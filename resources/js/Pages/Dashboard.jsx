@@ -613,7 +613,7 @@ export default function Dashboard(props) {
 
                                                                     <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
                                                                         <div className="p-6 md:p-8">
-                                                                            <h2 className="text-2xl font-black text-black uppercase tracking-wider">
+                                                                            <h2 className="text-2xl font-black text-black uppercase tracking-wide">
                                                                                 About
                                                                                 Me
                                                                             </h2>
@@ -727,7 +727,7 @@ export default function Dashboard(props) {
                                                                                     <div className="addsocial flex">
                                                                                         <ul>
                                                                                             <li>
-                                                                                                <AddSocial sLinks={sLinks} />
+                                                                                                <AddSocial classes={`bg-[#A2E4B8] hover:bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black`} sLinks={sLinks} />
                                                                                             </li>
 
                                                                                             <li>
@@ -736,9 +736,7 @@ export default function Dashboard(props) {
                                                                                                         user &&
                                                                                                         user.username
                                                                                                     }
-                                                                                                    classes={
-                                                                                                        "flex ml-auto font-black uppercase text-pink-600 hover:text-pink-800 transition-colors tracking-widest text-sm"
-                                                                                                    }
+                                                                                                    classes={" bg-yellow-300 hover:bg-yellow-500 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black"}
                                                                                                     custom={`${ziggy?.location}/${user?.username ?? 'creator_test'}/wishes?item=${wishitems[0]?.uuid}`}
                                                                                                 >
                                                                                                     Share
@@ -760,7 +758,7 @@ export default function Dashboard(props) {
 
                                                                                     {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
-                                                                                            classes="  font-poppins tracking-wider  shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase text-sm transition-all duration-200"
+                                                                                            classes="!tracking-wider !text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !p-4 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
                                                                                             text="Creator Payment Dashboard"
                                                                                         />
                                                                                     ) : (
@@ -850,6 +848,7 @@ export default function Dashboard(props) {
                                                                             />
                                                                         </Suspense>
                                                                     )}
+
 
                                                                 {IsloggedIn &&
                                                                 UserStripeConnected !==

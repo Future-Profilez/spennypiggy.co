@@ -27,7 +27,7 @@ export default function Popup(props) {
   }[size] || 'max-w-md';
 
   return <>
-      <button onClick={()=>setOpen(true)} className={classes}>{text}</button>
+      <button onClick={()=>setOpen(true)} className={`font-cera-medium ${classes}`}>{text}</button>
       <Transition appear show={open} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={closeModal}>
           <Transition.Child

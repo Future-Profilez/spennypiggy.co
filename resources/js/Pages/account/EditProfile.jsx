@@ -380,35 +380,39 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     );
 
     return (
-        <Popup modalclass='pinkmodal editprofile full' size='xl' action={close}
-            text={text ||<> Update Profile </>}
-            classes={`${classes ? classes : "button bg-pink block sm:flex m-auto sm:m-0"}`} >
+        <Popup modalclass='pinkmodal editprofile full' 
+        size='xl' action={close} text={ text ||<> Update Profile </> } 
+        classes={` ${ classes ? classes : "button bg-pink block sm:flex m-auto sm:m-0"} `} >
             <div className='editForm mt-4'>
-                {UploadingStart ? <div className='p-4 '>
-                    <div className='flex items-center justify-between mb-3'>
-                        <h2 className='pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
-                        <button onClick={()=>setUploadingStart(false)} className='mr-4 bg-gray-200 px-4 py-1 rounded-[10px] md:rounded-[15px]'>Exit</button>
-                    </div>
-                    {user?.role == 1 && <p className=' text-yellow-600'>Your Profile picture must match the person in the ID verification which is the next step, if it doesn’t your account will be blocked and the user banned.</p>}
-                    <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
-                </div> : ''}
+                
+                {UploadingStart ? 
+                    <div className='p-4 '>
+                        <div className='flex items-center justify-between mb-3'>
+                            <h2 className='pb-0 font-gulfs uppercase text-xl'>Update Avatar</h2>
+                            <button onClick={()=>setUploadingStart(false)} className='mr-4 bg-gray-200 px-4 py-1 rounded-[10px] md:rounded-[15px]'>Exit</button>
+                        </div>
+                        {user?.role == 1 && <p className=' text-yellow-600'>Your Profile picture must match the person in the ID verification which is the next step, if it doesn’t your account will be blocked and the user banned.</p>}
+                        <UpdateAvatar type="avatar" getImageUID={getImageUID} text={<> <button className='editbtn'><img src={editicon} alt="img" /></button></>} />
+                    </div> 
+                : ''}
 
                 {CoverUploadingStart ? 
-                <div className='py-4'>
-                    <div className='flex items-center justify-between'>
-                        <h2 className='py-2 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
-                        <button onClick={()=>setCoverUploadingStart(false)} className='mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-[10px] md:rounded-[15px]'>Exit</button>
-                    </div>
-                        <UpdateAvatar type="cover" getImageUID={getCoverUID}
-                                text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
-                </div> : ''}
+                    <div className='py-4'>
+                        <div className='flex items-center justify-between'>
+                            <h2 className='py-2 pb-0 font-gulfs uppercase text-xl'>Update Cover</h2>
+                            <button onClick={()=>setCoverUploadingStart(false)} className='mr-4 mt-4 bg-gray-200 px-4 py-1 rounded-[10px] md:rounded-[15px]'>Exit</button>
+                        </div>
+                            <UpdateAvatar type="cover" getImageUID={getCoverUID}
+                                    text={<> <button className='editbtn'> <img src={editicon} alt="img" /> </button> </>} />
+                    </div>   
+                : ''}
 
                 {UploadingStart || CoverUploadingStart ? '' : (
                     <>
                         {renderTabs()}
 
                         <form onSubmit={updateProfile}>
-                            {/* Profile Info Tab */}
+                            
                             <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
                                 <ul>
                                     <li className="mb-4">
@@ -504,7 +508,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                 </ul>
                             </div>
 
-                            {/* Appearance Tab */}
                             <div className={activeTab === 'appearance' ? 'block' : 'hidden'}>
                                 <div className='mainprofile mb-8 relative w-full'>
                                     <div className='profilePhotoImg cover group relative'>
@@ -513,7 +516,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                             type="button"
                                             onClick={()=>setCoverUploadingStart(true)} 
                                             className='w-fit absolute top-4 right-4    bg-white shadow-lg hover:bg-gray-200 transition-all z-10 px-4 py-2 rounded-xl shadow-lg !text-sm' >
-                                             Edit Cover Photo
+                                            Edit Cover Photo
                                         </button>
                                     </div>
                                     <div className="flex justify-center mt-[-70px]">
@@ -548,8 +551,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-2">Right-click image to save</p>
                                             </div>
-                                         )} 
-                                       
+                                        )} 
+                                    
                                         <button  
                                             type="button" 
                                             onClick={generateSocialImage}
@@ -562,7 +565,6 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                 )}
                             </div>
 
-                            {/* Settings Tab */}
                             <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
                                 <ul>
                                     {user?.role === 1 && (
@@ -698,6 +700,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
                                     {loading || processing ? "Saving..." : "Save Changes"}
                                 </LoaderButton>
                             </div>
+
                         </form>
                     </>
                 )}

@@ -690,7 +690,7 @@ html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
 /* .wishlistbtnFixed a{border:1px solid var(--mint) !important;background:var(--black);box-shadow:none !important;transform:inherit !important;border-radius:19px !important;width:100% !important;margin:auto;padding:27px 20px !important;font-size:22px !important;}
 */
  .itsfree{padding-inline-start:0;text-align:center !important;}
-.addsocial ul li{width:auto;padding:0 20px;}
+.addsocial ul li{width:auto; }
 .addsocial ul li a{font-size:20px;line-height:20px;}
 .addsocial ul li a svg{width:24px;height:24px;}
 .addsocial ul li:last-child{border:0 !important;}

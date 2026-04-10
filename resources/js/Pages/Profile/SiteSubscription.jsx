@@ -1,6 +1,6 @@
 import { Link } from "@inertiajs/react";
 
-export default function SiteSubscription({ auth, subscription_status, user, card_capabilities, site_subscription }) {
+export default function SiteSubscription({ children, auth, subscription_status, user, card_capabilities, site_subscription }) {
     const creatorUser = user ?? auth?.user;
 
     const resolvedStatus =
@@ -26,9 +26,9 @@ export default function SiteSubscription({ auth, subscription_status, user, card
     const canActivate = isExpiredOrInactive || isEnabled;
 
     return (
-        <div className="w-full finishs mb-6 p-6 rounded-[30px]   bg-white  border-2 !border-pink-500  ">
-
-            <h2 className="text-xl font-bold capitalize pb-3 goaltitle text-black  ">
+        <>
+        <div className="w-full finishs mb-6  bg-white  ">
+            <h2 className="text-[22px] tracking-wider font-gulfs uppercase pb-3 goaltitle text-black  ">
                 Subscription Status
             </h2>
                 {resolvedStatus === "EXPIRED" ? (
@@ -91,6 +91,9 @@ export default function SiteSubscription({ auth, subscription_status, user, card
                     </p>
                 )}
 
+
         </div>
+                {children}
+        </>
     );
 }

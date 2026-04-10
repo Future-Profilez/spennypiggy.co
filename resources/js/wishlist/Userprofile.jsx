@@ -25,7 +25,7 @@ export default function Userprofile({ IsloggedIn }) {
         <div className="userprofilesec mb-6 relative">
             <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none rounded-3xl">
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
-                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-80px]">
+                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-90px]">
                         <img
                             alt={`${user?.name || "User"} - Profile Avatar`}
                             src={IsloggedIn ? user?.avatar_url || userphoto : user?.avatar_url && user?.avatar_approved === 1 ? user?.avatar_url : userphoto}

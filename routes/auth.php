@@ -142,6 +142,7 @@ Route::get('/debug-webauthn-credential', function () {
         'last_used' => $credential->last_used_at
     ]);
 })->middleware('auth');
+
 Route::prefix('webauthn')->group(function () {
 
     // CHECK ROUTE - Check if user has passkey

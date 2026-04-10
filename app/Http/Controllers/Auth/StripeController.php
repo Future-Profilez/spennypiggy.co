@@ -3462,7 +3462,11 @@ class StripeController extends Controller
 
         $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * $multiplier);
 
-        $trial_period_days = 3;
+        // Determine if user has already used a free trial for the mandatory platform subscription
+        $hasUsedTrial = MonthlyCharge::where('user_id', $user->id)
+            ->whereNotNull('current_start_trial_date')
+            ->exists();
+        $trial_period_days = $hasUsedTrial ? 0 : 3;
 
         $payload = [
             "mode"  =>  'subscription',
@@ -3482,17 +3486,19 @@ class StripeController extends Controller
                     ]
                 ]
             ]],
-            'subscription_data' => [
-                'trial_period_days' => $trial_period_days,
+            'subscription_data' => array_filter([
+                // Only include trial if user has not used it before
+                'trial_period_days' => $trial_period_days > 0 ? $trial_period_days : null,
                 'description' => "Subscription for using site through Stripe.",
                 'metadata' => Helpers::buildStripeMetadata('site_subscription', $sub, [
                     'subscription_amount' => (string) $price,
                     'tax_amount' => (string) $tax,
-                    'trial_period_days' => (string) $trial_period_days,
+                    // Reflect actual trial setting in metadata
+                    'trial_period_days' => $trial_period_days > 0 ? (string) $trial_period_days : '0',
                     'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
                     'subscription_purpose' => 'mandatory_platform_access',
                 ]),
-            ],
+            ]),
             'customer_email' => $user->email,
             'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
             'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
@@ -3500,11 +3506,15 @@ class StripeController extends Controller
 
         try {
             $session = StripeControl::createCheckoutSession($payload);
-            $sub->update([
+            $updateData = [
                 'session_id' => $session->id,
-                'current_start_trial_date' => now(),
-                'current_end_trial_date' => now()->addDays($trial_period_days),
-            ]);
+            ];
+            // Persist trial dates only if trial is actually applied
+            if ($trial_period_days > 0) {
+                $updateData['current_start_trial_date'] = now();
+                $updateData['current_end_trial_date'] = now()->addDays($trial_period_days);
+            }
+            $sub->update($updateData);
             return Inertia::location($session->url);
         } catch (Exception $e) {
             $sub->delete();
@@ -3537,8 +3547,12 @@ class StripeController extends Controller
 
                 $sub->stripe_id = $session->subscription;
 
-                // $sub->upcoming_payment = Carbon::now()->addMonth();
-                $sub->upcoming_payment = Carbon::now()->addDays(3);
+                // Set upcoming payment based on whether a trial was applied
+                if (!empty($sub->current_end_trial_date)) {
+                    $sub->upcoming_payment = Carbon::parse($sub->current_end_trial_date);
+                } else {
+                    $sub->upcoming_payment = Carbon::now()->addMonth();
+                }
                 if ($sub->save()) {
                     // update profile status lock 1
                     $user->profile_status_lock = 1;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Calendar, CheckCircle2, Clock, XCircle, ArrowRight, CreditCard, RefreshCw } from 'lucide-react';
 
 // Simple date formatting function
 const formatDate = (dateString) => {
@@ -16,25 +17,20 @@ const formatDate = (dateString) => {
 };
 
 const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
-    const getStatusBadge = (status) => {
+    const getStatusInfo = (status) => {
         const statusConfig = {
-            'paid': { class: 'bg-green-100 text-green-800', text: 'Paid' },
-            'active': { class: 'bg-green-100 text-green-800', text: 'Active' },
-            'trialing': { class: 'bg-yellow-100 text-yellow-800', text: 'Trial' },
-            'incomplete': { class: 'bg-red-100 text-red-800', text: 'Incomplete' },
-            'incomplete_expired': { class: 'bg-red-100 text-red-800', text: 'Expired' },
-            'past_due': { class: 'bg-orange-100 text-orange-800', text: 'Past Due' },
-            'canceled': { class: 'bg-gray-100 text-gray-800', text: 'Canceled' },
-            'unpaid': { class: 'bg-red-100 text-red-800', text: 'Unpaid' },
-            'initiated': { class: 'bg-blue-100 text-blue-800', text: 'Processing' },
+            'paid': { class: 'bg-green-100 text-green-700 border border-green-200', text: 'Paid', icon: <CheckCircle2 size={12} className="mr-1" /> },
+            'active': { class: 'bg-green-100 text-green-700 border border-green-200', text: 'Active', icon: <CheckCircle2 size={12} className="mr-1" /> },
+            'trialing': { class: 'bg-yellow-100 text-yellow-700 border border-yellow-200', text: 'Trial', icon: <Clock size={12} className="mr-1" /> },
+            'incomplete': { class: 'bg-red-100 text-red-700 border border-red-200', text: 'Incomplete', icon: <XCircle size={12} className="mr-1" /> },
+            'incomplete_expired': { class: 'bg-red-100 text-red-700 border border-red-200', text: 'Expired', icon: <XCircle size={12} className="mr-1" /> },
+            'past_due': { class: 'bg-orange-100 text-orange-700 border border-orange-200', text: 'Past Due', icon: <Clock size={12} className="mr-1" /> },
+            'canceled': { class: 'bg-gray-100 text-gray-600 border border-gray-200', text: 'Canceled', icon: <XCircle size={12} className="mr-1" /> },
+            'unpaid': { class: 'bg-red-100 text-red-700 border border-red-200', text: 'Unpaid', icon: <XCircle size={12} className="mr-1" /> },
+            'initiated': { class: 'bg-blue-100 text-blue-700 border border-blue-200', text: 'Processing', icon: <RefreshCw size={12} className="mr-1 animate-spin" /> },
         };
         
-        const config = statusConfig[status] || { class: 'bg-gray-100 text-gray-800', text: status || 'Unknown' };
-        return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.class}`}>
-                {config.text}
-            </span>
-        );
+        return statusConfig[status] || { class: 'bg-gray-100 text-gray-700 border border-gray-200', text: status || 'Unknown', icon: null };
     };
 
     const formatCurrency = (amount, currency = 'GBP') => {
@@ -48,130 +44,129 @@ const SubscriptionHistory = ({ subscriptionHistory = [] }) => {
     };
 
     const getExpiryDate = (subscription) => {
-        if (subscription.current_end_subscription_date) {
-            return formatDate(subscription.current_end_subscription_date);
-        }
-        if (subscription.current_end_trial_date) {
-            return formatDate(subscription.current_end_trial_date);
-        }
-        if (subscription.upcoming_payment) {
-            return formatDate(subscription.upcoming_payment);
-        }
+        if (subscription.current_end_subscription_date) return formatDate(subscription.current_end_subscription_date);
+        if (subscription.current_end_trial_date) return formatDate(subscription.current_end_trial_date);
+        if (subscription.upcoming_payment) return formatDate(subscription.upcoming_payment);
         return 'N/A';
     };
 
     const getStartDate = (subscription) => {
-        // Always prioritize actual subscription period dates over created_at
-        if (subscription.current_start_subscription_date) {
-            return formatDate(subscription.current_start_subscription_date);
-        }
-        if (subscription.current_start_trial_date) {
-            return formatDate(subscription.current_start_trial_date);
-        }
-        // Only use created_at as absolute last resort
+        if (subscription.current_start_subscription_date) return formatDate(subscription.current_start_subscription_date);
+        if (subscription.current_start_trial_date) return formatDate(subscription.current_start_trial_date);
         return 'N/A';
+    };
+
+    const getRenewalDate = (subscription) => {
+        if ((subscription.status === 'active' || subscription.status === 'trialing') && subscription.upcoming_payment) {
+            return formatDate(subscription.upcoming_payment);
+        }
+        return null;
     };
 
     if (!subscriptionHistory || subscriptionHistory.length === 0) {
         return (
-            <div className="bg-white rounded-[30px]   shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription History</h3>
+            <div className="bg-white rounded-[30px] shadow-sm border border-gray-200 p-6">
                 <div className="text-center py-8">
                     <div className="text-gray-400 mb-2">
-                        <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <CreditCard className="mx-auto h-12 w-12 opacity-50" strokeWidth={1.5} />
                     </div>
-                    <p className="text-gray-500">No subscription history found</p>
-                    <p className="text-sm text-gray-400 mt-1">Your subscription payments will appear here</p>
+                    <p className="text-gray-500 font-medium">No billing history yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Your subscription payments will appear here once processed.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="bg-white rounded-[30px]   ">
-            <div className="py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Subscription History</h3>
-                <p className="text-sm text-gray-600 mt-1">Complete history of your Spenny Piggy subscription payments</p>
+        <div className="bg-white border-t pt-6 border-gray-200 overflow-hidden">
+            <div className="pb-4">
+                <p className="text-sm text-gray-500">Your recent subscription billing and payment activity.</p>
             </div>
             
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Amount
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Period
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Expires
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {subscriptionHistory.map((subscription, index) => (
-                            <tr key={subscription.id || index} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {getStartDate(subscription)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div className="flex flex-col">
-                                        <span className="font-medium">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 pb-4 scrollbar-hide">
+                {subscriptionHistory.map((subscription, index) => {
+                    const statusInfo = getStatusInfo(subscription.status);
+                    const isTrial = subscription.current_start_trial_date && subscription.current_end_trial_date;
+                    const nextPayment = getRenewalDate(subscription);
+                    const hasEnded = subscription.status === 'canceled' || subscription.status === 'past_due' || subscription.status === 'incomplete_expired';
+                    
+                    return (
+                        <div key={subscription.id || index} className="bg-white border border-gray-200 rounded-[24px] p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                            {/* Left accent bar based on status */}
+                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                                subscription.status === 'active' || subscription.status === 'paid' ? 'bg-green-500' :
+                                subscription.status === 'trialing' ? 'bg-yellow-400' :
+                                hasEnded ? 'bg-gray-400' : 'bg-red-500'
+                            }`}></div>
+                            
+                            {/* Header: Amount & Status */}
+                            <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-gray-500 uppercase font-semibold tracking-wider mb-1">
+                                        {isTrial ? 'Trial Period' : 'Subscription Charge'}
+                                    </span>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-2xl font-gulfs tracking-wide text-gray-900">
                                             {formatCurrency(subscription.amount, subscription.currency)}
                                         </span>
                                         {subscription.tax && parseFloat(subscription.tax) > 0 && (
-                                            <span className="text-xs text-gray-500">
-                                                +{formatCurrency(subscription.tax, subscription.currency)} tax
+                                            <span className="text-xs text-gray-500 font-medium">
+                                                + {formatCurrency(subscription.tax, subscription.currency)} tax
                                             </span>
                                         )}
                                     </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    {getStatusBadge(subscription.status)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                </div>
+                                
+                                <div className={`flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${statusInfo.class}`}>
+                                    {statusInfo.icon}
+                                    {statusInfo.text}
+                                </div>
+                            </div>
+                            
+                            {/* Body: Dates */}
+                            <div className="bg-gray-50 rounded-[16px] p-4 flex flex-col gap-3">
+                                {/* Start & End Row */}
+                                <div className="flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        {subscription.current_start_subscription_date && subscription.current_end_subscription_date ? (
-                                            <>
-                                                <span className="text-gray-900 font-medium">Subscription</span>
-                                                <span className="text-xs">
-                                                    {formatDate(subscription.current_start_subscription_date)} - {formatDate(subscription.current_end_subscription_date)}
-                                                </span>
-                                            </>
-                                        ) : subscription.current_start_trial_date && subscription.current_end_trial_date ? (
-                                            <>
-                                                <span className="text-yellow-600 font-medium">Trial Period</span>
-                                                <span className="text-xs">
-                                                    {formatDate(subscription.current_start_trial_date)} - {formatDate(subscription.current_end_trial_date)}
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <span className="text-gray-900 font-medium">Monthly</span>
-                                        )}
+                                        <span className="flex items-center text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">
+                                            <Calendar size={10} className="mr-1" /> {isTrial ? 'Trial Started' : 'Period Started'}
+                                        </span>
+                                        <span className="text-gray-800 font-medium text-sm">{getStartDate(subscription)}</span>
                                     </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                                    {getExpiryDate(subscription)}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                    
+                                    <div className="text-gray-300">
+                                        <ArrowRight size={16} />
+                                    </div>
+                                    
+                                    <div className="flex flex-col text-right">
+                                        <span className="flex items-center justify-end text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">
+                                            {hasEnded ? 'Expired On' : 'Period Ends'} <Calendar size={10} className="ml-1" />
+                                        </span>
+                                        <span className="text-gray-800 font-medium text-sm">{getExpiryDate(subscription)}</span>
+                                    </div>
+                                </div>
+
+                                {/* Next Billing Highlight (if applicable) */}
+                                {nextPayment && !hasEnded && (
+                                    <div className="mt-2 pt-3 border-t border-gray-200 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-pink-600 uppercase tracking-wide flex items-center">
+                                            <RefreshCw size={12} className="mr-1.5" /> Next Auto-Renewal
+                                        </span>
+                                        <span className="text-sm font-bold text-gray-900 bg-pink-100 text-pink-700 px-2 py-0.5 rounded-md">
+                                            {nextPayment}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
             
             {subscriptionHistory.length > 0 && (
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                    <p className="text-xs text-gray-500">
-                        Showing {subscriptionHistory.length} subscription record{subscriptionHistory.length !== 1 ? 's' : ''}
+                <div className="pt-4 mt-2 text-center">
+                    <p className="text-xs font-medium text-gray-400 bg-gray-50 inline-block px-4 py-1.5 rounded-full">
+                        Showing {subscriptionHistory.length} billing record{subscriptionHistory.length !== 1 ? 's' : ''}
                     </p>
                 </div>
             )}
