@@ -866,9 +866,11 @@ Route::get('first-three-leaderboard/{type?}', [LeaderBoardController::class, 'fi
 //     return $ret;
 // });
 
-Route::get('/test/test', function () {
-    return Inertia::render('Test');
-})->name("test");
+if (app()->environment('local')) {
+    Route::get('/test/test', function () {
+        return Inertia::render('Test');
+    })->name("test");
+}
 
 Route::get('/test-intercom-diagnostic', function () {
     return view('intercom-test');

@@ -721,10 +721,12 @@ Route::middleware(['web'])->group(function () {
     })->name('preview.pending-approval');
 });
 
-// Intercom test route
-Route::get('/test-intercom', function () {
-    return Inertia::render('TestIntercom');
-})->name('test.intercom');
+// Intercom test route (local only)
+if (app()->environment('local')) {
+    Route::get('/test-intercom', function () {
+        return Inertia::render('TestIntercom');
+    })->name('test.intercom');
+}
 
 // Intercom debug route
 Route::get('/debug-intercom', [\App\Http\Controllers\IntercomDebugController::class, 'debug'])->name('debug.intercom');
