@@ -97,7 +97,6 @@ export default function Membership() {
                 <div className="rounded-[30px]  overflow-hidden border-2 border-pink-500/30 shadow-[0_0_50px_rgba(236,72,153,0.3)] ">
                     <LazyLoadImage
                     alt={"image"}
-                    effect="blur"
                     className="w-full h-auto"
                     src={PREMIUMMEMBERSHIP}
                     />
@@ -112,7 +111,7 @@ export default function Membership() {
             <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
         </div>
 
-        <div className="containerbox relative  ">
+        <div className=" relative  ">
           <div className="flex justify-center mb-6">
             <img src={support} alt="Pig Mascot" className="w-24 h-24 object-contain animate-bounce" />
           </div>

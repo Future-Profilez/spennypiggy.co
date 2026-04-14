@@ -93,7 +93,6 @@ export default function Footer(props) {
                                     <LazyLoadImage
                                         alt={"image"}
                                         height={70}
-                                        effect="blur"
                                         src={spennypiggy}
                                         width={220}
                                         className="cursor-pointer"

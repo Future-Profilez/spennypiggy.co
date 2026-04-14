@@ -74,7 +74,7 @@ body{position:relative;font-family:var(--para-font)}
 .landing-bottom-bar ul {display:flex;background:#fff;width:100%;padding:10px;margin:0;border-radius:50px;justify-content:space-between;box-shadow:0 0 26px 4px #0002} 
 .landing-bottom-bar li a.active, 
 .landing-bottom-bar li a:focus {background:var(--mint)}  
-.landing-bottom-bar ul a {color:#000 !important;text-transform:uppercase;padding:6px 13px;font-family:var(--CeraBold);border-radius:20px;display:block;font-weight:700;font-size:15px}  
+.landing-bottom-bar ul a {color:#000 !important;text-transform:uppercase; font-family:var(--CeraBold);border-radius:20px;display:block;font-weight:700;}  
 
 .approvetag{left:42%;transform:translateX(-50%)}
 .pinkbg-i{background:var(--pink) !important}

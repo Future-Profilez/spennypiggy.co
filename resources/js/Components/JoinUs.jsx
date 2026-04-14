@@ -21,8 +21,6 @@ export default function JoinUs() {
                         <div key={idx} className="px-4 py-2">
                             <LazyLoadImage
                                 alt="image"
-
-                                effect="blur"
                                 className=""
                                 src={src}
                                 width={190}

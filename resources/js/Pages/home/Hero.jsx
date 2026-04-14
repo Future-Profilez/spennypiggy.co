@@ -8,7 +8,6 @@ import herobanner from '../../../assets/new/HeroBg.png';
 const transparentPixel = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB2aWV3Qm94PSIwIDAgMSAxIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+';
 import proud from '../../../assets/img/proud.png';
 import TrustBox from './TrustBox';
-import Scrollspy from 'react-scrollspy';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import Popup from '@/Components/Popup';
@@ -61,9 +60,9 @@ export default function Hero({auth}) {
 
   return <>
         <div className="block lg:hidden landing-bottom-bar bg-gray-900 border-t border-gray-800">
-            <Scrollspy items={sections} currentClassName="active" offset={-50}>
+            <ul className="px-2 flex justify-between items-center w-full text-sm sm:text-normal mx-auto">
               <li>
-                <a href="#home" className={activeSection === 'home' ? 'active text-pink-500' : 'text-white'} onClick={(e) => handleNavItemClick(e, 'home')}>
+                <a href="#home" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'home' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'home')}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M2 12.204C2 9.915 2 8.771 2.52 7.823C3.038 6.874 3.987 6.286 5.884 5.108L7.884 3.867C9.889 2.622 10.892 2 12 2C13.108 2 14.11 2.622 16.116 3.867L18.116 5.108C20.013 6.286 20.962 6.874 21.481 7.823C22 8.771 22 9.915 22 12.203V13.725C22 17.625 22 19.576 20.828 20.788C19.657 22 17.771 22 14 22H10C6.229 22 4.343 22 3.172 20.788C2 19.576 2 17.626 2 13.725V12.204Z" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M12 15V18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -71,21 +70,21 @@ export default function Hero({auth}) {
                 </a>
               </li>
               <li>
-                <a href="#features" className={activeSection === 'features' ? 'active text-pink-500' : 'text-white'} onClick={(e) => handleNavItemClick(e, 'features')}>
+                <a href="#features" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'features' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'features')}>
                   Features
                 </a>
               </li>
               <li>
-                <a href="#reviews" className={activeSection === 'reviews' ? 'active text-pink-500' : 'text-white'} onClick={(e) => handleNavItemClick(e, 'reviews')}>
+                <a href="#reviews" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'reviews' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'reviews')}>
                 reviews
                 </a>
               </li>
               <li>
-                <a href="#faq" className={activeSection === 'faq' ? 'active text-pink-500' : 'text-white'} onClick={(e) => handleNavItemClick(e, 'faq')}>
+                <a href="#faq" className={`px-[7px] py-[5px] md:px-3 md:py-2 ${activeSection === 'faq' ? 'active text-pink-500' : 'text-white'}`} onClick={(e) => handleNavItemClick(e, 'faq')}>
                   FAQ's
                 </a>
               </li>
-            </Scrollspy>
+            </ul>
         </div>
         <img 
           src={transparentPixel} 
@@ -94,7 +93,6 @@ export default function Hero({auth}) {
           height="1" 
           style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
           loading="eager"
-          fetchPriority="high"
         />
         <div id="home" className="bg-black relative min-h-[80vh] lg:min-h-[85vh] flex items-center justify-center py-2 md:py-24">
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">

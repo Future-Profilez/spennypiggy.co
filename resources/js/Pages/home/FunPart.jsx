@@ -15,7 +15,6 @@ export default function FunPart({imgbg, textcolor, mainbg, textbg, heading, ecla
       <div className="w-full h-full">
         <LazyLoadImage
           alt="image" className='max-h-[600px] w-full h-full object-cover !bg-transparent'
-          effect="blur"
           src={img || seek}
         />
       </div>

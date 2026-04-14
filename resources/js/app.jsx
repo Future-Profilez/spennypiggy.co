@@ -14,6 +14,7 @@ import "../css/home.css";
 import "../css/app.css";
 // Include confetti animations styles
 import "../css/confetti.css";
+import 'react-lazy-load-image-component/src/effects/blur.css';
 
 import { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
@@ -206,17 +207,15 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
-            <React.StrictMode>
-                <Provider store={store}>
-                    <Suspense fallback={null}>
-                        <GlobalErrorBoundary>
-                            <ConnectivityListener>
-                                <App {...props} />
-                            </ConnectivityListener>
-                        </GlobalErrorBoundary>
-                    </Suspense>
-                </Provider>
-            </React.StrictMode>
+            <Provider store={store}>
+                <Suspense fallback={null}>
+                    <GlobalErrorBoundary>
+                        <ConnectivityListener>
+                            <App {...props} />
+                        </ConnectivityListener>
+                    </GlobalErrorBoundary>
+                </Suspense>
+            </Provider>
         );
         
         // Hide initial loading screen once React app is mounted

@@ -268,7 +268,7 @@ export default function Header({ classMagicword }) {
                     </div>
                 </div>
             </div>
-            <div className="h-[66px] sm:h-[68px] md:h-[80px] lg:h-[82px] xl:h-[92px]"></div>
+            <div className="h-[75px] sm:h-[75px] md:h-[80px] lg:h-[82px] xl:h-[92px]"></div>
 
             {isActive ? (
                 <div
@@ -286,7 +286,7 @@ export default function Header({ classMagicword }) {
             <div
                 className={`fixed top-0 left-0 z-50 h-full w-full md:w-[500px]  rounded-r-xl
                     transform transition-transform duration-500 ease-in-out
-                    ${isActive ? "translate-x-0" : "-translate-x-full"}
+                    ${isActive ? "translate-x-0" : "-translate-x-full "}
                     flex flex-col p-8 select-none${isActive ? "Open" : null}`} >
                 <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7]  shadow-[10px_0px_0px_0px_rgba(0,0,0,1)] max-h-screen overflow-auto w-full sm:max-w-[320px] h-full">
                     <button
@@ -643,9 +643,9 @@ export default function Header({ classMagicword }) {
                                 </li>
 
                                 <li>
-                                    <Link
+                                    <div
                                         onClick={toggleClass}
-                                        className={`livechat ${getNavLinkClass()} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                                        className={`livechat ${getNavLinkClass()} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group cursor-pointer`}
                                     >
                                         <span className="inline-flex justify-center items-center ml-2">
                                             <MdOutlineSupportAgent
@@ -656,7 +656,7 @@ export default function Header({ classMagicword }) {
                                         <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Need help ?
                                         </span>
-                                    </Link>
+                                    </div>
                                 </li>
                                 <li className="bg-black h-[3px] w-full max-w-[85%] m-auto mt-3"></li>
                             </ul>
@@ -741,7 +741,7 @@ export default function Header({ classMagicword }) {
                                     </a>
                                 </li>
                                 <li>
-                                    <Link
+                                    <a
                                         onClick={toggleClass}
                                         target="_blank"
                                         href={route("terms-and-conditions")}
@@ -758,10 +758,10 @@ export default function Header({ classMagicword }) {
                                         >
                                             Terms
                                         </span>
-                                    </Link>
+                                    </a>
                                 </li>
                                 <li>
-                                    <Link
+                                    <a
                                         onClick={toggleClass}
                                         target="_blank"
                                         href={route("promotion-terms")}
@@ -776,7 +776,7 @@ export default function Header({ classMagicword }) {
                                         <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                             Promotion Terms
                                         </span>
-                                    </Link>
+                                    </a>
                                 </li>
 
                                 {auth && auth?.user?.username ? (
