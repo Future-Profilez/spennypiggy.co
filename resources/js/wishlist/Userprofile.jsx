@@ -36,7 +36,7 @@ export default function Userprofile({ IsloggedIn }) {
                         />
 
                         {/* Waiting for approval (ORANGE) */}
-                        {IsloggedIn && auth && auth?.user?.avatar_url && auth?.user?.avatar_approved === 0 && (
+                        {IsloggedIn && auth && auth?.user?.avatar && auth?.user?.avatar_approved === 0 && (
                                 <div className="absolute approvetag top-3 mx-auto">
                                     <button className="tooltipbtn">
                                         <svg

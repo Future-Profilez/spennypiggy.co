@@ -364,6 +364,23 @@ export default function Header({ classMagicword }) {
                                     auth.user &&
                                     auth.user.role ==1 ? (
                                         <>
+                                         <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/task/dashboard`}
+                                                    className={`${getNavLinkClass('/task/dashboard')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-2">
+                                                        <BiTask
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
+                                                        Tasks
+                                                    </span>
+                                                </Link>
+                                            </li>
                                             <li>
                                                 <Link
                                                     onClick={toggleClass}
@@ -506,23 +523,7 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                 </Link>
                                             </li>
-                                            <li>
-                                                <Link
-                                                    onClick={toggleClass}
-                                                    href={`/task/dashboard`}
-                                                    className={`${getNavLinkClass('/task/dashboard')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#A2E4B8] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
-                                                >
-                                                    <span className="inline-flex justify-center items-center ml-2">
-                                                        <BiTask
-                                                            className="text-gray-800 group-hover:text-black transition-colors"
-                                                            size={"1.5rem"}
-                                                        />
-                                                    </span>
-                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
-                                                        Tasks
-                                                    </span>
-                                                </Link>
-                                            </li>
+                                           
                                         </>
                                     ) : (
                                         ""
