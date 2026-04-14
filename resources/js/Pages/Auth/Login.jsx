@@ -532,13 +532,13 @@ export default function Login({ status, canResetPassword }) {
     return (
         <GuestLayout>
             <Head title="Log in" description="Log in to your account" />
-            <div className="min-h-[90vh] bg-[#A2E4B8] relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div className="min-h-[90vh] bg-[#A2E4B8] relative flex flex-col items-center justify-center py-12 md:py-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 {/* Decorative Background Elements */}
                 {/* <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
                     <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-pink-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float-delayed"></div>
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/10 rounded-full mix-blend-screen filter blur-[128px] animate-pulse"></div>
-                </div> */}  
+                </div> */}   
 
                 {status && (
                     <div className="mb-6 font-medium text-sm text-green-400 bg-green-900/30 px-4 py-2 rounded-[30px] border border-green-500/30 backdrop-blur-sm relative z-20">
@@ -548,14 +548,14 @@ export default function Login({ status, canResetPassword }) {
 
                 <div className="relative w-full">
                     <div className="text-center mb-10">
-                        <h2 className="text-4xl md:text-5xl font-gulfs whitespace-nowrap text-white uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        <h2 className="text-3xl md:text-4xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome{" "}
                             <span className="text-gradient-wishlist">
                                 Back!
                             </span>
                         </h2>
                         <h1 className="hidden">Login to your account.</h1>
-                        <p className="text-gray-400 text-lg font-medium">
+                        <p className="text-gray-800 text-lg font-medium">
                             Don't have an account?{" "}
                             <Link
                                 href={route("register")}
@@ -566,15 +566,14 @@ export default function Login({ status, canResetPassword }) {
                         </p>
                     </div>
 
-                    <div className="max-w-md m-auto !bg-black/20 backdrop-blur-xl border !border-pink-500/40 rounded-[30px] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="!bg-[#121212]/20 border-b border-pink-500/30 flex items-center p-4 space-x-2 rounded-t-xl">
+                    <div className="max-w-md m-auto bg-white rounded-[30px] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group">
+                        <div className="!border-r-0 !border-l-0 !border-t-0 border-b border-black flex items-center p-4 space-x-2 rounded-t-xl">
                             <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                             <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
                         </div>
 
-                        <div className="p-6 sm:p-8 bg-black/20 rounded-b-xl">
+                        <div className="p-6 sm:p-8   rounded-b-xl">
                             <form onSubmit={checkTFA} className="space-y-6">
                                 {redirectmessage && (
                                     <p className="text-center font-bold text-red-400 text-sm bg-red-900/20 py-2 rounded-[30px] border border-red-500/20 animate-pulse">
@@ -599,13 +598,13 @@ export default function Login({ status, canResetPassword }) {
 
                                 <div>
                                     <label
-                                        className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
+                                        className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide"
                                         htmlFor="email"
                                     >
                                         Email Address
                                     </label>
                                     <div className="relative group">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[20px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <FaCircleUser
                                             size="24"
                                             color="#000000"
@@ -616,7 +615,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="email"
                                             name="email"
                                             value={data.email}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[20px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 !ps-[40px] transition-all duration-300`}
                                             autoComplete="username webauthn"
                                             autoFocus={true}
                                             placeholder="you@example.com"
@@ -633,13 +632,13 @@ export default function Login({ status, canResetPassword }) {
 
                                 <div>
                                     <label
-                                        className="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wide"
+                                        className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide"
                                         htmlFor="password"
                                     >
                                         Password
                                     </label>
                                     <div className="relative group relative">
-                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[30px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-500 rounded-[20px] opacity-0 group-focus-within:opacity-75 transition duration-300 blur-sm"></div>
                                         <RiLockPasswordLine
                                             color="#000000"
                                             size="24"
@@ -650,7 +649,7 @@ export default function Login({ status, canResetPassword }) {
                                             type="password"
                                             name="password"
                                             value={data.password}
-                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[30px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
+                                            className={`${animate} relative w-full bg-white border border-gray-700 text-black text-lg rounded-[20px] focus:ring-0 focus:border-transparent block py-[12px] px-3 placeholder-gray-500 transition-all duration-300 !ps-[40px]`}
                                             autoComplete="current-password webauthn"
                                             placeholder="••••••••"
                                             onChange={(e) =>
@@ -667,11 +666,11 @@ export default function Login({ status, canResetPassword }) {
                                     />
 
                                     {canResetPassword && (
-                                        <div className="flex justify-end mt-2 relative z-1">
+                                        <div className="flex justify-center mt-2 relative z-1">
                                             <Link
                                                 method="get"
                                                 href={route("password.request")}
-                                                className="!cursor-pointer text-sm text-gray-400 hover:text-white transition-colors duration-200"
+                                                className="!cursor-pointer text-sm text-gray-600 hover:text-black transition-colors duration-200"
                                             >
                                                 Forgot your password?
                                             </Link>
@@ -683,7 +682,7 @@ export default function Login({ status, canResetPassword }) {
                                 <div>
                                     <LoaderButton
                                         disabled={loading}
-                                        className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 !text-black w-full`}
+                                        className={`${animate} ${loading || passkeyLoading ? "!animate-pulse !bg-green-400 text-white" : ""} relative flex flex-row items-center text-xl px-4 py-[10px] focus:outline-none text-gray-600 border-l-4 border-transparent hover:!bg-pink-500 hover:!text-white pr-6 bg-black !text-white w-full`}
                                         spinnerclass="fill-white"
                                     >   
                                         {loading || passkeyLoading ? "Logging In..." : "LOG IN"}
