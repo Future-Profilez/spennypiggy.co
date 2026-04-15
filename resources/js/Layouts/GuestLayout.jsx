@@ -6,10 +6,10 @@ import PullToRefresh from '@/Components/PullToRefresh';
 import FlashMessenger from '@/Components/FlashMessenger';
 // import IntercomProvider from '@/Components/IntercomProvider';
 import Footer from '@/includes/Footer';
-export default function Guest({children, auth}) {
-    return <>
+export default function Guest({children, auth, className}) {
+    return <div className={`guest-layout ${className || ''}`}>
         <Header auth={auth ||''} />
-        <main>
+        <main >
             <PullToRefresh />
             {children}
         </main>
@@ -24,7 +24,7 @@ export default function Guest({children, auth}) {
         <BottomBar />
         <PwaInstallPrompt />
         <FlashMessenger />
-    </>
+    </div>
 }
 
 

@@ -44,7 +44,7 @@ export default function FounderBadge({
     {icon ? 
         <FaCrown className={`${classes} ms-1 text-yellow-500`}  />
         :
-        <div 
+        <span 
             className={`
                 inline-flex items-center rounded-full font-semibold transition-all duration-200
                 ${currentSize.container}
@@ -59,7 +59,7 @@ export default function FounderBadge({
                     FOUNDER
                 </span>
             )}
-        </div>
+        </span>
     }
     </>
 }
