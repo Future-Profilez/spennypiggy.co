@@ -63,13 +63,15 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             avatar: {
                 isValid: auth?.user?.avatar && auth?.user?.avatar_approved == 1,
                 isPending: auth?.user?.avatar && auth?.user?.avatar_approved == 0,
-                message: auth?.user?.avatar ? "Profile picture under review" : "Profile picture required",
+                isRejected: auth?.user?.avatar_approved == 2,
+                message: auth?.user?.avatar_approved == 2 ? "Profile picture rejected" : auth?.user?.avatar ? "Profile picture under review" : "Profile picture required",
                 requirements: ["Clear, high-quality image", "Shows your face clearly", "Professional appearance", "No copyrighted content"]
             },
             bio: {
                 isValid: auth?.user?.bio && auth?.user?.bio_approved == 1,
                 isPending: auth?.user?.bio && auth?.user?.bio_approved == 0,
-                message: auth?.user?.bio ? "Bio under review" : "Compelling bio required",
+                isRejected: auth?.user?.bio_approved == 2,
+                message: auth?.user?.bio_approved == 2 ? "Bio rejected" : auth?.user?.bio ? "Bio under review" : "Compelling bio required",
                 requirements: ["At least 50 characters", "Describe what you create", "Professional and engaging", "No inappropriate content"]
             },
             identity: {
@@ -134,6 +136,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             description: 'Add a clear, high-quality profile picture for your creator profile.',
             isCompleted: auth?.user?.avatar && auth?.user?.avatar_approved == 1,
             isPending: auth?.user?.avatar && auth?.user?.avatar_approved == 0,
+            isRejected: auth?.user?.avatar_approved == 2,
             isRequired: true,
             order: 3,
             category: 'basic'
@@ -144,6 +147,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             description: 'Create a compelling bio that tells fans about yourself and what you create.',
             isCompleted: auth?.user?.bio && auth?.user?.bio_approved == 1,
             isPending: auth?.user?.bio && auth?.user?.bio_approved == 0,
+            isRejected: auth?.user?.bio_approved == 2,
             isRequired: true,
             order: 4,
             category: 'basic'
@@ -181,6 +185,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const getStepStatus = (step) => {
         if (step.id === 'stripe' && auth?.user?.identity_admin_status !== 1) return 'locked';
         if (step.isCompleted) return 'completed';
+        if (step.isRejected) return 'error';
         if (step.isPending) return 'pending';
         if (step.requiresApproval && auth?.user?.profile_status_lock != 2) return 'locked';
         return 'todo';
@@ -318,11 +323,13 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                                             status === 'completed' ? 'status-completed' :
                                             status === 'pending' ? 'status-pending' :
+                                            status === 'error' ? 'bg-red-600 text-white' :
                                             status === 'locked' ? 'status-locked' :
                                             'status-active'
                                         }`}>
                                             {status === 'completed' ? <FaCheckCircle size={16} /> :
                                              status === 'pending' ? <FaClock size={14} /> :
+                                             status === 'error' ? <BsXCircleFill size={14} /> :
                                              status === 'locked' ? <FaLock size={14} /> :
                                              index + 1}
                                         </div>
@@ -446,6 +453,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                             <div className={`step-number ${status}`}>
                                                 {step.isCompleted ? (
                                                     <FaCheckCircle size={18} />
+                                                ) : validateStep(step)?.isRejected ? (
+                                                    <BsXCircleFill size={16} />
                                                 ) : step.isPending ? (
                                                     <FaClock size={16} />
                                                 ) : (
@@ -483,6 +492,20 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                                 {/* Enhanced Status Messages with Validation */}
                                                 {(() => {
                                                     const validation = validateStep(step);
+
+                                                    if (validation.isRejected) {
+                                                        return (
+                                                            <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-[30px]  ">
+                                                                <div className="flex items-center mb-2">
+                                                                    <BsXCircleFill className="mr-2 text-red-600" size={16} />
+                                                                    <span className="font-medium text-red-800">Rejected</span>
+                                                                </div>
+                                                                <p className="text-sm text-red-700">
+                                                                    Your submission was rejected. Please update and resubmit.
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    }
 
                                                     if (step.isPending) {
                                                         return (
@@ -562,7 +585,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                             {step.id === 'avatar' && !step.isCompleted && !step.isPending && (
                                                 <EditProfile
-                                                    text="Upload Photo"
+                                                    text={validateStep(step)?.isRejected ? "Re-upload Photo" : "Upload Photo"}
                                                     updateProfileSteps={updateProfileSteps}
                                                     user={user}
                                                     classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"
@@ -572,7 +595,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
                                             {step.id === 'bio' && !step.isCompleted && !step.isPending && (
                                                 <EditProfile
-                                                    text="Write Bio"
+                                                    text={validateStep(step)?.isRejected ? "Rewrite Bio" : "Write Bio"}
                                                     updateProfileSteps={updateProfileSteps}
                                                     user={user}
                                                     classes="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-[30px]   hover:from-blue-700 hover:to-blue-800 transition-all font-medium whitespace-nowrap shadow-lg"

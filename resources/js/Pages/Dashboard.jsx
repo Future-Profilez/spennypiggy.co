@@ -456,6 +456,8 @@ export default function Dashboard(props) {
         setAuthUserStripeConnected((auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0);
     }, [auth?.user?.stripe_details_submitted]);
 
+    console.log(user);
+
     return (
             <>
                 <Guest auth={auth.user} user={user} className='bg-[#A2E4B8]'>
@@ -470,7 +472,7 @@ export default function Dashboard(props) {
                             <VersionUpdate />
                             <OfferAnnouncement variant="default" />
                             <div className="wishbanner relative ">
-                                <div className="relative border-b-4 border-black rounded-[40px] overflow-hidden">
+                                <div className="relative border-b-4 border-black rounded-[30px] overflow-hidden">
                                     {user?.is_founder ? (
                                         <div className="absolute top-4 left-4 flex justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] lg:justify-start mb-2 z-10 bg-white border-4 border-black rounded-2xl p-1">
                                             <FounderBadge size="md" />
@@ -594,6 +596,48 @@ export default function Dashboard(props) {
                                                                     
                                                                     
 
+                                                                    {(IsloggedIn && (user?.edit_bio_reason && user?.bio_approved == 2 || slinks?.reason || user?.avatar_approved == 2)) ?
+                                                                    <div className="bg-white  border-1 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.9)] rounded-[30px] mb-4 p-4">
+                                                                        <h2 className="text-red-600 font-bold text-xl ">Action Required </h2>
+                                                                        {user?.edit_bio_reason &&
+                                                                            user?.bio_approved ==
+                                                                                2 ? (
+                                                                                <div className="mt-3 ">
+                                                                                    <p className="text-red-700 font-bold"> Bio Edit Request </p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                        Reason : 
+                                                                                        {user?.edit_bio_reason }
+                                                                                        Please update your bio as per requested.
+                                                                                    </p>
+                                                                                </div>
+                                                                            ) : (
+                                                                                ""
+                                                                            )}
+                                                                            
+                                                                            {user?.avatar_approved == 2 && (
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700 font-semibold">
+                                                                                        Avatar Edit Request
+                                                                                    </p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                       Profile avatar has been rejected by admin. Please upload a new avatar.
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {slinks?.reason && (
+                                                                                <div className="mt-3">
+                                                                                    <p className="text-red-700 font-semibold">
+                                                                                        Social Media Edit Request
+                                                                                    </p>
+                                                                                    <p className="text-red-500 text-sm">
+                                                                                        Reason: 
+                                                                                        {slinks.reason}
+                                                                                        <br />
+                                                                                        Please update your social links as per the requested changes.
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                    </div> : ''}
 
                                                                     <div className="bg-white border-[3px] border-black rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6">
                                                                         <div className="p-4 md:p-8">
@@ -639,66 +683,13 @@ export default function Dashboard(props) {
                                                                                 </div>
                                                                             )}
 
-                                                                           
-
-                                                                            {IsloggedIn &&
-                                                                            user?.edit_bio_reason &&
-                                                                            user?.bio_approved ==
-                                                                                2 ? (
-                                                                                <div className="mt-3">
-                                                                                    <p className="text-red-700">
-                                                                                        Bio
-                                                                                        Edit
-                                                                                        Request
-                                                                                    </p>
-                                                                                    <p className="text-red-500 text-sm">
-                                                                                        Reason
-                                                                                        :{" "}
-                                                                                        {
-                                                                                            user?.edit_bio_reason
-                                                                                        }{" "}
-                                                                                        Please
-                                                                                        update
-                                                                                        your
-                                                                                        bio
-                                                                                        as
-                                                                                        per
-                                                                                        requested.
-                                                                                    </p>
-                                                                                </div>
-                                                                            ) : (
-                                                                                ""
-                                                                            )}
-
                                                                             <SocialLinks
                                                                                 links={
                                                                                     sLinks
                                                                                 }
                                                                             />
 
-                                                                            {/* SOCIAL MEDIA REJECT REASON */}
-                                                                            {IsloggedIn && slinks?.reason && (
-                                                                                    <div className="mt-3">
-                                                                                        <p className="text-red-700 font-semibold">
-                                                                                            Social Media Edit Request
-                                                                                        </p>
-                                                                                        <p className="text-red-500 text-sm">
-                                                                                            Reason: 
-                                                                                            {slinks.reason}
-                                                                                            <br />
-                                                                                            Please
-                                                                                            update
-                                                                                            your
-                                                                                            social
-                                                                                            links
-                                                                                            as
-                                                                                            per
-                                                                                            the
-                                                                                            requested
-                                                                                            changes.
-                                                                                        </p>
-                                                                                    </div>
-                                                                                )}
+                                                                            
 
                                                                             {IsloggedIn ? (
                                                                                 <div className="userProfileDate pt-0 md:pt-3">
@@ -710,7 +701,7 @@ export default function Dashboard(props) {
 
                                                                                     <div className="addsocial flex">
                                                                                         <ul>
-                                                                                            <li>
+                                                                                            <li> 
                                                                                                 <AddSocial classes={`bg-[#A2E4B8] hover:bg-[#A2E4B8] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[15px] px-4 py-2 text-black flex ml-auto font-black capitalize  transition-colors font-cera-medium !text-[18px] !text-black`} sLinks={sLinks} />
                                                                                             </li>
 
