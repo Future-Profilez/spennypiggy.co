@@ -23,9 +23,9 @@ export default function Userprofile({ IsloggedIn }) {
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr px-6 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[95%] xl:max-w-none rounded-3xl">
+            <div className="userPr px-0 xl:px-8 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[100%] xl:max-w-none rounded-3xl"> 
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
-                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[-90px]">
+                    <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[0px]">
                         <img
                             alt={`${user?.name || "User"} - Profile Avatar`}
                             src={IsloggedIn ? user?.avatar_url || userphoto : user?.avatar_url && user?.avatar_approved === 1 ? user?.avatar_url : userphoto}
@@ -86,34 +86,31 @@ export default function Userprofile({ IsloggedIn }) {
                             )}
                     </div>
 
-                    <div className="ps-[20px] pt-[20px] lg:pt-[0px] lg:mt-0">
-                        <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl flex items-center justify-center lg:justify-start text-center lg:text-left !text-black">
-                            {user?.name}
+                    <div className="md:ps-[20px] md:pe-[20px] pt-[20px] lg:pt-[0px] lg:mt-0">
+                        <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl inline-flex items-center justify-center lg:justify-start  text-center lg:text-left !text-black ">
+                            <p  className="line-clamp-1">{user?.name} </p>
                             {(user?.role == 1 &&
                                 user?.profile_status_lock == 2 && (
-                                    <>
+                                    <span className="ms-2">
                                         {user?.is_founder ? (
-                                            <div className="mb-1">
                                                 <FounderBadge
-                                                    classes="w-8 h-8 ml-3"
+                                                    classes="min-w-8 min-h-8 w-8 h-8 ml-2"
                                                     icon={true}
                                                 />
-                                            </div>
                                         ) : (
                                             <RiVerifiedBadgeFill
-                                                size="2rem"
-                                                className="ml-3 text-blue-600"
+                                                className=" min-w-8 min-h-8 w-8 h-8 text-[#1d3ef8]"
                                             />
                                         )}
-                                    </>
+                                    </span>
                                 )) ||
                                 ""}
                         </h1>
 
-                        <div className="userId mt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
+                        <div className="userId mt- flex flex-col sm:flex-row items-center justify-center lg:justify-start text-center lg:text-left gap-2">
                             <ShareProfile
                                 username={user?.name}
-                                classes="flex text-black font-black text-normal transition-all mr-4 items-center"
+                                classes="flex text-gray-800 font-black text-normal transition-all mr-4 items-center"
                                 custom={`${window.location.origin}/${user?.username}`} >
                                 @{user?.username}
                                 <MdOutlineContentCopy className="ml-2 font-black text-black" />
@@ -142,7 +139,7 @@ export default function Userprofile({ IsloggedIn }) {
                         ) : (
                             ""
                         )}
-                        <div className="mt-4 flex items-center justify-center gap-3">
+                        <div className="mt-4 flex items-center justify-center lg:justify-end gap-1">
                             {!IsloggedIn ? (
                                 <div className=""> 
                                     <FollowButton 

@@ -18,12 +18,12 @@ export default function TipInner({classes, idd}) {
   const turnstileRef = useRef(null);
   const deviceid = useMemo(() => DeviceID(), []);
   const { formatMultiPrice } = PriceFormat();
-  const [defaultAmount, setdefaultAmount] = useState(25);
+  const [defaultAmount, setdefaultAmount] = useState(0);
   const [amount, setAmount] = useState(defaultAmount);
   const { errorAlert } = useAlerts();
   const [verified, setVerified] = useState(false);
 
-  const [selectegTag, setselectegTag] = useState(25);
+  const [selectegTag, setselectegTag] = useState();
   const { data, setData } = useForm({
     email: auth && auth.user?.email || '',
     name: auth && auth.user?.name || '',
@@ -374,84 +374,89 @@ export default function TipInner({classes, idd}) {
               </div> */}
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 mt-2">
-                  <button className={`${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  <button className={`${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
-                  {/* <button className={`${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 25 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(25)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(25, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 30 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(30)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(30, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 35 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(35)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(35, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 40 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center hidden md:flex items-center !text-[16px] !font-bold `} onClick={()=>customAmountTag(40)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(40, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 45 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(45)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(45, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 50 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(50)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(50, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 75 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(75)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(75, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 85 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(85)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(85, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag == 99 ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[16px]  p-2 px-3 text-center justify-center  flex items-center !text-[16px] !font-bold`} onClick={()=>customAmountTag(99)}  > <span className='mr-2' dangerouslySetInnerHTML={{ __html: tipheading }} /> {formatMultiPrice(99, (auth && auth?.user && auth?.user.default_currency) || "GBP")}</button>
+                  {/* <button className={`border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${ selectegTag === 'custom' ? 'pinkbg text-white' : 'bg-gray-200'} rounded-[30px]  p-2 px-3  !text-md font-gulfs`} onClick={selectCustom} >Custom Support</button> */}
               </div>
 
               <p className="!my-4 text-[14px]  text-gray-500 font-normal mt-1 leading-tight">
                 * Includes all fees. <br /> You will be charged in {user?.default_currency || 'GBP'}. Amounts shown in {global_currency || user?.default_currency || 'GBP'} are estimates.
               </p>
 
-              {selectegTag === 'custom' ? <div className="mb-4 ">
-                  <div className="relative currency-wrapper " >
-                      <span className="currency-tag">{global_currency || 'GBP'}</span>
-                      <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] " value={amount}
-                      onChange={customAmount}
-                      type="number" placeholder="Enter amount.. " />
-                  </div>
-              </div> : ''}
 
-              <div className="mb-3"> 
-                <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Just a small token of appreciation 💖'}
-                onChange={(e) => setData('message', e.target.value)}
-                placeholder="Write a short note." />
-              </div>
+              {amount > 0 ?<>
 
-              {auth && auth.user ? '' :
-                <>
-                  <div className="mb-4">
-                    <input required
-                      className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
-                      defaultValue={auth && auth.user?.name}
-                      onChange={(e) => setData('name', e.target.value)}
-                      type="text" placeholder="Enter nickname.. "
-                    />
-                  </div>
+                {selectegTag === 'custom' ? <div className="mb-4 ">
+                    <div className="relative currency-wrapper " >
+                        <span className="currency-tag">{global_currency || 'GBP'}</span>
+                        <input className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] " value={amount}
+                        onChange={customAmount}
+                        type="number" placeholder="Enter amount.. " />
+                    </div>
+                </div> : ''}
 
-                  <div className="mb-4">
-                    <input required  disabled={auth && auth.user?.email ? true : false}
-                      className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
-                      defaultValue={auth && auth.user?.email}
-                      onChange={(e) => setData('email', e.target.value)}
-                      type="email" placeholder="Enter email.. " />
-                    <p className='text-sm text-gray-600 mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
-                  </div>
-                </>
-              }
+                <div className="mb-3"> 
+                  <textarea className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[20px] " defaultValue={'Just a small token of appreciation 💖'}
+                  onChange={(e) => setData('message', e.target.value)}
+                  placeholder="Write a short note." />
+                </div>
 
-              <div className='termselect mt-3 mb-3'>
-                  <label htmlFor={`termaccept${idd || 1}`}>
-                    <p className='text-[15px] text-gray-900 font-normal' >
-                      <input className='cursor-pointer'
-                      type="checkbox" ref={checkRef}
-                      id={`termaccept${idd || 1}`}  name="termaccept"
-                      value="termaccept" required
-                      onChange={(e) => setData("termaccept", e.target.value)}></input>
-                        By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
-                    </p>
-                  </label>
-              </div>
+                {auth && auth.user ? '' :
+                  <>
+                    <div className="mb-4">
+                      <input required
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                        defaultValue={auth && auth.user?.name}
+                        onChange={(e) => setData('name', e.target.value)}
+                        type="text" placeholder="Enter nickname.. "
+                      />
+                    </div>
 
-              <div className='termselect mt-3 mb-3'>
-                  <label htmlFor="keepanonymous">
-                    <p className='text-[15px] text-gray-900 font-normal'>
-                      <input className='cursor-pointer' type="checkbox"
-                      id="keepanonymous" name="keepanonymous"
-                      value="keepanonymous"
-                      onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
-                      ></input> Keep anonymous
-                    </p>
-                  </label>
-                  <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
-              </div>
+                    <div className="mb-4">
+                      <input required  disabled={auth && auth.user?.email ? true : false}
+                        className="border-gray-300 border px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] "
+                        defaultValue={auth && auth.user?.email}
+                        onChange={(e) => setData('email', e.target.value)}
+                        type="email" placeholder="Enter email.. " />
+                      <p className='text-sm text-gray-600 mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
+                    </div>
+                    <div className='termselect mt-3 mb-3'>
+                        <label htmlFor={`termaccept${idd || 1}`}>
+                          <p className='text-[15px] text-gray-900 font-normal' >
+                            <input className='cursor-pointer'
+                            type="checkbox" ref={checkRef}
+                            id={`termaccept${idd || 1}`}  name="termaccept"
+                            value="termaccept" required
+                            onChange={(e) => setData("termaccept", e.target.value)}></input>
+                              By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
+                          </p>
+                        </label>
+                    </div>
+
+                    <div className='termselect mt-3 mb-3'>
+                        <label htmlFor="keepanonymous">
+                          <p className='text-[15px] text-gray-900 font-normal'>
+                            <input className='cursor-pointer' type="checkbox"
+                            id="keepanonymous" name="keepanonymous"
+                            value="keepanonymous"
+                            onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
+                            ></input> Keep anonymous
+                          </p>
+                        </label>
+                        <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
+                    </div>
+                  </>
+                }
+              </> : ""}
+
+
               {turnstileSiteKey ? (
                 <div className="flex justify-center my-3">
                   <Turnstile
@@ -473,7 +478,7 @@ export default function TipInner({classes, idd}) {
               <button disabled={loading || (turnstileSiteKey && !verified) || (user?.role === 1 && card_capabilities === false)} onClick={send} className={`items-center px-4  shadow-black
                 rounded-[30px]  btn-pink md justify-center btn-shadow !font-normal
                 ease-in-out duration-150 flex button text-center w-full
-                  mx-auto  ${(checkRef.current && checkRef.current.checked && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
+                  mx-auto  ${(amount > 0 && checkRef.current && checkRef.current.checked && !(turnstileSiteKey && !verified) && !loading && !(user?.role === 1 && card_capabilities === false)) ? '' :'disabled'} font-gulfs`}
                 > {loading ? "Processing..." : 'Support Me'} </button>
 
               <div className='securestripe text-center mt-3' >

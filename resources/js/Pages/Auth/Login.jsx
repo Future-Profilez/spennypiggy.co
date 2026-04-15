@@ -262,125 +262,7 @@ export default function Login({ status, canResetPassword }) {
     };
 
     // Handle passkey action (login with email, register, or userless login)
-    const handlePasskeyAction = async () => {
-        // Abort any pending conditional UI request first
-        if (abortController) {
-            abortController.abort("Starting manual passkey action");
-        }
-
-        try {
-            setPasskeyLoading(true);
-
-            // USERNAME-LESS LOGIN (no email entered)
-            if (!data.email) {
-                try {
-                    const { data: options } = await axios.post(
-                        route("webauthn.login.userless.options"),
-                    );
-
-                    const publicKey = options.publicKey ?? options;
-                    publicKey.challenge = base64urlToUint8Array(
-                        publicKey.challenge,
-                    );
-
-                    const credential = await navigator.credentials.get({
-                        publicKey,
-                    });
-
-                    const response = await axios.post(
-                        route("webauthn.login"),
-                        formatCredentialForServer(credential),
-                    );
-
-                    console.log("Login response:", response.data);
-
-                    if (response.data.success) {
-                        const redirectUrl = response.data.redirect_url || "/";
-                        router.visit(redirectUrl);
-                    } else {
-                        errorAlert(response.data.message || "Login failed");
-                    }
-                    return;
-                } catch (routeError) {
-                    console.error("Userless route error:", routeError);
-                    
-                    if (routeError.response?.data?.message) {
-                        errorAlert(routeError.response.data.message);
-                    } else if (routeError.name === "NotAllowedError" || routeError.name === "AbortError") {
-                        errorAlert("Authentication cancelled.");
-                    } else {
-                        errorAlert("Please enter your email first");
-                    }
-                    return;
-                }
-            }
-
-            // First, check if user has a passkey
-            const hasPasskey = await checkUserHasPasskey(data.email);
-
-            // If user has no passkey, they need to login with password first
-            if (!hasPasskey) {
-                errorAlert("No passkey found. Please login with your password first.");
-                document.getElementById('password').focus();
-                return;
-            }
-
-            // If user has passkey, login
-            if (hasPasskey) {
-                const { data: options } = await axios.post(
-                    route("webauthn.login.options"),
-                    { email: data.email },
-                );
-
-                const publicKey = options.publicKey ?? options;
-                publicKey.challenge = base64urlToUint8Array(
-                    publicKey.challenge,
-                );
-
-                if (publicKey.allowCredentials) {
-                    publicKey.allowCredentials = publicKey.allowCredentials.map(
-                        (item) => ({
-                            ...item,
-                            id: base64urlToUint8Array(item.id),
-                        }),
-                    );
-                }
-
-                const credential = await navigator.credentials.get({
-                    publicKey,
-                });
-
-                const response = await axios.post(
-                    route("webauthn.login"),
-                    formatCredentialForServer(credential),
-                );
-
-                console.log("Login response:", response.data);
-
-                if (response.data.success) {
-                    const redirectUrl = response.data.redirect_url || "/";
-                    router.visit(redirectUrl);
-                } else {
-                    errorAlert(response.data.message || "Passkey login failed");
-                }
-                return;
-            }
-        } catch (error) {
-            console.error("Passkey error:", error);
-
-            if (error.response?.data?.message) {
-                errorAlert(error.response.data.message);
-            } else if (error.name === "NotAllowedError") {
-                errorAlert("Authentication cancelled. Please try again.");
-            } else if (error.name === "InvalidStateError") {
-                errorAlert("This device already has a passkey registered.");
-            } else {
-                errorAlert("Unable to authenticate. Please try again.");
-            }
-        } finally {
-            setPasskeyLoading(false);
-        }
-    };
+     
 
     const submit = (e) => {
         setAnimate("");
@@ -503,20 +385,8 @@ export default function Login({ status, canResetPassword }) {
             });
     };
 
-    // Get button text based on state
-    const getPasskeyButtonText = () => {
-        if (passkeyLoading) return "PROCESSING...";
-        if (hasPasskey === true) return "LOGIN WITH PASSKEY";
-        return "CHECKING PASSKEY...";
-    };
 
-    // Get button styling based on state
-    const getPasskeyButtonStyle = () => {
-        if (hasPasskey === true) {
-            return "hover:!bg-green-500"; // Green for login
-        }
-        return "hover:!bg-gray-500"; // Default
-    };
+  
 
     const handlePromptClose = () => {
         setShowSetupPrompt(false);
@@ -530,9 +400,9 @@ export default function Login({ status, canResetPassword }) {
     console.log("hasPasskey:", isWebAuthnSupported());
 
     return (
-        <GuestLayout>
+        <GuestLayout className="bg-[#A2E4B8]">
             <Head title="Log in" description="Log in to your account" />
-            <div className="min-h-[90vh] bg-[#A2E4B8] relative flex flex-col items-center justify-center py-12 md:py-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div className="min-h-[90vh]  relative flex flex-col items-center justify-center py-12 md:py-18 px-4 sm:px-6 lg:px-8 overflow-hidden">
                 {/* Decorative Background Elements */}
                 {/* <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
                     <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-float"></div>
@@ -548,7 +418,7 @@ export default function Login({ status, canResetPassword }) {
 
                 <div className="relative w-full">
                     <div className="text-center mb-10">
-                        <h2 className="text-3xl md:text-4xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                        <h2 className="text-3xl md:text-5xl lg:text-6xl font-gulfs whitespace-nowrap text-black uppercase tracking-wider mb-1 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                             Welcome{" "}
                             <span className="text-gradient-wishlist">
                                 Back!

@@ -458,9 +458,9 @@ export default function Dashboard(props) {
 
     return (
             <>
-                <Guest auth={auth.user} user={user}>
+                <Guest auth={auth.user} user={user} className='bg-[#A2E4B8]'>
                     <Head title={`${user?.name || auth?.user?.name} - Spenny Piggy`} />
-                    <div className="wishlistPage bg-[#A2E4B8] min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
+                    <div className="wishlistPage  min-h-screen !pt-8 sm:!pt-6 pb-0 sm:pb-5 ">
 
                         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
                             {/* Removed glowing orbs to fit brutalism style better, or kept them minimal */}
@@ -522,7 +522,7 @@ export default function Dashboard(props) {
 
 
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto px-4 md:px-6">
+                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto px-0 xl:px-6">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
                                 {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>

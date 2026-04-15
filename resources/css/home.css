@@ -154,7 +154,7 @@ select#country{text-transform:capitalize;border-radius:10px;border:1px solid var
 .wishlistdetial{min-height:140px;padding:20px;}
 .wishlistdetial h3{color:var(--gray2);}
 .sharelinks{text-align:center;border-top:1px solid var(--voilet);padding:8px;}
-.sharelinks a,.userprofilesec h2,.userprofilesec h1{font-style:normal;text-transform:uppercase;text-align:center;}
+.sharelinks a,.userprofilesec h2 {font-style:normal;text-transform:uppercase;text-align:center;}
 .sharelinks a{color:var(--pink);text-shadow:1px 1px 0 var(--black);line-height:19px;}
 .userphoto img{border:4px solid #000;}
 .accountphotosm,.wishlistModal .accordion-button::after{display:none;}
