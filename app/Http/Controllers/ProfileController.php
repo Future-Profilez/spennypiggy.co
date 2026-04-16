@@ -212,7 +212,9 @@ class ProfileController extends Controller
                 }
 
                 $user->bio = $request->bio;
-                $user->profile_status_lock = 1;
+                if ($user->profile_status_lock == 2) {
+                    $user->profile_status_lock = 1;
+                }
                 if ($userProfileStatus) {
                     $userProfileStatus->user_profile_status = 0;
                     $userProfileStatus->save();

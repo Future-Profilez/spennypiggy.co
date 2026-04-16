@@ -86,7 +86,7 @@ class UserProfileService
         if (!$isOwner) {
             $query->where('status', 'active')->where('is_approved', 1);
         }
-        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved'])
+        return $query->select(['id', 'uuid', 'title', 'description', 'price', 'currency', 'type', 'status', 'media_url', 'category', 'created_at', 'sla_hours', 'is_approved', 'reason'])
             ->latest()
             ->get()
             ->toArray();

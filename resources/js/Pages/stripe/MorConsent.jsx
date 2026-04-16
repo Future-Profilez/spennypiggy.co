@@ -29,10 +29,10 @@ export default function MorConsent(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title="Merchant of Record Consent - Spenny Piggy" />
             <div className="bg-white min-h-screen py-12 md:py-20">
-                <div className="max-width-800 mx-auto px-4">
+                <div className="containerbox mx-auto px-4">
                     {/* Header Section */}
                     <div className="text-center mb-10">
-                        <h1 className="text-[29px] font-gulfs uppercase text-pink mb-2">
+                        <h1 className="text-[29px] uppercase text-pink mb-2">
                             Merchant of Record Acknowledgement
                         </h1>
                         <p className="text-black text-lg font-CeraGR max-w-2xl mx-auto">

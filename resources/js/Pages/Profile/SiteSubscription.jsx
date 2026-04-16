@@ -11,6 +11,7 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                 ? "FREE_TRIAL"
                 : "EXPIRED");
 
+
     const isActive = resolvedStatus === "ACTIVE";
     const isTrial = resolvedStatus === "FREE_TRIAL";
     const isExpiredOrInactive = resolvedStatus === "EXPIRED" || resolvedStatus === "INACTIVE";
@@ -24,33 +25,10 @@ export default function SiteSubscription({ children, auth, subscription_status, 
         hasCapability;
 
     const canActivate = isExpiredOrInactive || isEnabled;
-
-    return (
-        <>
-        <div className="w-full finishs mb-6  bg-white  ">
-            <h2 className="text-[22px] tracking-wider font-gulfs uppercase pb-3 goaltitle text-black  ">
-                Subscription Status
-            </h2>
-                {resolvedStatus === "EXPIRED" ? (
-                    <p className="mb-3 text-[14px] font-poppins text-start text-red-600">
-                        Your monthly subscription has expired. Activate again to keep creator tools and payments enabled.
-                    </p>
-                ) : resolvedStatus === "INACTIVE" ? (
-                    <p className="mb-3 text-[14px] font-poppins text-start text-gray-700">
-                        Activate your monthly subscription to unlock creator tools and accept payments.
-                    </p>
-                ) : isActive ? (
-                    <p className="mb-3 text-[14px] font-poppins text-start text-green-700">
-                        Your subscription is active.
-                    </p>
-                ) : isTrial ? (
-                    <p className="mb-3 text-[14px] font-poppins text-start text-green-700">
-                        Your free trial is active.
-                    </p>
-                ) : (
-                    ""
-                )}
-                <p className="mb-4 text-[15px] font-poppins text-start text-gray-700">
+    
+    const SUBSCRIPTIONBOX = () => { 
+        return <>
+            <p className="mb-4 text-[15px] font-poppins text-start text-gray-700">
                     Enjoy a{" "}
                     <span className="text-green-700 font-bold uppercase">
                         3-days free trial
@@ -78,6 +56,41 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                             ? "Restart Subscription Again"
                             : "Start Free Trial"}
                 </Link>
+        </>
+    }
+    return (
+        <>
+        <div className="w-full finishs mb-6  bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 rounded-[20px] md:rounded-[30px] ">
+            <h2 className="text-[22px] font-bold uppercase pb-3 goaltitle text-black  ">
+                Subscription Status
+            </h2>
+                {resolvedStatus === "EXPIRED" ? (
+                    <>
+                        <p className="mb-3 text-[18px] font-poppins text-start text-red-600">
+                            Your monthly subscription has expired. Activate again to keep creator tools and payments enabled.
+                        </p>
+                        <SUBSCRIPTIONBOX />
+                    </>
+                ) : resolvedStatus === "INACTIVE" ? (
+                    <>
+                        <p className="mb-3 font-bold text-[16px] font-poppins text-start text-gray-700">
+                            Activate your monthly subscription to unlock creator tools and accept payments.
+                        </p>
+                        <SUBSCRIPTIONBOX />
+                    </>
+                ) : isActive ? (
+                    <p className="mb-3 text-[17px]  font-poppins text-start text-green-700">
+                        Your subscription is active.
+                    </p>
+                ) : isTrial ? (
+                    <p className="mb-3 text-[18px] font-poppins text-start text-green-700">
+                        Your free trial is active.
+                    </p>
+                ) : (
+                    ""
+                )}
+                
+                
 
                 {!isActive && !isEnabled && (
                     <p className="text-xs text-red-500 mt-2 text-center">
@@ -87,7 +100,7 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                                     Please <a href="/stripe/enable_card_payments" className="underline font-bold text-red-700 hover:text-red-800">enable card payments</a> to activate your subscription.
                                 </span>
                             )
-                            : "Please ensure your avatar, bio, and social links are approved before activating your subscription."}
+                            : ""}
                     </p>
                 )}
 

@@ -7,6 +7,13 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { post, processing } = useForm();
     const url = `/task/${task.uuid}`;
+    const isRejected = task?.is_approved === 2;
+    const isApproved = task?.is_approved === 1;
+    const isPending = !isApproved && !isRejected;
+    const reviewMessage =
+        task?.reason ||
+        task?.is_approved_reason ||
+        "Item is currently under review. Please check again after 30 minutes.";
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -112,9 +119,17 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
                         </div> 
                     </div>
                 </div>
-                {task.is_approved  !== 1 ?
-                    <p className="!pt-3 block text-red-500 font-bold">Unapproved : {task.is_approved_reason || 'Item is currently under review. Please check again after 30 minutes.'}</p> 
-                : ''}
+                {isRejected ? (
+                    <p className="!pt-3 block text-red-600 font-bold">
+                        Action Required: {reviewMessage}
+                    </p>
+                ) : isPending ? (
+                    <p className="!pt-3 block text-yellow-700 font-bold">
+                        Under Review: {reviewMessage}
+                    </p>
+                ) : (
+                    ""
+                )}
         </li>
     );
 }

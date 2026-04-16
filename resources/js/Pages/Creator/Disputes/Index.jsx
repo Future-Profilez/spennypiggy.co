@@ -80,7 +80,7 @@ export default function DisputesIndex({ auth, disputes }) {
                         </div>
                     </div>
 
-                    <div className="bg-[#1a1a1a] rounded-[40px] p-6 md:p-8 shadow-xl border border-gray-800">
+                    <div className="bg-[#1a1a1a] rounded-[30px] p-6 md:p-8 shadow-xl border border-gray-800">
                         {disputes.data.length === 0 ? (
                             <div className="text-center py-16 flex flex-col items-center justify-center">
                                 <div className="bg-gray-800/50 p-6 rounded-full mb-4">

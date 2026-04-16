@@ -132,7 +132,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   return (
     <div className={`${item?.status == 0 ? 'inactive-item' : ''} h-full`}>
        <div className={`shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] 
-        hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all rounded-[40px] relative 
+        hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all rounded-[30px] relative 
         border-[3px] border-black bg-white overflow-hidden w-full h-full flex flex-col`}>
                   {IsloggedIn && item && item?.approved === 0 ?
                     <div className='absolute top-8 z-10 m-3 bg-yellow-500 text-[10px] p-2 text-center rounded-[25px] md:rounded-[30px] ' >Membership waiting for approval. Currently only you can see this membership.</div>
@@ -140,8 +140,8 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                   
                     {IsloggedIn ?  
                       <Menu as="div" className="absolute top-2 right-2 z-10 m-1">
-                        <Menu.Button className="edit-post pr-0 flex items-center justify-center p-2 rounded-full hover:bg-black/10 transition-colors focus:outline-none">
-                          <div className='dots flex flex-col gap-[3px]' >
+                        <Menu.Button className="edit-post p-2 px-3 flex items-center justify-center p-2 rounded-full hover:bg-black/10 transition-colors focus:outline-none">
+                          <div className='dots flex flex-col gap-[0px]' >
                             <span className='bg-white w-1 h-1 rounded-full' ></span>
                             <span className='bg-white w-1 h-1 rounded-full' ></span>
                             <span className='bg-white w-1 h-1 rounded-full' ></span>
