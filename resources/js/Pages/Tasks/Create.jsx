@@ -36,13 +36,13 @@ export default function Create({ auth, currencySymbol }) {
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="Create Task" />
-            <div className="loginPage bg-white px-3 py-5 min-h-screen font-public-sans">
-                <div className="container">
-                    <div className="mx-auto max-w-[900px]">
-                        <div className="text-center">
+            <div className="loginPage bg-white px-3 py-8 md:py-18 min-h-screen font-public-sans">
+                <div className="container"> 
+                    <div className="mx-auto max-w-[900px]"> 
+                        <div className="text-center">  
                             <h2 className="font-fre text-3xl md:text-4xl uppercase tracking-wider ">
-                                Create New Task
-                            </h2>
+                                Create New Task 
+                            </h2> 
                             <p className="text-black mt-1 font-bold text-lg tracking-wide capitalize">
                                 Offer something unique to your supporters
                             </p>

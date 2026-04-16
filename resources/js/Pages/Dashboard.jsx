@@ -331,7 +331,7 @@ export default function Dashboard(props) {
                                                         </div>
 
                                                         <div className="flex justify-center">
-                                                            <button className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
+                                                            <button onClick={()=>setWishOptions(!wishOptions)} className="bg-gray-200 text-back rounded-[30px] px-3 py-2">Back</button>
                                                         </div>
                                                     </div>
                                                 ) : (

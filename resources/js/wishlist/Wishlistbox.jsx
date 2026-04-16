@@ -121,11 +121,11 @@ export default function Wishlistbox(props) {
         >
             <div className="bg-[#fdfbf7] rounded-[30px] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative border-[3px] border-black w-full min-h-[300px] flex flex-col justify-between ">
                 {IsloggedIn && itm && itm.is_approved === 0 && (
-                    <div className="approvalmessge membership m-2 md:mt-3 rounded-[25px]  p-3 py-2 mb-2">
+                    <div className="approvalmessge membership m-6 md:mt-6 rounded-[20px] !text-[12px] p-6 mb-2">
                         {itm.edited_reason && itm.edited_reason.trim() !== "" ? (
                             <>
-                                <p className="font-semibold text-sm mb-1">Edit requested by admin reason : </p>
-                                <p className="text-sm opacity-90">{itm.edited_reason}</p>
+                                <p className="font-semibold  mb-1 text-red-600">Edit requested by admin reason : </p>
+                                <p className=" opacity-90">{itm.edited_reason}</p>
                             </>
                         ) : (
                             <p>

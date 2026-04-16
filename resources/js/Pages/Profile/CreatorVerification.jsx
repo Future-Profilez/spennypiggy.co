@@ -33,9 +33,29 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const [status, setStatus] = useState();
     const [introStatus, setIntroStatus] = useState(status && status.intro);
     const [filledSteps, setFilledSteps] = useState(0);
+    const creatorUser = auth?.user || user;
     const hasAnySocialMedia =
         slinks &&
         Object.values(slinks).some((value) => value !== null && value !== "");
+    const hasSubscription =
+        creatorUser?.is_subscribed == 1 ||
+        (creatorUser?.subscription_status ?? 0) >= 1;
+    const socialStatus = slinks?.status;
+    const isSocialApproved = socialStatus == 1;
+    const isSocialPending = hasAnySocialMedia && socialStatus == 0;
+    const isSocialRejected = socialStatus == 2;
+    const avatarStatus = creatorUser?.avatar_approved;
+    const bioStatus = creatorUser?.bio_approved;
+    const profileStatusLock = creatorUser?.profile_status_lock;
+    const profileRejectReason =
+        creatorUser?.profile_reject_reason || user?.profile_reject_reason;
+    const hasBasicDetails =
+        hasAnySocialMedia && creatorUser?.avatar && creatorUser?.bio;
+    const isSubmittedForReview = profileStatusLock == 1 && hasBasicDetails;
+    const canSubmitForReview =
+        profileStatusLock != 1 &&
+        profileStatusLock != 2 &&
+        hasBasicDetails;
     const updateProfileSteps = () => {
         if (typeof window !== "undefined") {
             window.location.reload(false);
@@ -44,14 +64,26 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
 
     useEffect(() => {
         let steps = 0;
-        if (auth?.user?.bio && auth?.user?.bio_approved == 1) steps += 1;
-        if (auth?.user?.avatar && auth?.user?.avatar_approved == 1) steps += 1;
-        if (auth?.user?.is_subscribed == 1) steps += 1;
-        if (auth?.user?.identity_status == 1) steps += 1;
-        if (auth?.user?.stripe_details_submitted == 1) steps += 1;
-        if (hasAnySocialMedia) steps += 1;
+        if (creatorUser?.bio && (bioStatus == 0 || bioStatus == 1)) steps += 1;
+        if (creatorUser?.avatar && (avatarStatus == 0 || avatarStatus == 1))
+            steps += 1;
+        if (hasSubscription) steps += 1;
+        if (creatorUser?.identity_status == 1) steps += 1;
+        if (creatorUser?.stripe_details_submitted == 1) steps += 1;
+        if (hasAnySocialMedia && (socialStatus == 0 || socialStatus == 1))
+            steps += 1;
         setFilledSteps(steps);
-    }, []);
+    }, [
+        creatorUser?.bio,
+        creatorUser?.avatar,
+        bioStatus,
+        avatarStatus,
+        hasSubscription,
+        creatorUser?.identity_status,
+        creatorUser?.stripe_details_submitted,
+        hasAnySocialMedia,
+        socialStatus,
+    ]);
 
     const error = (() => {
         try {
@@ -59,6 +91,153 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         } catch {
             return null;
         }
+    })();
+
+    const nextStep = (() => {
+        if (profileStatusLock == 2) {
+            if (creatorUser?.identity_status != 1) {
+                return {
+                    title: "Complete identity verification",
+                    description:
+                        "This unlocks payments and helps keep your account secure.",
+                    action: (
+                        <Link
+                            className={"text-pink font-bold"}
+                            href="/stripe/identity-verification"
+                        >
+                            Verify identity
+                        </Link>
+                    ),
+                };
+            }
+            if (creatorUser?.stripe_details_submitted != 1) {
+                return {
+                    title: "Connect your Stripe account",
+                    description:
+                        "Finish setting up Stripe so you can receive funds.",
+                    action: (
+                        <Link className={"text-pink font-bold"} href="/stripe">
+                            Connect Stripe
+                        </Link>
+                    ),
+                };
+            }
+            return {
+                title: "All steps completed",
+                description:
+                    "Your creator profile is ready. You can now use creator features.",
+                action: null,
+            };
+        }
+
+        if (isSubmittedForReview) {
+            return {
+                title: "Waiting for admin review",
+                description:
+                    "Your profile is under review. You can still complete other steps while waiting.",
+                action: null,
+            };
+        }
+
+        if (profileStatusLock == 0 && profileRejectReason) {
+            return {
+                title: "Fix issues and resubmit",
+                description:
+                    "Update your profile based on the rejection reason and submit again.",
+                action: (
+                    <Link
+                        className="text-pink font-bold"
+                        href={route("update.profile.lock.status")}
+                        method="get"
+                    >
+                        Submit for re-verification
+                    </Link>
+                ),
+            };
+        }
+
+        if (!hasSubscription) {
+            return {
+                title: "Start your 3-day free trial",
+                description: "You can do this anytime. It doesn't block other steps.",
+                action: (
+                    <Link
+                        className="text-pink font-bold"
+                        href="/activate-subscription"
+                    >
+                        Start free trial
+                    </Link>
+                ),
+            };
+        }
+
+        if (!hasAnySocialMedia) {
+            return {
+                title: "Add at least one social handle",
+                description:
+                    "You can add socials now. Approval can happen in parallel.",
+                action: null,
+            };
+        }
+
+        if (isSocialRejected) {
+            return {
+                title: "Update your social handles",
+                description:
+                    "Your social handles were rejected. Update and resubmit.",
+                action: null,
+            };
+        }
+
+        if (!creatorUser?.avatar || avatarStatus == 2) {
+            return {
+                title: "Upload a profile picture",
+                description:
+                    "Upload a clear avatar. Review will happen in parallel.",
+                action: null,
+            };
+        }
+
+        if (!creatorUser?.bio || bioStatus == 2) {
+            return {
+                title: "Write your bio",
+                description:
+                    "Add your bio now. Review will happen in parallel.",
+                action: null,
+            };
+        }
+
+        if (canSubmitForReview) {
+            return {
+                title: "Submit your profile for review",
+                description:
+                    "Submit now once your socials, avatar, bio, and subscription are added.",
+                action: (
+                    <Link
+                        className="text-pink font-bold"
+                        href={route("update.profile.lock.status")}
+                        method="get"
+                    >
+                        Submit for review
+                    </Link>
+                ),
+            };
+        }
+
+        if (isSocialPending || avatarStatus == 0 || bioStatus == 0) {
+            return {
+                title: "Some steps are under review",
+                description:
+                    "You can keep working on other parts of your profile while we review.",
+                action: null,
+            };
+        }
+
+        return {
+            title: "Continue completing steps",
+            description: "You can complete steps in any order.",
+            action: null,
+        };
     })();
 
     return (
@@ -82,8 +261,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 }
             `}</style>
 
-            <div className="profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]   mb-4 p-3 lg:!p-6">
-                <h2 className="mb-1 text-[20px] font-bold">
+            <div className="profileSteps bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[30px]   mb-4 p-3 lg:!p-8">
+                <h2 className="mb-1 text-[20px] uppercase font-bold">
                     Profile Verification
                 </h2>
                 <p className="text-gray-500 mb-3">
@@ -91,13 +270,31 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 </p>
                 <CustomProgressBar now={filledSteps} max={6} />
 
-                {auth?.user?.profile_status_lock == 0 && auth?.user?.profile_reject_reason ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-[20px] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-gray-900 font-bold">
+                                Recommended next step (any order): {nextStep.title}
+                            </p>
+                            <p className="text-gray-600 text-sm mt-1">
+                                {nextStep.description}
+                            </p>
+                        </div>
+                        {nextStep.action ? (
+                            <div className="shrink-0">{nextStep.action}</div>
+                        ) : (
+                            ""
+                        )}
+                    </div>
+                </div>
+
+                {profileStatusLock == 0 && profileRejectReason ? (
                     <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-[20px]   mt-3">
                         <strong className="text-red-800">
                             Profile Verification Rejected
                         </strong>
                         <p className="text-sm capitalize mb-2">
-                            {auth?.user?.profile_reject_reason}
+                            {profileRejectReason}
                         </p>
                         <Link className="text-xs px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full "
                             href={route("update.profile.lock.status")}
@@ -110,7 +307,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ""
                 )}
 
-                {auth?.user?.bio && auth?.user?.avatar && auth?.user?.profile_status_lock == 1 ? (
+                {creatorUser?.bio && creatorUser?.avatar && profileStatusLock == 1 ? (
                     <div className="text-yellow-600 bg-yellow-50 border !border-yellow-500 p-4 rounded-[30px] mt-3" > 
                             <>
                                 <strong className="text-yellow-800">
@@ -168,29 +365,6 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     ""
                 )}
 
-                {IsloggedIn &&
-                user?.profile_reject_reason != null &&
-                user?.profile_status_lock == 0 ? (
-                    <>
-                        <div className="text-red-600 bg-red-50 border !border-red-500 p-3 rounded-[20px]   mt-3">
-                            <strong className="text-red-800">
-                                Profile Verification Rejected
-                            </strong>
-                            <p className="text-sm">
-                                {user?.profile_reject_reason}
-                            </p>
-                        </div>
-                        <Link
-                            className="bg-[#fce100] mt-3 mb-4 block rounded-[30px]  px-3 py-2 text-sm text-center focus:opacity-[0.8]"
-                            href="/update-profile-lock-status"
-                        >
-                            Submit Re-verification Request
-                        </Link>
-                    </>
-                ) : (
-                    ""
-                )}
-
                 {/* Step 1: Social Handles */}
                 <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px] p-4 mt-3">
                     <div className="md:flex items-center justify-between">
@@ -226,12 +400,30 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                         </div>
 
-                        {slinks?.status !== 1 && (
-                            <Social
-                                classes="bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm md:ms-[30px]"
-                                links={slinks}
-                            />
-                        )}
+                        <div className="flex items-center gap-2 w-full md:w-auto md:ms-[30px]">
+                            {isSocialApproved ? (
+                                <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-green-600">
+                                    Approved
+                                </span>
+                            ) : isSocialPending ? (
+                                ''
+                            ) : isSocialRejected ? (
+                                <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-red-600">
+                                    Rejected
+                                </span>
+                            ) : (
+                                <span className="text-xs text-white inline-block px-2 rounded-[30px] p-1 bg-gray-600">
+                                    Required
+                                </span>
+                            )}
+
+                            {slinks?.status !== 1 && (
+                                <Social buttontext='Add'
+                                    classes="bg-gray-200 my-2 rounded-xl px-2 py-2 w-full text-sm"
+                                    links={slinks}
+                                />
+                            )}
+                        </div>
                     </div>
 
                     {/* 🟡 UNDER REVIEW */}
@@ -242,10 +434,29 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </p>
                         </div>
                     )}
-                </div>
 
+                    {slinks?.status == 2 && (
+                        <div className="mt-3 px-3 py-3 bg-red-50 border border-red-200 rounded-[18px]">
+                            <p className="text-red-700 font-semibold text-sm">
+                                Social Media Edit Request Rejected
+                            </p>
+                            {slinks?.reason && (
+                                <p className="text-gray-600 text-sm mt-1">
+                                    <span className="font-medium text-gray-700">
+                                        Reason:
+                                    </span>{" "}
+                                    {slinks.reason}
+                                </p>
+                            )}
+                            <p className="text-red-500 text-xs mt-2">
+                                Please update your social links as per the
+                                requested changes.
+                            </p>
+                        </div>
+                    )}
+                </div>
                 {/* Step 2: Avatar */}
-                {auth?.user?.avatar_approved == 2 ? (
+                {avatarStatus == 2 ? (
                     <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px] flex items-center p-4 mt-3 justify-between">
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div className="check-icon mr-2 pt-1">
@@ -273,8 +484,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             global_currency={global_currency}
                         />
                     </div>
-                ) : auth?.user?.avatar ? (
-                    auth?.user?.avatar_approved == 0 ? (
+                ) : creatorUser?.avatar ? (
+                    avatarStatus == 0 ? (
                         <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
                                 <div className={`check-icon mr-2 pt-1`}>
@@ -322,7 +533,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         <div className="step-title flex max-w-[390px] pr-3">
                             <div
                                 className={`check-icon mr-2 pt-1 ${
-                                    auth?.user?.avatar_approved == 1
+                                    avatarStatus == 1
                                         ? "checked"
                                         : ""
                                 }`}
@@ -353,8 +564,8 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                 )}
 
                 {/* Step 3: Bio */}
-                {auth?.user?.bio ? (
-                    auth?.user?.bio_approved === 0 ? (
+                {creatorUser?.bio ? (
+                    bioStatus === 0 ? (
                         /* 🔄 UNDER REVIEW */
                         <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
@@ -377,7 +588,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             </div>
                             <BsStopwatch color="#dd9100" size="28px" />
                         </div>
-                    ) : auth?.user?.bio_approved === 1 ? (
+                    ) : bioStatus === 1 ? (
                         /* ✅ APPROVED */
                         <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]   rounded-[25px]  flex items-center p-4 mt-3 justify-between">
                             <div className="step-title flex max-w-[390px] pr-3">
@@ -486,7 +697,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                     <div className="step-title flex max-w-[390px] pr-3">
                         <div
                             className={`check-icon mr-2 pt-1 ${
-                                auth?.user?.is_subscribed == 1 ? "checked" : ""
+                                hasSubscription ? "checked" : ""
                             }`}
                         >
                             <div
@@ -510,11 +721,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                         </div>
                     </div>
 
-                    {auth?.user?.avatar_approved == 1 &&
-                    auth?.user?.bio_approved == 1 &&
-                    auth?.user?.is_subscribed == 0 &&
-                    hasAnySocialMedia &&
-                    slinks?.status == 1 ? (
+                    {!hasSubscription ? (
                         <Link
                             className="bg-pink-500 my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] !text-white"
                             href="/activate-subscription"
@@ -522,9 +729,57 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                             Start for Free
                         </Link>
                     ) : (
-                        <Link className="bg-gray-200 my-2 text-center max-w-[130px] rounded-xl px-2 py-2 w-full text-sm md:ms-[30px] disabled">
-                            Start for Free
+                        <span className="text-green-600 font-semibold md:ms-[30px]">
+                            Active
+                        </span>
+                    )}
+                </div>
+
+                <div className="profile-steps border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-[25px] flex items-center p-4 mt-3 justify-between">
+                    <div className="step-title flex max-w-[390px] pr-3">
+                        <div
+                            className={`check-icon mr-2 pt-1 ${
+                                profileStatusLock == 2 ? "checked" : ""
+                            }`}
+                        >
+                            <div
+                                dangerouslySetInnerHTML={{
+                                    __html: checkedItem,
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <h2 className="text-gray-900 font-bold">
+                                Submit Profile For Review
+                            </h2>
+                            <p className="text-gray-500 text-[14px]">
+                                Send your profile to admins for final approval.
+                            </p>
+                        </div>
+                    </div>
+
+                    {profileStatusLock == 2 ? (
+                        <span className="text-green-600 font-semibold">
+                            Approved
+                        </span>
+                    ) : isSubmittedForReview ? (
+                        <span className="text-yellow-600 font-semibold">
+                            Under Review
+                        </span>
+                    ) : profileRejectReason ? (
+                        <span className="text-red-600 font-semibold">
+                            Rejected
+                        </span>
+                    ) : canSubmitForReview ? (
+                        <Link
+                            className={"text-pink font-semibold"}
+                            href={route("update.profile.lock.status")}
+                            method="get"
+                        >
+                            Submit
                         </Link>
+                    ) : (
+                        <span className="text-gray-400">Locked</span>
                     )}
                 </div>
 

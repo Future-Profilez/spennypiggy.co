@@ -129,9 +129,8 @@ export default function Stripe(props) {
             <Authenticated auth={auth.user} user={user}>
                 <Head title="Merchant of Record Consent - Spenny Piggy" />
                 <div className="bg-white min-h-screen py-12 md:py-20">
-                    <div className="max-width-800 mx-auto px-4">
-                        {/* Header Section */}
-                        <div className="text-center mb-10">
+                    <div className="containerbox mx-auto px-4">
+                        <div className="text-center mb-10"> 
                             <h1 className="text-[25px] font-bold font-CeraGR  uppercase text-pink mb-2">
                                 Merchant of Record Acknowledgement
                             </h1>
@@ -507,7 +506,7 @@ export default function Stripe(props) {
         <Authenticated auth={auth.user} user={user}>
             <Head title="Connect Stripe Account - Spenny Piggy" />
             <div className="bg-white min-h-screen py-12 md:py-20">
-                <div className="max-width-800 mx-auto px-4">
+                <div className="containerbox mx-auto px-4">
                     {/* Header Section */}
                     <div className="text-center mb-2">
                         <h1 className="text-[29px] font-gulfs uppercase text-pink mb-1">
@@ -721,7 +720,7 @@ export default function Stripe(props) {
 
                     <div className="flex justify-center">
                         <button
-                            className={`${country == null || country == "" ? "disabled" : ""} ${!checkRef.current.checked ? "disabled" : ""} block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                            className={`${country == null || country == "" ? "disabled" : ""} ${checkRef && checkRef.current &&  !checkRef.current.checked ? "disabled" : ""} block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
                             onClick={checkTerms}
                             disabled={
                                 connecting ||

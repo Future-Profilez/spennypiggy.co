@@ -35,7 +35,7 @@ export default function AddSocial({
     openSocial, classes,
     sLinks,
     links,
-    type,
+    type, buttontext,
     redirect_url,
 }) {
     const { auth } = usePage().props;
@@ -363,9 +363,9 @@ export default function AddSocial({
             action={close}
             space="4"
             modalclass="pinkmodal full"
-            size="md"
-            classes={classes}
-            text={removetext ? "" : "Add Social Links"}
+            size="md" 
+            classes={classes} 
+            text={buttontext ? buttontext : removetext ? "" : "Add Social Links"}
         >
             <div className="editprofileModalInner p-3  ">
                 <div className="swishinfo">

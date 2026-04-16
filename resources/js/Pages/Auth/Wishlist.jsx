@@ -738,7 +738,7 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     </div>
                                 </div>
 
-                                <div className="mb-6 border-t border-gray-100 pt-6">
+                                <div className="hidden mb-6 border-t border-gray-100 pt-6">
                                     <label className="mb-4 text-left block font-semibold text-gray-700">
                                         Wish Type
                                     </label>

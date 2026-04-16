@@ -212,8 +212,8 @@ export default function Index({
     return (
         <Guest auth={auth.user} user={auth.user}>
             <Head title="My Tasks" />
-            <div className="px-3 py-5 min-h-screen !bg-white">
-                <h2 className="text-4xl font-fre uppercase mb-8 text-center text-pink-500">
+            <div className="px-3 py-8 md:py-18 min-h-screen !bg-white">
+                <h2 className="text-3xl md:text-4xl font-fre uppercase mb-8 text-center text-pink-500">
                     Task Dashboard
                 </h2>
                 <div className="max-w-4xl mx-auto space-y-8">
