@@ -143,9 +143,9 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md px-6 ">
-            <div className="bg-[#1a1a1a] border border-pink-500/30 rounded-xl md:rounded-3xl p-4 md:p-8 max-w-[400px] w-full shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-md px-6 ">
+            <div className="bg-[#ffffff] border !border-2 border-black  rounded-[50px] md:rounded-[50px] p-4 md:p-8 max-w-[400px] w-full shadow-[5px_5px_0px_rgba(0,0,0,0.9)] relative overflow-hidden">
+                {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div> */}
                 
                 <div className="text-center mb-8">
                     <div className="w-20 h-20 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-pink-500/30">
@@ -153,28 +153,27 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
                         </svg>
                     </div>
-                    <h3 className="text-xl md:text-2xl text-white mb-2  uppercase font-bold">Faster Login Next Time?</h3>
+                    <h3 className="text-lg md:text-xl text-black mb-2  uppercase font-bold">Faster Login Next Time?</h3>
                     <p className="text-gray-400">
                         Set up a Passkey to use FaceID, Fingerprint, or Windows Hello for instant login instead of typing your password.
                     </p>
                 </div>
 
                 <div className="space-y-4">
-                    <LoaderButton
+                    <button
                         type="button"
                         onClick={handleSetup}
                         disabled={loading}
-                        className="w-full !border-0  !bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white tracking-wider py-3 px-6 rounded-full transition-all transform hover:scale-[1.02] shadow-lg text-sm md:text-normal flex justify-center items-center"
+                        className="w-full !border-0  !bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white tracking-wide py-3 px-6 rounded-full transition-all transform hover:scale-[1.02] shadow-lg text-normal md:text-normal flex justify-center items-center"
                         spinnerclass="fill-white"
                     >
                         {loading ? "SETTING UP..." : "SET UP PASSKEY"}
-                    </LoaderButton>
-                    
+                    </button>
                     <button
                         type="button"
                         onClick={onSkip}
                         disabled={loading}
-                        className="w-full bg-transparent text-gray-400 hover:text-white font-medium py-2 px-4 rounded-full transition-colors focus:outline-none"
+                        className="w-full bg-transparent text-gray-400 hover:text-black font-medium py-2 px-4 rounded-full transition-colors focus:outline-none"
                     >
                         Skip for now
                     </button>

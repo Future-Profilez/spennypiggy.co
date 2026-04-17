@@ -120,6 +120,11 @@ trait RiskEnforcement
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $identity->id,
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']),
+                        'reserve_amount_minor' => (function () use ($creator, $context) {
+                            $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']);
+                            $reservePercent = (int) (\App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid])->reserve_percent ?? 0);
+                            return $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
+                        })(),
                         'currency' => 'gbp',
                         'status' => 'step_up',
                         'reason_codes' => $riskResult['reason_codes'] ?? [],

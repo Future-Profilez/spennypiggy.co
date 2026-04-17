@@ -524,7 +524,7 @@ export default function Dashboard(props) {
 
 
                         {user && user.role == 1 ? (
-                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto px-0 xl:px-6">
+                            <div className="wishManage sticky top-8 w-full max-w-[1200px] mx-auto">
                                 {/* Creator Subscription Widget - Show on all tabs for creators */}
                                 {/* {IsloggedIn && auth?.user && auth?.user?.role == 1 && (
                                         <Suspense fallback={<div className="mb-4">Loading subscription status...</div>}>

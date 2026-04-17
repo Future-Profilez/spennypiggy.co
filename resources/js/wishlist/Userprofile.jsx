@@ -23,7 +23,7 @@ export default function Userprofile({ IsloggedIn }) {
     
     return (
         <div className="userprofilesec mb-6 relative">
-            <div className="userPr px-0 xl:px-8 py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[100%] xl:max-w-none rounded-3xl"> 
+            <div className="userPr  py-6 md:py-8 lg:flex items-center justify-center lg:justify-between mt-[-90px] md:mt-[-20px] relative z-auto mx-auto max-w-[100%] xl:max-w-none rounded-3xl"> 
                 <div className="update-profile text-center lg:flex items-center justify-center lg:justify-start">
                     <div className="fading userphoto relative !flex items-center justify-center mb-4 lg:mb-0 !mt-[-60px] md:!mt-[-80px] lg:!mt-[0px]">
                         <img
@@ -140,32 +140,43 @@ export default function Userprofile({ IsloggedIn }) {
                             ""
                         )}
                         <div className="mt-4 flex items-center justify-center lg:justify-end gap-1">
-                            {!IsloggedIn ? (
-                                <div className=""> 
-                                    <FollowButton 
-                                    targetUserId={opponantUser?.id} 
-                                    isInitiallyFollowing={follow_status} />
-                                </div>
-                            ) : (
-                                ""
-                            )}
-                            {!IsloggedIn ? user && user.stripe_details_submitted == 1 && (
-                                      <div>
-                                        {user && user.role == 1 ? 
-                                            <SendTip card_capabilities={card_capabilities} />
-                                        :  "" }
-                                      </div>
-                                  )
-                                : (
-                                    ''
-                                ) || ""}
-
-                                {/* <EditProfile
+                            
+                            {IsloggedIn ?
+                                <>
+                                    <EditProfile 
+                                        profilepage={1}
                                         user={user}
                                         classes={"bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all uppercase text-black font-black text-xs md:text-sm px-6 py-3 rounded-full tracking-widest"}
                                         global_currency={global_currency}
                                     /> 
-                                */}
+                                </>
+                                :
+                                <>
+                                    {!IsloggedIn ? (
+                                        <div className=""> 
+                                            <FollowButton 
+                                            targetUserId={opponantUser?.id} 
+                                            isInitiallyFollowing={follow_status} />
+                                        </div>
+                                    ) : (
+                                        ""
+                                    )}
+                                    {!IsloggedIn ? user && user.stripe_details_submitted == 1 && (
+                                            <div>
+                                                {user && user.role == 1 ? 
+                                                    <SendTip card_capabilities={card_capabilities} />
+                                                :  "" }
+                                            </div>
+                                        )
+                                    : (
+                                        ''
+                                    ) || ""}
+                                </>
+                            }
+                            
+
+                                
+                               
                         </div>
                     </div>
                 </div>

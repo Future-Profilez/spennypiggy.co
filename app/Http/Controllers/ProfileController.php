@@ -286,8 +286,12 @@ class ProfileController extends Controller
                 }
             }
             $this->userProfileService->clearUserCaches($user->username, $user->id);
-            // return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
-            return back()->with('success', 'Profile updated successfully.');
+            return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+            // if($request->profilepage == 1){
+                //     return redirect(route("user.show", ["username" => $request->username ?? $user->username]))->with('success', "Profile has been updated.");
+            // } else { 
+            //     return back()->with('success', 'Profile updated successfully.');
+            // }
 
         }
         } catch (\Throwable $e) {
@@ -1272,7 +1276,8 @@ class ProfileController extends Controller
             $q->where('owner_id', $creator->id)
               ->where(function ($sub) use ($gifter) {
                   $sub->where('user_id', $gifter->id)->orWhere('guest_email', $gifter->email);
-              });
+              })
+              ->where('payment_status', 'paid');
         })->with(['payment', 'wish'])->get();
 
         foreach ($wishItems as $it) {
@@ -1281,6 +1286,7 @@ class ProfileController extends Controller
                 'source' => 'stripe_payment_items',
                 'source_id' => $it->id,
                 'amount' => $it->amount,
+                'creator_amount' => $it->amount,
                 'tax' => $it->tax,
                 'currency' => $it->payment->currency,
                 'created_at' => Carbon::parse($it->created_at)->format('Y-m-d H:i:s'),
@@ -1322,7 +1328,7 @@ class ProfileController extends Controller
             $q->where('user_id', $creator->id);
         })->where(function ($q) use ($gifter) {
             $q->where('user_id', $gifter->id)->orWhere('guest_email', $gifter->email);
-        })->with(['membership'])->get();
+        })->where('status', 'paid')->with(['membership'])->get();
 
         foreach ($membershipPayments as $mp) {
             $events[] = [
@@ -1330,6 +1336,7 @@ class ProfileController extends Controller
                 'source' => 'membership_payments',
                 'source_id' => $mp->id,
                 'amount' => $mp->amount,
+                'creator_amount' => $mp->amount,
                 'tax' => $mp->tax,
                 'currency' => $mp->currency,
                 'created_at' => Carbon::parse($mp->created_at)->format('Y-m-d H:i:s'),
@@ -1351,7 +1358,7 @@ class ProfileController extends Controller
             $q->where('user_id', $creator->id);
         })->where(function ($q) use ($gifter) {
             $q->where('user_id', $gifter->id)->orWhere('guest_email', $gifter->email);
-        })->with(['bill'])->get();
+        })->where('status', 'paid')->with(['bill'])->get();
 
         foreach ($billPayments as $bp) {
             $events[] = [
@@ -1359,6 +1366,7 @@ class ProfileController extends Controller
                 'source' => 'bill_payments',
                 'source_id' => $bp->id,
                 'amount' => $bp->amount,
+                'creator_amount' => $bp->amount,
                 'tax' => $bp->tax,
                 'currency' => $bp->currency,
                 'created_at' => Carbon::parse($bp->created_at)->format('Y-m-d H:i:s'),
@@ -1379,7 +1387,7 @@ class ProfileController extends Controller
         $tipPayments = TipGoalsPayment::where('creator_id', $creator->id)
             ->where(function ($q) use ($gifter) {
                 $q->where('user_id', $gifter->id)->orWhere('guest_email', $gifter->email);
-            })->with(['tipGoal'])->get();
+            })->where('status', 'paid')->with(['tipGoal'])->get();
 
         foreach ($tipPayments as $tp) {
             $vatPercent = $creator->vat_amount_percentage ?? 0;
@@ -1389,6 +1397,7 @@ class ProfileController extends Controller
                 'source' => 'tip_goals_payments',
                 'source_id' => $tp->id,
                 'amount' => $tp->amount,
+                'creator_amount' => $tp->amount,
                 'tax' => $tp->tax,
                 'vat_amount' => $vatAmount,
                 'currency' => $tp->currency,
@@ -1409,7 +1418,7 @@ class ProfileController extends Controller
             $q->where('user_id', $creator->id);
         })->where(function ($q) use ($gifter) {
             $q->where('user_id', $gifter->id)->orWhere('email', $gifter->email);
-        })->with(['shop'])->get();
+        })->where('payment_status', 'paid')->with(['shop'])->get();
 
         foreach ($shopPayments as $sp) {
             $events[] = [
@@ -1417,6 +1426,7 @@ class ProfileController extends Controller
                 'source' => 'shop_payments',
                 'source_id' => $sp->id,
                 'amount' => $sp->amount,
+                'creator_amount' => $sp->amount,
                 'tax' => ($sp->tax_amount ?? 0) + ($sp->vat_tax_amount ?? 0),
                 'currency' => $sp->currency,
                 'created_at' => Carbon::parse($sp->created_at)->format('Y-m-d H:i:s'),
@@ -1438,6 +1448,7 @@ class ProfileController extends Controller
 
         $taskPurchases = TaskPurchase::where('creator_id', $creator->id)
             ->where('supporter_id', $gifter->id)
+            ->whereNotIn('status', ['initiated', 'expired', 'refunded'])
             ->with(['task'])
             ->get();
 
@@ -1447,6 +1458,7 @@ class ProfileController extends Controller
                 'source' => 'task_purchases',
                 'source_id' => $tpur->id,
                 'amount' => $tpur->amount,
+                'creator_amount' => $tpur->transfer_amount ?? $tpur->amount,
                 'tax' => $tpur->vat_amount ?? 0,
                 'currency' => 'gbp', // tasks stored in platform currency; adjust if field exists
                 'created_at' => Carbon::parse($tpur->created_at)->format('Y-m-d H:i:s'),
@@ -1758,31 +1770,30 @@ class ProfileController extends Controller
 
         $spendSummary = null;
         try {
-            $deviceId = request()->cookie('device_id') ?: request()->header('X-Device-ID');
-            $identity = app(\App\Services\Risk\RiskIdentityService::class)->resolveIdentity([
-                'email' => $user->email,
-                'ip' => request()->ip(),
-                'device_id' => $deviceId,
-                'is_guest' => false,
-            ]);
+            $now = Carbon::now();
+            $sentCompletedBase = \App\Models\FinancialTransaction::where('supporter_id', $user->id)
+                ->where('type', 'income')
+                ->where('status', 'completed');
 
-            app(\App\Services\Risk\IdentityRollupService::class)->refreshRollups($identity);
-            $rollup = $identity->rollup;
-
-            $gbpDigits = (int) ($currencyMeta['GBP']->ISOdigits ?? 2);
-            $minorToMajorGbp = function ($minor) use ($gbpDigits) {
-                return ((float) ((int) ($minor ?? 0))) / pow(10, $gbpDigits);
+            $sumInDisplayCurrency = function ($rows) use ($convert, $displayCurrency) {
+                return $rows->sum(function ($tx) use ($convert, $displayCurrency) {
+                    $from = strtoupper($tx->currency ?? 'GBP');
+                    $amount = (float) ($tx->gross_amount ?? 0);
+                    return $from === $displayCurrency
+                        ? $amount
+                        : ($convert($from, $amount, $displayCurrency) ?? $amount);
+                });
             };
 
-            $spend1hMajor = $minorToMajorGbp($rollup->spend_1h ?? 0);
-            $spend24hMajor = $minorToMajorGbp($rollup->spend_24h ?? 0);
-            $spend7dMajor = $minorToMajorGbp($rollup->spend_7d ?? 0);
-
-            if ($displayCurrency !== 'GBP') {
-                $spend1hMajor = $convert('GBP', $spend1hMajor, $displayCurrency) ?? $spend1hMajor;
-                $spend24hMajor = $convert('GBP', $spend24hMajor, $displayCurrency) ?? $spend24hMajor;
-                $spend7dMajor = $convert('GBP', $spend7dMajor, $displayCurrency) ?? $spend7dMajor;
-            }
+            $spend1hMajor = $sumInDisplayCurrency(
+                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subHour())->get(['gross_amount', 'currency'])
+            );
+            $spend24hMajor = $sumInDisplayCurrency(
+                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subDay())->get(['gross_amount', 'currency'])
+            );
+            $spend7dMajor = $sumInDisplayCurrency(
+                (clone $sentCompletedBase)->where('transaction_date', '>=', $now->copy()->subDays(7))->get(['gross_amount', 'currency'])
+            );
 
             $limit1hMajor = null;
             $limit24hMajor = null;
@@ -1843,8 +1854,7 @@ class ProfileController extends Controller
         $before = $before ?: null;
 
         $query = \App\Models\FinancialTransaction::query()
-            ->where('type', 'income')
-            ->where('status', 'completed');
+            ->where('type', 'income');
 
         if ($tab === 'sent') {
             $query->where('supporter_id', $user->id);
@@ -1930,6 +1940,8 @@ class ProfileController extends Controller
                 'display_amount' => $displayAmount,
                 'currency' => strtolower($from),
                 'display_currency' => strtolower($displayCurrency),
+                'status' => $tx->status,
+                'is_success' => $tx->status === 'completed',
                 'created_at' => optional($tx->transaction_date)->format('Y-m-d H:i:s') ?? $tx->created_at->format('Y-m-d H:i:s'),
                 'creator_id' => $tx->user_id,
                 'gifter_id' => $tx->supporter_id,

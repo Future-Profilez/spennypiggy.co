@@ -416,7 +416,12 @@
     
     {{-- Standard Vite asset loading for both development and production --}}
     @vite(['resources/js/app.jsx'])
-    
+        
+    <style>
+        @media (max-width:991px){
+            html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
+        }
+    </style>
     @inertiaHead
 </head>
 
