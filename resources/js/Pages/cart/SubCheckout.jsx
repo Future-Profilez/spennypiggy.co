@@ -6,6 +6,7 @@ import { useAlerts } from "@/Components/Alerts";
 import { Toaster } from "react-hot-toast";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
 import axios from "axios";
+import Popup from "@/Components/Popup";
 
 export default function SubCheckout(props) {
     const {auth, user, wish, reccure, vat_amount  } = props;
@@ -65,8 +66,7 @@ export default function SubCheckout(props) {
         }
     }
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const submitCheckout = () => {
         if (!auth?.user) {
             if (guestAllowed === false) {
                 const msg = "Guest checkout is disabled. Please log in.";
@@ -93,8 +93,22 @@ export default function SubCheckout(props) {
         });
     }
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        submitCheckout();
+    }
+
     const { flash, global_currency, rates } = usePage().props;
     const [guestAllowed, setGuestAllowed] = useState(null);
+
+    const [showStepUp, setShowStepUp] = useState(false);
+    const [otpCode, setOtpCode] = useState("");
+    const [typedConfirmation, setTypedConfirmation] = useState("");
+    const [verifyingOtp, setVerifyingOtp] = useState(false);
+    const [stepUpContext, setStepUpContext] = useState(null);
+    const [stepUpData, setStepUpData] = useState(null);
+    const [passkeyLoading, setPasskeyLoading] = useState(false);
+    const [hasPasskey, setHasPasskey] = useState(false);
     useEffect(() => {
         if(flash?.error){
             errorAlert(flash.error);
@@ -107,6 +121,13 @@ export default function SubCheckout(props) {
         }
         if(flash?.info){
             infoAlert(flash.info);
+        }
+        if (flash?.step_up_required) {
+            setStepUpContext(flash.step_up_context || null);
+            setStepUpData(flash.step_up_data || null);
+            setOtpCode("");
+            setTypedConfirmation("");
+            setShowStepUp(true);
         }
     },[flash]);
 
@@ -129,6 +150,189 @@ export default function SubCheckout(props) {
                 setGuestAllowed(true);
             });
     }, [auth?.user?.id]);
+
+    const arrayBufferToBase64 = (buffer) => {
+        let binary = "";
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+    };
+
+    const formatCredentialForServer = (credential) => {
+        if (!credential) return null;
+
+        const formatted = {
+            id: credential.id,
+            rawId: arrayBufferToBase64(credential.rawId),
+            type: credential.type,
+            response: {
+                authenticatorData: arrayBufferToBase64(
+                    credential.response.authenticatorData,
+                ),
+                clientDataJSON: arrayBufferToBase64(
+                    credential.response.clientDataJSON,
+                ),
+                signature: arrayBufferToBase64(credential.response.signature),
+                userHandle: credential.response.userHandle
+                    ? arrayBufferToBase64(credential.response.userHandle)
+                    : null,
+            },
+        };
+
+        if (credential.response.attestationObject) {
+            formatted.response.attestationObject = arrayBufferToBase64(
+                credential.response.attestationObject,
+            );
+        }
+
+        return formatted;
+    };
+
+    const base64urlToUint8Array = (base64url) => {
+        const base64 = base64url
+            .replace(/-/g, "+")
+            .replace(/_/g, "/")
+            .padEnd(
+                base64url.length + ((4 - (base64url.length % 4)) % 4),
+                "=",
+            );
+
+        const binary = window.atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    };
+
+    const isWebAuthnSupported = () => {
+        return window.PublicKeyCredential !== undefined;
+    };
+
+    useEffect(() => {
+        const checkPasskey = async () => {
+            const userEmail = stepUpContext?.email || data?.email || email || auth?.user?.email;
+            if (userEmail && isWebAuthnSupported()) {
+                try {
+                    const res = await axios.post("/webauthn/check", {
+                        email: userEmail,
+                    });
+                    setHasPasskey(res.data.has_passkey);
+                } catch (e) {
+                    setHasPasskey(false);
+                }
+            }
+        };
+        if (showStepUp) {
+            checkPasskey();
+        }
+    }, [showStepUp, stepUpContext?.email, data?.email, email, auth?.user?.email]);
+
+    const handlePasskeyStepUp = async () => {
+        try {
+            setPasskeyLoading(true);
+            const userEmail = stepUpContext?.email || data?.email || email || auth?.user?.email;
+            if (!userEmail) {
+                errorAlert("Email required for passkey verification.");
+                return;
+            }
+
+            const { data: options } = await axios.post(
+                route("webauthn.login.options"),
+                { email: userEmail },
+            );
+
+            const publicKey = options.publicKey ?? options;
+            publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
+            if (publicKey.allowCredentials) {
+                publicKey.allowCredentials = publicKey.allowCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    }),
+                );
+            }
+
+            const credential = await navigator.credentials.get({ publicKey });
+
+            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, vat_amount);
+            const amountMinor = Math.round(
+                total * (isZeroDecimalCurrency(wish?.currency) ? 1 : 100),
+            );
+
+            const payload = {
+                ...formatCredentialForServer(credential),
+                amount: stepUpContext?.amount || amountMinor,
+                currency: stepUpContext?.currency || (wish?.currency || "GBP"),
+                creator_id: stepUpContext?.creator_id || wish?.user?.uuid || wish?.user?.id,
+                email: userEmail,
+                device_id: stepUpContext?.device_id,
+                is_checkout_session: true,
+                risk_identity_id: stepUpContext?.risk_identity_id,
+            };
+
+            const response = await axios.post(
+                "/api/risk/step-up/verify-passkey",
+                payload,
+            );
+
+            if (response.data.success) {
+                successAlert("Identity verified! Proceeding to checkout...");
+                setShowStepUp(false);
+                submitCheckout();
+            } else {
+                errorAlert("Passkey verification failed.");
+            }
+        } catch (error) {
+            if (error.response?.data?.error) {
+                errorAlert(error.response.data.error);
+            } else if (error.name === "NotAllowedError") {
+                errorAlert("Authentication cancelled.");
+            } else {
+                errorAlert("Unable to authenticate. Please try again.");
+            }
+        } finally {
+            setPasskeyLoading(false);
+        }
+    };
+
+    const handleVerifyStepUp = async (e) => {
+        e.preventDefault();
+        setVerifyingOtp(true);
+        try {
+            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, vat_amount);
+            const amountMinor = Math.round(
+                total * (isZeroDecimalCurrency(wish?.currency) ? 1 : 100),
+            );
+
+            const response = await axios.post("/api/risk/step-up/verify", {
+                otp: otpCode,
+                typed_confirmation: typedConfirmation,
+                amount: stepUpContext?.amount || amountMinor,
+                currency: stepUpContext?.currency || (wish?.currency || "GBP"),
+                creator_id: stepUpContext?.creator_id || wish?.user?.uuid || wish?.user?.id,
+                email: stepUpContext?.email || data?.email || email || auth?.user?.email,
+                device_id: stepUpContext?.device_id,
+                is_checkout_session: true,
+                risk_identity_id: stepUpContext?.risk_identity_id,
+            });
+
+            if (response.data.success) {
+                successAlert("Identity verified! Proceeding to checkout...");
+                setShowStepUp(false);
+                submitCheckout();
+            } else {
+                errorAlert("Verification failed.");
+            }
+        } catch (error) {
+            errorAlert(error.response?.data?.error || "OTP Verification failed.");
+        } finally {
+            setVerifyingOtp(false);
+        }
+    };
 
     return (
         <>
@@ -310,6 +514,76 @@ export default function SubCheckout(props) {
                     </div>
                 </div>
             </div>
+            <Popup
+                size="md"
+                action={showStepUp}
+                space="p-0"
+                modalclass="pinkmodal"
+                classes="hidden"
+            >
+                <div className="!rounded-none p-6">
+                    <h2 className="text-xl font-bold mb-2 text-center">{stepUpData?.ui?.title || "Confirm Your Payment"}</h2>
+                    <p className="text-gray-600 mb-6 text-center">
+                        {stepUpData?.ui?.body || "For your security, please confirm this payment."}
+                    </p>
+                    <form onSubmit={handleVerifyStepUp}>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP Code (Check your email)</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="e.g. 123456"
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Type 'CONFIRM' to proceed</label>
+                            <input
+                                type="text"
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                                placeholder="CONFIRM"
+                                value={typedConfirmation}
+                                onChange={(e) => setTypedConfirmation(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowStepUp(false)}
+                                className="w-full main-button b"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={verifyingOtp || !otpCode || typedConfirmation.toUpperCase() !== "CONFIRM"}
+                                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== "CONFIRM" || verifyingOtp) ? "disabled" : ""}`}
+                            >
+                                {verifyingOtp ? "Verifying..." : "Verify & Checkout"}
+                            </button>
+                        </div>
+                    </form>
+
+                    {isWebAuthnSupported() && hasPasskey && (
+                        <div className="mt-6 border-t border-gray-200 pt-6">
+                            <button
+                                type="button"
+                                onClick={handlePasskeyStepUp}
+                                disabled={passkeyLoading || verifyingOtp}
+                                className="relative flex flex-row justify-center items-center text-base px-4 py-[10px] focus:outline-none text-gray-600 border border-gray-300 bg-white hover:bg-gray-50 rounded-full transition-all w-full max-w-[260px] mx-auto disabled:opacity-50"
+                            >
+                                {passkeyLoading ? "Checking device..." : "Use Face ID / Fingerprint"}
+                            </button>
+                            <p className="text-xs text-gray-500 text-center mt-2">
+                                Bypass OTP by verifying your identity with a saved passkey.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </Popup>
             <Toaster />
         </Authenticated>
         </>
