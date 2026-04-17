@@ -40,7 +40,14 @@ class CreatorRiskController extends Controller
         }
 
         // 2. PAYOUT_DELAYED
-        if ($metrics->payout_delay_days > 0) {
+        if (
+            $metrics->payout_delay_days > 0
+            && (
+                ($metrics->risk_level && $metrics->risk_level !== 'low')
+                || ($metrics->reserve_percent > 0)
+                || ((bool) ($metrics->is_overridden ?? false))
+            )
+        ) {
             $banners[] = [
                 'key' => 'PAYOUT_DELAYED',
                 'type' => 'info',

@@ -176,6 +176,7 @@ export default function Transactions(props) {
   const currencyTotals = useMemo(() => {
     const sums = {};
     filtered.forEach(e => {
+      if (e?.status !== 'completed') return;
       const total = Number(e.display_amount ?? 0);
       const cur = displayCurrency.toLowerCase();
       sums[cur] = (sums[cur] || 0) + total;
@@ -198,7 +199,7 @@ export default function Transactions(props) {
 
   const toCSV = () => {
     const rows = [
-      ['Type', 'Category', 'Title', 'Counterparty', 'Access', 'Amount', 'Currency', 'Date']
+      ['Type', 'Category', 'Title', 'Counterparty', 'Access', 'Amount', 'Currency', 'Status', 'Date']
     ];
     filtered.forEach(e => {
       const title = titleFor(e);
@@ -207,7 +208,15 @@ export default function Transactions(props) {
         : (e?.gifter?.username ? '@' + e.gifter.username : (e?.gifter?.name || 'Supporter'));
       const amt = Number(e.display_amount ?? 0);
       rows.push([
-        e.type, e.category, title, cp, rewardChip(e) || '', amt.toFixed(displayDigits), displayCurrency, e.created_at
+        e.type,
+        e.category,
+        title,
+        cp,
+        rewardChip(e) || '',
+        amt.toFixed(displayDigits),
+        displayCurrency,
+        e.status || '',
+        e.created_at
       ]);
     });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -410,6 +419,17 @@ export default function Transactions(props) {
                             <span className="px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] bg-gray-200 text-black">
                                 {e.category === 'sent' ? 'SENT' : 'RECEIVED'}
                             </span>
+                            {e?.status ? (
+                              <span className={`px-2 py-0.5 rounded-full border-2 border-black text-[9px] font-black uppercase tracking-widest shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${
+                                e.status === 'completed'
+                                  ? 'bg-green-300 text-black'
+                                  : (e.status === 'initiated' || e.status === 'pending')
+                                    ? 'bg-yellow-300 text-black'
+                                    : 'bg-red-300 text-black'
+                              }`}>
+                                {String(e.status).replaceAll('_', ' ')}
+                              </span>
+                            ) : null}
                             {isNew(e.created_at) ? (
                               <span className="px-2 py-0.5 rounded-md bg-yellow-300 border-2 border-black text-[9px] font-black text-black uppercase tracking-widest animate-pulse shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">New</span>
                             ) : null}
@@ -502,7 +522,14 @@ export default function Transactions(props) {
                           ) : null}
                         </div>
                         <div className="text-right">
-                          <div className="text-green-600 font-black text-xl md:text-2xl">{amountFor(e)}</div>
+                          <div className={`${e?.status === 'completed' ? 'text-green-600' : 'text-gray-500'} font-black text-xl md:text-2xl`}>
+                            {amountFor(e)}
+                          </div>
+                          {e?.status && e.status !== 'completed' ? (
+                            <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-1">
+                              Not included in totals
+                            </div>
+                          ) : null}
                           {Number(e?.vat_amount || 0) > 0 ? (
                             <div className="text-xs text-gray-600 font-black uppercase mt-1">
                               VAT: {formatMoney(Number(e.vat_amount || 0))}

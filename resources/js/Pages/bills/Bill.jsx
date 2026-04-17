@@ -201,12 +201,9 @@ function Bill(props) {
                         className="wishlistdetial cursor-pointer relative bg-[#fdfbf7] p-5 flex-grow"
                     >
                         <div>
-                            <h4
-                                className={`text-xl font-black text-black text-center el1 uppercase tracking-wide `}
-                            >
+                            <h4 className={`text-xl font-black !text-black text-center el1 uppercase tracking-wide `} >
                                 {itm.name}
-                            </h4>
-
+                            </h4> 
                             <h5 className="text-center font-black text-2xl  text-black mt-3 mb-1 titleprice">
                                 {isCreator ? (
                                     formatMultiPrice(itm.price, itm?.currency || "GBP")

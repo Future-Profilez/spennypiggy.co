@@ -89,12 +89,12 @@ export default function ReactionsAndReply({
             <button  
               key={e} onClick={() => react(e)}
               disabled={sending} title="React"  
-              className="px-2 py-1  bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 text-[26px] transition-colors" >
+              className="px-2 py-1 rounded-[10px]  bg-white/5 border border-white/10 text-white  hover:bg-white/10 text-[26px] transition-colors" >
               {e} {counts?.[e] ? <span className="text-black text-xs"> {counts[e]}</span> : null}
             </button>
           ) : (
-            <span key={e} className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-sm">
-              {e} {counts?.[e] ? <span className="text-white/50 text-xs"> {counts[e]}</span> : null}
+            <span key={e} className="px-2 py-1 rounded-full bg-white/5 border border-white/10 !text-white text-sm">
+              {e} {counts?.[e] ? <span className="!text-black text-xs"> {counts[e]}</span> : null}
             </span> 
           )
         ))}

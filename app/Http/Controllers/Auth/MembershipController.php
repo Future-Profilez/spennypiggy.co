@@ -294,6 +294,9 @@ class MembershipController extends Controller
                 ]);
 
                 $mem->product_id = $product->id;
+                if ($mem->edited_status === 0 || $mem->edited_status === 3) {
+                    $mem->edited_status = 1;
+                }
                 $mem->approved = 0;
                 $mem->save();
 
@@ -476,6 +479,25 @@ class MembershipController extends Controller
                 'email' => ['required', 'email:dns'],
                 'message' => ['nullable', 'string', 'max:800'],
             ]);
+
+            if ($user) {
+                $now = Carbon::now();
+                $hasActiveSameTier = MembershipPayment::where('user_id', $user->id)
+                    ->where('membership_id', $membership->id)
+                    ->where('status', 'paid')
+                    ->where(function ($q) use ($now) {
+                        $q->whereNull('end')->orWhere('end', '>', $now);
+                    })
+                    ->whereNotNull('stripe_id')
+                    ->exists();
+
+                if ($hasActiveSameTier) {
+                    return back()->with(
+                        'error',
+                        "You already have an active {$membership->level} membership for this creator."
+                    );
+                }
+            }
 
             $sub = MembershipPayment::create([
                 'membership_id' => $membership->id,

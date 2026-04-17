@@ -3206,6 +3206,13 @@ class StripeController extends Controller
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $riskData['risk_identity_id'],
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
+                        'reserve_amount_minor' => (function () use ($creator, $unitAmount) {
+                            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                            $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                            if ($reservePercent <= 0) return 0;
+                            $reserveMinor = (int) round(((int) $unitAmount * $reservePercent) / 100);
+                            return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($creator->default_currency));
+                        })(),
                         'currency' => 'gbp',
                         'stripe_session_id' => $session->id,
                         'stripe_payment_intent_id' => $session->payment_intent ?? null,

@@ -14,6 +14,7 @@ class Payment extends Model
         'creator_id',
         'risk_identity_id',
         'amount',
+        'reserve_amount_minor',
         'currency',
         'stripe_session_id',
         'stripe_payment_intent_id',
@@ -25,6 +26,7 @@ class Payment extends Model
     protected $casts = [
         'reason_codes' => 'array',
         'amount' => 'integer',
+        'reserve_amount_minor' => 'integer',
     ];
 
     public function riskIdentity()
