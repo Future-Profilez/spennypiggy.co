@@ -74,6 +74,5 @@ export default function Popup(props) {
           </div>
         </Dialog>
       </Transition>
-
     </>
 }
