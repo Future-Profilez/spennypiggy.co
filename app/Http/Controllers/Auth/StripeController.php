@@ -3206,6 +3206,13 @@ class StripeController extends Controller
                         'creator_id' => $creator->uuid,
                         'risk_identity_id' => $riskData['risk_identity_id'],
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
+                        'reserve_amount_minor' => (function () use ($creator, $unitAmount) {
+                            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                            $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                            if ($reservePercent <= 0) return 0;
+                            $reserveMinor = (int) round(((int) $unitAmount * $reservePercent) / 100);
+                            return app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($creator->default_currency));
+                        })(),
                         'currency' => 'gbp',
                         'stripe_session_id' => $session->id,
                         'stripe_payment_intent_id' => $session->payment_intent ?? null,
@@ -3554,8 +3561,6 @@ class StripeController extends Controller
                     $sub->upcoming_payment = Carbon::now()->addMonth();
                 }
                 if ($sub->save()) {
-                    // update profile status lock 1
-                    $user->profile_status_lock = 1;
                     $user->is_subscribed = 1;
                     $user->save();
                 }

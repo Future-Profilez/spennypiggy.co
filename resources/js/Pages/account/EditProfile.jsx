@@ -14,7 +14,7 @@ import { Switch } from '@headlessui/react';
 import { Link } from '@inertiajs/react';
 import ManagePasskey from '@/Components/ManagePasskey';
 
-export default function EditProfile({ user, text, classes, updateProfileSteps, global_currency }) {
+export default function EditProfile({ profilepage, user, text, classes, updateProfileSteps, global_currency }) {
 
     console.log(user);
     
@@ -37,9 +37,8 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     const [profileDP, setProfileDP] = useState();
     const [coverImage, setCoverImage] = useState();
     const [socialFile, setSocialFile] = useState();
-
     const [activeTab, setActiveTab] = useState('profile'); // profile, appearance, settings
-
+    
     useEffect(() => {
         if (socialFile) {
             setData('social_image', socialFile);
@@ -59,10 +58,10 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
         social_image: null,
         min_surprise_amount: user?.min_surprise_amount || 5,
         social_handle: user?.social_handle || '',
+        profilepage: profilepage || false,
     });
+
     const [loading, setLoading] = useState(processing);
-
-
     const generateCardAndUpload = async (avataruid, load) => {
         // if(load == true){
         //     setLoading(true);
@@ -199,10 +198,7 @@ export default function EditProfile({ user, text, classes, updateProfileSteps, g
     }
 
     const [username, setUsername] = useState(user?.username);
-
-
     const [profileTags, setProfileTags] = useState([]);
-
     useEffect(() => {
         if (user?.creator_category) {
             try {

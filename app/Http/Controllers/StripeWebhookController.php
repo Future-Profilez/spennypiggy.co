@@ -1149,6 +1149,7 @@ class StripeWebhookController extends Controller
                             'stripe_payment_intent_id' => $paymentIntentId,
                             'creator_id' => $creatorId,
                             'amount' => $amount,
+                        'reserve_amount_minor' => 0,
                             'currency' => $dispute->currency,
                             'status' => 'disputed',
                         ]);
@@ -2545,6 +2546,7 @@ class StripeWebhookController extends Controller
                         'creator_id' => $creatorId,
                         'amount' => $amount,
                         'currency' => strtoupper($paymentIntent->currency),
+                        'reserve_amount_minor' => 0,
                         'status' => 'succeeded',
                     ]);
                     Log::info("Risk Ledger: Auto-created missing Payment record", ['id' => $payment->id, 'creator_id' => $creatorId]);
@@ -2563,6 +2565,20 @@ class StripeWebhookController extends Controller
             
             $payment->update(['status' => $newStatus]);
             Log::info("Risk Ledger: Payment marked as {$newStatus}", ['id' => $payment->id]);
+
+            try {
+                if ((int) ($payment->reserve_amount_minor ?? 0) === 0 && strtoupper((string) ($payment->currency ?? '')) === 'GBP') {
+                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $payment->creator_id]);
+                    $reservePercent = (int) ($metrics->reserve_percent ?? 0);
+                    if ($reservePercent > 0) {
+                        $payment->update([
+                            'reserve_amount_minor' => (int) round(((int) $payment->amount * $reservePercent) / 100),
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to backfill reserve amount on payment success: " . $e->getMessage());
+            }
             
             // 2. Update Identity Rollups
             if ($payment->riskIdentity) {

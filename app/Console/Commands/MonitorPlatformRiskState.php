@@ -269,37 +269,43 @@ class MonitorPlatformRiskState extends Command
             ]
         ]);
 
-        // Notify Admins
-        if ($newState === 'FREEZE' || $newState === 'THROTTLE') {
-            try {
-                $admins = Admin::all(); // Assuming Admin model exists and has email
-                if ($admins->isEmpty()) {
-                    // Fallback to config email or hardcoded if no admins in DB
-                    $fallbackEmail = config('mail.from.address');
-                    if ($fallbackEmail) {
-                        Mail::to($fallbackEmail)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
-                        \App\Helpers::sendNotification(
-                            "Platform Risk Alert: {$newState}", 
-                            "System state changed to {$newState}. Reasons: " . implode(', ', $reasons), 
-                            $fallbackEmail
-                        );
-                    }
-                } else {
-                    foreach ($admins as $admin) {
-                        if ($admin->email) {
-                            Mail::to($admin->email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
-                            \App\Helpers::sendNotification(
-                                "Platform Risk Alert: {$newState}", 
-                                "System state changed to {$newState}. Reasons: " . implode(', ', $reasons), 
-                                $admin->email
-                            );
-                        }
-                    }
-                }
-                $this->info("Admin notifications sent.");
-            } catch (\Exception $e) {
-                Log::error("Failed to send Platform Risk Alert email: " . $e->getMessage());
+        try {
+
+            if(env('APP_ENV') === 'production'){
+                $fixedRecipients = [
+                    'noreply@spennypiggy.co',
+                    'naveen@internetbusinesssolutionsindia.com',
+                ];
+            } else {
+                $fixedRecipients = [
+                    'naveen@internetbusinesssolutionsindia.com',
+                ];
             }
+
+            $adminRecipients = Admin::query()
+                ->whereNotNull('email')
+                ->pluck('email')
+                ->toArray();
+
+            $fallbackEmail = config('mail.from.address');
+            if ($fallbackEmail) {
+                $adminRecipients[] = $fallbackEmail;
+            }
+
+            $allRecipients = array_values(array_unique(array_filter(array_merge($fixedRecipients, $adminRecipients))));
+
+            foreach ($allRecipients as $email) {
+                Mail::to($email)->send(new PlatformRiskAlert($newState, $reasons, $metrics));
+                \App\Helpers::sendNotification(
+                    "Platform Risk Alert: {$newState}",
+                    "System state changed to {$newState}. Reasons: " . implode(', ', $reasons),
+                    $email
+                );
+            }
+
+            $this->info("Platform state change notifications sent.");
+        } catch (\Exception $e) {
+            Log::error("Failed to send Platform Risk Alert email: " . $e->getMessage());
         }
     }
 }

@@ -96,9 +96,9 @@ export default function SupportStory({ creator, gifter }) {
   };
 
   const amountFor = (ev) => {
-    if (!ev.amount) return null;
-    const total = (Number(ev.amount || 0) + Number(ev.tax || 0) + Number(ev.vat_amount || 0) + Number(ev.vat_tax_amount || 0));
-    return formatMultiPrice(total, ev.currency || 'gbp');
+    const creatorAmount = Number(ev?.creator_amount ?? ev?.amount ?? 0);
+    if (!creatorAmount) return null;
+    return formatMultiPrice(creatorAmount, ev.currency || 'gbp');
   };
 
   const filteredEvents = data?.events?.filter((e) => activeType === 'all' ? true : e.type === activeType) || [];
@@ -145,43 +145,55 @@ export default function SupportStory({ creator, gifter }) {
     const icon = iconFor(ev.type);
     const viewer = auth?.user?.username;
     const canAct = !!viewer && (viewer === (data?.creator?.username || creator) || viewer === (data?.gifter?.username || gifter));
+    const typeLabel = (() => {
+      switch (ev.type) {
+        case 'gift_wish': return 'Wish';
+        case 'gift_membership': return 'Membership';
+        case 'gift_bill': return 'Bill';
+        case 'gift_tip': return 'Support';
+        case 'gift_shop': return 'Shop';
+        case 'gift_task': return 'Task';
+        case 'thankyou': return 'Thank-you';
+        default: return 'Update';
+      }
+    })();
 
     return (
-      <div className="relative pl-10">
-        <div className="absolute flex justify-center items-center left-[-10px] top-0 w-10 h-10 rounded-full 
-        bg-[#05EFB8]  
-        border-2 border-white/10 flex items-center justify-center 
-        text-[24px] text-white/90">
-          <span className=' mt-[4px]'>
-            {icon}
-            </span>
-        </div>
-        <div className="rounded-[20px] md:rounded-[30px] bg-[#1A1B23]/40 border border-white/10 p-5 hover:bg-[#1A1B23]/60 transition-all">
-          <div className="md:flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* <img className="h-10 w-10 rounded-[20px] object-cover border border-white/10" src={ev.owner?.avatar || ''} alt="avatar" /> */}
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center min-w-[28px] h-[22px] px-2 rounded-full bg-white/10 border border-white/10 text-[11px] tracking-widest text-white/70 font-black">#{idx}</span>
-                  <p className="text-gray-100 font-bold text-normal mb-0">{title}</p>
-                </div>
-                <p className=" font-poppins !text-white text-[12px] mt-2 font-black  uppercase">{subtitle} <span className="ms-3 text-white/60 text-[12px] !text-white tracking-widest uppercase">{ev.created_at}</span> </p>
-              </div>
+      <div className="rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all p-5">
+        <div className="md:flex items-start justify-between gap-6">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-yellow-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                {icon} {typeLabel}
+              </span>
+              <span className="inline-flex items-center justify-center min-w-[28px] h-[22px] px-2 rounded-full bg-white border-2 border-black text-[10px] tracking-widest text-black font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                #{idx}
+              </span>
             </div>
-            <div className="mt-4 md:mt-0 flex items-center gap-2">
+
+            <p className="text-black font-black text-lg md:text-xl mt-3 mb-1">
+              {title}
+            </p>
+            <p className="text-[10px] md:text-[11px] uppercase tracking-widest text-gray-700 font-black">
+              {subtitle}
+              <span className="ml-3 text-gray-500">{ev.created_at}</span>
+            </p>
+          </div>
+
+          <div className="mt-4 md:mt-0 flex items-center md:justify-end gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
               {!isThankyou && (
                 <button
                   onClick={() => shareIndividualEvent(ev)}
-                  className="p-2 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] border border-[#1DA1F2]/20 hover:bg-[#1DA1F2]/20 transition-all group"
-                  title="Share this moment on X"
+                  className="p-2 rounded-full bg-[#1DA1F2] text-white border-2 border-black hover:bg-[#1a91da] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                  title="Share on X"
                 >
-                  <FaTwitter size={14} className="group-hover:scale-110 transition-transform" />
+                  <FaTwitter size={16} className="group-hover:scale-110 transition-transform" />
                 </button>
               )}
               {(() => {
                 let openUrl = null;
                 let label = 'Open';
-                // Prefer internal context routes
                 if (ev?.type === 'gift_wish' && ev?.wish?.id && ev?.owner?.username) {
                   openUrl = `/${ev.owner.username}/wish/${ev.wish.id}`;
                   label = 'View Wish';
@@ -199,7 +211,6 @@ export default function SupportStory({ creator, gifter }) {
                   openUrl = `/task/${ev.task.uuid}`;
                   label = 'View Task';
                 } else {
-                  // Fallback to media permalink when available (external)
                   openUrl =
                     ev?.wish?.perma_link ||
                     ev?.membership?.perma_link ||
@@ -209,48 +220,64 @@ export default function SupportStory({ creator, gifter }) {
                 }
                 if (!openUrl) return null;
                 const isExternal = /^https?:\/\//i.test(openUrl) && !openUrl.startsWith(window.location.origin);
+                const btnClass = "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-white border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all";
                 if (isExternal) {
                   return (
-                    <a
-                      href={openUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1 rounded-[30px] text-[11px] uppercase tracking-widest bg-white/10 text-white/70 hover:bg-white/20"
-                    >
+                    <a href={openUrl} target="_blank" rel="noopener noreferrer" className={btnClass}>
                       {label}
                     </a>
                   );
                 }
                 return (
-                  <Link
-                    href={openUrl}
-                    className="px-3 py-1 rounded-[30px] text-[11px] uppercase tracking-widest bg-white/10 text-white/70 hover:bg-white/20"
-                  >
+                  <Link href={openUrl} className={btnClass}>
                     {label}
                   </Link>
                 );
               })()}
-              {amount ? <div className="text-[#05EFB8] font-black text-sm">{amount}</div> : null}
+            </div>
+
+            <div className="text-right">
+              {amount ? (
+                <div className="text-green-600 font-black text-xl md:text-2xl">
+                  {amount}
+                </div>
+              ) : null}
             </div>
           </div>
+        </div>
           
           {/* Status Badges */}
           {(ev.status === 'disputed' || ev.status === 'review_hold' || (ev.dispute_status && ev.dispute_status !== 'none')) && (
-            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 text-[10px] font-bold uppercase tracking-widest">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2 animate-pulse"></span>
-                Reserved / Disputed
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-yellow-300 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <span className="w-2 h-2 rounded-full bg-black mr-2 animate-pulse"></span>
+              Reserved / Disputed
             </div>
           )}
           
           {(ev.status === 'refunded' || ev.dispute_status === 'lost') && (
-            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-500 text-[10px] font-bold uppercase tracking-widest">
-                Refunded
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-red-400 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              Refunded
             </div>
           )}
 
+          {ev.status &&
+          ev.type !== 'thankyou' &&
+          ev.status !== 'disputed' &&
+          ev.status !== 'review_hold' &&
+          ev.status !== 'refunded' &&
+          (!ev.dispute_status || ev.dispute_status === 'none') ? (
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-green-300 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              {String(ev.status).replaceAll('_', ' ')}
+            </div>
+          ) : null}
+
           {isThankyou ? (
             <div className="mt-4">
-              {ev.message ? <p className="text-white/80">{ev.message}</p> : null}
+              {ev.message ? (
+                <p className="text-black font-bold text-sm italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">
+                  {ev.message}
+                </p>
+              ) : null}
               {ev.media_url ? (
                 <div className="mt-3">
                   <Popup
@@ -258,7 +285,7 @@ export default function SupportStory({ creator, gifter }) {
                     space="0"
                     size="md"
                     action={false}
-                    classes={`button sm`}
+                    classes="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                     text={<>View</>}
                   >
                     <div className="video-payer-pop">
@@ -276,16 +303,16 @@ export default function SupportStory({ creator, gifter }) {
 
           {ev.type === 'gift_task' && ev.task?.reward_file ? (
             <div className="mt-4">
-              <a href={ev.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded-[30px] text-[11px] uppercase tracking-widest bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600/30">Download Reward</a>
+              <a href={ev.task.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-purple-300 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
               {ev.task.reward_note ? (
-                <p className="mt-2 text-white/50 text-[11px] italic">Note: {ev.task.reward_note}</p>
+                <p className="mt-2 text-black font-bold text-xs italic leading-relaxed bg-yellow-100 p-3 rounded-[25px] md:rounded-[30px] border-2 border-black">Note: {ev.task.reward_note}</p>
               ) : null}
             </div>
           ) : null}
 
           {ev.type === 'gift_wish' && ev.wish?.reward_file ? (
             <div className="mt-4">
-              <a href={ev.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded-[30px] text-[11px] uppercase tracking-widest bg-pink-600/20 text-pink-500 border border-pink-500/30 hover:bg-pink-600/30">Download Reward</a>
+              <a href={ev.wish.reward_file} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-400 border-2 border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">Download Reward</a>
             </div>
           ) : null}
 
@@ -296,128 +323,127 @@ export default function SupportStory({ creator, gifter }) {
             creator={data?.creator?.username || creator} 
             gifter={data?.gifter?.username || gifter} 
           />
-        </div>
       </div>
     );
   };
 
   return (
-    <Authenticated >
-      <div className={`relative z-1 min-h-screen pb-20`}>
-        <div className="max-w-[900px] mx-auto px-4 md:px-8 pt-8">
-          <div className="relative mb-6">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#8C52FF]/40 to-[#05EFB8]/40 rounded-[30px] blur opacity-10"></div>
-            <div className="relative rounded-[30px] bg-[#000]/40 backdrop-blur-3xl border border-white/10 p-6 md:p-8">
-              
-              <h2 className="text-white font-black text-2xl mb-2">Support Story with {data?.creator?.name || creator}</h2>
-              <p className="text-white/60 text-normal mt-2 !mb-6">Your shared journey of gifts, thank‑yous and progress.</p>
+    <Authenticated auth={auth?.user || ''} user={auth?.user || ''}>
+      <div className="bg-[#A2E4B8] min-h-screen py-8 md:py-12 pb-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="rounded-[25px] md:rounded-[30px] bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 mb-6">
+            <h2 className="text-black font-black text-2xl md:text-3xl uppercase tracking-widest mb-2">
+              Support Story
+            </h2>
+            <p className="text-gray-600 font-bold">
+              Shared journey of gifts, thank‑yous and progress with{' '}
+              <span className="text-black">@{data?.creator?.username || creator}</span>
+            </p>
 
-              <div className="mt-6">
-                <div className="md:flex items-center gap-4 !mb-6 ">
-                  <Avatar namecolor='!text-white'
-                    name={data?.creator?.name || creator}
-                    username={`@${data?.creator?.username || creator}`}
-                    src={data?.creator?.avatar}
-                    link={data?.creator?.username || null}
-                  />
-                  <div className="text-white/60 w-fit text-center text-5xl px-[20px] py-[10px]">×</div>
-                  <Avatar namecolor='!text-white'
-                    name={data?.gifter?.name || gifter}
-                    username={`@${data?.gifter?.username || gifter}`}
-                    src={data?.gifter?.avatar}
-                    link={data?.gifter?.username || null}
-                  />
+            <div className="mt-6 md:flex items-center gap-4">
+              <Avatar
+                name={data?.creator?.name || creator}
+                username={`@${data?.creator?.username || creator}`}
+                src={data?.creator?.avatar}
+                link={data?.creator?.username || null}
+              />
+              <div className="text-black w-fit text-center text-4xl px-[16px] py-[10px] font-black">
+                ×
+              </div>
+              <Avatar
+                name={data?.gifter?.name || gifter}
+                username={`@${data?.gifter?.username || gifter}`}
+                src={data?.gifter?.avatar}
+                link={data?.gifter?.username || null}
+              />
+            </div>
+
+            <div className="mt-6 p-4 rounded-[25px] md:rounded-[30px] bg-[#fdfbf7] border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <p className="text-black text-[11px] font-black uppercase tracking-widest mb-3">
+                Shared History Summary
+              </p>
+              <div className="flex flex-wrap items-center gap-6">
+                <div>
+                  <p className="text-gray-700 text-[10px] uppercase tracking-widest font-black">
+                    Total Moments
+                  </p>
+                  <p className="text-black font-black text-xl">
+                    {data?.events?.length || 0}
+                  </p>
                 </div>
-               
-              </div>
-             
-              <div className="mt-6 p-4 rounded-[20px] md:rounded-[30px] bg-white/5 border border-white/10">
-                <p className="text-white/40 text-[15px] font-bold uppercase tracking-widest mb-3">Shared History Summary</p>
-                <div className="flex flex-wrap items-center gap-6">
-                  <div>
-                    <p className="text-white/60 text-[11px] uppercase tracking-tighter">Total Moments</p>
-                    <p className="text-white font-black text-xl">{data?.events?.length || 0}</p>
-                  </div>
-                  <div className="w-px h-8 bg-white/10"></div>
-                  <div>
-                    <p className="text-white/60 text-[11px] uppercase tracking-tighter">Gifts Exchanged</p>
-                    <p className="text-white font-black text-xl">{giftCount}</p>
-                  </div>
-                  <div className="w-px h-8 bg-white/10"></div>
-                  {(() => {
-                    const sums = {};
-                    (data?.events || []).forEach(ev => {
-                      if (!ev?.currency || !ev?.amount) return;
-                      const t = Number(ev.amount || 0) + Number(ev.tax || 0);
-                      sums[ev.currency] = (sums[ev.currency] || 0) + t;
-                    });
-                    const entries = Object.entries(sums);
-                    return entries.map(([cur, amt]) => (
-                      <div key={cur}>
-                        <p className="text-[#05EFB8] text-[11px] uppercase tracking-tighter">{cur} Total</p>
-                        <p className="text-white font-black text-xl">{formatMultiPrice(amt, cur)}</p>
-                      </div>
-                    ));
-                  })()}
+                <div className="w-px h-8 bg-black/20"></div>
+                <div>
+                  <p className="text-gray-700 text-[10px] uppercase tracking-widest font-black">
+                    Gifts Exchanged
+                  </p>
+                  <p className="text-black font-black text-xl">{giftCount}</p>
                 </div>
+                <div className="w-px h-8 bg-black/20"></div>
+                {(() => {
+                  const sums = {};
+                  (data?.events || []).forEach((ev) => {
+                    const a = Number(ev?.creator_amount ?? ev?.amount ?? 0);
+                    if (!ev?.currency || !a) return;
+                    sums[ev.currency] = (sums[ev.currency] || 0) + a;
+                  });
+                  const entries = Object.entries(sums);
+                  return entries.map(([cur, amt]) => (
+                    <div key={cur}>
+                      <p className="text-gray-700 text-[10px] uppercase tracking-widest font-black">
+                        {cur} Earned
+                      </p>
+                      <p className="text-green-600 font-black text-xl">
+                        {formatMultiPrice(amt, cur)}
+                      </p>
+                    </div>
+                  ));
+                })()}
               </div>
+            </div>
 
-              <div className="mt-6 flex flex-wrap gap-2">
-                {[
-                  { key: 'all', label: 'All Gifts' },
-                  { key: 'gift_wish', label: 'Wishes' },
-                  { key: 'gift_membership', label: 'Memberships' },
-                  { key: 'gift_bill', label: 'Bills' },
-                  { key: 'gift_tip', label: 'Support' },
-                  { key: 'gift_shop', label: 'Shop' },
-                  { key: 'gift_task', label: 'Paid Tasks' },
-                  // { key: 'thankyou', label: 'Thank‑you' },
-                ].map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setActiveType(f.key)}
-                    className={`px-4 py-2 rounded-[30px] text-[12px] uppercase tracking-widest ${
-                      activeType === f.key ? 'bg-pink-600 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {[
+                { key: 'all', label: 'All Gifts' },
+                { key: 'gift_wish', label: 'Wishes' },
+                { key: 'gift_membership', label: 'Memberships' },
+                { key: 'gift_bill', label: 'Bills' },
+                { key: 'gift_tip', label: 'Support' },
+                { key: 'gift_shop', label: 'Shop' },
+                { key: 'gift_task', label: 'Paid Tasks' },
+              ].map((f) => (
+                <button 
+                  key={f.key}
+                  onClick={() => setActiveType(f.key)}
+                  className={`px-4 py-2 rounded-full text-[13px] font-black uppercase tracking-widest border-[3px] border-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all ${ activeType === f.key ? 'bg-yellow-300' : 'bg-white' }`} > {f.label} </button>
+              ))}
+            </div>
 
-              <div className='pt-6'>
-                <Link
-                    href={`/${data?.creator?.username || creator}`}
-                    className="!w-full md:!w-auto button rounded-[30px] px-4 text-[11px] uppercase" >
-                      View Creator Profile
-                </Link>
-              </div>
+            <div className="pt-6">
+              <Link
+                href={`/${data?.creator?.username || creator}`}
+                className="inline-block px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest bg-pink-400 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+              > View Creator Profile </Link>
             </div>
           </div>
 
           {loading ? (
             <LoadingScreen />
           ) : filteredEvents.length ? (
-            <div className="relative">
-              <div className="absolute left-[9px] top-0 bottom-0 w-[2px] bg-white/10"></div>
-              <div className="space-y-4">
-                {filteredEvents.map((ev, i) => {
-                  const highlight = appendStart !== null && i >= appendStart;
-                  return (
-                    <FadeIn key={`ev-${i}`} highlight={highlight}>
-                      <EventCard ev={ev} idx={i + 1} />
-                    </FadeIn>
-                  )
-                })}
-              </div>
+            <div className="space-y-4">
+              {filteredEvents.map((ev, i) => {
+                const highlight = appendStart !== null && i >= appendStart;
+                return (
+                  <FadeIn key={`ev-${i}`} highlight={highlight}>
+                    <EventCard ev={ev} idx={i + 1} />
+                  </FadeIn>
+                );
+              })}
               {data?.has_more ? (
-                <div className="text-center mt-6">
+                <div className="text-center mt-8">
                   <button
                     onClick={() => fetchStory(data?.next_before || null, true)}
-                    className="px-5 py-2 rounded-[30px] text-[11px] uppercase tracking-widest bg-white/10 text-white/80 hover:bg-white/20"
-                  >
-                    Load More
-                  </button>
+                    className="px-6 py-3 rounded-full text-sm font-black uppercase tracking-widest bg-yellow-300 border-[3px] border-black text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  > Load More </button>
                 </div>
               ) : null}
             </div>
@@ -436,8 +462,9 @@ function FadeIn({ children, highlight }) {
     if (highlight) {
       const t = setTimeout(() => setShow(true), 10);
       return () => clearTimeout(t);
-    }
+    } 
   }, [highlight]);
+  
   return (
     <div className={`transition-all duration-300 ${show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
       {children}

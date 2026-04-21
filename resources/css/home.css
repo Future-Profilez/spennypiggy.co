@@ -637,7 +637,6 @@ select#country{width:150px;}
 .creators-platforms span.lazy-load-image-background{max-width:133px;display:block;}
 .publish-image span{display:block !important;width:100% !important;height:auto !important;}
 .membership-image span{width:100% !important;display:block;height:auto !important;}
-html body .intercom-lightweight-app-launcher{ margin-bottom:90px !important;}
 }
 .btn-shadow{text-shadow:0.5px 0.5px #000000 !important;letter-spacing:1px;}
 @media (max-width:767px){.membershipitems svg{height:70px;width:70px;}

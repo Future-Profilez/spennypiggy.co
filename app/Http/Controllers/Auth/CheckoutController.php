@@ -362,10 +362,13 @@ class CheckoutController extends Controller
 
             try {
                 $rawAmountMinor = (int) ($sessionCreate->amount_total ?? (int) round($totalCreatorNet * $multiplier));
+                $reserveRate = (int) (\App\Models\CreatorMetric::firstOrCreate(['creator_id' => $owner->uuid])->reserve_percent ?? 0);
+                $reserveMinor = $reserveRate > 0 ? (int) round(($rawAmountMinor * $reserveRate) / 100) : 0;
                 \App\Models\Payment::create([
                     'creator_id' => $owner->uuid,
                     'risk_identity_id' => $riskData['risk_identity_id'],
                     'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($rawAmountMinor, (string) strtoupper($chargeCurrency)),
+                    'reserve_amount_minor' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor($reserveMinor, (string) strtoupper($chargeCurrency)),
                     'currency' => 'gbp',
                     'stripe_session_id' => $sessionCreate->id,
                     'stripe_payment_intent_id' => $sessionCreate->payment_intent ?? null,

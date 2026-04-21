@@ -391,8 +391,6 @@ export default function TipInner({classes, idd}) {
               </p>
 
 
-              {amount > 0 ?<>
-
                 {selectegTag === 'custom' ? <div className="mb-4 ">
                     <div className="relative currency-wrapper " >
                         <span className="currency-tag">{global_currency || 'GBP'}</span>
@@ -427,34 +425,36 @@ export default function TipInner({classes, idd}) {
                         type="email" placeholder="Enter email.. " />
                       <p className='text-sm text-gray-600 mt-1 ' >Your email address is kept private and will not be shown to anyone.</p>
                     </div>
-                    <div className='termselect mt-3 mb-3'>
-                        <label htmlFor={`termaccept${idd || 1}`}>
-                          <p className='text-[15px] text-gray-900 font-normal' >
-                            <input className='cursor-pointer'
-                            type="checkbox" ref={checkRef}
-                            id={`termaccept${idd || 1}`}  name="termaccept"
-                            value="termaccept" required
-                            onChange={(e) => setData("termaccept", e.target.value)}></input>
-                              By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
-                          </p>
-                        </label>
-                    </div>
-
-                    <div className='termselect mt-3 mb-3'>
-                        <label htmlFor="keepanonymous">
-                          <p className='text-[15px] text-gray-900 font-normal'>
-                            <input className='cursor-pointer' type="checkbox"
-                            id="keepanonymous" name="keepanonymous"
-                            value="keepanonymous"
-                            onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
-                            ></input> Keep anonymous
-                          </p>
-                        </label>
-                        <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
-                    </div>
                   </>
                 }
-              </> : ""}
+
+              {amount > 0 ? <>
+              <div className='termselect mt-3 mb-3'>
+                  <label htmlFor={`termaccept${idd || 1}`}>
+                    <p className='text-[15px] text-gray-900 font-normal' >
+                      <input className='cursor-pointer'
+                      type="checkbox" ref={checkRef}
+                      id={`termaccept${idd || 1}`}  name="termaccept"
+                      value="termaccept" required
+                      onChange={(e) => setData("termaccept", e.target.value)}></input>
+                        By supporting me, you agree that this support is a gift and as a thank you, you get access to my profile feed and supporter only posts. To view these, you will need to create an account with the e-mail you used to send the support, as effectively you are purchasing a supporter Membership attached to your e-mail for 30 days.
+                    </p>
+                  </label>
+              </div>
+
+              <div className='termselect mt-3 mb-3'>
+                  <label htmlFor="keepanonymous">
+                    <p className='text-[15px] text-gray-900 font-normal'>
+                      <input className='cursor-pointer' type="checkbox"
+                      id="keepanonymous" name="keepanonymous"
+                      value="keepanonymous"
+                      onChange={(e) => setData("anonymous", e.target.checked ? 1 : 0 )}
+                      ></input> Keep anonymous
+                    </p>
+                  </label>
+                  <p className="text-gray-700 text-sm mt-1 mb-3" >Your personal email and name will be private.</p>
+              </div>
+              </> : ''}
 
 
               {turnstileSiteKey ? (
@@ -527,14 +527,12 @@ export default function TipInner({classes, idd}) {
                 type="button"
                 onClick={() => setShowStepUp(false)}
                 className="w-full main-button b"
-              >
-                Cancel
+              > Cancel
               </button>
               <button
                 type="submit"
                 disabled={verifyingOtp || !otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM'}
-                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM' || verifyingOtp) ? 'disabled' : ''}`}
-              >
+                className={`w-full main-button p ${(!otpCode || typedConfirmation.toUpperCase() !== 'CONFIRM' || verifyingOtp) ? 'disabled' : ''}`}>
                 {verifyingOtp ? "Verifying..." : "Verify"}
               </button>
             </div>

@@ -65,7 +65,7 @@ export default function Post({item}) {
 
   return (
     <>
-      <div className=" post-wrap bg-[#fdfbf7] rounded-[30px] md:rounded-[40px] p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
+      <div className=" post-wrap bg-[#fdfbf7] rounded-[30px] md:rounded-[35px] p-[15px] xl:p-6 !mb-4 md:!mb-[22px] border-[3px] border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
         <div className='flex items-center justify-between mb-3' >
             {item?.user ? <Link href={`${item?.user?.username}`} className="headerpost mb-0 head w-auto" >
                 <img alt='spenny piggy' className="fading author-img border-[3px] border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" src={item?.user?.avatar_url || userphoto} />

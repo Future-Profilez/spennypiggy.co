@@ -166,10 +166,13 @@ class RiskController extends Controller
 
         // Create Payment Record (for Payment Intent flow)
         $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+        $reservePercent = (int) (\App\Models\CreatorMetric::firstOrCreate(['creator_id' => $request->creator_id])->reserve_percent ?? 0);
+        $reserveGbp = $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
         $payment = \App\Models\Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
             'amount' => $amountGbp,
+            'reserve_amount_minor' => $reserveGbp,
             'currency' => 'gbp',
             'status' => ($decision === 'REVIEW_HOLD') ? 'review_hold' : 'initiated',
             'reason_codes' => $reasons,
@@ -336,11 +339,14 @@ class RiskController extends Controller
         $identity = $identityService->resolveIdentity($context);
 
         $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $request->amount, (string) $request->currency);
+        $reservePercent = (int) (\App\Models\CreatorMetric::firstOrCreate(['creator_id' => $request->creator_id])->reserve_percent ?? 0);
+        $reserveGbp = $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
         
         $payment = Payment::create([
             'creator_id' => $request->creator_id,
             'risk_identity_id' => $identity->id,
             'amount' => $amountGbp,
+            'reserve_amount_minor' => $reserveGbp,
             'currency' => 'gbp',
             'status' => 'initiated',
             'reason_codes' => $reasons,
