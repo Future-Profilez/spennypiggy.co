@@ -94,9 +94,9 @@ const CreatorActivityWidget = (props) => {
     const suggestions = getSuggestions(activityStatus.status, activityStatus.content_count || activityStatus.current_content || 0);
     return (
         <>
-        <div className={`rounded-[30px] border-2 p-4 md:p-6 ${getStatusColor(activityStatus.status)} ${className}`}>
+        <div className={`rounded-[30px] border-2 p-4 md:p-6 ${getStatusColor(activityStatus.status)} ${className} !bg-white border-black shadow-[4px_4px_0px_rgba(0,0,0,0.9)]`}>
             <div className="lg:flex items-center justify-between">
-                <div className="md:flex items-center gap-3 lg:max-w-[70%] me-3">
+                <div className="md:flex items-centerx gap-3 lg:max-w-[70%] me-3">
                     <div>
                         <h3 className=" text-xl font-gulfs uppercase">
                         <span className="me-2" role="img" aria-label="status">
@@ -113,7 +113,7 @@ const CreatorActivityWidget = (props) => {
                 <div className='!mt-3'>
                     <Link
                         href="/creator/activity"
-                        className="text-center border !border-black block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-4 py-3  rounded-[30px]  text-sm  hover:underline opacity-80 hover:opacity-100"
+                        className="text-center border !border-black block lg:inline w-full lg:w-auto whitespace-nowrap text-normal bg-white text-black  px-4 py-2  rounded-[30px]  text-sm  hover:underline opacity-80 hover:opacity-100"
                     >
                         View Details
                     </Link>

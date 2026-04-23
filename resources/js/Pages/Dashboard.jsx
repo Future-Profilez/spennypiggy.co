@@ -263,14 +263,11 @@ export default function Dashboard(props) {
                     <>
                         <div
                             onClick={() => setShowAdd(true)}
-                            className="addoption-action cursor-pointer p-2 
-                            bg-pink-400 border-4 border-black !rounded-[20px] 
-                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
-                            hover:translate-x-[2px] hover:translate-y-[2px] 
-                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] 
-                            transition-all z-50"
+                            className="addoption-action cursor-pointer p-2 bg-pink-400 border-4 border-black !rounded-[20px] 
+                            shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] 
+                            hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50 "
                             // dangerouslySetInnerHTML={{ __html: addicon.replace('fill="#fff"', 'fill="#000"') }}
-                        ><b className="!text-xl md:!text-2xl px-4">+</b></div>
+                        ><b className="text-2xl md:text-3xl px-4  !leading-[8px] top-[4px] relative">+</b></div>
                         {showAdd ? (
                             <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
                                 <div className="w-full max-w-[550px]  px-3">
