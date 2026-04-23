@@ -31,7 +31,7 @@ const imageLinks = [
 ];
 
 export default function Wishlist(props) {
-    const { global_currency, auth, wish_categories } = usePage().props;
+    const { global_currency, auth, wish_categories, all_user_categories } = usePage().props;
     const { currency, item, text, editpop, openPop, setuped, customtext } =
         props;
     const defaultCurrency =
@@ -68,7 +68,15 @@ export default function Wishlist(props) {
         }
     };
 
-    const [categories, setcategories] = useState(wish_categories || []);
+    const [categories, setcategories] = useState(all_user_categories || wish_categories || []);
+    
+    useEffect(() => {
+        if (all_user_categories && all_user_categories.length > 0) {
+            setcategories(all_user_categories);
+        } else if (wish_categories && wish_categories.length > 0) {
+            setcategories(wish_categories);
+        }
+    }, [all_user_categories, wish_categories]);
     const fetch_categories = async () => {
         const controller = new AbortController();
         const { signal } = controller;
