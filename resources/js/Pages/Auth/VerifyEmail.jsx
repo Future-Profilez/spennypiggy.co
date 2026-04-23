@@ -100,8 +100,8 @@ export default function VerifyEmail({auth}) {
                         </defs>
                     </svg>
                 </div>
-                <h3 className="headingSm !text-3xl md:!text-5xl tracking-wider mb-3 text-center" >Verification Email Sent !!</h3>
-                <h5 className="text-xl  text-center text-mint w-3/4 mx-auto block" >Thanks for signing up! Before getting started, please verify your email.</h5> 
+                <h3 className="text-mint !text-xl md:!text-3xl font-bold mb-3 text-center" >Verification Email Sent !!</h3>
+                <h5 className="text-xl text-center text-mint w-3/4 mx-auto block" >Thanks for signing up! Before getting started, please verify your email.</h5> 
                 <div className="flex justify-center mt-6 mb-2">
                     <button  onClick={()=>{setSent(true);sendMail()}} className="text-pink m-auto">{loading ? 'Sending..' : 
                     <>
@@ -116,7 +116,7 @@ export default function VerifyEmail({auth}) {
                         method="post"
                         href={route("logout")}
                         as="button" className="text-white" >
-                            Use Another Email Address ?
+                            Want to Use Another Email Address ?
                     </Link>
                 </div>
             </div>

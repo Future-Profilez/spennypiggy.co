@@ -184,9 +184,12 @@ div{animation:load 0.4s linear;} */
 .border-voilet{border-color:var(--voilet) !important;}
 
 
+.btn-pink { 
+    font-family: 'CeraGRBold', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+}
 
 @layer components{
-  .btn-pink{@apply !text-[18px] bg-[#F94F96] text-white uppercase font-gulfs rounded-full !px-4 !py-3 m-auto}
+  .btn-pink{@apply !text-[18px] bg-[#F94F96] text-white uppercase  rounded-full !px-4 !py-3 m-auto}
   .lg { @apply !text-[20px] !px-[30px] !py-[12px] text-center }
   .sm { @apply !text-[16px] !px-[20px] !py-[9px] text-center }
 }

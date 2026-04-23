@@ -271,6 +271,7 @@ class AuthenticatedSessionController extends Controller
                 'intro' => $userIntro,
                 'supporters' => $profileData['supporters'],
                 'wish_categories' => $this->getCategoriesWithItems($user),
+                'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories()->get() : [],
                 'selectedCategory' => request()->query('category') ?? false,
                 'page' => $page,
                 'first30DayEarnings' => $founderData['first30DayEarnings'],
