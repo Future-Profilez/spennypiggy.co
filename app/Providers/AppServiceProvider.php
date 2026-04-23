@@ -9,12 +9,29 @@ use App\Models\Deliverable;
 use App\Observers\DeliverableObserver;
 use Stripe\ApiRequestor;
 use Stripe\HttpClient\CurlClient;
-
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
+use App\Observers\ActivityObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Models that should be observed by ActivityObserver
+     */
+    protected $activityLogModels = [
+        \App\Models\WishItem::class,
+        \App\Models\Post::class,
+        \App\Models\Shop::class,
+        \App\Models\Membership::class,
+        \App\Models\Bills::class,
+        \App\Models\Task::class,
+        \App\Models\User::class,
+        // Add more models as needed:
+        // \App\Models\Comment::class,
+        // \App\Models\Payment::class,
+        // \App\Models\Subscription::class,
+    ];
+
     /**
      * Register any application services.
      */
@@ -45,15 +62,30 @@ class AppServiceProvider extends ServiceProvider
 
         // Register model observers
         Deliverable::observe(DeliverableObserver::class);
-        
+
+        // Register ActivityObserver for all models
+        $this->registerActivityObservers();
+
         // Register custom notification channel for MagicBell push notifications
         Notification::extend('push', function ($app) {
             return new MagicBellChannel();
         });
-        
+
         // Ensure storage directories exist in Lambda environment
         if (app()->environment('production')) {
             $this->ensureLambdaStorageDirectories();
+        }
+    }
+
+    /**
+     * Register ActivityObserver for all required models
+     */
+    protected function registerActivityObservers(): void
+    {
+        foreach ($this->activityLogModels as $model) {
+            if (class_exists($model)) {
+                $model::observe(ActivityObserver::class);
+            }
         }
     }
 
@@ -71,7 +103,7 @@ class AppServiceProvider extends ServiceProvider
             '/tmp/storage/app',
             '/tmp/storage/logs'
         ];
-        
+
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
                 @mkdir($directory, 0755, true);

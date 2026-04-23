@@ -24,6 +24,7 @@ use App\Services\StripeMetadataService;
 use Carbon\Carbon;
 use App\Services\UserProfileService;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Services\ActivityLogger;
 use App\Services\CreatorSubscriptionService;
 use Exception;
 use Illuminate\Http\Request;
@@ -43,24 +44,19 @@ class BillsController extends Controller
     use RiskEnforcement;
     public function billSave(Request $request)
     {
+        // 🔴 DEBUGGING: Log that method was called
+        Log::info('🎯 billSave method called', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all()
+        ]);
+
         $validator = Validator::make($request->all(), [
-            "name" => [
-                "required",
-                "string",
-            ],
-            "price" => [
-                "required",
-                "numeric",
-                "min:0"
-            ],
-            'period' => [
-                'required',
-                'string'
-            ]
+            "name" => ["required", "string"],
+            "price" => ["required", "numeric", "min:0"],
+            'period' => ['required', 'string']
         ]);
 
         if ($validator->fails()) {
-
             return response()->json([
                 "status" => false,
                 "msg" => "Validation failed",
@@ -70,8 +66,10 @@ class BillsController extends Controller
 
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
 
-        $media = $request->thumbnail;
+        // 🔴 DEBUGGING: Log user found
+        Log::info('👤 User found', ['user_id' => $user->id ?? null, 'is_uk' => $user->is_uk ?? null]);
 
+        $media = $request->thumbnail;
         $price = $request->price;
         $currency = $user->default_currency ?? 'gbp';
 
@@ -101,6 +99,26 @@ class BillsController extends Controller
         $bill->status = 1;
 
         $bill->save();
+        // ✅ ACTIVITY LOG 1: Bill created in database
+        ActivityLogger::log(
+            'BILL_CREATED',
+            (string) $bill->id,  // Cast to string for UUID
+            [
+                'bill_name' => $bill->name,
+                'price' => $price,
+                'currency' => $currency,
+                'period' => $request->period,
+                'vat_percent' => $vatPercent,
+                'vat_amount' => $vatAmount,
+                'price_with_vat' => $priceWithVat,
+                'reserve_rate' => $reserveRate,
+                'net_to_creator' => $breakdown['net_to_creator'] ?? null,
+                'total_supporter_pays' => $createPriceId,
+                'tax_amount' => $taxAmount,
+                'thumbnail_provided' => !empty($media),
+                'status' => 'pending_stripe_creation'
+            ]
+        );
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -134,7 +152,40 @@ class BillsController extends Controller
 
             // Clear user caches
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
+
+            // ✅ ACTIVITY LOG 3: Bill fully activated
+            ActivityLogger::log(
+                'BILL_ACTIVATED',
+                (string) $bill->id,
+                [
+                    'status' => 'active',
+                    'product_id' => $product->id,
+                    'price_id' => $product->default_price,
+                    'approval_status' => 'pending_approval'
+                ]
+            );
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Bill added successfully, your upload will be approved shortly.",
+                'bill_id' => $bill->id  // Added for debugging
+            ]);
         } catch (Exception $e) {
+            // ❌ ACTIVITY LOG 4: Failure - log what went wrong
+            ActivityLogger::log(
+                'BILL_CREATION_FAILED',
+                (string) $bill->id,
+                [
+                    'error_message' => $e->getMessage(),
+                    'error_code' => $e->getCode(),
+                    'stripe_error' => true,
+                    'product_payload' => $productPayload,
+                    'user_account_id' => $user->account_id,
+                    'status' => 'failed'
+                ]
+            );
+
             $bill->delete();
 
             return response()->json([
@@ -142,11 +193,6 @@ class BillsController extends Controller
                 'msg' => "Stripe Error: " . $e->getMessage()
             ]);
         }
-
-        return response()->json([
-            'status' => true,
-            'msg' => "Bill added successfully, your upload will be approved shortly."
-        ]);
     }
 
     public function billEdit(Request $request, $id)
