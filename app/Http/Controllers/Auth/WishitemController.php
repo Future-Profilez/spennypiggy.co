@@ -2557,7 +2557,8 @@ class WishitemController extends Controller
                     'name' => $value[0]['owner']['name'] ?? null,
                     'username' => $value[0]['owner']['username'] ?? null,
                     'uuid' => $value[0]['owner']['uuid'] ?? null,
-                    'default_currency' => $value[0]['owner']['default_currency']
+                    'default_currency' => $value[0]['owner']['default_currency'],
+                    'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0
                 ],
                 'card_capabilities' => StripeControl::hasCardPaymentsCapability($value[0]['owner_account_id'] ?? null),
             ];
@@ -2745,6 +2746,7 @@ class WishitemController extends Controller
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
                         'default_currency' => $value[0]['owner']['default_currency'],
+                        'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0
                     ],
                     'card_capabilities' => StripeControl::hasCardPaymentsCapability($value[0]['owner_account_id'] ?? null),
                 ];

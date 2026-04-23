@@ -26,9 +26,47 @@ export default function BuyShopItem({
     card_capabilities,
 }) {
     const { formatMultiPrice } = PriceFormat();
-    const { global_currency, auth, turnstileSiteKey, shop } = usePage().props;
+    const { global_currency, auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const turnstileRef = useRef(null);
     const [close, setClose] = useState();
+
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+
+    // Helper to identify zero decimal currencies
+    const isZeroDecimalCurrency = (curr) => {
+        const zeroDecimalCurrencies = [
+            'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+            'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+        ];
+        return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+    };
+
+    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
+        const isZeroDecimal = isZeroDecimalCurrency(curr);
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
+
+        // Constants must match backend configuration (Helpers.php)
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
+        const adminFee = adminFeeInCurrency(curr); 
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) return priceWithVat;
+
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
+    };
 
     useEffect(() => {
         if (open) {
@@ -549,16 +587,9 @@ export default function BuyShopItem({
                                         You will be charged{" "}
                                         <strong className="text-black">
                                             {formatMultiPrice(
-                                                fairPrice || s.price,
+                                                calculateTotalSupporterPays(fairPrice || s.price, s?.currency || "GBP", vat_percent),
                                                 s?.currency || "GBP"
-                                            )}{" "}
-                                            {vat_percent
-                                                ? `+${formatMultiPrice(
-                                                      vat_percent,
-                                                      s?.currency || "GBP"
-                                                  )}`
-                                                : ""}{" "}
-                                            + processing fee
+                                            )}
                                         </strong>
                                         <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
                                             * Includes all fees. You will be charged in {s?.currency || "GBP"}.

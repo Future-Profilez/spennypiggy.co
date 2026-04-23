@@ -3,7 +3,7 @@ import PriceFormat from "@/includes/PriceFormat";
 import { Link, useForm, usePage } from "@inertiajs/react";
 
 export default function ProfileTask({ task, IsloggedIn, profileUser }) {
-    const { auth } = usePage().props;
+    const { auth, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { post, processing } = useForm();
     const url = `/task/${task.uuid}`;
@@ -36,17 +36,21 @@ export default function ProfileTask({ task, IsloggedIn, profileUser }) {
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const isCreator = auth?.user?.id === (profileUser?.id || task.creator_id);

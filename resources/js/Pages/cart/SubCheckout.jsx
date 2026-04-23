@@ -9,6 +9,7 @@ import axios from "axios";
 import Popup from "@/Components/Popup";
 
 export default function SubCheckout(props) {
+    const { flash, global_currency, rates, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const {auth, user, wish, reccure, vat_amount  } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [name, setName] = useState(auth && auth.user && auth.user.name || '');
@@ -32,28 +33,30 @@ export default function SubCheckout(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const vat = parseFloat(vatAmount || 0);
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Client Rule: Add VAT before other fees
-        const priceWithVat = listedPrice + vat;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -74,7 +77,7 @@ export default function SubCheckout(props) {
                 window.location = `/login?redirect=${encodeURIComponent(window.location.href)}&message=${encodeURIComponent(msg)}`;
                 return;
             }
-            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, vat_amount);
+            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, wish?.user?.vat_amount_percentage || 0);
             const wishCurrency = (wish?.currency || "GBP").toUpperCase();
             const rate = rates?.[wishCurrency];
             const totalGbp = rate ? total / rate : total;
@@ -98,7 +101,6 @@ export default function SubCheckout(props) {
         submitCheckout();
     }
 
-    const { flash, global_currency, rates } = usePage().props;
     const [guestAllowed, setGuestAllowed] = useState(null);
 
     const [showStepUp, setShowStepUp] = useState(false);
@@ -370,37 +372,22 @@ export default function SubCheckout(props) {
                                 <div className='cartProRtbox mt-3 items-center'>
 
                                     <div className='cartPric pr-4'>
-                                        {formatMultiPrice(wish.price, wish && wish.currency)}
+                                        {formatMultiPrice(
+                                            calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
+                                            wish && wish.currency
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="cartTotal justify-end px-0 py-3">
-                            <div className="cartSubTotal  mt-1 mb-4 !text-sm">
-                                <span> Amount :</span>
-                                <strong className="">
-                                    {formatMultiPrice(wish.price || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            <div className="cartSubTotal  mt-1 mb-4 !text-sm">
-                                <span>VAT Applicable : </span>
-                                <strong className="">
-                                    {formatMultiPrice(vat_amount || "", wish && wish.currency)}
-                                </strong>
-                            </div>
-                            {/* <div className="cartSubTotal  mt-1 !text-sm">
-                                <span>Platform Fee :</span>
-                                <strong className="">
-                                    {formatMultiPrice(wish.tax_amount || "", wish && wish.currency, 'adminFee')}
-                                </strong>
-                            </div> */}
                             <div className="cartSubTotal mt-1 mb-4">
-                                <strong className="text-gray-900">Total :</strong>
+                                <strong className="text-gray-900 text-xl">Total:</strong>
                                 <span className=" text-black">
-                                    <strong className="block">
+                                    <strong className="block text-xl">
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(wish.price, wish?.currency, vat_amount),
+                                            calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                             wish && wish.currency
                                         )}
                                     </strong>

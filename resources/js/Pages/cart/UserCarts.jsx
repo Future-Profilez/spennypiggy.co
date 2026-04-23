@@ -11,8 +11,8 @@ import Popup from "@/Components/Popup";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
+    const { flash, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
-    const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart, currency } = props;
     const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
@@ -77,20 +77,26 @@ export default function UserCarts(props) {
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
     const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-        const listedPrice = parseFloat(price || 0);
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        const vatAmount = listedPrice * (vatPercent || 0) / 100;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
         const priceWithVat = listedPrice + vatAmount;
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         if (totalDeductionRate >= 1) return priceWithVat;
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        return totalSupporterPays;
+        
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -113,7 +119,6 @@ export default function UserCarts(props) {
     const [otpCode, setOtpCode] = useState("");
     const [typedConfirmation, setTypedConfirmation] = useState("");
     const [verifyingOtp, setVerifyingOtp] = useState(false);
-    const { flash, rates } = usePage().props;
     const [guestAllowed, setGuestAllowed] = useState(null);
 
     // Check for flash messages indicating Step-Up is required
@@ -623,7 +628,7 @@ export default function UserCarts(props) {
                                 <div className="fading cartSubTotal text-right mt-2">
                                     <strong className="!text-black">Total :</strong>
                                     <strong className="!text-right !text-black">
-                                        {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
+                                        {formatMultiPrice((fee + subtotal) || "",datas?.user && currency)}
                                     </strong>
                                     <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
                                         * Includes all applicable fees

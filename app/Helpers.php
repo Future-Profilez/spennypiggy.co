@@ -182,7 +182,7 @@ class Helpers
         $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
         
         // Platform fees
-        $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
+        $platformFeeRate = config('app.platform_fee_percentage', 20) / 100;
         $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
         $adminFee = self::administrationFeeInCurrency($currency);
 
@@ -495,9 +495,15 @@ class Helpers
 
             $totalAmountPaid = array_sum($convertedAmount);
 
-            if ($user->is_500_limit_exceeded == 0 && $totalAmountPaid && $totalAmountPaid > 500) {
-                $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
-                return true;
+            if ($totalAmountPaid > 500) {
+                if ($user->is_500_limit_exceeded == 0) {
+                    $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
+                }
+
+                // If admin hasn't approved yet (status 2), block payment
+                if ($user->profile_status_lock != 2) {
+                    return true;
+                }
             }
 
             return false;

@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
         if ($user) {
             $user->append(['monthly_charge_enabled']);
+            $user->load('gifterCardVerification');
         }
 
         // Cache the followed user lookup if username is present
@@ -102,6 +103,8 @@ class HandleInertiaRequests extends Middleware
             'rates'     =>  Cache::remember('currency_rates', 86400, fn() => Currency::rates()),
             'currencies' => Cache::remember('all_currencies_iso', 86400, fn() => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),
             'global_currency'   =>  Cookie::get('currency'),
+            'platform_fee_percentage' => config('app.platform_fee_percentage', 20),
+            'transaction_fee_percentage' => config('app.transaction_fee_percentage', 2),
             'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
             'intercom' => app(IntercomService::class)->buildSettings($user)
         ];

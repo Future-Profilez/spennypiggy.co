@@ -9,7 +9,7 @@ import userphoto from "../../../assets/siteicon.png";
 import axios from "axios";
 
 export default function Show({ auth, task, purchase, purchaseHistory, isCreator, deliverableUrl, currencySymbol, card_capabilities }) {
-    const { turnstileSiteKey } = usePage().props;
+    const { turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage, flash } = usePage().props;
     const turnstileRef = useRef(null);
     const { data, setData, post, processing } = useForm({
         gifter_message: '',
@@ -39,17 +39,21 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const [verified, setVerified] = useState(false);
@@ -78,7 +82,6 @@ export default function Show({ auth, task, purchase, purchaseHistory, isCreator,
             });
     }, [auth?.user?.id]);
 
-    const { flash } = usePage().props;
     const lastFlashRef = useRef({ error: null, success: null, warning: null, info: null });
 
     // Step-Up Modal State

@@ -1,7 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import GifterItems from './GifterItems';
 import GifterTips from './GifterTips';
-import ShareProfile from '@/wishlist/ShareProfile';
 import SocialLinks from '@/includes/SocialLinks';
 import { Tab } from '@headlessui/react';
 import { useState, useEffect, Fragment } from 'react';
@@ -9,8 +8,6 @@ import GifterFeed from './GifterFeed';
 import MembershipLists from './MembershipLists';
 import GifterMedia from './GifterMedia';
 import ActivateCard from './ActivateCard';
-import ThankyouMessages from './ThankyouMessages';
-import userphoto from "../../../assets/siteicon.png";
 
 export default function Gifter({ IsloggedIn,  sLinks }){
   const pageProps = usePage().props || {};
@@ -95,31 +92,33 @@ export default function Gifter({ IsloggedIn,  sLinks }){
     <div className={`relative z-1 min-h-screen pb-20 bg-[#A2E4B8] ${IsloggedIn ? "IsloggedIn" : ""}`} >
         <div className="max-w-[1400px] mx-auto  pt-8">
           {IsloggedIn ? (
-            <div className="inlinetab ">
-                <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-                    <Tab.List className="flex items-center justify-center gap-3 md:gap-4 mb-4 md:mb-12 overflow-x-auto scrollbar-hide p-2 pt-1">
-                        {['About', 'Feed', 'Memberships', 'Gifts', 'Tips', 'Media'].map((category, idx) => (
-                            <Tab key={category} as={Fragment} >
-                                {({ selected }) => (
-                                    <button
-                                        className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
-                                            font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap
-                                            py-2 px-6 border-[3px] border-black rounded-[30px] 
-                                            ${selected ? 'text-black bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'text-black bg-white hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'} 
-                                        `}
-                                    >
-                                        {category}
-                                    </button>
-                                )}
-                            </Tab> 
-                        ))} 
-                    </Tab.List>
+            <>
+                <div className='max-w-4xl mx-auto'>
+                    <ActivateCard />
+                </div>
+                <div className="inlinetab ">
+                     <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+                        <Tab.List className="flex items-center justify-center gap-3 md:gap-4 mb-4 md:mb-12 overflow-x-auto scrollbar-hide p-2 pt-1">
+                            {['About', 'Feed', 'Memberships', 'Gifts', 'Tips', 'Media'].map((category, idx) => (
+                                <Tab key={category} as={Fragment} >
+                                    {({ selected }) => (
+                                        <button
+                                            className={`relative focus:border-0 focus:outline-none text-sm md:text-base 
+                                                font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap
+                                                py-2 px-6 border-[3px] border-black rounded-[30px] 
+                                                ${selected ? 'text-black bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]' : 'text-black bg-white hover:bg-yellow-100 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]'} 
+                                            `}
+                                        >
+                                            {category}
+                                        </button>
+                                    )}
+                                </Tab> 
+                            ))} 
+                        </Tab.List>
 
-
-                    <Tab.Panels>
+                        <Tab.Panels>
                         <Tab.Panel className="focus:outline-none">
                             <div className='max-w-4xl mx-auto'>
-                                {auth?.user?.profile_status_lock == 1 && <ActivateCard auth={auth}/>}
                                 <AboutScreen />
                             </div>
                         </Tab.Panel>
@@ -156,6 +155,7 @@ export default function Gifter({ IsloggedIn,  sLinks }){
                     </Tab.Panels>
                 </Tab.Group>
             </div>
+            </>
           ) : (
             <div className='max-w-4xl mx-auto pt-10'>
                 <AboutScreen />

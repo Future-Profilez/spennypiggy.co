@@ -484,7 +484,7 @@ export default function Dashboard(props) {
                                         className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
                                         src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
                                         loading="eager"
-                                        fetchPriority="high"
+                                        fetchpriority="high"
                                     />
                                     {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ? (
                                         <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
@@ -881,7 +881,7 @@ export default function Dashboard(props) {
                                                                         {wish_categories &&
                                                                         wish_categories.length ? (
                                                                             <>
-                                                                                <div className="new-wish-cats flex mb-6 gap-2 flex-wrap p-2">
+                                                                                <div className="new-wish-cats flex items-center mb-6 gap-2 flex-wrap p-2">
                                                                                     <Link
                                                                                         preserveScroll
                                                                                         href={route(
@@ -952,35 +952,22 @@ export default function Dashboard(props) {
                                                                             ""
                                                                         )}
 
-                                                                        {loading ||
-                                                                        (isInitialLoad &&
-                                                                            (!wishitems ||
-                                                                                wishitems.length ===
-                                                                                    0)) ? (
+                                                                        {loading || (isInitialLoad &&
+                                                                            (!wishitems || wishitems.length === 0)) ? (
                                                                             <LoadingScreen />
-                                                                        ) : wishitems &&
-                                                                          wishitems.length >
-                                                                              0 ? (
+                                                                        ) : wishitems && wishitems.length > 0 ? (
                                                                             <>
                                                                                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 !gap-2 sm:!gap-3 md:!gap-4">
                                                                                     <DndContext
-                                                                                        sensors={
-                                                                                            sensors
-                                                                                        }
-                                                                                        collisionDetection={
-                                                                                            closestCenter
-                                                                                        }
+                                                                                        sensors={sensors}
+                                                                                        collisionDetection={closestCenter}
                                                                                         onDragEnd={
                                                                                             handleDragEnd
                                                                                         }
                                                                                     >
                                                                                         <SortableContext
-                                                                                            strategy={
-                                                                                                rectSortingStrategy
-                                                                                            }
-                                                                                            items={
-                                                                                                wishitems
-                                                                                            }
+                                                                                            strategy={rectSortingStrategy}
+                                                                                            items={wishitems}
                                                                                         >
                                                                                             {wishitems.map(
                                                                                                 (

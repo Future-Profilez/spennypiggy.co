@@ -2,6 +2,8 @@ import { useEffect, useState, lazy } from "react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 const Popup = lazy(() => import('@/Components/Popup'));
+import { RiEdit2Line } from "react-icons/ri";
+
 export default function EditCategories({username, fetch_categories}) {
 
    const [data, setData] = useState(null);
@@ -71,10 +73,10 @@ export default function EditCategories({username, fetch_categories}) {
    return (
       <>
       {data && data.length ? 
-         <Popup size="md" text="Edit Categories" space={4}
+         <Popup size="md" text={<><RiEdit2Line className="me-2" size='18' /> Edit Categories</>} space={4}
             action={close}
             modalclass="pinkmodal"
-            classes="me-2 mb-2 wish-tags cursor-pointer edit text-nowrap " >
+            classes="me-2 flex items-center !text-sm font-bold wish-tags uppercase tracking-widest cursor-pointer edit text-nowrap !bg-black !text-gray-200 !rounded-xl !px-4 !py-[6px]" >
                <h2 className="font-GillSans text-bl  uppercase text-lg relative z-1 "> Edit Categories </h2>
                {data && data.map((s, i)=>{
                   return <Item item={s} />

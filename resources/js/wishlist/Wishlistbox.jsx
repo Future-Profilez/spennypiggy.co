@@ -17,7 +17,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 import { Link, usePage } from "@inertiajs/react";
 
 export default function Wishlistbox(props) {
-    const { ziggy, auth: globalAuth } = usePage().props;
+    const { ziggy, auth: globalAuth, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const {
         imagesize,
@@ -45,28 +45,30 @@ export default function Wishlistbox(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const vat = parseFloat(vatAmount || 0);
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Client Rule: Add VAT before other fees
-        const priceWithVat = listedPrice + vat;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const effectiveAuth = auth || globalAuth;
@@ -241,7 +243,7 @@ export default function Wishlistbox(props) {
                                             calculateTotalSupporterPays(
                                                 itm.price, 
                                                 itm?.currency || "GBP",
-                                                ((parseFloat(String(itm.price || 0).replace(/,/g, '')) + parseFloat(String(itm.tax_amount || 0).replace(/,/g, ''))) * (itm?.user?.vat_amount_percentage || 0) / 100)
+                                                itm?.user?.vat_amount_percentage || 0
                                             ), 
                                             itm?.currency || "GBP"
                                         )}

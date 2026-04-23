@@ -54,7 +54,7 @@ const rewards_lists = [
 export default function Membership({item, hidebtn, IsloggedIn }) {
   const { successAlert, errorAlert, errorsHandling } = useAlerts();
   
-  const {auth} = usePage().props;
+  const { auth, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
   const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
   const [rewards ,setrewards ] = useState(item?.rewards ? JSON.parse(item.rewards) : []);
   const getRewardTitle = (e) => {
@@ -97,18 +97,16 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
   };
 
   const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-    const listedPrice = parseFloat(price || 0);
+    const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
     const isZeroDecimal = isZeroDecimalCurrency(curr);
-    
-    // 1. VAT is added to the listed price first
-    const vatAmount = listedPrice * (vatPercent || 0) / 100;
+    const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
     const priceWithVat = listedPrice + vatAmount;
 
-    // 2. Define fee rates
-    const stripeFeeRate = 0.029; // 2.9%
-    const stripeFixedFee = isZeroDecimal ? 0 : 0.30; // 30 cents (0 for zero-decimal)
-    const platformFeeRate = 0.15; // 15%
-    const complianceFeeRate = 0.02; // 2%
+    // 2. Define fee rates (Constants must match backend configuration in Helpers.php)
+    const stripeFeeRate = 0.029;
+    const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+    const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+    const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
     const adminFee = adminFeeInCurrency(curr);
 
     // 3. Gross-up formula:
@@ -123,11 +121,15 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
 
     const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
     
-    return totalSupporterPays;
+    // Rounding logic to match backend (Helpers.php)
+    if (!isZeroDecimal) {
+        return Math.ceil(totalSupporterPays * 100) / 100;
+    } else {
+        return Math.ceil(totalSupporterPays);
+    }
   };
 
   const isCreator = auth?.user?.id === item?.user_id;
-  const vatPercentage = item?.user?.vat_amount_percentage || 0;
   const approvalStatus = item?.approved;
   const editStatus = item?.edited_status;
   const isApprovalPending = approvalStatus === 0 || approvalStatus === '0';
@@ -202,7 +204,7 @@ export default function Membership({item, hidebtn, IsloggedIn }) {
                                   calculateTotalSupporterPays(
                                     item?.price, 
                                     item?.currency,
-                                    vatPercentage
+                                    item?.user?.vat_amount_percentage || 0
                                   ), 
                                   item?.currency
                                 )

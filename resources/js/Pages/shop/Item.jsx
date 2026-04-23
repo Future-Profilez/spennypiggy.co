@@ -37,7 +37,47 @@ export default function ShopDetailItem(props) {
       const shareUrl = `https://feedly.com/i/subscription/feed/${encodeURIComponent(url)}`;
       window.open(shareUrl, '_blank', 'noopener,noreferrer');
    };
-   const { formatMultiPrice} = PriceFormat();
+   const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
+   const { global_currency, auth, turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+
+   // Helper to identify zero decimal currencies
+   const isZeroDecimalCurrency = (curr) => {
+       const zeroDecimalCurrencies = [
+           'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 
+           'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+       ];
+       return zeroDecimalCurrencies.includes(curr?.toUpperCase());
+   };
+
+   // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
+   const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+       const listedPrice = parseFloat(price || 0);
+       const isZeroDecimal = isZeroDecimalCurrency(curr);
+       const vatAmount = listedPrice * (vatPercent || 0) / 100;
+       const priceWithVat = listedPrice + vatAmount;
+
+       // Constants must match backend configuration (Helpers.php)
+       const stripeFeeRate = 0.029;
+       const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+       const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+       const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
+       const adminFee = adminFeeInCurrency(curr); 
+       const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+       
+       if (totalDeductionRate >= 1) return priceWithVat;
+
+       const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+       
+       // Rounding logic to match backend (Helpers.php)
+       if (!isZeroDecimal) {
+           return Math.ceil(totalSupporterPays * 100) / 100;
+       } else {
+           return Math.ceil(totalSupporterPays);
+       }
+   };
+
+   const isOwner = auth?.user?.id === shop?.user_id;
+   const vatPercentage = shop?.user?.vat_amount_percentage || 0;
 
    const [price, setPrice] = useState(shop.price);
    const [selectedVarient, setSelectedVarient] = useState(shop && shop.shop_varients[0] && shop.shop_varients[0].id);
@@ -211,13 +251,36 @@ export default function ShopDetailItem(props) {
 
                      <div className='sm:flex items-center justify-between' >
                         <div className=' mb-3'>
-                           <h3 className='text-3xl font-bold' >
-                              {shop && shop.is_member == 1 && shop.special_member_price ? <>
-                                 {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP') } <span className='line-through text-gray-400' >{price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "FREE"}</span>
-                              </>
-                              : price > 0 ? formatMultiPrice(price, shop?.currency || 'GBP') : "Free"
-                              }
-                              {shop.slot_limitation ? <span className='ml-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
+                           <h3 className='text-3xl font-bold flex flex-col' >
+                              <div className="flex items-baseline">
+                                 {shop && shop.is_member == 1 && shop.special_member_price ? <>
+                                    {isOwner ? (
+                                       formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP')
+                                    ) : (
+                                       formatMultiPrice(
+                                          calculateTotalSupporterPays(shop.special_member_price, shop?.currency || 'GBP', vatPercentage),
+                                          shop?.currency || 'GBP'
+                                       )
+                                    )} <span className='line-through text-gray-400 text-xl ml-2' >{price > 0 ? (isOwner ? formatMultiPrice(price, shop?.currency || 'GBP') : formatMultiPrice(calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage), shop?.currency || 'GBP')) : "FREE"}</span>
+                                 </>
+                                 : price > 0 ? (
+                                    isOwner ? (
+                                       formatMultiPrice(price, shop?.currency || 'GBP')
+                                    ) : (
+                                       formatMultiPrice(
+                                          calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage),
+                                          shop?.currency || 'GBP'
+                                       )
+                                    )
+                                 ) : "Free"
+                                 }
+                                 {shop.slot_limitation ? <span className='ml-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
+                              </div>
+                              {!isOwner && price > 0 && (
+                                 <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                    * Includes all applicable fees
+                                 </span>
+                              )}
                            </h3>
                            {shop.type === 'physical' ? <h2 className='mt-1'>
                               Shipping Price : {formatMultiPrice(shippingPrice, shop?.currency || 'GBP')}</h2>
