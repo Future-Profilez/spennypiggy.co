@@ -40,7 +40,7 @@ environments:
       - "php artisan route:clear"
       - "php artisan view:clear"
       - "php artisan event:clear"
-     
+
   production:
     memory: 1024
     queue-memory: 512

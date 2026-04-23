@@ -33,9 +33,9 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                     <span className="text-green-700 font-bold uppercase">
                         3-days free trial
                     </span>{" "}
-                    before your monthly subscription begins! Stripe charges £2
-                    per month, plus a £2 administrator fee due to compliance
-                    requirements.
+                    before your monthly subscription begins! After the trial,
+                    your subscription renews at £8.99/month to help cover
+                    payment processing and compliance requirements.
                 </p>
 
                 <Link href={"/activate-subscription"}
@@ -45,8 +45,8 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                     //         e.preventDefault()
                     //     }
                     // }}
-                    className={`btn-pink !text-sm sm:!text-normal md:!text-[17px] btn-shadow w-full block text-center 
-                    bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-2 transition-all duration-200
+                    className={`btn-pink !text-sm sm:!text-normal md:!text-[17px] w-full block text-center 
+                    bg-pink-600 hover:bg-pink-700 text-white font-medium px-4 py-3 transition-all duration-200
                     ${!isActive && canActivate ? "" :
                     "cursor-not-allowed opacity-50 pointer-events-none"
                     }`} >

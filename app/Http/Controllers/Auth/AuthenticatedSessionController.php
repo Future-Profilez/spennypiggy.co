@@ -271,6 +271,7 @@ class AuthenticatedSessionController extends Controller
                 'intro' => $userIntro,
                 'supporters' => $profileData['supporters'],
                 'wish_categories' => $this->getCategoriesWithItems($user),
+                'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories()->get() : [],
                 'selectedCategory' => request()->query('category') ?? false,
                 'page' => $page,
                 'first30DayEarnings' => $founderData['first30DayEarnings'],
@@ -364,9 +365,9 @@ class AuthenticatedSessionController extends Controller
             
             $categoryIds = \App\Models\WishCategory::whereHas('wish', function ($q) use ($user, $isPublicView) {
                 $q->where('user_id', $user->id);
-                if ($isPublicView) {
-                    $q->where('is_approved', 1);
-                }
+                // For both public and owner, only show categories with approved items
+                // This matches the user's request to only show categories with items (meaning visible items)
+                $q->where('is_approved', 1);
             })->pluck('user_category_id')->unique()->filter();
 
             // Return the filtered categories as a collection

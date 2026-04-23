@@ -137,7 +137,7 @@ export default function Wishlistbox(props) {
                 {IsloggedIn ? (
                     <>
                         <div
-                            className="movesvg"
+                            className="movesvg absolute !top-6 !left-6"
                             ref={setNodeRef}
                             {...listeners}
                             {...attributes} >
@@ -172,7 +172,7 @@ export default function Wishlistbox(props) {
                     />
                 )}
                 {IsloggedIn ? (
-                    <Menu as="div" className="absolute top-2 right-2 z-10 inline-block text-left">
+                    <Menu as="div" className="absolute top-4 right-4 z-10 inline-block text-left">
                         <div>
                             <Menu.Button className="flex flex-col gap-1 p-2 bg-transparent border-0 cursor-pointer focus:outline-none">
                                 <span className="bg-white block w-1 h-1 rounded-full"></span>
@@ -210,7 +210,7 @@ export default function Wishlistbox(props) {
                     className={`h-[110px] sm:h-[150px]  md:h-[200px] wishbox overflow-hidden cursor-pointer ${imagesize} p-3`} >
                     <LazyLoadImage
                         alt={"image"}
-                        effect="blur"
+                        effect="blur" 
                         height={193}
                         className={`block w-full h-full object-cover rounded-[20px] overflow-hidden border-[3px] border-black`}
                         src={itm?.perma_link ? itm?.perma_link : uploadedimg}

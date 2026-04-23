@@ -66,12 +66,9 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
   // Handle filter change
   const handleFilterChange = async (newFilter) => {
     if (newFilter === filter) return;
-    
     setFilter(newFilter);
     setPage(1);
     setHasMore(true);
-    
-    // If we haven't used API yet and it's 'all' filter, use initial props
     if (!useApi && newFilter === 'all' && initialPosts?.length) {
       setPosts(initialPosts);
       setHasMore(initialPosts.length >= 10); // Assume more if we got full page
@@ -87,17 +84,15 @@ export default function FeedList({ user, IsloggedIn, initialFilter = 'all' }) {
     await fetchPosts(filter, nextPage, true);
   };
 
-  // Initialize with API if not 'all' filter or no initial posts
   useEffect(() => {
     if (filter !== 'all' || !initialPosts?.length) {
       fetchPosts(filter, 1, false);
     }
   }, []);
 
-  // Memoized filtered posts for initial props fallback
   const displayPosts = useMemo(() => {
     return posts || [];
-  }, [posts]);
+  }, [posts]); 
 
   if (isLoading && !posts.length) {
     return (

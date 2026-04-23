@@ -9,7 +9,7 @@ export default function EditCategories({username, fetch_categories}) {
    const [isLoading, setIsLoading] = useState(true);
    const fetchCategoriesLists = () => { 
       if(username){
-         axios.get(`/user_category/${username}`).then((res)=>{
+         axios.get(`/user/category/${username}`).then((res)=>{
             setIsLoading(false);
             setData(res.data.categories);
          }).catch(err => {
