@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class ActivityObserver
 {
     /**
+     * Track newly created models to prevent duplicate update logs
+     * Using static property to persist across event calls
+     */
+    private static $justCreated = [];
+
+    /**
      * Sensitive fields that should never be logged
      */
     protected $excludedFields = [
@@ -39,9 +45,12 @@ class ActivityObserver
             return;
         }
 
+        // Mark that this model was just created to prevent duplicate update logs
+        $this->markAsJustCreated($model);
+
         ActivityLogger::log(
             "{$modelName}_CREATED",
-            (string) $model->id,  // Cast to string to handle UUIDs properly
+            (string) $model->id,
             [
                 'model_type' => get_class($model),
                 'model_data' => $this->sanitizeData($model->getAttributes()),
@@ -60,12 +69,27 @@ class ActivityObserver
     {
         $modelName = class_basename($model);
 
+        // Skip if this model was just created (prevents duplicate logging)
+        if ($this->wasJustCreated($model)) {
+            $this->clearJustCreatedFlag($model);
+            return;
+        }
+
         // Get only the fields that changed
         $dirty = $model->getDirty();
         $original = $model->getOriginal();
 
         // If nothing changed, don't log
         if (empty($dirty)) {
+            return;
+        }
+
+        // Skip auto-updating timestamp fields if they're the only changes
+        $timestampFields = ['updated_at', 'created_at'];
+        $nonTimestampChanges = array_diff(array_keys($dirty), $timestampFields);
+
+        // If ONLY timestamp fields changed, skip logging
+        if (empty($nonTimestampChanges)) {
             return;
         }
 
@@ -77,9 +101,14 @@ class ActivityObserver
                 continue;
             }
 
+            // Skip timestamp fields
+            if (in_array($field, $timestampFields)) {
+                continue;
+            }
+
             $oldValue = $original[$field] ?? null;
 
-            // Only record if there's an actual change (using strict comparison where appropriate)
+            // Only record if there's an actual change
             if ($oldValue != $newValue) {
                 $diff[$field] = [
                     'old' => $this->sanitizeValue($oldValue),
@@ -92,12 +121,12 @@ class ActivityObserver
         if (!empty($diff)) {
             ActivityLogger::log(
                 "{$modelName}_UPDATED",
-                (string) $model->id,  // Cast to string for UUIDs
+                (string) $model->id,
                 [
                     'model_type' => get_class($model),
                     'diff' => $diff,
                     'event' => 'updated',
-                    'changed_fields' => array_keys($diff)  // Added for quick reference
+                    'changed_fields' => array_keys($diff)
                 ]
             );
         }
@@ -115,7 +144,7 @@ class ActivityObserver
 
         ActivityLogger::log(
             "{$modelName}_DELETED",
-            (string) $model->id,  // Cast to string for UUIDs
+            (string) $model->id,
             [
                 'model_type' => get_class($model),
                 'deleted_data' => $this->sanitizeData($model->getAttributes()),
@@ -163,6 +192,53 @@ class ActivityObserver
                 'event' => 'force_deleted'
             ]
         );
+    }
+
+    /**
+     * Generate a unique key for the model
+     *
+     * @param Model $model
+     * @return string
+     */
+    private function getModelKey(Model $model): string
+    {
+        return get_class($model) . ':' . ($model->id ?? 'new');
+    }
+
+    /**
+     * Mark a model as just created to prevent duplicate update logging
+     *
+     * @param Model $model
+     * @return void
+     */
+    private function markAsJustCreated(Model $model): void
+    {
+        $key = $this->getModelKey($model);
+        self::$justCreated[$key] = true;
+    }
+
+    /**
+     * Check if the model was just created
+     *
+     * @param Model $model
+     * @return bool
+     */
+    private function wasJustCreated(Model $model): bool
+    {
+        $key = $this->getModelKey($model);
+        return isset(self::$justCreated[$key]) && self::$justCreated[$key] === true;
+    }
+
+    /**
+     * Clear the just created flag
+     *
+     * @param Model $model
+     * @return void
+     */
+    private function clearJustCreatedFlag(Model $model): void
+    {
+        $key = $this->getModelKey($model);
+        unset(self::$justCreated[$key]);
     }
 
     /**

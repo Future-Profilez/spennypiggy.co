@@ -44,39 +44,6 @@ Route::get('/health', function () {
     ], 200);
 })->name('health.check');
 
-// In routes/web.php - Add temporarily for testing
-Route::get('/test-logger', function () {
-    try {
-        // Test 1: Simple log
-        $log1 = \App\Services\ActivityLogger::log('TEST_LOG_1', null, ['test' => 'data']);
-
-        // Test 2: Log with user (if logged in)
-        $log2 = null;
-        if (Auth::check()) {
-            $log2 = \App\Services\ActivityLogger::log('TEST_LOG_WITH_USER', Auth::id(), ['email' => Auth::user()->email]);
-        }
-
-        // Check if logs were created
-        $logs = \App\Models\AuditLog::latest()->take(5)->get();
-
-        return response()->json([
-            'success' => true,
-            'log1_created' => !is_null($log1),
-            'log2_created' => !is_null($log2),
-            'recent_logs_count' => $logs->count(),
-            'recent_logs' => $logs->toArray()
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
-        ], 500);
-    }
-});
-
 // Cache Check Route
 Route::get('/debug/cache-check', function () {
     $key = 'debug_cache_test_' . time();
@@ -417,6 +384,7 @@ if (app()->environment('local')) {
     // Debug: Test support image generation end-to-end (Node + PHP fallback)
     Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
         ->name('debug.test-support-image');
+    Route::get('activity/logs', [\App\Http\Controllers\CreatorActivityController::class, 'logs'])->name('activity.logs');
 }
 
 // Creator Activity Routes

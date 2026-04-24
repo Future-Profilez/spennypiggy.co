@@ -24,7 +24,6 @@ use App\Services\StripeMetadataService;
 use Carbon\Carbon;
 use App\Services\UserProfileService;
 use App\Notifications\SubscriptionBlockedNotification;
-use App\Services\ActivityLogger;
 use App\Services\CreatorSubscriptionService;
 use Exception;
 use Illuminate\Http\Request;
@@ -99,26 +98,6 @@ class BillsController extends Controller
         $bill->status = 1;
 
         $bill->save();
-        // ✅ ACTIVITY LOG 1: Bill created in database
-        ActivityLogger::log(
-            'BILL_CREATED',
-            (string) $bill->id,  // Cast to string for UUID
-            [
-                'bill_name' => $bill->name,
-                'price' => $price,
-                'currency' => $currency,
-                'period' => $request->period,
-                'vat_percent' => $vatPercent,
-                'vat_amount' => $vatAmount,
-                'price_with_vat' => $priceWithVat,
-                'reserve_rate' => $reserveRate,
-                'net_to_creator' => $breakdown['net_to_creator'] ?? null,
-                'total_supporter_pays' => $createPriceId,
-                'tax_amount' => $taxAmount,
-                'thumbnail_provided' => !empty($media),
-                'status' => 'pending_stripe_creation'
-            ]
-        );
 
         // Get currency metadata to handle zero-decimal currencies properly
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -153,38 +132,12 @@ class BillsController extends Controller
             // Clear user caches
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
 
-
-            // ✅ ACTIVITY LOG 3: Bill fully activated
-            ActivityLogger::log(
-                'BILL_ACTIVATED',
-                (string) $bill->id,
-                [
-                    'status' => 'active',
-                    'product_id' => $product->id,
-                    'price_id' => $product->default_price,
-                    'approval_status' => 'pending_approval'
-                ]
-            );
-
             return response()->json([
                 'status' => true,
                 'msg' => "Bill added successfully, your upload will be approved shortly.",
                 'bill_id' => $bill->id  // Added for debugging
             ]);
         } catch (Exception $e) {
-            // ❌ ACTIVITY LOG 4: Failure - log what went wrong
-            ActivityLogger::log(
-                'BILL_CREATION_FAILED',
-                (string) $bill->id,
-                [
-                    'error_message' => $e->getMessage(),
-                    'error_code' => $e->getCode(),
-                    'stripe_error' => true,
-                    'product_payload' => $productPayload,
-                    'user_account_id' => $user->account_id,
-                    'status' => 'failed'
-                ]
-            );
 
             $bill->delete();
 
@@ -348,10 +301,22 @@ class BillsController extends Controller
         if (!empty($bill)) {
             BillPayment::where('bills_id', $bill->id)->delete();
             $account_id = $bill->user->account_id;
-            $stripeProduct = StripeControl::getProduct($bill->product_id, $account_id);
-            if ($stripeProduct) {
-                // Delete the product and prices from Stripe
-                StripeControl::deleteProductAndPrices($stripeProduct->id, $account_id);
+
+            // Only attempt to delete Stripe product if product_id exists
+            if (!empty($bill->product_id)) {
+                try {
+                    $stripeProduct = StripeControl::getProduct($bill->product_id, $account_id);
+                    if ($stripeProduct) {
+                        // Delete the product and prices from Stripe
+                        StripeControl::deleteProductAndPrices($stripeProduct->id, $account_id);
+                    }
+                } catch (\Exception $e) {
+                    // Log the error but continue with bill deletion
+                    \Log::error('Failed to delete Stripe product: ' . $e->getMessage(), [
+                        'bill_uuid' => $uuid,
+                        'product_id' => $bill->product_id
+                    ]);
+                }
             }
 
             $bill->delete();
