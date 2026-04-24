@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\DiscoveryService;
+use App\Http\Controllers\FeatureSuggestionController;
 use App\Http\Controllers\Auth\CheckoutController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\StripeController;
@@ -35,6 +36,15 @@ use Illuminate\Support\Str;
 */
 
 // Health check endpoint for Vapor
+use App\Http\Controllers\Admin\EmulationLoginController;
+
+// Emulation Bridge
+Route::get('/admin/emulate-login/{user}', [EmulationLoginController::class, 'login'])
+    ->name('admin.emulate.login');
+
+Route::post('/admin/emulate-stop', [EmulationLoginController::class, 'stop'])
+    ->name('admin.emulate.stop');
+
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
@@ -213,6 +223,7 @@ Route::get('get-cart', function () {
 
 // Analytics
 Route::post('/analytics/search-click', [\App\Http\Controllers\AnalyticsController::class, 'searchClick'])->name('analytics.search-click');
+Route::post('/feature-suggestion', [FeatureSuggestionController::class, 'store'])->middleware('throttle:5,1')->name('feature-suggestion.store');
 Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('rye.webhook');
 
 // Unified Stripe Webhook Endpoint
@@ -407,6 +418,16 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     
     // Payout/Reserve Routes
     Route::get('/payouts/reserves', [\App\Http\Controllers\Api\CreatorPayoutController::class, 'getReserves'])->name('payouts.reserves');
+
+    // Security Zone Routes
+    Route::prefix('security')->name('security.')->group(function () {
+        Route::get('/sessions', [\App\Http\Controllers\SecurityController::class, 'getSessions'])->name('sessions');
+        Route::post('/sessions/revoke', [\App\Http\Controllers\SecurityController::class, 'revokeSession'])->name('sessions.revoke');
+        Route::get('/blocked-users', [\App\Http\Controllers\SecurityController::class, 'getBlockedUsers'])->name('blocked-users');
+        Route::post('/block-user', [\App\Http\Controllers\SecurityController::class, 'blockUser'])->name('block-user');
+        Route::delete('/unblock-user/{id}', [\App\Http\Controllers\SecurityController::class, 'unblockUser'])->name('unblock-user');
+        Route::get('/search-users', [\App\Http\Controllers\SecurityController::class, 'searchUsers'])->name('search-users');
+    });
 });
 
 Route::get('/service-worker.js', function () {
@@ -675,6 +696,31 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
         return Inertia::render('Admin/FounderBonus/Settings');
     })->name('admin.founder/bonus-settings.page');
     Route::post('/founder/bonuses/trigger-qualification-check', [App\Http\Controllers\Admin\FounderBonusAdminController::class, 'triggerQualificationCheck'])->name('admin.founder/bonuses.trigger-qualification');
+    
+    // Feature Suggestions Admin
+    Route::get('/feature-suggestions', function (Illuminate\Http\Request $request) {
+        $query = \App\Models\FeatureSuggestion::with('user')->latest();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('suggestion', 'like', "%{$term}%")
+                  ->orWhere('name', 'like', "%{$term}%")
+                  ->orWhere('email', 'like', "%{$term}%");
+            });
+        }
+
+        return Inertia::render('Admin/FeatureSuggestions', [
+            'suggestions' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only(['status', 'search']),
+        ]);
+    })->name('admin.feature-suggestions.index');
+
+    Route::patch('/feature-suggestions/{suggestion}/status', [FeatureSuggestionController::class, 'updateStatus'])->name('admin.feature-suggestions.update-status');
 });
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes

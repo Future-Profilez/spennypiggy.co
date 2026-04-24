@@ -31,7 +31,6 @@ export default function Wishlistbox(props) {
         setuped,
         classes,
         showall,
-        key,
         trackClick,
     } = props;
 
@@ -115,7 +114,6 @@ export default function Wishlistbox(props) {
 
     return (
         <div
-            key={key}
             style={IsloggedIn ? style : stylenone}
             className={`wish-item-box !p-0 ${classes} ${
                 isDragging ? "dragging" : ""

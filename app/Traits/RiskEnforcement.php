@@ -79,6 +79,12 @@ trait RiskEnforcement
         $riskResult = app(\App\Services\Risk\RiskEngineService::class)->evaluate($context);
         $decision = $riskResult['decision'] ?? 'ALLOW';
 
+        // Bypass STEP_UP if emulated by admin
+        if ($decision === 'STEP_UP' && session()->get('emulated_by_admin')) {
+            Log::info("Bypassing STEP_UP for payment because user is being emulated by admin.");
+            $decision = 'ALLOW';
+        }
+
         // 5. Handle BLOCK / COOLDOWN
         if (in_array($decision, ['BLOCK', 'COOLDOWN'], true)) {
             $msg = $riskResult['ui']['body'] ?? 'Payment blocked for security reasons.';

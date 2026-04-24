@@ -673,11 +673,11 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                     type="button" 
                                     onClick={() => setClose(false)} 
                                     className="w-full rounded-xl bg-gray-200 border-[3px]
-                                    border-black font-black uppercase tracking-widest block p-3 
+                                    border-black font-black uppercase tracking-widest block p-[10px] 
                                     hover:bg-gray-300 transition-colors 
                                     shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
                                     hover:translate-x-[-2px] hover:translate-y-[-2px] 
-                                    hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                                    hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !text-sm" 
                                 >
                                     Cancel
                                 </button>
@@ -686,8 +686,8 @@ export default function EditProfile({ profilepage, user, text, classes, updatePr
                                     disabled={processing} 
                                     className='w-full rounded-xl bg-yellow-300 
                                     border-[3px] border-black font-black 
-                                    uppercase font-poppins tracking-widest block p-3 hover:bg-yellow-400 
-                                    transition-colors font-bold !mt-0
+                                    uppercase font-poppins tracking-widest block p-[10px] hover:bg-yellow-400 
+                                    transition-colors font-bold !mt-0 !text-sm
                                     shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] 
                                     hover:translate-x-[-2px] hover:translate-y-[-2px] 
                                     hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !text-black '

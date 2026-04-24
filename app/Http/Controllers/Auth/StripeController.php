@@ -1340,6 +1340,10 @@ class StripeController extends Controller
     /* create checkout */
     public function createCheckout($owner_id)
     {
+        request()->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
         try {
             if (!empty(request()->query('message'))) {
                 $wordLimit = 100;
@@ -1406,14 +1410,16 @@ class StripeController extends Controller
                     'receipt_email' => $user->email,
                 ],
                 'customer_email' => $user->email,
-                'metadata' => [
+                'metadata' => Helpers::buildStripeMetadata('wishlist', $getdata[0], [
                     'user_id' => Auth::id(),
                     'creator_id' => $owner_id,
                     'wish_id' => $getdata[0]->wish_item_id ?? null,
                     'deliverable_type' => 'media_bundle',
                     'certificate' => 'true',
                     'product_type' => 'wish_one_off',
-                ],
+                    'digital_waiver_confirmed_at' => now()->toDateTimeString(),
+                    'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
+                ]),
             ], [
                 'stripe_account' => $getdata[0]->owner->account_id,
             ]);
@@ -1435,6 +1441,9 @@ class StripeController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            Helpers::applyDigitalWaiver($stripePaymentDetail, (bool) request()->digital_waiver);
+            $stripePaymentDetail->save();
 
             $stripePaymentDetail->refresh();
 
@@ -1546,6 +1555,10 @@ class StripeController extends Controller
 
     public function createAnonymousCheckout($device_id)
     {
+        request()->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
         try {
             // \Log::info(request()->query('name'));
             $cart = UserCart::where('device_id', $device_id)->where('status', 1)->with('owner')->get();
@@ -1647,7 +1660,7 @@ class StripeController extends Controller
                     'payment_intent_data' => [
                         'application_fee_amount' => (int)($totalApplicationFee * 100),
                         'description' => "Anonymous Support Payment for {$creator->username} (Total value including all fees)",
-                        'metadata' => [
+                        'metadata' => Helpers::buildStripeMetadata('wishlist', $cart[0], [
                             'user_id' => null, // Anonymous purchase
                             'creator_id' => $creator->id,
                             'wish_id' => $cart[0]->wish_item_id ?? null,
@@ -1657,7 +1670,9 @@ class StripeController extends Controller
                             'device_id' => $device_id,
                             'creator_net_amount' => (string)($totalCreatorNet * 100),
                             'total_charge_amount' => (string)(array_sum(array_column($lineItems, 'price_data.unit_amount'))),
-                        ],
+                            'digital_waiver_confirmed_at' => now()->toDateTimeString(),
+                            'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
+                        ]),
                     ],
                 ], ['stripe_account' => $connectedAccountId]);
 
@@ -1684,6 +1699,9 @@ class StripeController extends Controller
                     'created_at' => Carbon::now(),
                     'updated_at' => Carbon::now(),
                 ]);
+
+                Helpers::applyDigitalWaiver($stripeid, (bool) request()->digital_waiver);
+                 $stripeid->save();
                 $stripeid->refresh();
 
                 return Inertia::location($sessioncreate->url);
@@ -1866,6 +1884,7 @@ class StripeController extends Controller
                 'name' => ['nullable', 'sometimes', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
                 'message' => ['sometimes', 'nullable', 'string', 'max:800'],
+                'digital_waiver' => ['required', 'accepted'],
             ]);
 
             // ✅ FIXED: Prevent duplicate subscriptions by canceling existing ones
@@ -1924,6 +1943,9 @@ class StripeController extends Controller
                 'surprise_message' => $request->message ?? NULL,
                 'anonymous' => $request->anonymous ?? 0
             ]);
+
+            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+            $sub->save();
 
             $connectedAccountId = $wish->user->account_id;
 
@@ -2146,7 +2168,7 @@ class StripeController extends Controller
 
             try {
                 // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, current(compact('force3DS')));
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, current(compact('force3DS')), $wish->user->username);
                 $sub->update(['session_id' => $session->id]);
                 return Inertia::location($session->url);
             } catch (Exception $e) {
@@ -2425,6 +2447,8 @@ class StripeController extends Controller
                 'guest_name' => $subscription->guest_name,
                 'anonymous' => $subscription->anonymous ?? false,
                 'message' => $subscription->surprise_message,
+                'digital_waiver_confirmed_at' => $subscription->digital_waiver_confirmed_at,
+                'digital_waiver_text' => $subscription->digital_waiver_text,
                 'metadata' => json_encode([
                     'subscription_id' => $subscription->id,
                     'wish_item_id' => $subscription->wish_item->id,
@@ -2933,6 +2957,9 @@ class StripeController extends Controller
 
     public function tipToJar(Request $request, $creator_uid)
     {
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
         $user = Auth::user();
         if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
@@ -3128,6 +3155,9 @@ class StripeController extends Controller
                 'anonymous' => $request->anonymous ?? 0,
             ]);
 
+            Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);
+            $pay->save();
+
             // Use destination charges pattern like createCheckout - create line items that sum to total charge
             // Single line item hiding all fees
             $lineItems = [
@@ -3198,7 +3228,7 @@ class StripeController extends Controller
 
             try {
                 // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $creator->account_id);
+                $session = StripeControl::createCheckoutSession($payload, $creator->account_id, false, $creator->username);
                 $pay->update(['session_id' => $session->id]);
 
                 try {
@@ -3425,6 +3455,9 @@ class StripeController extends Controller
      */
     public function payMonthlyCharge(Request $request)
     {
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
         $currency = strtolower($request->cookie("currency", "GBP"));
         $price = 4.00;
         
@@ -3461,6 +3494,9 @@ class StripeController extends Controller
             'amount'    =>  $price,
             'tax'       =>  $tax,
         ]);
+
+        Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+        $sub->save();
 
         $amount = $finalTotalAmount;
         // Get currency metadata to handle zero-decimal currencies properly

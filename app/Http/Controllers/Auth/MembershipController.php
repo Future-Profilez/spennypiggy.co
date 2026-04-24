@@ -478,6 +478,7 @@ class MembershipController extends Controller
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
                 'message' => ['nullable', 'string', 'max:800'],
+                'digital_waiver' => ['required', 'accepted'],
             ]);
 
             if ($user) {
@@ -516,6 +517,10 @@ class MembershipController extends Controller
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
             ]);
+
+            // Apply digital waiver confirmation
+            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+            $sub->save();
 
             try {
                 $connectedAccountId = $membership->user->account_id;
@@ -712,7 +717,7 @@ class MembershipController extends Controller
                 }
 
                 // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS);
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $membership->user->username);
 
                 $sub->update([
                     'session_id' => $session->id,

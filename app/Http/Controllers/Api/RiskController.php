@@ -204,7 +204,7 @@ class RiskController extends Controller
                 $stripePayload['application_fee_amount'] = (int)($request->amount * 0.05); 
             }
 
-            $pi = StripeControl::createPaymentIntent($stripePayload);
+            $pi = StripeControl::createPaymentIntent($stripePayload, null, false, $creator->username);
 
             $payment->update([
                 'stripe_payment_intent_id' => $pi->id,
@@ -427,7 +427,7 @@ class RiskController extends Controller
             // So $connectedAccountId argument to createPaymentIntent should be null.
             
             // Correction:
-            $pi = StripeControl::createPaymentIntent($stripePayload); 
+            $pi = StripeControl::createPaymentIntent($stripePayload, null, $force3ds, $creator->username); 
 
             // 5. Update Payment Record
             $payment->update([

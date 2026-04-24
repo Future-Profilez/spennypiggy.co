@@ -20,6 +20,7 @@ export default function SubCheckout(props) {
         email: email,
         message: '',
         agree: false,
+        digital_waiver: false,
         anonymous: 0,
     });
 
@@ -260,7 +261,7 @@ export default function SubCheckout(props) {
 
             const credential = await navigator.credentials.get({ publicKey });
 
-            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, vat_amount);
+            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, wish?.user?.vat_amount_percentage || 0);
             const amountMinor = Math.round(
                 total * (isZeroDecimalCurrency(wish?.currency) ? 1 : 100),
             );
@@ -305,7 +306,7 @@ export default function SubCheckout(props) {
         e.preventDefault();
         setVerifyingOtp(true);
         try {
-            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, vat_amount);
+            const total = calculateTotalSupporterPays(wish?.price, wish?.currency, wish?.user?.vat_amount_percentage || 0);
             const amountMinor = Math.round(
                 total * (isZeroDecimalCurrency(wish?.currency) ? 1 : 100),
             );
@@ -394,7 +395,7 @@ export default function SubCheckout(props) {
                                     {global_currency && global_currency.toUpperCase() !== (wish?.currency || '').toUpperCase() && (
                                         <div className="text-sm text-gray-500 font-medium mt-1">
                                             ≈ {formatMultiPrice(
-                                                calculateTotalSupporterPays(wish.price, wish?.currency, vat_amount),
+                                                calculateTotalSupporterPays(wish.price, wish?.currency, wish?.user?.vat_amount_percentage || 0),
                                                 global_currency
                                             )} (estimated)
                                         </div>
@@ -473,7 +474,7 @@ export default function SubCheckout(props) {
                                             name="agreeterm"
                                             className="mr-2"
                                             value="agreeterm" ></input>
-                                           I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-violet-600" href={route("terms-and-conditions")} >Terms of Service</Link> and <a className="text-violet-600" target='_blank' href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6" > Privacy Policy </a>  and the following statements:
+                                           I understand I am paying the creator directly and I agree to the <Link target='_blank' className="text-violet-600" href={route("terms-and-conditions")} >Terms of Service</Link> and <Link className="text-violet-600" target='_blank' href={route("terms-and-conditions")} > Privacy Policy </Link>  and the following statements:
                                         </label>
                                         <div className="tearmlist pl-3">
                                             <ul className="pl-0">
@@ -489,10 +490,36 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                 </ul>
+                                <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
+                                    <label
+                                        htmlFor="digital_waiver"
+                                        className="text-left flex items-start cursor-pointer group"
+                                    >
+                                        <div className="flex items-center h-5 mt-1">
+                                            <input
+                                                onChange={(e) => setData('digital_waiver', e.target.checked)}
+                                                type="checkbox"
+                                                id="digital_waiver"
+                                                name="digital_waiver"
+                                                className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                checked={data.digital_waiver}
+                                                required
+                                            />
+                                        </div>
+                                        <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                            I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                        </span>
+                                    </label>
+                                    {errors.digital_waiver && (
+                                        <p className="mt-2 text-xs text-red-600 font-bold uppercase tracking-tight">
+                                            {errors.digital_waiver}
+                                        </p>
+                                    )}
+                                </div>
                                 <div className="mt-4 flex items-center justify-center" >
                                     <button type="submit"
-                                        className={`${!data.agree || processing ? "disabled" : ""} main-button p`}
-                                        disabled={!data.agree || processing}>
+                                        className={`${!data.agree || !data.digital_waiver || processing ? "disabled" : ""} main-button p`}
+                                        disabled={!data.agree || !data.digital_waiver || processing}>
                                         {processing ? 'Processing...' : `${reccure == 'onetime' ? `Subscribe Once ` : `Subscribe ${wish.subscription_period}`} `}
                                     </button>
                                 </div>

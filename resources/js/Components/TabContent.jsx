@@ -11,6 +11,7 @@ const ProfileProductLists = React.lazy(
     () => import("@/Pages/shop/profile/ProfileProductLists"),
 );
 const GiftListing = React.lazy(() => import("@/Pages/rye/GiftListing"));
+const SecurityZone = React.lazy(() => import("@/Components/SecurityZone"));
 
 // About Tab Component
 const AboutTab = ({ user, sLinks }) => (
@@ -144,6 +145,17 @@ const GiftsTab = ({ gifts, giftsloading }) => (
     </div>
 );
 
+// Security Tab Component
+const SecurityTab = () => (
+    <div className="p-4 min-h-screen">
+        <Suspense fallback={<LoadingScreen />}>
+            <div className="bg-white rounded-[30px] p-6 shadow-sm border-2 border-black">
+                <SecurityZone />
+            </div>
+        </Suspense>
+    </div>
+);
+
 // Main TabContent Component
 export default function TabContent({
     activeTab,
@@ -192,6 +204,8 @@ export default function TabContent({
                 return <ShopTab IsloggedIn={IsloggedIn} username={username} />;
             case "gifts":
                 return <GiftsTab gifts={gifts} giftsloading={giftsloading} />;
+            case "security":
+                return <SecurityTab />;
             default:
                 return <AboutTab user={user} sLinks={sLinks} />;
         }

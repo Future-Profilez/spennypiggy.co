@@ -2,15 +2,22 @@ import LoaderButton from '@/Components/LoaderButton';
 import Authenticated from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
+import { Toaster, toast } from "react-hot-toast";
 
 export default function ActivateSubscription(props) {
 
     const { auth, user } = props;
 
     const [loading, setLoading] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
+
     const checkTerms = () => {
+      if (!digitalWaiver) {
+        toast.error("Please confirm the digital waiver to continue.");
+        return;
+      }
       setLoading(true);
-      window.location.href = route("mandatory.checkout");
+      window.location.href = route("mandatory.checkout", { digital_waiver: 1 });
     }
 
     return (
@@ -107,11 +114,33 @@ export default function ActivateSubscription(props) {
                                         </div>
                                     </div>
 
+                                    <div className="mt-6 mb-6 p-4 bg-white/50 border border-black/10 rounded-2xl">
+                                        <label
+                                            htmlFor="digital_waiver"
+                                            className="text-left flex items-start cursor-pointer group"
+                                        >
+                                            <div className="flex items-center h-5 mt-1">
+                                                <input
+                                                    onChange={(e) => setDigitalWaiver(e.target.checked)}
+                                                    type="checkbox"
+                                                    id="digital_waiver"
+                                                    name="digital_waiver"
+                                                    className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                    checked={digitalWaiver}
+                                                    required
+                                                />
+                                            </div>
+                                            <span className="ml-3 text-xs text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                                I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                            </span>
+                                        </label>
+                                    </div>
+
                                     <div className="mt-8">
                                         <LoaderButton 
                                             onClick={checkTerms} 
-                                            disabled={loading} 
-                                            className="w-full !rounded-[20px] bg-pink-500 hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg"
+                                            disabled={loading || !digitalWaiver} 
+                                            className={`w-full !rounded-[20px] bg-pink-500 hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg ${(!digitalWaiver || loading) ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                                         >
                                             {loading ? "Redirecting..." : "Activate Now"}
                                         </LoaderButton>
@@ -127,6 +156,7 @@ export default function ActivateSubscription(props) {
                 </div>
               </div>
             </div>
+            <Toaster />
         </Authenticated>
     )
 }

@@ -12,7 +12,7 @@ import { useDispatch } from "react-redux";
 import { add_to_cart } from "../Pages/redux/UserSlice";
 import ChangeCurrency from "@/Components/ChangeCurrency";
 import { IoSettingsOutline } from "react-icons/io5";
-import { FaHeart, FaRegStar, FaUserAlt } from "react-icons/fa";
+import { FaHeart, FaRegStar, FaUserAlt, FaLightbulb } from "react-icons/fa";
 import { SlCalculator, SlCalender } from "react-icons/sl";
 import { FaBasketShopping, FaHouseChimneyUser } from "react-icons/fa6";
 import { GiInjustice, GiTwoCoins } from "react-icons/gi";
@@ -291,12 +291,43 @@ export default function Header({ classMagicword }) {
                 <div className="fixed menu p-2 z-10 top-0 customScrollbar left-0 bg-[#fdfbf7] max-h-screen overflow-auto w-full sm:max-w-[320px] h-full">
                     <button 
                         onClick={toggleClass}
-                        className="absolute top-[60px] md:top-4 right-[30px] md:right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
+                        className="absolute top-4 md:top-4 right-4 md:right-4 bg-white border-[3px] border-black rounded-full p-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all z-20" >
                         <MdClose color="#000" size={"2rem"} />
                     </button>
                     <div className="overflow-y-auto overflow-x-hidden   flex-grow">
-                        <div className="pb-[110px] px-2">
-                            <ul className=" flex flex-col pt-[60px] space-y-4 ">
+                        <div className="pb-[110px] pt-[60px] px-2">
+                            {auth?.user && (
+                                <Link 
+                                    href={route('user.show', { username: auth.user.username })}
+                                    onClick={toggleClass}
+                                    className="flex items-center gap-4 p-4 mb-6 bg-white border-[3px] border-black rounded-[20px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                                >
+                                    <div className="relative">
+                                        <div className="w-14 h-14 rounded-xl border-[3px] border-black overflow-hidden bg-pink-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:rotate-3 transition-transform">
+                                            <img 
+                                                src={auth.user.avatar_url} 
+                                                alt={auth.user.name} 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 border-[2px] border-black rounded-full"></div>
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="font-black text-black text-base uppercase tracking-tight truncate leading-tight">
+                                            {auth.user.name}
+                                        </span>
+                                        <span className="text-gray-500 text-xs font-bold uppercase tracking-widest truncate">
+                                            @{auth.user.username}
+                                        </span>
+                                        <div className="mt-1 inline-flex items-center gap-1">
+                                            <span className="text-[10px] font-black bg-pink-500 text-white px-1.5 py-0.5 rounded border border-black uppercase">
+                                                {auth.user.role == 1 ? 'Creator' : 'User'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            )}
+                            <ul className=" flex flex-col pt-[0px] space-y-4 ">
                                 <>
                                     {auth?.user?.username ? (
                                         <>
@@ -480,6 +511,23 @@ export default function Header({ classMagicword }) {
                                                     </span>
                                                     <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
                                                         Membership Dashboard
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link
+                                                    onClick={toggleClass}
+                                                    href={`/admin/feature-suggestions`}
+                                                    className={`${getNavLinkClass('/admin/feature-suggestions')} rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#EFEA7B] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group`}
+                                                >
+                                                    <span className="inline-flex justify-center items-center ml-2">
+                                                        <FaLightbulb
+                                                            className="text-gray-800 group-hover:text-black transition-colors"
+                                                            size={"1.5rem"}
+                                                        />
+                                                    </span>
+                                                    <span className="ml-3 text-[16px] font-black uppercase tracking-widest truncate text-black">
+                                                        Feature Suggestions
                                                     </span>
                                                 </Link>
                                             </li>
@@ -681,10 +729,9 @@ export default function Header({ classMagicword }) {
                                     </a>
                                 </li>
                                 <li>
-                                    <a
+                                    <Link
                                         onClick={toggleClass}
-                                        target="_blank"
-                                        href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                        href={route("terms-and-conditions")}
                                         className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
                                         <span className="inline-flex justify-center items-center ml-2">
@@ -698,13 +745,12 @@ export default function Header({ classMagicword }) {
                                         >
                                             Privacy Policy
                                         </span>
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <a
+                                    <Link
                                         onClick={toggleClass}
-                                        target="_blank"
-                                        href="https://app.termly.io/document/cookie-policy/45944c26-6e99-4065-833a-8fa224fb8e20"
+                                        href={route("terms-and-conditions")}
                                         className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-pink-400 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
                                         <span className="inline-flex justify-center items-center ml-2">
@@ -718,14 +764,13 @@ export default function Header({ classMagicword }) {
                                         >
                                             Cookies Policy
                                         </span>
-                                    </a>
+                                    </Link>
                                 </li>
 
                                 <li>
-                                    <a
+                                    <Link
                                         onClick={toggleClass}
-                                        target="_blank"
-                                        href="https://app.termly.io/document/acceptable-use/458f5fac-0c41-406f-a02f-b50adff1ec9c"
+                                        href={route("terms-and-conditions")}
                                         className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-[#b892ff] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
                                         <span className="inline-flex justify-center items-center ml-2">
@@ -739,12 +784,11 @@ export default function Header({ classMagicword }) {
                                         >
                                             Acceptable Use Policy
                                         </span>
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <a
+                                    <Link
                                         onClick={toggleClass}
-                                        target="_blank"
                                         href={route("terms-and-conditions")}
                                         className="relative flex flex-row items-center h-11 focus:outline-none hover:opacity-[0.8] border-l-4 border-transparent hover:border-indigo-500 pr-6 rounded-xl border-[3px] border-transparent hover:border-black hover:bg-yellow-300 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-3 mx-2 group"
                                     >
@@ -759,7 +803,7 @@ export default function Header({ classMagicword }) {
                                         >
                                             Terms
                                         </span>
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
                                     <a

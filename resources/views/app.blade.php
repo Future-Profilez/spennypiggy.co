@@ -401,8 +401,6 @@
         }
     </script>
 
-    <script nonce="{{ $cspNonce ?? '' }}" async defer src="https://app.termly.io/resource-blocker/1f6672bd-7b65-47a4-8a75-d02946c93b2e?autoBlock=on"></script>
-    
     {{-- @laravelPWA --}}
     @viteReactRefresh
     

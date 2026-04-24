@@ -25,12 +25,10 @@ export default function BuyShopItem({
     shippingPrice,
     card_capabilities,
 }) {
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { global_currency, auth, turnstileSiteKey, shop, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const turnstileRef = useRef(null);
     const [close, setClose] = useState();
-
-    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -122,6 +120,7 @@ export default function BuyShopItem({
     const [name, setName] = useState((auth && auth.user?.name) || "");
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
@@ -195,13 +194,7 @@ export default function BuyShopItem({
         return window.PublicKeyCredential !== undefined;
     };
 
-    
-    const isZeroDecimalCurrency = (currencyCode) => {
-        const zeroDecimalCurrencies = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'];
-        return zeroDecimalCurrencies.includes(currencyCode?.toUpperCase());
-    };
 
-    
     const [hasPasskey, setHasPasskey] = React.useState(false);
     
     React.useEffect(() => {
@@ -337,11 +330,13 @@ export default function BuyShopItem({
         }
         
         // If token is passed directly (e.g. from verify), use it, otherwise use state
-        const currentToken = typeof token === 'string' ? token : captchaToken;
-        
+        const currentToken = typeof token === "string" ? token : captchaToken;
+
         const captchaQuery = currentToken
-            ? `&cf_turnstile_response=${encodeURIComponent(currentToken)}`
-            : "";
+            ? `&cf_turnstile_response=${encodeURIComponent(
+                  currentToken
+              )}&digital_waiver=1`
+            : "&digital_waiver=1";
         if (shop.type === "physical") {
             axios
                 .post(
@@ -587,9 +582,13 @@ export default function BuyShopItem({
                                         You will be charged{" "}
                                         <strong className="text-black">
                                             {formatMultiPrice(
-                                                calculateTotalSupporterPays(fairPrice || s.price, s?.currency || "GBP", vat_percent),
-                                                s?.currency || "GBP"
-                                            )}
+                                            calculateTotalSupporterPays(
+                                                fairPrice || s.price, 
+                                                s?.currency || "GBP", 
+                                                s?.user?.vat_amount_percentage || 0
+                                            ),
+                                            s?.currency || "GBP"
+                                        )}
                                         </strong>
                                         <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
                                             * Includes all fees. You will be charged in {s?.currency || "GBP"}.
@@ -763,11 +762,33 @@ export default function BuyShopItem({
                                 </div>
                             )}
 
+                            <div className="mt-2 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-left">
+                                <label
+                                    htmlFor="digital_waiver"
+                                    className="text-left flex items-start cursor-pointer group"
+                                >
+                                    <div className="flex items-center h-5 mt-1">
+                                        <input
+                                            onChange={(e) => setDigitalWaiver(e.target.checked)}
+                                            type="checkbox"
+                                            id="digital_waiver"
+                                            name="digital_waiver"
+                                            className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                            checked={digitalWaiver}
+                                            required
+                                        />
+                                    </div>
+                                    <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                        I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                    </span>
+                                </label>
+                            </div>
+
                             <button
-                                disabled={checking || !card_capabilities}
+                                disabled={checking || !card_capabilities || !digitalWaiver}
                                 onClick={executeCaptcha}
                                 className={`${
-                                    checking || !card_capabilities ? "opacity-[0.5] disabled" : ""
+                                    checking || !card_capabilities || !digitalWaiver ? "opacity-[0.5] disabled" : ""
                                 }  w-1/2 block mx-auto rounded-full bg-gray-900 hover:shadow-lg font-semibold text-white px-6 py-2`}
                             >
                                 {checking ? "Buying.." : "Pay"}

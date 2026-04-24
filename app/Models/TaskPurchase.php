@@ -57,6 +57,8 @@ class TaskPurchase extends Model
         'refunded_at',
         'gifter_message',
         'last_reminder_at',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $casts = [

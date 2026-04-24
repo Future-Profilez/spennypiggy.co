@@ -928,9 +928,9 @@ class StripeWebhookController extends Controller
     {
         Log::info("Processing task purchase", ['session_id' => $session->id]);
 
-        $taskId = $metadata->task_id ?? null;
-        $buyerId = $metadata->buyer_id ?? null;
-        $creatorId = $metadata->creator_id ?? null;
+        $taskId = (!empty($metadata->task_id)) ? $metadata->task_id : null;
+        $buyerId = (!empty($metadata->buyer_id)) ? $metadata->buyer_id : null;
+        $creatorId = (!empty($metadata->creator_id)) ? $metadata->creator_id : null;
 
         if (!$taskId || !$buyerId) {
             Log::error("Missing task_id or buyer_id in metadata for task purchase");

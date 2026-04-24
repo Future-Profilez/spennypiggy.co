@@ -1,10 +1,10 @@
-import * as LR from "@uploadcare/blocks";
-import { useState, useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
-import { PACKAGE_VERSION } from "@uploadcare/blocks/env";
-import CustomProgressBar from "@/Components/CustomProgressBar";
-import { useAlerts } from "@/Components/Alerts";
+import * as LR from "@uploadcare/blocks"; 
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react"; 
+import { PACKAGE_VERSION } from "@uploadcare/blocks/env"; 
+import CustomProgressBar from "@/Components/CustomProgressBar"; 
+import { useAlerts } from "@/Components/Alerts"; 
 import axios from "axios"; 
-LR.registerBlocks(LR);
+LR.registerBlocks(LR); 
 
 const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploading, type, ctxName = 'default', imgonly = true }, ref) => {
   const { successAlert, errorAlert } = useAlerts();
@@ -31,7 +31,6 @@ const GlobalUploader = forwardRef(({ options, sendFile, accept, view, isUploadin
     reset: () => handleResetUploader(),
   }));
 
-  // Calculate time remaining based on upload progress
   const calculateTimeRemaining = (progress, startTime) => {
     if (!startTime || progress <= 0) return '';
     

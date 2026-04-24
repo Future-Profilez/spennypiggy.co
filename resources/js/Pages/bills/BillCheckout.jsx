@@ -28,6 +28,7 @@ export default function BillCheckout(props) {
         email: email,
         message: "",
         agree: false,
+        digital_waiver: false,
         anonymous: 0,
         cf_turnstile_response: "",
     });
@@ -549,14 +550,16 @@ export default function BillCheckout(props) {
                                                     Terms of Service
                                                 </Link>{" "}
                                                 and{" "}
-                                                <a
+                                                <Link
                                                     className="text-violet-600"
                                                     target="_blank"
-                                                    href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                    href={route(
+                                                        "terms-and-conditions"
+                                                    )}
                                                 >
                                                     {" "}
                                                     Privacy Policy{" "}
-                                                </a>{" "}
+                                                </Link>{" "}
                                                 and the following statements:
                                             </label>
                                             <div className="tearmlist pl-3">
@@ -640,6 +643,32 @@ export default function BillCheckout(props) {
                                             </div>
                                         </li>
                                     </ul>
+                                    <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
+                                        <label
+                                            htmlFor="digital_waiver"
+                                            className="text-left flex items-start cursor-pointer group"
+                                        >
+                                            <div className="flex items-center h-5 mt-1">
+                                                <input
+                                                    onChange={(e) => setData('digital_waiver', e.target.checked)}
+                                                    type="checkbox"
+                                                    id="digital_waiver"
+                                                    name="digital_waiver"
+                                                    className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                    checked={data.digital_waiver}
+                                                    required
+                                                />
+                                            </div>
+                                            <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                                I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                            </span>
+                                        </label>
+                                        {errors.digital_waiver && (
+                                            <p className="mt-2 text-xs text-red-600 font-bold uppercase tracking-tight">
+                                                {errors.digital_waiver}
+                                            </p>
+                                        )}
+                                    </div>
                                     {!card_capabilities && (
                                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
                                             <strong className="font-bold">Payment Unavailable: </strong>
@@ -661,6 +690,7 @@ export default function BillCheckout(props) {
                                             type="button"
                                             className={`${
                                                 !data.agree ||
+                                                !data.digital_waiver ||
                                                 processing ||
                                                 checking ||
                                                 !card_capabilities
@@ -669,6 +699,7 @@ export default function BillCheckout(props) {
                                             } button p w-full`}
                                             disabled={
                                                 !data.agree ||
+                                                !data.digital_waiver ||
                                                 processing ||
                                                 checking ||
                                                 !card_capabilities

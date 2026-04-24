@@ -733,10 +733,10 @@ Route::middleware('auth')->group(function () {
                 'creator' => $creator,
                 'gifter' => $gifter
             ]);
-        })->name('support.story.page');
-        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->name('support.story');
-        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->name('support.story.react');
-        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->name('support.story.reply');
+        })->middleware('check.block')->name('support.story.page');
+        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->middleware('check.block')->name('support.story');
+        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->middleware('check.block')->name('support.story.react');
+        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
         Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
         Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
@@ -831,17 +831,21 @@ Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');
 })->name("how-it-works");
 
-Route::get('/terms-and-conditions', function () {
-    return Inertia::render('Terms');
-})->name("terms-and-conditions");
+Route::controller(\App\Http\Controllers\StaticPageController::class)->group(function () {
+    Route::get('/terms-and-conditions', 'terms')->name("terms-and-conditions");
+    Route::get('/creator-agreement', 'creatorAgreement')->name("creator-agreement");
+    Route::get('/supporter-terms', 'supporterTerms')->name("supporter-terms");
+    Route::get('/creator-supporter-contract', 'creatorSupporterContract')->name("creator-supporter-contract");
+    Route::get('/mor-agreement', 'morAgreement')->name("mor-agreement");
+    Route::get('/reserves-and-payments-policy', 'paymentsPolicy')->name("reserves-and-payments-policy");
+    Route::get('/paid-tasks-terms', 'paidTasksTerms')->name("paid-tasks-terms");
+    Route::get('/return-policy', 'returnPolicy')->name("return-policy");
+    Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
+});
 
 Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
 })->name("promotion-terms");
-
-Route::get('/paid-tasks-terms', function () {
-    return Inertia::render('PaidTasksTerms');
-})->name("paid-tasks-terms");
 
 Route::get('/files/{filename}', function (string $filename) {
     $fullPath = asset($filename);
@@ -945,9 +949,10 @@ Route::get('/{username}/wish/{id}', function ($username, $id) {
     $uuid = $wish?->uuid ?? $id;
     request()->merge(['item' => $uuid]);
     return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
-})->name('wish.show');
+})->middleware('check.block')->name('wish.show');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
+    ->middleware('check.block')
     ->name('user.show');
 
 Route::prefix("wish")->name("wish.")->group(function () {

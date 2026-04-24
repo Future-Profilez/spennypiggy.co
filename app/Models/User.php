@@ -54,12 +54,12 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'show_piggy_bank',
         'referral_code',
         'default_currency',
+        'terms_accepted_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
-        'created_at',
         'account_id',
         'updated_at',
         'deleted_at',
@@ -71,6 +71,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'password' => 'hashed',
         'identity_admin_status' => 'integer',
         'identity_admin_reviewed_at' => 'datetime',
+        'terms_accepted_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -499,6 +500,21 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
     public function documents()
     {
         return $this->hasMany(\App\Models\UserDocuments::class, 'user_id');
+    }
+
+    public function blockedUsers()
+    {
+        return $this->hasMany(UserBlock::class, 'creator_id');
+    }
+
+    public function blockedBy()
+    {
+        return $this->hasMany(UserBlock::class, 'blocked_id');
+    }
+
+    public function isBlockedBy($creatorId)
+    {
+        return $this->blockedBy()->where('creator_id', $creatorId)->exists();
     }
     public function paymentitems()
     {

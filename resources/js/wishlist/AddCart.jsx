@@ -28,9 +28,11 @@ export default function AddCart(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr) => {
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
         const listedPrice = parseFloat(price || 0);
         const isZeroDecimal = isZeroDecimalCurrency(curr);
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
         
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
@@ -40,9 +42,9 @@ export default function AddCart(props) {
         const adminFee = adminFeeInCurrency(curr); 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
-        if (totalDeductionRate >= 1) return listedPrice;
+        if (totalDeductionRate >= 1) return priceWithVat;
 
-        const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
         // Rounding logic to match backend (Helpers.php)
         if (!isZeroDecimal) {
@@ -111,7 +113,11 @@ export default function AddCart(props) {
                                 <div className="flex flex-col items-center">
                                     <span>
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(item.price, item?.currency || 'USD'), 
+                                            calculateTotalSupporterPays(
+                                                item.price, 
+                                                item?.currency || 'USD',
+                                                item?.user?.vat_amount_percentage || 0
+                                            ), 
                                             item?.currency || 'USD'
                                         )}
                                     </span>

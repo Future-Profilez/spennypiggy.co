@@ -76,7 +76,7 @@ export default function HappyCreators() {
                                         >
                                             <div className="flex items-center content-center flex-wrap mb-3 w-full">
                                                 <div className="pl-2.5">
-                                                    <strong className="text-center text-lg not-italic font-normal leading-[120%] font-gulfs text-white">
+                                                    <strong className="text-center text-lg not-italic uppercase font-normal leading-[120%] tracking-wide font-gulfs text-white">
                                                         @{m.name}
                                                     </strong>
                                                 </div>

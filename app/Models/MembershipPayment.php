@@ -45,6 +45,8 @@ class MembershipPayment extends Model
         'supporter_country',
         'card_country',
         'fee_variance',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $appends = [

@@ -41,7 +41,7 @@ export default function FAQ() {
                       <Disclosure key={i} defaultOpen={i === 0}>
                         {({ open }) => (
                           <div className={`fading bg-gray-900 border-2 border-pink-500 rounded-[30px]   shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] overflow-hidden`}>
-                            <Disclosure.Button className={`flex w-full justify-between px-6 py-6 text-left text-xl font-gulfs uppercase focus:outline-none ${open ? 'text-yellow-400' : 'text-white'}`}>
+                            <Disclosure.Button className={`flex w-full justify-between px-6 py-6 text-left text-xl font-gulfs uppercase focus:outline-none tracking-wide ${open ? 'text-yellow-400' : 'text-white'}`}>
                               <span>{f.title}</span>
                               <ChevronUpIcon
                                 className={`${

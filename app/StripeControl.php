@@ -476,14 +476,28 @@ class StripeControl
      * Create Payment Intent
      *
      * @param array $payload Payment Payload
+     * @param string|null $connectedAccountId Connected Account ID
+     * @param bool $force3DS Whether to force 3D Secure
+     * @param string|null $creatorUsername The username of the creator to use in statement descriptor
      * @return Throwable|\Stripe\PaymentIntent
      */
-    public static function createPaymentIntent(array $payload, $connectedAccountId = null, bool $force3DS = false)
+    public static function createPaymentIntent(array $payload, $connectedAccountId = null, bool $force3DS = false, $creatorUsername = null)
     {
         self::setClient();
         
         if ($force3DS) {
             $payload['payment_method_options']['card']['request_three_d_secure'] = 'any';
+        }
+
+        if ($creatorUsername) {
+            // Stripe statement descriptor rules: max 22 characters
+            $descriptor = "SP*" . strtoupper($creatorUsername);
+            $descriptor = substr($descriptor, 0, 22);
+            
+            // For card payments, statement_descriptor_suffix is preferred if a prefix is set.
+            // However, statement_descriptor is often accepted as a full override for some payment methods.
+            // We'll set both to be safe, or just statement_descriptor if it's a full override.
+            $payload['statement_descriptor'] = $descriptor;
         }
         
         try {
@@ -511,14 +525,36 @@ class StripeControl
      * Create Payment Session
      *
      * @param array $payload Payment Payload
+     * @param string|null $connectedAccountId Connected Account ID
+     * @param bool $force3DS Whether to force 3D Secure
+     * @param string|null $creatorUsername The username of the creator to use in statement descriptor
      * @return Throwable|\Stripe\Checkout\Session
      */
-    public static function createCheckoutSession(array $payload, $connectedAccountId = null, bool $force3DS = false)
+    public static function createCheckoutSession(array $payload, $connectedAccountId = null, bool $force3DS = false, $creatorUsername = null)
     {
         self::setClient();
         
         if ($force3DS) {
             $payload['payment_method_options']['card']['request_three_d_secure'] = 'any';
+        }
+
+        if ($creatorUsername) {
+            // Stripe statement descriptor rules: max 22 characters
+            $descriptor = "SP*" . strtoupper($creatorUsername);
+            $descriptor = substr($descriptor, 0, 22);
+            
+            // For one-time payments (mode: payment)
+            if (isset($payload['mode']) && $payload['mode'] === 'payment') {
+                if (!isset($payload['payment_intent_data'])) {
+                    $payload['payment_intent_data'] = [];
+                }
+                $payload['payment_intent_data']['statement_descriptor'] = $descriptor;
+            } 
+            // For subscriptions (mode: subscription)
+            elseif (isset($payload['mode']) && $payload['mode'] === 'subscription') {
+                // Note: subscription_data does not support statement_descriptor in the Checkout Session API.
+                // For subscriptions, Stripe uses the descriptor defined on the Product or the Account.
+            }
         }
 
         try {

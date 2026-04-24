@@ -1427,6 +1427,10 @@ class WishitemController extends Controller
     {
         $this->ensureTurnstileVerified($request);
 
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
         $user = Auth::user(); // or $requestingUser if handling guests
 
         if (empty($user->stripe_id)) {
@@ -1579,6 +1583,7 @@ class WishitemController extends Controller
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
+            Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
             $ryeProductPayment->save();
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -1592,17 +1597,16 @@ class WishitemController extends Controller
             // Build payment_intent_data for Direct Charges
             $paymentIntentData = [
                 'application_fee_amount' => round($applicationFeeAmount * $multiplier),
-                'metadata' => [
+                'metadata' => Helpers::buildStripeMetadata('product_purchase', $ryeProductPayment, [
                     'order_id' => $orderDetails->id,
                     'user_id' => $orderDetails->user->id,
                     'creator_id' => $orderDetails->creator->id,
-                    'payment_type' => 'product_purchase',
                     'has_card_payments' => (string) $hasCardPayments,
                     'item_amount' => (string) round($basePrice * $multiplier),
                     'creator_net_amount' => (string) $creatorNetAmount,
                     'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
                     'total_charge_amount' => (string) $finalTotalAmount,
-                ],
+                ]),
             ];
 
             Log::info('Using Direct Charges for Rye product payment', [
@@ -1619,12 +1623,12 @@ class WishitemController extends Controller
                 'payment_method_types' => ['card'],
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' => $orderDetails->user->email,
-                'metadata' => [
+                'metadata' => Helpers::buildStripeMetadata('product_purchase', $ryeProductPayment, [
                     'order_id' => $orderDetails->id,
                     'user_email' => $orderDetails->user->email,
                     'payment_source' => 'website',
                     'has_card_payments' => (string) $hasCardPayments,
-                ],
+                ]),
             ], [
                 'stripe_account' => $orderDetails->creator->account_id,
             ]);

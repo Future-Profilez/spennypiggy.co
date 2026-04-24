@@ -38,7 +38,7 @@ export default function ShopDetailItem(props) {
       window.open(shareUrl, '_blank', 'noopener,noreferrer');
    };
    const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
-   const { global_currency, auth, turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+   const { global_currency, turnstileSiteKey, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
 
    // Helper to identify zero decimal currencies
    const isZeroDecimalCurrency = (curr) => {

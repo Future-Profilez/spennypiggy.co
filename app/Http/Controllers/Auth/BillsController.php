@@ -460,6 +460,7 @@ class BillsController extends Controller
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
                 'message' => ['nullable', 'string', 'max:800'],
+                'digital_waiver' => ['required', 'accepted'],
             ]);
 
             $sub = BillPayment::create([
@@ -479,6 +480,10 @@ class BillsController extends Controller
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
             ]);
+
+            // Apply digital waiver confirmation
+            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+            $sub->save();
 
             try {
                 $connectedAccountId = $bill->user->account_id;
@@ -631,7 +636,7 @@ class BillsController extends Controller
                     ];
                 }
 
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS); // Create session on CONNECTED account
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $bill->user->username); // Create session on CONNECTED account
 
                 $sub->update([
                     'session_id' => $session->id,

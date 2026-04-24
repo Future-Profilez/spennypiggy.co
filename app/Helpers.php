@@ -15,6 +15,11 @@ use Ramsey\Uuid\Uuid;
 
 class Helpers
 {
+    /**
+     * The standard digital waiver text for loss of right to cancel.
+     */
+    const DIGITAL_WAIVER_TEXT = "I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.";
+
     public static function checkBlockData($request)
     {
         $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
@@ -514,6 +519,21 @@ class Helpers
     }
 
     /**
+     * Apply digital waiver confirmation to a payment model
+     *
+     * @param mixed $model The payment model instance
+     * @param bool $confirmed Whether the waiver was confirmed
+     * @return void
+     */
+    public static function applyDigitalWaiver($model, bool $confirmed = false): void
+    {
+        if ($confirmed) {
+            $model->digital_waiver_confirmed_at = now();
+            $model->digital_waiver_text = self::DIGITAL_WAIVER_TEXT;
+        }
+    }
+
+    /**
      * Build comprehensive Stripe metadata for payments with detailed user and transaction information
      *
      * @param string $type Payment type (support, wishlist, membership, bill, shop, etc.)
@@ -531,6 +551,12 @@ class Helpers
             'payment_uuid' => (string) ($paymentModel->uuid ?? Uuid::uuid4()),
             'timestamp' => now()->format('Y-m-d H:i:s T'),
         ];
+
+        // Add digital waiver info if present on the model
+        if (!empty($paymentModel->digital_waiver_confirmed_at)) {
+            $commonFields['digital_waiver_confirmed_at'] = (string) $paymentModel->digital_waiver_confirmed_at;
+            $commonFields['digital_waiver_text'] = (string) ($paymentModel->digital_waiver_text ?? self::DIGITAL_WAIVER_TEXT);
+        }
 
         switch ($type) {
             case 'support':
@@ -721,6 +747,36 @@ class Helpers
                     'quantity_purchased' => (string) ($paymentModel->quantity ?? '1'),
                     'variant_id' => (string) ($paymentModel->varient_id ?? ''),
                     'transaction_description' => 'Shop purchase: ' . ($shopItem ? $shopItem->name : 'item') . ' from ' . ($creator ? $creator->name : 'creator'),
+                ]);
+                break;
+
+            case 'task':
+            case 'task_purchase':
+                $buyer = $paymentModel->supporter ?? $paymentModel->user ?? null;
+                $creator = $paymentModel->creator ?? null;
+                // If the model passed is already a Task, use it. Otherwise try to get the related task.
+                $taskInstance = ($paymentModel instanceof \App\Models\Task) ? $paymentModel : ($paymentModel->task ?? null);
+
+                $baseMetadata = array_merge($commonFields, [
+                    'purpose' => 'Task Request Payment',
+                    'payment_category' => 'task_purchase',
+                    'product_type' => 'task',
+
+                    // Buyer Information
+                    'buyer_id' => (string) ($paymentModel->supporter_id ?? $paymentModel->user_id ?? 'guest'),
+                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
+                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
+
+                    // Creator Information
+                    'creator_id' => (string) ($paymentModel->creator_id ?? ($taskInstance ? $taskInstance->creator_id : '')),
+                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
+                    'creator_username' => $creator ? $creator->username : '',
+
+                    // Task Details
+                    'task_id' => (string) ($paymentModel->task_id ?? ($taskInstance ? $taskInstance->id : '')),
+                    'task_title' => $taskInstance ? substr($taskInstance->title, 0, 100) : 'Task Request',
+                    'task_type' => $taskInstance ? $taskInstance->type : 'standard',
+                    'deliverable_type' => 'task_completion',
                 ]);
                 break;
 

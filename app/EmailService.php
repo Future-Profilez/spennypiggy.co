@@ -30,6 +30,7 @@ use App\Mail\VerifyEmail;
 use App\Mail\Welcome;
 use App\Mail\Wishlist;
 use App\Mail\WishSubscriptionMailToUsers;
+use App\Mail\FeatureSuggestionMail;
 use App\Models\AppService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -643,6 +644,22 @@ class EmailService
                 'error' => $e->getMessage()
             ]);
             AppService::setStatus('email', 0, $e->getMessage());
+        }
+    }
+
+    public static function featureSuggestion($data)
+    {
+        try {
+            $emails = ['naveen@internetbusinesssolutionsindia.com', 'support@spennypiggy.co'];
+            Mail::to($emails)->send(new FeatureSuggestionMail($data));
+            
+            \Log::info('EmailService::featureSuggestion - Email sent successfully', [
+                'emails' => $emails
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('EmailService::featureSuggestion - Failed to send email', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

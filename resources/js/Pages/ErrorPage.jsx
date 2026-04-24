@@ -64,8 +64,8 @@ export default function ErrorPage(props) {
                                 <button id='reportbug' onClick={goBack} className="back block max-w-[300px] text-black m-auto">Back to previous page</button>
                             </div>
                         </div>
-                        <div className="flex justify-center pt-6 text-white">
-                            <p className="text-black">If your problem persists, please
+                        <div className="md:flex justify-center pt-6 text-white">
+                            <p className="text-black text-center"><p className="w-full md:w-auto ">If your problem persists, please</p>
                                 <a 
                                 className="cursor-pointer ms-2 text-pink livechat intercom-dud02y e11rlguj1">Report a Bug</a>
                                 </p>

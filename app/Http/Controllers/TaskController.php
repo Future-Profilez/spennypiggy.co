@@ -371,6 +371,10 @@ class TaskController extends Controller
 
         $this->ensureTurnstileVerified($request);
 
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
         $price = $task->price;
 
         // Enforce Paid Task limits in GBP (min £5, max £500)
@@ -438,11 +442,9 @@ class TaskController extends Controller
         $appUrl = rtrim(config('app.url'), '/');
 
         $paymentType = $task->type === 'instant' ? 'STANDARD - Direct Charge' : 'PAID_TASK - Direct Charge';
-        $complianceMetadata = [
-            'type' => 'task_purchase',
-            'task_id' => $task->id,
+        
+        $complianceMetadata = Helpers::buildStripeMetadata('task_purchase', $task, [
             'buyer_id' => $user->id,
-            'creator_id' => $task->creator_id,
             'task_type' => $task->type,
             'sla_hours' => (string) ($task->sla_hours ?? 0),
             'payment_type' => $paymentType,
@@ -457,7 +459,9 @@ class TaskController extends Controller
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
             'transfer_amount' => (string) round($creatorNet * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
-        ];
+            'digital_waiver_confirmed_at' => now()->toDateTimeString(),
+            'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
+        ]);
 
         $paymentIntentData = [
             'description' => "Spenny Piggy - Task purchase: " . $task->title . " (Total value including all fees)",
@@ -488,7 +492,7 @@ class TaskController extends Controller
         }
 
         // Create session on CONNECTED account
-        $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+        $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $creator->username);
 
         try {
             Payment::firstOrCreate(
@@ -598,9 +602,9 @@ class TaskController extends Controller
             }
         }
 
-        $taskId = $metadata->task_id ?? $task->id;
-        $buyerId = $metadata->buyer_id ?? null;
-        $creatorId = $metadata->creator_id ?? $task->creator_id;
+        $taskId = (!empty($metadata->task_id)) ? $metadata->task_id : $task->id;
+        $buyerId = (!empty($metadata->buyer_id)) ? $metadata->buyer_id : null;
+        $creatorId = (!empty($metadata->creator_id)) ? $metadata->creator_id : $task->creator_id;
 
         $currency = strtoupper($session->currency ?? ($task->currency ?? 'GBP'));
         $currencyModel = \App\Models\Currency::where('ISO', $currency)->first();
@@ -650,6 +654,8 @@ class TaskController extends Controller
             'vat_amount' => $vat,
             'transfer_amount' => $transferAmount,
             'dispute_status' => 'none',
+            'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
+            'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
         ]);
 
         // SLA logic
@@ -681,6 +687,8 @@ class TaskController extends Controller
             'payment_currency' => strtoupper($session->currency ?? 'GBP'),
             'customer_email' => $session->customer_details->email ?? null,
             'customer_name' => $session->customer_details->name ?? null,
+            'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
+            'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
             'metadata' => json_encode(array_merge((array)$metadata, [
                 'currency' => $currency
             ])),

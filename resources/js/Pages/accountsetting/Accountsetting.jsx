@@ -19,6 +19,7 @@ import AddressForm from "../rye/AddressForm";
 import FollowersBulkNotification from "@/Components/FollowersBulkNotification";
 import SubscriptionHistory from "@/Components/SubscriptionHistory";
 import ManagePasskey from '@/Components/ManagePasskey';
+import SecurityZone from '@/Components/SecurityZone';
 import { Switch } from "@headlessui/react";
 import {
     User,
@@ -597,6 +598,25 @@ export default function Accountsetting(props) {
                         <SectionTitle title="Security" />
 
                         <ManagePasskey className="w-full border-2 border-pink-500 rounded-[30px] hover:border-pink-200 hover:shadow-sm transition-all" email={auth.user.email} />
+
+                        {isCreator && (
+                            <Popup
+                                size={"lg"}
+                                action={passClose}
+                                space="4"
+                                classes="w-full"
+                                modalclass="pinkmodal"
+                                text={
+                                    <SettingItem
+                                        icon={Shield}
+                                        title="Creator Security Zone"
+                                        subtitle="Manage sessions and blocked users"
+                                    />
+                                }
+                            >
+                                <SecurityZone />
+                            </Popup>
+                        )}
 
                         <Popup
                             action={emailPopupAction}

@@ -31,6 +31,8 @@ class  TipGoalsPayment extends Model
         'twitter_response',
         'certificate_url',
         'status',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $hidden = [

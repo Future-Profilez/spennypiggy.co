@@ -56,7 +56,7 @@ export default function GifterItems(props) {
   }
 
 
-  const Item = ({key, w}) => { 
+  const Item = ({w}) => { 
     
     const Template = () => { 
       const total_amount = (+w.amount)+(+w.tax)
@@ -102,7 +102,7 @@ export default function GifterItems(props) {
         </div>
       </div>
     }
-    return <div className='wish-grant my-2' key={key} >
+    return <div className='wish-grant my-2' >
         <Template  />
     </div>
   }

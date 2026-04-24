@@ -88,11 +88,23 @@ export default function AddIntro({IsloggedIn,  text, classes, setIntroStatus}){
 
         {IsloggedIn ? <button onClick={removeVideo} className='!z-2 !py-2 !px-4 rounded-xl bg-red-600 remove-story text-sm text-white' >Remove</button> : ''}
 
-        <div className='isintro  relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] cursor-pointer  '>
+        <div className='isintro  relative border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] !rounded-[20px] md:!rounded-[30px] cursor-pointer overflow-hidden'>
+          <div className='absolute top-3 left-3 z-10 bg-white/90 px-3 py-1 rounded-full border-2 border-black text-[10px] font-black uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'>
+            Intro video
+          </div>
           
-          <img alt={"image"} width={400}  effect="blur"
-          height={350} src={ intro && intro.poster_url || wishlistbannerimg} 
-          className='!min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px]'  />
+          <img 
+            alt="Intro video placeholder" 
+            width={400} 
+            height={350} 
+            src={intro?.poster_url || wishlistbannerimg} 
+            className='w-full object-cover !min-h-[200px] md:!min-h-[250px] lg:!min-h-[300px]' 
+            onError={(e) => {
+              if (e.target.src !== wishlistbannerimg) {
+                e.target.src = wishlistbannerimg;
+              }
+            }}
+          />
           
           <div className='cursor-pointer playicon' >
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">

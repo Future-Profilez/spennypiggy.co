@@ -9,6 +9,7 @@ import LiveBar from '@/includes/LiveBar';
 import FunPart from './home/FunPart';
 import WhyLove from './home/WhyLove';
 import HappyCreators from './home/HappyCreators';
+import FeatureSuggestionSection from './home/FeatureSuggestionSection';
 import JoinUs from '@/Components/JoinUs';
 import seek from "../../assets/img/seeksearch.png";
 import fill from "../../assets/img/fillbank.png";
@@ -142,6 +143,7 @@ export default function Home({ auth, user, founderBonus, trendingCreators, newVe
         <WhyLove />
 
         <HappyCreators />
+        <FeatureSuggestionSection auth={auth} />
         <FAQ />
 
         <JoinUs />

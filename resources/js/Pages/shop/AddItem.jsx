@@ -1185,9 +1185,7 @@ export default function AddItem(props) {
                                 <a
                                     className="text-voilet font-bold"
                                     target="_blank"
-                                    href={
-                                        "https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                    }
+                                    href={route("terms-and-conditions")}
                                 >
                                     Privacy Policy,
                                 </a>{" "}

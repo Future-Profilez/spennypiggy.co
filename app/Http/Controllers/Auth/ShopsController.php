@@ -786,6 +786,10 @@ class ShopsController extends Controller
                 $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
             }
 
+            $request->validate([
+                'digital_waiver' => ['required', 'accepted'],
+            ]);
+
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
                 'tax_amount' => $convertedStoreTaxAmount,
@@ -801,6 +805,10 @@ class ShopsController extends Controller
                 'quantity' => request()->query('quantity'),
                 'shipping_info' => $shipping_info ?? null
             ]);
+
+            // Apply digital waiver confirmation
+            Helpers::applyDigitalWaiver($shopPaymentDetail, (bool) $request->digital_waiver);
+            $shopPaymentDetail->save();
 
             $shopPaymentDetail->refresh();
 
@@ -978,7 +986,7 @@ class ShopsController extends Controller
                 ];
             }
 
-            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, false, $shop->user->username);
 
             $shopPaymentDetail->session_id =  $sessionCreate->id;
             $shopPaymentDetail->save();
