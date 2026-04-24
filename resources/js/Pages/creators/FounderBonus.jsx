@@ -41,7 +41,7 @@ export default function FounderBonus() {
                       <ArrowRight />
                     </Link>
                     <div className="text-xs md:text-sm font-medium text-gray-700">
-                      3 days free • £4/month after • Cancel anytime
+                      3 days free • £8.99/month after • Cancel anytime
                     </div>
                  </div>
                </div>

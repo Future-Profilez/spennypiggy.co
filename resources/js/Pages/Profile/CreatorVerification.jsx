@@ -715,7 +715,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 <strong className="text-black">
                                     Free Trial
                                 </strong>{" "}
-                                subscription of £4/month. No charges until the
+                                subscription of £8.99/month. No charges until the
                                 trial period ends.
                             </p>
                         </div>

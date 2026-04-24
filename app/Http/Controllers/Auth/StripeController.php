@@ -3459,13 +3459,11 @@ class StripeController extends Controller
             'digital_waiver' => ['required', 'accepted'],
         ]);
         $currency = strtolower($request->cookie("currency", "GBP"));
-        $price = 4.00;
+        $price = 8.99;
         
-        // Use new gross-up flow
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($price, 'GBP');
-        
-        $finalTotalAmount = $breakdown['total_supporter_pays'];
-        $tax = $breakdown['application_fee'];
+        // For platform charges, we want the customer to pay exactly the price shown on site
+        $finalTotalAmount = $price;
+        $tax = 0; 
 
         $user = User::where('id', Auth::id())->first();
         if (!$user) {
@@ -3503,7 +3501,12 @@ class StripeController extends Controller
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
         $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
 
-        $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * $multiplier);
+        // Force exactly 899 for GBP to avoid any conversion issues from database rates
+        if (strtoupper($currency) === 'GBP') {
+            $unit_amount = 899;
+        } else {
+            $unit_amount = round(Helpers::priceFormat("GBP", $amount, $currency) * $multiplier);
+        }
 
         // Determine if user has already used a free trial for the mandatory platform subscription
         $hasUsedTrial = MonthlyCharge::where('user_id', $user->id)
@@ -3647,7 +3650,14 @@ class StripeController extends Controller
                 }
 
                 $currency = strtolower($request->cookie("currency", "GBP"));
-                $convertedAmount = strtoupper(Helpers::priceFormat('gbp', $sub->amount, $currency));
+                
+                // Force correct display for GBP emails
+                if (strtoupper($currency) === 'GBP') {
+                    $convertedAmount = "8.99";
+                } else {
+                    $convertedAmount = strtoupper(Helpers::priceFormat('gbp', $sub->amount, $currency));
+                }
+                
                 SendPaymentSuccessEmail::dispatch($sub->user, $convertedAmount, $currency, $sub->upcoming_payment);
 
                 $this->userProfileService->clearUserCaches($sub->user->username, $sub->user->id);

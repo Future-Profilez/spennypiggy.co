@@ -224,7 +224,7 @@ class SyncSubscriptionStatus extends Command
                 MonthlyCharge::create([
                     'user_id' => $user->id,
                     'stripe_id' => $stripeSubscription->id,
-                    'amount' => 4.00, // Default amount
+                    'amount' => 8.99, // Updated amount
                     'currency' => 'GBP',
                     'status' => $status,
                     'current_start_subscription_date' => $periodStart,

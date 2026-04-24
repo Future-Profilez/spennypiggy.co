@@ -114,7 +114,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         {
             id: 'subscription',
             title: 'Start 3-Days Free Trial',
-            description: 'Unlock full access with a Free Trial subscription of £4/month. No charges until the trial period ends.',
+            description: 'Unlock full access with a Free Trial subscription of £8.99/month. No charges until the trial period ends.',
             isCompleted: auth?.user?.subscription_status >= 1,
             isRequired: true,
             order: 1,

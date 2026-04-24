@@ -15,10 +15,15 @@ use Ramsey\Uuid\Uuid;
 
 class Helpers
 {
-    /**
-     * The standard digital waiver text for loss of right to cancel.
-     */
     const DIGITAL_WAIVER_TEXT = "I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.";
+
+    public static function applyDigitalWaiver($model, bool $confirmed): void
+    {
+        if ($confirmed) {
+            $model->digital_waiver_confirmed_at = now();
+            $model->digital_waiver_text = self::DIGITAL_WAIVER_TEXT;
+        }
+    }
 
     public static function checkBlockData($request)
     {
@@ -187,7 +192,7 @@ class Helpers
         $stripeFixedFee = $isZeroDecimal ? 0 : 0.30;
         
         // Platform fees
-        $platformFeeRate = config('app.platform_fee_percentage', 20) / 100;
+        $platformFeeRate = config('app.platform_fee_percentage', 15) / 100;
         $complianceFeeRate = config('app.transaction_fee_percentage', 2) / 100;
         $adminFee = self::administrationFeeInCurrency($currency);
 
@@ -500,36 +505,15 @@ class Helpers
 
             $totalAmountPaid = array_sum($convertedAmount);
 
-            if ($totalAmountPaid > 500) {
-                if ($user->is_500_limit_exceeded == 0) {
-                    $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
-                }
-
-                // If admin hasn't approved yet (status 2), block payment
-                if ($user->profile_status_lock != 2) {
-                    return true;
-                }
+            if ($user->is_500_limit_exceeded == 0 && $totalAmountPaid && $totalAmountPaid > 500) {
+                $user->update(['profile_status_lock' => 1, 'is_500_limit_exceeded' => 1]);
+                return true;
             }
 
             return false;
         } catch (\Exception $e) {
             Log::error('Error retrieving authenticated user: ' . $e->getMessage());
             return false;
-        }
-    }
-
-    /**
-     * Apply digital waiver confirmation to a payment model
-     *
-     * @param mixed $model The payment model instance
-     * @param bool $confirmed Whether the waiver was confirmed
-     * @return void
-     */
-    public static function applyDigitalWaiver($model, bool $confirmed = false): void
-    {
-        if ($confirmed) {
-            $model->digital_waiver_confirmed_at = now();
-            $model->digital_waiver_text = self::DIGITAL_WAIVER_TEXT;
         }
     }
 
@@ -551,12 +535,6 @@ class Helpers
             'payment_uuid' => (string) ($paymentModel->uuid ?? Uuid::uuid4()),
             'timestamp' => now()->format('Y-m-d H:i:s T'),
         ];
-
-        // Add digital waiver info if present on the model
-        if (!empty($paymentModel->digital_waiver_confirmed_at)) {
-            $commonFields['digital_waiver_confirmed_at'] = (string) $paymentModel->digital_waiver_confirmed_at;
-            $commonFields['digital_waiver_text'] = (string) ($paymentModel->digital_waiver_text ?? self::DIGITAL_WAIVER_TEXT);
-        }
 
         switch ($type) {
             case 'support':
@@ -750,36 +728,6 @@ class Helpers
                 ]);
                 break;
 
-            case 'task':
-            case 'task_purchase':
-                $buyer = $paymentModel->supporter ?? $paymentModel->user ?? null;
-                $creator = $paymentModel->creator ?? null;
-                // If the model passed is already a Task, use it. Otherwise try to get the related task.
-                $taskInstance = ($paymentModel instanceof \App\Models\Task) ? $paymentModel : ($paymentModel->task ?? null);
-
-                $baseMetadata = array_merge($commonFields, [
-                    'purpose' => 'Task Request Payment',
-                    'payment_category' => 'task_purchase',
-                    'product_type' => 'task',
-
-                    // Buyer Information
-                    'buyer_id' => (string) ($paymentModel->supporter_id ?? $paymentModel->user_id ?? 'guest'),
-                    'buyer_name' => $buyer ? $buyer->name : ($paymentModel->name ?? 'Anonymous'),
-                    'buyer_email' => $buyer ? $buyer->email : ($paymentModel->email ?? 'anonymous@spennypiggy.co'),
-
-                    // Creator Information
-                    'creator_id' => (string) ($paymentModel->creator_id ?? ($taskInstance ? $taskInstance->creator_id : '')),
-                    'creator_name' => $creator ? $creator->name : 'Unknown Creator',
-                    'creator_username' => $creator ? $creator->username : '',
-
-                    // Task Details
-                    'task_id' => (string) ($paymentModel->task_id ?? ($taskInstance ? $taskInstance->id : '')),
-                    'task_title' => $taskInstance ? substr($taskInstance->title, 0, 100) : 'Task Request',
-                    'task_type' => $taskInstance ? $taskInstance->type : 'standard',
-                    'deliverable_type' => 'task_completion',
-                ]);
-                break;
-
             case 'site_subscription':
             case 'mandatory_subscription':
                 $subscriber = $paymentModel->user ?? null;
@@ -804,7 +752,7 @@ class Helpers
 
                     // Subscription Details
                     'subscription_type' => 'monthly',
-                    'subscription_amount' => (string) ($paymentModel->amount ?? '4.00'),
+                    'subscription_amount' => (string) ($paymentModel->amount ?? '8.99'),
                     'currency' => (string) ($paymentModel->currency ?? 'GBP'),
                     'trial_period_days' => '3',
                     'subscription_description' => 'Mandatory monthly subscription for platform access',
