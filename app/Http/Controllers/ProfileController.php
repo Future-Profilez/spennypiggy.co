@@ -306,7 +306,7 @@ class ProfileController extends Controller
     public function updateProfileLockStatus()
     {
         try {
-            $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+            $user = User::where('id', Auth::id())->first();
             if ($user->role == 1) {
                 $user->profile_status_lock = 1;
                 $user->profile_status_lock = 1;
@@ -498,7 +498,7 @@ class ProfileController extends Controller
      */
     public function notificationSwitch()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if (!$user) {
             return response()->json([
