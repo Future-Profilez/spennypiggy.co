@@ -58,13 +58,13 @@ Route::get('/health', function () {
 Route::get('/debug/cache-check', function () {
     $key = 'debug_cache_test_' . time();
     $value = 'working';
-    
+
     // Put in cache for 1 minute
     \Illuminate\Support\Facades\Cache::put($key, $value, 60);
-    
+
     // Retrieve
     $retrieved = \Illuminate\Support\Facades\Cache::get($key);
-    
+
     return response()->json([
         'status' => $retrieved === $value ? 'ok' : 'failed',
         'driver' => config('cache.default'),
@@ -87,9 +87,9 @@ if (app()->environment('local')) {
         if (!$user) {
             return response()->json(['error' => 'User not found']);
         }
-        
+
         $subscription = $user->creatorMonthlySubscription;
-        
+
         return response()->json([
             'user_id' => $user->id,
             'username' => $user->username,
@@ -122,7 +122,7 @@ if (app()->environment('local')) {
     Route::get('/debug-cart-api', function () {
         $controller = app(App\Http\Controllers\Auth\WishitemController::class);
         $response = $controller->authenticatedCartItems();
-        
+
         $authUser = Auth::user();
         return response()->json([
             'timestamp' => now(),
@@ -165,19 +165,19 @@ Route::get('/', function (DiscoveryService $discoveryService) {
         $newVerifiedCreators = $discoveryService->getNewVerifiedCreators();
         $topEarnersData = $discoveryService->getTopEarners($period, $limit);
     } else {
-        $trendingCreators = \Illuminate\Support\Facades\Cache::remember('home_trending_creators', 900, function() use ($discoveryService) {
+        $trendingCreators = \Illuminate\Support\Facades\Cache::remember('home_trending_creators', 900, function () use ($discoveryService) {
             return $discoveryService->getTrendingCreators();
         });
-        $newVerifiedCreators = \Illuminate\Support\Facades\Cache::remember('home_new_verified_creators', 900, function() use ($discoveryService) {
+        $newVerifiedCreators = \Illuminate\Support\Facades\Cache::remember('home_new_verified_creators', 900, function () use ($discoveryService) {
             return $discoveryService->getNewVerifiedCreators();
         });
         $ttl = match ($period) {
-            'daily' => 600, 
+            'daily' => 600,
             'weekly' => 1200,
             'monthly' => 1800,
             default => 1200,
         };
-        $topEarnersData = \Illuminate\Support\Facades\Cache::remember('home_top_earners_'.$period.'_'.$limit, $ttl, function() use ($discoveryService, $period, $limit) {
+        $topEarnersData = \Illuminate\Support\Facades\Cache::remember('home_top_earners_' . $period . '_' . $limit, $ttl, function () use ($discoveryService, $period, $limit) {
             return $discoveryService->getTopEarners($period, $limit);
         });
     }
@@ -277,10 +277,10 @@ Route::get('/creators/founder-bonus', function () {
 
 if (app()->environment('local')) {
     Route::get('create-product-for-creator-and-gifter', [StripeWebhookController::class, 'CreateProductForCreatorAndGifter']);
-    
+
     // routes/web.php or routes/api.php
     Route::get('delete-all-products', [TestController::class, 'deleteAllProducts'])->name('delete.all.products');
-    
+
     // delete all products from stripe
     Route::get('archived-all-products', [TestController::class, 'archiveAllStripeProducts'])->name('archived.all.products');
     Route::get('send-identity-verification-failed-emails', [TestController::class, 'sendFailedVerificationEmails']);
@@ -316,16 +316,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
     // Purchases routes
     Route::get('/purchases', [\App\Http\Controllers\PurchasesController::class, 'index'])->name('purchases');
     Route::post('/purchases/cancel-subscription/{type}/{uuid}', [\App\Http\Controllers\PurchasesController::class, 'cancelSubscription'])
-         ->name('purchases.cancel-subscription');
-    
+        ->name('purchases.cancel-subscription');
+
     // Alternative subscription cancellation route to match frontend expectation
     Route::post('/subscriptions/{id}/cancel', [\App\Http\Controllers\PurchasesController::class, 'cancelSubscriptionById'])
-         ->name('subscriptions.cancel');
-         
+        ->name('subscriptions.cancel');
+
     // Comprehensive subscription management routes
     Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
         Route::get('/', [\App\Http\Controllers\SubscriptionsController::class, 'index'])->name('index');
@@ -376,8 +376,8 @@ Route::get('/pwa-debug', function () {
         'is_https' => request()->isSecure(),
         'host' => request()->getHost(),
         'user_agent' => request()->userAgent(),
-        'manifest_content' => file_exists(public_path('site.webmanifest')) 
-            ? json_decode(file_get_contents(public_path('site.webmanifest')), true) 
+        'manifest_content' => file_exists(public_path('site.webmanifest'))
+            ? json_decode(file_get_contents(public_path('site.webmanifest')), true)
             : null
     ]);
 })->name('pwa.debug');
@@ -396,6 +396,7 @@ if (app()->environment('local')) {
     // Debug: Test support image generation end-to-end (Node + PHP fallback)
     Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
         ->name('debug.test-support-image');
+    Route::get('activity/logs', [\App\Http\Controllers\CreatorActivityController::class, 'logs'])->name('activity.logs');
 }
 
 // Creator Activity Routes
@@ -404,7 +405,7 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     Route::get('/activity/status', [\App\Http\Controllers\CreatorActivityController::class, 'getActivityStatus'])->name('activity.status');
     Route::post('/activity/refresh', [\App\Http\Controllers\CreatorActivityController::class, 'refreshActivity'])->name('activity.refresh');
     Route::get('/activity/suggestions', [\App\Http\Controllers\CreatorActivityController::class, 'getSuggestions'])->name('activity.suggestions');
-    
+
     // Creator Subscription Routes
     Route::get('/subscription/status', [\App\Http\Controllers\CreatorSubscriptionController::class, 'getSubscriptionStatus'])->name('subscription.status');
     Route::post('/subscription/validate-payment', [\App\Http\Controllers\CreatorSubscriptionController::class, 'validatePaymentSubscription'])->name('subscription.validate-payment');
@@ -416,7 +417,7 @@ Route::middleware('auth')->prefix('creator')->name('creator.')->group(function (
     Route::get('/disputes', [\App\Http\Controllers\Creator\DisputeController::class, 'index'])->name('disputes.index');
     Route::get('/disputes/{id}', [\App\Http\Controllers\Creator\DisputeController::class, 'show'])->name('disputes.show');
     Route::post('/disputes/{id}/submit', [\App\Http\Controllers\Creator\DisputeController::class, 'submitEvidence'])->name('disputes.submit');
-    
+
     // Payout/Reserve Routes
     Route::get('/payouts/reserves', [\App\Http\Controllers\Api\CreatorPayoutController::class, 'getReserves'])->name('payouts.reserves');
 
@@ -516,13 +517,13 @@ Route::get('/splashscreen.png', function () {
 Route::withoutMiddleware([])->group(function () {
     // New robots route with different name
     Route::get('/app-robots-file', [\App\Http\Controllers\SeoController::class, 'robotsTxt'])->name('app.robots');
-    
+
     // New sitemap routes with different names
     Route::get('/app-sitemap-index', [\App\Http\Controllers\SitemapController::class, 'index'])->name('app.sitemap.index');
     Route::get('/app-sitemap-pages', [\App\Http\Controllers\SitemapController::class, 'static'])->name('app.sitemap.static');
     Route::get('/app-sitemap-users', [\App\Http\Controllers\SitemapController::class, 'creators'])->name('app.sitemap.creators');
     Route::get('/app-sitemap-items', [\App\Http\Controllers\SitemapController::class, 'wishlists'])->name('app.sitemap.wishlists');
-    
+
     // Inline robots.txt that bypasses all file systems
     Route::get('/dynamic-robots', function () {
         $siteUrl = config('app.url');
@@ -543,7 +544,7 @@ Route::withoutMiddleware([])->group(function () {
         $content .= "Allow: /how-it-works\n";
         $content .= "\n# Sitemap location\n";
         $content .= "Sitemap: {$siteUrl}/dynamic-sitemap\n";
-        
+
         return response($content, 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
@@ -551,7 +552,7 @@ Route::withoutMiddleware([])->group(function () {
             'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
         ]);
     })->name('dynamic.robots');
-    
+
     // Inline sitemap that bypasses all file systems
     Route::get('/dynamic-sitemap', function () {
         $siteUrl = config('app.url');
@@ -570,7 +571,7 @@ Route::withoutMiddleware([])->group(function () {
         $content .= '    <lastmod>' . now()->toW3cString() . '</lastmod>' . "\n";
         $content .= '  </sitemap>' . "\n";
         $content .= '</sitemapindex>' . "\n";
-        
+
         return response($content, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
@@ -578,7 +579,7 @@ Route::withoutMiddleware([])->group(function () {
             'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
         ]);
     })->name('dynamic.sitemap');
-    
+
     // Dynamic sub-sitemaps
     Route::get('/dynamic-sitemap-pages', function () {
         $siteUrl = config('app.url');
@@ -598,10 +599,10 @@ Route::withoutMiddleware([])->group(function () {
             ['url' => '/creators/disputes', 'priority' => '0.6', 'changefreq' => 'monthly'],
             ['url' => '/creators/founder-bonus', 'priority' => '0.7', 'changefreq' => 'weekly'],
         ];
-        
+
         $content = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $content .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-        
+
         foreach ($staticPages as $page) {
             $content .= '  <url>' . "\n";
             $content .= '    <loc>' . $siteUrl . $page['url'] . '</loc>' . "\n";
@@ -610,9 +611,9 @@ Route::withoutMiddleware([])->group(function () {
             $content .= '    <priority>' . $page['priority'] . '</priority>' . "\n";
             $content .= '  </url>' . "\n";
         }
-        
+
         $content .= '</urlset>' . "\n";
-        
+
         return response($content, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
@@ -620,10 +621,10 @@ Route::withoutMiddleware([])->group(function () {
             'Expires' => 'Thu, 01 Jan 1970 00:00:00 GMT',
         ]);
     })->name('dynamic.sitemap.pages');
-    
+
     Route::get('/dynamic-sitemap-users', [\App\Http\Controllers\SitemapController::class, 'creators'])->name('dynamic.sitemap.users');
     Route::get('/dynamic-sitemap-items', [\App\Http\Controllers\SitemapController::class, 'wishlists'])->name('dynamic.sitemap.items');
-    
+
     // SEO Status Page
     Route::get('/seo-status', function () {
         $siteUrl = config('app.url');
@@ -641,7 +642,7 @@ Route::withoutMiddleware([])->group(function () {
         $html .= '<p>Use this URL for search engine submission:</p>';
         $html .= '<code>' . $siteUrl . '/dynamic-sitemap</code>';
         $html .= '</body></html>';
-        
+
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
         ]);
@@ -681,7 +682,7 @@ Route::get('/health/detailed', [HealthController::class, 'detailed'])->name('hea
 // require __DIR__.'/auth.php'; // moved below founder routes
 
 // Debug routes for wish creation issue
-require __DIR__.'/debug-wish.php';
+require __DIR__ . '/debug-wish.php';
 
 // Founder routes are now defined in auth.php
 
@@ -725,11 +726,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
 });
 
 // Ensure auth routes (including catch-all) load AFTER explicit founder routes
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 // Quick middleware test
 Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])
-    ->get('/debug-middleware-test', function() {
+    ->get('/debug-middleware-test', function () {
         $user = auth()->user();
         return response()->json([
             'success' => true,
@@ -742,11 +743,11 @@ Route::middleware(['auth', 'mustCompletedStripeIdentity', 'mustHaveToVerify'])
             ] : null,
         ]);
     });
-require __DIR__.'/test-date.php';
+require __DIR__ . '/test-date.php';
 
 // Test subscription routes (remove in production)
 if (config('app.env') !== 'production') {
-require __DIR__.'/test-subscription.php';
+    require __DIR__ . '/test-subscription.php';
 }
 
 

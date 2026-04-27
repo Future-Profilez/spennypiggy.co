@@ -43,24 +43,19 @@ class BillsController extends Controller
     use RiskEnforcement;
     public function billSave(Request $request)
     {
+        // 🔴 DEBUGGING: Log that method was called
+        Log::info('🎯 billSave method called', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->all()
+        ]);
+
         $validator = Validator::make($request->all(), [
-            "name" => [
-                "required",
-                "string",
-            ],
-            "price" => [
-                "required",
-                "numeric",
-                "min:0"
-            ],
-            'period' => [
-                'required',
-                'string'
-            ]
+            "name" => ["required", "string"],
+            "price" => ["required", "numeric", "min:0"],
+            'period' => ['required', 'string']
         ]);
 
         if ($validator->fails()) {
-
             return response()->json([
                 "status" => false,
                 "msg" => "Validation failed",
@@ -70,8 +65,10 @@ class BillsController extends Controller
 
         $user = User::where('id', Auth::id())->first();
 
-        $media = $request->thumbnail;
+        // 🔴 DEBUGGING: Log user found
+        Log::info('👤 User found', ['user_id' => $user->id ?? null, 'is_uk' => $user->is_uk ?? null]);
 
+        $media = $request->thumbnail;
         $price = $request->price;
         $currency = $user->default_currency ?? 'gbp';
 
@@ -134,7 +131,14 @@ class BillsController extends Controller
 
             // Clear user caches
             app(UserProfileService::class)->clearUserCaches($user->username, $user->id);
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Bill added successfully, your upload will be approved shortly.",
+                'bill_id' => $bill->id  // Added for debugging
+            ]);
         } catch (Exception $e) {
+
             $bill->delete();
 
             return response()->json([
@@ -142,11 +146,6 @@ class BillsController extends Controller
                 'msg' => "Stripe Error: " . $e->getMessage()
             ]);
         }
-
-        return response()->json([
-            'status' => true,
-            'msg' => "Bill added successfully, your upload will be approved shortly."
-        ]);
     }
 
     public function billEdit(Request $request, $id)
@@ -302,10 +301,22 @@ class BillsController extends Controller
         if (!empty($bill)) {
             BillPayment::where('bills_id', $bill->id)->delete();
             $account_id = $bill->user->account_id;
-            $stripeProduct = StripeControl::getProduct($bill->product_id, $account_id);
-            if ($stripeProduct) {
-                // Delete the product and prices from Stripe
-                StripeControl::deleteProductAndPrices($stripeProduct->id, $account_id);
+
+            // Only attempt to delete Stripe product if product_id exists
+            if (!empty($bill->product_id)) {
+                try {
+                    $stripeProduct = StripeControl::getProduct($bill->product_id, $account_id);
+                    if ($stripeProduct) {
+                        // Delete the product and prices from Stripe
+                        StripeControl::deleteProductAndPrices($stripeProduct->id, $account_id);
+                    }
+                } catch (\Exception $e) {
+                    // Log the error but continue with bill deletion
+                    \Log::error('Failed to delete Stripe product: ' . $e->getMessage(), [
+                        'bill_uuid' => $uuid,
+                        'product_id' => $bill->product_id
+                    ]);
+                }
             }
 
             $bill->delete();
