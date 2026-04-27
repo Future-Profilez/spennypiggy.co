@@ -15,6 +15,16 @@ use Ramsey\Uuid\Uuid;
 
 class Helpers
 {
+    const DIGITAL_WAIVER_TEXT = "I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.";
+
+    public static function applyDigitalWaiver($model, bool $confirmed): void
+    {
+        if ($confirmed) {
+            $model->digital_waiver_confirmed_at = now();
+            $model->digital_waiver_text = self::DIGITAL_WAIVER_TEXT;
+        }
+    }
+
     public static function checkBlockData($request)
     {
         $blockedWords = ['paypig', 'findom', 'worship', 'unlock', 'unblock', 'receive', 'tax', 'fee', 'session', 'deposit', 'tribute', 'dick', 'goddess', 'master', 'mistress'];
@@ -742,7 +752,7 @@ class Helpers
 
                     // Subscription Details
                     'subscription_type' => 'monthly',
-                    'subscription_amount' => (string) ($paymentModel->amount ?? '4.00'),
+                    'subscription_amount' => (string) ($paymentModel->amount ?? '8.99'),
                     'currency' => (string) ($paymentModel->currency ?? 'GBP'),
                     'trial_period_days' => '3',
                     'subscription_description' => 'Mandatory monthly subscription for platform access',

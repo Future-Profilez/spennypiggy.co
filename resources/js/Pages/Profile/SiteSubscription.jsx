@@ -34,7 +34,7 @@ export default function SiteSubscription({ children, auth, subscription_status, 
                         3-days free trial
                     </span>{" "}
                     before your monthly subscription begins! After the trial,
-                    your subscription renews at £8.99/month to help cover
+                    your subscription renews at £8.99 + VAT / month to help cover
                     payment processing and compliance requirements.
                 </p>
 

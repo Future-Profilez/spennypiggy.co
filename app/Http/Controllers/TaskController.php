@@ -31,6 +31,11 @@ use App\Services\UserProfileService;
 use App\Services\StripeMetadataService;
 use Illuminate\Support\Facades\App;
 use App\Traits\RiskEnforcement;
+use App\Services\CreatorSubscriptionService;
+use App\Services\CreatorActivityService;
+use App\Services\CreatorAvailabilityMessageService;
+use App\Notifications\SubscriptionBlockedNotification;
+use App\Notifications\PaymentBlockedNotification;
 
 class TaskController extends Controller
 {
@@ -359,6 +364,64 @@ class TaskController extends Controller
 
         $creator = $task->creator;
 
+        // NEW: Check creator subscription eligibility first
+        $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
+
+        if (!$subscriptionCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $task->price));
+
+            // Log the blocked payment for subscription issues
+            Log::warning('Task payment blocked due to subscription issue', [
+                'creator_id' => $creator->id,
+                'creator_username' => $creator->username,
+                'task_id' => $task->id,
+                'task_price' => $task->price,
+                'subscription_status' => $subscriptionCheck['status'],
+                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
+            ]);
+
+            // Return user-friendly error to fan
+            return redirect()->back()->with(
+                'error',
+                app(CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+            );
+        }
+
+        // NEW: Check creator activity eligibility
+        $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
+
+        if (!$activityCheck['eligible']) {
+            // Send notification to creator about blocked payment
+            $creator->notify(new PaymentBlockedNotification($activityCheck, $task->price));
+
+            // Log the blocked payment for analytics
+            Log::info('Task purchase blocked due to insufficient creator activity', [
+                'creator_id' => $creator->id,
+                'creator_username' => $creator->username,
+                'task_id' => $task->id,
+                'task_price' => $task->price,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+
+            // Return user-friendly error to fan
+            return redirect()->back()->with(
+                'error',
+                app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+            );
+        }
+
+        // Log successful activity check for analytics
+        if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+            Log::info('Task purchase allowed - creator activity check passed', [
+                'creator_id' => $creator->id,
+                'creator_username' => $creator->username,
+                'activity_status' => $activityCheck['status'],
+                'content_count' => $activityCheck['content_count'] ?? 0
+            ]);
+        }
+
         // Currency Handling
         $currency = strtolower($task->currency ?? 'usd');
         $currencyModel = Currency::where('ISO', strtoupper($currency))->first();
@@ -370,6 +433,10 @@ class TaskController extends Controller
         $vatPercent = $creator->vat_amount_percentage ?? 0;
 
         $this->ensureTurnstileVerified($request);
+
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
 
         $price = $task->price;
 
@@ -438,11 +505,9 @@ class TaskController extends Controller
         $appUrl = rtrim(config('app.url'), '/');
 
         $paymentType = $task->type === 'instant' ? 'STANDARD - Direct Charge' : 'PAID_TASK - Direct Charge';
-        $complianceMetadata = [
-            'type' => 'task_purchase',
-            'task_id' => $task->id,
+        
+        $complianceMetadata = Helpers::buildStripeMetadata('task_purchase', $task, [
             'buyer_id' => $user->id,
-            'creator_id' => $task->creator_id,
             'task_type' => $task->type,
             'sla_hours' => (string) ($task->sla_hours ?? 0),
             'payment_type' => $paymentType,
@@ -457,7 +522,9 @@ class TaskController extends Controller
             'total_charge_amount' => (string) round($finalTotalAmount * $multiplier),
             'transfer_amount' => (string) round($creatorNet * $multiplier),
             'has_card_payments' => (string) $hasCardPayments,
-        ];
+            'digital_waiver_confirmed_at' => now()->toDateTimeString(),
+            'digital_waiver_text' => Helpers::DIGITAL_WAIVER_TEXT,
+        ]);
 
         $paymentIntentData = [
             'description' => "Spenny Piggy - Task purchase: " . $task->title . " (Total value including all fees)",
@@ -469,7 +536,11 @@ class TaskController extends Controller
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
             'mode' => 'payment',
-            'payment_intent_data' => $paymentIntentData,
+            'payment_intent_data' => [
+                'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
+                'receipt_email' => $user->email,
+                'metadata' => $complianceMetadata,
+            ],
             'success_url' => route('task.success', ['uuid' => $task->uuid]) . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $appUrl . '/task/' . $task->uuid,
             'customer_email' => $user->email,
@@ -488,7 +559,7 @@ class TaskController extends Controller
         }
 
         // Create session on CONNECTED account
-        $session = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+        $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $creator->username);
 
         try {
             Payment::firstOrCreate(
@@ -565,12 +636,7 @@ class TaskController extends Controller
             return redirect('/task/' . $uuid)->with('error', 'Payment not completed.');
         }
 
-        return Inertia::render('Tasks/Success', [
-            'task' => $task,
-            'purchase' => $purchase,
-            'currencySymbol' => Currency::where('ISO', $task->currency)->value('symbol') ?? '$',
-            'gracePeriodHours' => config('tasks.grace_period_hours', 1),
-        ]);
+        return to_route('thank-you', ['username' => $task->creator->username])->with('success', 'Payment Successful.');
     }
 
     /**
@@ -598,9 +664,9 @@ class TaskController extends Controller
             }
         }
 
-        $taskId = $metadata->task_id ?? $task->id;
-        $buyerId = $metadata->buyer_id ?? null;
-        $creatorId = $metadata->creator_id ?? $task->creator_id;
+        $taskId = (!empty($metadata->task_id)) ? $metadata->task_id : $task->id;
+        $buyerId = (!empty($metadata->buyer_id)) ? $metadata->buyer_id : null;
+        $creatorId = (!empty($metadata->creator_id)) ? $metadata->creator_id : $task->creator_id;
 
         $currency = strtoupper($session->currency ?? ($task->currency ?? 'GBP'));
         $currencyModel = \App\Models\Currency::where('ISO', $currency)->first();
@@ -650,6 +716,8 @@ class TaskController extends Controller
             'vat_amount' => $vat,
             'transfer_amount' => $transferAmount,
             'dispute_status' => 'none',
+            'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
+            'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
         ]);
 
         // SLA logic
@@ -681,6 +749,8 @@ class TaskController extends Controller
             'payment_currency' => strtoupper($session->currency ?? 'GBP'),
             'customer_email' => $session->customer_details->email ?? null,
             'customer_name' => $session->customer_details->name ?? null,
+            'digital_waiver_confirmed_at' => $metadata->digital_waiver_confirmed_at ?? null,
+            'digital_waiver_text' => $metadata->digital_waiver_text ?? null,
             'metadata' => json_encode(array_merge((array)$metadata, [
                 'currency' => $currency
             ])),

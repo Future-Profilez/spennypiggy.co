@@ -20,7 +20,7 @@ class ReferralQualifiedMail extends Mailable
 
     public function build()
     {
-        return $this
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject('🎉 Your Referral Reward Is Ready to Redeem!')
             ->view('email.referral-qualified')
             ->with([

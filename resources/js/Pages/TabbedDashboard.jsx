@@ -120,6 +120,7 @@ export default function TabbedDashboard(props) {
                             onTabChange={handleTabChange}
                             showAddButton={IsloggedIn}
                             onAddClick={handleAddClick}
+                            showSecurity={IsloggedIn && user?.role == 1}
                         />
 
                         <TabContent

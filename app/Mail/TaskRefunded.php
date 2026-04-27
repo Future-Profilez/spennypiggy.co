@@ -29,7 +29,7 @@ class TaskRefunded extends Mailable
         $formattedAmount = $symbol . number_format($amount, $digits);
 
         return $this->view('email.taskrefunded')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject('Task Refund Notification')
             ->with([
                 'formattedAmount' => $formattedAmount,

@@ -248,7 +248,7 @@ export default function PwaInstallPrompt() {
           <p className="mt-2 text-sm text-neutral-700  ">
             Never miss a tribute, task, or juicy update again.
             <br />
-            📲 Install the app to get push notifications — including when your favourite creators message you (or demand payment 👀).
+            📲 Install the app to get push notifications — including when your favourite creators message you (or request payment 👀).
           </p>
 
           {isSafari ? (

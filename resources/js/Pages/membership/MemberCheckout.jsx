@@ -12,8 +12,8 @@ import Popup from "@/Components/Popup";
 import axios from "axios";
 
 export default function SubCheckout(props) {
+    const { flash, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
-    const { turnstileSiteKey } = usePage().props;
     const { user, auth, membership, vat_amount, isSocilAdded, card_capabilities, creator_currency, display_currency } = props;
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const [username, setUserName] = useState(
@@ -31,6 +31,7 @@ export default function SubCheckout(props) {
         email: email,
         message: "",
         agree: false,
+        digital_waiver: false,
         anonymous: 0,
         cf_turnstile_response: "",
     });
@@ -45,34 +46,36 @@ export default function SubCheckout(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const vat = parseFloat(vatAmount || 0);
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Client Rule: Add VAT before other fees
-        const priceWithVat = listedPrice + vat;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const finalTotalAmount = calculateTotalSupporterPays(
         membership?.price, 
         membership?.currency,
-        vat_amount
+        membership?.user?.vat_amount_percentage || 0
     );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -124,20 +127,6 @@ export default function SubCheckout(props) {
     }, [setData, setVerified]);
 
     // const executeCaptcha = (e) => {
-    //     e.preventDefault();
-        
-    //     if (!turnstileSiteKey) {
-    //         handleSubmit();
-    //         return;
-    //     }
-        
-    //     if (turnstileRef.current && !verified) {
-    //         turnstileRef.current.execute();
-    //     }
-    //     setChecking(true);
-    // };
-
-    const { flash } = usePage().props;
 
     // Step-Up Modal State
     const [showStepUp, setShowStepUp] = useState(false);
@@ -398,40 +387,11 @@ export default function SubCheckout(props) {
                                     </p>
                                     <div className="w-full lg:max-w-[300px] cartTotal px-0 lg:pt-4 flex justify-end">
                                         <ul className="w-full">
-                                            {/* <li className="flex justify-between  border p-3">
-                                                <span className="min-w-[100px] block">Subtotal :</span>
-                                                <strong>{formatMultiPrice(membership?.price || "",membership && membership?.currency)}</strong>
-                                            </li> */}
-                                            {/* <li className="flex justify-between   border p-3">
-                                                <span className="min-w-[100px] block">Platform Fee :</span>
-                                                <div>
-                                                    <strong>{formatMultiPrice(membership?.tax_amount || "",membership && membership?.currency, 'adminfee')}</strong>
-                                                    <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
-                                                    ?
-                                                    <p className="absolute bg-[#505050] p-[10px] rounded-[30px]  top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                        {window.platformFeePercentage || 20}% Card Fees and £1 administrative fee applies to
-                                                    all transactions.
-                                                    </p>
-                                                    </button>
-                                                </div>
-                                            </li> */}
-                                            {/* {vat_amount && vat_amount > 0 ? (
-                                                <li className="flex justify-between   border p-3">
-                                                    <span className="min-w-[100px] block">VAT :</span>
-                                                    <strong>{formatMultiPrice(
-                                                            vat_amount || "",
-                                                            membership &&
-                                                                membership.currency
-                                                        )}</strong>
-                                                </li>
-                                            ) : (
-                                                ""
-                                            )} */}
                                             <li className="flex justify-between mb-3">
-                                                <span className="min-w-[100px] text-xl block">Total :</span>
+                                                <span className="min-w-[100px] text-xl block">Total:</span>
                                                 <div className="text-right">
                                                     <strong className="block text-xl">
-                                                        {formatMultiPrice(finalTotalAmount, (membership && membership?.currency))}
+                                                        {formatMultiPrice(finalTotalAmount, membership?.currency)}
                                                     </strong>
                                                 </div>
                                             </li>
@@ -570,14 +530,14 @@ export default function SubCheckout(props) {
                                                 Terms of Service
                                             </Link>{" "}
                                             and{" "}
-                                            <a
+                                            <Link
                                                 className="text-violet-600"
                                                 target="_blank"
-                                                href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                href={route("terms-and-conditions")}
                                             >
                                                 {" "}
                                                 Privacy Policy{" "}
-                                            </a>{" "}
+                                            </Link>{" "}
                                             and the following statements:
                                         </label>
                                         <div className="tearmlist pl-3">
@@ -667,6 +627,32 @@ export default function SubCheckout(props) {
                                         </div>
                                     </li>
                                 </ul>
+                                <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
+                                    <label
+                                        htmlFor="digital_waiver"
+                                        className="text-left flex items-start cursor-pointer group"
+                                    >
+                                        <div className="flex items-center h-5 mt-1">
+                                            <input
+                                                onChange={(e) => setData('digital_waiver', e.target.checked)}
+                                                type="checkbox"
+                                                id="digital_waiver"
+                                                name="digital_waiver"
+                                                className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                checked={data.digital_waiver}
+                                                required
+                                            />
+                                        </div>
+                                        <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                            I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                        </span>
+                                    </label>
+                                    {errors.digital_waiver && (
+                                        <p className="mt-2 text-xs text-red-600 font-bold uppercase tracking-tight">
+                                            {errors.digital_waiver}
+                                        </p>
+                                    )}
+                                </div>
                                 {!card_capabilities && (
                                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-3" role="alert">
                                         <strong className="font-bold">Payment Unavailable: </strong>
@@ -688,6 +674,7 @@ export default function SubCheckout(props) {
                                         onClick={handleSubmit}
                                         className={`${
                                             !data.agree ||
+                                            !data.digital_waiver ||
                                             processing ||
                                             checking ||
                                             !card_capabilities
@@ -696,6 +683,7 @@ export default function SubCheckout(props) {
                                         } button-pink btn-shadow shadow-black text-white md !px-8 mt-3 text-center`}
                                         disabled={
                                             !data.agree ||
+                                            !data.digital_waiver ||
                                             processing ||
                                             checking ||
                                             !card_capabilities

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class UserIntro extends Model
 {
@@ -45,26 +46,36 @@ class UserIntro extends Model
     {
         $url = null;
         if (!empty($this->poster) && !empty($this->poster_token)) {
-            $req = Http::accept('application/vnd.uploadcare-v0.7+json')
-                ->contentType('application/json')
-                ->withHeaders([
-                    'Authorization' => "Uploadcare.Simple " . env("UPLOADCARE_PUBLIC_KEY") . ":" . env('UPLOADCARE_SECRET_KEY')
-                ])
-                ->get(env("UPLOADCARE_HOST") . "convert/video/status/$this->poster_token/");
+            try {
+                // Use a short timeout to prevent blocking the request for too long
+                $req = Http::timeout(3)
+                    ->accept('application/vnd.uploadcare-v0.7+json')
+                    ->contentType('application/json')
+                    ->withHeaders([
+                        'Authorization' => "Uploadcare.Simple " . env("UPLOADCARE_PUBLIC_KEY") . ":" . env('UPLOADCARE_SECRET_KEY')
+                    ])
+                    ->get(env("UPLOADCARE_HOST") . "convert/video/status/$this->poster_token/");
 
-            if ($req->successful()) {
-                $request = $req->json();
-
-                // echo $request['status'];
-                // die;
-
-                if ($request['status'] == 'processing') {
-                    $url = false;
-                } elseif ($request['status'] == 'finished') {
-                    $url = env("UPLOADCARE_CDN") . $this->poster . "/nth/0/";
+                if ($req->successful()) {
+                    $res = json_decode($req->body());
+                    if ($res->status == "success") {
+                        $url = env("UPLOADCARE_CDN") . $res->result->uuid . "/nth/0/";
+                        
+                        // Update the model to store the final URL and clear the token
+                        // This prevents future network calls for this video
+                        $this->poster = $res->result->uuid;
+                        $this->poster_token = null;
+                        $this->save();
+                    } else {
+                        // Fallback to the original UUID if still processing
+                        $url = env("UPLOADCARE_CDN") . $this->uuid . "/";
+                    }
+                } else {
+                    $url = env("UPLOADCARE_CDN") . $this->uuid . "/";
                 }
-            } else {
-                $url = false;
+            } catch (\Exception $e) {
+                Log::warning("Uploadcare status check failed for UserIntro {$this->id}: " . $e->getMessage());
+                $url = env("UPLOADCARE_CDN") . $this->uuid . "/";
             }
         } elseif (empty($this->poster)) {
             $uuid = Uploadcare::generateThumb($this->uuid, $this->duration);

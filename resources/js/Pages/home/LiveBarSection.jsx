@@ -17,7 +17,7 @@ export default function LiveBarSection() {
         src={HeroWishlistImage}
         alt="Wishlist image"
         />
-        <p className='uppercase text-center mt-4 text-gray-400 font-poppins text-[10px] xl:text-[15px] tracking-wider'>*3 days Free trial and then requires a monthly £4 payment to cover stripe fees and compliance costs. </p>
+        <p className='uppercase text-center mt-4 text-gray-400 font-poppins text-[10px] xl:text-[15px] tracking-wider'>*3 days Free trial and then requires a monthly £8.99 + VAT payment to cover stripe fees and compliance costs. </p>
       </div>
      
 

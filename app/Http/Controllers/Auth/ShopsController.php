@@ -786,6 +786,10 @@ class ShopsController extends Controller
                 $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
             }
 
+            $request->validate([
+                'digital_waiver' => ['required', 'accepted'],
+            ]);
+
             $shopPaymentDetail = ShopPayment::create([
                 'amount' => $amount,
                 'tax_amount' => $convertedStoreTaxAmount,
@@ -801,6 +805,10 @@ class ShopsController extends Controller
                 'quantity' => request()->query('quantity'),
                 'shipping_info' => $shipping_info ?? null
             ]);
+
+            // Apply digital waiver confirmation
+            Helpers::applyDigitalWaiver($shopPaymentDetail, (bool) $request->digital_waiver);
+            $shopPaymentDetail->save();
 
             $shopPaymentDetail->refresh();
 
@@ -956,6 +964,7 @@ class ShopsController extends Controller
                 "customer" => $customer_id,
                 'payment_intent_data' => [
                     'application_fee_amount' => $applicationFeeAmount,
+                    'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                     'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
                     'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
                         'shop_item_id' => $shop->id,
@@ -978,7 +987,7 @@ class ShopsController extends Controller
                 ];
             }
 
-            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId);
+            $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, false, $shop->user->username);
 
             $shopPaymentDetail->session_id =  $sessionCreate->id;
             $shopPaymentDetail->save();
@@ -1088,7 +1097,7 @@ class ShopsController extends Controller
 
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 
-            return redirect(route('single-shop-list', [$slug, $stripeid->shop->uuid, $stripeid->session_id]))->with('success', 'Payment Successful.');
+            return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
         } catch (Exception $e) {
             Log::error("Error in successPayment: " . $e->getMessage());
             return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', $e->getMessage());

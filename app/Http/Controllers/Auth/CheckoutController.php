@@ -49,6 +49,10 @@ class CheckoutController extends Controller
     /* create checkout */
     public function createCheckout($creator_id, $user_id_or_device = null)
     {
+        request()->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
         $debugId = request()->query('debug_id');
         if (!empty($debugId)) {
             Log::info('Cart checkout debug start', [
@@ -320,6 +324,11 @@ class CheckoutController extends Controller
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
+            // Ensure receipt_email is set in payment_intent_data for Stripe receipts
+            if ($payload['customer_email']) {
+                $payload['payment_intent_data']['receipt_email'] = $payload['customer_email'];
+            }
+
             // Validate payload before sending to Stripe
             $validationError = $this->validateStripePayload($payload);
             if ($validationError) {
@@ -330,7 +339,7 @@ class CheckoutController extends Controller
             try {
                 // For Direct Charges, we pass the connectedAccountId as the second parameter
                 // This adds the 'stripe_account' => $connectedAccountId header to the request
-                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3ds);
+                $sessionCreate = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3ds, $owner->username);
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 Log::error("Stripe Checkout Error: " . $e->getMessage(), [
                     'error_body' => $e->getJsonBody(),
@@ -421,6 +430,9 @@ class CheckoutController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            Helpers::applyDigitalWaiver($stripePaymentDetail, (bool) request()->digital_waiver);
+            $stripePaymentDetail->save();
 
             $stripePaymentDetail->refresh();
 
@@ -554,6 +566,9 @@ class CheckoutController extends Controller
             $metadata['buyer_name'] = $buyerName;
             $metadata['buyer_email'] = $buyerEmail;
             $metadata['buyer_username'] = $buyerUsername;
+
+            $metadata['digital_waiver_confirmed_at'] = now()->toDateTimeString();
+            $metadata['digital_waiver_text'] = Helpers::DIGITAL_WAIVER_TEXT;
 
             // Payment details - REQUIRED fields
             $metadata['payment_type'] = 'Destination Charges with transfers';
@@ -941,6 +956,8 @@ class CheckoutController extends Controller
                     // Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
                     if ($existingPayment->owner) {
                         $this->userProfileService->clearUserCaches($existingPayment->owner->username, $existingPayment->owner->id);
+                        // Also clear discovery cache to update top earners and trending
+                        app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
                     }
                     return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
                 }
@@ -1377,7 +1394,7 @@ class CheckoutController extends Controller
             'connected_account_id' => $owner->account_id,
         ]);
 
-        $session = StripeControl::createCheckoutSession($payload, $owner->account_id);
+        $session = StripeControl::createCheckoutSession($payload, $owner->account_id, false, $owner->username);
         Session::put("checkout_session", $session->id);
         return response()->json($session);
     }

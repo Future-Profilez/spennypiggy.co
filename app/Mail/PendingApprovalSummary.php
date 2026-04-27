@@ -26,7 +26,8 @@ class PendingApprovalSummary extends Mailable
      */
     public function build()
     {
-        return $this->subject('Spenny Piggy — Pending Approval Summary')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Spenny Piggy — Pending Approval Summary')
                     ->view('email.pending_approval_summary')
                     ->with([
                         'pendingItems' => $this->pendingItems,

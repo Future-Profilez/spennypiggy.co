@@ -21,7 +21,7 @@ class TaskGracePeriodReminderMail extends Mailable
     public function build()
     {
         return $this->view('email.taskgraceperiodreminder')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject('Grace Period Reminder ⏰');
     }
 }

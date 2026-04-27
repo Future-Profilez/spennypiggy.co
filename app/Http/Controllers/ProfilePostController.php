@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\UserProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ProfilePostController extends Controller
@@ -225,7 +226,7 @@ class ProfilePostController extends Controller
                 'filter' => $filter,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error fetching profile posts', [
+            Log::error('Error fetching profile posts', [
                 'user_id' => $profileUser->id,
                 'filter' => $filter,
                 'page' => $page,
@@ -248,14 +249,12 @@ class ProfilePostController extends Controller
         // Try to find by username first (most common case)
         if (is_string($identifier) && !is_numeric($identifier)) {
             return User::where('username', $identifier)
-                ->where('is_uk', 0)
                 ->first();
         }
 
         // Try to find by ID if numeric
         if (is_numeric($identifier)) {
             return User::where('id', $identifier)
-                ->where('is_uk', 0)
                 ->first();
         }
 

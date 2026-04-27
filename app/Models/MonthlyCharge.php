@@ -27,6 +27,8 @@ class MonthlyCharge extends Model
         'current_start_subscription_date',
         'current_end_subscription_date',
         'upcoming_payment',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $casts = [

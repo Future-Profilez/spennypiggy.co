@@ -2,7 +2,81 @@ import { usePage } from "@inertiajs/react";
 
 export default function PriceFormat() {
     // ✅ Hook called at top level (LEGAL)
-    const { rates, global_currency, currencies } = usePage().props;
+    const { rates, global_currency, currencies, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
+
+    /**
+     * Calculate what the supporter actually pays (Gross-up logic)
+     * 
+     * @param {number} price The base price the creator wants to receive
+     * @param {string} currency The currency of the transaction
+     * @param {number} reserveRate Optional reserve rate (percentage)
+     * @returns {object} Breakdown of fees and total
+     */
+    const calculateTotalSupporterPays = (price, currency = 'GBP', reserveRate = 0) => {
+        const listedPrice = parseFloat(price) || 0;
+        const upCurrency = (currency || global_currency || "GBP").toUpperCase();
+        const targetCurrency = currencies?.[upCurrency];
+        const isZeroDecimal = targetCurrency?.ISOdigits === 0;
+        
+        // Stripe fees
+        const stripeFeeRate = 0.029;
+        const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
+        
+        // Platform fees
+        const platformFeeRate = (platform_fee_percentage || 20) / 100;
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100;
+        
+        // Admin fee in target currency
+        const conversion_rate = rates?.[upCurrency] || 1;
+        const adminFee = upCurrency === "GBP" ? 1 : Number(conversion_rate);
+
+        // Gross-up formula
+        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
+        
+        if (totalDeductionRate >= 1) {
+            return {
+                total_supporter_pays: listedPrice,
+                net_to_creator: listedPrice,
+                application_fee: 0,
+                stripe_fee: 0
+            };
+        }
+
+        let totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        
+        // Rounding
+        if (!isZeroDecimal) {
+            totalSupporterPays = Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            totalSupporterPays = Math.ceil(totalSupporterPays);
+        }
+        
+        const precision = isZeroDecimal ? 0 : 2;
+        const actualStripeFee = Number(((totalSupporterPays * stripeFeeRate) + stripeFixedFee).toFixed(precision));
+        
+        const platformFee = Number((totalSupporterPays * platformFeeRate).toFixed(precision));
+        const complianceFee = Number((totalSupporterPays * complianceFeeRate).toFixed(precision));
+        let applicationFee = platformFee + complianceFee + adminFee;
+
+        // Reserve
+        let reserveAmount = 0;
+        if (reserveRate > 0) {
+            reserveAmount = Number(((totalSupporterPays * reserveRate) / 100).toFixed(precision));
+            applicationFee += reserveAmount;
+        }
+
+        return {
+            listed_price: listedPrice,
+            platform_fee: platformFee,
+            compliance_fee: complianceFee,
+            admin_fee: adminFee,
+            reserve_amount: reserveAmount,
+            application_fee: applicationFee,
+            stripe_fee: actualStripeFee,
+            total_supporter_pays: totalSupporterPays,
+            net_to_creator: Number((totalSupporterPays - actualStripeFee - applicationFee).toFixed(precision))
+        };
+    };
 
     /**
      * Format the Price in Multi-currency and Exchange Rate
@@ -109,5 +183,6 @@ export default function PriceFormat() {
         },
         formatMultiPrice,
         usdtogbp,
+        calculateTotalSupporterPays,
     };
 }

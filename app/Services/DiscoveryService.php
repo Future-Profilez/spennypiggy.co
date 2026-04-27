@@ -9,85 +9,87 @@ use Illuminate\Support\Facades\DB;
 
 class DiscoveryService
 {
-    public function getTrendingCreators($limit = 12)
-    {
-        $nowUtc = Carbon::now('UTC');
-        $clicks24hStart = $nowUtc->copy()->subHours(24);
-        $clicks7dStart = $nowUtc->copy()->subDays(7);
+    public function getTrendingCreators($limit = 12) {
+        return \Illuminate\Support\Facades\Cache::remember('trending_creators_limit_' . $limit, 300, function() use ($limit) {
+            $nowUtc = Carbon::now('UTC');
+            $clicks24hStart = $nowUtc->copy()->subHours(24);
+            $clicks7dStart = $nowUtc->copy()->subDays(7);
 
-        return User::query()
-            ->where('role', 1)
-            ->where('suspended_account', 0)
-            ->where('profile_status_lock', 2)
-            // ->where('identity_status', 1)
-            ->join('search_clicks', 'search_clicks.creator_id', '=', 'users.id')
-            ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio')
-            ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_24h', [$clicks24hStart])
-            ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_7d', [$clicks7dStart])
-            ->groupBy('users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio')
-            ->orderByDesc('clicks_24h')
-            ->orderByDesc('clicks_7d')
-            ->limit($limit)
-            ->with(['wishes' => function($q) {
-                $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
-            }, 'intro'])
-            ->get()
-            ->map(function ($u) {
-                return [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'username' => $u->username,
-                    'avatar_url' => $u->avatar_url,
-                    'cover_url' => $u->cover_url,
-                    'bio' => $u->bio,
-                    'profile_status_lock' => $u->profile_status_lock,
-                    'role' => $u->role,
-                    'clicks_24h' => (int) $u->clicks_24h,
-                    'clicks_7d' => (int) $u->clicks_7d,
-                    'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
-                    'intro' => $u->intro ? [
-                        'poster_url' => $u->intro->poster_url,
-                        'perma_link' => $u->intro->perma_link,
-                        'approved' => (int) $u->intro->approved,
-                    ] : null,
-                ];
-            })
-            ->values();
+            return User::query()
+                ->where('role', 1)
+                ->where('suspended_account', 0)
+                ->where('profile_status_lock', 2)
+                ->join('search_clicks', 'search_clicks.creator_id', '=', 'users.id')
+                ->select('users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio')
+                ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_24h', [$clicks24hStart])
+                ->selectRaw('SUM(CASE WHEN search_clicks.created_at >= ? THEN 1 ELSE 0 END) as clicks_7d', [$clicks7dStart])
+                ->groupBy('users.id', 'users.name', 'users.username', 'users.avatar', 'users.cover', 'users.cover_cdn_modifier', 'users.profile_status_lock', 'users.role', 'users.bio')
+                ->orderByDesc('clicks_24h')
+                ->orderByDesc('clicks_7d')
+                ->limit($limit)
+                ->with(['wishes' => function($q) {
+                    $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
+                }, 'intro'])
+                ->get()
+                ->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'username' => $u->username,
+                        'avatar_url' => $u->avatar_url,
+                        'cover_url' => $u->cover_url,
+                        'bio' => $u->bio,
+                        'profile_status_lock' => $u->profile_status_lock,
+                        'role' => $u->role,
+                        'clicks_24h' => (int) $u->clicks_24h,
+                        'clicks_7d' => (int) $u->clicks_7d,
+                        'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                        'intro' => $u->intro ? [
+                            'poster_url' => $u->intro->poster_url,
+                            'perma_link' => $u->intro->perma_link,
+                            'approved' => (int) $u->intro->approved,
+                        ] : null,
+                    ];
+                })
+                ->values();
+        });
     }
 
     public function getNewVerifiedCreators($limit = 12)
     {
-        $nowUtc = Carbon::now('UTC');
-        return User::query()
-            ->where('role', 1)
-            ->where('suspended_account', 0)
-            ->where('profile_status_lock', 2)
-            ->where('identity_status', 1)
-            ->where('created_at', '>=', $nowUtc->copy()->subDays(30))
-            ->inRandomOrder()
-            ->limit($limit)
-            ->with(['wishes' => function($q) {
-                $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
-            }, 'intro'])
-            ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio'])
-            ->map(function ($u) {
-                return [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'username' => $u->username,
-                    'avatar_url' => $u->avatar_url,
-                    'cover_url' => $u->cover_url,
-                    'bio' => $u->bio,
-                    'profile_status_lock' => $u->profile_status_lock,
-                    'role' => $u->role,
-                    'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
-                    'intro' => $u->intro ? [
-                        'poster_url' => $u->intro->poster_url,
-                        'perma_link' => $u->intro->perma_link,
-                        'approved' => (int) $u->intro->approved,
-                    ] : null,
-                ];
-            });
+        return \Illuminate\Support\Facades\Cache::remember('new_verified_creators_limit_' . $limit, 300, function() use ($limit) {
+            $nowUtc = Carbon::now('UTC');
+            return User::query()
+                ->where('role', 1)
+                ->where('suspended_account', 0)
+                ->where('profile_status_lock', 2)
+                ->where('identity_status', 1)
+                ->where('created_at', '>=', $nowUtc->copy()->subDays(30))
+                ->orderByDesc('created_at') // Faster than inRandomOrder()
+                ->limit($limit)
+                ->with(['wishes' => function($q) {
+                    $q->where('is_approved', 1)->limit(3)->select('id', 'user_id', 'thumbnail');
+                }, 'intro'])
+                ->get(['id', 'name', 'username', 'avatar', 'cover', 'cover_cdn_modifier', 'profile_status_lock', 'role', 'bio'])
+                ->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'username' => $u->username,
+                        'avatar_url' => $u->avatar_url,
+                        'cover_url' => $u->cover_url,
+                        'bio' => $u->bio,
+                        'profile_status_lock' => $u->profile_status_lock,
+                        'role' => $u->role,
+                        'top_wishes' => $u->wishes->map(fn($w) => $w->thumbnail),
+                        'intro' => $u->intro ? [
+                            'poster_url' => $u->intro->poster_url,
+                            'perma_link' => $u->intro->perma_link,
+                            'approved' => (int) $u->intro->approved,
+                        ] : null,
+                    ];
+                });
+        });
     }
 
     public function getSearchCreators($filters, $limit = 24)
@@ -259,125 +261,132 @@ class DiscoveryService
         if ($limit < 1) { $limit = 9; }
         if ($limit > 50) { $limit = 50; }
 
-        $nowLondon = Carbon::now('Europe/London');
-        $label = 'All Time';
+        $cacheKey = 'top_earners_' . ($period ?: 'all_time') . '_limit_' . $limit;
+        
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($period, $limit) {
+            $nowLondon = Carbon::now('Europe/London');
+            $label = 'All Time';
 
-        if ($period === 'weekly') {
-            $startLondon = $nowLondon->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
-            $endLondon = $nowLondon->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay();
-            $label = 'Week';
-        } elseif ($period === 'monthly') {
-            $startLondon = $nowLondon->copy()->startOfMonth()->startOfDay();
-            $endLondon = $nowLondon->copy()->endOfMonth()->endOfDay();
-            $label = 'Month';
-        } elseif ($period === 'daily') {
-            $startLondon = $nowLondon->copy()->startOfDay();
-            $endLondon = $nowLondon->copy()->endOfDay();
-            $label = 'Today';
-        } else {
-            $startLondon = null;
-            $endLondon = null;
-        }
+            if ($period === 'weekly') {
+                $startLondon = $nowLondon->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+                $endLondon = $nowLondon->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+                $label = 'Week';
+            } elseif ($period === 'monthly') {
+                $startLondon = $nowLondon->copy()->startOfMonth()->startOfDay();
+                $endLondon = $nowLondon->copy()->endOfMonth()->endOfDay();
+                $label = 'Month';
+            } elseif ($period === 'daily') {
+                $startLondon = $nowLondon->copy()->startOfDay();
+                $endLondon = $nowLondon->copy()->endOfDay();
+                $label = 'Today';
+            } else {
+                $startLondon = null;
+                $endLondon = null;
+            }
 
-        $startUtc = $startLondon ? $startLondon->copy()->setTimezone('UTC') : null;
-        $endUtc = $endLondon ? $endLondon->copy()->setTimezone('UTC') : null;
+            $startUtc = $startLondon ? $startLondon->copy()->setTimezone('UTC') : null;
+            $endUtc = $endLondon ? $endLondon->copy()->setTimezone('UTC') : null;
 
-        $earners = User::where('stripe_details_submitted', 1)
-                ->where('suspended_account', 0)
-                ->withCount([
-                    'paymentitems as total_payments' => function ($query) use ($startUtc, $endUtc, $period) {
-                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
-                            ->whereHas('payment', function($q) use ($startUtc, $endUtc, $period) { 
-                                $q->where('payment_status', 'paid');
-                                if ($period !== 'all_time' && $startUtc && $endUtc) {
-                                    $q->whereBetween('stripe_payment_details.created_at', [$startUtc, $endUtc]);
-                                }
-                            }); 
-                    },
-                    'subscriptions as total_subscriptions' => function ($query) use ($startUtc, $endUtc, $period) {
-                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
-                            ->where('wish_item_subscriptions.status', 'paid');
-                        if ($period !== 'all_time' && $startUtc && $endUtc) {
-                            $query->whereBetween('wish_item_subscriptions.created_at', [$startUtc, $endUtc]);
-                        }
-                    },
-                    'tip_goal_payment as total_tips' => function ($query) use ($startUtc, $endUtc, $period) {
-                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
-                            ->where('tip_goals_payments.status', 'paid');
-                        if ($period !== 'all_time' && $startUtc && $endUtc) {
-                            $query->whereBetween('tip_goals_payments.created_at', [$startUtc, $endUtc]);
-                        }
-                    },
-                    'membership_payments as total_member' => function ($query) use ($startUtc, $endUtc, $period) {
-                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
-                            ->where('membership_payments.status', 'paid');
-                        if ($period !== 'all_time' && $startUtc && $endUtc) {
-                            $query->whereBetween('membership_payments.created_at', [$startUtc, $endUtc]);
-                        }
-                    },
-                    'bill_payments as total_bill' => function ($query) use ($startUtc, $endUtc, $period) {
-                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
-                            ->where('bill_payments.status', 'paid');
-                        if ($period !== 'all_time' && $startUtc && $endUtc) {
-                            $query->whereBetween('bill_payments.created_at', [$startUtc, $endUtc]);
-                        }
-                    },
-                    'shop_payments as total_shop' => function ($query) use ($startUtc, $endUtc, $period) {
-                        $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
-                            ->where('shop_payments.payment_status', 'paid');
-                        if ($period !== 'all_time' && $startUtc && $endUtc) {
-                            $query->whereBetween('shop_payments.created_at', [$startUtc, $endUtc]);
-                        }
-                    },
-                ])
-                ->havingRaw('(total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop) > 0')
-                ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
-                ->take($limit)
-                ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency'])
-                ->map(function ($u, $index) {
-                    $sum = ($u->total_payments ?? 0) + ($u->total_subscriptions ?? 0) + ($u->total_tips ?? 0) + ($u->total_member ?? 0) + ($u->total_bill ?? 0) + ($u->total_shop ?? 0);
-                    return [
-                        'id' => $u->id,
-                        'name' => $u->name,
-                        'username' => $u->username,
-                        'avatar_url' => $u->avatar_url,
-                        'cover_url' => $u->cover_url,
-                        'profile_status_lock' => $u->profile_status_lock,
-                        'role' => $u->role,
-                        'total_amount' => \App\Helpers::priceFormat($u->default_currency, $sum, 'USD'),
-                        'currency' => 'USD',
-                        'is_number_one' => $index === 0,
-                    ];
-                });
-    
-            return ['data' => $earners, 'label' => $label];
+            $earners = User::where('stripe_details_submitted', 1)
+                    ->where('suspended_account', 0)
+                    ->where('role', 1) // Only creators can be top earners
+                    ->withCount([
+                        'paymentitems as total_payments' => function ($query) use ($startUtc, $endUtc, $period) {
+                            $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
+                                ->whereHas('payment', function($q) use ($startUtc, $endUtc, $period) { 
+                                    $q->where('payment_status', 'paid');
+                                    if ($period !== 'all_time' && $startUtc && $endUtc) {
+                                        $q->whereBetween('stripe_payment_details.created_at', [$startUtc, $endUtc]);
+                                    }
+                                }); 
+                        },
+                        'subscriptions as total_subscriptions' => function ($query) use ($startUtc, $endUtc, $period) {
+                            $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
+                                ->where('wish_item_subscriptions.status', 'paid');
+                            if ($period !== 'all_time' && $startUtc && $endUtc) {
+                                $query->whereBetween('wish_item_subscriptions.created_at', [$startUtc, $endUtc]);
+                            }
+                        },
+                        'tip_goal_payment as total_tips' => function ($query) use ($startUtc, $endUtc, $period) {
+                            $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
+                                ->where('tip_goals_payments.status', 'paid');
+                            if ($period !== 'all_time' && $startUtc && $endUtc) {
+                                $query->whereBetween('tip_goals_payments.created_at', [$startUtc, $endUtc]);
+                            }
+                        },
+                        'membership_payments as total_member' => function ($query) use ($startUtc, $endUtc, $period) {
+                            $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
+                                ->where('membership_payments.status', 'paid');
+                            if ($period !== 'all_time' && $startUtc && $endUtc) {
+                                $query->whereBetween('membership_payments.created_at', [$startUtc, $endUtc]);
+                            }
+                        },
+                        'bill_payments as total_bill' => function ($query) use ($startUtc, $endUtc, $period) {
+                            $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
+                                ->where('bill_payments.status', 'paid');
+                            if ($period !== 'all_time' && $startUtc && $endUtc) {
+                                $query->whereBetween('bill_payments.created_at', [$startUtc, $endUtc]);
+                            }
+                        },
+                        'shop_payments as total_shop' => function ($query) use ($startUtc, $endUtc, $period) {
+                            $query->select(DB::raw('COALESCE(SUM(amount), 0)'))
+                                ->where('shop_payments.payment_status', 'paid');
+                            if ($period !== 'all_time' && $startUtc && $endUtc) {
+                                $query->whereBetween('shop_payments.created_at', [$startUtc, $endUtc]);
+                            }
+                        },
+                    ])
+                    ->havingRaw('(total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop) > 0')
+                    ->orderByDesc(DB::raw('total_payments + total_subscriptions + total_tips + total_member + total_bill + total_shop'))
+                    ->take($limit)
+                    ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency'])
+                    ->map(function ($u, $index) {
+                        $sum = ($u->total_payments ?? 0) + ($u->total_subscriptions ?? 0) + ($u->total_tips ?? 0) + ($u->total_member ?? 0) + ($u->total_bill ?? 0) + ($u->total_shop ?? 0);
+                        return [
+                            'id' => $u->id,
+                            'name' => $u->name,
+                            'username' => $u->username,
+                            'avatar_url' => $u->avatar_url,
+                            'cover_url' => $u->cover_url,
+                            'profile_status_lock' => $u->profile_status_lock,
+                            'role' => $u->role,
+                            'total_amount' => \App\Helpers::priceFormat($u->default_currency, $sum, 'USD'),
+                            'currency' => 'USD',
+                            'is_number_one' => $index === 0,
+                        ];
+                    });
+        
+                return ['data' => $earners, 'label' => $label];
+        });
     }
 
     public function getFeaturedWishes($limit = 12)
     {
-        return WishItem::where('is_approved', 1)
-            ->whereHas('user', function($q) {
-                $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
-            })
-            ->orderByDesc('supporter_count')
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
-            ->get()
-            ->map(function ($w) {
-                return [
-                    'id' => $w->id,
-                    'uuid' => $w->uuid,
-                    'wishname' => $w->wishname,
-                    'price' => $w->price,
-                    'perma_link' => $w->perma_link,
-                    'funded_percent' => $w->fullfill_amount > 0 ? round(($w->fullfill_amount / $w->price) * 100) : 0,
-                    'image_url' => $w->thumbnail,
-                    'type' => $w->category,
-                    'user' => $w->user ?? null,
-                ];
-            });
+        return \Illuminate\Support\Facades\Cache::remember('featured_wishes_limit_' . $limit, 300, function() use ($limit) {
+            return WishItem::where('is_approved', 1)
+                ->whereHas('user', function($q) {
+                    $q->where('suspended_account', 0)
+                      ->where('profile_status_lock', 2);
+                })
+                ->orderByDesc('supporter_count')
+                ->orderByDesc('id')
+                ->limit($limit)
+                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->get()
+                ->map(function ($w) {
+                    return [
+                        'id' => $w->id,
+                        'uuid' => $w->uuid,
+                        'wishname' => $w->wishname,
+                        'price' => $w->price,
+                        'perma_link' => $w->perma_link,
+                        'funded_percent' => $w->fullfill_amount > 0 ? round(($w->fullfill_amount / $w->price) * 100) : 0,
+                        'image_url' => $w->thumbnail,
+                        'type' => $w->category,
+                        'user' => $w->user ?? null,
+                    ];
+                });
+        });
     }
 
     public function getSuggestions($term)
@@ -432,86 +441,90 @@ class DiscoveryService
 
     public function getFeaturedBills($limit = 12)
     {
-        return \App\Models\Bills::where(function ($q) {
-                $q->where('status', 'active')
-                  ->orWhere('status', 1)
-                  ->orWhereNull('status');
-            })
-            ->whereHas('user', function($q) {
-                $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
-            })
-            ->orderByDesc('supporter_count')
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
-            ->get()
-            ->map(function ($b) {
-                return [
-                    'id' => $b->id,
-                    'uuid' => $b->uuid,
-                    'name' => $b->name,
-                    'title' => $b->name,
-                    'amount' => null, // Bills might not have a fixed price display in the card same as wishes
-                    'image_url' => $b->thumbnail,
-                    'perma_link' => $b->perma_link,
-                    'period' => $b->period,
-                    'price' => $b->price ?? null,
-                    'currency' => $b->currency ?? null,
-                    'approved' => $b->approved ?? null,
-                    'created_at' => $b->created_at,
-                    'type' => 'Bill',
-                    'user' => $b->user ? [
-                        'name' => $b->user->name,
-                        'username' => $b->user->username,
-                        'avatar_url' => $b->user->avatar_url,
-                        'cover_url' => $b->user->cover_url,
-                    ] : null,
-                ];
-            });
+        return \Illuminate\Support\Facades\Cache::remember('featured_bills_limit_' . $limit, 300, function() use ($limit) {
+            return \App\Models\Bills::where(function ($q) {
+                    $q->where('status', 'active')
+                      ->orWhere('status', 1)
+                      ->orWhereNull('status');
+                })
+                ->whereHas('user', function($q) {
+                    $q->where('suspended_account', 0)
+                      ->where('profile_status_lock', 2);
+                })
+                ->orderByDesc('supporter_count')
+                ->orderByDesc('id')
+                ->limit($limit)
+                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->get()
+                ->map(function ($b) {
+                    return [
+                        'id' => $b->id,
+                        'uuid' => $b->uuid,
+                        'name' => $b->name,
+                        'title' => $b->name,
+                        'amount' => null, 
+                        'image_url' => $b->thumbnail,
+                        'perma_link' => $b->perma_link,
+                        'period' => $b->period,
+                        'price' => $b->price ?? null,
+                        'currency' => $b->currency ?? null,
+                        'approved' => $b->approved ?? null,
+                        'created_at' => $b->created_at,
+                        'type' => 'Bill',
+                        'user' => $b->user ? [
+                            'name' => $b->user->name,
+                            'username' => $b->user->username,
+                            'avatar_url' => $b->user->avatar_url,
+                            'cover_url' => $b->user->cover_url,
+                        ] : null,
+                    ];
+                });
+        });
     }
 
     public function getFeaturedMemberships($limit = 12)
     {
-        return \App\Models\Membership::where(function ($q) {
-                $q->where('status', 'active')
-                  ->orWhere('status', 1)
-                  ->orWhereNull('status');
-            })
-            ->whereHas('user', function($q) {
-                $q->where('suspended_account', 0)
-                  ->where('profile_status_lock', 2);
-            })
-            ->orderByDesc('supporter_count')
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
-            ->get()
-            ->map(function ($m) {
-                return [
-                    'id' => $m->id,
-                    'uuid' => $m->uuid,
-                    'name' => $m->level,
-                    'level' => $m->level,
-                    'title' => $m->level . ' Membership',
-                    'amount' => null,
-                    'image_url' => $m->thumbnail,
-                    'perma_link' => $m->perma_link,
-                    'price' => $m->price ?? null,
-                    'currency' => $m->currency ?? null,
-                    'rewards' => $m->rewards ?? null,
-                    'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
-                    'approved' => $m->approved ?? null,
-                    'created_at' => $m->created_at,
-                    'type' => 'Membership',
-                    'user' => $m->user ? [
-                        'name' => $m->user->name,
-                        'username' => $m->user->username,
-                        'avatar_url' => $m->user->avatar_url,
-                        'cover_url' => $m->user->cover_url,
-                    ] : null,
-                ];
-            });
+        return \Illuminate\Support\Facades\Cache::remember('featured_memberships_limit_' . $limit, 300, function() use ($limit) {
+            return \App\Models\Membership::where(function ($q) {
+                    $q->where('status', 'active')
+                      ->orWhere('status', 1)
+                      ->orWhereNull('status');
+                })
+                ->whereHas('user', function($q) {
+                    $q->where('suspended_account', 0)
+                      ->where('profile_status_lock', 2);
+                })
+                ->orderByDesc('supporter_count')
+                ->orderByDesc('id')
+                ->limit($limit)
+                ->with('user:id,name,username,avatar,cover,cover_cdn_modifier')
+                ->get()
+                ->map(function ($m) {
+                    return [
+                        'id' => $m->id,
+                        'uuid' => $m->uuid,
+                        'name' => $m->level,
+                        'level' => $m->level,
+                        'title' => $m->level . ' Membership',
+                        'amount' => null,
+                        'image_url' => $m->thumbnail,
+                        'perma_link' => $m->perma_link,
+                        'price' => $m->price ?? null,
+                        'currency' => $m->currency ?? null,
+                        'rewards' => $m->rewards ?? null,
+                        'benefits' => !empty($m->rewards) ? json_decode($m->rewards, true) : [],
+                        'approved' => $m->approved ?? null,
+                        'created_at' => $m->created_at,
+                        'type' => 'Membership',
+                        'user' => $m->user ? [
+                            'name' => $m->user->name,
+                            'username' => $m->user->username,
+                            'avatar_url' => $m->user->avatar_url,
+                            'cover_url' => $m->user->cover_url,
+                        ] : null,
+                    ];
+                });
+        });
     }
 
     public function getSearchBills($filters, $limit = 24)
@@ -634,5 +647,33 @@ class DiscoveryService
                     ] : null,
                 ];
             });
+    }
+
+    /**
+     * Clear all discovery related caches to ensure real-time updates
+     * when important events occur (e.g. payment, approval)
+     */
+    public function clearDiscoveryCache()
+    {
+        // Clear section caches
+        \Illuminate\Support\Facades\Cache::forget('trending_creators_limit_12');
+        \Illuminate\Support\Facades\Cache::forget('trending_creators_limit_10');
+        \Illuminate\Support\Facades\Cache::forget('new_verified_creators_limit_12');
+        \Illuminate\Support\Facades\Cache::forget('new_verified_creators_limit_10');
+        \Illuminate\Support\Facades\Cache::forget('featured_wishes_limit_12');
+        \Illuminate\Support\Facades\Cache::forget('featured_wishes_limit_10');
+        \Illuminate\Support\Facades\Cache::forget('featured_bills_limit_12');
+        \Illuminate\Support\Facades\Cache::forget('featured_bills_limit_10');
+        \Illuminate\Support\Facades\Cache::forget('featured_memberships_limit_12');
+        \Illuminate\Support\Facades\Cache::forget('featured_memberships_limit_10');
+        
+        // Clear top earners
+        \Illuminate\Support\Facades\Cache::forget('top_earners_weekly_limit_10');
+        \Illuminate\Support\Facades\Cache::forget('top_earners_all_time_limit_9');
+        \Illuminate\Support\Facades\Cache::forget('top_earners_daily_limit_9');
+        \Illuminate\Support\Facades\Cache::forget('top_earners_monthly_limit_9');
+
+        // Note: discover_v2_* keys are harder to clear without tags because they use md5(request).
+        // However, with 5 min TTL they will refresh soon enough, or we can use a cache tag if supported.
     }
 }

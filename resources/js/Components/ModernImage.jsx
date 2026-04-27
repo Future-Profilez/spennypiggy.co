@@ -23,6 +23,7 @@ const ModernImage = ({
     breakpoints = null,
     preventCLS = true,
     reserveSpace = true,
+    fetchPriority: _ignoredFetchPriority, // Destructure to prevent passing to DOM
     ...props
 }) => {
     const [imageData, setImageData] = useState(null);

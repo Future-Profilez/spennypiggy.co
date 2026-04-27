@@ -256,6 +256,13 @@ class AuthenticatedSessionController extends Controller
             $migrationStatus = $this->getMigrationStatus($user);
             $founderData = $this->getFounderData($user);
 
+            $isBlocked = false;
+            if (Auth::check() && Auth::id() !== $user->id) {
+                $isBlocked = \App\Models\UserBlock::where('creator_id', Auth::id())
+                    ->where('blocked_id', $user->id)
+                    ->exists();
+            }
+
                 return [
                     '__page' => 'Dashboard',
                     'username' => $username,
@@ -274,6 +281,7 @@ class AuthenticatedSessionController extends Controller
                 'all_user_categories' => Auth::check() && Auth::id() === $user->id ? $user->user_categories()->get() : [],
                 'selectedCategory' => request()->query('category') ?? false,
                 'page' => $page,
+                'is_blocked' => $isBlocked,
                 'first30DayEarnings' => $founderData['first30DayEarnings'],
                 ...$pageData
             ];

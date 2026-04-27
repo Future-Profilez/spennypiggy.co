@@ -38,7 +38,7 @@ export default function Features() {
                     <ArrowRight />
                   </Link>
                   <div className="py-2 text-xs md:text-sm font-medium text-gray-700">
-                    3 days free • £4/month after • Cancel anytime
+                    3 days free • £8.99 + VAT / month after • Cancel anytime
                   </div>
                 </div>
               </div>

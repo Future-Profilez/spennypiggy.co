@@ -11,10 +11,10 @@ import Popup from "@/Components/Popup";
 import axios from "axios";
 
 export default function BillCheckout(props) {
+    const { user, auth, turnstileSiteKey, flash, rates, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const turnstileRef = useRef(null);
     const { formatMultiPrice, adminFeeInCurrency } = PriceFormat();
     const { bill, vat_amount, card_capabilities, creator_currency, display_currency } = props;
-    const { user, auth, turnstileSiteKey } = usePage().props;
 
     const [name, setName] = useState(
         (auth && auth.user && auth.user.name) || ""
@@ -28,6 +28,7 @@ export default function BillCheckout(props) {
         email: email,
         message: "",
         agree: false,
+        digital_waiver: false,
         anonymous: 0,
         cf_turnstile_response: "",
     });
@@ -42,28 +43,30 @@ export default function BillCheckout(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr, vatAmount = 0) => {
-        const listedPrice = parseFloat(price || 0);
-        const vat = parseFloat(vatAmount || 0);
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        
-        // Client Rule: Add VAT before other fees
-        const priceWithVat = listedPrice + vat;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     // New: Calculate estimated display price for UI only
@@ -77,7 +80,7 @@ export default function BillCheckout(props) {
     const finalTotalAmount = calculateTotalSupporterPays(
         bill?.price, 
         bill?.currency,
-        vat_amount
+        bill?.user?.vat_amount_percentage || 0
     );
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
@@ -92,7 +95,6 @@ export default function BillCheckout(props) {
 
     const [checking, setChecking] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
-    const { flash } = usePage().props;
 
     // Step-Up Modal State
     const [showStepUp, setShowStepUp] = useState(false);
@@ -384,7 +386,7 @@ export default function BillCheckout(props) {
                                     <div className="cartProRtbox mt-3 items-center">
                                         <div className="cartPric pr-4">
                                             {formatMultiPrice(
-                                                bill && bill.price,
+                                                finalTotalAmount,
                                                 bill && bill.currency
                                             )}
                                         </div>
@@ -394,72 +396,21 @@ export default function BillCheckout(props) {
 
                             <div className="cartTotal px-0 pt-4 flex justify-end">
                                 <ul className="max-w-[300px] w-full">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <div className="text-lg text-gray-700">
-                                            Subtotal
-                                        </div>
-                                        <div className="text-lg text-gray-700">
-                                            {formatMultiPrice(
-                                                bill?.price || "",
-                                                bill && bill?.currency
-                                            )}
-                                        </div>
-                                    </div>
-                                    {/* <li className="flex justify-between">
-                                        <span className="min-w-[100px] block text-lg">
-                                            Platform Fee :
-                                        </span>
-                                        <div>
-                                            <strong className="text-lg">
-                                                {formatMultiPrice(
-                                                    bill?.tax_amount || "",
-                                                    bill && bill?.currency,
-                                                    "adminfee"
-                                                )}
-                                            </strong>
-                                            <button className="relative group w-[13px] h-[14px] bg-gray-700 text-white text-[11px] rounded-full ml-1.5 inline-block">
-                                                ?
-                                                <p className="absolute bg-[#505050] p-[10px] rounded-[30px]  top-[22px] right-[-18px] text-left font-normal text-[15px] z-[1] hidden group-hover:block">
-                                                    {window.platformFeePercentage || 20}% Card Fees and £1
-                                                    administrative fee 
-                                                    applies to all transactions.
-                                                </p>
-                                            </button>
-                                        </div>
-                                    </li> */}
-                                    {vat_amount && vat_amount > 0 ? (
-                                        <li className="text-gray-700 flex justify-between">
-                                            <span className="min-w-[100px] block text-lg">
-                                                VAT :
-                                            </span>
-                                            <strong className="text-lg">
-                                                {formatMultiPrice(
-                                                    vat_amount || "",
-                                                    bill && bill.currency
-                                                )}
-                                            </strong>
-                                        </li>
-                                    ) : (
-                                        ""
-                                    )}
-                                    <li className="flex justify-between">
-                                        <span className="min-w-[100px] block text-lg">
-                                            Total :
-                                        </span>
+                                    <li className="flex justify-end">
                                         <div className="text-right">
                                             <strong className="text-lg block">
-                                                {formatMultiPrice(
+                                                 Total : {formatMultiPrice(
                                                     finalTotalAmount,
                                                     bill && bill?.currency
                                                 )}
                                             </strong>
                                             
                                             {/* Show estimated price if display currency differs from charge currency */}
-                                            {display_currency && display_currency !== bill?.currency && (
+                                            {/* {display_currency && display_currency !== bill?.currency && (
                                                 <div className="text-sm text-gray-500 font-medium mt-1">
                                                     ≈ {formatMultiPrice(finalTotalAmount, display_currency)} (estimated)
                                                 </div>
-                                            )}
+                                            )} */}
 
                                             <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight block">
                                                 * Includes all fees. You will be charged in {bill?.currency}.
@@ -599,14 +550,16 @@ export default function BillCheckout(props) {
                                                     Terms of Service
                                                 </Link>{" "}
                                                 and{" "}
-                                                <a
+                                                <Link
                                                     className="text-violet-600"
                                                     target="_blank"
-                                                    href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                    href={route(
+                                                        "terms-and-conditions"
+                                                    )}
                                                 >
                                                     {" "}
                                                     Privacy Policy{" "}
-                                                </a>{" "}
+                                                </Link>{" "}
                                                 and the following statements:
                                             </label>
                                             <div className="tearmlist pl-3">
@@ -690,6 +643,32 @@ export default function BillCheckout(props) {
                                             </div>
                                         </li>
                                     </ul>
+                                    <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
+                                        <label
+                                            htmlFor="digital_waiver"
+                                            className="text-left flex items-start cursor-pointer group"
+                                        >
+                                            <div className="flex items-center h-5 mt-1">
+                                                <input
+                                                    onChange={(e) => setData('digital_waiver', e.target.checked)}
+                                                    type="checkbox"
+                                                    id="digital_waiver"
+                                                    name="digital_waiver"
+                                                    className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                    checked={data.digital_waiver}
+                                                    required
+                                                />
+                                            </div>
+                                            <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                                I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                            </span>
+                                        </label>
+                                        {errors.digital_waiver && (
+                                            <p className="mt-2 text-xs text-red-600 font-bold uppercase tracking-tight">
+                                                {errors.digital_waiver}
+                                            </p>
+                                        )}
+                                    </div>
                                     {!card_capabilities && (
                                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
                                             <strong className="font-bold">Payment Unavailable: </strong>
@@ -711,6 +690,7 @@ export default function BillCheckout(props) {
                                             type="button"
                                             className={`${
                                                 !data.agree ||
+                                                !data.digital_waiver ||
                                                 processing ||
                                                 checking ||
                                                 !card_capabilities
@@ -719,6 +699,7 @@ export default function BillCheckout(props) {
                                             } button p w-full`}
                                             disabled={
                                                 !data.agree ||
+                                                !data.digital_waiver ||
                                                 processing ||
                                                 checking ||
                                                 !card_capabilities

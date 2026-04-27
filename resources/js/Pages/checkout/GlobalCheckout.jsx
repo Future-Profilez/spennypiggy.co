@@ -31,6 +31,7 @@ export default function GlobalCheckout({
 
     const [checked, setChecked] = useState("");
     const [loading, setLoading] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState("");
     const [iban, setiban] = useState("");
     const [sortCode, setSortCode] = useState("");
@@ -481,12 +482,36 @@ export default function GlobalCheckout({
                             ""
                         )}
                         {selectedCurrency ? (
-                            <button
-                                onClick={handleSubmit}
-                                className="btn-pink md m-auto mt-4  d-table"
-                            >
-                                {loading ? "Processing" : "Pay Now"}
-                            </button>
+                            <>
+                                <div className="mt-6 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[15px]">
+                                    <label
+                                        htmlFor="digital_waiver"
+                                        className="text-left flex items-start cursor-pointer group"
+                                    >
+                                        <div className="flex items-center h-5 mt-1">
+                                            <input
+                                                onChange={(e) => setDigitalWaiver(e.target.checked)}
+                                                type="checkbox"
+                                                id="digital_waiver"
+                                                name="digital_waiver"
+                                                className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                checked={digitalWaiver}
+                                                required
+                                            />
+                                        </div>
+                                        <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                            I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                        </span>
+                                    </label>
+                                </div>
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={!digitalWaiver || loading}
+                                    className={`${!digitalWaiver || loading ? 'opacity-50 cursor-not-allowed' : ''} btn-pink md m-auto mt-4 d-table`}
+                                >
+                                    {loading ? "Processing" : "Pay Now"}
+                                </button>
+                            </>
                         ) : (
                             ""
                         )}

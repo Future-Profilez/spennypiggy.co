@@ -11,8 +11,8 @@ import Popup from "@/Components/Popup";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function UserCarts(props) {
+    const { flash, rates, platform_fee_percentage, transaction_fee_percentage, turnstileSiteKey } = usePage().props;
     const turnstileRef = useRef(null);
-    const { turnstileSiteKey } = usePage().props;
     const deviceid = useMemo(() => DeviceID(), []);
     const { auth, removeFromCart, currency } = props;
     const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
@@ -77,24 +77,31 @@ export default function UserCarts(props) {
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
     const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-        const listedPrice = parseFloat(price || 0);
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
-        const vatAmount = listedPrice * (vatPercent || 0) / 100;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
         const priceWithVat = listedPrice + vatAmount;
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         if (totalDeductionRate >= 1) return priceWithVat;
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
-        return totalSupporterPays;
+        
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const [keepAnonmyous, setKeepAnonmyous] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
     const [message, setMessage] = useState(null);
     const [name, setName] = useState((auth && auth.user && auth.user.name) || "");
     const [email, setEmail] = useState((auth && auth.user && auth.user.email) || "");
@@ -113,7 +120,6 @@ export default function UserCarts(props) {
     const [otpCode, setOtpCode] = useState("");
     const [typedConfirmation, setTypedConfirmation] = useState("");
     const [verifyingOtp, setVerifyingOtp] = useState(false);
-    const { flash, rates } = usePage().props;
     const [guestAllowed, setGuestAllowed] = useState(null);
 
     // Check for flash messages indicating Step-Up is required
@@ -413,6 +419,7 @@ export default function UserCarts(props) {
             anonymous: keepAnonmyous ? 1 : 0,
             device_id: deviceid,
             cf_turnstile_response: skipCaptcha ? "" : (captchaToken || ""),
+            digital_waiver: 1,
             debug_id: debugEnabled ? `${Date.now()}-${Math.random().toString(16).slice(2)}` : undefined,
         };
         pushDebug('navigating_to_checkout', { checkoutUrl, queryParams });
@@ -623,7 +630,7 @@ export default function UserCarts(props) {
                                 <div className="fading cartSubTotal text-right mt-2">
                                     <strong className="!text-black">Total :</strong>
                                     <strong className="!text-right !text-black">
-                                        {formatMultiPrice((fee + subtotal) || "",datas?.user && currency, 'adminfees')}
+                                        {formatMultiPrice((fee + subtotal) || "",datas?.user && currency)}
                                     </strong>
                                     <div className="text-[10px] text-gray-500 font-normal mt-1 leading-tight text-right">
                                         * Includes all applicable fees
@@ -634,6 +641,29 @@ export default function UserCarts(props) {
                             <div className="addMessage">
                                 <form onSubmit={(e) => e.preventDefault()}>
                                     <ul className="flex flex-wrap">
+                                        <li className="fading w-full">
+                                            <div className="mt-4 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-[20px] text-left">
+                                                <label
+                                                    htmlFor={`digital_waiver_${datas?.user?.id}`}
+                                                    className="text-left flex items-start cursor-pointer group"
+                                                >
+                                                    <div className="flex items-center h-5 mt-1">
+                                                        <input
+                                                            onChange={(e) => setDigitalWaiver(e.target.checked)}
+                                                            type="checkbox"
+                                                            id={`digital_waiver_${datas?.user?.id}`}
+                                                            name="digital_waiver"
+                                                            className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
+                                                            checked={digitalWaiver}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
+                                                        I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </li>
                                         <li className="fading w-full">
                                             <label>Add Message </label>
                                             <textarea rows={2}
@@ -725,14 +755,14 @@ export default function UserCarts(props) {
                                                     Terms of Service
                                                 </Link>{" "}
                                                 and{" "}
-                                                <a
+                                                <Link
                                                     className="text-violet-600"
                                                     target="_blank"
-                                                    href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                    href={route("terms-and-conditions")}
                                                 >
                                                     {" "}
                                                     Privacy Policy{" "}
-                                                </a>{" "}
+                                                </Link>{" "}
                                                 and the following statements:
                                             </label>
                                             <div className="tearmlist pl-3">
@@ -818,10 +848,10 @@ export default function UserCarts(props) {
                                         </button>
                                         <button
                                             type="button"
-                                            disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken && !skipCaptcha) || !card_capabilities}
+                                            disabled={!isChecked || !digitalWaiver || checking || (turnstileSiteKey && !captchaToken && !skipCaptcha) || !card_capabilities}
                                             onClick={handleSubmit}
                                             className={`${
-                                                isChecked && !(turnstileSiteKey && !captchaToken && !skipCaptcha) && !checking && card_capabilities ? "" : "disabled"
+                                                isChecked && digitalWaiver && !(turnstileSiteKey && !captchaToken && !skipCaptcha) && !checking && card_capabilities ? "" : "disabled"
                                             } main-button p w-full`}
                                         >
                                             {checking ? "Wait.." : "Checkout"}{" "}

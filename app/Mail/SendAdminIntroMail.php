@@ -32,7 +32,7 @@ class SendAdminIntroMail extends Mailable
         try {
             $subject = 'New intro video to approve.';
             return $this->view('email.new-intro')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

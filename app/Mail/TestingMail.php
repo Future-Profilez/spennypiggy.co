@@ -33,7 +33,7 @@ class TestingMail extends Mailable
         try {
             $subject = 'Testing Mail';
             return $this->view('email.testing')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject);
         } catch (\Exception $e) {
         }

@@ -46,7 +46,7 @@ export default function ThankyouMessages(props) {
 
   
   
-  const Item = ({key, w}) => { 
+  const Item = ({w}) => { 
     
     const MessageMedia = () => {
       return <>
@@ -70,7 +70,7 @@ export default function ThankyouMessages(props) {
       </>
     }
     const type = w && w.media_type;
-    return <div className='wish-grant box rounded-[30px]   p-3 my-2' key={key} >
+    return <div className='wish-grant box rounded-[30px]   p-3 my-2' >
       <p className='mb-3 text-grey ' ><span className='text-capitalize' >{w && w.owner && w.owner.name}</span> send a thankyou message {w && w.message ? <b>{w && w.message}</b> : ''} {type =='image' ? 'with attached pic' : type =='video' ? 'with attached video' : '' }.</p>
       <div className='flex justify-between items-center' >
         <Avatar name={w && w.owner && w.owner.name}

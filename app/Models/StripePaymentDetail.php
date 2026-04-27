@@ -33,6 +33,8 @@ class StripePaymentDetail extends Model
         'payment_status',
         'session_created',
         'session_expires_at',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
         'deleted_at',
     ];
 

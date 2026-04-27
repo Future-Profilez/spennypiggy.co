@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useState } from "react";
 import userphoto from "../../assets/siteicon.png";
 import { usePage } from "@inertiajs/react";
 const EditProfile = lazy(() => import("@/Pages/account/EditProfile"));
@@ -8,6 +8,12 @@ import { RiVerifiedBadgeFill } from "react-icons/ri";
 import FollowButton from "@/Pages/Profile/FollowButton";
 import { MdOutlineContentCopy } from "react-icons/md";
 import FounderBadge from "@/Components/FounderBadge";
+import { UserX, ShieldAlert, Ban, Info } from "lucide-react";
+import axios from "axios";
+import { useAlerts } from "@/Components/Alerts";
+import Popup from "@/Components/Popup";
+import FeatureSuggestionBanner from "@/Components/FeatureSuggestionBanner";
+import FeatureSuggestionModal from "@/Components/FeatureSuggestionModal";
 
 export default function Userprofile({ IsloggedIn }) {
     const {
@@ -18,8 +24,36 @@ export default function Userprofile({ IsloggedIn }) {
         follow_status,
         first30DayEarnings,
         card_capabilities,
+        is_blocked: initialIsBlocked,
     } = usePage().props;
+    const { successAlert, errorAlert } = useAlerts();
     const opponantUser = auth?.opposite_user;
+    const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(initialIsBlocked);
+    const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+
+    const blockUser = async () => {
+        try {
+            await axios.post(route('creator.security.block-user'), { user_id: user.id });
+            successAlert(`${user?.name} has been blocked.`);
+            setIsBlocked(true);
+            setShowBlockConfirm(false);
+            // Optionally redirect or refresh
+            // window.location.reload();
+        } catch (error) {
+            errorAlert(error.response?.data?.message || 'Failed to block user');
+        }
+    };
+
+    const unblockUser = async () => {
+        try {
+            await axios.delete(route('creator.security.unblock-user', { id: user.id }));
+            successAlert(`${user?.name} has been unblocked.`);
+            setIsBlocked(false);
+        } catch (error) {
+            errorAlert(error.response?.data?.message || 'Failed to unblock user');
+        }
+    };
     
     return (
         <div className="userprofilesec mb-6 relative">
@@ -123,15 +157,15 @@ export default function Userprofile({ IsloggedIn }) {
                     <div>
                         {user && user?.role == 1 ? (
                             <div className="flex mb-4 justify-center md:mb-4 gap-2 md:gap-3">
-                                <div className="md:flex items-center gap-3 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="md:flex items-center gap-2 text-center bg-yellow-300 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">👥 {user?.followers_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Followers</p>
                                 </div>
-                                <div className="md:flex items-center gap-3 text-center  bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="md:flex items-center gap-2 text-center  bg-blue-100 border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">🤝 {user?.following_count}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Following</p>
                                 </div>
-                                <div className="md:flex items-center gap-3 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="md:flex items-center gap-2 text-center bg-[#b892ff] border-[3px] border-black px-3 md:px-4 py-2 rounded-[15px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                     <span className="font-black block text-[22px] md:text-[16px] whitespace-nowrap">🐷 {supporters}</span>
                                     <p className="font-black text-black text-[10px] md:text-sm uppercase">Supporters</p>
                                 </div>
@@ -153,10 +187,67 @@ export default function Userprofile({ IsloggedIn }) {
                                 :
                                 <>
                                     {!IsloggedIn ? (
-                                        <div className=""> 
+                                        <div className="flex gap-1"> 
                                             <FollowButton 
                                             targetUserId={opponantUser?.id} 
                                             isInitiallyFollowing={follow_status} />
+                                            
+                                            {auth?.user?.role == 1 && (
+                                                isBlocked ? (
+                                                    <button 
+                                                        onClick={unblockUser}
+                                                        className="bg-green-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white"
+                                                        title="Unblock User"
+                                                    >
+                                                        <UserX size={20} strokeWidth={2.5} className="rotate-180" />
+                                                    </button>
+                                                ) : (
+                                                    <Popup 
+                                                        modalclass="pinkmodal"
+                                                        size="md"
+                                                        space="6"
+                                                        classes="bg-red-600 border-[3px] me-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all p-3 rounded-[18px] text-white"
+                                                        text={<UserX size={20} strokeWidth={2.5} />}
+                                                        action={showBlockConfirm}
+                                                        onHide={() => setShowBlockConfirm(false)}
+                                                    >
+                                                        <div className="text-center">
+                                                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-black">
+                                                                <Ban size={40} className="text-red-600" />
+                                                            </div>
+                                                            <h2 className="text-2xl font-gulfs mb-4 uppercase">Block {user?.name}?</h2>
+                                                            <div className="bg-gray-50 border-2 border-black rounded-[20px] p-4 text-left space-y-3 mb-6">
+                                                                <div className="flex gap-3">
+                                                                    <ShieldAlert size={20} className="text-red-600 shrink-0" />
+                                                                    <p className="text-sm font-bold">They will no longer be able to view your profile or content.</p>
+                                                                </div>
+                                                                <div className="flex gap-3">
+                                                                    <Ban size={20} className="text-red-600 shrink-0" />
+                                                                    <p className="text-sm font-bold">They will be blocked from sending you any gifts, tips, or messages.</p>
+                                                                </div>
+                                                                <div className="flex gap-3">
+                                                                    <Info size={20} className="text-blue-600 shrink-0" />
+                                                                    <p className="text-sm font-bold text-gray-500">They won't be notified that you blocked them.</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-4">
+                                                                <button 
+                                                                    onClick={() => setShowBlockConfirm(false)}
+                                                                    className="flex-1 bg-white border-2 border-black py-3 rounded-xl font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                                <button 
+                                                                    onClick={blockUser}
+                                                                    className="flex-1 bg-red-600 text-white border-2 border-black py-3 rounded-xl font-black uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all"
+                                                                >
+                                                                    Block User
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </Popup>
+                                                )
+                                            )}
                                         </div>
                                     ) : (
                                         ""
@@ -181,6 +272,20 @@ export default function Userprofile({ IsloggedIn }) {
                     </div>
                 </div>
             </div>
+            
+            {IsloggedIn && (
+                <div className="mt-8">
+                    <FeatureSuggestionBanner 
+                        onSuggestClick={() => setShowSuggestionModal(true)} 
+                    />
+                </div>
+            )}
+
+            <FeatureSuggestionModal 
+                show={showSuggestionModal} 
+                onClose={() => setShowSuggestionModal(false)} 
+                auth={auth} 
+            />
         </div>
     );
 }

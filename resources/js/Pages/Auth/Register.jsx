@@ -1771,7 +1771,9 @@ export default function Register(props) {
                                                     </a>{" "}
                                                     and{" "}
                                                     <a
-                                                        href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                                        href={route(
+                                                            "terms-and-conditions",
+                                                        )}
                                                         target="_blank"
                                                         className="text-pink-400 hover:text-pink-300 underline"
                                                     >

@@ -4,12 +4,12 @@ import { useState } from "react";
 
 export default function NotFound({ auth, user }) {
       const [IsloggedIn, setIsLoggedIn] = useState(
-           (auth && auth.user && auth.user.username) == (user && user.username)
+           (auth?.user?.username) == (user?.username)
       );
       
 
     return (
-        <Authenticated auth={auth.user} user={user} >
+        <Authenticated auth={auth} user={user} >
             <div className="blackbg py-18">
                 <div className=" h-[80vh] flex justify-center items-center   ">
                   <div className="flex justify-center">

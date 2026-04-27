@@ -42,6 +42,8 @@ class Deliverable extends Model
         'payment_currency',
         'anonymous',
         'message',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     protected $casts = [

@@ -14,7 +14,7 @@ import ActivateSubscription from "./ActivateSubscription";
 import SiteSubscription from "./SiteSubscription";
 import { BsStopwatch } from "react-icons/bs";
 import { FaLock } from "react-icons/fa";
-import { MdOutlinePayment } from "react-icons/md";
+import { MdOutlinePayment, MdInfoOutline } from "react-icons/md";
 
 const CustomProgressBar = ({ now, max }) => {
     const percentage = Math.round((now / max) * 100);
@@ -98,15 +98,20 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             if (creatorUser?.identity_status != 1) {
                 return {
                     title: "Complete identity verification",
-                    description:
-                        "This unlocks payments and helps keep your account secure.",
-                    action: (
+                    description: hasSubscription
+                        ? "This unlocks payments and helps keep your account secure."
+                        : "Active subscription or free trial required to verify identity.",
+                    action: hasSubscription ? (
                         <Link
                             className={"text-pink font-bold"}
                             href="/stripe/identity-verification"
                         >
                             Verify identity
                         </Link>
+                    ) : (
+                        <span className="text-gray-400 font-bold cursor-not-allowed">
+                            Verify identity
+                        </span>
                     ),
                 };
             }
@@ -715,7 +720,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                 <strong className="text-black">
                                     Free Trial
                                 </strong>{" "}
-                                subscription of £4/month. No charges until the
+                                subscription of £8.99 + VAT / month. No charges until the
                                 trial period ends.
                             </p>
                         </div>
@@ -858,12 +863,18 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         Re-verify
                                     </Link>
                                 ) : auth?.user?.profile_status_lock == 2 ? (
-                                    <Link
-                                        className={"text-pink"}
-                                        href="/stripe/identity-verification"
-                                    >
-                                        Verify
-                                    </Link>
+                                    hasSubscription ? (
+                                        <Link
+                                            className={"text-pink"}
+                                            href="/stripe/identity-verification"
+                                        >
+                                            Verify
+                                        </Link>
+                                    ) : (
+                                        <span className="text-gray-400 flex items-center gap-1 cursor-not-allowed" title="Active subscription required">
+                                            Verify <MdInfoOutline size={14} />
+                                        </span>
+                                    )
                                 ) : (
                                     <p className={"text-gray-400"}>Verify</p>
                                 )}

@@ -14,9 +14,9 @@ import { useAlerts } from "@/Components/Alerts";
 
 function Bill(props) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
-    const { auth } = usePage().props;
+    const { auth, rates, global_currency, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const { format, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
-    const { itm, itemid, IsloggedIn, classes, key } = props;
+    const { itm, itemid, IsloggedIn, classes } = props;
 
     // Helper to identify zero decimal currencies
     const isZeroDecimalCurrency = (curr) => {
@@ -29,31 +29,34 @@ function Bill(props) {
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
     const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-        const listedPrice = parseFloat(price || 0);
+        const listedPrice = parseFloat(String(price || 0).replace(/,/g, ''));
         const isZeroDecimal = isZeroDecimalCurrency(curr);
         
         // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
-        const vatAmount = listedPrice * (vatPercent || 0) / 100;
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
         const priceWithVat = listedPrice + vatAmount;
 
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 15) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
         if (totalDeductionRate >= 1) return priceWithVat;
 
         const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const isCreator = auth?.user?.id === itm?.user_id;
-    const vatPercentage = itm?.user?.vat_amount_percentage || 0;
 
     const {
         attributes,
@@ -121,7 +124,9 @@ function Bill(props) {
     return (
         <>
             <div
-                key={key}
+                ref={setNodeRef}
+                {...attributes}
+                {...listeners}
                 style={IsloggedIn ? style : stylenone}
                 className={` relative billbox wish-item-box ${classes} ${isDragging ? "dragging" : ""} hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all`}
             >
@@ -213,7 +218,7 @@ function Bill(props) {
                                             calculateTotalSupporterPays(
                                                 itm.price, 
                                                 itm?.currency || "GBP",
-                                                vatPercentage
+                                                itm?.user?.vat_amount_percentage || 0
                                             ), 
                                             itm?.currency || "GBP"
                                         )}

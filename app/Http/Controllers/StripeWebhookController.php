@@ -53,25 +53,46 @@ class StripeWebhookController extends Controller
         Log::info("StripeWebhookController: Received request at /webhook/payment (Unified Endpoint)");
         
         // Ensure API key is set for any subsequent Stripe calls
-        Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
+        $stripe_secret = env('STRIPE_SECRET_KEY');
+        Stripe::setApiKey($stripe_secret);
 
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $request->header('Stripe-Signature');
         $event = null;
 
-        try {
-            $event = Webhook::constructEvent(
-                $payload,
-                $sig_header,
-                $endpoint_secret
-            ); 
-        } catch (\UnexpectedValueException $e) {
-            Log::error('Stripe webhook: Invalid payload');
-            return response()->json(['status' => false, 'message' => $e->getMessage()], 400);
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            Log::error('Stripe webhook: Invalid signature');
-            return response()->json(['status' => false, 'message' => $e->getMessage()], 400);
+        // Try multiple secrets (UK and US)
+        $configs = [
+            ['secret' => env('STRIPE_WEBHOOK_SECRET'), 'key' => env('STRIPE_SECRET_KEY')],
+            ['secret' => env('STRIPE_WEBHOOK_SECRET_US'), 'key' => env('STRIPE_SECRET_KEY_US')],
+        ];
+
+        $verified = false;
+        foreach ($configs as $config) {
+            if (empty($config['secret'])) continue;
+            
+            try {
+                $event = Webhook::constructEvent($payload, $sig_header, $config['secret']);
+                
+                // Set the correct API key for this account
+                if (!empty($config['key'])) {
+                    Stripe::setApiKey($config['key']);
+                    config(['services.stripe.key' => $config['key']]); // Update global config if needed
+                }
+                
+                $verified = true;
+                break;
+            } catch (\Stripe\Exception\SignatureVerificationException $e) {
+                // Try next secret
+                continue;
+            } catch (\Exception $e) {
+                Log::error('Stripe webhook error: ' . $e->getMessage());
+                return response()->json(['status' => false, 'message' => $e->getMessage()], 400);
+            }
+        }
+
+        if (!$verified) {
+            Log::error('Stripe webhook: Signature verification failed for all secrets');
+            return response()->json(['status' => false, 'message' => 'No signatures found matching the expected signature for payload'], 400);
         }
 
         if (!$event || !isset($event->type)) {
@@ -274,7 +295,7 @@ class StripeWebhookController extends Controller
      */
     private function processMandatorySubscription($event)
     {
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new \Stripe\StripeClient(Stripe::getApiKey());
         
         $eventType = $event->type;
         $object = $event->data->object;
@@ -581,6 +602,20 @@ class StripeWebhookController extends Controller
     {
         $user = User::where('stripe_user_id', $session->id)->first();
 
+        // Fallback: look up by metadata.user_id if stripe_user_id is stale (e.g. creator retried)
+        if (!$user && !empty($session->metadata->user_id)) {
+            $user = User::find($session->metadata->user_id);
+            if ($user) {
+                // Re-sync the session ID so future webhooks resolve correctly
+                $user->stripe_user_id = $session->id;
+                $user->save();
+                Log::info('Identity webhook: resolved user via metadata.user_id fallback', [
+                    'user_id' => $user->id,
+                    'session_id' => $session->id,
+                ]);
+            }
+        }
+
         if ($user) {
             $isFraudulent = $this->checkForFraud($session);
 
@@ -620,6 +655,20 @@ class StripeWebhookController extends Controller
     private function handleVerifiedEvent($session)
     {
         $user = User::where('stripe_user_id', $session->id)->first();
+
+        // Fallback: look up by metadata.user_id if stripe_user_id is stale (e.g. creator retried)
+        if (!$user && !empty($session->metadata->user_id)) {
+            $user = User::find($session->metadata->user_id);
+            if ($user) {
+                // Re-sync the session ID so future webhooks resolve correctly
+                $user->stripe_user_id = $session->id;
+                $user->save();
+                Log::info('Identity webhook: resolved user via metadata.user_id fallback', [
+                    'user_id' => $user->id,
+                    'session_id' => $session->id,
+                ]);
+            }
+        }
 
         if ($user) {
             $docType = data_get($session, 'verified_outputs.document.type')
@@ -667,7 +716,7 @@ class StripeWebhookController extends Controller
 
             // Request redaction of verification session to avoid storing sensitive images at Stripe
             try {
-                $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+                $client = new StripeClient(Stripe::getApiKey());
                 $client->identity->verificationSessions->redact($session->id, []);
             } catch (\Throwable $e) {
                 Log::warning('Stripe Identity redaction failed', [
@@ -888,6 +937,8 @@ class StripeWebhookController extends Controller
             $creator = \App\Models\User::find($metadata->creator_id);
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                // Also clear discovery cache to update trending/top earners
+                app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
             }
         }
 
@@ -1414,6 +1465,8 @@ class StripeWebhookController extends Controller
             $creator = \App\Models\User::find($metadata->creator_id);
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                // Also clear discovery cache
+                app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
             }
         }
 
@@ -1517,6 +1570,8 @@ class StripeWebhookController extends Controller
             $creator = \App\Models\User::find($metadata->creator_id);
             if ($creator) {
                 $this->userProfileService->clearUserCaches($creator->username, $creator->id);
+                // Also clear discovery cache
+                app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
             }
         }
 
@@ -1591,7 +1646,7 @@ class StripeWebhookController extends Controller
             ]);
 
             // Get the subscription details from Stripe to update period information
-            $stripeClient = new StripeClient(env('STRIPE_SECRET_KEY'));
+            $stripeClient = new StripeClient(Stripe::getApiKey());
             $stripeSubscription = $stripeClient->subscriptions->retrieve($wishSubscription->stripe_id);
 
             // Update subscription with new period information
@@ -1805,6 +1860,9 @@ class StripeWebhookController extends Controller
                         'membership_id' => $membershipPayment->membership_id
                     ]);
 
+                    // Also clear discovery cache to update trending/top earners
+                    app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
+                    
                     // Create deliverable for membership renewal
                     $deliverable = $this->createMembershipRenewalDeliverable($membershipPayment);
 
@@ -2039,16 +2097,16 @@ class StripeWebhookController extends Controller
 
     public function CreateProductForCreatorAndGifter()
     {
-        $client = new StripeClient(env('STRIPE_SECRET_KEY'));
+        $client = new StripeClient(Stripe::getApiKey());
         try {
             // Step 1: Create the product
             $product = $client->products->create([
-                'name' => 'Creator Monthly Subscription 4 Pound Product',
+                'name' => 'Creator Monthly Subscription 8.99 GBP Product',
             ]);
 
             // Step 2: Create the recurring price
             $price = $client->prices->create([
-                'unit_amount' => 400, // 4 GBP = 400 pence
+                'unit_amount' => 899, // 8.99 GBP = 899 pence
                 'currency' => 'gbp',
                 'recurring' => [
                     'interval' => 'month', // monthly plan
@@ -2062,7 +2120,7 @@ class StripeWebhookController extends Controller
                 'price_id' => $price->id,
             ];
         } catch (\Exception $e) {
-            Log::error("Error creating £4/month subscription: " . $e->getMessage());
+            Log::error("Error creating £8.99/month subscription: " . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -2565,6 +2623,9 @@ class StripeWebhookController extends Controller
             
             $payment->update(['status' => $newStatus]);
             Log::info("Risk Ledger: Payment marked as {$newStatus}", ['id' => $payment->id]);
+
+            // Also clear discovery cache to update trending/top earners
+            app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
 
             try {
                 if ((int) ($payment->reserve_amount_minor ?? 0) === 0 && strtoupper((string) ($payment->currency ?? '')) === 'GBP') {

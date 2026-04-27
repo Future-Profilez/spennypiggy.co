@@ -31,6 +31,8 @@ class RyeProductPayment extends Model
         'stripe_payment_intent_status',
         'stripe_payment_intent_last_payment_error',
         'payment_metadata',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
     ];
 
     public function user()

@@ -10,6 +10,7 @@ use App\Models\UserCart;
 use App\Models\UserVerificationStatus;
 use App\Models\WishItem;
 use App\Services\IntercomService;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
@@ -46,6 +47,7 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
         if ($user) {
             $user->append(['monthly_charge_enabled']);
+            $user->load('gifterCardVerification');
         }
 
         // Cache the followed user lookup if username is present
@@ -73,6 +75,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'opposite_user' => $followedUser,
                 'verification_status' => $userBioStatus,
+                'is_emulated' => $request->session()->get('emulated_by_admin', false),
                 // Expose admin identity review status explicitly for frontend gating/UI
                 'admin_identity' => $user ? [
                     'status' => $user->identity_admin_status,
@@ -102,8 +105,12 @@ class HandleInertiaRequests extends Middleware
             'rates'     =>  Cache::remember('currency_rates', 86400, fn() => Currency::rates()),
             'currencies' => Cache::remember('all_currencies_iso', 86400, fn() => Currency::select('ISO', 'ISOdigits', 'symbol')->get()->keyBy('ISO')),
             'global_currency'   =>  Cookie::get('currency'),
+            'platform_fee_percentage' => config('app.platform_fee_percentage', 20),
+            'transaction_fee_percentage' => config('app.transaction_fee_percentage', 2),
             'turnstileSiteKey' => $this->resolveTurnstileSiteKey($request),
-            'intercom' => app(IntercomService::class)->buildSettings($user)
+            'intercom' => app(IntercomService::class)->buildSettings($user),
+            'last_terms_update' => Setting::getValue('last_terms_update', '2026-04-23 00:00:00'),
+            'updated_terms_list' => json_decode(Setting::getValue('updated_terms_list', '[]'), true),
         ];
     }
 

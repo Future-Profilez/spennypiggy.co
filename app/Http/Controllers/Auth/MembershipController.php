@@ -478,6 +478,7 @@ class MembershipController extends Controller
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
                 'message' => ['nullable', 'string', 'max:800'],
+                'digital_waiver' => ['required', 'accepted'],
             ]);
 
             if ($user) {
@@ -516,6 +517,10 @@ class MembershipController extends Controller
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
             ]);
+
+            // Apply digital waiver confirmation
+            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+            $sub->save();
 
             try {
                 $connectedAccountId = $membership->user->account_id;
@@ -662,6 +667,22 @@ class MembershipController extends Controller
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                 ];
 
+                // Ensure receipt_email is set for Stripe receipts
+                $customerEmail = $user->email ?? $request->email;
+                if ($customerEmail) {
+                    if ($membership->level === 'lifetime') {
+                        // For mode: payment
+                        if (!isset($payload['payment_intent_data'])) {
+                            $payload['payment_intent_data'] = [];
+                        }
+                        $payload['payment_intent_data']['receipt_email'] = $customerEmail;
+                    } else {
+                        // For mode: subscription, Stripe uses the customer's email automatically.
+                        // However, we can also set it on the checkout session if no customer ID is used.
+                        // Since we have a customer_id, Stripe will use that customer's email.
+                    }
+                }
+
                 // Risk Engine: Force 3DS if Step-Up required
                 if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                     $payload['payment_method_options'] = [
@@ -712,7 +733,7 @@ class MembershipController extends Controller
                 }
 
                 // Create session on CONNECTED account
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS);
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $membership->user->username);
 
                 $sub->update([
                     'session_id' => $session->id,

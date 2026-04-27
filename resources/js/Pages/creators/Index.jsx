@@ -38,7 +38,7 @@ export default function Index() {
                         <span>Start Free Creator Trial</span>
                         <ArrowRight />
                       </Link>
-                      <span className="text-xs md:text-sm font-medium text-gray-700">3 days free • £4/month after • Cancel anytime</span>
+                      <span className="text-xs md:text-sm font-medium text-gray-700">3 days free • £8.99 + VAT / month after • Cancel anytime</span>
                     </div>
                   </div>
                 </div>
@@ -230,7 +230,7 @@ export default function Index() {
                   <ArrowRight />
                 </Link>
                 <div className="mt-2 text-sm font-medium text-gray-700">
-                  3 days free • £4/month after • Live support included
+                  3 days free • £8.99 + VAT / month after • Live support included
                 </div>
               </div>
 

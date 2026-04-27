@@ -3,8 +3,12 @@ import Guest from "@/Layouts/GuestLayout";
 import GlobalUploader from "@/uploadcare/Uploader";
 import InputError from "@/Components/InputError";
 import { usePage } from "@inertiajs/react";
+import PriceFormat from "@/includes/PriceFormat";
 
 export default function Edit({ auth, currencySymbol, task }) {
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
+    const { global_currency } = usePage().props;
+    const defaultCurrency = auth.user.default_currency || 'GBP';
     const { data, setData, post, processing, errors } = useForm({
         title: task.title || "",
         description: task.description || "",
@@ -207,6 +211,33 @@ export default function Edit({ auth, currencySymbol, task }) {
                                                 }
                                             />
                                         </div>
+                                        {data.price > 0 && (
+                                            <div className="mt-4 p-4 bg-gray-50 rounded-[30px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
+                                                    <span className="font-black text-xl text-black">
+                                                        {new Intl.NumberFormat('en-GB', { 
+                                                            style: 'currency', 
+                                                            currency: defaultCurrency 
+                                                        }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm font-bold text-gray-700 uppercase">You receive:</span>
+                                                    <span className="font-black text-xl text-green-600">
+                                                        {new Intl.NumberFormat('en-GB', { 
+                                                            style: 'currency', 
+                                                            currency: defaultCurrency 
+                                                        }).format(data.price)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {defaultCurrency !== global_currency && data.price > 0 && (
+                                            <p className="mt-2 text-sm text-gray-500 font-bold">
+                                                ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})
+                                            </p>
+                                        )}
                                         <InputError
                                             message={errors.price}
                                             className="mt-2 font-bold text-red-600 bg-red-100 p-2 rounded border-2 border-red-500 inline-block"

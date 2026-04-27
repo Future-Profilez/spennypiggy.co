@@ -58,7 +58,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
     return () => controller.abort();
   },[]);
 
-  const Item = ({key, w}) => { 
+  const Item = ({w}) => { 
     const Template = () => { 
       const total_amount = (+w.amount)+(+w.tax)
       const uname = user && user.username;
@@ -72,7 +72,7 @@ export default function GifterSubscriptions({IsloggedIn}) {
           </p>
       </div>
     }
-    return <div className='wish-grant my-2' key={key} >
+    return <div className='wish-grant my-2' >
         <Template  />
     </div>
   }

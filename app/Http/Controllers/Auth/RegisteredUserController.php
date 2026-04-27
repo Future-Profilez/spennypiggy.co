@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -33,7 +34,6 @@ use App\Models\UserVerificationStatus;
 use App\Services\UserProfileService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
 use PragmaRX\Google2FALaravel\Google2FA;
 
@@ -351,7 +351,7 @@ class RegisteredUserController extends Controller
                 'message' => 'Unauthorized.',
             ], 401);
         }
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
+        $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
         // Ensure Stripe customer
         if (empty($user->stripe_id)) {
@@ -397,6 +397,7 @@ class RegisteredUserController extends Controller
             'cancel_url' => route('card.verification.failed', [$user->uuid]),
             'mode' => 'payment',
             'customer' => $user->stripe_id,
+            'billing_address_collection' => 'required',
             'line_items' => [[
                 'price_data' => [
                     'currency' => $currency,
@@ -438,7 +439,11 @@ class RegisteredUserController extends Controller
     // This method is called when the payment is successful
     public function cardVerificationSuccess($uuid)
     {
-        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
+        $user = User::where('uuid', $uuid)->first();
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'User not found.');
+        }
 
         $stripe = new StripeClient(env('STRIPE_SECRET_KEY'));
 
@@ -457,12 +462,29 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        // $billingDetails = $charge->billing_details;
+        // Retrieve full session object to ensure customer_details are populated
+        $session = $stripe->checkout->sessions->retrieve($session->id);
+
         $address = $session->customer_details->address ?? null;
 
-        $gifterAddress = GifterAddress::where('user_id', $user->id)->whereNotNull('stripe_address')->exists();
+        // Fallback: Check payment intent billing details if session address is incomplete
+        if ((!$address || empty($address->line1)) && $session->payment_intent) {
+            try {
+                $paymentIntent = $stripe->paymentIntents->retrieve($session->payment_intent);
+                if ($paymentIntent->shipping && $paymentIntent->shipping->address) {
+                    $address = $paymentIntent->shipping->address;
+                } elseif ($paymentIntent->latest_charge) {
+                    $charge = $stripe->charges->retrieve($paymentIntent->latest_charge);
+                    if ($charge->billing_details && $charge->billing_details->address) {
+                        $address = $charge->billing_details->address;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to retrieve fallback address: " . $e->getMessage());
+            }
+        }
 
-        if ($address && !$gifterAddress) {
+        if ($address) {
             $encryptedAddress = [
                 'line1' => $address->line1 ?? null,
                 'line2' => $address->line2 ?? null,
@@ -470,15 +492,14 @@ class RegisteredUserController extends Controller
                 'state' => $address->state ?? null,
                 'postal_code' => $address->postal_code ?? null,
                 'country' => $address->country ?? null,
-                'name' => $session->customer_details->name ?? null,
+                'name' => ($session->customer_details->name ?? null) ?: ($address->name ?? null),
             ];
 
             $encryptedJson = json_encode($encryptedAddress);
-            // $encryptedJson = Crypt::encryptString(json_encode($encryptedAddress));
 
-            $gifterAddress = GifterAddress::updateOrCreate(
-                ['user_id' => $user->id],  // Match user by their ID
-                ['stripe_address' => $encryptedJson]  // Update the stripe_address column
+            GifterAddress::updateOrCreate(
+                ['user_id' => $user->id],
+                ['stripe_address' => $encryptedJson]
             );
         }
 
@@ -523,13 +544,10 @@ class RegisteredUserController extends Controller
      */
     public function cardVerificationFailed($uuid)
     {
-        $user = User::where('uuid', $uuid)->where('is_uk', 0)->first();
+        $user = User::where('uuid', $uuid)->first();
 
         if (!$user) {
-            return response()->json([
-                'status' => false,
-                'message' => 'User not found.',
-            ]);
+            return redirect()->route('login')->with('error', 'User not found.');
         }
 
         // Update the latest verification record for the user
@@ -545,10 +563,8 @@ class RegisteredUserController extends Controller
             $verification->save();
         }
 
-        return response()->json([
-            'status' => false,
-            'message' => 'Card verification failed or was canceled by the user.',
-        ]);
+        return redirect()->route('user.show', ['username' => $user->username])
+            ->with('error', 'Card verification was canceled or failed. Please try again.');
     }
 
     // public function gifterCardVerification(Request $request)

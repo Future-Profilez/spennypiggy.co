@@ -78,6 +78,17 @@ export default function Notifications() {
     });
   };
 
+  const deleteAll = (e) => {
+    if (confirm("Are you sure you want to delete all notifications?")) {
+      axios.get(`/delete-all-notifications`).then((resp) => {
+        getNotifications();
+        setCount(0);
+      }).catch((_err) => {
+        console.error("error", _err);
+      });
+    }
+  };
+
 
   return (
     <>
@@ -110,12 +121,20 @@ export default function Notifications() {
                 <button onClick={readAll} className="items-center flex text-gray-500 hover:text-gray-900 mb-2 " >
                     Mark all as read
                 </button>
+                <button onClick={deleteAll} className="items-center flex text-red-500 hover:text-red-700 mb-2 " >
+                    Delete all
+                </button>
             </div>
             <div className="flex items-center noti-title justify-between ">
                 <p className="text-lg font-semibold text-black-900   mb-2">Notifications</p>
-                <button onClick={readAll} className="items-center flex text-gray-600 hover:text-gray-900 " >
-                    Mark all as read
-                </button>
+                <div className='flex gap-4'>
+                    <button onClick={readAll} className="items-center flex text-gray-600 hover:text-gray-900 " >
+                        Mark all as read
+                    </button>
+                    <button onClick={deleteAll} className="items-center flex text-red-500 hover:text-red-700 " >
+                        Delete all
+                    </button>
+                </div>
             </div>
 
             <div className='notifications-lists' >

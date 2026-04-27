@@ -39,7 +39,7 @@ class UserProfileService
                     'avatar', 'avatar_approved', 'cover', 'suspended_account',
                     'social_image', 'account_id', 'stripe_details_submitted',
                     'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
-                    'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'is_uk'
+                    'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'is_uk', 'vat_amount_percentage'
                 ])
                 ->with([
                     'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
@@ -99,8 +99,8 @@ class UserProfileService
     {
         $query = WishItem::select([
             'id', 'user_id', 'uuid', 'wishname', 'price', 'currency', 'thumbnail', 
-            'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason'
-        ])->with('user:id,name,username,suspended_account')->where('user_id', $userId);
+            'is_approved', 'sort', 'created_at', 'subscription', 'fullfill_amount', 'edited_reason', 'tax_amount'
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')->where('user_id', $userId);
         
         if (!$isOwner) {
             $query->where('is_approved', 1);
@@ -123,9 +123,9 @@ class UserProfileService
     private function getOptimizedMemberships(int $userId, bool $isOwner): array
     {
         $query = Membership::select([
-            'id', 'uuid', 'name', 'level', 'price', 'currency', 
+            'id', 'user_id', 'uuid', 'name', 'level', 'price', 'currency', 
             'thumbnail', 'approved', 'created_at'
-        ])->where('user_id', $userId);
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')->where('user_id', $userId);
         
         if (!$isOwner) {
             $query->where('approved', 1);
@@ -140,9 +140,9 @@ class UserProfileService
     private function getOptimizedBills(int $userId, bool $isOwner): array
     {
         $query = Bills::select([
-            'id', 'uuid', 'name', 'price', 'currency', 'period',
+            'id', 'user_id', 'uuid', 'name', 'price', 'currency', 'period',
             'thumbnail', 'approved', 'created_at'
-        ])->where('user_id', $userId);
+        ])->with('user:id,name,username,suspended_account,vat_amount_percentage')->where('user_id', $userId);
         
         if (!$isOwner) {
             $query->where('approved', 1);
@@ -157,10 +157,10 @@ class UserProfileService
     private function getOptimizedShopItems(int $userId, bool $isOwner): array
     {
         $query = Shop::select([
-            'id', 'uuid', 'name', 'price', 'currency',
+            'id', 'user_id', 'uuid', 'name', 'price', 'currency',
             'thumbnail', 'approved', 'created_at'
         ])->where('user_id', $userId)
-        ->with(['shop_varients:id,shop_id,name,price']);
+        ->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage']);
         
         if (!$isOwner) {
             $query->where('approved', 1);
@@ -194,7 +194,7 @@ class UserProfileService
         $callback = function () use ($userId, $categoryId, $perPage) {
             $isOwner = Auth::check() && Auth::id() === $userId;
             
-            $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account')
+            $query = WishItem::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage')
             ->when($categoryId && $categoryId !== 'all', function ($query) use ($categoryId) {
                 $query->whereHas('categories', fn ($q) => $q->where('user_category_id', $categoryId));
             });
@@ -342,7 +342,7 @@ class UserProfileService
     {
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
-            $query = Membership::where('user_id', $userId);
+            $query = Membership::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
             if (!$isOwner) {
                 $query->where('approved', 1);
             }
@@ -364,7 +364,7 @@ class UserProfileService
         $callback = function () use ($userId) {
             $isOwner = Auth::check() && Auth::id() === $userId;
             
-            $query = Bills::where('user_id', $userId);
+            $query = Bills::where('user_id', $userId)->with('user:id,name,username,suspended_account,vat_amount_percentage');
 
             if (!$isOwner) {
                 $query->where('approved', 1);

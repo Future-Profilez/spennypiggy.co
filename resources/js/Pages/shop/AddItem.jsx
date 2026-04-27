@@ -68,7 +68,7 @@ export default function AddItem(props) {
     }, [open]);
 
     const AddForm = () => {
-        const { formatMultiPrice } = PriceFormat();
+        const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
         const { global_currency } = usePage().props;
         const [isVat, setIsVat] = useState(
             auth && auth.user && auth.user.vat_amount_percentage ? true : false,
@@ -382,6 +382,7 @@ export default function AddItem(props) {
                     if (res.data.status) {
                         resetUploader();
                         setOpen(false);
+                        window.dispatchEvent(new Event("closeAddOptions"));
                         setTimeout(() => {
                             successAlert(res.data.msg || "Item Added !!");
                             setOpen();
@@ -428,6 +429,7 @@ export default function AddItem(props) {
                 .then((res) => {
                     if (res.data.status) {
                         resetUploader();
+                        window.dispatchEvent(new Event("closeAddOptions"));
                         setTimeout(() => {
                             successAlert(res.data.msg || "Item Added !!");
                             setOpen();
@@ -566,6 +568,28 @@ export default function AddItem(props) {
                                         placeholder="Enter the price of your item"
                                     />
                                 </div>
+                                {shopItem.price > 0 && (
+                                    <div className="mt-3 p-3 bg-gray-50 rounded-[20px] border border-gray-100">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-sm text-gray-600">Fans pay:</span>
+                                            <span className="font-bold text-gray-900">
+                                                {new Intl.NumberFormat('en-GB', { 
+                                                    style: 'currency', 
+                                                    currency: defaultCurrency 
+                                                }).format(calculateTotalSupporterPays(shopItem.price, defaultCurrency).total_supporter_pays)}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">You receive:</span>
+                                            <span className="font-bold text-green-600">
+                                                {new Intl.NumberFormat('en-GB', { 
+                                                    style: 'currency', 
+                                                    currency: defaultCurrency 
+                                                }).format(shopItem.price)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                                 {defaultCurrency !== global_currency &&
                                     shopItem.price > 0 && (
                                         <p className="mt-1 text-sm text-gray-500">
@@ -657,6 +681,11 @@ export default function AddItem(props) {
                                                             )
                                                         }
                                                     />
+                                                    {variant.value > 0 && (
+                                                        <div className="mt-1 px-2 text-[10px] font-bold text-gray-600 flex justify-between gap-2">
+                                                            <span>Fans pay: {new Intl.NumberFormat('en-GB', { style: 'currency', currency: defaultCurrency }).format(calculateTotalSupporterPays(variant.value, defaultCurrency).total_supporter_pays)}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <button
                                                     type="button"
@@ -1185,9 +1214,7 @@ export default function AddItem(props) {
                                 <a
                                     className="text-voilet font-bold"
                                     target="_blank"
-                                    href={
-                                        "https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
-                                    }
+                                    href={route("terms-and-conditions")}
                                 >
                                     Privacy Policy,
                                 </a>{" "}

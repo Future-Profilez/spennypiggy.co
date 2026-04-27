@@ -222,14 +222,30 @@ registerRoute(
 // ================================================================
 
 self.addEventListener('push', event => {
+  let title = 'SpennyPiggy';
+  let body = 'No payload';
+  let actionUrl = '/';
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      const notification = payload.notification || payload;
+      title = notification.title || title;
+      body = notification.content || notification.body || body;
+      actionUrl = notification.action_url || actionUrl;
+    } catch (_) {
+      body = event.data.text();
+    }
+  }
+
   const options = {
-    body: event.data ? event.data.text() : 'No payload',
+    body,
     icon: '/images/icons/icon-192x192.png',
     badge: '/images/icons/icon-72x72.png',
     vibrate: [100, 50, 100],
     data: {
+      actionUrl,
       dateOfArrival: Date.now(),
-      primaryKey: '2'
     },
     actions: [
       {
@@ -245,15 +261,16 @@ self.addEventListener('push', event => {
     ]
   };
   event.waitUntil(
-    self.registration.showNotification('SpennyPiggy', options)
+    self.registration.showNotification(title, options)
   );
 });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  if (event.action === 'explore') {
-    event.waitUntil(clients.openWindow('/'));
+  if (event.action === 'explore' || event.action === '') {
+    const url = (event.notification.data && event.notification.data.actionUrl) || '/';
+    event.waitUntil(clients.openWindow(url));
   }
 });
 

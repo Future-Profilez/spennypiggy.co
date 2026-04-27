@@ -78,6 +78,7 @@ class Kernel extends HttpKernel
         'mustCompletedCardVerification' => \App\Http\Middleware\CheckGifterCardVerification::class,
         'membership' => \App\Http\Middleware\RequireActiveMembership::class,
         'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
+        'check.block' => \App\Http\Middleware\CheckUserBlock::class,
     ];
 
     protected $except = [

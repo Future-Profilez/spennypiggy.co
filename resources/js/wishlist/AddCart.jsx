@@ -10,7 +10,7 @@ import { trackSearchClick } from "@/includes/Analytics";
 
 export default function AddCart(props) {
     const {  action, uuid, item, currency, showall, IsloggedIn } = props;
-    const { auth, card_capabilities } = usePage().props;
+    const { auth, card_capabilities, platform_fee_percentage, transaction_fee_percentage } = usePage().props;
     const [sub, setSub] = useState("daily");
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { usdtogbp, formatMultiPrice, adminFeeInCurrency } = PriceFormat();
@@ -28,24 +28,30 @@ export default function AddCart(props) {
     };
 
     // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-    const calculateTotalSupporterPays = (price, curr) => {
+    const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
         const listedPrice = parseFloat(price || 0);
         const isZeroDecimal = isZeroDecimalCurrency(curr);
+        const vatAmount = listedPrice * (parseFloat(vatPercent) || 0) / 100;
+        const priceWithVat = listedPrice + vatAmount;
         
         // Constants must match backend configuration (Helpers.php)
         const stripeFeeRate = 0.029;
         const stripeFixedFee = isZeroDecimal ? 0 : 0.30;
-        const platformFeeRate = 0.15; 
-        const complianceFeeRate = 0.02; 
+        const platformFeeRate = (platform_fee_percentage || 20) / 100; 
+        const complianceFeeRate = (transaction_fee_percentage || 2) / 100; 
         const adminFee = adminFeeInCurrency(curr); 
-
         const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
         
-        if (totalDeductionRate >= 1) return listedPrice;
+        if (totalDeductionRate >= 1) return priceWithVat;
 
-        const totalSupporterPays = (listedPrice + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+        const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
         
-        return totalSupporterPays;
+        // Rounding logic to match backend (Helpers.php)
+        if (!isZeroDecimal) {
+            return Math.ceil(totalSupporterPays * 100) / 100;
+        } else {
+            return Math.ceil(totalSupporterPays);
+        }
     };
 
     const isCreator = auth?.user?.id === item?.user_id;
@@ -107,7 +113,11 @@ export default function AddCart(props) {
                                 <div className="flex flex-col items-center">
                                     <span>
                                         {formatMultiPrice(
-                                            calculateTotalSupporterPays(item.price, item?.currency || 'USD'), 
+                                            calculateTotalSupporterPays(
+                                                item.price, 
+                                                item?.currency || 'USD',
+                                                item?.user?.vat_amount_percentage || 0
+                                            ), 
                                             item?.currency || 'USD'
                                         )}
                                     </span>

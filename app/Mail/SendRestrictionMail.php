@@ -32,7 +32,7 @@ class SendRestrictionMail extends Mailable
         try {
             $subject = '⚠️ Wishlist Item Removed! ⚠️';
             return $this->view('email.wish-remove')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

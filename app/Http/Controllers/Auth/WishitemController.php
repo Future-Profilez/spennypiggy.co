@@ -34,7 +34,9 @@ use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\TipJarTweet;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\CreatorAvailabilityMessageService;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Notifications\PaymentBlockedNotification;
 use App\Rules\ValidSubscriptionPeriod;
 use App\Services\UserProfileService;
 use Illuminate\Http\RedirectResponse;
@@ -1427,6 +1429,10 @@ class WishitemController extends Controller
     {
         $this->ensureTurnstileVerified($request);
 
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
         $user = Auth::user(); // or $requestingUser if handling guests
 
         if (empty($user->stripe_id)) {
@@ -1489,6 +1495,39 @@ class WishitemController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+                ]);
+            }
+
+            // NEW: Check creator activity eligibility
+            $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($orderDetails->creator);
+
+            if (!$activityCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $orderDetails->creator->notify(new PaymentBlockedNotification($activityCheck, $totalAmount / 100));
+
+                // Log the blocked payment for analytics
+                Log::info('Rye product payment blocked due to insufficient creator activity', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'creator_username' => $orderDetails->creator->username,
+                    'cart_id' => $request->cart_id,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
+                ]);
+
+                // Return user-friendly error to fan
+                return response()->json([
+                    'status' => false,
+                    'message' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+                ]);
+            }
+
+            // Log successful activity check for analytics
+            if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+                Log::info('Rye product payment allowed - creator activity check passed', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'creator_username' => $orderDetails->creator->username,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
                 ]);
             }
 
@@ -1579,6 +1618,7 @@ class WishitemController extends Controller
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
+            Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
             $ryeProductPayment->save();
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
@@ -1592,17 +1632,16 @@ class WishitemController extends Controller
             // Build payment_intent_data for Direct Charges
             $paymentIntentData = [
                 'application_fee_amount' => round($applicationFeeAmount * $multiplier),
-                'metadata' => [
+                'metadata' => Helpers::buildStripeMetadata('product_purchase', $ryeProductPayment, [
                     'order_id' => $orderDetails->id,
                     'user_id' => $orderDetails->user->id,
                     'creator_id' => $orderDetails->creator->id,
-                    'payment_type' => 'product_purchase',
                     'has_card_payments' => (string) $hasCardPayments,
                     'item_amount' => (string) round($basePrice * $multiplier),
                     'creator_net_amount' => (string) $creatorNetAmount,
                     'platform_fee_amount' => (string) round($applicationFeeAmount * $multiplier),
                     'total_charge_amount' => (string) $finalTotalAmount,
-                ],
+                ]),
             ];
 
             Log::info('Using Direct Charges for Rye product payment', [
@@ -1619,12 +1658,12 @@ class WishitemController extends Controller
                 'payment_method_types' => ['card'],
                 'payment_intent_data' => $paymentIntentData,
                 'customer_email' => $orderDetails->user->email,
-                'metadata' => [
+                'metadata' => Helpers::buildStripeMetadata('product_purchase', $ryeProductPayment, [
                     'order_id' => $orderDetails->id,
                     'user_email' => $orderDetails->user->email,
                     'payment_source' => 'website',
                     'has_card_payments' => (string) $hasCardPayments,
-                ],
+                ]),
             ], [
                 'stripe_account' => $orderDetails->creator->account_id,
             ]);
@@ -2557,7 +2596,8 @@ class WishitemController extends Controller
                     'name' => $value[0]['owner']['name'] ?? null,
                     'username' => $value[0]['owner']['username'] ?? null,
                     'uuid' => $value[0]['owner']['uuid'] ?? null,
-                    'default_currency' => $value[0]['owner']['default_currency']
+                    'default_currency' => $value[0]['owner']['default_currency'],
+                    'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0
                 ],
                 'card_capabilities' => StripeControl::hasCardPaymentsCapability($value[0]['owner_account_id'] ?? null),
             ];
@@ -2745,6 +2785,7 @@ class WishitemController extends Controller
                         'username' => $value[0]['owner']['username'],
                         'uuid' => $value[0]['owner']['uuid'],
                         'default_currency' => $value[0]['owner']['default_currency'],
+                        'vat_amount_percentage' => $value[0]['owner']['vat_amount_percentage'] ?? 0
                     ],
                     'card_capabilities' => StripeControl::hasCardPaymentsCapability($value[0]['owner_account_id'] ?? null),
                 ];

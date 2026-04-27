@@ -40,7 +40,7 @@ class ShopBuyedMailUser extends Mailable
         try {
             $subject = "Thank You For Claiming Shop Item  " . $this->data->shop->name;
             return $this->view('email.shop-buy-user')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

@@ -65,7 +65,7 @@ class SupportPaymentToUser extends Mailable
                     'symbol' => $this->symbol,     // Currency symbol
                     'amount' => $this->paymentData->amount ?? 0  // Amount for template
                 ])
-                ->from(env('MAIL_FROM_ADDRESS', 'Noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'SPENNY PIGGY'))
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
 
             Log::info('SupportPaymentToUser: Email built successfully');

@@ -471,6 +471,7 @@ class BillsController extends Controller
                 'name' => ['nullable', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
                 'message' => ['nullable', 'string', 'max:800'],
+                'digital_waiver' => ['required', 'accepted'],
             ]);
 
             $sub = BillPayment::create([
@@ -490,6 +491,10 @@ class BillsController extends Controller
                 'charge_currency' => $chargeCurrency,
                 'display_currency' => $displayCurrency,
             ]);
+
+            // Apply digital waiver confirmation
+            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+            $sub->save();
 
             try {
                 $connectedAccountId = $bill->user->account_id;
@@ -633,6 +638,9 @@ class BillsController extends Controller
                     'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
 
+                // Note: For mode: subscription, Stripe uses the customer_email or the email of the customer object for receipts.
+                // We are providing customer_email here.
+
                 // Risk Engine: Force 3DS if Step-Up required
                 if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                     $payload['payment_method_options'] = [
@@ -642,7 +650,7 @@ class BillsController extends Controller
                     ];
                 }
 
-                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS); // Create session on CONNECTED account
+                $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $bill->user->username); // Create session on CONNECTED account
 
                 $sub->update([
                     'session_id' => $session->id,

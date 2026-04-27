@@ -27,7 +27,7 @@ class TaskProofSubmittedMail extends Mailable
         $subject = "Proof submitted for task: " . $this->task->title;
 
         return $this->view('email.taskproofsubmitted')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject);
     }
 }

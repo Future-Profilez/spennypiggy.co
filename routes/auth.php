@@ -223,14 +223,17 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
         }
 
         $searchResults = [];
+        $featuredCreators = [];
+        $newVerifiedCreators = [];
+        $featuredWishes = [];
+        $topEarnersData = [];
+        $featuredBills = [];
+        $featuredMemberships = [];
+
         if ($isSearch) {
             // Fetch all types unless specific contentType is set
             $ctype = $filters['contentType'] ?? 'All';
 
-            // If contentType is default "Creators" but user didn't explicitly select it (e.g. just /discover/trending),
-            // we might want to show everything.
-            // However, the logic above sets contentType to Creators if missing.
-            // Let's adjust: if type is a shortcut (trending/new/verified), unset contentType to allow fetching all?
             if ($type && in_array(strtolower($type), ['trending', 'new']) && !$request->has('contentType')) {
                 $ctype = 'All';
             }
@@ -247,46 +250,47 @@ Route::get('discover/{type?}/{category?}', function (Illuminate\Http\Request $re
             if ($ctype === 'Memberships' || $ctype === 'All') {
                 $searchResults['memberships'] = $discoveryService->getSearchMemberships($filters);
             }
+        } else {
+            // Section data (top 10) - ONLY fetch when not searching to save resources
+            $limit = 10;
+            $sortBy = $filters['sortBy'] ?? null;
+            
+            // Creators
+            $featuredCreators = $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
+            
+            $newVerifiedCreators = $discoveryService->getNewVerifiedCreators($limit);
+            
+            // Wishes
+            $featuredWishes = $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
+            
+            // Top earners this week
+            $topEarnersData = $discoveryService->getTopEarners('weekly', $limit)['data'];
+            
+            // Bills & Memberships
+            $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
+            
+            $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
         }
 
-        // Section data (top 10)
-        $limit = 10;
-        $sortBy = $filters['sortBy'] ?? null;
-        
-        // Creators
-        $featuredCreators = $sortBy === 'New' ? $discoveryService->getSearchCreators(['sortBy' => 'New'], $limit) : $discoveryService->getTrendingCreators($limit);
-        
-        $newVerifiedCreators = $discoveryService->getNewVerifiedCreators($limit);
-        
-        // Wishes
-        $featuredWishes = $sortBy ? $discoveryService->getSearchWishes(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedWishes($limit);
-        
-        // Top earners this week
-        $topEarnersData = $discoveryService->getTopEarners('weekly', $limit)['data'];
-        
-        // Bills & Memberships
-        $featuredBills = $sortBy ? $discoveryService->getSearchBills(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedBills($limit);
-        
-        $featuredMemberships = $sortBy ? $discoveryService->getSearchMemberships(['sortBy' => $sortBy], $limit) : $discoveryService->getFeaturedMemberships($limit);
-
-        return compact(
-            'featuredCreators',
-            'newVerifiedCreators',
-            'featuredWishes',
-            'topEarnersData', // Map to 'topEarners' in return
-            'featuredBills',
-            'featuredMemberships',
-            'filters',
-            'searchResults'
-        );
+        return [
+            'featuredCreators' => $featuredCreators,
+            'newVerifiedCreators' => $newVerifiedCreators,
+            'featuredWishes' => $featuredWishes,
+            'topEarnersData' => $topEarnersData,
+            'featuredBills' => $featuredBills,
+            'featuredMemberships' => $featuredMemberships,
+            'filters' => $filters,
+            'searchResults' => $searchResults
+        ];
     };
 
-    if (Auth::check()) {
-        $data = $getData();
-    } else {
-        $cacheKey = 'discover_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1200, $getData);
-    }
+    // Use cache for everyone, but shorter TTL for auth users if needed
+    // However, discovery data is mostly global, so we can use a shared cache key
+    // that depends on the request parameters.
+    $cacheKey = 'discover_v2_' . ($type ?? 'root') . '_' . ($category ?? 'none') . '_' . md5(json_encode($request->all()));
+    $ttl = Auth::check() ? 300 : 1200; // 5 mins for auth, 20 mins for guests
+    
+    $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, $ttl, $getData);
 
     return Inertia::render('discover/Discover', [
         'featuredCreators' => $data['featuredCreators'],
@@ -361,6 +365,8 @@ Route::middleware('auth')->group(function () {
             Route::get('like/{uuid}', [PostsController::class, 'postLike'])->name('like');
             Route::post('comment/{uuid}', [PostsController::class, 'commentOnPost'])->name('comment');
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
+            Route::post('comment-approve/{uuid}', [PostsController::class, 'approveComment'])->name('comment-approve');
+            Route::post('reply-approve/{uuid}', [PostsController::class, 'approveReply'])->name('reply-approve');
         });
         // Categories and basic functionality
         Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
@@ -670,6 +676,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('get-notification/', [ProfileController::class, 'getNotifications'])->name("get-notification");
         Route::get('mark-as-read/', [ProfileController::class, 'markRead'])->name("mark-as-read");
+        Route::get('delete-all-notifications/', [ProfileController::class, 'deleteAllNotifications'])->name("delete-all-notifications");
 
         // Creator Financial Tools
         Route::prefix('financial')->name('financial.')->group(function () {
@@ -733,10 +740,10 @@ Route::middleware('auth')->group(function () {
                 'creator' => $creator,
                 'gifter' => $gifter
             ]);
-        })->name('support.story.page');
-        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->name('support.story');
-        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->name('support.story.react');
-        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->name('support.story.reply');
+        })->middleware('check.block')->name('support.story.page');
+        Route::get('support-story/{creator}/{gifter}', [ProfileController::class, 'supportStory'])->middleware('check.block')->name('support.story');
+        Route::post('support-story/{creator}/{gifter}/react', [ProfileController::class, 'supportStoryReact'])->middleware('check.block')->name('support.story.react');
+        Route::post('support-story/{creator}/{gifter}/reply', [ProfileController::class, 'supportStoryReply'])->middleware('check.block')->name('support.story.reply');
         Route::get('history', [ProfileController::class, 'supportHistory'])->name('support.history.page');
         Route::get('history-feed', [ProfileController::class, 'transactionsFeed'])->name('transactions.feed');
 
@@ -812,16 +819,6 @@ Route::prefix("tip-jar")->name("tip-jar.")->group(function () {
 });
 
 Route::get('/user/tip/goal/{username?}', [AuthenticatedSessionController::class, 'usergoal'])->name('user.goal');
-// Unified Stripe Webhook Endpoint
-Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->name('stripe.webhook.unified');
-
-// Legacy routes redirected to unified handler
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
-Route::post('/mandatory-status', [StripeWebhookController::class, 'handle']);
-// Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
-// Route::post('membership-status/', [MembershipController::class, 'membershipStatus'])->name('membership-status');
-Route::post('subs-status/', [StripeController::class, 'subscriptionStatus'])->name('subs-status');
-// Route::post('bill-status/', [BillsController::class, 'billStatus'])->name('bill-status');
 
 Route::get('counter/{deviceid}', [WishitemController::class, 'wish_counter'])->name('counter');
 // Route::get('user/tip-jar/list/{uuid}', [WishitemController::class, 'listGoal'])->name('list');
@@ -831,17 +828,22 @@ Route::get('/how-it-works', function () {
     return Inertia::render('howitworks/Works');
 })->name("how-it-works");
 
-Route::get('/terms-and-conditions', function () {
-    return Inertia::render('Terms');
-})->name("terms-and-conditions");
+Route::controller(\App\Http\Controllers\StaticPageController::class)->group(function () {
+    Route::get('/terms-and-conditions', 'terms')->name("terms-and-conditions");
+    Route::get('/creator-agreement', 'creatorAgreement')->name("creator-agreement");
+    Route::get('/supporter-terms', 'supporterTerms')->name("supporter-terms");
+    Route::get('/creator-supporter-contract', 'creatorSupporterContract')->name("creator-supporter-contract");
+    Route::get('/mor-agreement', 'morAgreement')->name("mor-agreement");
+    Route::get('/reserves-and-payments-policy', 'paymentsPolicy')->name("reserves-and-payments-policy");
+    Route::get('/paid-tasks-terms', 'paidTasksTerms')->name("paid-tasks-terms");
+    Route::get('/return-policy', 'returnPolicy')->name("return-policy");
+    Route::get('/us-addendum', 'usAddendum')->name("us-addendum");
+    Route::post('/accept-terms', 'acceptTerms')->name("accept-terms")->middleware('auth');
+});
 
 Route::get('/promotion-terms', function () {
     return Inertia::render('Promotions');
 })->name("promotion-terms");
-
-Route::get('/paid-tasks-terms', function () {
-    return Inertia::render('PaidTasksTerms');
-})->name("paid-tasks-terms");
 
 Route::get('/files/{filename}', function (string $filename) {
     $fullPath = asset($filename);
@@ -945,9 +947,10 @@ Route::get('/{username}/wish/{id}', function ($username, $id) {
     $uuid = $wish?->uuid ?? $id;
     request()->merge(['item' => $uuid]);
     return app(AuthenticatedSessionController::class)->getUserProfile($username, 'wishes');
-})->name('wish.show');
+})->middleware('check.block')->name('wish.show');
 
 Route::get('/{username}/{page?}', [AuthenticatedSessionController::class, 'getUserProfile'])
+    ->middleware('check.block')
     ->name('user.show');
 
 Route::prefix("wish")->name("wish.")->group(function () {
@@ -974,7 +977,6 @@ Route::prefix("bill")->name("bill.")->group(function () {
 
 
 Route::get('image/dalle', [TestController::class, 'testAiImage'])->name("image-dalle");
-Route::match(["get", "post"], '/test-kyc-webhook', [TestController::class, 'reviewWebhook'])->name("test-kyc")->withoutMiddleware(VerifyCsrfToken::class);
 
 Route::get('/remove-from-cart/{uuid}/{device_id?}', [WishitemController::class, 'removeSurpriseFromCart'])->name('remove-from-cart');
 

@@ -29,7 +29,7 @@ class TaskDisputeEscalatedMail extends Mailable
         $subject = "Dispute Escalated to Admin: " . $this->task->title;
 
         return $this->view('email.taskdisputeescalated')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject);
     }
 }

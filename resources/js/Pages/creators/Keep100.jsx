@@ -40,7 +40,7 @@ export default function Keep100() {
                     </Link>
                   </div>
                   <div className="text-xs md:text-sm font-medium text-gray-700">
-                    3 days free • £4/month after
+                    3 days free • £8.99 + VAT / month after
                   </div>
                 </div>
               </div>

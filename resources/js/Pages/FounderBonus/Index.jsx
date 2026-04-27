@@ -20,7 +20,7 @@ export default function FounderBonusIndex() {
     const availableSeats = programStats?.availableSeats || 150;
     const currentMonth = programStats?.currentMonth || new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     
-    const user = auth.user;
+    const user = auth?.user;
     const { formatMultiPrice } = PriceFormat();
 
     const getRankIcon = (position) => {
@@ -31,7 +31,10 @@ export default function FounderBonusIndex() {
     };
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout
+            auth={auth}
+            user={auth.user}
+        >
             <Head title="Founder Program - Current Month Race" >
                 <meta name="description" content="Compete in our Founder Program to earn a special badge and exclusive rewards. New creators must earn £2,500 in their first 30 days to join." />
             </Head>
@@ -69,7 +72,7 @@ export default function FounderBonusIndex() {
                                             <FaCrown className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
-                                    <h2 className="fading text-xl md:text-2xl font-bold mb-1">🎉 Congratulations, {auth.user.name}!</h2>
+                                    <h2 className="fading text-xl md:text-2xl font-bold mb-1">🎉 Congratulations, {auth?.user?.name}!</h2>
                                     <p className="fading text-sm md:text-base opacity-90">You're officially a SpennyPiggy Founder!</p>
                                 </div>
                                 

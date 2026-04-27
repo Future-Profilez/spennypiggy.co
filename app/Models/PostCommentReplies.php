@@ -16,6 +16,7 @@ class PostCommentReplies extends Model
         'post_comment_id',
         'user_id',
         'reply',
+        'is_approved',
     ];
 
     protected $hidden = [

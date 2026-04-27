@@ -35,7 +35,7 @@ class BioSocialUpdateMail extends Mailable
                 $subject = "{$this->user->name} updated their Profile – Approval Needed";
             }
             return $this->view('email.bio-social-update')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

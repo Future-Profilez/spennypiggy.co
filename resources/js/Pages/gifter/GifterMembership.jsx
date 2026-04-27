@@ -41,10 +41,10 @@ export default function GifterMembership(props) {
     fetch_items(page);
   },[]);
 
-  const Item = ({key, w}) => { 
+  const Item = ({w}) => { 
 
     const amount =(w && +w.amount) + ( w && +w.tax)
-    return <div className='wish-grant my-3 pb-3 box rounded-[30px]   p-3' key={key} >
+    return <div className='wish-grant my-3 pb-3 box rounded-[30px]   p-3' >
         <div className='flex justify-between items-center' >
           <Avatar 
           role={w && w.owner && w.owner.role}

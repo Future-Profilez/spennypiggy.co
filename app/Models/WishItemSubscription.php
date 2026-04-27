@@ -29,6 +29,8 @@ class WishItemSubscription extends Model
         'payment_method',
         'surprise_message',
         'anonymous',
+        'digital_waiver_confirmed_at',
+        'digital_waiver_text',
         'end',
         'upcoming_payment',
         'twitter_response',

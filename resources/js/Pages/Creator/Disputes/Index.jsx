@@ -33,6 +33,7 @@ export default function DisputesIndex({ auth, disputes }) {
 
     return (
         <AuthenticatedLayout
+            auth={auth}
             user={auth.user}
         >
             <Head title="Disputes" />

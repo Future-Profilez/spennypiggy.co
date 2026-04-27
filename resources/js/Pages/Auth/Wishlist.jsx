@@ -43,7 +43,7 @@ export default function Wishlist(props) {
     );
 
     const [close, setClose] = useState();
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const [repeat, setRepeat] = useState(true);
     const [thumbnail, setThumbnail] = useState(item?.thumbnail || "");
     const [adding, setAdding] = useState(false);
@@ -345,6 +345,7 @@ console.log("Function triggered");
                         );
                         reset();
                         setClose(false);
+                        window.dispatchEvent(new Event("closeAddOptions"));
                         setTimeout(() => {
                             setClose();
                         }, 100);
@@ -375,6 +376,7 @@ console.log("Function triggered");
                         );
                         reset();
                         setClose(false);
+                        window.dispatchEvent(new Event("closeAddOptions"));
                         resetUploader();
                         setTimeout(() => {
                             setClose();
@@ -484,6 +486,28 @@ border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                             }
                                         />
                                     </div>
+                                    {data.price > 0 && (
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-sm text-gray-600">Fans pay:</span>
+                                                <span className="font-bold text-gray-900">
+                                                    {new Intl.NumberFormat('en-GB', { 
+                                                        style: 'currency', 
+                                                        currency: defaultCurrency 
+                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">You receive:</span>
+                                                <span className="font-bold text-green-600">
+                                                    {new Intl.NumberFormat('en-GB', { 
+                                                        style: 'currency', 
+                                                        currency: defaultCurrency 
+                                                    }).format(data.price)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                     {defaultCurrency !== global_currency &&
                                         data.price > 0 && (
                                             <p className="mt-2 text-sm text-gray-500">

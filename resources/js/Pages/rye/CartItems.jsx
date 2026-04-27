@@ -15,6 +15,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const [totalPrice, setTotalPrice] = useState(0);
     const [isChecked, setIsChecked] = useState(false);
+    const [digitalWaiver, setDigitalWaiver] = useState(false);
     const [checking, setChecking] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
@@ -220,6 +221,10 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                 errorAlert("Please verify the captcha");
                 return false;
             }
+            if (!digitalWaiver) {
+                errorAlert("Please accept the digital waiver");
+                return false;
+            }
             const response = await axios.post(
                 route("handle.rye.product.payment"),
                 {
@@ -227,6 +232,7 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                     creator_id: cartsItems?.creator?.id,
                     is_anonymous: isAnonymous,
                     cf_turnstile_response: captchaToken || "",
+                    digital_waiver: digitalWaiver,
                 }
             );
             if (response?.data?.status === true) {
@@ -495,6 +501,23 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                         </label>
                                         <p className='text-[12px] text-gray-500 mt-1'>Your name will not be shown to the recipient if checked.</p>
                                     </div>
+
+                                    <div className="form-field mb-4">
+                                        <label htmlFor="digital_waiver" className="flex items-start cursor-pointer text-sm font-medium text-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                id="digital_waiver"
+                                                name="digital_waiver"
+                                                className="mt-1 mr-3 h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                                checked={digitalWaiver}
+                                                onChange={(e) => setDigitalWaiver(e.target.checked)}
+                                                required
+                                            />
+                                            <span>
+                                                I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
+                                            </span>
+                                        </label>
+                                    </div>
                                     {/* <div className="form-field mb-3 ">
                                         <p className='mb-2'>Shipping Information</p>
                                         <select required className="border-gray-300 border rounded-[30px]  px-4 py-2 w-full focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-[30px] " name="country"
@@ -559,14 +582,14 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                             Terms of Service
                                         </Link>{" "}
                                         and{" "}
-                                        <a
+                                        <Link
                                             className="text-voilet"
                                             target="_blank"
-                                            href="https://app.termly.io/document/privacy-policy/696baafc-17cd-4a28-b758-a8f597cf2ad6"
+                                            href={route("terms-and-conditions")}
                                         >
                                             {" "}
                                             Privacy Policy{" "}
-                                        </a>{" "}
+                                        </Link>{" "}
                                         and the following statements:
                                     </label>
                                     <div className="tearmlist pl-3">
@@ -648,9 +671,9 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={!isChecked || checking || (turnstileSiteKey && !captchaToken)}
+                                    disabled={!isChecked || !digitalWaiver || checking || (turnstileSiteKey && !captchaToken)}
                                     onClick={handleSubmit}
-                                    className={`${isChecked && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"} btn-pink md mt-3 text-center`} >
+                                    className={`${isChecked && digitalWaiver && !(turnstileSiteKey && !captchaToken) && !checking ? "" : "disabled"} btn-pink md mt-3 text-center`} >
                                     {checking ? "Wait.." : "Checkout"}{" "}
                                 </button>
                             </div>
