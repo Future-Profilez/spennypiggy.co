@@ -2,14 +2,49 @@ import { TimeFormat } from '@/includes/TimeFormat'
 import { useState } from "react";
 import AddComment from './AddComment';
 import userphoto from "../../../assets/siteicon.png";
-export default function Comment({c, update, updateComments}) {
+import { usePage } from '@inertiajs/react';
+import axios from 'axios';
+
+export default function Comment({c, update, updateComments, postUserId}) {
+
+  const { auth } = usePage().props;
+  const currentUserId = auth.user.id;
+  const isPostCreator = currentUserId === postUserId;
 
   const [handleReply, sethandleReply] = useState(false);
+  const [approving, setApproving] = useState(false);
 
-  const updates = () =>{
+  const updates = () => {
     sethandleReply(false);
     update && update();
   }
+
+  const approveComment = (uuid) => {
+    setApproving(true);
+    axios.post(`/post/comment-approve/${uuid}`)
+      .then(() => {
+        update();
+        setApproving(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setApproving(false);
+      });
+  }
+
+  const approveReply = (uuid) => {
+    setApproving(true);
+    axios.post(`/post/reply-approve/${uuid}`)
+      .then(() => {
+        update();
+        setApproving(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setApproving(false);
+      });
+  }
+
   const CommentReply = ({item}) => {
     return <>
       <div className="pt-4 pb-2 flex justify-center items-center">
@@ -18,13 +53,18 @@ export default function Comment({c, update, updateComments}) {
             <div className="flex flex-shrink-0 self-start cursor-pointer">
               <img src={item.user?.avatar_url || userphoto} alt="" className="h-10 w-10 object-fill rounded-full" />
             </div>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="block">
+            <div className="flex items-center justify-center space-x-2 w-full">
+              <div className="block w-full">
                 <div className="w-auto rounded-[30px]  px-2 ps-0  pb-2">
-                  <div className="font-medium">
+                  <div className="font-medium flex items-center justify-between">
                     <a href="#" className="hover:underline text-sm">
                       <p className='text-base font-bold capitalize' >{item.user?.name || ''}</p>
                     </a>
+                    {!item.is_approved && (
+                      <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
+                        Pending Approval
+                      </span>
+                    )}
                   </div>
                   <div className="text-small font-ligth text-gray-600">
                     {item.reply || ''}
@@ -39,6 +79,18 @@ export default function Comment({c, update, updateComments}) {
                     <p className="ppointer-none">
                       <p className='text-small' ><TimeFormat dateString={item.created_at || ''} /></p>
                     </p>
+                    {isPostCreator && (
+                      <>
+                        <p className="self-center mx-2">.</p>
+                        <button 
+                          disabled={approving}
+                          onClick={() => approveReply(item.uuid)} 
+                          className={`text-small hover:underline ${item.is_approved ? 'text-red-500' : 'text-green-600 font-bold'}`}
+                        >
+                          {item.is_approved ? 'Hide' : 'Approve'}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -61,10 +113,15 @@ export default function Comment({c, update, updateComments}) {
           <div className="items-center w-full ">
             <div className="block">
               <div className="w-auto rounded-[30px]  px-2 ps-0  pb-2">
-                <div className="font-medium">
+                <div className="font-medium flex items-center justify-between">
                   <a href="#" className="hover:underline text-sm">
                     <p className='text-base font-bold capitalize' >{c?.user?.name || ''}</p>
                   </a>
+                  {!c.is_approved && (
+                    <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
+                      Pending Approval
+                    </span>
+                  )}
                 </div>
                 <div className="text-small font-ligth text-gray-600">
                   {c?.comment || ''}
@@ -79,6 +136,18 @@ export default function Comment({c, update, updateComments}) {
                   <a   className=" ">
                     <p className='text-small' ><TimeFormat dateString={c?.created_at || ''} /></p>
                   </a>
+                  {isPostCreator && (
+                    <>
+                      <p className="self-center mx-2">.</p>
+                      <button 
+                        disabled={approving}
+                        onClick={() => approveComment(c.uuid)} 
+                        className={`text-small hover:underline ${c.is_approved ? 'text-red-500' : 'text-green-600 font-bold'}`}
+                      >
+                        {c.is_approved ? 'Hide' : 'Approve'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

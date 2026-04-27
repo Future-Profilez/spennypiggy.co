@@ -964,6 +964,7 @@ class ShopsController extends Controller
                 "customer" => $customer_id,
                 'payment_intent_data' => [
                     'application_fee_amount' => $applicationFeeAmount,
+                    'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
                     'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
                     'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
                         'shop_item_id' => $shop->id,
@@ -1096,7 +1097,7 @@ class ShopsController extends Controller
 
             $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
 
-            return redirect(route('single-shop-list', [$slug, $stripeid->shop->uuid, $stripeid->session_id]))->with('success', 'Payment Successful.');
+            return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
         } catch (Exception $e) {
             Log::error("Error in successPayment: " . $e->getMessage());
             return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', $e->getMessage());

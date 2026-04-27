@@ -9,15 +9,10 @@ export default function ActivateSubscription(props) {
     const { auth, user } = props;
 
     const [loading, setLoading] = useState(false);
-    const [digitalWaiver, setDigitalWaiver] = useState(false);
 
     const checkTerms = () => {
-      if (!digitalWaiver) {
-        toast.error("Please confirm the digital waiver to continue.");
-        return;
-      }
       setLoading(true);
-      window.location.href = route("mandatory.checkout", { digital_waiver: 1 });
+      window.location.href = route("mandatory.checkout");
     }
 
     return (
@@ -54,7 +49,7 @@ export default function ActivateSubscription(props) {
                                     </h3>
                                     <p className="text-gray-700 text-lg leading-relaxed font-medium">
                                         Start your journey with a <span className="text-pink-600 font-bold">3-day free trial</span>. 
-                                        After the trial, your plan renews at <span className="text-black font-bold">£8.99/month</span>.
+                                        After the trial, your plan renews at <span className="text-black font-bold">£8.99 + VAT / month</span>.
                                     </p>
                                 </div>
 
@@ -66,7 +61,7 @@ export default function ActivateSubscription(props) {
                                     </div>
                                     <div className="p-5 rounded-[20px] bg-[#f3f4f6] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">Renewal Price</p>
-                                        <p className="text-black font-black text-xl">£8.99 / MONTH</p>
+                                        <p className="text-black font-black text-xl">£8.99 + VAT</p>
                                         <p className="text-gray-600 text-xs mt-1 font-medium italic">Secure Billing</p>
                                     </div>
                                 </div>
@@ -96,7 +91,7 @@ export default function ActivateSubscription(props) {
                                         <p className="text-gray-600 text-xs font-bold uppercase tracking-widest mb-2">Order Summary</p>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-4xl font-black text-black">£8.99</span>
-                                            <span className="text-gray-600 font-bold">/ month</span>
+                                            <span className="text-gray-600 font-bold">+ VAT / month</span>
                                         </div>
                                         <div className="mt-2 inline-block px-3 py-1 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-tighter">
                                             Includes 3-day free trial
@@ -110,37 +105,15 @@ export default function ActivateSubscription(props) {
                                         </div>
                                         <div className="flex justify-between font-bold text-gray-700">
                                             <span>Monthly Total</span>
-                                            <span className="text-black">£8.99</span>
+                                            <span className="text-black">£10.79</span>
                                         </div>
-                                    </div>
-
-                                    <div className="mt-6 mb-6 p-4 bg-white/50 border border-black/10 rounded-2xl">
-                                        <label
-                                            htmlFor="digital_waiver"
-                                            className="text-left flex items-start cursor-pointer group"
-                                        >
-                                            <div className="flex items-center h-5 mt-1">
-                                                <input
-                                                    onChange={(e) => setDigitalWaiver(e.target.checked)}
-                                                    type="checkbox"
-                                                    id="digital_waiver"
-                                                    name="digital_waiver"
-                                                    className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
-                                                    checked={digitalWaiver}
-                                                    required
-                                                />
-                                            </div>
-                                            <span className="ml-3 text-xs text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
-                                                I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
-                                            </span>
-                                        </label>
                                     </div>
 
                                     <div className="mt-8">
                                         <LoaderButton 
                                             onClick={checkTerms} 
-                                            disabled={loading || !digitalWaiver} 
-                                            className={`w-full !rounded-[20px] bg-pink-500 hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg ${(!digitalWaiver || loading) ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
+                                            disabled={loading} 
+                                            className={`w-full !rounded-[20px] bg-pink-500 hover:bg-pink-600 text-white font-black py-4 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-widest text-lg ${loading ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                                         >
                                             {loading ? "Redirecting..." : "Activate Now"}
                                         </LoaderButton>

@@ -5,11 +5,13 @@ import axios from 'axios'
 export default function CommentList({post_uuid, updateComments}){
 
   const [lists, setLists] = useState([]);
+  const [postUserId, setPostUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const listComments = () => {
     setLoading(true);
     axios.get(`/comments/${post_uuid}`).then((resp) => {
         setLists(resp.data.comments);
+        setPostUserId(resp.data.post_user_id);
         setLoading(false);
     }).catch((_err) => {
         console.error("error", _err);
@@ -34,7 +36,7 @@ export default function CommentList({post_uuid, updateComments}){
         {lists && lists.length ? 
           <>
             {lists.map((c, i)=>{ 
-              return <Comment updateComments={updateComments} c={c} update={listComments} />
+              return <Comment key={i} updateComments={updateComments} c={c} update={listComments} postUserId={postUserId} />
             })}
           </>
         : ''}

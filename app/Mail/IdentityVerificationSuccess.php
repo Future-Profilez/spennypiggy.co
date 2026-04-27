@@ -19,7 +19,8 @@ class IdentityVerificationSuccess extends Mailable
 
     public function build()
     {
-        return $this->subject('Identity Verification Successful')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Identity Verification Successful')
             ->view('email.identity_success')
             ->with(['user' => $this->user]);
     }

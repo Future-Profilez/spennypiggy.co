@@ -181,7 +181,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                 deliverable.transaction_amount || 
                                                 metadata.amount || 
                                                 0, 
-                                                (deliverable.wish_item?.currency || deliverable.payment_currency || metadata.currency || auth.user.default_currency || global_currency)
+                                                (deliverable.wish_item?.currency || deliverable.payment_currency || metadata.currency || auth?.user?.default_currency || global_currency)
                                             )}</p>
                                             <span className={`capitalize px-3 py-1 text-xs font-medium rounded-full ${statusClass}`}>
                                                 {displayStatus === 'refunded' ? 'Refunded' : 
@@ -427,7 +427,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                             
                             <div className='lg:flex lg:items-center justify-center gap-2 flex-wrap'>
                                 <p className='me-4 text-lg font-bold'>
-                                    {formatMultiPrice(subscription.amount, subscription.currency || auth.user.default_currency || global_currency)}
+                                    {formatMultiPrice(subscription.amount, subscription.currency || auth?.user?.default_currency || global_currency)}
                                     /{subscription.recurring_type || 'month'}
                                 </p>
                                 {statusBadge}
@@ -494,6 +494,7 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
     
     return (
         <AuthenticatedLayout
+            auth={auth}
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-pink-600 leading-tight">Purchases</h2>}
         >

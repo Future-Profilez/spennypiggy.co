@@ -82,6 +82,7 @@ export default function AddPost({item, text, classes, isEdit, title}) {
 
                 toast.success(resp.data.msg);
                 setClose(false);
+                window.dispatchEvent(new Event("closeAddOptions"));
                 setTimeout(()=>{
                     setClose();
                 },100);

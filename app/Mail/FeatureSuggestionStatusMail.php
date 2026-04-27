@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\FeatureSuggestion;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -28,7 +29,10 @@ class FeatureSuggestionStatusMail extends Mailable
             'rejected'     => 'An update on your feature suggestion',
         ];
         $subject = $subjects[$this->suggestion->status] ?? 'Update on your feature suggestion';
-        return new Envelope(subject: $subject . ' - Spenny Piggy');
+        return new Envelope(
+            subject: $subject . ' - Spenny Piggy',
+            from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+        );
     }
 
     public function content(): Content

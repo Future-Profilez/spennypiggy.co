@@ -324,6 +324,11 @@ class CheckoutController extends Controller
                 'customer_email' =>  $getdata[0]->user->email ?? request()->query('email'),
             ];
 
+            // Ensure receipt_email is set in payment_intent_data for Stripe receipts
+            if ($payload['customer_email']) {
+                $payload['payment_intent_data']['receipt_email'] = $payload['customer_email'];
+            }
+
             // Validate payload before sending to Stripe
             $validationError = $this->validateStripePayload($payload);
             if ($validationError) {
@@ -951,6 +956,8 @@ class CheckoutController extends Controller
                     // Log::info("Payment already processed by webhook", ['session_id' => $sessionId]);
                     if ($existingPayment->owner) {
                         $this->userProfileService->clearUserCaches($existingPayment->owner->username, $existingPayment->owner->id);
+                        // Also clear discovery cache to update top earners and trending
+                        app(\App\Services\DiscoveryService::class)->clearDiscoveryCache();
                     }
                     return redirect(route('thank-you', [$existingPayment->owner->username]))->with('success', 'Payment Successful.');
                 }

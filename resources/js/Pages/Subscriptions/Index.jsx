@@ -319,6 +319,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
 
     return (
         <AuthenticatedLayout
+            auth={auth}
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-pink-600 leading-tight">Subscription Management</h2>}
         >
@@ -342,7 +343,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                 <StatCard
                                     icon={<FiDollarSign className="h-8 w-8 text-green-600" />}
                                     title="Monthly Cost"
-                                    value={formatMultiPrice(subscriptionStats.as_subscriber.monthly_cost, auth.user.default_currency || global_currency)}
+                                    value={formatMultiPrice(subscriptionStats.as_subscriber.monthly_cost, auth?.user?.default_currency || global_currency)}
                                     subtitle="Your recurring payments"
                                     color="green"
                                 />
@@ -356,7 +357,7 @@ export default function Index({ auth, mySubscriptions, subscribersToMe, subscrip
                                 <StatCard
                                     icon={<FiTrendingUp className="h-8 w-8 text-orange-600" />}
                                     title="Monthly Revenue"
-                                    value={formatMultiPrice(subscriptionStats.as_creator.monthly_revenue, auth.user.default_currency || global_currency)}
+                                    value={formatMultiPrice(subscriptionStats.as_creator.monthly_revenue, auth?.user?.default_currency || global_currency)}
                                     subtitle="Your recurring income"
                                     color="orange"
                                 />

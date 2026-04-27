@@ -2597,6 +2597,18 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function deleteAllNotifications()
+    {
+        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+
+        Notification::where('notifiable_id', $user->id)->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => "All notifications deleted."
+        ]);
+    }
+
     public function piggyBankSetting()
     {
         $user = User::where('id', Auth::id())->where('is_uk', 0)->first();

@@ -27,12 +27,13 @@ export default function LegalLayout({ children, activePage }) {
         { name: 'Payments Policy', href: '/reserves-and-payments-policy', component: 'PaymentsPolicy', icon: Wallet },
         { name: 'Paid Tasks Terms', href: '/paid-tasks-terms', component: 'PaidTasksTerms', icon: ClipboardList },
         { name: 'Return Policy', href: '/return-policy', component: 'ReturnPolicy', icon: RotateCcw },
+        { name: 'US Addendum', href: '/us-addendum', component: 'UsAddendum', icon: ShieldCheck },
     ];
 
     return (
-        <div className="min-h-screen bg-[#FDFCFD] flex flex-col md:flex-row font-poppins">
+        <div className="min-h-screend bg-[#FDFCFD] flex flex-col md:flex-row font-poppins">
             {/* Mobile Header */}
-            <div className="md:hidden bg-white border-b border-gray-100 p-4 sticky top-0 z-50 flex items-center justify-between">
+            <div className="md:hidden bg-white border-b border-gray-100 p-4  z-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-pink-600 rounded-lg flex items-center justify-center shadow-md shadow-pink-100">
                         <ShieldCheck className="text-white" size={16} />
@@ -48,7 +49,7 @@ export default function LegalLayout({ children, activePage }) {
             </div>
 
             {/* Sidebar */}
-            <aside className={`w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-gray-100 sticky !top-0 md:h-screen overflow-y-auto z-1 transition-all duration-300
+            <aside className={`w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-gray-100    md:h-screen overflow-y-auto  transition-all duration-300
                 ${isMobileMenuOpen ? 'block' : 'hidden md:block'} `}>
                 <div className="p-6">
                     <Link 

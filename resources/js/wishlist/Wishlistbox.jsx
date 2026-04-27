@@ -278,15 +278,27 @@ export default function Wishlistbox(props) {
 
                     <div className="absolute top-1 left-1 text-xl">👀</div>
                     <div className="absolute bottom-2 right-2 text-xl">⭐</div>
+
                     <div className="flex justify-center items-center mt-3 pb-3">
-                        <ShareProfile
-                            username={itm.wishname}
-                            custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
-                            <div className=" bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[13px] md:text-normal py-2 px-4 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                Share Link
-                            </div>
-                        </ShareProfile>
+                        {IsloggedIn ? (
+                            <ShareProfile
+                                username={itm.wishname}
+                                custom={`${ziggy?.url}/${itm?.user?.username}/wishes?item=${itm.uuid}`} >
+                                <div className=" bg-yellow-300 hover:bg-yellow-400 text-black font-black uppercase text-[13px] md:text-normal py-2 px-4 rounded-xl border-[3px] border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                    Share Link
+                                </div>
+                            </ShareProfile>
+                        ) : 
+                            <button className="bg-yellow-300 hover:bg-yellow-400 
+                            text-black font-black uppercase text-[13px] md:text-normal 
+                            py-2 px-4 rounded-xl border-[3px] border-black 
+                            shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] 
+                            hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] 
+                            transition-all"> Tip Me </button>
+                        }
                     </div>
+
+
                     {itm.user ? (
                         <div className="flex px-2 mt-3 justify-center">
                             {itm?.user ? (

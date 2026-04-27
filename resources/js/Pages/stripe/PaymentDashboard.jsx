@@ -1,12 +1,17 @@
 import LoaderButton from "@/Components/LoaderButton";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 
 export default function PaymentDashboard({auth, classes, text, trigger}){
+    const { auth: pageAuth } = usePage().props;
     const {data, post, processing} = useForm();
 
     const handleStripeLogin = (e) => {
         e.preventDefault();
-        post(route("stripe.login"),{
+        
+        // Pass user's country if available to ensure correct account creation if needed
+        const country = auth?.user?.country || pageAuth?.user?.country || "";
+        
+        post(route("stripe.login", { country: country }),{
             preserveScroll:true,
         });
     }

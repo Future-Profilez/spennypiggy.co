@@ -88,6 +88,7 @@ export default function AddGift({
                 fetch_gifts && fetch_gifts();
                 updateState && updateState(new Date());
                 setClose(false);
+                window.dispatchEvent(new Event("closeAddOptions"));
                 setTimeout(() => {
                     setClose();
                 }, 100);

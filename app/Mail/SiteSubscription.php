@@ -23,7 +23,8 @@ class SiteSubscription extends Mailable
     public function build()
     {
 
-        return $this->subject('Subscription Update')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Subscription Update')
             ->view('email.sitesubscription')  
             ->with([
                 'array' => $this->array,

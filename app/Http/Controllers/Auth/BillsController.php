@@ -627,6 +627,9 @@ class BillsController extends Controller
                     'cancel_url' => route('bill.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
                 ];
 
+                // Note: For mode: subscription, Stripe uses the customer_email or the email of the customer object for receipts.
+                // We are providing customer_email here.
+
                 // Risk Engine: Force 3DS if Step-Up required
                 if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                     $payload['payment_method_options'] = [

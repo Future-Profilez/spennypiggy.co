@@ -35,7 +35,7 @@ class MonthlySubscriptionSuccessMail extends Mailable
         try {
             $subject = 'Your payment status is paid on Spenny Piggy.';
             return $this->view('email.monthly-subs')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

@@ -28,7 +28,8 @@ class ProductDeletionMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Your Wish List Items Have Been Deleted')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Your Wish List Items Have Been Deleted')
             ->view('email.product_deleted');
     }
 }

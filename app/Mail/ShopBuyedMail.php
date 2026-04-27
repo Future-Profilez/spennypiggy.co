@@ -40,7 +40,7 @@ class ShopBuyedMail extends Mailable
             $name = $this->anon ? 'Anonymous user' : $this->data->name;
             $subject = "$name just claimed shop item " . $this->data->shop->name;
             return $this->view('email.shopbuy')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

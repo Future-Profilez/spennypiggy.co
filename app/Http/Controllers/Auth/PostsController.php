@@ -362,11 +362,85 @@ class PostsController extends Controller
     {
         $post = Post::where('uuid', $uuid)->first();
 
-        $comments = PostComment::where('post_id', $post->id)->with(['replies', 'replies.user', 'user'])->get();
+        if (empty($post)) {
+            return response()->json([
+                'status' => false,
+                'msg' => "Post not found."
+            ]);
+        }
+
+        $userId = Auth::id();
+        $isCreator = $post->user_id === $userId;
+
+        $comments = PostComment::where('post_id', $post->id)
+            ->with(['replies' => function ($query) use ($userId, $isCreator) {
+                $query->where(function ($q) use ($userId, $isCreator) {
+                    $q->where('is_approved', 1)
+                        ->orWhere('user_id', $userId);
+                    
+                    if ($isCreator) {
+                        $q->orWhereRaw('1=1'); // Creators see all replies on their post
+                    }
+                })->with('user');
+            }, 'user'])
+            ->where(function ($query) use ($userId, $isCreator) {
+                $query->where('is_approved', 1)
+                    ->orWhere('user_id', $userId);
+                
+                if ($isCreator) {
+                    $query->orWhereRaw('1=1'); // Creators see all comments on their post
+                }
+            })
+            ->get();
 
         return response()->json([
             'status' => true,
-            'comments' => $comments
+            'comments' => $comments,
+            'post_user_id' => $post->user_id
+        ]);
+    }
+
+    public function approveComment($uuid)
+    {
+        $comment = PostComment::where('uuid', $uuid)->first();
+        if (empty($comment)) {
+            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+        }
+
+        // Only the post creator can approve comments
+        if ($comment->post->user_id !== Auth::id()) {
+            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+        }
+
+        $comment->is_approved = !$comment->is_approved;
+        $comment->save();
+
+        return response()->json([
+            'status' => true,
+            'is_approved' => $comment->is_approved,
+            'msg' => $comment->is_approved ? "Comment approved." : "Comment hidden."
+        ]);
+    }
+
+    public function approveReply($uuid)
+    {
+        $reply = PostCommentReplies::where('uuid', $uuid)->first();
+        if (empty($reply)) {
+            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+        }
+
+        // Only the post creator can approve replies
+        if ($reply->post_comment->post->user_id !== Auth::id()) {
+            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+        }
+
+        $reply->is_approved = !$reply->is_approved;
+        $reply->save();
+
+        return response()->json([
+            'status' => true,
+            'is_approved' => $reply->is_approved,
+            'msg' => $reply->is_approved ? "Reply approved." : "Reply hidden."
         ]);
     }
 }

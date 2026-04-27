@@ -16,6 +16,7 @@ export default function TermsUpdatePopup() {
         { key: 'PaymentsPolicy', name: 'Payments Policy', href: '/reserves-and-payments-policy' },
         { key: 'PaidTasksTerms', name: 'Paid Tasks Terms', href: '/paid-tasks-terms' },
         { key: 'ReturnPolicy', name: 'Return Policy', href: '/return-policy' },
+        { key: 'UsAddendum', name: 'US Addendum', href: '/us-addendum' },
     ];
 
     // Default to showing Terms of Service if no specific docs are selected but an update is triggered

@@ -24,6 +24,7 @@ export default function DisputeShow({ auth, dispute }) {
 
     return (
         <AuthenticatedLayout
+            auth={auth}
             user={auth.user}
             header={
                 <div className="flex items-center gap-4">

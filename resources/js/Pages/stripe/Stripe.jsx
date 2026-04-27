@@ -600,12 +600,14 @@ export default function Stripe(props) {
 
                     <div className="flex justify-center">
                         <button
-                            className={`${country == null || country == "" ? "disabled" : ""} ${checkRef && checkRef.current &&  !checkRef.current.checked ? "disabled" : ""} block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                            className={`${!country || (checkRef && checkRef.current && !checkRef.current.checked) ? "opacity-50 cursor-not-allowed" : ""} block w-full text-center bg-[#F94F96] hover:bg-pink-600 text-white font-gulfs uppercase text-lg py-3 px-6 rounded-full transition-all duration-200 btn-shadow active:transform active:scale-[0.99] transition-all duration-300 transform hover:scale-105`}
                             onClick={checkTerms}
                             disabled={
                                 connecting ||
                                 !finalStepsUnlocked ||
-                                !mor_consent_given
+                                !mor_consent_given ||
+                                !country ||
+                                (checkRef && checkRef.current && !checkRef.current.checked)
                             }
                         >
                             {connecting ? (

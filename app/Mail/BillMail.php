@@ -38,7 +38,7 @@ class BillMail extends Mailable
         try {
             $subject = 'WooHoo! You got a new Bill subscription.';
             return $this->view('email.bills')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

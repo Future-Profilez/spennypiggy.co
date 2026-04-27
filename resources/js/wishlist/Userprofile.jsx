@@ -12,6 +12,8 @@ import { UserX, ShieldAlert, Ban, Info } from "lucide-react";
 import axios from "axios";
 import { useAlerts } from "@/Components/Alerts";
 import Popup from "@/Components/Popup";
+import FeatureSuggestionBanner from "@/Components/FeatureSuggestionBanner";
+import FeatureSuggestionModal from "@/Components/FeatureSuggestionModal";
 
 export default function Userprofile({ IsloggedIn }) {
     const {
@@ -28,6 +30,7 @@ export default function Userprofile({ IsloggedIn }) {
     const opponantUser = auth?.opposite_user;
     const [showBlockConfirm, setShowBlockConfirm] = useState(false);
     const [isBlocked, setIsBlocked] = useState(initialIsBlocked);
+    const [showSuggestionModal, setShowSuggestionModal] = useState(false);
 
     const blockUser = async () => {
         try {
@@ -269,6 +272,20 @@ export default function Userprofile({ IsloggedIn }) {
                     </div>
                 </div>
             </div>
+            
+            {IsloggedIn && (
+                <div className="mt-8">
+                    <FeatureSuggestionBanner 
+                        onSuggestClick={() => setShowSuggestionModal(true)} 
+                    />
+                </div>
+            )}
+
+            <FeatureSuggestionModal 
+                show={showSuggestionModal} 
+                onClose={() => setShowSuggestionModal(false)} 
+                auth={auth} 
+            />
         </div>
     );
 }

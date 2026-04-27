@@ -94,7 +94,7 @@ export default function ContentFilePreview({
     const isAudioFile = isAudio || (fileType && fileType.toLowerCase().includes('audio'));
 
     return (
-        <div className={`content-file-preview bg-white border border-gray-200 rounded-[30px]  lg:rounded-[30px]  p-3 shadow-sm ${className}`}>
+        <div className={`content-file-preview bg-white border border-gray-200 rounded-[15px]  lg:rounded-[20px]  p-3 shadow-sm ${className}`}>
             <div className="flex items-start space-x-4">
                 {/* File preview based on type */}
                 <div className="flex-shrink-0">
@@ -103,7 +103,7 @@ export default function ContentFilePreview({
                             <img 
                                 src={fileUrl} 
                                 alt={fileName || "Content preview"}
-                                className="w-20 h-20 object-cover rounded-[30px]  lg:rounded-[30px]  border shadow-sm"
+                                className="w-20 h-20 object-cover rounded-[15px]  lg:rounded-[20px]  border shadow-sm"
                                 onError={(e) => {
                                     e.target.style.display = 'none';
                                     e.target.nextSibling.style.display = 'flex';
@@ -209,7 +209,8 @@ export default function ContentFilePreview({
                         {isImageFile || isVideoFile ? 'View' : 'Download'}
                     </a> */}
                     {(isImageFile && !isVideoFile && !isAudioFile) && (
-                        <a 
+                        <a  target="_blank"
+                            rel="noopener noreferrer"
                             href={`${fileUrl}/-/format/auto/-/quality/best/`}
                             download
                             className="text-center inline-flex items-center px-3 py-1.5 border border-pink-300 text-sm font-medium rounded-[30px]  lg:rounded-[30px]  text-pink-700 bg-pink-50 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"

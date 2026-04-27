@@ -34,10 +34,8 @@ export default function OldSubscribe() {
             userEmail: auth && auth.user && auth.user.email,
             serviceWorkerPath: '/service-worker.js',
       });
-      setSubscribing(true);
       if (pushClient) {
          try {
-            const authToken = await pushClient.getAuthToken();
             const data = await pushClient.subscribe();
             const subscribed = await pushClient.isSubscribed();
             toast.success(subscribed ? "You have been subscribed for push notifications." : "Unfortunately, you are not subscribed for push notifications.");

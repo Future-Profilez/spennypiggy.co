@@ -6,7 +6,7 @@ import PriceFormat from "@/includes/PriceFormat";
 
 export default function Create({ auth, currencySymbol }) {
     const { global_currency } = usePage().props;
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const defaultCurrency = auth.user.default_currency || 'GBP';
     const { data, setData, post, processing, errors } = useForm({
         title: "",
@@ -118,6 +118,28 @@ export default function Create({ auth, currencySymbol }) {
                                                 }
                                             />
                                         </div>
+                                        {data.price > 0 && (
+                                            <div className="mt-4 p-4 bg-gray-50 rounded-[20px] md:rounded-[25px] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-sm font-bold text-gray-700 uppercase">Fans pay:</span>
+                                                    <span className="font-black text-xl text-black">
+                                                        {new Intl.NumberFormat('en-GB', { 
+                                                            style: 'currency', 
+                                                            currency: defaultCurrency 
+                                                        }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm font-bold text-gray-700 uppercase">You receive:</span>
+                                                    <span className="font-black text-xl text-green-600">
+                                                        {new Intl.NumberFormat('en-GB', { 
+                                                            style: 'currency', 
+                                                            currency: defaultCurrency 
+                                                        }).format(data.price)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
                                         {defaultCurrency !== global_currency && data.price > 0 && (
                                             <p className="mt-2 text-sm text-gray-500 font-bold">
                                                 ≈ {formatMultiPrice(data.price, defaultCurrency)} ({global_currency})

@@ -46,7 +46,7 @@ class WishSubscriptionMailToUsers extends Mailable
                 : 'Wish Subscription Granted on Spenny Piggy!';
                 
             return $this->view('email.subscription_wish_for_user')
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject)
                 ->with([
                     'is_renewal' => $this->is_renewal

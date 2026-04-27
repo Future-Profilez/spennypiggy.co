@@ -30,7 +30,7 @@ class TaskPurchasedMail extends Mailable
         $currencySymbol = \App\Models\Currency::where('ISO', $this->task->currency)->value('symbol') ?? '$';
 
         return $this->view('email.taskpurchased')
-            ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+            ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject)
             ->with(['currencySymbol' => $currencySymbol]);
     }

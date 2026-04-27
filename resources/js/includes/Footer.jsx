@@ -176,7 +176,8 @@ export default function Footer(props) {
                                         { name: "MoR Agreement", route: "mor-agreement" },
                                         { name: "Payments", route: "reserves-and-payments-policy" },
                                         { name: "Paid Tasks", route: "paid-tasks-terms" },
-                                        { name: "Return Policy", route: "return-policy" }
+                                        { name: "Return Policy", route: "return-policy" },
+                                        { name: "US Addendum", route: "us-addendum" }
                                     ].map((item, index) => (
                                         <div key={index}>
                                             {item.external ? (

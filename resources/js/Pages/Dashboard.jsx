@@ -89,7 +89,7 @@ export default function Dashboard(props) {
         }
     }, [items, selectedCategory]);
 
-    const [IsloggedIn, setIsLoggedIn] = useState((auth && auth.user && auth.user.username) == (user && user.username));
+    const [IsloggedIn, setIsLoggedIn] = useState((auth?.user?.username) == (user?.username));
 
     const hasPendingCardPayments = useMemo(() => {
         return stripe_requirements?.requirements?.some(r => r.type === 'card_payments_pending') || false;
@@ -239,11 +239,20 @@ export default function Dashboard(props) {
                 setShowAdd(true);
             };
 
+            const handleCloseEvent = () => {
+                setShowAdd(false);
+            };
+
             window.addEventListener("toggleAddOptions", handleToggleEvent);
+            window.addEventListener("closeAddOptions", handleCloseEvent);
             return () => {
                 window.removeEventListener(
                     "toggleAddOptions",
                     handleToggleEvent,
+                );
+                window.removeEventListener(
+                    "closeAddOptions",
+                    handleCloseEvent,
                 );
             };
         }, []);
@@ -252,6 +261,7 @@ export default function Dashboard(props) {
                 document.body.classList.add("overflow-hidden");
             } else {
                 document.body.classList.remove("overflow-hidden");
+                setWishOptions(false);
             }
         }, [showAdd]);
 
@@ -486,7 +496,7 @@ export default function Dashboard(props) {
                                         loading="eager"
                                         fetchpriority="high"
                                     />
-                                    {IsloggedIn && auth && auth?.user.cover_url && auth?.user?.cover_approved == 0 ? (
+                                    {IsloggedIn && auth?.user?.cover_url && auth?.user?.cover_approved == 0 ? (
                                         <div className="absolute right-4 text-sm bottom-4 mx-auto z-10 bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-2">
                                             <button className="flex items-center gap-2">
                                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" >
@@ -728,7 +738,7 @@ export default function Dashboard(props) {
                                                                                 <MyGoal IsloggedIn={IsloggedIn} />
                                                                             ) :  "" }
 
-                                                                                    {auth.user && auth.user.role == 1 && AuthUserStripeConnected == 1 ? (
+                                                                                    {auth?.user?.role == 1 && AuthUserStripeConnected == 1 ? (
                                                                                         <PaymentDashboard
                                                                                             classes="!tracking-wider text-sm md:!text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 !bg-pink-600 text-white !px-4 py-3 w-full border-[3px] border-black rounded-[30px] bg-pink-600 hover:bg-pink-700   transition-all duration-200"
                                                                                             text="Creator Payment Dashboard"
@@ -738,7 +748,7 @@ export default function Dashboard(props) {
                                                                                             {auth?.user?.identity_status == 1 ? 
                                                                                             <div className="finish mt-4 block">
                                                                                                 <p className="mb-4 text-lg font-bold text-black"> Finish setting up your account to receive funds. You have more steps to complete your payment setup.</p>
-                                                                                                <Link disabled={auth.user && auth.user.monthly_charge_enabled ? '' : true } href={"/stripe"} className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center" > Finish Setup
+                                                                                                <Link disabled={auth?.user?.monthly_charge_enabled ? '' : true } href={"/stripe"} className="shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] mt-6 text-white !p-4 w-full border-[3px] border-black rounded-xl bg-pink-600 hover:bg-pink-700 font-black uppercase tracking-widest text-sm transition-all duration-200 block text-center" > Finish Setup
                                                                                                 </Link>
                                                                                             </div> 
                                                                                             : ''}

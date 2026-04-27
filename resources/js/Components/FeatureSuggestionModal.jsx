@@ -146,7 +146,7 @@ export default function FeatureSuggestionModal({ show, onClose, auth }) {
                                                 isUploading={setIsUploading}
                                                 view={true}
                                             />
-                                            <p className="text-[10px] text-gray-500 mt-2 font-poppins">
+                                            <p className="p-2 text-[10px] text-gray-500 mt-2 font-poppins">
                                                 JPG, PNG or WEBP (Max 5MB)
                                             </p>
                                         </div>

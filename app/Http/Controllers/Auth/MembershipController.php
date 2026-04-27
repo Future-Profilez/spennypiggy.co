@@ -667,6 +667,22 @@ class MembershipController extends Controller
                     'cancel_url' => route('membership.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
                 ];
 
+                // Ensure receipt_email is set for Stripe receipts
+                $customerEmail = $user->email ?? $request->email;
+                if ($customerEmail) {
+                    if ($membership->level === 'lifetime') {
+                        // For mode: payment
+                        if (!isset($payload['payment_intent_data'])) {
+                            $payload['payment_intent_data'] = [];
+                        }
+                        $payload['payment_intent_data']['receipt_email'] = $customerEmail;
+                    } else {
+                        // For mode: subscription, Stripe uses the customer's email automatically.
+                        // However, we can also set it on the checkout session if no customer ID is used.
+                        // Since we have a customer_id, Stripe will use that customer's email.
+                    }
+                }
+
                 // Risk Engine: Force 3DS if Step-Up required
                 if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                     $payload['payment_method_options'] = [

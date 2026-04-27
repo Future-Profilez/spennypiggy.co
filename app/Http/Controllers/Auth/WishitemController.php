@@ -34,7 +34,9 @@ use App\Jobs\SubscribeAutoTweet;
 use App\Jobs\TipJarTweet;
 use App\Services\CreatorActivityService;
 use App\Services\CreatorSubscriptionService;
+use App\Services\CreatorAvailabilityMessageService;
 use App\Notifications\SubscriptionBlockedNotification;
+use App\Notifications\PaymentBlockedNotification;
 use App\Rules\ValidSubscriptionPeriod;
 use App\Services\UserProfileService;
 use Illuminate\Http\RedirectResponse;
@@ -1493,6 +1495,39 @@ class WishitemController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+                ]);
+            }
+
+            // NEW: Check creator activity eligibility
+            $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($orderDetails->creator);
+
+            if (!$activityCheck['eligible']) {
+                // Send notification to creator about blocked payment
+                $orderDetails->creator->notify(new PaymentBlockedNotification($activityCheck, $totalAmount / 100));
+
+                // Log the blocked payment for analytics
+                Log::info('Rye product payment blocked due to insufficient creator activity', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'creator_username' => $orderDetails->creator->username,
+                    'cart_id' => $request->cart_id,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
+                ]);
+
+                // Return user-friendly error to fan
+                return response()->json([
+                    'status' => false,
+                    'message' => app(CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
+                ]);
+            }
+
+            // Log successful activity check for analytics
+            if ($activityCheck['status'] !== 'not_creator' && $activityCheck['status'] !== 'not_fully_verified') {
+                Log::info('Rye product payment allowed - creator activity check passed', [
+                    'creator_id' => $orderDetails->creator->id,
+                    'creator_username' => $orderDetails->creator->username,
+                    'activity_status' => $activityCheck['status'],
+                    'content_count' => $activityCheck['content_count'] ?? 0
                 ]);
             }
 

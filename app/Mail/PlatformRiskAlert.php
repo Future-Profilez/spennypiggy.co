@@ -6,6 +6,7 @@ use App\Models\PlatformRiskState;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -36,6 +37,7 @@ class PlatformRiskAlert extends Mailable
         $emoji = $this->state === 'FREEZE' ? '❄️🚨' : ($this->state === 'THROTTLE' ? '⚠️' : '✅');
         return new Envelope(
             subject: "{$emoji} Platform Risk Alert: State changed to {$this->state}",
+            from: new Address(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
         );
     }
 

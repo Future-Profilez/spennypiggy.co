@@ -16,6 +16,7 @@ class PostComment extends Model
       'post_id',
       'user_id',
       'comment',
+      'is_approved',
     ];
 
     protected $hidden = [

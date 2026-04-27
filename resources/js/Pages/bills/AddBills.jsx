@@ -25,7 +25,7 @@ export default function AddBills(props) {
     const [thumbnail, setThumbnail] = useState("");
     const [close, setClose] = useState();
     const { updatebill, item, isEdit, editpop, text, classes, fetchBills } = props;
-    const { formatMultiPrice } = PriceFormat();
+    const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
     const BillsImages = [
         "901c0a0e-e5de-4d7a-8ac3-de11a4632542",
         "6d5506b2-7361-4c58-8f1b-dfe1e196885a",
@@ -101,6 +101,7 @@ export default function AddBills(props) {
                     );
                     successAlert(resp.data.msg);
                     setClose(false);
+                    window.dispatchEvent(new Event("closeAddOptions"));
                     setTimeout(() => {
                         setClose();
                     }, 100);
@@ -193,6 +194,28 @@ export default function AddBills(props) {
                                             }
                                         />
                                     </div>
+                                    {data.price > 0 && (
+                                        <div className="mt-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-sm text-gray-600">Fans pay:</span>
+                                                <span className="font-bold text-gray-900">
+                                                    {new Intl.NumberFormat('en-GB', { 
+                                                        style: 'currency', 
+                                                        currency: defaultCurrency 
+                                                    }).format(calculateTotalSupporterPays(data.price, defaultCurrency).total_supporter_pays)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">You receive:</span>
+                                                <span className="font-bold text-green-600">
+                                                    {new Intl.NumberFormat('en-GB', { 
+                                                        style: 'currency', 
+                                                        currency: defaultCurrency 
+                                                    }).format(data.price)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                     {defaultCurrency !== global_currency && data.price > 0 && (
                                     <p className="mt-1 text-sm text-gray-500">
                                         ≈ {formatMultiPrice(

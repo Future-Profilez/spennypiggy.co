@@ -229,10 +229,8 @@ Route::post('rye-webhook', [WishitemController::class, 'handleWebhook'])->name('
 // Unified Stripe Webhook Endpoint
 Route::post('/webhook/payment', [StripeWebhookController::class, 'handle'])->name('stripe.webhook.unified');
 
-// Legacy routes redirected to unified handler (for backward compatibility)
+// Legacy route for Stripe Identity Verification
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
-Route::post('/mandatory-status', [StripeWebhookController::class, 'handle']);
-Route::post('/webhook/connect', [StripeWebhookController::class, 'handle']);
 // Route::post('creator-monthly-verification-webhook', [StripeWebhookController::class, 'creatorMonthlyVerificationWebhook'])->name('creator.monthly.verification.webhook');
 
 

@@ -34,7 +34,7 @@ class Wishlist extends Mailable
             $name = $this->data['name'];
             $subject = 'Your wishlist added in the spenny piggy platform.';
             return $this->view('email.wishlist')->with(['name' => $name])
-                ->from('Noreply@spennypiggy.co', 'SPENNY PIGGY')
+                ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
                 ->subject($subject);
         } catch (\Exception $e) {
         }

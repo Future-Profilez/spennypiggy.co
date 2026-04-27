@@ -23,7 +23,8 @@ class RenewMail extends Mailable
     public function build()
     {
 
-        return $this->subject('Spenny Piggy Subscription Status Notification')
+        return $this->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
+            ->subject('Spenny Piggy Subscription Status Notification')
             ->view('email.subscription-renew')  
             ->with([
                 'array' => $this->array,

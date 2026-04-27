@@ -62,6 +62,9 @@ export default function MyGoal({  IsloggedIn}) {
                     <span className="text-black font-black">{formatMultiPrice(goal?.fullfilled, goal?.currency)}</span> earned of {formatMultiPrice(goal?.target, goal?.currency)}
                 </p> 
             : '' }
+
+            {IsloggedIn ? <p>Current Target is {formatMultiPrice(goal?.target, goal?.currency)} *target increases when met.</p> : ''}
+
         </div>
     </div>
   )
