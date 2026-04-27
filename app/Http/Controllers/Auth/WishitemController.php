@@ -492,7 +492,7 @@ class WishitemController extends Controller
             $user = User::find(Auth::id());
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 
-            $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
+            $user = User::whereId(Auth::id())->first();
             $unit_amount_decimal = round($createpriceid * 100); // Stripe expects integer cents
 
             if (in_array($request->subscription, [0, 1])) {
@@ -2867,7 +2867,7 @@ class WishitemController extends Controller
 
         $currency = strtolower($request->cookie("currency", "GBP"));
 
-        $owner = User::where('id', $request->owner_id)->where('is_uk', 0)->first();
+        $owner = User::where('id', $request->owner_id)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
         $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
         $user_amount = Helpers::priceFormat($owner->default_currency, $min_amount, $currency);
@@ -3170,7 +3170,7 @@ class WishitemController extends Controller
             ]
         );
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $target = $request->target;
 
@@ -3310,7 +3310,7 @@ class WishitemController extends Controller
     public function enableAutoTweet()
     {
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if ($user->auto_tweet == 1) {
             $user->auto_tweet = 0;

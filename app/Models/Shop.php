@@ -64,7 +64,7 @@ class Shop extends Model
     }
 
     public function user(){
-        return $this->belongsTo(User::class,'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class,'user_id');
     }
 
 
@@ -182,6 +182,16 @@ class Shop extends Model
 
     public function shop_varients(){
         return $this->hasMany(ShopVarients::class,'shop_id');
+    }
+
+    public function shop_shipping_info()
+    {
+        return $this->hasMany(ShopShippingInfo::class);
+    }
+
+    public function shipping_profile()
+    {
+        return $this->belongsTo(ShippingProfile::class);
     }
 
 }

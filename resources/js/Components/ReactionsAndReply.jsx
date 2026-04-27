@@ -21,7 +21,7 @@ export default function ReactionsAndReply({
   
   const canAct = typeof overrideCanAct !== 'undefined' 
     ? overrideCanAct 
-    : (viewer && (viewer.username === creatorUsername || viewer.username === gifterUsername));
+    : (viewer && creatorUsername && gifterUsername && (viewer.username === creatorUsername || viewer.username === gifterUsername));
 
   const wordCount = useMemo(() => {
     return reply.trim() ? reply.trim().split(/\s+/).length : 0;
@@ -73,8 +73,11 @@ export default function ReactionsAndReply({
         setReplies([resp.data.reply, ...replies].slice(0, 5));
       }
     } catch (e) {
+      console.error('Reply failed', e);
       if (e.response?.data?.msg) {
         setError(e.response.data.msg);
+      } else {
+        setError('Failed to send reply. Please try again.');
       }
     } finally {
       setSending(false);
@@ -89,12 +92,12 @@ export default function ReactionsAndReply({
             <button  
               key={e} onClick={() => react(e)}
               disabled={sending} title="React"  
-              className="px-2 py-1 rounded-[10px]  bg-white/5 border border-white/10 text-white  hover:bg-white/10 text-[26px] transition-colors" >
-              {e} {counts?.[e] ? <span className="text-black text-xs"> {counts[e]}</span> : null}
+              className={`px-2 py-1 rounded-[10px] border text-[26px] transition-colors ${reacted.has(e) ? 'bg-pink-100 border-pink-500' : 'bg-white border-black/10 hover:bg-gray-100'}`} >
+              {e} {counts?.[e] ? <span className="text-black text-xs font-black"> {counts[e]}</span> : null}
             </button>
           ) : (
-            <span key={e} className="px-2 py-1 rounded-full bg-white/5 border border-white/10 !text-white text-sm">
-              {e} {counts?.[e] ? <span className="!text-black text-xs"> {counts[e]}</span> : null}
+            <span key={e} className="px-2 py-1 rounded-full bg-gray-100 border border-black/10 text-black text-sm font-black">
+              {e} {counts?.[e] ? <span className="text-black text-xs"> {counts[e]}</span> : null}
             </span> 
           )
         ))}
@@ -142,13 +145,13 @@ export default function ReactionsAndReply({
               <img 
                 src={r.avatar || ''} 
                 alt="" 
-                className="h-6 w-6 rounded-full border border-white/10 object-cover" 
+                className="h-6 w-6 rounded-full border border-black/10 object-cover" 
               />
               <div>
-                <p className="text-white/80 text-sm">
-                  <span className="text-white/60">@{r.username}</span> {r.message}
+                <p className="text-black/80 text-sm">
+                  <span className="text-black/60 font-black">@{r.username}</span> {r.message}
                 </p>
-                <p className="text-white/30 text-[10px] uppercase tracking-widest">
+                <p className="text-black/30 text-[10px] uppercase tracking-widest">
                   {r.created_at}
                 </p>
               </div>

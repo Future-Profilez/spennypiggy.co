@@ -162,7 +162,14 @@ export default function Post({item}) {
 
         <div className="interactions flex items-center mt-4 pt-4 "  >
           <PostLike is_liked={item.liked} likes_count={item?.likes_count || 0} updatecount={updatecount} text={likes} post_uuid={item.uuid} />
-          <div className="cursor-pointer hover:scale-110 transition-transform ml-4" onClick={()=>setShowComments(!showComments)} dangerouslySetInnerHTML={{ __html: comment }} />
+          <div className="relative cursor-pointer hover:scale-110 transition-transform ml-4" onClick={()=>setShowComments(!showComments)}>
+            <div dangerouslySetInnerHTML={{ __html: comment }} />
+            {item.pending_items_count > 0 && (
+              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white border-2 border-white animate-pulse">
+                {item.pending_items_count}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className='flex mt-3'  >

@@ -158,7 +158,7 @@ class UserProfileService
     {
         $query = Shop::select([
             'id', 'user_id', 'uuid', 'name', 'price', 'currency',
-            'thumbnail', 'approved', 'created_at'
+            'image', 'approved', 'created_at'
         ])->where('user_id', $userId)
         ->with(['shop_varients:id,shop_id,name,price', 'user:id,name,username,suspended_account,vat_amount_percentage']);
         
@@ -175,7 +175,7 @@ class UserProfileService
     private function getOptimizedPosts(int $userId, bool $isOwner, int $limit = 5): array
     {
         $query = Post::select([
-            'id', 'uuid', 'content', 'thumbnail',
+            'id', 'uuid', 'content', 'image',
             'approved', 'created_at'
         ])->where('user_id', $userId);
         
@@ -420,11 +420,11 @@ class UserProfileService
                     WHERE email IN (
                         SELECT guest_email FROM tip_goals_payments 
                         WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
-                    ) AND is_uk = 0
+                    )
                     UNION
                     SELECT CONCAT('guest_', ROW_NUMBER() OVER()) as supporter FROM tip_goals_payments 
                     WHERE creator_id = ? AND status = 'paid' AND guest_email IS NOT NULL
-                    AND guest_email NOT IN (SELECT email FROM users WHERE is_uk = 0)
+                    AND guest_email NOT IN (SELECT email FROM users)
                 ) supporters
             ";
             

@@ -1410,7 +1410,6 @@ class StripeController extends Controller
             }
 
             $user = User::where('id', Auth::id())
-                ->where('is_uk', 0)
                 ->firstOrFail();
 
             $getdata = UserCart::where('user_id', Auth::id())
@@ -2686,7 +2685,7 @@ class StripeController extends Controller
 
             // Get email from billing_details
             $email = $charge->billing_details->email ?? null;
-            $user = User::where('email', $email)->where('is_uk', 0)->first();
+            $user = User::where('email', $email)->first();
             if (!$user) {
                 return response()->json([
                     'status' => true,
@@ -3119,7 +3118,7 @@ class StripeController extends Controller
             'digital_waiver' => ['required', 'accepted'],
         ]);
         $user = Auth::user();
-        if (!empty($user) && $user->role === 0 && $user->is_uk == 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
+        if (!empty($user) && $user->role === 0 && $user->is_500_limit_exceeded == 1 && $user->profile_status_lock != 2) {
             return response()->json([
                 'status' => false,
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
@@ -3461,16 +3460,15 @@ class StripeController extends Controller
                     return to_route('user.show', ['username' => $tip_pay->creator->username])->with('error', 'Currency configuration error. Please contact support.');
                 }
 
-                // Send notification to creator
-                TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol);
-
-                // Use consistent fee calculation for creator net amount
                 $vatPercent = $tip_pay->creator->vat_amount_percentage ?? 0;
                 $vatAmount = $tip_pay->amount * $vatPercent / 100;
                 $amountWithVat = $tip_pay->amount + $vatAmount;
 
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($amountWithVat, $tip_pay->currency);
                 $creatorNet = $breakdown['net_to_creator'];
+
+                // Send notification to creator with net amount
+                TipJarPurchased::dispatch($tip_pay, $ownerCurrency->symbol, number_format($creatorNet, 2));
 
                     // Create deliverable record for tracking and certificate generation
                     $deliverable = Deliverable::create([
@@ -3759,7 +3757,7 @@ class StripeController extends Controller
             return to_route('home')->with("error", 'Subscription already processed!');
         }
 
-        $user = User::where('id', $sub->user_id)->where('is_uk', 0)->first();
+        $user = User::where('id', $sub->user_id)->first();
 
         try {
             $session = StripeControl::getCheckoutSession($sub->session_id);
@@ -3840,7 +3838,10 @@ class StripeController extends Controller
 
                 $this->userProfileService->clearUserCaches($sub->user->username, $sub->user->id);
 
-                return to_route('thank-you', ['username' => $sub->user->username])->with('success', "Subscription Success!");
+                return Inertia::render('Profile/Thankyou', [
+                    'owner' => $sub->user,
+                    'type' => 'monthly_subscription'
+                ]);
             }
 
             MonthlySubscribedJob::dispatch($sub->email, $sub, 'failure');

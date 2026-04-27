@@ -147,6 +147,12 @@ export default function DeliveriesDashboard({ auth, deliverables, stats }) {
                                                                     Delivered: {delivery.delivered_at}
                                                                 </div>
                                                             )}
+                                                            {delivery.accessed_at && (
+                                                                <div className="text-xs text-blue-600 font-semibold">
+                                                                    Accessed: {delivery.accessed_at} 
+                                                                    {delivery.access_count > 1 && ` (${delivery.access_count} times)`}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

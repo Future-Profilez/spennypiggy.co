@@ -16,6 +16,7 @@ class ShopBuyedMailUser extends Mailable
     public $data;
     public $url;
     public $curr;
+    public $deliverable;
 
 
     /**
@@ -23,11 +24,12 @@ class ShopBuyedMailUser extends Mailable
      *
      * @return void
      */
-    public function __construct($data,$url,$curr)
+    public function __construct($data,$url,$curr, $deliverable = null)
     {
         $this->data = $data;
         $this->url = $url;
         $this->curr = $curr;
+        $this->deliverable = $deliverable;
     }
 
     /**

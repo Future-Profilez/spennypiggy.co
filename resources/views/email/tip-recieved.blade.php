@@ -23,9 +23,9 @@
                  <tr>
  
                      <td
-                         style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
-                        You just received a new tip of <strong style="color:#8C52FF;">{{ $symbol }}{{ number_format($tip->amount, 2) }}</strong> towards your tip jar goal on Spenny Piggy! 🤑🎉
-                     </td>
+                        style="padding: 0 0 15px 0;  font-weight: bold;  font-size: 18px; line-height: 27px;  color: 141414; text-align: left; text-align: center;">
+                       You just received a new tip of <strong style="color:#8C52FF;">{{ $symbol }}{{ isset($net_amount) ? $net_amount : number_format($tip->amount, 2) }}</strong> towards your tip jar goal on Spenny Piggy! 🤑🎉
+                    </td>
                  </tr>
                  <tr>
                      <td

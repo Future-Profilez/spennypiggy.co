@@ -15,15 +15,17 @@ class TipJarMail extends Mailable
 
     public $tip;
     public $symbol;
+    public $net_amount;
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($tip,$symbol)
+    public function __construct($tip, $symbol, $net_amount = null)
     {
         $this->tip = $tip;
         $this->symbol = $symbol;
+        $this->net_amount = $net_amount;
     }
 
     /**

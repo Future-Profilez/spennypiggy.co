@@ -36,8 +36,12 @@ class BillPayToUser implements ShouldQueue
     public function handle()
     {
         if ((isset($this->bill_pay->user) && $this->bill_pay->user->notification_send == 1) || (empty($this->bill_pay->user))) {
-            // EmailService::sendBillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name);
-            Mail::to($this->bill_pay->guest_email)->send(new BillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name));
+            // Fetch deliverable for tracking
+            $deliverable = \App\Models\Deliverable::where('session_id', $this->bill_pay->session_id)
+                ->where('product_type', 'bill')
+                ->first();
+
+            Mail::to($this->bill_pay->guest_email)->send(new BillMailToUser($this->bill_pay, $this->amountWithCurr, $this->user_name, $deliverable));
         }
     }
 }

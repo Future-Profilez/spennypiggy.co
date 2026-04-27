@@ -35,6 +35,8 @@ class Deliverable extends Model
         'refund_eligible',
         'is_deliverable', // NEW: Flag for admin interface
         'delivered_at',
+        'accessed_at',
+        'access_count',
         'customer_email',
         'customer_name',
         'payment_status',
@@ -48,12 +50,15 @@ class Deliverable extends Model
 
     protected $casts = [
         'delivered_at' => 'datetime',
+        'accessed_at' => 'datetime',
         'metadata' => 'array',
-        'transaction_amount' => 'decimal:2'
+        'transaction_amount' => 'decimal:2',
+        'access_count' => 'integer'
     ];
 
     protected $dates = [
-        'delivered_at'
+        'delivered_at',
+        'accessed_at'
     ];
 
     protected static function boot()

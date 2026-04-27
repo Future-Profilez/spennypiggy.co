@@ -18,6 +18,7 @@ class ShopPayment extends Model
         'amount',
         'tax_amount',
         'vat_tax_amount',
+        'shipping_amount',
         'currency',
         'shop_id',
         'user_id',

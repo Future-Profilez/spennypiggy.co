@@ -76,7 +76,7 @@ class MembershipController extends Controller
             ]);
         }
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $exist = Membership::where('user_id', $user->id)->pluck('level')->whereNull('deleted_at')->toArray();
 
         if (in_array($request->level, $exist)) {
@@ -199,7 +199,7 @@ class MembershipController extends Controller
             return redirect()->back()->with("error", "Some words and emojis are not allowed. Eg. paypig, findom, worship, unlock, unblock, receive, tax, fee, session, deposit, tribute,dick,goddess,master,mistress, 😈, 💩, 💬, 👅, 🍆, 🍌, 🌽, 🌶️, 🍑, 💎, 💦");
         } else {
             try {
-                $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+                $user = User::where('id', Auth::id())->first();
                 $mem = Membership::where('uuid', $uuid)->first();
 
                 if (empty($mem)) {
@@ -842,8 +842,12 @@ class MembershipController extends Controller
                     $symbol = Currency::where('iso', strtoupper($mem->currency))->first();
 
                     $total_amount = $mem->membership->price + $mem->vat_tax_amount;
-                    $amountWithCurr = $symbol->symbol . $total_amount;
-                    MembershipMail::dispatch($mem, $amountWithCurr);
+                    
+                    // Calculate creator net amount
+                    $breakdown = Helpers::calculateStripeDirectChargeFlow($total_amount, $mem->currency);
+                    $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($breakdown['net_to_creator'], 2);
+
+                    MembershipMail::dispatch($mem, $creatorNetAmount);
                 }
 
                 // this job is for creator
@@ -943,7 +947,7 @@ class MembershipController extends Controller
 
     public function membershipDashboard()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
 
         $count = MembershipPayment::whereHas('membership', function ($q) use ($user) {
@@ -974,7 +978,7 @@ class MembershipController extends Controller
 
     public function membershipGraph()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
 
         $currentDate = Carbon::now();

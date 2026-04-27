@@ -13,6 +13,7 @@ export default function Comment({c, update, updateComments, postUserId}) {
 
   const [handleReply, sethandleReply] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const updates = () => {
     sethandleReply(false);
@@ -43,6 +44,36 @@ export default function Comment({c, update, updateComments, postUserId}) {
         console.error(err);
         setApproving(false);
       });
+  }
+
+  const deleteComment = (uuid) => {
+    if (window.confirm("Are you sure you want to remove this comment?")) {
+      setDeleting(true);
+      axios.post(`/post/comment-delete/${uuid}`)
+        .then(() => {
+          update();
+          setDeleting(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setDeleting(false);
+        });
+    }
+  }
+
+  const deleteReply = (uuid) => {
+    if (window.confirm("Are you sure you want to remove this reply?")) {
+      setDeleting(true);
+      axios.post(`/post/reply-delete/${uuid}`)
+        .then(() => {
+          update();
+          setDeleting(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setDeleting(false);
+        });
+    }
   }
 
   const CommentReply = ({item}) => {
@@ -88,6 +119,18 @@ export default function Comment({c, update, updateComments, postUserId}) {
                           className={`text-small hover:underline ${item.is_approved ? 'text-red-500' : 'text-green-600 font-bold'}`}
                         >
                           {item.is_approved ? 'Hide' : 'Approve'}
+                        </button>
+                      </>
+                    )}
+                    {(isPostCreator || currentUserId === item.user_id) && (
+                      <>
+                        <p className="self-center mx-2">.</p>
+                        <button 
+                          disabled={deleting}
+                          onClick={() => deleteReply(item.uuid)} 
+                          className="text-small text-red-500 hover:underline"
+                        >
+                          Remove
                         </button>
                       </>
                     )}
@@ -145,6 +188,18 @@ export default function Comment({c, update, updateComments, postUserId}) {
                         className={`text-small hover:underline ${c.is_approved ? 'text-red-500' : 'text-green-600 font-bold'}`}
                       >
                         {c.is_approved ? 'Hide' : 'Approve'}
+                      </button>
+                    </>
+                  )}
+                  {(isPostCreator || currentUserId === c.user_id) && (
+                    <>
+                      <p className="self-center mx-2">.</p>
+                      <button 
+                        disabled={deleting}
+                        onClick={() => deleteComment(c.uuid)} 
+                        className="text-small text-red-500 hover:underline"
+                      >
+                        Remove
                       </button>
                     </>
                   )}

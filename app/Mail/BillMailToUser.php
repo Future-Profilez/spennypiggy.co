@@ -14,16 +14,19 @@ class BillMailToUser extends Mailable
     public $bill_pay;
     public $amountWithCurr;
     public $user_name;
+    public $deliverable;
+
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($bill_pay, $amountWithCurr, $user_name)
+    public function __construct($bill_pay, $amountWithCurr, $user_name, $deliverable = null)
     {
         $this->bill_pay = $bill_pay;
         $this->amountWithCurr = $amountWithCurr;
         $this->user_name = $user_name;
+        $this->deliverable = $deliverable;
     }
 
     /**

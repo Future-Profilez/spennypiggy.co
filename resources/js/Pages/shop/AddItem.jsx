@@ -127,6 +127,11 @@ export default function AddItem(props) {
         const [shipping, setShipping] = useState([]);
         const [variants, setVariants] = useState([{ name: "", value: "" }]);
         const [shipping_info, setShipping_info] = useState("");
+        const [shippingProfiles, setShippingProfiles] = useState([]);
+        const [selectedProfile, setSelectedProfile] = useState(
+            (item && item.shipping_profile_id) || null,
+        );
+        const [useSimpleShipping, setUseSimpleShipping] = useState(true);
 
         const handleShipping = (e) => {
             setShipping(e);
@@ -134,6 +139,21 @@ export default function AddItem(props) {
         const handlewws = (e) => {
             setwwsShipping(e);
         };
+
+        const fetchShippingProfiles = async () => {
+            try {
+                const res = await axios.get("/shop/shipping-profiles");
+                if (res.data.status) {
+                    setShippingProfiles(res.data.profiles);
+                }
+            } catch (err) {
+                console.error("Failed to fetch shipping profiles", err);
+            }
+        };
+
+        useEffect(() => {
+            fetchShippingProfiles();
+        }, []);
 
         const [physical, setPhysical] = useState(
             shopItem && shopItem.type === "physical" ? true : false,
@@ -345,8 +365,8 @@ export default function AddItem(props) {
             };
 
             const ships = updatedShipping();
-            if (physical && ships.length < 1) {
-                errorAlert("Please add at least one shipping method");
+            if (physical && !selectedProfile && ships.length < 1) {
+                errorAlert("Please add at least one shipping method or select a profile");
                 return false;
             }
             if (physical && vars.length < 1) {
@@ -368,6 +388,7 @@ export default function AddItem(props) {
                 special_member_price: spPrice || "",
                 quantity_allow: haveQty ? 1 : 0,
                 shipping: JSON.stringify(ships),
+                shipping_profile_id: selectedProfile,
                 shipping_info: shipping_info,
                 varients: vars && vars.length ? JSON.stringify(vars) : "",
                 vat_applicable: haveVat,
@@ -406,6 +427,28 @@ export default function AddItem(props) {
                 return false;
             }
             setLoading(true);
+            const vars = updatedVarients(variants);
+            const updatedShipping = () => {
+                const arr = [];
+                shipping.forEach((v, i) => {
+                    if (v.country !== "" && v.price !== "") {
+                        arr.push(v);
+                    }
+                });
+                if (wwsShipping > 0) {
+                    arr.push({ country: "all", price: wwsShipping });
+                }
+                return arr;
+            };
+
+            const ships = updatedShipping();
+
+            if (physical && !selectedProfile && ships.length < 1) {
+                errorAlert("Please add at least one shipping method or select a profile");
+                setLoading(false);
+                return false;
+            }
+
             const data = {
                 ...shopItem,
                 success_page_value:
@@ -419,6 +462,10 @@ export default function AddItem(props) {
                 slot_limitation: slots || "",
                 special_member_price: spPrice || "",
                 quantity_allow: haveQty ? 1 : 0,
+                shipping: JSON.stringify(ships),
+                shipping_profile_id: selectedProfile,
+                shipping_info: shipping_info,
+                varients: vars && vars.length ? JSON.stringify(vars) : "",
                 image: thumb,
                 vat_applicable: haveVat,
                 success_page_type: pagetype,
@@ -455,7 +502,7 @@ export default function AddItem(props) {
                         <AiOutlineShop color="var(--pink)" size="1.5rem" />
                     </div>
                     <div className="pl-3 text-left">
-                        <h2 className="text-base font-normal font-GillSans uppercase ">
+                        <h2 className="text-lg font-normal font-GillSans uppercase ">
                             Sell Something
                         </h2>
                         <p className="text-sm font-poppins">
@@ -482,16 +529,16 @@ export default function AddItem(props) {
         return (
             <Popup
                 modalclass="addShopItems modals full"
-                // size="lg"
+                size="xl"
                 action={open}
                 text={title || <AddItem />}
                 classes={`${classes ? classes : "px-3 py-2"}`}
             >
-                <div className="p-3 md:p-8 overflow-auto bg-white md:bg-gray-200 h-full">
-                    <div className="flex items-center justify-center py-3 bg-white sticky -top-4 w-full mb-6">
+                <div className=" overflow-auto bg-white md:bg-gray-200 h-full">
+                    <div className="flex items-center justify-center py-3 bg-white sticky -top-4 w-full">
                         <h2 className="text-[22px]">What are you offering?</h2>
                     </div>
-                    <div className="shop-forms-field p-0 md:p-8 max-w-[800px] m-auto rounded-[30px] ">
+                    <div className="shop-forms-field m-auto rounded-[30px] ">
                         {/* Basic Information Section */}
                         <div className="bg-white p-6 rounded-[30px]   mb-6 shadow-sm">
                             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
@@ -555,7 +602,7 @@ export default function AddItem(props) {
                                 <label className="w-full mb-2">
                                     Price ({defaultCurrency})*
                                 </label>
-                                <div className="relative  currency-wrapper dollar">
+                                <div className="relative ">
                                     <span className="currency-tag">
                                         {defaultCurrency}
                                     </span>
@@ -563,7 +610,7 @@ export default function AddItem(props) {
                                         name="price"
                                         defaultValue={pre_price}
                                         onChange={handelInputs}
-                                        className="shop-forms-input pl-[50px] bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] "
+                                        className="shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-[12px] px-[20px] !ps-[55px]  "
                                         type="number"
                                         placeholder="Enter the price of your item"
                                     />
@@ -708,10 +755,84 @@ export default function AddItem(props) {
                                             Add Variant
                                         </button>
                                     </div>
-                                    <CountriesShipping
-                                        handleShipping={handleShipping}
-                                        handlewws={handlewws}
-                                    />
+                                    <div className="shipping-setup-options border-t border-gray-100 pt-4 mt-4">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-md font-bold">Shipping Setup</h2>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500">Simple</span>
+                                                <div 
+                                                    onClick={() => setUseSimpleShipping(!useSimpleShipping)}
+                                                    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-colors ${useSimpleShipping ? 'bg-pink-500' : 'bg-gray-300'}`}
+                                                >
+                                                    <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${useSimpleShipping ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                                </div>
+                                                <span className="text-xs text-gray-500">Advanced</span>
+                                            </div>
+                                        </div>
+
+                                        {shippingProfiles.length > 0 && (
+                                            <div className="mb-6">
+                                                <label className="text-sm font-medium mb-2 block">Select Shipping Profile (Recommended)</label>
+                                                <Select
+                                                    options={[
+                                                        { value: null, label: "None (Use manual pricing below)" },
+                                                        ...shippingProfiles.map(p => ({ value: p.id, label: p.name }))
+                                                    ]}
+                                                    value={selectedProfile ? { value: selectedProfile, label: shippingProfiles.find(p => p.id === selectedProfile)?.name } : { value: null, label: "None (Use manual pricing below)" }}
+                                                    onChange={(e) => setSelectedProfile(e.value)}
+                                                    classNamePrefix="react-select"
+                                                />
+                                                <p className="text-[11px] text-gray-500 mt-1">Using a profile makes it easy to manage shipping across all your items.</p>
+                                            </div>
+                                        )}
+
+                                        {!selectedProfile && (
+                                            <>
+                                                {useSimpleShipping ? (
+                                                    <div className="simple-shipping-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                                        <div className="field">
+                                                            <label className="text-sm block mb-1">Domestic (My Country)</label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-3 text-gray-500 text-sm">{global_currency === 'GBP' ? '£' : '$'}</span>
+                                                                <input 
+                                                                    type="number"
+                                                                    placeholder="0.00"
+                                                                    className="shop-forms-input pl-8 bg-gray-200 w-full border-0 rounded-[30px] p-[12px] px-[20px]"
+                                                                    value={shipping.find(s => s.country === (auth?.user?.country_code || 'GB'))?.price || ''}
+                                                                    onChange={(e) => {
+                                                                        const country = auth?.user?.country_code || 'GB';
+                                                                        const newShipping = [...shipping.filter(s => s.country !== country)];
+                                                                        if (e.target.value !== "") {
+                                                                            newShipping.push({ country, price: e.target.value });
+                                                                        }
+                                                                        setShipping(newShipping);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="field">
+                                                            <label className="text-sm block mb-1">Worldwide (Everywhere else)</label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-3 text-gray-500 text-sm">{global_currency === 'GBP' ? '£' : '$'}</span>
+                                                                <input 
+                                                                    type="number"
+                                                                    placeholder="0.00"
+                                                                    className="shop-forms-input pl-8 bg-gray-200 w-full border-0 rounded-[30px] p-[12px] px-[20px]"
+                                                                    value={wwsShipping || ''}
+                                                                    onChange={(e) => setwwsShipping(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <CountriesShipping
+                                                        handleShipping={handleShipping}
+                                                        handlewws={handlewws}
+                                                    />
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
 
                                     <h2 className="font-bold pt-4 border-t border-gray-200 mb-2">
                                         Shipping Information
@@ -971,274 +1092,274 @@ export default function AddItem(props) {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                            <details className="border-t pt-3 mt-4">
+                                <summary className="text-lg font-bold cursor-pointer">
+                                    Advanced Settings
+                                </summary>
 
-                        <details className="border-t pt-3 mt-4">
-                            <summary className="text-lg font-bold cursor-pointer">
-                                Advanced Settings
-                            </summary>
-
-                            <div className="ad-setting my-2">
-                                <div className="inline-flex items-center cursor-pointer">
-                                    <div
-                                        onClick={handleVat}
-                                        className={` cursor-pointer relative w-11 h-6
-                                    peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer
-                                    peer-checked:after:border-white after:content-['']
-                                    after:absolute after:top-[2px] after:start-[2px] after:bg-white
-                                    after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
-                                    ${haveVat == "1" ? "after:transition-all after:translate-x-full bg-blue-600" : "bg-gray-200"}`}
-                                    ></div>
-                                    <span className="ml-3 text-base font-medium text-gray-900">
-                                        Vat Applicable
-                                        <button className="tooltipbtn">
-                                            ?
-                                            <p>
-                                                Enable vat for this item of your
-                                                chosen percentage.
-                                            </p>
-                                        </button>
-                                    </span>
-                                </div>
-
-                                <Popup
-                                    action={passClose}
-                                    space="4"
-                                    modalclass="pinkmodal"
-                                >
-                                    <div className="addvat">
-                                        <ChangeVat
-                                            defaultvalue={vatpercent}
-                                            updatevat={updatevat}
-                                        />
+                                <div className="ad-setting my-2">
+                                    <div className="inline-flex items-center cursor-pointer">
+                                        <div
+                                            onClick={handleVat}
+                                            className={` cursor-pointer relative w-11 h-6
+                                        peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer
+                                        peer-checked:after:border-white after:content-['']
+                                        after:absolute after:top-[2px] after:start-[2px] after:bg-white
+                                        after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+                                        ${haveVat == "1" ? "after:transition-all after:translate-x-full bg-blue-600" : "bg-gray-200"}`}
+                                        ></div>
+                                        <span className="ml-3 text-base font-medium text-gray-900">
+                                            Vat Applicable
+                                            <button className="tooltipbtn">
+                                                ?
+                                                <p>
+                                                    Enable vat for this item of your
+                                                    chosen percentage.
+                                                </p>
+                                            </button>
+                                        </span>
                                     </div>
-                                </Popup>
-                            </div>
 
-                            <div className="ad-setting my-2">
-                                <div className="inline-flex items-center cursor-pointer">
-                                    <div
-                                        onClick={handleHaveQuestion}
-                                        className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
-                                    ${haveQuestion ? "after:transition-all after:translate-x-full bg-blue-600" : "bg-gray-200"}
-                                    `}
-                                    ></div>
-                                    <span className="ml-3 text-base font-medium text-gray-900">
-                                        Ask a question (optional)
-                                        <button className="tooltipbtn">
-                                            ?
-                                            <p>
-                                                {" "}
-                                                If you'd like any additional
-                                                information to fulfil this
-                                                offering,you can leave a
-                                                question here.{" "}
-                                            </p>
-                                        </button>
-                                    </span>
+                                    <Popup
+                                        action={passClose}
+                                        space="4"
+                                        modalclass="pinkmodal"
+                                    >
+                                        <div className="addvat">
+                                            <ChangeVat
+                                                defaultvalue={vatpercent}
+                                                updatevat={updatevat}
+                                            />
+                                        </div>
+                                    </Popup>
                                 </div>
-                                {haveQuestion ? (
-                                    <input
-                                        defaultValue={item && item.ask_question}
-                                        onChange={(e) =>
-                                            setQuestion(e.target.value)
-                                        }
-                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
-                                        type="text"
-                                        placeholder="e.g What would like to learn next ?"
-                                    />
+
+                                <div className="ad-setting my-2">
+                                    <div className="inline-flex items-center cursor-pointer">
+                                        <div
+                                            onClick={handleHaveQuestion}
+                                            className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+                                        ${haveQuestion ? "after:transition-all after:translate-x-full bg-blue-600" : "bg-gray-200"}
+                                        `}
+                                        ></div>
+                                        <span className="ml-3 text-base font-medium text-gray-900">
+                                            Ask a question (optional)
+                                            <button className="tooltipbtn">
+                                                ?
+                                                <p>
+                                                    {" "}
+                                                    If you'd like any additional
+                                                    information to fulfil this
+                                                    offering,you can leave a
+                                                    question here.{" "}
+                                                </p>
+                                            </button>
+                                        </span>
+                                    </div>
+                                    {haveQuestion ? (
+                                        <input
+                                            defaultValue={item && item.ask_question}
+                                            onChange={(e) =>
+                                                setQuestion(e.target.value)
+                                            }
+                                            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
+                                            type="text"
+                                            placeholder="e.g What would like to learn next ?"
+                                        />
+                                    ) : (
+                                        ""
+                                    )}
+                                </div>
+
+                                <div className="ad-setting my-2">
+                                    <div className="inline-flex items-centercursor-pointer">
+                                        <div
+                                            onClick={handleHaveSlots}
+                                            className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${
+                                                haveSlots
+                                                    ? "after:transition-all after:translate-x-full  bg-blue-600"
+                                                    : "bg-gray-200"
+                                            }`}
+                                        ></div>
+                                        <span className="ml-3 text-md font-medium text-gray-900">
+                                            Limit slots (optional)
+                                            <button className="tooltipbtn">
+                                                {" "}
+                                                ?
+                                                <p>
+                                                    A limited number of slots
+                                                    creates a sense of urgency and
+                                                    also saves you from burn-out.
+                                                </p>
+                                            </button>
+                                        </span>
+                                    </div>
+                                    {haveSlots ? (
+                                        <input
+                                            onChange={(e) =>
+                                                setSlots(e.target.value)
+                                            }
+                                            defaultValue={slots || ""}
+                                            className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
+                                            type="text"
+                                        />
+                                    ) : (
+                                        ""
+                                    )}
+                                </div>
+
+                                {shopItem && shopItem.type !== "physical" ? (
+                                    <>
+                                        <div className="ad-setting my-2">
+                                            <div className="inline-flex items-center cursor-pointer">
+                                                <label
+                                                    className="relative flex items-center p-3 rounded-full cursor-pointer"
+                                                    htmlFor="check3"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-[30px]  border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                                                        id="check3"
+                                                        onChange={handleSpPrice}
+                                                        checked={haveSpPrice}
+                                                    />
+                                                    <span className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
+                                                        <svg
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            className="h-3.5 w-3.5"
+                                                            viewBox="0 0 20 20"
+                                                            fill="currentColor"
+                                                            stroke="currentColor"
+                                                            strokeWidth="1"
+                                                        >
+                                                            <path
+                                                                fillRule="evenodd"
+                                                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                clipRule="evenodd"
+                                                            ></path>
+                                                        </svg>
+                                                    </span>
+                                                </label>
+                                                <span className="ml-3 text-base font-medium text-gray-900">
+                                                    Special Price for Members (
+                                                    {defaultCurrency})
+                                                </span>
+                                            </div>
+                                            {haveSpPrice ? (
+                                                <>
+                                                    <input
+                                                        onChange={(e) =>
+                                                            setSpPrice(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-[13px] px-4"
+                                                        type="text"
+                                                        defaultValue={spPrice || ""}
+                                                    />
+                                                    {defaultCurrency !==
+                                                        global_currency &&
+                                                        spPrice > 0 && (
+                                                            <p className="mb-3 text-sm text-gray-500">
+                                                                ≈{" "}
+                                                                {formatMultiPrice(
+                                                                    spPrice,
+                                                                    defaultCurrency,
+                                                                )}{" "}
+                                                                ({global_currency})
+                                                            </p>
+                                                        )}
+                                                </>
+                                            ) : (
+                                                ""
+                                            )}
+                                        </div>
+                                    </>
                                 ) : (
                                     ""
                                 )}
-                            </div>
 
-                            <div className="ad-setting my-2">
-                                <div className="inline-flex items-centercursor-pointer">
-                                    <div
-                                        onClick={handleHaveSlots}
-                                        className={` cursor-pointer relative w-11 h-6  peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 ${
-                                            haveSlots
+                                <div className="hidden ad-setting my-2">
+                                    <div className="inline-flex items-centercursor-pointer">
+                                        <div
+                                            onClick={handleQty}
+                                            className={` cursor-pointer relative w-11 h-6   peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+                                        ${
+                                            haveQty
                                                 ? "after:transition-all after:translate-x-full  bg-blue-600"
                                                 : "bg-gray-200"
-                                        }`}
-                                    ></div>
-                                    <span className="ml-3 text-md font-medium text-gray-900">
-                                        Limit slots (optional)
-                                        <button className="tooltipbtn">
-                                            {" "}
-                                            ?
-                                            <p>
-                                                A limited number of slots
-                                                creates a sense of urgency and
-                                                also saves you from burn-out.
-                                            </p>
-                                        </button>
-                                    </span>
+                                        } `}
+                                        ></div>
+                                        <span className="ml-3 text-md font-medium text-gray-900">
+                                            Allow buyer to choose a quantity
+                                            (optional){" "}
+                                            <button className="tooltipbtn">
+                                                ?
+                                                <p>
+                                                    Your supporters will be able to
+                                                    select the desired quantity of
+                                                    this item. You will receive
+                                                    payment based on the quantity
+                                                    They've chosen multiplied by
+                                                    your set price.
+                                                </p>
+                                            </button>
+                                        </span>
+                                    </div>
                                 </div>
-                                {haveSlots ? (
+                            </details>
+
+                            <div className="isCheckedRefernce py-4">
+                                <label htmlFor="agreeterm" className="text-left">
                                     <input
                                         onChange={(e) =>
-                                            setSlots(e.target.value)
+                                            setIsChecked(e.target.checked)
                                         }
-                                        defaultValue={slots || ""}
-                                        className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full border-0 rounded-[30px]  p-[13px] px-4"
-                                        type="text"
-                                    />
-                                ) : (
-                                    ""
-                                )}
+                                        type="checkbox"
+                                        id="agreeterm"
+                                        name="agreeterm"
+                                        className="mr-2 rounded-[30px]   cursor-pointer"
+                                        value="agreeterm"
+                                    ></input>
+                                    By adding shop item you agree to our{" "}
+                                    <a
+                                        className="text-voilet font-bold"
+                                        target="_blank"
+                                        href={route("terms-and-conditions")}
+                                    >
+                                        Terms & Conditions
+                                    </a>{" "}
+                                    and{" "}
+                                    <a
+                                        className="text-voilet font-bold"
+                                        target="_blank"
+                                        href={route("terms-and-conditions")}
+                                    >
+                                        Privacy Policy,
+                                    </a>{" "}
+                                    and confirm that you are at least 18 years old.
+                                </label>
                             </div>
 
-                            {shopItem && shopItem.type !== "physical" ? (
-                                <>
-                                    <div className="ad-setting my-2">
-                                        <div className="inline-flex items-center cursor-pointer">
-                                            <label
-                                                className="relative flex items-center p-3 rounded-full cursor-pointer"
-                                                htmlFor="check3"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    className="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-[30px]  border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
-                                                    id="check3"
-                                                    onChange={handleSpPrice}
-                                                    checked={haveSpPrice}
-                                                />
-                                                <span className="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100">
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        className="h-3.5 w-3.5"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                        stroke="currentColor"
-                                                        strokeWidth="1"
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                            clipRule="evenodd"
-                                                        ></path>
-                                                    </svg>
-                                                </span>
-                                            </label>
-                                            <span className="ml-3 text-base font-medium text-gray-900">
-                                                Special Price for Members (
-                                                {defaultCurrency})
-                                            </span>
-                                        </div>
-                                        {haveSpPrice ? (
-                                            <>
-                                                <input
-                                                    onChange={(e) =>
-                                                        setSpPrice(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className="mt-2 mb-3 shop-forms-input bg-gray-200 w-full  border-0 rounded-[30px]  p-[13px] px-4"
-                                                    type="text"
-                                                    defaultValue={spPrice || ""}
-                                                />
-                                                {defaultCurrency !==
-                                                    global_currency &&
-                                                    spPrice > 0 && (
-                                                        <p className="mb-3 text-sm text-gray-500">
-                                                            ≈{" "}
-                                                            {formatMultiPrice(
-                                                                spPrice,
-                                                                defaultCurrency,
-                                                            )}{" "}
-                                                            ({global_currency})
-                                                        </p>
-                                                    )}
-                                            </>
-                                        ) : (
-                                            ""
-                                        )}
-                                    </div>
-                                </>
+                            {isEdit ? (
+                                <button
+                                    disabled={!isChecked}
+                                    onClick={updateItem}
+                                    className="mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table"
+                                >
+                                    {loading ? "Updating..." : "Update"}
+                                </button>
                             ) : (
-                                ""
+                                <button
+                                    disabled={!isChecked}
+                                    onClick={addShopItem}
+                                    className="mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table"
+                                >
+                                    {loading ? "Publishing..." : "Publish"}
+                                </button>
                             )}
-
-                            <div className="hidden ad-setting my-2">
-                                <div className="inline-flex items-centercursor-pointer">
-                                    <div
-                                        onClick={handleQty}
-                                        className={` cursor-pointer relative w-11 h-6   peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer     peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
-                                    ${
-                                        haveQty
-                                            ? "after:transition-all after:translate-x-full  bg-blue-600"
-                                            : "bg-gray-200"
-                                    } `}
-                                    ></div>
-                                    <span className="ml-3 text-md font-medium text-gray-900">
-                                        Allow buyer to choose a quantity
-                                        (optional){" "}
-                                        <button className="tooltipbtn">
-                                            ?
-                                            <p>
-                                                Your supporters will be able to
-                                                select the desired quantity of
-                                                this item. You will receive
-                                                payment based on the quantity
-                                                They've chosen multiplied by
-                                                your set price.
-                                            </p>
-                                        </button>
-                                    </span>
-                                </div>
-                            </div>
-                        </details>
-
-                        <div className="isCheckedRefernce py-4">
-                            <label htmlFor="agreeterm" className="text-left">
-                                <input
-                                    onChange={(e) =>
-                                        setIsChecked(e.target.checked)
-                                    }
-                                    type="checkbox"
-                                    id="agreeterm"
-                                    name="agreeterm"
-                                    className="mr-2 rounded-[30px]   cursor-pointer"
-                                    value="agreeterm"
-                                ></input>
-                                By adding shop item you agree to our{" "}
-                                <a
-                                    className="text-voilet font-bold"
-                                    target="_blank"
-                                    href={route("terms-and-conditions")}
-                                >
-                                    Terms & Conditions
-                                </a>{" "}
-                                and{" "}
-                                <a
-                                    className="text-voilet font-bold"
-                                    target="_blank"
-                                    href={route("terms-and-conditions")}
-                                >
-                                    Privacy Policy,
-                                </a>{" "}
-                                and confirm that you are at least 18 years old.
-                            </label>
                         </div>
 
-                        {isEdit ? (
-                            <button
-                                disabled={!isChecked}
-                                onClick={updateItem}
-                                className="mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table"
-                            >
-                                {loading ? "Updating..." : "Update"}
-                            </button>
-                        ) : (
-                            <button
-                                disabled={!isChecked}
-                                onClick={addShopItem}
-                                className="mt-4 mb-4 btn-pink md w-full max-w-[300px] m-auto d-table"
-                            >
-                                {loading ? "Publishing..." : "Publish"}
-                            </button>
-                        )}
                     </div>
                 </div>
             </Popup>

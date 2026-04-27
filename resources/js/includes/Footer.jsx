@@ -206,15 +206,15 @@ export default function Footer(props) {
                     <div className="py-8 md:py-16 ">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:text-center md:px-8">
                             <div className="space-y-1">
-                                <p className="text-[#924DFF] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.2em]">Call the Piggy</p>
+                                <p className="text-[#924DFF] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Call the Piggy</p>
                                 <a href="tel:02033552057" className="text-normal sm:text-xl font-poppins font-black hover:text-[#924DFF] transition-all duration-300 hover:scale-105 inline-block">020 3355 2057</a>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[#F94F96] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.2em]">Drop an Email</p>
+                                <p className="text-[#F94F96] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Drop an Email</p>
                                 <a href="mailto:support@spennypiggy.co" className="text-normal sm:text-xl font-poppins font-black hover:text-[#F94F96] transition-all duration-300 hover:scale-105 inline-block">support@spennypiggy.co</a>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[#EFEA7B] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.2em]">Our Office</p>
+                                <p className="text-[#EFEA7B] font-gulfs text-lg uppercase trackind-[0.1em] md:tracking-[0.15em]">Our Office</p>
                                 <p className="text-normal sm:text-xl font-poppins font-black hover:scale-105 transition-transform duration-300 cursor-default">55 Colmore Row, B3 2AA</p>
                             </div>
                         </div>

@@ -18,6 +18,33 @@
                      <td style="padding: 0 0 20px 0;  font-weight: normal; font-size: 14px; color: #4D4D4D; text-align: center; line-height: 18px;">
                          Go to <a href="{{ env('APP_URL') . '/history' }}">Spenny Piggy</a> to manage your current Memberships.</td>
                  </tr>
+
+                 <tr>
+                     <td style="padding: 20px 0; border-top: 1px solid #eee;">
+                         <h3 style="font-family: Arial; font-weight: bold; font-size: 18px; color: #F94F97; text-align: center; margin-bottom: 15px;">💎 Welcome to the Inner Circle!</h3>
+                         <p style="font-family: Arial; font-size: 14px; color: #666; text-align: center; margin-bottom: 20px;">Your membership is now active. You have unlocked exclusive access to:</p>
+                         
+                         <div style="margin-bottom: 20px; padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
+                             <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4;">
+                                 <strong>Important Notice:</strong> By clicking the access links below, you acknowledge and agree that you are requesting immediate access to digital content and membership benefits. You further acknowledge that this will waive your statutory right to cancel this purchase once the access has started.
+                             </p>
+                         </div>
+                         
+                         <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF; text-align: left;">
+                             <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">Membership Benefits</p>
+                             <ul style="font-family: Arial; font-size: 14px; color: #666; margin: 0 0 15px 0; padding-left: 20px;">
+                                 <li>Exclusive Member-Only Posts</li>
+                                 <li>Special Intro Videos</li>
+                                 <li>Direct Support to {{ $mem->membership->user->name }}</li>
+                             </ul>
+                             <div style="text-align: center;">
+                                 <a href="{{ env('APP_URL') . '/' . $mem->membership->user->username }}" 
+                                    style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;"
+                                    target="_blank">🔓 Access Creator Profile</a>
+                             </div>
+                         </div>
+                     </td>
+                 </tr>
                  <tr style="line-height: 20px; height: 20px;" ><td></td></tr>
                  <tr>
                      <td style="padding:0 0 10px 0; text-align: center; ">

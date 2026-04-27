@@ -23,6 +23,7 @@ use App\Mail\ShopBuyedMailUser;
 use App\Mail\SubscriptionFailedMail;
 use App\Mail\SubscriptionMail;
 use App\Mail\SubsMail;
+use App\Mail\SupportPaymentToUser;
 use App\Mail\ThankYouMailAdmin;
 use App\Mail\ThankyouUser;
 use App\Mail\TipJarMail;
@@ -116,8 +117,14 @@ class EmailService
                 'email' => $data->user->email,
                 'uuid' => $data->user->uuid,
             ];
+
+            // Fetch deliverable for tracking link
+            $deliverable = \App\Models\Deliverable::where('session_id', $data->session_id)
+                ->where('product_type', 'shop_item')
+                ->first();
+
             Mail::to($emailData['to'])
-                ->send(new ShopBuyedMailUser($data, $url, $curr));
+                ->send(new ShopBuyedMailUser($data, $url, $curr, $deliverable));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }
@@ -473,10 +480,10 @@ class EmailService
     //     }
     // }
 
-    public static function sendTipJarSubscribedMail($data, $symbol)
+    public static function sendTipJarSubscribedMail($data, $symbol, $net_amount = null)
     {
         try {
-            Mail::to($data->creator->email)->send(new TipJarMail($data, $symbol));
+            Mail::to($data->creator->email)->send(new TipJarMail($data, $symbol, $net_amount));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

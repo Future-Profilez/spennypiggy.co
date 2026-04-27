@@ -17,14 +17,18 @@ use App\Models\ShopCategory;
 use App\Models\ShopPayment;
 use App\Models\ShopShippingInfo;
 use App\Models\ShopVarients;
+use App\Models\ShippingProfile;
+use App\Models\ShippingProfileZone;
 use App\Models\User;
 use App\Models\UserPayment;
 use App\Models\UserShopCategories;
+use App\Models\Deliverable;
 use App\StripeControl;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -41,6 +45,28 @@ use App\Traits\RiskEnforcement;
 class ShopsController extends Controller
 {
     use RiskEnforcement;
+
+    public function shopList($username)
+    {
+        $user = User::where('username', $username)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'msg' => "User not found."
+            ]);
+        }
+
+        $shops = Shop::where('user_id', $user->id)
+            ->where('approved', 1)
+            ->where('deactive', 0)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'shops' => $shops
+        ]);
+    }
 
     public function addShopItems(Request $request)
     {
@@ -166,18 +192,21 @@ class ShopsController extends Controller
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
                 'vat_applicable' => $request->vat_applicable,
+                'shipping_profile_id' => $request->shipping_profile_id ?? null,
                 'shipping_information' => $request->shipping_info ?? null
             ]);
 
-            $shipping = json_decode($request->shipping);
+            if (empty($request->shipping_profile_id)) {
+                $shipping = json_decode($request->shipping);
 
-            foreach ($shipping as $value) {
-                $ship = new ShopShippingInfo();
-                $ship->uuid = Uuid::uuid4();
-                $ship->shop_id = $shop->id;
-                $ship->country = $value->country;
-                $ship->shipping_price = $value->price;
-                $ship->save();
+                foreach ($shipping as $value) {
+                    $ship = new ShopShippingInfo();
+                    $ship->uuid = Uuid::uuid4();
+                    $ship->shop_id = $shop->id;
+                    $ship->country = $value->country;
+                    $ship->shipping_price = $value->price;
+                    $ship->save();
+                }
             }
 
             if (!empty($request->varients)) {
@@ -210,21 +239,21 @@ class ShopsController extends Controller
         $currency = $user->default_currency ?? 'gbp';
 
         // Use new gross-up flow for consistent fee calculation
-        // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+        // Calculate the base amount the creator should receive (Price + Tax + VAT)
         $vatPercent = $user->vat_amount_percentage ?? 0;
-        // Check if item has VAT applicable flag, default to true if not set or if logic dictates
-        // Based on other controllers, we mostly rely on user setting. But here we have a specific field.
-        // If request has vat_applicable and it is falsy, maybe we shouldn't add VAT?
-        // However, usually VAT registration means you MUST charge VAT.
-        // Let's assume if user has VAT % set, it applies.
         $vatAmount = $request->price * $vatPercent / 100;
-        $priceWithVat = $request->price + $vatAmount;
+        
+        // Add Shop Tax (Standard 20% if not overridden)
+        $taxRate = config('app.shop_tax', 20) / 100;
+        $taxAmount = $request->price * $taxRate;
+
+        $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
 
         // Fetch creator risk metrics for reserve calculation
         $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
-        $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate);
         
         $createpriceid = $breakdown['total_supporter_pays'];
 
@@ -244,8 +273,8 @@ class ShopsController extends Controller
             'metadata' => [
                 'shop_item_name' => $shop->name,
                 'creator_id' => $user->id,
-                'creator_net_amount' => (string)($breakdown['net_to_creator'] * 100),
-                'total_charge_amount' => (string)($createpriceid * 100),
+                'creator_net_amount' => (string)($breakdown['net_to_creator'] * $multiplier),
+                'total_charge_amount' => (string)($createpriceid * $multiplier),
             ]
         ];
 
@@ -330,18 +359,23 @@ class ShopsController extends Controller
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? null,
                     'vat_applicable' => $request->vat_applicable,
+                    'shipping_profile_id' => $request->shipping_profile_id ?? null,
                     'shipping_information' => $request->shipping_info ?? null
                 ]);
 
-                $shipping = json_decode($request->shipping);
-                ShopShippingInfo::where('shop_id', $shop->id)->delete();
-                foreach ($shipping as $value) {
-                    $ship = new ShopShippingInfo();
-                    $ship->uuid = Uuid::uuid4();
-                    $ship->shop_id = $shop->id;
-                    $ship->country = $value->country;
-                    $ship->shipping_price = $value->price;
-                    $ship->save();
+                if (!empty($request->shipping_profile_id)) {
+                    ShopShippingInfo::where('shop_id', $shop->id)->delete();
+                } else {
+                    $shipping = json_decode($request->shipping);
+                    ShopShippingInfo::where('shop_id', $shop->id)->delete();
+                    foreach ($shipping as $value) {
+                        $ship = new ShopShippingInfo();
+                        $ship->uuid = Uuid::uuid4();
+                        $ship->shop_id = $shop->id;
+                        $ship->country = $value->country;
+                        $ship->shipping_price = $value->price;
+                        $ship->save();
+                    }
                 }
 
                 if (!empty($request->varients)) {
@@ -376,17 +410,23 @@ class ShopsController extends Controller
 
             $currency = $user->default_currency ?? 'gbp';
 
-            // Calculate VAT if applicable (Client Rule: Add VAT before other fees)
+            // Use new gross-up flow for consistent fee calculation
+            // Calculate the base amount the creator should receive (Price + Tax + VAT)
             $vatPercent = $user->vat_amount_percentage ?? 0;
             $vatAmount = $request->price * $vatPercent / 100;
-            $priceWithVat = $request->price + $vatAmount;
+            
+            // Add Shop Tax (Standard 20% if not overridden)
+            $taxRate = config('app.shop_tax', 20) / 100;
+            $taxAmount = $request->price * $taxRate;
+
+            $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
 
             // Fetch creator risk metrics for reserve calculation
             $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use new gross-up flow for consistent fee calculation
-            $breakdown = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $currency, $reserveRate);
+            $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate);
             
             $createpriceid = $breakdown['total_supporter_pays'];
 
@@ -406,6 +446,8 @@ class ShopsController extends Controller
                 'metadata' => [
                     'shop_item_name' => $shop->name,
                     'creator_id' => $user->id,
+                    'creator_net_amount' => (string)($breakdown['net_to_creator'] * $multiplier),
+                    'total_charge_amount' => (string)($createpriceid * $multiplier),
                 ]
             ];
 
@@ -421,6 +463,8 @@ class ShopsController extends Controller
                             'metadata' => [
                                 'shop_item_name' => $request->name ?? $shop->name,
                                 'creator_id' => $user->id,
+                                'creator_net_amount' => (string)($breakdown['net_to_creator'] * $multiplier),
+                                'total_charge_amount' => (string)($createpriceid * $multiplier),
                             ]
                         ], [
                             'stripe_account' => $user->account_id,
@@ -639,6 +683,14 @@ class ShopsController extends Controller
                 ]);
             }
 
+            // Check stock if slot_limitation is set
+            if ($shop->slot_limitation !== null && $shop->slot_limitation <= 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This item is currently sold out.'
+                ]);
+            }
+
             if (!$shop->user) {
                 return response()->json([
                     'status' => false,
@@ -713,270 +765,199 @@ class ShopsController extends Controller
                 ]);
             }
 
-            $amount = $shop->price;
-            
-            // $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, 'GBP');
-
-            if ($shop->type == 'physical') {
-                $request->validate([
-                    "shipping_info" => [
-                        "required",
-                    ],
+        // Calculate the base amount the creator should receive (Price + Tax + VAT)
+        $amount = round($shop->price, 2, PHP_ROUND_HALF_UP);
+        if ($varient_id != "no_varient") {
+            $var = ShopVarients::where('id', $varient_id)->where('shop_id', $shop->id)->first();
+            if (!$var) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Selected variant not found.'
                 ]);
-
-                $shipping_info = $request->shipping_info;
-                $country = $request->query('country');
-                if (!empty($country)) {
-                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
-                }
-                if (empty($shipping) || empty($country)) {
-                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
-                }
             }
+            $amount = round($var->price, 2, PHP_ROUND_HALF_UP);
+        }
 
-            if (!empty($shop->slot_limitation)) {
-                $pay = ShopPayment::where('shop_id', $shop->id)->where('payment_status', 'paid')->count();
-
-                if ($pay >= $shop->slot_limitation) {
-                    return redirect()->back()->with("error", "Slots are full for this shop.");
-                }
-            }
-
-            $vat_percentage_amount = 0;
-
-            if ($varient_id != "no_varient") {
-                $var = ShopVarients::where('id', $varient_id)->first();
-                $amount = round($var->price, 2, PHP_ROUND_HALF_UP);
-            } else {
-                $amount = round(request()->query('amount'), 2, PHP_ROUND_HALF_UP);
-            }
-
-            $tax = $amount * config('app.shop_tax') / 100;
-
-            $total = $amount + $tax;
-
-            if ($shop->vat_applicable == 1 && !empty($shop->user->vat_amount_percentage)) {
-                $vat_percentage_amount = $total * $shop->user->vat_amount_percentage / 100;
-            }
-
-            // Unified Risk Enforcement
-            $riskData = $this->enforceRiskChecks(
-                $request,
-                $shop->user,
-                $amount + $tax + $vat_percentage_amount,
-                $shop->user->default_currency ?? 'USD',
-                'shop',
-                true // JSON response expected
-            );
-
-            // If it's a JSON error response (blocked, step_up, login required), return it immediately
-            if ($riskData instanceof \Illuminate\Http\JsonResponse) {
-                return $riskData;
-            }
-
-            $adminFee = config('app.administration_fee');
-            $ConvertedStoreAdminFees = Helpers::priceFormat($currency, $adminFee, $shop->currency);
-            $ConvertedAdminFees = Helpers::priceFormat('GBP', $adminFee, $currency);
-            $ConvertedTaxAmount = Helpers::priceFormat($shop->currency, $tax, $currency);
-            $ConvertedAmount = Helpers::priceFormat($shop->currency, $amount, $currency);
-
-            $convertedStoreTaxAmount = $ConvertedStoreAdminFees + $tax;
-            
-            if (!Auth::check()) {
-                $logged_out_user = User::where('email', request()->query('email'))->where('is_uk', 0)->first();
-            }
-
-            $request->validate([
-                'digital_waiver' => ['required', 'accepted'],
-            ]);
-
-            $shopPaymentDetail = ShopPayment::create([
-                'amount' => $amount,
-                'tax_amount' => $convertedStoreTaxAmount,
-                'vat_tax_amount' => $vat_percentage_amount,
-                'currency' => $shop->user->default_currency,
-                'shop_id' => $shop->id,
-                'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
-                'varient_id' => $varient_id != "no_varient" ? $varient_id : null,
-                'name' => request()->query('from') ?? null,
-                'email' => request()->query('email'),
-                'message' => $message ?? null,
-                'anonymous' => request()->query('anonymous') ?? 0,
-                'quantity' => request()->query('quantity'),
-                'shipping_info' => $shipping_info ?? null
-            ]);
-
-            // Apply digital waiver confirmation
-            Helpers::applyDigitalWaiver($shopPaymentDetail, (bool) $request->digital_waiver);
-            $shopPaymentDetail->save();
-
-            $shopPaymentDetail->refresh();
-
-            // $total += $vat_percentage_amount;
-            // $total += $ConvertedAdminFees;
-            // $total += $shipping_price;
-
-            // $ConvertedTotalAmount = Helpers::priceFormat($shop->currency, $total, $currency);
-
-            $sessionCreate = null;
-            $storeCustomer = null;
-            $existingPriceEntry = null;
-            $customer_id = null;
-            $priceId = null;
-            $unitAmount = 0;
-            $applicationFeeAmount = 0;
-
-            if ($shop->price > 0) {
-
-                $connectedAccountId = $shop->user->account_id;
-
-                // Check if creator has card_payments capability
-                if (!StripeControl::hasCardPaymentsCapability($connectedAccountId)) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, null, ["eligible" => false, "status" => "stripe_disabled"])
-                    ]);
-                }
-
-                // Step 1: Check if customer already exists in connected account
-                $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $shop->user->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_type', 'shop item')
-                    ->where('currency', $shop->user->default_currency)
-                    ->first();
-
-                // Step 2: Check if price already exists
-                $existingPriceEntry = ConnectedAccountCustomer::where('user_id', Auth::id())
-                    ->where('creator_id', $shop->user->id)
-                    ->where('connected_account_id', $connectedAccountId)
-                    ->where('product_id', $shop->stripe_product_id)
-                    ->where('product_type', 'shop item')
-                    ->where('currency', $shop->user->default_currency)
-                    ->whereNotNull('price_id')
-                    ->first();
-
-                if (!$existingPriceEntry) {
-                    // Step 3: Create customer in connected account if not exists
-                    $customer = null;
-                    if (!$storeCustomer) {
-                        $customer = StripeControl::createCustomer([
-                            'email' => $shop->user->email,
-                            'name' => $shop->user->name,
-                        ], $connectedAccountId);
+        // Add Shipping Price if physical item
+        $shipping_price = 0;
+        $shipping_info = null;
+        if ($shop->type == 'physical') {
+            $shipping_info = $request->shipping_info;
+            $country = $request->query('country');
+            if (!empty($country)) {
+                // First check if shop has a shipping profile
+                if ($shop->shipping_profile_id) {
+                    $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
+                        ->where('country', $country)
+                        ->first();
+                    if (empty($shipping)) {
+                        $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
+                            ->where('country', 'all')
+                            ->first();
                     }
-
-                    $customer_id = $storeCustomer->stripe_customer_id ?? $customer->id;
-
-                    // Use new gross-up flow
-                    // Force using shop currency, ignoring cookie currency
-                    $chargeCurrency = $shop->user->default_currency ?? 'USD';
-
-                    // Fetch creator risk metrics for reserve calculation
-                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
-                    $reserveRate = $metrics->reserve_percent ?? 0;
-
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
-                    $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
-                    if ($guestRestriction) {
-                        return response()->json([
-                            'status' => false,
-                            'code' => 'AUTH_REQUIRED',
-                            'reason_code' => $guestRestriction['code'],
-                            'message' => 'Login required',
-                            'msg' => $guestRestriction['message'],
-                        ]);
-                    }
-                    
-                    $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
-                    $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
-                    $creatorNet = $breakdown['net_to_creator'];
-
-                    $pricePayload = [
-                        'unit_amount' => $unitAmount,
-                        'currency' => $chargeCurrency,
-                        'product' => $shop->stripe_product_id,
-                    ];
-
-                    // Create the price in the connected account
-                    $price = StripeControl::createPrice($pricePayload, $connectedAccountId);
-
-                    if (empty($price->id)) {
-                        throw new Exception("Failed to create Stripe price.");
-                    }
-
-                    $priceId = $price->id;
+                    $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
                 } else {
-                    // If price exists, we still need to calculate the breakdown for application fee
-                    $chargeCurrency = $shop->user->default_currency ?? 'USD';
-
-                    // Fetch creator risk metrics for reserve calculation
-                    $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
-                    $reserveRate = $metrics->reserve_percent ?? 0;
-
-                    $breakdown = Helpers::calculateStripeDirectChargeFlow($shop->price, $chargeCurrency, $reserveRate);
-                    $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
-                    if ($guestRestriction) {
-                        return response()->json([
-                            'status' => false,
-                            'code' => 'AUTH_REQUIRED',
-                            'reason_code' => $guestRestriction['code'],
-                            'message' => 'Login required',
-                            'msg' => $guestRestriction['message'],
-                        ]);
+                    // Fallback to legacy shop-specific shipping info
+                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
+                    if (empty($shipping)) {
+                        $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
                     }
-                    $unitAmount = (int)($breakdown['total_supporter_pays'] * 100);
-                    $applicationFeeAmount = (int)($breakdown['application_fee'] * 100);
-                    $creatorNet = $breakdown['net_to_creator'];
-                    
-                    $priceId = $existingPriceEntry->price_id;
-                    $customer_id = $storeCustomer->stripe_customer_id;
+                    $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
                 }
             }
+        }
 
-            // Step 5: Store customer & price if not already stored
-            if (!$storeCustomer) {
-                ConnectedAccountCustomer::create([
-                    'user_id' => Auth::id(),
-                    'creator_id' => $shop->user->id,
-                    'connected_account_id' => $connectedAccountId,
-                    'stripe_customer_id' => $customer_id,
-                    'product_type' => 'shop item',
-                    'product_id' => $shop->stripe_product_id,
-                    'price_id' => $priceId,
-                    'currency' => $chargeCurrency,
-                ]);
-            }
+        // Add Shop Tax (Standard 20% if not overridden)
+        $taxRate = config('app.shop_tax', 20) / 100;
+        $taxAmount = $amount * $taxRate;
+        
+        // Add VAT if applicable
+        $vatAmount = 0;
+        if ($shop->vat_applicable == 1 && !empty($shop->user->vat_amount_percentage)) {
+            $vatAmount = ($amount + $taxAmount) * $shop->user->vat_amount_percentage / 100;
+        }
 
-            // Step 6: Build line item
-            $items = [
-                'price' => $priceId,  // Use the existing price ID
+        $listedPriceToGrossUp = $amount + $taxAmount + $vatAmount + $shipping_price;
+
+        // Unified Risk Enforcement
+        $riskData = $this->enforceRiskChecks(
+            $request,
+            $shop->user,
+            $listedPriceToGrossUp,
+            $shop->user->default_currency ?? 'USD',
+            'shop',
+            true // JSON response expected
+        );
+
+        // If it's a JSON error response (blocked, step_up, login required), return it immediately
+        if ($riskData instanceof \Illuminate\Http\JsonResponse) {
+            return $riskData;
+        }
+
+        $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
+        $chargeCurrency = $shop->user->default_currency ?? 'USD';
+        
+        // Fetch creator risk metrics for reserve calculation
+        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
+        $reserveRate = $metrics->reserve_percent ?? 0;
+
+        // Use new gross-up flow with the full price the creator expects to receive
+        $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $chargeCurrency, $reserveRate);
+        
+        $guestRestriction = Helpers::guestCheckoutRestriction($chargeCurrency, $breakdown['total_supporter_pays'] ?? 0);
+        if ($guestRestriction) {
+            return response()->json([
+                'status' => false,
+                'code' => 'AUTH_REQUIRED',
+                'reason_code' => $guestRestriction['code'],
+                'message' => 'Login required',
+                'msg' => $guestRestriction['message'],
+            ]);
+        }
+
+        // Get currency metadata to handle zero-decimal currencies properly
+        $currencyModel = Currency::where('ISO', strtoupper($chargeCurrency))->first();
+        $multiplier = ($currencyModel && $currencyModel->ISOdigits == 0) ? 1 : 100;
+        
+        $unitAmount = (int) round($breakdown['total_supporter_pays'] * $multiplier);
+        $applicationFeeAmount = (int) round($breakdown['application_fee'] * $multiplier);
+        $creatorNet = $breakdown['net_to_creator'];
+
+        if (!Auth::check()) {
+            $logged_out_user = User::where('email', request()->query('email'))->first();
+        }
+
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
+        $shopPaymentDetail = ShopPayment::create([
+            'amount' => $amount,
+            'tax_amount' => $taxAmount,
+            'vat_tax_amount' => $vatAmount,
+            'shipping_amount' => $shipping_price,
+            'currency' => $chargeCurrency,
+            'shop_id' => $shop->id,
+            'user_id' => (Auth::check()) ? Auth::id() : (!empty($logged_out_user) ? $logged_out_user->id : null),
+            'varient_id' => $varient_id != "no_varient" ? $varient_id : null,
+            'name' => request()->query('from') ?? null,
+            'email' => request()->query('email'),
+            'message' => $message ?? null,
+            'anonymous' => request()->query('anonymous') ?? 0,
+            'quantity' => request()->query('quantity'),
+            'shipping_info' => $shipping_info ?? null
+        ]);
+
+        // Apply digital waiver confirmation
+        Helpers::applyDigitalWaiver($shopPaymentDetail, (bool) $request->digital_waiver);
+        $shopPaymentDetail->save();
+        $shopPaymentDetail->refresh();
+
+        $sessionCreate = null;
+        $connectedAccountId = $shop->user->account_id;
+
+        // Step 1: Check if customer already exists in connected account
+        $storeCustomer = ConnectedAccountCustomer::where('user_id', Auth::id())
+            ->where('creator_id', $shop->user->id)
+            ->where('connected_account_id', $connectedAccountId)
+            ->where('product_type', 'shop item')
+            ->where('currency', $chargeCurrency)
+            ->first();
+
+        $customer_id = null;
+        if (!$storeCustomer) {
+            $customer = StripeControl::createCustomer([
+                'email' => $shopPaymentDetail->email ?? (Auth::user()->email ?? null),
+                'name' => $shopPaymentDetail->name ?? (Auth::user()->name ?? 'Supporter'),
+            ], $connectedAccountId);
+            $customer_id = $customer->id;
+            
+            ConnectedAccountCustomer::create([
+                'user_id' => Auth::id(),
+                'creator_id' => $shop->user->id,
+                'connected_account_id' => $connectedAccountId,
+                'stripe_customer_id' => $customer_id,
+                'product_type' => 'shop item',
+                'currency' => $chargeCurrency,
+            ]);
+        } else {
+            $customer_id = $storeCustomer->stripe_customer_id;
+        }
+
+        // Create a unique price for this specific transaction (to handle variants/taxes correctly)
+        $pricePayload = [
+            'unit_amount' => $unitAmount,
+            'currency' => $chargeCurrency,
+            'product' => $shop->stripe_product_id,
+        ];
+        $price = StripeControl::createPrice($pricePayload, $connectedAccountId);
+        $priceId = $price->id;
+
+        // Step 7: Build session payload
+        $payload = [
+            'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
+            'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
+            'line_items' => [[
+                'price' => $priceId,
                 'quantity' => 1,
-            ];
-
-            // Step 7: Build session payload
-            $payload = [
-                'success_url' => route('shop.success-payment', [$shopPaymentDetail->uuid]),
-                'cancel_url' => route('shop.cancel-payment', [$shopPaymentDetail->uuid]),
-                'line_items' => [$items],
-                'mode' => 'payment',
-                'payment_method_types' => ['card'], // Add this line
-                "customer" => $customer_id,
-                'payment_intent_data' => [
-                    'application_fee_amount' => $applicationFeeAmount,
-                    'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
-                    'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
-                    'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
-                        'shop_item_id' => $shop->id,
-                        'quantity' => $shopPaymentDetail->quantity,
-                        'anonymous' => $shopPaymentDetail->anonymous,
-                        'varient_id' => $shopPaymentDetail->varient_id,
-                        'creator_net_amount' => (string)($creatorNet * 100),
-                        'total_charge_amount' => (string)$unitAmount,
-                    ]),
-                ],
-
-            ];
+            ]],
+            'mode' => 'payment',
+            'payment_method_types' => ['card'],
+            "customer" => $customer_id,
+            'payment_intent_data' => [
+                'application_fee_amount' => $applicationFeeAmount,
+                'receipt_email' => $shopPaymentDetail->email ?? ($shopPaymentDetail->user->email ?? null),
+                'description' => "Shop Payment for {$shop->user->username} (Total value including all fees)",
+                'metadata' => Helpers::buildStripeMetadata('shop', $shopPaymentDetail, [
+                    'shop_item_id' => $shop->id,
+                    'quantity' => $shopPaymentDetail->quantity,
+                    'anonymous' => $shopPaymentDetail->anonymous,
+                    'varient_id' => $shopPaymentDetail->varient_id,
+                    'creator_net_amount' => (string)($creatorNet * $multiplier),
+                    'total_charge_amount' => (string)$unitAmount,
+                ]),
+            ],
+        ];
 
             // Check if we need to force 3DS
             if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
@@ -1028,80 +1009,146 @@ class ShopsController extends Controller
 
     public function successPayment($id)
     {
-        try {
-            $stripeid = ShopPayment::with('shop', 'user')->where('uuid', $id)->first();
-            if (!$stripeid) {
-                Log::error("No ShopPayment found for UUID: $id");
-                return redirect()->back()->with('error', 'Invalid payment ID.');
+        return DB::transaction(function () use ($id) {
+            try {
+                $stripeid = ShopPayment::with('shop', 'user')->where('uuid', $id)->lockForUpdate()->first();
+                if (!$stripeid) {
+                    Log::error("No ShopPayment found for UUID: $id");
+                    return redirect()->back()->with('error', 'Invalid payment ID.');
+                }
+
+                // If already paid, just redirect
+                if ($stripeid->payment_status === 'paid') {
+                    return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
+                }
+
+                // 1. Decrement stock if applicable
+                $shop = $stripeid->shop;
+                if ($shop->slot_limitation !== null) {
+                    if ($shop->slot_limitation > 0) {
+                        $shop->decrement('slot_limitation');
+                    } else {
+                        Log::warning('Shop item sold out during payment success', ['shop_id' => $shop->id]);
+                        // We still allow the payment to succeed as money is already taken
+                    }
+                }
+
+                Helpers::addGmv($stripeid->shop->user_id, (float) $stripeid->amount);
+
+                if ($stripeid->anonymous == 1) {
+                    $username = "Anonymous user";
+                } else {
+                    $username = $stripeid->name ?? "Anonymous user";
+                }
+
+                $message = $username . " just purchased your shop item " . $stripeid->shop->name;
+                NotificationSave::dispatch($message, $stripeid->shop->user, $stripeid->user, 'Shop');
+
+                $stripeid->update([
+                    'payment_status' => 'paid',
+                    'updated_at' => Carbon::now(),
+                ]);
+
+                $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
+
+                $message = $stripeid->message;
+                $amountUserPay = ($symbol->symbol ?? '£') . ($stripeid->amount + $stripeid->tax_amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0));
+                
+                // Calculate creator net amount using the SAME logic as buyShopItem
+                $listedPriceToGrossUp = $stripeid->amount + $stripeid->tax_amount + $stripeid->vat_tax_amount + ($stripeid->shipping_amount ?? 0);
+                
+                // Fetch creator risk metrics for reserve calculation
+                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $stripeid->shop->user->uuid]);
+                $reserveRate = $metrics->reserve_percent ?? 0;
+                
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $stripeid->currency, $reserveRate);
+                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($breakdown['net_to_creator'], 2);
+
+                if ($stripeid->anonymous == 0) {
+                    ShopBuyed::dispatch($stripeid, false, $creatorNetAmount);
+                } else {
+                    ShopBuyed::dispatch($stripeid, true, $creatorNetAmount);
+                }
+
+                ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
+
+                // Create deliverable record for shop item
+                try {
+                    \App\Models\Deliverable::create([
+                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'product_id' => $stripeid->shop->stripe_product_id ?? 'shop_' . $stripeid->shop->id,
+                        'price_id' => $stripeid->shop->price_id,
+                        'item_id' => $stripeid->shop->id,
+                        'creator_id' => $stripeid->shop->user_id,
+                        'gifter_id' => $stripeid->user_id,
+                        'session_id' => $stripeid->session_id,
+                        'deliverable_type' => $stripeid->shop->type == 'physical' ? 'shipping' : 'digital_file',
+                        'product_type' => 'shop_item',
+                        'transaction_amount' => $stripeid->amount,
+                        'deliverable_url' => $stripeid->shop->reward_file_url,
+                        'customer_email' => $stripeid->email ?? ($stripeid->user->email ?? null),
+                        'customer_name' => $stripeid->name ?? ($stripeid->user->name ?? null),
+                        'payment_status' => 'paid',
+                        'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
+                        'anonymous' => $stripeid->anonymous ?? false,
+                        'message' => $stripeid->message,
+                        'status' => $stripeid->shop->type == 'physical' ? 'pending' : 'delivered',
+                        'delivered_at' => $stripeid->shop->type == 'physical' ? null : now(),
+                        'metadata' => json_encode([
+                            'shop_item_id' => $stripeid->shop->id,
+                            'shop_item_name' => $stripeid->shop->name,
+                            'type' => $stripeid->shop->type,
+                            'amount' => $stripeid->amount,
+                            'currency' => $stripeid->currency,
+                            'creator_net_amount' => $creatorNetAmount
+                        ])
+                    ]);
+                    Log::info('ShopsController: Deliverable record created for shop item', ['shop_id' => $stripeid->shop->id]);
+                } catch (\Exception $e) {
+                    Log::error('ShopsController: Failed to create deliverable record', ['error' => $e->getMessage()]);
+                }
+
+                /**************************SHOP**PWA**START****************************************************/
+                // below is SHOP pwa for fans
+
+                $CreatorName = ucfirst($stripeid->shop->user->name) ?? 'A Creator';
+                $title = "🛍️ Purchase Confirmed!";
+                $content = "You bought something from $CreatorName ’s shop. They’ll process it soon.";
+                $email = $stripeid->email ?? $stripeid->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+
+                // below is wish pwa for creator
+                $FanName = ucfirst($stripeid->user->name) ?? 'A Fan';
+                $title = "📦 New Shop Order!";
+                $content = "$FanName placed an order in your shop. Time to fulfill it!.";
+                $email = $stripeid->shop->user->email;
+
+                Helpers::sendNotification($title, $content, $email);
+
+                /****************************SHOP**PWA**ENDS****************************************************/
+
+                $userPayment = new UserPayment();
+                $userPayment->from_user_id = $stripeid->user_id ?? null;
+                $userPayment->to_user_id = $stripeid->shop->user_id;
+                $userPayment->product_type = 'shop';
+                $userPayment->amount = $stripeid->amount;
+                $userPayment->currency = $stripeid->currency;
+                $userPayment->payment_method = 'stripe';
+                $userPayment->payment_details = json_encode($stripeid->session_id, true);
+                $userPayment->paid_at = Carbon::now();
+                $userPayment->status = 'paid';
+                $userPayment->save();
+
+                // Clear user caches
+                app(UserProfileService::class)->clearUserCaches($stripeid->shop->user->username, $stripeid->shop->user->id);
+
+                return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
+            } catch (\Exception $e) {
+                Log::error("Error in successPayment: " . $e->getMessage());
+                return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', 'Something went wrong during payment processing.');
             }
-
-            Helpers::addGmv($stripeid->shop->user_id, (float) $stripeid->amount);
-
-            if ($stripeid->anonymous == 1) {
-                $username = "Anonymous user";
-            } else {
-                $username = $stripeid->name ?? "Anonymous user";
-            }
-
-            $message = $username . " just purchased your shop item " . $stripeid->shop->name;
-            NotificationSave::dispatch($message, $stripeid->shop->user, $stripeid->user, 'Shop');
-
-            ShopPayment::where('uuid', $id)->update([
-                'payment_status' => 'paid',
-                'updated_at' => Carbon::now(),
-            ]);
-
-            $symbol = Currency::where('iso', strtoupper($stripeid->currency))->first();
-
-            $message = $stripeid->message;
-            $amountUserPay = ($symbol->symbol ?? '£') . ($stripeid->amount + $stripeid->vat_tax_amount);
-            if ($stripeid->anonymous == 0) {
-                ShopBuyed::dispatch($stripeid, false, $amountUserPay);
-            } else {
-                ShopBuyed::dispatch($stripeid, true, $amountUserPay);
-            }
-
-            ShopBuyedUser::dispatch($stripeid, $stripeid->shop->reward_file_url, $symbol->symbol);
-
-            /**************************SHOP**PWA**START****************************************************/
-            // below is SHOP pwa for fans
-
-            $CreatorName = ucfirst($stripeid->shop->user->name) ?? 'A Creator';
-            $title = "🛍️ Purchase Confirmed!";
-            $content = "You bought something from $CreatorName ’s shop. They’ll process it soon.";
-            $email = $stripeid->email ?? $stripeid->user->email;
-
-            Helpers::sendNotification($title, $content, $email);
-
-            // below is wish pwa for creator
-            $FanName = ucfirst($stripeid->user->name) ?? 'A Fan';
-            $title = "📦 New Shop Order!";
-            $content = "$FanName placed an order in your shop. Time to fulfill it!.";
-            $email = $stripeid->shop->user->email;
-
-            Helpers::sendNotification($title, $content, $email);
-
-            /****************************SHOP**PWA**ENDS****************************************************/
-
-            $userPayment = new UserPayment();
-            $userPayment->from_user_id = $stripeid->user_id ?? null;
-            $userPayment->to_user_id = $stripeid->shop->user_id;
-            $userPayment->product_type = 'shop';
-            $userPayment->amount = $stripeid->amount;
-            $userPayment->currency = $stripeid->currency;
-            $userPayment->payment_method = 'stripe';
-            $userPayment->payment_details = json_encode($stripeid->session_id, true);
-            $userPayment->paid_at = Carbon::now();
-            $userPayment->status = $stripeid->payment_status ?? 'paid';
-            $userPayment->save();
-
-            $slug = strtolower(str_replace(" ", "-", $stripeid->shop->name));
-
-            return to_route('thank-you', ['username' => $stripeid->shop->user->username])->with('success', 'Payment Successful.');
-        } catch (Exception $e) {
-            Log::error("Error in successPayment: " . $e->getMessage());
-            return redirect(route('user.show', [$stripeid->shop->user->username]))->with('error', $e->getMessage());
-        }
+        });
     }
 
     public function cancelPayment($id)
@@ -1132,43 +1179,115 @@ class ShopsController extends Controller
         }
     }
 
-    public function answerPayment(Request $request, $payment_id)
+    public function updateFulfillment(Request $request, $uuid)
     {
-        $payment = ShopPayment::where('session_id', $payment_id)->first();
+        $request->validate([
+            'status' => 'required|in:pending,processing,shipped,delivered',
+            'tracking_id' => 'nullable|string',
+            'courier_name' => 'nullable|string',
+        ]);
 
-        $payment->answer = $request->answer;
-        $payment->save();
+        $deliverable = Deliverable::where('uuid', $uuid)
+            ->where('creator_id', Auth::id())
+            ->firstOrFail();
+
+        $updateData = [
+            'status' => $request->status,
+            'tracking_id' => $request->tracking_id,
+            'courier_name' => $request->courier_name,
+        ];
+
+        if ($request->status === 'shipped' && !$deliverable->shipped_at) {
+            $updateData['shipped_at'] = now();
+            
+            // Send PWA notification to supporter
+            try {
+                $creatorName = ucfirst(Auth::user()->name);
+                $title = "🚚 Your order has been shipped!";
+                $content = "Great news! $creatorName has shipped your order. Tracking: " . ($request->tracking_id ?? 'Available soon');
+                Helpers::sendNotification($title, $content, $deliverable->customer_email);
+            } catch (\Exception $e) {
+                Log::error('Fulfillment: Failed to send shipping notification', ['error' => $e->getMessage()]);
+            }
+        }
+
+        if ($request->status === 'delivered') {
+            $updateData['delivered_at'] = now();
+        }
+
+        $deliverable->update($updateData);
 
         return response()->json([
             'status' => true,
-            'msg' => "Answer saved successfully."
+            'message' => 'Fulfillment status updated successfully.',
+            'deliverable' => $deliverable
         ]);
     }
 
-    public function ordersList()
+    /**
+     * Get all shipping profiles for the authenticated creator
+     */
+    public function getShippingProfiles()
     {
-        $payments = ShopPayment::whereHas('shop', function ($q) {
-            $q->where('user_id', Auth::id());
-        })->with(['shop', 'shop.user'])->where('payment_status', 'paid')->latest()->get();
-
-        $payments->map(function ($q) {
-            $q->avatar_url = $q->user->avatar_url ?? false;
-            $q->username = $q->user->username ?? false;
-            return $q;
-        });
-
-        $total_claims = $payments->count();
-        $all_time = $payments->sum('amount');
-        $day30 = ShopPayment::whereHas('shop', function ($q) {
-            $q->where('user_id', Auth::id());
-        })->with(['shop', 'shop.user'])->where('payment_status', 'paid')->where('created_at', '<=', Carbon::now())->where('created_at', '>=', Carbon::now()->subDays(30))->sum('amount');
+        $profiles = ShippingProfile::where('user_id', Auth::id())
+            ->with('zones')
+            ->latest()
+            ->get();
 
         return response()->json([
             'status' => true,
-            'orders' => $payments,
-            'total_claims' => $total_claims,
-            'all_time' => $all_time,
-            'thirtydays' => $day30
+            'profiles' => $profiles
+        ]);
+    }
+
+    /**
+     * Save or update a shipping profile
+     */
+    public function saveShippingProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'zones' => 'required|array',
+            'zones.*.country' => 'required|string',
+            'zones.*.shipping_price' => 'required|numeric|min:0',
+        ]);
+
+        return DB::transaction(function () use ($request) {
+            $profile = ShippingProfile::updateOrCreate(
+                ['id' => $request->id, 'user_id' => Auth::id()],
+                ['name' => $request->name]
+            );
+
+            // Delete old zones if updating
+            $profile->zones()->delete();
+
+            // Create new zones
+            foreach ($request->zones as $zone) {
+                $profile->zones()->create([
+                    'country' => $zone['country'],
+                    'shipping_price' => $zone['shipping_price'],
+                ]);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Shipping profile saved successfully.',
+                'profile' => $profile->load('zones')
+            ]);
+        });
+    }
+
+    /**
+     * Delete a shipping profile
+     */
+    public function deleteShippingProfile($id)
+    {
+        $profile = ShippingProfile::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        $profile->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Shipping profile deleted successfully.'
         ]);
     }
 }

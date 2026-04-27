@@ -401,10 +401,10 @@ export default function Dashboard(props) {
                                                                     </div>
                                                                 </Link>
 
-                                                                {/* <AddItem
-                                                                    classes="w-full font-bold addop bg-white rounded-[30px]  p-3 mb-2 text-center"
+                                                                <AddItem
+                                                                    classes="w-full font-bold addop bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px] p-3 md:p-4 mb-4 text-center cursor-pointer"
                                                                     product_type="digital_products"
-                                                                /> */}
+                                                                />
                                                                 <AddPost classes="font-bold p-3 md:p-4 mb-4 text-center border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all  rounded-[30px]" />
                                                                 {/* <AddGift
                                                                     text="Add Gift "

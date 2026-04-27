@@ -157,7 +157,6 @@ class RegisteredUserController extends Controller
 
         if (config('app.url') === 'https://spennypiggy.co') {
             $ipExists = User::where('ip_address', $ip_address)
-                ->where('is_uk', 0)
                 ->exists();
 
             if ($ipExists) {
@@ -312,7 +311,7 @@ class RegisteredUserController extends Controller
                 "max:20"
             ]
         ]);
-        $exist = User::whereUsername($request->username)->where('is_uk', 0)->first();
+        $exist = User::whereUsername($request->username)->first();
         return response()->json([
             "available" => empty($exist)
         ]);
