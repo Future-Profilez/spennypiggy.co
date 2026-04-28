@@ -46,6 +46,8 @@ class DeliveriesController extends Controller
                 'status_class' => $this->getStatusClass($deliverable->status),
                 'created_at' => $deliverable->created_at->format('M d, Y H:i'),
                 'delivered_at' => $deliverable->delivered_at?->format('M d, Y H:i'),
+                'accessed_at' => $deliverable->accessed_at?->format('M d, Y H:i'),
+                'access_count' => $deliverable->access_count,
                 'deliverable_url' => $deliverable->deliverable_url,
                 'certificate_url' => $deliverable->certificate_url, // Added certificate URL
                 'is_creator' => $deliverable->creator_id === $user->id,
@@ -59,6 +61,36 @@ class DeliveriesController extends Controller
             'deliverables' => $deliverables,
             'stats' => $this->getDeliveryStats($user),
         ]);
+    }
+
+    /**
+     * Handle deliverable access tracking and redirection
+     */
+    public function access(string $uuid)
+    {
+        $deliverable = Deliverable::where('uuid', $uuid)->firstOrFail();
+
+        // Update tracking metrics
+        $deliverable->update([
+            'accessed_at' => now(),
+            'access_count' => $deliverable->access_count + 1,
+            'status' => 'delivered' // Ensure it's marked as delivered if it was pending
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('Deliverable accessed', [
+            'uuid' => $uuid,
+            'type' => $deliverable->deliverable_type,
+            'ip' => request()->ip(),
+            'access_count' => $deliverable->access_count
+        ]);
+
+        // Redirect to the actual content URL
+        if (empty($deliverable->deliverable_url)) {
+            // Fallback if URL is missing
+            return redirect()->route('home')->with('error', 'Content URL not found.');
+        }
+
+        return redirect($deliverable->deliverable_url);
     }
 
     /**

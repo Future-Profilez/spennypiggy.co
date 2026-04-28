@@ -170,7 +170,7 @@ class AuthenticatedSessionController extends Controller
     public function verifyUser(Request $request)
     {
 
-        $user = User::where('email', $request->email)->where('is_uk', 0)->first();
+        $user = User::where('email', $request->email)->first();
 
         if (empty($user)) {
             return response()->json([
@@ -518,11 +518,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function userItems($username, $category_id = null)
     {
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
+        $user = User::firstWhere('username', $username);
 
         if ($user) {
             $query = $user->wishItems()
@@ -564,11 +560,7 @@ class AuthenticatedSessionController extends Controller
     public function user_category($username)
     {
         try {
-            $user = User::where('username', $username)->where(
-                'is_uk',
-                0
-                // $q->whereNot('country', 'GB')->orWhereNull('country');
-            )->first();
+            $user = User::where('username', $username)->first();
             $categories = [];
             if (!empty($user)) {
                 $categories = $user->user_categories()->get();
@@ -600,11 +592,7 @@ class AuthenticatedSessionController extends Controller
     {
         $authUser = Auth::user(); // Get the logged-in user
 
-        $user = User::where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->firstWhere('username', $username);
+        $user = User::firstWhere('username', $username);
 
         if (!$user) {
             return response()->json([
@@ -635,11 +623,7 @@ class AuthenticatedSessionController extends Controller
     public function sociallinks($username)
     {
         try {
-            $user = User::where('username', $username)->where(
-                'is_uk',
-                0
-                // $q->whereNot('country', 'GB')->orWhereNull('country');
-            )->first();
+            $user = User::where('username', $username)->first();
             $slinks = [];
             $sociallinks = [];
             if (!empty($user)) {
@@ -705,11 +689,7 @@ class AuthenticatedSessionController extends Controller
         try {
             if (preg_match("/^[a-z0-9_]+$/", $username)) {
                 // Username contains only lowercase letters, numbers, and underscores
-                $user = User::where('username', $username)->where(
-                    'is_uk',
-                    0
-                    // $q->whereNot('country', 'GB')->orWhereNull('country');
-                )->first();
+                $user = User::where('username', $username)->first();
                 if (!empty($user)) {
                     return response()->json(['status' => false, 'msg' => 'Username is not available']);
                 } else {
@@ -726,7 +706,7 @@ class AuthenticatedSessionController extends Controller
 
     public function unlinkTwitter()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if (!empty($user->twitter_token)) {
             //     $req = TwitterAuthService::revokeToken($user->twitter_token);
@@ -792,7 +772,7 @@ class AuthenticatedSessionController extends Controller
 
     public function updateVat($percent)
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $user->vat_amount_percentage = $percent;
         $user->save();
@@ -814,7 +794,7 @@ class AuthenticatedSessionController extends Controller
         $email = $request->input('email');
         $password = $request->input('password');
 
-        $user = User::where('email', $email)->where('is_uk', 0)->first();
+        $user = User::where('email', $email)->first();
 
         $otp = $request->input('otp');
         $backup_code = $request->input('backup_code');
@@ -966,7 +946,7 @@ class AuthenticatedSessionController extends Controller
 
         $sign = $request->query('sign');
 
-        $user = User::where('id', Auth::guard('sanctum')->id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::guard('sanctum')->id())->first();
 
         $contract = new FanContract();
         $contract->user_id = $user->id;

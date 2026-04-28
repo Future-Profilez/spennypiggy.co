@@ -196,12 +196,12 @@ export default function Board(props) {
     return (
         <Authenticated auth={auth && auth.user}>
             <Head title={"Leaderboard"} />
-            <div className="bg-white pt-4">
+            <div className="bg-white pt-4  min-h-screen ">
                 <div className="containerbox pb-5 pt-2 ">
                     <h1 className="text-bl font-GillSans text-center xl:!text-left text-3xl lg:text-4xl my-6 uppercase text-black ">
                     Leaderboard
                 </h1>
-                <div className="flex flex-wrap -mx-4">
+                <div className="flex flex-wrap items-start -mx-4">
                     <div className="w-full xl:w-2/3 px-4 mb-4">
                         <div className=" ">
                             <div className="p-2  md:!p-6 pinkbg rounded-[30px]  mb-6">
@@ -291,11 +291,13 @@ export default function Board(props) {
                             </div>
                             <CategoryLeaders />
                     </div>
-                    <div className="w-full xl:w-1/3 px-4">
-                        <RecentSupporters />
-                        <VipSupporters />
-                        {/* <TopSupporters /> */}
-                        <LeaderboardStars />
+                    <div className="w-full xl:w-1/3 px-4 sticky top-24 z-10">
+                        <div>
+                            <RecentSupporters />
+                            <VipSupporters />
+                            {/* <TopSupporters /> */}
+                            <LeaderboardStars />
+                        </div>
                     </div>
                 </div>
                     

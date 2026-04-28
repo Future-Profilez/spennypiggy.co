@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Jobs\BillPayMail;
+use App\Jobs\BillPayMail; 
 use App\Jobs\BillPayToUser;
 use App\Jobs\BillContentDeliveryMail;
 use App\Jobs\ProcessWishItemDeliverable;
@@ -63,10 +63,10 @@ class BillsController extends Controller
             ]);
         }
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         // 🔴 DEBUGGING: Log user found
-        Log::info('👤 User found', ['user_id' => $user->id ?? null, 'is_uk' => $user->is_uk ?? null]);
+        Log::info('👤 User found', ['user_id' => $user->id ?? null]);
 
         $media = $request->thumbnail;
         $price = $request->price;
@@ -165,7 +165,7 @@ class BillsController extends Controller
             ]);
         }
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $bill = Bills::where('uuid', $id)->first();
         $old_periods = $bill->period;
 
@@ -772,8 +772,12 @@ class BillsController extends Controller
                 // Create deliverable entry for bill payment (like wish subscriptions)
                 $this->createBillDeliverable($bill_pay, $session);
 
+                // Calculate creator net amount
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($bill_pay->amount + $bill_pay->vat_tax_amount, $bill_pay->currency);
+                $creatorNetAmount = ($symbol->symbol ?? '£') . number_format($breakdown['net_to_creator'], 2);
+
                 // Dispatch mail jobs
-                BillPayMail::dispatch($bill_pay, $amountWithVat);
+                BillPayMail::dispatch($bill_pay, $creatorNetAmount);
                 BillPayToUser::dispatch($bill_pay, $amountWithCurr, $bill_pay->bill->user->name);
 
                 // Dispatch content delivery email if bill has content file

@@ -165,8 +165,10 @@
                                      }
                                  }
                                  
-                                 // Get deliverable URL
-                                 $contentUrl = $deliverable->deliverable_url ?? '#';
+                                 // Get deliverable URL - Use tracking URL if UUID is available
+                                 $contentUrl = isset($deliverable->uuid) 
+                                    ? route('deliverable.access', $deliverable->uuid) 
+                                    : ($deliverable->deliverable_url ?? '#');
                              @endphp
                              <div style="margin-bottom: 15px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #8C52FF;">
                                  <p style="font-family: Arial; font-size: 16px; font-weight: bold; color: #333; margin: 0 0 5px 0;">{{ $wishName }}</p>

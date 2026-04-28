@@ -32,11 +32,25 @@
 
                                          </td>
                                          <td style="float:right;padding-top: 8px;">
-                                             <a href={{ $url }} style="background:#ffffff;border:1px solid #dddddd;border-radius:4px;font-size: 12px;font-family:Helvetica Neue Roman,Arial,sans-serif,'Open Sans';font-weight: 500;padding: 8px 16px;display:inline-block;text-decoration:none;color:#000000!important;margin-top: 3;" target="_blank" data-saferedirecturl="https://www.google.com/url?q=https://ucarecdn.com/c70dd0b9-487e-4c23-99ae-9f0f0bee7feb/&amp;source=gmail&amp;ust=1716369958375000&amp;usg=AOvVaw3SLTM8okd0JjQ65OI34mUF" jslog="32272; 1:WyIjdGhyZWFkLWY6MTc5OTY0MDc5Mjk4MTQ3NjQ5OCJd; 4:WyIjbXNnLWY6MTc5OTY1Mzc0Mzk2MDAyMjc1MCJd">Download</a>
+                                             @php
+                                                 $accessUrl = isset($deliverable->uuid) 
+                                                    ? route('deliverable.access', $deliverable->uuid) 
+                                                    : $url;
+                                             @endphp
+                                             <a href="{{ $accessUrl }}" style="background:#ffffff;border:1px solid #dddddd;border-radius:4px;font-size: 12px;font-family:Helvetica Neue Roman,Arial,sans-serif,'Open Sans';font-weight: 500;padding: 8px 16px;display:inline-block;text-decoration:none;color:#000000!important;margin-top: 3;" target="_blank">Download</a>
                                          </td>
                                      </tr>
                                  </tbody>
                              </table>
+                         </td>
+                     </tr>
+                     <tr>
+                         <td style="padding: 15px 0;">
+                             <div style="padding: 15px; background-color: #fff4f8; border: 1px solid #f94f97; border-radius: 8px;">
+                                 <p style="font-family: Arial; font-size: 13px; color: #f94f97; margin: 0; line-height: 1.4; text-align: center;">
+                                     <strong>Important Notice:</strong> By clicking the download link above, you acknowledge and agree that you are requesting immediate access to digital content. You further acknowledge that this will waive your statutory right to cancel this purchase once the download has started.
+                                 </p>
+                             </div>
                          </td>
                      </tr>
                  @endif

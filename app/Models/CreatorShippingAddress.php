@@ -21,7 +21,7 @@ class CreatorShippingAddress extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class)->where('is_uk', 0);
+        return $this->belongsTo(User::class);
     }
 
     public function firstName(): Attribute

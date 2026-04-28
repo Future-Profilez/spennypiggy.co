@@ -102,6 +102,32 @@ export default function PriceFormat() {
 
         const upGlobalCurrency = global_currency?.toUpperCase() || "GBP";
 
+        // 🚀 Optimization: If currencies match, skip all conversion logic
+        if (upCurrency === upGlobalCurrency) {
+            const final = amount;
+            const finalAdminFee = adminfee ? 1 : 0; // Admin fee is 1 in native GBP, but wait...
+            
+            // Wait, if it's native currency, admin fee might need conversion if it's not GBP
+            // Actually, the admin fee is fixed £1.00. 
+            // If the transaction is in EUR, we need the EUR equivalent of £1.00.
+            
+            let totalAmount = final;
+            if (adminfee) {
+                const adminFeeInNative = upCurrency === "GBP" ? 1 : (rates?.[upCurrency] || 1);
+                totalAmount += adminFeeInNative;
+            }
+
+            const targetCurrency = currencies?.[upCurrency];
+            const decimalPlaces = targetCurrency?.ISOdigits ?? 2;
+
+            return new Intl.NumberFormat("en-GB", {
+                style: "currency",
+                currency: upCurrency,
+                minimumFractionDigits: decimalPlaces,
+                maximumFractionDigits: decimalPlaces,
+            }).format(totalAmount);
+        }
+
         const conversion_rate = rates?.[upCurrency];
 
         // ❗ Fallback if conversion rate is invalid

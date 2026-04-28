@@ -10,8 +10,12 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Stripe\Exception\SignatureVerificationException;
 use App\Jobs\SendRenewMail;
+use App\Jobs\ShopBuyed;
+use App\Jobs\ShopBuyedUser;
+use App\Jobs\NotificationSave;
 use App\Models\BillPayment;
 use App\Models\Deliverable;
 use App\Models\MembershipPayment;
@@ -19,6 +23,9 @@ use App\Models\StripePaymentDetail;
 use App\Models\Task;
 use App\Models\TaskPurchase;
 use App\Models\WishItemSubscription;
+use App\Models\ShopPayment;
+use App\Models\Shop;
+use App\Models\UserPayment;
 use App\StripeControl as AppStripeControl;
 use Carbon\Carbon;
 use Stripe\StripeClient;
@@ -833,6 +840,11 @@ class StripeWebhookController extends Controller
                 $this->processWishItemDeliverable($session, $metadata);
             }
 
+            // Check if this is a shop item purchase
+            if (isset($metadata->type) && $metadata->type === 'shop') {
+                $this->processShopItemPayment($session, $metadata);
+            }
+
             // Check if this is a task purchase
             if (isset($metadata->type) && $metadata->type === 'task_purchase') {
                 $this->processTaskPurchase($session, $metadata);
@@ -946,8 +958,8 @@ class StripeWebhookController extends Controller
         if (isset($metadata->user_id)) {
             $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
             if ($payment) {
-                // Check if user exists and has is_uk = 0 (to match the relationship constraint)
-                $user = \App\Models\User::where('id', $metadata->user_id)->where('is_uk', 0)->first();
+                // Check if user exists
+                $user = \App\Models\User::where('id', $metadata->user_id)->first();
 
                 if ($user) {
                     $currency = \App\Models\Currency::where('iso', strtoupper($session->currency))->first();
@@ -962,7 +974,7 @@ class StripeWebhookController extends Controller
                     // \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
                     // NOTE: Disabled to prevent duplicate emails - checkout controller handles this
                 } else {
-                    Log::info('User not eligible for email (is_uk != 0 or user not found)', [
+                    Log::info('User not eligible for email (user not found)', [
                         'user_id' => $metadata->user_id
                     ]);
                 }
@@ -1771,6 +1783,31 @@ class StripeWebhookController extends Controller
                 true // is_renewal = true
             );
 
+            // Notify Creator about the renewal with Net amount
+            try {
+                $total_amount = ($invoiceData->amount_paid ?? 0) / 100; // Stripe amount is in cents
+                if ($total_amount <= 0) {
+                    $total_amount = $wishSubscription->amount;
+                }
+                
+                $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency);
+                $creatorNet = $breakdown['net_to_creator'];
+                $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
+
+                \App\Jobs\SubscribedMail::dispatch($wishSubscription, $creatorNetAmountWithSymbol);
+                
+                Log::info('Wish subscription renewal email dispatched to creator', [
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'creator_email' => $wishSubscription->wish_item->user->email,
+                    'net_amount' => $creatorNetAmountWithSymbol
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to notify creator about subscription renewal', [
+                    'subscription_id' => $wishSubscription->stripe_id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             Log::info('Wish subscription renewal email dispatched', [
                 'subscription_id' => $wishSubscription->stripe_id,
                 'customer_email' => $wishSubscription->guest_email,
@@ -1826,6 +1863,30 @@ class StripeWebhookController extends Controller
                 // Create deliverable for bill renewal
                 $deliverable = $this->createBillRenewalDeliverable($billPayment);
                 
+                // Notify Creator about the bill renewal with Net amount
+                try {
+                    $currency = \App\Models\Currency::where('iso', strtoupper($billPayment->currency ?? 'gbp'))->first();
+                    $currencySymbol = $currency ? $currency->symbol : '£';
+                    
+                    $total_amount = ($data->amount_paid ?? 0) / 100;
+                    $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $billPayment->currency);
+                    $creatorNet = $breakdown['net_to_creator'];
+                    $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
+
+                    \App\Jobs\BillPayMail::dispatch($billPayment, $creatorNetAmountWithSymbol);
+                    
+                    Log::info('Bill renewal email dispatched to creator', [
+                        'subscription_id' => $subscriptionId,
+                        'creator_email' => $billPayment->bill->user->email,
+                        'net_amount' => $creatorNetAmountWithSymbol
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to notify creator about bill renewal', [
+                        'subscription_id' => $subscriptionId,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+                
                 if ($deliverable && $data->payment_intent) {
                     // Update payment intent ID on deliverable if it was missing
                     if (!$deliverable->payment_intent_id) {
@@ -1865,6 +1926,30 @@ class StripeWebhookController extends Controller
                     
                     // Create deliverable for membership renewal
                     $deliverable = $this->createMembershipRenewalDeliverable($membershipPayment);
+
+                    // Notify Creator about the membership renewal with Net amount
+                    try {
+                        $currency = \App\Models\Currency::where('iso', strtoupper($membershipPayment->currency ?? 'gbp'))->first();
+                        $currencySymbol = $currency ? $currency->symbol : '£';
+                        
+                        $total_amount = ($data->amount_paid ?? 0) / 100;
+                        $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $membershipPayment->currency);
+                        $creatorNet = $breakdown['net_to_creator'];
+                        $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
+
+                        \App\Jobs\MembershipMail::dispatch($membershipPayment, $creatorNetAmountWithSymbol);
+                        
+                        Log::info('Membership renewal email dispatched to creator', [
+                            'subscription_id' => $subscriptionId,
+                            'creator_email' => $membershipPayment->membership->user->email,
+                            'net_amount' => $creatorNetAmountWithSymbol
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to notify creator about membership renewal', [
+                            'subscription_id' => $subscriptionId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
 
                     if ($deliverable && $data->payment_intent) {
                         // Update payment intent ID on deliverable if it was missing
@@ -1996,6 +2081,31 @@ class StripeWebhookController extends Controller
                     true // is_renewal = true for subscription payments
                 );
 
+                // Notify Creator about the payment with Net amount
+                try {
+                    $total_amount = ($invoiceData->amount_paid ?? 0) / 100; // Stripe amount is in cents
+                    if ($total_amount <= 0) {
+                        $total_amount = $wishSubscription->amount;
+                    }
+                    
+                    $breakdown = \App\Helpers::calculateStripeDirectChargeFlow($total_amount, $wishSubscription->currency);
+                    $creatorNet = $breakdown['net_to_creator'];
+                    $creatorNetAmountWithSymbol = $currencySymbol . number_format($creatorNet, 2);
+
+                    \App\Jobs\SubscribedMail::dispatch($wishSubscription, $creatorNetAmountWithSymbol);
+                    
+                    Log::info('Wish subscription payment email dispatched to creator', [
+                        'subscription_id' => $wishSubscription->stripe_id,
+                        'creator_email' => $wishSubscription->wish_item->user->email,
+                        'net_amount' => $creatorNetAmountWithSymbol
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to notify creator about subscription payment', [
+                        'subscription_id' => $wishSubscription->stripe_id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+
                 Log::info('Wish subscription email notification dispatched', [
                     'subscription_id' => $wishSubscription->stripe_id,
                     'wish_item_id' => $wishSubscription->wish_item->id,
@@ -2101,12 +2211,12 @@ class StripeWebhookController extends Controller
         try {
             // Step 1: Create the product
             $product = $client->products->create([
-                'name' => 'Creator Monthly Subscription 8.99 GBP Product',
+                'name' => 'Creator Monthly Subscription £8.99 + VAT Product',
             ]);
 
-            // Step 2: Create the recurring price
+            // Step 2: Create the recurring price (£10.79 total)
             $price = $client->prices->create([
-                'unit_amount' => 899, // 8.99 GBP = 899 pence
+                'unit_amount' => 1079, // £8.99 + £1.80 VAT = £10.79
                 'currency' => 'gbp',
                 'recurring' => [
                     'interval' => 'month', // monthly plan
@@ -2743,5 +2853,162 @@ class StripeWebhookController extends Controller
             Log::info("Payment Intent Failed for TaskPurchase", ['id' => $purchase->id]);
             // Optional: Update status if needed, but 'failed' isn't in enum yet.
         }
+    }
+
+    /**
+     * Process shop item payment (Webhook alternative to ShopsController@successPayment)
+     */
+    private function processShopItemPayment($session, $metadata)
+    {
+        return DB::transaction(function () use ($session, $metadata) {
+            try {
+                $paymentId = $metadata->payment_id ?? null;
+                if (!$paymentId) {
+                    Log::error("StripeWebhookController: Missing payment_id in metadata for shop purchase");
+                    return;
+                }
+
+                $shopPayment = ShopPayment::with(['shop', 'shop.user', 'user'])->where('uuid', $paymentId)->lockForUpdate()->first();
+                if (!$shopPayment) {
+                    Log::error("StripeWebhookController: No ShopPayment found for UUID: $paymentId");
+                    return;
+                }
+
+                // Idempotency check: if already paid, skip
+                if ($shopPayment->payment_status === 'paid') {
+                    Log::info("StripeWebhookController: Shop payment already processed", ['payment_id' => $paymentId]);
+                    return;
+                }
+
+                Log::info("StripeWebhookController: Processing shop payment via webhook", ['payment_id' => $paymentId]);
+
+                // 1. Decrement stock if applicable
+                $shop = $shopPayment->shop;
+                if ($shop->slot_limitation !== null) {
+                    if ($shop->slot_limitation > 0) {
+                        $shop->decrement('slot_limitation');
+                    } else {
+                        Log::warning('Shop item sold out during webhook processing', ['shop_id' => $shop->id]);
+                    }
+                }
+
+                // 2. Update GMV
+                Helpers::addGmv($shopPayment->shop->user_id, (float) $shopPayment->amount);
+
+                // 3. Set username for notification
+                if ($shopPayment->anonymous == 1) {
+                    $username = "Anonymous user";
+                } else {
+                    $username = $shopPayment->name ?? ($shopPayment->user->name ?? "Anonymous user");
+                }
+
+                // 4. Save notification
+                $message = $username . " just purchased your shop item " . $shopPayment->shop->name;
+                NotificationSave::dispatch($message, $shopPayment->shop->user, $shopPayment->user, 'Shop');
+
+                // 5. Update status
+                $shopPayment->update([
+                    'payment_status' => 'paid',
+                    'session_id' => $session->id,
+                    'updated_at' => Carbon::now(),
+                ]);
+
+                // 6. Get currency symbol and calculate net
+                $currency = \App\Models\Currency::where('iso', strtoupper($shopPayment->currency))->first();
+                $symbol = $currency->symbol ?? '£';
+                
+                // Calculate creator net amount using the SAME logic as ShopsController
+                $listedPriceToGrossUp = $shopPayment->amount + $shopPayment->tax_amount + $shopPayment->vat_tax_amount + ($shopPayment->shipping_amount ?? 0);
+                
+                // Fetch creator risk metrics for reserve calculation
+                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shopPayment->shop->user->uuid]);
+                $reserveRate = $metrics->reserve_percent ?? 0;
+                
+                $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate);
+                $creatorNetAmount = $symbol . number_format($breakdown['net_to_creator'], 2);
+
+                // 7. Dispatch jobs
+                ShopBuyed::dispatch($shopPayment, $shopPayment->anonymous == 1, $creatorNetAmount);
+                ShopBuyedUser::dispatch($shopPayment, $shopPayment->shop->reward_file_url, $symbol);
+
+                // 8. Create deliverable record
+                try {
+                    if (!\App\Models\Deliverable::where('session_id', $session->id)->exists()) {
+                        \App\Models\Deliverable::create([
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'product_id' => $shopPayment->shop->stripe_product_id ?? 'shop_' . $shopPayment->shop->id,
+                            'price_id' => $shopPayment->shop->price_id,
+                            'item_id' => $shopPayment->shop->id,
+                            'creator_id' => $shopPayment->shop->user_id,
+                            'gifter_id' => $shopPayment->user_id,
+                            'session_id' => $session->id,
+                            'deliverable_type' => $shopPayment->shop->type == 'physical' ? 'shipping' : 'digital_file',
+                            'product_type' => 'shop_item',
+                            'transaction_amount' => $shopPayment->amount,
+                            'deliverable_url' => $shopPayment->shop->reward_file_url,
+                            'customer_email' => $shopPayment->email ?? ($shopPayment->user->email ?? null),
+                            'customer_name' => $shopPayment->name ?? ($shopPayment->user->name ?? null),
+                            'payment_status' => 'paid',
+                            'payment_currency' => strtoupper($shopPayment->currency ?? 'GBP'),
+                            'anonymous' => $shopPayment->anonymous ?? false,
+                            'message' => $shopPayment->message,
+                            'status' => $shopPayment->shop->type == 'physical' ? 'pending' : 'delivered',
+                            'delivered_at' => $shopPayment->shop->type == 'physical' ? null : now(),
+                            'metadata' => json_encode([
+                                'shop_item_id' => $shopPayment->shop->id,
+                                'shop_item_name' => $shopPayment->shop->name,
+                                'type' => $shopPayment->shop->type,
+                                'amount' => $shopPayment->amount,
+                                'currency' => $shopPayment->currency,
+                                'creator_net_amount' => $creatorNetAmount,
+                                'via_webhook' => true
+                            ])
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('StripeWebhookController: Failed to create deliverable record for shop', ['error' => $e->getMessage()]);
+                }
+
+                // 9. Send PWA notifications
+                try {
+                    $creatorName = ucfirst($shopPayment->shop->user->name) ?? 'A Creator';
+                    Helpers::sendNotification("🛍️ Purchase Confirmed!", "You bought something from $creatorName ’s shop. They’ll process it soon.", $shopPayment->email ?? $shopPayment->user->email);
+
+                    $fanName = ucfirst($shopPayment->user->name ?? $shopPayment->name) ?? 'A Fan';
+                    Helpers::sendNotification("📦 New Shop Order!", "$fanName placed an order in your shop. Time to fulfill it!.", $shopPayment->shop->user->email);
+                } catch (\Exception $e) {
+                    Log::error('StripeWebhookController: Failed to send PWA notifications for shop', ['error' => $e->getMessage()]);
+                }
+
+                // 10. Record UserPayment
+                try {
+                    $existingUserPayment = UserPayment::where('payment_details', json_encode($session->id, true))->exists();
+                    if (!$existingUserPayment) {
+                        UserPayment::create([
+                            'from_user_id' => $shopPayment->user_id ?? null,
+                            'to_user_id' => $shopPayment->shop->user_id,
+                            'product_type' => 'shop',
+                            'amount' => $shopPayment->amount,
+                            'currency' => $shopPayment->currency,
+                            'payment_method' => 'stripe',
+                            'payment_details' => json_encode($session->id, true),
+                            'paid_at' => Carbon::now(),
+                            'status' => 'paid',
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('StripeWebhookController: Failed to record UserPayment for shop', ['error' => $e->getMessage()]);
+                }
+
+                // 11. Clear user caches
+                $this->userProfileService->clearUserCaches($shopPayment->shop->user->username, $shopPayment->shop->user->id);
+
+            } catch (\Exception $e) {
+                Log::error("StripeWebhookController: Error processing shop payment: " . $e->getMessage(), [
+                    'session_id' => $session->id,
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        });
     }
 }

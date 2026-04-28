@@ -492,7 +492,7 @@ class WishitemController extends Controller
             $user = User::find(Auth::id());
             $this->userProfileService->clearUserCaches($user->username, $user->id);
 
-            $user = User::whereId(Auth::id())->where('is_uk', 0)->first();
+            $user = User::whereId(Auth::id())->first();
             $unit_amount_decimal = round($createpriceid * 100); // Stripe expects integer cents
 
             if (in_array($request->subscription, [0, 1])) {
@@ -825,8 +825,7 @@ class WishitemController extends Controller
             $join->on('user_intros.id', '=', 'latest_intros.latest_id');
         })
             ->with(['user' => function ($q) use ($gender) {
-                $q->where('is_uk', 0)
-                    ->where('suspended_account', 0)
+                $q->where('suspended_account', 0)
                     ->whereNotNull('username')
                     ->where('username', '!=', '');
                 if ($gender != 'all') {
@@ -838,7 +837,6 @@ class WishitemController extends Controller
         // Double-check to ensure we only get intros with valid users
         $query->whereHas('user', function ($q) use ($gender) {
             $q->whereNull('deleted_at')
-                ->where('is_uk', 0)
                 ->where('suspended_account', 0)
                 ->where('username', '!=', '');
             if ($gender != 'all') {
@@ -876,7 +874,6 @@ class WishitemController extends Controller
             ->whereHas('wishItems', function ($query) {
                 $query->where('is_approved', 1);
             })
-            ->where('is_uk', 0)
             ->where('suspended_account', 0)
             ->pluck('creator_category')
             ->map(function ($item) {
@@ -909,11 +906,7 @@ class WishitemController extends Controller
         $query->whereHas('wish', function ($q) use ($user_id) {
             $q->where('user_id', $user_id);
         })->pluck('wish_item_id');
-        $user = User::where('id', $user_id)->where('suspended_account', 0)->where(
-            'is_uk',
-            0
-            // $q->whereNot('country', 'GB')->orWhereNull('country');
-        )->first();
+        $user = User::where('id', $user_id)->where('suspended_account', 0)->first();
         return redirect(route('user.show', ['username', $user->username, 'filter' => true]));
         // return response()->json(["items" => $items])->header('Content-Type', 'application/json');
     }
@@ -934,6 +927,16 @@ class WishitemController extends Controller
 
         $amount = round((float) $amount, 2, PHP_ROUND_HALF_UP);
         $wishitem = WishItem::where('uuid', $uuid)->firstOrFail();
+
+        // ✅ NEW: Check creator subscription eligibility first
+        $subscriptionCheck = app(\App\Services\CreatorSubscriptionService::class)->validateCreatorSubscription($wishitem->user);
+
+        if (!$subscriptionCheck['eligible']) {
+            return response()->json([
+                'success' => false,
+                'msg' => app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
+            ]);
+        }
 
         // ✅ Prevent user from buying own item
         if (Auth::check() && Auth::id() == $wishitem->user_id) {
@@ -1503,7 +1506,7 @@ class WishitemController extends Controller
 
             if (!$activityCheck['eligible']) {
                 // Send notification to creator about blocked payment
-                $orderDetails->creator->notify(new PaymentBlockedNotification($activityCheck, $totalAmount / 100));
+                $orderDetails->creator->notify(new PaymentBlockedNotification($activityCheck, ($request->amount ?? 0) / 100));
 
                 // Log the blocked payment for analytics
                 Log::info('Rye product payment blocked due to insufficient creator activity', [
@@ -2449,11 +2452,6 @@ class WishitemController extends Controller
         if (!empty(Auth::id())) {
             $groupedWishes = [];
             $user = User::where('id', Auth::id())
-                ->where('is_uk', 0)
-                // ->where(function ($query) {
-                //     $query->where('country', '!=', 'GB')
-                //         ->orWhereNull('country');
-                // })
                 ->first();
             $cart = [];
             if ($user) {
@@ -2678,7 +2676,6 @@ class WishitemController extends Controller
         }
 
         $user = User::where('id', Auth::id())
-            ->where('is_uk', 0)
             ->first();
 
         $cart = [];
@@ -2867,7 +2864,7 @@ class WishitemController extends Controller
 
         $currency = strtolower($request->cookie("currency", "GBP"));
 
-        $owner = User::where('id', $request->owner_id)->where('is_uk', 0)->first();
+        $owner = User::where('id', $request->owner_id)->first();
         $price = Helpers::priceFormat($currency, $request->amount, $owner->default_currency);
         $min_amount = $owner->min_surprise_amount < 5 ? 5 : $owner->min_surprise_amount;
         $user_amount = Helpers::priceFormat($owner->default_currency, $min_amount, $currency);
@@ -3170,7 +3167,7 @@ class WishitemController extends Controller
             ]
         );
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $target = $request->target;
 
@@ -3310,7 +3307,7 @@ class WishitemController extends Controller
     public function enableAutoTweet()
     {
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if ($user->auto_tweet == 1) {
             $user->auto_tweet = 0;

@@ -30,7 +30,12 @@ class MembershipMailToUser implements ShouldQueue
     public function handle(): void
     {
         if((isset($this->mem->user) && $this->mem->user->notification_send == 1) || (empty($this->mem->user))){
-            EmailService::sendMembershipMailToUser($this->mem, $this->amountWithcurrency);
+            // Fetch deliverable for tracking
+            $deliverable = \App\Models\Deliverable::where('session_id', $this->mem->session_id)
+                ->where('product_type', 'membership')
+                ->first();
+
+            EmailService::sendMembershipMailToUser($this->mem, $this->amountWithcurrency, $deliverable);
         }
     }
 }

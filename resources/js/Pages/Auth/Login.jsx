@@ -241,28 +241,51 @@ export default function Login({ status, canResetPassword }) {
         };
     }, []);
 
-    const loginWithWindowsHello = async () => {
-        const { data } = await axios.post(
-            route("webauthn.login.userless.options"),
-        );
+    const handlePasskeyLogin = async () => {
+        setPasskeyLoading(true);
+        try {
+            const { data: options } = await axios.post(
+                route("webauthn.login.userless.options"),
+            );
 
-        const publicKey = data.publicKey ?? data;
+            const publicKey = options.publicKey ?? options;
+            publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
 
-        publicKey.challenge = base64urlToUint8Array(publicKey.challenge);
+            if (publicKey.allowCredentials) {
+                publicKey.allowCredentials = publicKey.allowCredentials.map(
+                    (item) => ({
+                        ...item,
+                        id: base64urlToUint8Array(item.id),
+                    }),
+                );
+            }
 
-        const credential = await navigator.credentials.get({
-            publicKey,
-        });
+            const credential = await navigator.credentials.get({
+                publicKey,
+            });
 
-        const response = await axios.post(route("webauthn.login"), formatCredentialForServer(credential));
+            if (credential) {
+                const response = await axios.post(
+                    route("webauthn.login"),
+                    formatCredentialForServer(credential),
+                );
 
-        if (response.data.success) {
-            window.location.href = response.data.redirect_url;
+                if (response.data.success) {
+                    const redirectUrl = response.data.redirect_url || "/";
+                    window.location.href = redirectUrl;
+                } else {
+                    errorAlert(response.data.message || "Passkey login failed");
+                }
+            }
+        } catch (error) {
+            if (error.name !== "AbortError" && error.name !== "NotAllowedError") {
+                console.error("Passkey login error:", error);
+                errorAlert("Passkey authentication failed");
+            }
+        } finally {
+            setPasskeyLoading(false);
         }
     };
-
-    // Handle passkey action (login with email, register, or userless login)
-     
 
     const submit = (e) => {
         setAnimate("");
@@ -339,8 +362,16 @@ export default function Login({ status, canResetPassword }) {
             });
     };
 
-    const checkTFA = (e) => {
+    const checkTFA = async (e) => {
         e.preventDefault();
+        
+        // If user has a passkey and is using a supported browser, 
+        // try passkey login first for a seamless "system prompt" experience
+        if (isWebAuthnSupported() && hasPasskey === true) {
+            handlePasskeyLogin();
+            return;
+        }
+
         setLoading(true);
         axios
             .post("/verify-user", data)
@@ -587,6 +618,7 @@ export default function Login({ status, canResetPassword }) {
                 email={promptEmail} 
                 onSkip={handlePromptClose} 
                 onSuccess={handlePromptClose} 
+                silent={true}
             />
         </GuestLayout>
     );

@@ -180,7 +180,7 @@ class Helpers
         return round($converted, $precision, PHP_ROUND_HALF_UP);
     }
 
-    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'USD', $reserveRate = 0): array
+    public static function calculateStripeDirectChargeFlow($listedPrice, $currency = 'GBP', $reserveRate = 0): array
     {
         $listedPrice = (float) $listedPrice;
         $isZeroDecimal = self::isZeroDecimalCurrency($currency);

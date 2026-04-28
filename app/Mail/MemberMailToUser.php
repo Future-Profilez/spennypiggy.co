@@ -13,15 +13,18 @@ class MemberMailToUser extends Mailable
 
     public $mem;
     public $amountWithcurrency;
+    public $deliverable;
+
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct($mem, $amountWithcurrency)
+    public function __construct($mem, $amountWithcurrency, $deliverable = null)
     {
         $this->mem = $mem;
         $this->amountWithcurrency = $amountWithcurrency;
+        $this->deliverable = $deliverable;
     }
 
     /**

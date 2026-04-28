@@ -350,7 +350,6 @@ class OptimizedProfileController extends Controller
     public function checkUserName(string $username)
     {
         $exists = \App\Models\User::where('username', $username)
-            ->where('is_uk', 0)
             ->exists();
 
         return response()->json([
@@ -387,8 +386,8 @@ class OptimizedProfileController extends Controller
     {
         $user = $this->profileService->getUserWithRelations($username);
         
-        // Ensure user exists and is not UK (if required by legacy logic)
-        if (!$user || ($user->is_uk ?? 0) != 0) {
+        // Ensure user exists
+        if (!$user) {
              return response()->json([
                 'success' => true,
                 'items' => []

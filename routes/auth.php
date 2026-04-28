@@ -367,6 +367,8 @@ Route::middleware('auth')->group(function () {
             Route::post('comment-reply/{comment_uid}', [PostsController::class, 'replyOnComment'])->name('comment-reply');
             Route::post('comment-approve/{uuid}', [PostsController::class, 'approveComment'])->name('comment-approve');
             Route::post('reply-approve/{uuid}', [PostsController::class, 'approveReply'])->name('reply-approve');
+            Route::post('comment-delete/{uuid}', [PostsController::class, 'deleteComment'])->name('comment-delete');
+            Route::post('reply-delete/{uuid}', [PostsController::class, 'deleteReply'])->name('reply-delete');
         });
         // Categories and basic functionality
         Route::post('user/save-category', [WishitemController::class, 'saveUserCategory'])->name('save-category');
@@ -784,13 +786,21 @@ Route::middleware('auth')->group(function () {
 Route::get('send-automatically-follow-request-to-all', [PwaNotification::class, 'sendAutomaticallyFollowRequestToAll'])->name('send.automatically.follow.request.to.all');
 
 Route::prefix('shop')->group(function () {
-    // Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
+    Route::get('/list/{username}', [ShopsController::class, 'shopList'])->name('shop-list');
     Route::get('/item/{slug}/{uuid}/{session_id?}', [ShopsController::class, 'singleShopList'])->name('single-shop-list');
     Route::match(['get', 'post'], '/buy/{uuid}/{varient_id}', [ShopsController::class, 'buyShopItem'])->name('buy-shop-item');
     Route::post('/answer-to-payment/{payment_id}', [ShopsController::class, 'answerPayment'])->name('answerPayment');
     Route::get('/success-payment/{uuid}', [ShopsController::class, 'successPayment'])->name('shop.success-payment');
     Route::get('/cancel-payment/{uuid}', [ShopsController::class, 'cancelPayment'])->name('shop.cancel-payment');
     Route::get('/shipping-price/{shop_id}', [ShopsController::class, 'shippingPrice'])->name('shop.shipping-price');
+    
+    // Shipping Profiles (Authenticated)
+    Route::middleware('auth')->group(function () {
+        Route::get('/shipping-profiles', [ShopsController::class, 'getShippingProfiles'])->name('shop.shipping-profiles');
+        Route::post('/shipping-profile/save', [ShopsController::class, 'saveShippingProfile'])->name('shop.shipping-profile.save');
+        Route::delete('/shipping-profile/{id}', [ShopsController::class, 'deleteShippingProfile'])->name('shop.shipping-profile.delete');
+        Route::post('/fulfillment/{uuid}', [ShopsController::class, 'updateFulfillment'])->name('shop.fulfillment.update');
+    });
 });
 
 Route::get('/create-checkout-session/{creator_id}/{user_id_or_device?}', [CheckoutController::class, 'createCheckout'])->name('create.checkout')->middleware('mustCompletedCardVerification');

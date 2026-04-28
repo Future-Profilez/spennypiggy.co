@@ -613,18 +613,23 @@ class StripeControl
      * Get Active subscription of customer
      *
      */
-    public static function getActiveSubscriptionByCustomer($customerId, $connectedAccountId)
+    public static function getActiveSubscriptionByCustomer($customerId, $connectedAccountId = null)
     {
         self::setClient();
 
         try {
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
+
             $subscriptions = self::$client->subscriptions->all(
                 [
                     'customer' => $customerId,
                     'status' => 'active',
                     'limit' => 1,
                 ],
-                ['stripe_account' => $connectedAccountId]
+                $options
             );
 
             return $subscriptions->data[0] ?? null;

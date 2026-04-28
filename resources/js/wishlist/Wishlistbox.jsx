@@ -294,7 +294,7 @@ export default function Wishlistbox(props) {
                             py-2 px-4 rounded-xl border-[3px] border-black 
                             shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] 
                             hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] 
-                            transition-all"> Tip Me </button>
+                            transition-all"> Treat Me </button>
                         }
                     </div>
 

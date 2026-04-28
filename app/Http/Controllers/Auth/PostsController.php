@@ -198,7 +198,7 @@ class PostsController extends Controller
     {
         $post = Post::where('uuid', $uuid)->first();
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if (!empty($post)) {
             $is_liked = false;
@@ -277,7 +277,7 @@ class PostsController extends Controller
         ]);
 
         $post = Post::where('uuid', $uuid)->first();
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         if (!empty($post)) {
             $post->comments()->create([
                 'user_id' => $user->id,
@@ -288,8 +288,8 @@ class PostsController extends Controller
             NotificationSave::dispatch($message, $post->user, $user, 'Post Comment');
 
             $name = ucfirst($user->name);
-            $title = "💬 New Comment on Your Post!";
-            $content = "$name commented one of your post ({$post->title}).";
+            $title = "💬 New Comment Needing Approval!";
+            $content = "$name commented on your post ({$post->title}). Please review and approve it.";
             $email = $post->user->email;
 
             Helpers::sendNotification($title, $content, $email);
@@ -317,7 +317,7 @@ class PostsController extends Controller
         ]);
 
         $comment = PostComment::where('uuid', $comment_uid)->first();
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         if (!empty($comment)) {
             $comment->replies()->create([
                 'user_id' => $user->id,
@@ -325,8 +325,8 @@ class PostsController extends Controller
             ]);
 
             $name = ucfirst($user->name);
-            $title = "💬 New Reply on a Comment in Your Post!";
-            $content = "$name replied to a comment on one of your post ({$comment->post->title}).";
+            $title = "💬 New Reply Needing Approval!";
+            $content = "$name replied to a comment on your post ({$comment->post->title}). Please review and approve it.";
             $email = $comment->post->user->email;
 
             Helpers::sendNotification($title, $content, $email);
@@ -441,6 +441,47 @@ class PostsController extends Controller
             'status' => true,
             'is_approved' => $reply->is_approved,
             'msg' => $reply->is_approved ? "Reply approved." : "Reply hidden."
+        ]);
+    }
+
+    public function deleteComment($uuid)
+    {
+        $comment = PostComment::where('uuid', $uuid)->first();
+        if (empty($comment)) {
+            return response()->json(['status' => false, 'msg' => "Comment not found."]);
+        }
+
+        // Only the post creator or comment owner can delete comments
+        if ($comment->post->user_id !== Auth::id() && $comment->user_id !== Auth::id()) {
+            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+        }
+
+        // Soft delete handles replies if cascading is set up, otherwise manual delete
+        $comment->delete();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Comment removed successfully."
+        ]);
+    }
+
+    public function deleteReply($uuid)
+    {
+        $reply = PostCommentReplies::where('uuid', $uuid)->first();
+        if (empty($reply)) {
+            return response()->json(['status' => false, 'msg' => "Reply not found."]);
+        }
+
+        // Only the post creator or reply owner can delete replies
+        if ($reply->post_comment->post->user_id !== Auth::id() && $reply->user_id !== Auth::id()) {
+            return response()->json(['status' => false, 'msg' => "Unauthorized."]);
+        }
+
+        $reply->delete();
+
+        return response()->json([
+            'status' => true,
+            'msg' => "Reply removed successfully."
         ]);
     }
 }

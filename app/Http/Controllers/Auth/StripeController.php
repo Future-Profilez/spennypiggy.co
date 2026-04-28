@@ -619,54 +619,6 @@ class StripeController extends Controller
             'currency' => $currency
         ]);
 
-        if (empty($user->account_id) && empty($country)) {
-            return redirect()->route('stripe.index')->with('error', 'Please select your country first.');
-        }
-
-        // If the user already has an incomplete Stripe account (not yet charges_enabled),
-        // always reset it so the creator's freshly selected country and currency are used.
-        if (!empty($user->account_id) && !empty($country)) {
-            try {
-                $existingAccount = StripeControl::getAccount($user->account_id);
-
-                if (!$existingAccount->charges_enabled) {
-                    try {
-                        StripeControl::deleteAccount($user->account_id);
-                        Log::info('Auto-reset inactive Stripe account on new connect attempt', [
-                            'user_id'        => $user->id,
-                            'old_account_id' => $user->account_id,
-                            'old_country'    => $user->country,
-                            'new_country'    => strtoupper($country),
-                        ]);
-                    } catch (Exception $e) {
-                        Log::warning('Could not delete old Stripe account during auto-reset', [
-                            'user_id'    => $user->id,
-                            'account_id' => $user->account_id,
-                            'error'      => $e->getMessage(),
-                        ]);
-                    }
-
-                    $user->account_id               = null;
-                    $user->country                  = null;
-                    $user->stripe_details_submitted = 0;
-                    $user->save();
-                    $this->userProfileService->clearUserCaches($user->username, $user->id);
-                }
-            } catch (Exception $e) {
-                // Cannot fetch the old account — clear it so a fresh one is created
-                Log::warning('Could not fetch existing Stripe account; clearing for auto-reset', [
-                    'user_id'    => $user->id,
-                    'account_id' => $user->account_id,
-                    'error'      => $e->getMessage(),
-                ]);
-                $user->account_id               = null;
-                $user->country                  = null;
-                $user->stripe_details_submitted = 0;
-                $user->save();
-                $this->userProfileService->clearUserCaches($user->username, $user->id);
-            }
-        }
-
         if (empty($user->account_id)) {
             $country = strtoupper($country);
             try {
@@ -697,7 +649,7 @@ class StripeController extends Controller
                     'email' => $user->email,
                     'capabilities' => $capabilities,
                     'tos_acceptance' => ['service_agreement' => $serviceAgreementType],
-                    "business_type" => ($country === 'AE') ? 'company' : 'individual',
+                    "business_type" => ($user->country === 'AE') ? 'company' : 'individual',
                     'business_profile' => [
                         'url'   => "https://spennypiggy.co/{$user->username}",
                         'mcc'   => '7278',
@@ -731,7 +683,7 @@ class StripeController extends Controller
             }
             $link = StripeControl::createAccountLink([
                 "account" => $account->id,
-                "refresh_url" => route("stripe.connect", ["country" => $user->country, "step" => "refresh"]),
+                "refresh_url" => route("stripe.connect", ["step" => "refresh", "country" => $user->country]),
                 "return_url"  => route("stripe.return"),
                 "type"        => "account_onboarding",
                 "collect"   => 'currently_due'
@@ -1038,8 +990,8 @@ class StripeController extends Controller
                 $link = StripeControl::createAccountLink([
                     'account'     => $newAccount->id,
                     'refresh_url' => route('stripe.connect', [
-                        'country' => $user->country,
                         'step'    => 'refresh',
+                        'country' => $user->country,
                     ]),
                     'return_url'  => route('stripe.return'),
                     'type'        => 'account_onboarding',
@@ -1198,8 +1150,8 @@ class StripeController extends Controller
             $accountLink = StripeControl::getClient()->accountLinks->create([
                 'account'      => $user->account_id,
                 'refresh_url'  => route('stripe.connect', [
-                    'country' => $user->country,
                     'step'    => 'refresh',
+                    'country' => $user->country,
                 ]),
                 'return_url'   => route('stripe.return'),
                 'type'         => $accountLinkType,
@@ -1298,13 +1250,6 @@ class StripeController extends Controller
 
             // ✅ 1. Create account if not exists
             if (empty($user->account_id)) {
-
-                // Fallback to user's profile country if not provided in request
-                $country = $country ?: $user->country;
-
-                if (empty($country)) {
-                    return redirect()->route('stripe.index')->with('error', 'Please select your country first.');
-                }
 
                 $country = strtoupper($country);
 
@@ -1418,45 +1363,6 @@ class StripeController extends Controller
                 ->where('status', 1)
                 ->with(['wish'])
                 ->get();
-
-            if ($getdata->isEmpty()) {
-                return redirect()->back()->with('error', 'No items in cart to checkout.');
-            }
-
-            $creator = User::find($owner_id);
-            if (!$creator) {
-                return redirect()->back()->with('error', 'Creator not found.');
-            }
-
-            // NEW: Check creator subscription eligibility first
-            $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
-
-            if (!$subscriptionCheck['eligible']) {
-                $preliminaryTotal = $getdata->sum(function ($item) {
-                    return $item->amount * $item->quantity;
-                });
-                $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
-
-                return redirect()->back()->with(
-                    'error',
-                    app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
-                );
-            }
-
-            // NEW: Check creator activity eligibility
-            $activityCheck = app(CreatorActivityService::class)->validateCreatorActivity($creator);
-
-            if (!$activityCheck['eligible']) {
-                $preliminaryTotal = $getdata->sum(function ($item) {
-                    return $item->amount * $item->quantity;
-                });
-                $creator->notify(new PaymentBlockedNotification($activityCheck, $preliminaryTotal));
-
-                return redirect()->back()->with(
-                    'error',
-                    app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage(null, $activityCheck)
-                );
-            }
 
             $lineItems = [];
             $totalApplicationFee = 0;
@@ -1625,10 +1531,10 @@ class StripeController extends Controller
 
             if (!empty($getdata[0]->owner->username)) {
                 $this->userProfileService->clearUserCaches($getdata[0]->owner->username, $getdata[0]->owner->id);
-                return redirect(route('thank-you', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
+                return redirect(route('user.show', [$getdata[0]->owner->username]))->with('success', 'Payment Successfull.');
             } else {
                 $this->userProfileService->clearUserCaches(Auth::user()->username, Auth::user()->id);
-                return redirect(route('thank-you', [Auth::user()->username]))->with('success', 'Payment Successfull.');
+                return redirect(route('user.show', [Auth::user()->username]))->with('success', 'Payment Successfull.');
             }
         } catch (\Throwable $th) {
             Log::info('error:' . $th);
@@ -1662,34 +1568,6 @@ class StripeController extends Controller
                 $creator = $cart[0]->owner;
                 if (!$creator) {
                     return redirect()->back()->with('error', 'Creator not found.');
-                }
-
-                // NEW: Check creator subscription eligibility first
-                $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($creator);
-
-                if (!$subscriptionCheck['eligible']) {
-                    // Send notification to creator about blocked payment
-                    $preliminaryTotal = $cart->sum(function ($item) {
-                        return $item->amount * $item->quantity;
-                    });
-                    $creator->notify(new SubscriptionBlockedNotification($subscriptionCheck, $preliminaryTotal));
-
-                    // Log the blocked payment for subscription issues
-                    Log::warning('Anonymous cart payment blocked due to subscription issue', [
-                        'creator_id' => $creator->id,
-                        'creator_username' => $creator->username,
-                        'device_id' => $device_id,
-                        'cart_items_count' => $cart->count(),
-                        'preliminary_total' => $preliminaryTotal,
-                        'subscription_status' => $subscriptionCheck['status'],
-                        'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
-                    ]);
-
-                    // Return user-friendly error to fan
-                    return redirect()->back()->with(
-                        'error',
-                        app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
-                    );
                 }
 
                 // NEW: Check creator activity eligibility for anonymous checkout
@@ -1779,10 +1657,8 @@ class StripeController extends Controller
                     'cancel_url' => route('checkout.anonymous.cancel', [$device_id]),
                     'line_items' => $lineItems,
                     'mode' => 'payment',
-                    'customer_email' => request()->query('email') ?? ($cart[0]->user->email ?? null),
                     'payment_intent_data' => [
                         'application_fee_amount' => (int)($totalApplicationFee * 100),
-                        'receipt_email' => request()->query('email') ?? ($cart[0]->user->email ?? null),
                         'description' => "Anonymous Support Payment for {$creator->username} (Total value including all fees)",
                         'metadata' => Helpers::buildStripeMetadata('wishlist', $cart[0], [
                             'user_id' => null, // Anonymous purchase
@@ -1876,7 +1752,7 @@ class StripeController extends Controller
 
 
             $this->userProfileService->clearUserCaches($stripeid->owner->username, $stripeid->owner->id);
-            return to_route('thank-you', ['username' => $stripeid->owner->username])->with('success', 'Payment Successfull.');
+            return redirect(route('user.show', [$stripeid->owner->username]))->with('success', 'Payment Successfull.');
         } catch (\Throwable) {
             //throw $th;
         }
@@ -1914,30 +1790,6 @@ class StripeController extends Controller
         $wish = WishItem::whereUuid($uuid)->with('user')->first();
         if (!$wish) return redirect()->back()->with('error', 'Wish item not found!');
         if (!$wish->user) return redirect()->back()->with('error', 'Creator not found!');
-
-        // NEW: Check creator subscription eligibility first
-        $subscriptionCheck = app(CreatorSubscriptionService::class)->validateCreatorSubscription($wish->user);
-
-        if (!$subscriptionCheck['eligible']) {
-            // Send notification to creator about blocked payment
-            $wish->user->notify(new SubscriptionBlockedNotification($subscriptionCheck, $wish->price));
-
-            // Log the blocked payment for subscription issues
-            Log::warning('Wish subscription payment blocked due to subscription issue', [
-                'creator_id' => $wish->user->id,
-                'creator_username' => $wish->user->username,
-                'wish_item_id' => $wish->id,
-                'wish_price' => $wish->price,
-                'subscription_status' => $subscriptionCheck['status'],
-                'subscription_status_code' => $subscriptionCheck['subscription_status'] ?? 'unknown'
-            ]);
-
-            // Return user-friendly error to fan
-            return redirect()->back()->with(
-                'error',
-                app(\App\Services\CreatorAvailabilityMessageService::class)->supporterMessage($subscriptionCheck, null)
-            );
-        }
 
         $guestRestriction = Helpers::guestCheckoutRestriction('GBP', 0);
         if (!Auth::check() && $guestRestriction) {
@@ -2242,15 +2094,6 @@ class StripeController extends Controller
                 'cancel_url' => route('wish.subscribe.handle', ['uuid' => $sub->uuid, 'status' => 'cancel']),
             ];
 
-            // Ensure receipt_email is set for Stripe receipts
-            if ($payload['customer_email']) {
-                if ($reccure === 'onetime') {
-                    // receipt_email will be added to payment_intent_data below
-                } else {
-                    // For mode: subscription, Stripe uses the customer's email.
-                }
-            }
-
             // Risk Engine: Force 3DS if Step-Up required
             if (isset($force3DS) && $force3DS) {
                 $payload['payment_method_options'] = [
@@ -2279,7 +2122,6 @@ class StripeController extends Controller
                         'has_card_payments' => (string) $hasCardPayments,
                     ]),
                     'application_fee_amount' => (int) round($applicationFeeAmount * $multiplier),
-                    'receipt_email' => $payload['customer_email'],
                 ];
 
                 // Direct Charges used
@@ -3125,7 +2967,7 @@ class StripeController extends Controller
                 'msg' => "Please complete your card verification process. Go your profile and complete your card verification process."
             ]);
         }
-        $creator = User::where('uuid', $creator_uid)->first();
+        $creator = User::where('uuid', $creator_uid)->where('is_uk', 0)->first();
         if (!$creator) {
             return response()->json([
                 'status' => false,
@@ -3375,14 +3217,6 @@ class StripeController extends Controller
                 'cancel_url' => route('tip-jar.handle', ['uuid' => $pay->uuid, 'status' => "cancel"]),
             ];
 
-            // Ensure receipt_email is set for Stripe receipts
-            if ($payload['customer_email']) {
-                if (!isset($payload['payment_intent_data'])) {
-                    $payload['payment_intent_data'] = [];
-                }
-                $payload['payment_intent_data']['receipt_email'] = $payload['customer_email'];
-            }
-
             // Check if we need to force 3DS
             if (in_array('FORCE_3DS', $riskData['reason_codes'] ?? [])) {
                 $payload['payment_method_options'] = [
@@ -3583,7 +3417,7 @@ class StripeController extends Controller
                     $this->userProfileService->clearUserCaches($tip_pay->user->username, $tip_pay->user->id);
                 }
 
-                return to_route('thank-you', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
+                return to_route('user.show', ['username' => $tip_pay->creator->username])->with('success', "Thank you for your support!");
             }
 
             $tip_pay->save();
@@ -3621,6 +3455,26 @@ class StripeController extends Controller
      */
     public function payMonthlyCharge(Request $request)
     {
+        $request->validate([
+            'digital_waiver' => ['required', 'accepted'],
+        ]);
+
+        $user = User::where('id', Auth::id())->first();
+        if (!$user) {
+            return back()->with('error', 'Subscription not allowed for this user.');
+        }
+
+        // 🛡️ Prevent duplicate subscriptions: Sync status from Stripe first
+        if ($user->stripe_id) {
+            $this->userProfileService->syncUserSubscription($user);
+            
+            // Check if user is already subscribed after sync
+            if ($user->subscription_status >= 1) { // 1 = ACTIVE, 2 = FREE_TRIAL
+                return to_route('user.show', ['username' => $user->username])
+                    ->with('success', 'You already have an active subscription.');
+            }
+        }
+
         $currency = strtolower($request->cookie("currency", "GBP"));
         $price = 8.99;
         
@@ -3628,11 +3482,6 @@ class StripeController extends Controller
         $vatRate = 20; 
         $tax = round($price * $vatRate / 100, 2);
         $finalTotalAmount = $price + $tax;
-
-        $user = User::where('id', Auth::id())->first();
-        if (!$user) {
-            return back()->with('error', 'Subscription not allowed for this user.');
-        }
 
         if (!$user->stripe_id) {
             $customer = StripeControl::createCustomer([
@@ -3657,10 +3506,7 @@ class StripeController extends Controller
             'tax'       =>  $tax,
         ]);
 
-        if ($request->has('digital_waiver')) {
-            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
-        }
-        
+        Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
         $sub->save();
 
         $amount = $finalTotalAmount;
@@ -3716,14 +3562,6 @@ class StripeController extends Controller
             'success_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "success"]),
             'cancel_url' => route('mandatory.handle', ['uuid' => $sub->uuid, 'status' => "cancel"]),
         ];
-
-        // Ensure receipt_email is set on the subscription if possible, 
-        // but for mode: subscription, Stripe uses the customer's email.
-        if ($payload['customer_email']) {
-            // No direct receipt_email on checkout session for mode: subscription, 
-            // but we can ensure it's in the metadata for tracking.
-            $payload['subscription_data']['metadata']['receipt_email'] = $payload['customer_email'];
-        }
 
         try {
             $session = StripeControl::createCheckoutSession($payload);
@@ -3840,7 +3678,7 @@ class StripeController extends Controller
 
                 $this->userProfileService->clearUserCaches($sub->user->username, $sub->user->id);
 
-                return to_route('thank-you', ['username' => $sub->user->username])->with('success', "Subscription Success!");
+                return to_route('user.show', ['username' => $sub->user->username])->with('success', "Subscription Success!");
             }
 
             MonthlySubscribedJob::dispatch($sub->email, $sub, 'failure');

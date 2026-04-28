@@ -5,43 +5,35 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class BillMailToUser extends Mailable
+class ShopShippedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $bill_pay;
-    public $amountWithCurr;
-    public $user_name;
     public $deliverable;
+    public $creator;
 
     /**
      * Create a new message instance.
-     *
-     * @return void
      */
-    public function __construct($bill_pay, $amountWithCurr, $user_name, $deliverable = null)
+    public function __construct($deliverable, $creator)
     {
-        $this->bill_pay = $bill_pay;
-        $this->amountWithCurr = $amountWithCurr;
-        $this->user_name = $user_name;
         $this->deliverable = $deliverable;
+        $this->creator = $creator;
     }
 
     /**
      * Build the message.
-     *
-     * @return $this
      */
     public function build()
     {
-        try {
-            $subject = 'Bill Granted on Spenny Piggy!';
-            return $this->view('email.bill_checkout_to_user')
+        $subject = "Your order from " . $this->creator->name . " has been shipped!";
+        
+        return $this->view('email.shop-shipped')
             ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject);
-        } catch (\Exception $e) {
-        }
     }
 }

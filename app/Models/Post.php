@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use App\Models\PostCommentReplies;
 use Ramsey\Uuid\Uuid;
 
 class Post extends Model
@@ -42,7 +43,8 @@ class Post extends Model
         'image_url',
         'likes_count',
         'liked',
-        'comments_count'
+        'comments_count',
+        'pending_items_count'
     ];
 
     public static function boot()
@@ -53,7 +55,7 @@ class Post extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0)->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
     }
 
     public function getImageUrlAttribute()
@@ -160,10 +162,29 @@ class Post extends Model
 
     public function getCommentsCountAttribute()
     {
-        $count = $this->comments()->count();
-        foreach ($this->comments as $key => $value) {
-            $count += $value->replies()->count();
+        $userId = Auth::id();
+        $isCreator = $this->user_id === $userId;
+
+        $commentsQuery = $this->comments();
+        if (!$isCreator) {
+            $commentsQuery->where(function($q) use ($userId) {
+                $q->where('is_approved', 1)->orWhere('user_id', $userId);
+            });
         }
+        
+        $comments = $commentsQuery->get();
+        $count = $comments->count();
+
+        foreach ($comments as $comment) {
+            $repliesQuery = $comment->replies();
+            if (!$isCreator) {
+                $repliesQuery->where(function($q) use ($userId) {
+                    $q->where('is_approved', 1)->orWhere('user_id', $userId);
+                });
+            }
+            $count += $repliesQuery->count();
+        }
+
         return $count;
     }
 
@@ -179,6 +200,20 @@ class Post extends Model
         }
 
         return false;
+    }
+
+    public function getPendingItemsCountAttribute()
+    {
+        if (!Auth::check() || Auth::id() !== $this->user_id) {
+            return 0;
+        }
+
+        $pendingCommentsCount = $this->comments()->where('is_approved', 0)->count();
+        $pendingRepliesCount = PostCommentReplies::whereHas('post_comment', function ($q) {
+            $q->where('post_id', $this->id);
+        })->where('is_approved', 0)->count();
+
+        return $pendingCommentsCount + $pendingRepliesCount;
     }
 
     /**

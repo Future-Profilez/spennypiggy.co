@@ -12,7 +12,7 @@ class MyController extends Controller
     public function getUsers()
     {
         // $users = User::where('name','naveen')->orderBy('created_at','DESC')->get();
-        $users = User::where('is_uk', 0)->get();
+        $users = User::all();
         return Inertia::render('Lists', [
             'users' => $users
         ]);

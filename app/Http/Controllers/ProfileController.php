@@ -139,7 +139,7 @@ class ProfileController extends Controller
         // $fullUrl = $request->fullUrl(); // Includes query parameters
         // $method = $request->method();   // GET, POST, etc.
 
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $currency = strtolower($request->cookie("currency", "GBP"));
 
         // if($request->min_surprise_amount < 5){
@@ -306,7 +306,7 @@ class ProfileController extends Controller
     public function updateProfileLockStatus()
     {
         try {
-            $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+            $user = User::where('id', Auth::id())->first();
             if ($user->role == 1) {
                 $user->profile_status_lock = 1;
                 $user->profile_status_lock = 1;
@@ -498,7 +498,7 @@ class ProfileController extends Controller
      */
     public function notificationSwitch()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if (!$user) {
             return response()->json([
@@ -682,7 +682,7 @@ class ProfileController extends Controller
 
     public function gifterWishitems($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -742,7 +742,7 @@ class ProfileController extends Controller
 
     public function gifterSubs($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
         $trackData = [];
@@ -789,7 +789,7 @@ class ProfileController extends Controller
 
     public function gifterTips($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_tips = TipGoalsPayment::where('user_id', $user->id)->with('tipGoal')->paginate(30);
 
@@ -832,7 +832,7 @@ class ProfileController extends Controller
 
     public function gifterMemberships($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_member = MembershipPayment::where('user_id', $user->id)->with(['membership', 'membership.user'])->paginate(30);
 
@@ -875,7 +875,7 @@ class ProfileController extends Controller
 
     public function gifterBills($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $billPayments = BillPayment::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
@@ -925,7 +925,7 @@ class ProfileController extends Controller
 
     public function gifterContentFiles($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
         // 1) Wish purchases (StripePaymentItems) -> prefer content_file_url, then reward_url, else message_url
         $wishPurchases = \App\Models\StripePaymentItems::whereHas('payment', function ($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -1051,7 +1051,7 @@ class ProfileController extends Controller
 
     public function gifterThanksMessages($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -1097,7 +1097,7 @@ class ProfileController extends Controller
 
     public function gifterAccessPosts($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $data = [];
         // Get user IDs from active subscriptions for post access
@@ -1180,7 +1180,7 @@ class ProfileController extends Controller
 
     public function gifterMedia($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $categorizedPayments = [];
 
@@ -1218,7 +1218,7 @@ class ProfileController extends Controller
 
     public function gifterSubscription($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_subs = WishItemSubscription::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
@@ -1263,8 +1263,8 @@ class ProfileController extends Controller
 
     public function supportStory($creatorUsername, $gifterUsername)
     {
-        $creator = User::where('username', $creatorUsername)->where('is_uk', 0)->firstOrFail();
-        $gifter = User::where('username', $gifterUsername)->where('is_uk', 0)->firstOrFail();
+        $creator = User::where('username', $creatorUsername)->firstOrFail();
+        $gifter = User::where('username', $gifterUsername)->firstOrFail();
 
         if (!Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
             throw new AuthorizationException('Unauthorized');
@@ -1931,10 +1931,22 @@ class ProfileController extends Controller
                 default => 'transaction',
             };
 
-            return [
+            $source = match ($base) {
+                'StripePaymentItems' => 'stripe_payment_items',
+                'MembershipPayment' => 'membership_payments',
+                'BillPayment' => 'bill_payments',
+                'TipGoalsPayment' => 'tip_goals_payments',
+                'ShopPayment' => 'shop_payments',
+                'TaskPurchase' => 'task_purchases',
+                default => 'financial_transactions',
+            };
+
+            $sourceId = $source === 'financial_transactions' ? $tx->id : $tx->source_id;
+
+            $event = [
                 'type' => $type,
-                'source' => 'financial_transactions',
-                'source_id' => $tx->id,
+                'source' => $source,
+                'source_id' => $sourceId,
                 'category' => $tab,
                 'amount' => $baseAmount,
                 'display_amount' => $displayAmount,
@@ -1957,6 +1969,53 @@ class ProfileController extends Controller
                     'avatar' => $tx->user->avatar_url,
                 ] : null,
             ];
+
+            // Load reactions and replies
+            try {
+                $event['reactions'] = SupportStoryReaction::where([
+                    'creator_id' => $tx->user_id,
+                    'gifter_id' => $tx->supporter_id,
+                    'event_type' => $type,
+                    'source' => $source,
+                    'source_id' => $sourceId,
+                ])->selectRaw('emoji, COUNT(*) as c')->groupBy('emoji')->pluck('c', 'emoji')->toArray();
+
+                if (Auth::check()) {
+                    $event['user_reacted'] = SupportStoryReaction::where([
+                        'creator_id' => $tx->user_id,
+                        'gifter_id' => $tx->supporter_id,
+                        'event_type' => $type,
+                        'source' => $source,
+                        'source_id' => $sourceId,
+                        'user_id' => Auth::id(),
+                    ])->pluck('emoji')->toArray();
+                } else {
+                    $event['user_reacted'] = [];
+                }
+
+                $event['replies'] = SupportStoryReply::where([
+                    'creator_id' => $tx->user_id,
+                    'gifter_id' => $tx->supporter_id,
+                    'event_type' => $type,
+                    'source' => $source,
+                    'source_id' => $sourceId,
+                ])->with('user:id,username,avatar')->orderBy('created_at', 'desc')->limit(5)->get()->map(function ($r) {
+                    return [
+                        'id' => $r->id,
+                        'user_id' => $r->user_id,
+                        'username' => optional($r->user)->username,
+                        'avatar' => optional($r->user)->avatar_url,
+                        'message' => $r->message,
+                        'created_at' => $r->created_at->format('Y-m-d H:i:s'),
+                    ];
+                })->toArray();
+            } catch (\Throwable $e) {
+                $event['reactions'] = [];
+                $event['user_reacted'] = [];
+                $event['replies'] = [];
+            }
+
+            return $event;
         })->values()->toArray();
 
         $nextBefore = $hasMore && !empty($events) ? end($events)['created_at'] : null;
@@ -1984,518 +2043,11 @@ class ProfileController extends Controller
         return response()->json(
             $this->buildFinancialTransactionsFeed($user, $tab, $limit, $before, $displayCurrency)
         );
-        $events = [];
-
-        if ($tab === 'sent') {
-            // WISH
-            $wishItems = StripePaymentItems::whereHas('payment', function ($q) use ($user) {
-                $q->where(function ($sub) use ($user) {
-                    $sub->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-                });
-            })->with(['payment.owner', 'wish'])->get();
-            foreach ($wishItems as $it) {
-                $events[] = [
-                    'type' => 'gift_wish',
-                    'source' => 'stripe_payment_items',
-                    'source_id' => $it->id,
-                    'category' => 'sent',
-                    'amount' => $it->amount,
-                    'tax' => 0,
-                    'vat_amount' => $it->vat_amount ?? ($it->tax ?? 0),
-                    'currency' => optional($it->payment)->currency,
-                    'created_at' => Carbon::parse($it->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => optional($it->payment->owner)->id,
-                    'gifter_id' => $user->id,
-                    'gifter' => [
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'avatar' => $user->avatar_url,
-                    ],
-                    'creator' => [
-                        'name' => optional($it->payment->owner)->name,
-                        'username' => optional($it->payment->owner)->username,
-                        'avatar' => optional($it->payment->owner)->avatar_url,
-                    ],
-                    'wish' => $it->wish ? [
-                        'id' => $it->wish->id,
-                        'uuid' => $it->wish->uuid ?? null,
-                        'name' => $it->wish->wishname,
-                        'perma_link' => $it->wish->perma_link,
-                        'reward_file' => $it->wish->content_file_url ?? $it->wish->reward_url ?? null,
-                    ] : null,
-                    'access' => $it->wish && ($it->wish->content_file_url ?? $it->wish->reward_url ?? null) ? 'Reward file' : null,
-                    'open_link' => ($it->wish && optional($it->payment->owner)->username)
-                        ? ("/" . optional($it->payment->owner)->username . "/wish/" . $it->wish->id)
-                        : null,
-                ];
-            }
-            // MEMBERSHIP
-            $membershipPayments = MembershipPayment::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            })->with(['membership', 'membership.user', 'user'])->get();
-            foreach ($membershipPayments as $mp) {
-                $events[] = [
-                    'type' => 'gift_membership',
-                    'source' => 'membership_payments',
-                    'source_id' => $mp->id,
-                    'category' => 'sent',
-                    'amount' => $mp->amount,
-                    'tax' => $mp->tax,
-                    'vat_amount' => $mp->vat_tax_amount ?? 0,
-                    'currency' => $mp->currency,
-                    'created_at' => Carbon::parse($mp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => optional(optional($mp->membership)->user)->id,
-                    'gifter_id' => $user->id,
-                    'gifter' => [
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'avatar' => $user->avatar_url,
-                    ],
-                    'creator' => [
-                        'name' => optional(optional($mp->membership)->user)->name,
-                        'username' => optional(optional($mp->membership)->user)->username,
-                        'avatar' => optional(optional($mp->membership)->user)->avatar_url,
-                    ],
-                    'membership' => $mp->membership ? [
-                        'uuid' => $mp->membership->uuid ?? null,
-                        'level' => $mp->membership->level,
-                        'perma_link' => $mp->membership->perma_link,
-                    ] : null,
-                    'access' => 'Members-only posts',
-                    'open_link' => optional(optional($mp->membership)->user)->username ? ("/" . optional(optional($mp->membership)->user)->username) : null,
-                ];
-            }
-            // BILLS
-            $billPayments = BillPayment::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            })->with(['bill', 'bill.user', 'user'])->get();
-            foreach ($billPayments as $bp) {
-                $events[] = [
-                    'type' => 'gift_bill',
-                    'source' => 'bill_payments',
-                    'source_id' => $bp->id,
-                    'category' => 'sent',
-                    'amount' => $bp->amount,
-                    'tax' => $bp->tax,
-                    'vat_amount' => $bp->vat_tax_amount ?? 0,
-                    'currency' => $bp->currency,
-                    'created_at' => Carbon::parse($bp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => optional($bp->bill->user)->id,
-                    'gifter_id' => $user->id,
-                    'gifter' => [
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'avatar' => $user->avatar_url,
-                    ],
-                    'creator' => [
-                        'name' => optional($bp->bill->user)->name,
-                        'username' => optional($bp->bill->user)->username,
-                        'avatar' => optional($bp->bill->user)->avatar_url,
-                    ],
-                    'bill' => $bp->bill ? [
-                        'uuid' => $bp->bill->uuid ?? null,
-                        'name' => $bp->bill->name,
-                        'perma_link' => $bp->bill->perma_link,
-                    ] : null,
-                    'access' => 'Subscription-only posts',
-                    'open_link' => optional($bp->bill->user)->username ? ("/" . optional($bp->bill->user)->username) : null,
-                ];
-            }
-            // SUPPORT/TIP
-            $tipPayments = TipGoalsPayment::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
-            })->with(['creator', 'user'])->get();
-            foreach ($tipPayments as $tp) {
-                $vatAmount = $tp->vat_amount ?? 0;
-                $events[] = [
-                    'type' => 'gift_tip',
-                    'source' => 'tip_goals_payments',
-                    'source_id' => $tp->id,
-                    'category' => 'sent',
-                    'amount' => $tp->amount,
-                    'tax' => $tp->tax,
-                    'vat_amount' => $vatAmount,
-                    'paid_total' => $tp->total_paid ?? null,
-                    'currency' => $tp->currency,
-                    'created_at' => Carbon::parse($tp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => optional($tp->creator)->id,
-                    'gifter_id' => $user->id,
-                    'gifter' => [
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'avatar' => $user->avatar_url,
-                    ],
-                    'creator' => [
-                        'name' => optional($tp->creator)->name,
-                        'username' => optional($tp->creator)->username,
-                        'avatar' => optional($tp->creator)->avatar_url,
-                    ],
-                    'certificate_url' => $tp->certificate_url ?? null,
-                    'access' => 'Supporters-only posts',
-                    'open_link' => optional($tp->creator)->username
-                        ? ("/" . optional($tp->creator)->username)
-                        : null,
-                ];
-            }
-            // SHOP
-            $shopPayments = ShopPayment::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)->orWhere('email', $user->email);
-            })->with(['shop', 'shop.user', 'user'])->get();
-            foreach ($shopPayments as $sp) {
-                $events[] = [
-                    'type' => 'gift_shop',
-                    'source' => 'shop_payments',
-                    'source_id' => $sp->id,
-                    'category' => 'sent',
-                    'amount' => $sp->amount,
-                    'tax' => $sp->tax_amount ?? 0,
-                    'vat_amount' => $sp->vat_tax_amount ?? 0,
-                    'currency' => $sp->currency,
-                    'created_at' => Carbon::parse($sp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => optional(optional($sp->shop)->user)->id,
-                    'gifter_id' => $user->id,
-                    'gifter' => [
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'avatar' => $user->avatar_url,
-                    ],
-                    'creator' => [
-                        'name' => optional(optional($sp->shop)->user)->name,
-                        'username' => optional(optional($sp->shop)->user)->username,
-                        'avatar' => optional(optional($sp->shop)->user)->avatar_url,
-                    ],
-                    'shop' => $sp->shop ? [
-                        'uuid' => $sp->shop->uuid ?? null,
-                        'name' => $sp->shop->name,
-                        'perma_link' => $sp->shop->perma_link,
-                    ] : null,
-                    'access' => 'Physical item',
-                    'open_link' => $sp->shop ? $sp->shop->perma_link : null,
-                ];
-            }
-            // TASK
-            $taskPurchases = TaskPurchase::where('supporter_id', $user->id)->with(['task'])->get();
-            foreach ($taskPurchases as $tpur) {
-                $creatorUser = User::find($tpur->creator_id);
-                $events[] = [
-                    'type' => 'gift_task',
-                    'source' => 'task_purchases',
-                    'source_id' => $tpur->id,
-                    'category' => 'sent',
-                    'amount' => $tpur->amount,
-                    'tax' => 0,
-                    'vat_amount' => $tpur->vat_amount ?? 0,
-                    'currency' => 'gbp',
-                    'created_at' => Carbon::parse($tpur->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $tpur->creator_id,
-                    'gifter_id' => $user->id,
-                    'gifter' => [
-                        'name' => $user->name,
-                        'username' => $user->username,
-                        'avatar' => $user->avatar_url,
-                    ],
-                    'creator' => [
-                        'name' => optional($creatorUser)->name,
-                        'username' => optional($creatorUser)->username,
-                        'avatar' => optional($creatorUser)->avatar_url,
-                    ],
-                    'task' => $tpur->task ? [
-                        'title' => $tpur->task->title,
-                        'uuid' => $tpur->task->uuid,
-                        'reward_file' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out'])) 
-                            ? route('task.download', $tpur->task->uuid) 
-                            : ($tpur->proof_content['media_url'] ?? null),
-                        'reward_note' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out']))
-                            ? $tpur->task->deliverable_note
-                            : ($tpur->proof_content['message'] ?? null),
-                    ] : null,
-                    'access' => 'Task benefits',
-                    'open_link' => $tpur->task ? ("/task/" . $tpur->task->uuid) : null,
-                ];
-            }
-        } else {
-            // RECEIVED
-            $creator = $user;
-            // WISH
-            $wishItems = StripePaymentItems::whereHas('payment', function ($q) use ($creator) {
-                $q->where('owner_id', $creator->id);
-            })->with(['payment.user', 'wish'])->get();
-            foreach ($wishItems as $it) {
-                $events[] = [
-                    'type' => 'gift_wish',
-                    'source' => 'stripe_payment_items',
-                    'source_id' => $it->id,
-                    'category' => 'received',
-                    'amount' => $it->amount,
-                    'tax' => 0,
-                    'vat_amount' => $it->vat_amount ?? ($it->tax ?? 0),
-                    'currency' => optional($it->payment)->currency,
-                    'created_at' => Carbon::parse($it->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $creator->id,
-                    'creator' => [
-                        'name' => $creator->name,
-                        'username' => $creator->username,
-                        'avatar' => $creator->avatar_url,
-                    ],
-                    'gifter_id' => optional($it->payment->user)->id,
-                    'gifter' => [
-                        'name' => optional($it->payment->user)->name ?? $it->payment->guest_name ?? null,
-                        'username' => optional($it->payment->user)->username ?? null,
-                        'avatar' => optional($it->payment->user)->avatar_url ?? null,
-                    ],
-                    'wish' => $it->wish ? [
-                        'id' => $it->wish->id,
-                        'uuid' => $it->wish->uuid ?? null,
-                        'name' => $it->wish->wishname,
-                        'perma_link' => $it->wish->perma_link,
-                        'reward_file' => $it->wish->content_file_url ?? $it->wish->reward_url ?? null,
-                    ] : null,
-                    'access' => $it->wish && ($it->wish->content_file_url ?? $it->wish->reward_url ?? null) ? 'Reward file' : null,
-                    'open_link' => $it->wish ? ("/" . $creator->username . "/wish/" . $it->wish->id) : null,
-                ];
-            }
-            // MEMBERSHIP
-            $membershipPayments = MembershipPayment::whereHas('membership', function ($q) use ($creator) {
-                $q->where('user_id', $creator->id);
-            })->with(['membership', 'user'])->get();
-            foreach ($membershipPayments as $mp) {
-                $events[] = [
-                    'type' => 'gift_membership',
-                    'source' => 'membership_payments',
-                    'source_id' => $mp->id,
-                    'category' => 'received',
-                    'amount' => $mp->amount,
-                    'tax' => $mp->tax,
-                    'vat_amount' => $mp->vat_tax_amount ?? 0,
-                    'currency' => $mp->currency,
-                    'created_at' => Carbon::parse($mp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $creator->id,
-                    'creator' => [
-                        'name' => $creator->name,
-                        'username' => $creator->username,
-                        'avatar' => $creator->avatar_url,
-                    ],
-                    'gifter_id' => optional($mp->user)->id,
-                    'access' => 'Members-only posts',
-                    'gifter' => [
-                        'name' => optional($mp->user)->name ?? $mp->guest_name ?? null,
-                        'username' => optional($mp->user)->username ?? null,
-                        'avatar' => optional($mp->user)->avatar_url ?? null,
-                    ],
-                    'membership' => $mp->membership ? [
-                        'uuid' => $mp->membership->uuid ?? null,
-                        'level' => $mp->membership->level,
-                        'perma_link' => $mp->membership->perma_link,
-                    ] : null,
-                    'open_link' => optional($mp->user)->username ? ("/" . optional($mp->user)->username) : null,
-                ];
-            }
-            // BILLS
-            $billPayments = BillPayment::whereHas('bill', function ($q) use ($creator) {
-                $q->where('user_id', $creator->id);
-            })->with(['bill', 'user'])->get();
-            foreach ($billPayments as $bp) {
-                $events[] = [
-                    'type' => 'gift_bill',
-                    'source' => 'bill_payments',
-                    'source_id' => $bp->id,
-                    'category' => 'received',
-                    'amount' => $bp->amount,
-                    'tax' => $bp->tax,
-                    'vat_amount' => $bp->vat_tax_amount ?? 0,
-                    'currency' => $bp->currency,
-                    'created_at' => Carbon::parse($bp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $creator->id,
-                    'creator' => [
-                        'name' => $creator->name,
-                        'username' => $creator->username,
-                        'avatar' => $creator->avatar_url,
-                    ],
-                    'gifter_id' => optional($bp->user)->id,
-                    'bill' => $bp->bill ? [
-                        'uuid' => $bp->bill->uuid ?? null,
-                        'name' => $bp->bill->name,
-                        'perma_link' => $bp->bill->perma_link,
-                    ] : null,
-                    'access' => 'Subscription-only posts',
-                    'gifter' => [
-                        'name' => optional($bp->user)->name ?? $bp->guest_name ?? null,
-                        'username' => optional($bp->user)->username ?? null,
-                        'avatar' => optional($bp->user)->avatar_url ?? null,
-                    ],
-                    'open_link' => optional($bp->user)->username ? ("/" . optional($bp->user)->username) : null,
-                ];
-            }
-            // SUPPORT/TIP
-            $tipPayments = TipGoalsPayment::where('creator_id', $creator->id)->with(['user'])->get();
-            foreach ($tipPayments as $tp) {
-                $vatAmount = $tp->vat_amount ?? 0;
-                $events[] = [
-                    'type' => 'gift_tip',
-                    'source' => 'tip_goals_payments',
-                    'source_id' => $tp->id,
-                    'category' => 'received',
-                    'amount' => $tp->amount,
-                    'tax' => $tp->tax,
-                    'vat_amount' => $vatAmount,
-                    'currency' => $tp->currency,
-                    'created_at' => Carbon::parse($tp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $creator->id,
-                    'creator' => [
-                        'name' => $creator->name,
-                        'username' => $creator->username,
-                        'avatar' => $creator->avatar_url,
-                    ],
-                    'gifter_id' => optional($tp->user)->id,
-                    'certificate_url' => $tp->certificate_url ?? null,
-                    'access' => 'Supporters-only posts',
-                    'gifter' => [
-                        'name' => optional($tp->user)->name ?? $tp->guest_name ?? null,
-                        'username' => optional($tp->user)->username ?? null,
-                        'avatar' => optional($tp->user)->avatar_url ?? null,
-                    ],
-                    'open_link' => optional($tp->user)->username ? ("/" . optional($tp->user)->username) : null,
-                ];
-            }
-            // SHOP
-            $shopPayments = ShopPayment::whereHas('shop', function ($q) use ($creator) {
-                $q->where('user_id', $creator->id);
-            })->with(['shop', 'user'])->get();
-            foreach ($shopPayments as $sp) {
-                $events[] = [
-                    'type' => 'gift_shop',
-                    'source' => 'shop_payments',
-                    'source_id' => $sp->id,
-                    'category' => 'received',
-                    'amount' => $sp->amount,
-                    'tax' => $sp->tax_amount ?? 0,
-                    'vat_amount' => $sp->vat_tax_amount ?? 0,
-                    'currency' => $sp->currency,
-                    'created_at' => Carbon::parse($sp->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $creator->id,
-                    'creator' => [
-                        'name' => $creator->name,
-                        'username' => $creator->username,
-                        'avatar' => $creator->avatar_url,
-                    ],
-                    'gifter_id' => optional($sp->user)->id,
-                    'shop' => $sp->shop ? [
-                        'uuid' => $sp->shop->uuid ?? null,
-                        'name' => $sp->shop->name,
-                        'perma_link' => $sp->shop->perma_link,
-                    ] : null,
-                    'access' => 'Physical item',
-                    'gifter' => [
-                        'name' => optional($sp->user)->name ?? $sp->name ?? null,
-                        'username' => optional($sp->user)->username ?? null,
-                        'avatar' => optional($sp->user)->avatar_url ?? null,
-                    ],
-                    'open_link' => $sp->shop ? $sp->shop->perma_link : null,
-                ];
-            }
-            // TASK
-            $taskPurchases = TaskPurchase::where('creator_id', $creator->id)->with(['task', 'supporter'])->get();
-            foreach ($taskPurchases as $tpur) {
-                $events[] = [
-                    'type' => 'gift_task',
-                    'source' => 'task_purchases',
-                    'source_id' => $tpur->id,
-                    'category' => 'received',
-                    'amount' => $tpur->amount,
-                    'tax' => 0,
-                    'vat_amount' => $tpur->vat_amount ?? 0,
-                    'currency' => 'gbp',
-                    'created_at' => Carbon::parse($tpur->created_at)->format('Y-m-d H:i:s'),
-                    'creator_id' => $creator->id,
-                    'creator' => [
-                        'name' => $creator->name,
-                        'username' => $creator->username,
-                        'avatar' => $creator->avatar_url,
-                    ],
-                    'gifter_id' => optional($tpur->supporter)->id,
-                    'task' => $tpur->task ? [
-                        'title' => $tpur->task->title,
-                        'uuid' => $tpur->task->uuid,
-                        'reward_file' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out'])) 
-                            ? route('task.download', $tpur->task->uuid) 
-                            : ($tpur->proof_content['media_url'] ?? null),
-                        'reward_note' => ($tpur->task->type === 'instant' && in_array($tpur->status, ['paid', 'delivered', 'completed', 'completed_accepted', 'paid_out']))
-                            ? $tpur->task->deliverable_note
-                            : ($tpur->proof_content['message'] ?? null),
-                    ] : null,
-                    'access' => 'Task benefits',
-                    'gifter' => [
-                        'name' => optional($tpur->supporter)->name ?? null,
-                        'username' => optional($tpur->supporter)->username ?? null,
-                        'avatar' => optional($tpur->supporter)->avatar_url ?? null,
-                    ],
-                    'open_link' => $tpur->task ? ("/task/" . $tpur->task->uuid) : null,
-                ];
-            }
-        }
-
-        foreach ($events as $idx => $ev) {
-            $src = $ev['source'] ?? null;
-            $sid = $ev['source_id'] ?? null;
-            $etype = $ev['type'] ?? null;
-            $creatorId = $ev['creator_id'] ?? null;
-            $gifterId = $ev['gifter_id'] ?? null;
-            if (!$src || !$sid || !$etype || !$creatorId || !$gifterId) {
-                $events[$idx]['reactions'] = [];
-                $events[$idx]['replies'] = [];
-                continue;
-            }
-            try {
-                $counts = SupportStoryReaction::where([
-                    'creator_id' => $creatorId,
-                    'gifter_id' => $gifterId,
-                    'event_type' => $etype,
-                    'source' => $src,
-                    'source_id' => $sid,
-                ])->selectRaw('emoji, COUNT(*) as c')->groupBy('emoji')->pluck('c', 'emoji')->toArray();
-                $events[$idx]['reactions'] = $counts;
-                $replies = SupportStoryReply::where([
-                    'creator_id' => $creatorId,
-                    'gifter_id' => $gifterId,
-                    'event_type' => $etype,
-                    'source' => $src,
-                    'source_id' => $sid,
-                ])->orderBy('created_at', 'desc')->limit(5)->get()->map(function ($r) {
-                    return [
-                        'id' => $r->id,
-                        'user_id' => $r->user_id,
-                        'username' => optional($r->user)->username,
-                        'avatar' => optional($r->user)->avatar_url,
-                        'message' => $r->message,
-                        'created_at' => $r->created_at->format('Y-m-d H:i:s'),
-                    ];
-                })->toArray();
-                $events[$idx]['replies'] = $replies;
-            } catch (\Throwable $e) {
-                $events[$idx]['reactions'] = [];
-                $events[$idx]['replies'] = [];
-            }
-        }
-
-        usort($events, fn ($a, $b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
-        if (!empty($before)) {
-            $events = array_values(array_filter($events, function ($e) use ($before) {
-                return strtotime($e['created_at']) < strtotime($before);
-            }));
-        }
-        $sliced = array_slice($events, 0, $limit);
-        $hasMore = count($events) > $limit;
-        $nextBefore = $hasMore && !empty($sliced) ? end($sliced)['created_at'] : null;
-        return response()->json([
-            'status' => true,
-            'events' => $sliced,
-            'has_more' => $hasMore,
-            'next_before' => $nextBefore,
-        ]);
     }
+
     public function profileStepsStatus()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
         $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
@@ -2572,7 +2124,7 @@ class ProfileController extends Controller
      */
     public function getNotifications()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $notifications = Notification::where('notifiable_id', $user->id)->with('user')->orderBy('created_at', 'DESC')->paginate(30);
         return response()->json([
@@ -2587,7 +2139,7 @@ class ProfileController extends Controller
 
     public function markRead()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         Notification::where('notifiable_id', $user->id)->where('is_read', 0)->update(['is_read' => 1]);
 
@@ -2599,7 +2151,7 @@ class ProfileController extends Controller
 
     public function deleteAllNotifications()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         Notification::where('notifiable_id', $user->id)->delete();
 
@@ -2611,7 +2163,7 @@ class ProfileController extends Controller
 
     public function piggyBankSetting()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if ($user->show_piggy_bank == 0) {
             $user->show_piggy_bank = 1;
@@ -2695,7 +2247,7 @@ class ProfileController extends Controller
 
     public function show2faQR()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $qrCode = null;
 
         if (empty($user->tfa_key)) {
@@ -2713,7 +2265,7 @@ class ProfileController extends Controller
 
     public function verification2FA(Request $request)
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $valid = false;
         if (!empty($request->otp)) {

@@ -342,6 +342,13 @@ class DiscoveryService
                     ->get(['id','name','username','avatar','cover','cover_cdn_modifier','profile_status_lock','role','default_currency'])
                     ->map(function ($u, $index) {
                         $sum = ($u->total_payments ?? 0) + ($u->total_subscriptions ?? 0) + ($u->total_tips ?? 0) + ($u->total_member ?? 0) + ($u->total_bill ?? 0) + ($u->total_shop ?? 0);
+                        
+                        // ✅ FIX: Ensure we return the correct currency metadata
+                        // If the creator's default_currency is different from the currency of the payments,
+                        // we need to be careful. For now, we'll assume the sum matches the default_currency
+                        // but we fallback to GBP to prevent USD-drift issues.
+                        $currency = $u->default_currency ?? 'GBP';
+                        
                         return [
                             'id' => $u->id,
                             'name' => $u->name,
@@ -350,8 +357,8 @@ class DiscoveryService
                             'cover_url' => $u->cover_url,
                             'profile_status_lock' => $u->profile_status_lock,
                             'role' => $u->role,
-                            'total_amount' => \App\Helpers::priceFormat($u->default_currency, $sum, 'USD'),
-                            'currency' => 'USD',
+                            'total_amount' => (float)$sum,
+                            'currency' => strtoupper($currency),
                             'is_number_one' => $index === 0,
                         ];
                     });

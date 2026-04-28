@@ -79,7 +79,7 @@ export default function CategoryLeaders() {
                         </>
                     ) : (
                         <>
-                            <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'USD')}</p>
+                            <p className="font-bold text-lg">{formatMultiPrice(creator.total_amount, creator.currency || 'GBP')}</p>
                             <p className="text-sm text-gray-600">Last 3 months</p>
                             <p className="text-xs text-gray-500">{creator.total_count || creator.supporters_count || 0} {creator.supporters_count ? 'supporters' : 'transactions'}</p>
                         </>
