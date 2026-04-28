@@ -537,12 +537,12 @@ class ShopsController extends Controller
         // dd($shop, $uuid, $session_id);
 
         // Handle case when shop doesn't exist
-        // if (!$shop) {
-        //     return Inertia::render('ErrorPage', [
-        //         'status' => 404,
-        //         'message' => 'Shop not found'
-        //     ]);
-        // }
+        if (!$shop) {
+            return Inertia::render('ErrorPage', [
+                'status' => 404,
+                'message' => 'Shop not found'
+            ]);
+        }
 
         // Initialize opened with default value
         $opened = 0;
