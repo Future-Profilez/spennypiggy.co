@@ -77,8 +77,7 @@ class BillsController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
@@ -188,8 +187,7 @@ class BillsController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow for consistent fee calculation
@@ -312,7 +310,7 @@ class BillsController extends Controller
                     }
                 } catch (\Exception $e) {
                     // Log the error but continue with bill deletion
-                    \Log::error('Failed to delete Stripe product: ' . $e->getMessage(), [
+                    Log::error('Failed to delete Stripe product: ' . $e->getMessage(), [
                         'bill_uuid' => $uuid,
                         'product_id' => $bill->product_id
                     ]);
@@ -418,8 +416,7 @@ class BillsController extends Controller
         $vatPercent = $bill->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $bill->user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $bill->user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
@@ -468,9 +465,9 @@ class BillsController extends Controller
             $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
             $request->validate([
-                'name' => ['nullable', 'string', 'max:50'],
+                'name' => ['nullable', 'sometimes', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
-                'message' => ['nullable', 'string', 'max:800'],
+                'message' => ['sometimes', 'nullable', 'string', 'max:800'],
                 'digital_waiver' => ['required', 'accepted'],
             ]);
 
@@ -829,8 +826,7 @@ class BillsController extends Controller
         try {
             $bill = $billPayment->bill;
 
-            // Fetch creator risk metrics for reserve calculation
-            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $bill->user->uuid]);
+            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $bill->user->uuid);
             $reserveRate = $metrics->reserve_percent ?? 0;
 
             // Use consistent fee calculation for creator net amount

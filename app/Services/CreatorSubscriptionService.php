@@ -35,12 +35,14 @@ class CreatorSubscriptionService
                 'is_subscribed' => $creator->is_subscribed
             ]);
 
-            // Status 0 = No subscription or inactive
-            if ($subscriptionStatus === 0) {
+            // Status 0 = Expired, Status 3 = Inactive/Never Subscribed
+            if ($subscriptionStatus === 0 || $subscriptionStatus === 3) {
                 return [
                     'eligible' => false,
-                    'status' => 'no_subscription',
-                    'message' => '💳 Active subscription required to receive payments',
+                    'status' => $subscriptionStatus === 0 ? 'subscription_expired' : 'no_subscription',
+                    'message' => $subscriptionStatus === 0 
+                        ? '💳 Your site subscription has expired' 
+                        : '💳 Active subscription required to receive payments',
                     'subscription_status' => $subscriptionStatus,
                     'action_required' => 'subscribe',
                     'suggestions' => $this->getSubscriptionSuggestions()

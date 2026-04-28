@@ -510,9 +510,9 @@ export default function CartItems({ data, cartsItems, fetchCartItem, auth }) {
                                                 name="digital_waiver"
                                                 className="mt-1 mr-3 h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
                                                 checked={digitalWaiver}
-                                                onChange={(e) => setDigitalWaiver(e.target.checked)}
-                                                required
-                                            />
+                                                 onChange={(e) => setDigitalWaiver(e.target.checked)}
+                                                 required
+                                             />
                                             <span>
                                                 I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.
                                             </span>

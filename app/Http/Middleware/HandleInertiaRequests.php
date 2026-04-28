@@ -59,15 +59,15 @@ class HandleInertiaRequests extends Middleware
         }
 
         $follow_status = false;
-        if ($followedUser) {
+        if ($followedUser && $user) {
             // This query depends on the logged-in user, so we keep it uncached or cache per user pair
-            $follow_status = Follow::where('follower_id', $user->id ?? null)
-                ->where('followed_id', $followedUser->id ?? null)
+            $follow_status = Follow::where('follower_id', $user->id)
+                ->where('followed_id', $followedUser->id)
                 ->exists();
         }
-        $userBioStatus = UserVerificationStatus::where('user_id', $user->id ?? null)->first();
-        $items = UserCart::where('user_id', $user->id ?? null)->where('status', 1)->count();
-        $notification_count = Notification::where('notifiable_id', $user->id ?? null)->where('is_read', 0)->count();
+        $userBioStatus = $user ? UserVerificationStatus::where('user_id', $user->id)->first() : null;
+        $items = $user ? UserCart::where('user_id', $user->id)->where('status', 1)->count() : 0;
+        $notification_count = $user ? Notification::where('notifiable_id', $user->id)->where('is_read', 0)->count() : 0;
         
         return [
             ...parent::share($request),

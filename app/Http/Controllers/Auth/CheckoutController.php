@@ -371,7 +371,8 @@ class CheckoutController extends Controller
 
             try {
                 $rawAmountMinor = (int) ($sessionCreate->amount_total ?? (int) round($totalCreatorNet * $multiplier));
-                $reserveRate = (int) (\App\Models\CreatorMetric::firstOrCreate(['creator_id' => $owner->uuid])->reserve_percent ?? 0);
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner->uuid);
+                $reserveRate = (int) ($metrics->reserve_percent ?? 0);
                 $reserveMinor = $reserveRate > 0 ? (int) round(($rawAmountMinor * $reserveRate) / 100) : 0;
                 \App\Models\Payment::create([
                     'creator_id' => $owner->uuid,

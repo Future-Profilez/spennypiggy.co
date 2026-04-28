@@ -519,18 +519,11 @@ Route::middleware('auth')->group(function () {
                         $site_subscription['expired_at'] = $isExpired ? $subEndCarbon->diffForHumans($now) : null;
 
                         $site_subscription['next_payment_date'] = $subEndCarbon ? $subEndCarbon->format('d F Y') : null;
-
-                        if ($subscription && $subscription->status === 'trialing') {
-                            $site_subscription['status'] = 'FREE_TRIAL';
-                        } elseif ($isSubscriptionActive) {
-                            $site_subscription['status'] = 'ACTIVE';
-                        } elseif ($isTrialOngoing && !$isSubscriptionActive) {
-                            $site_subscription['status'] = 'FREE_TRIAL';
-                        } elseif ($isExpired || $user->is_subscribed == 0) {
-                            $site_subscription['status'] = 'EXPIRED';
-                        }
+                        $site_subscription['subscription_status_code'] = $user->subscription_status;
+                        $site_subscription['status'] = $user->display_subscription_status;
                     } else {
-                        $site_subscription['status'] = 'INACTIVE';
+                        $site_subscription['status'] = 'Not Subscribed';
+                        $site_subscription['subscription_status_code'] = 3;
                     }
 
                     return Inertia::render('accountsetting/Accountsetting', [

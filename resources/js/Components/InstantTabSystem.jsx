@@ -213,7 +213,7 @@ function InstantTabSystem({
     return (
         <div className='relative pb-2 mt-4'>
             <div className="w-full flex items-center justify-between py-2 relative">
-                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-3 md:space-x-4 pb-2 pt-1 px-1`}>
+                <div className={`flex !pe-[100px] ${IsloggedIn ? 'max-w-[85%]' : 'max-w-[100%]'} overflow-x-auto scrollbar-hide space-x-3 md:space-x-4 pb-2 pt-1 px-0`}>
                     {tabs.map((tab) => (
                         <TabButton
                             key={tab.id}

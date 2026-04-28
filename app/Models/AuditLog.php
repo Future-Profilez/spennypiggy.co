@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class AuditLog extends Model
 {
@@ -27,6 +28,18 @@ class AuditLog extends Model
         'metadata_json' => 'array',
         'created_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (!$model->id) {
+                $model->id = (string) Str::uuid();
+            }
+            if (!$model->created_at) {
+                $model->created_at = now();
+            }
+        });
+    }
     
     // Helper methods
     public function getActorType(): string

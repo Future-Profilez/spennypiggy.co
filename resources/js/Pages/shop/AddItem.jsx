@@ -1,6 +1,7 @@
 import { useAlerts } from "@/Components/Alerts";
 import { usePage } from "@inertiajs/react";
 import axios from "axios";
+import { useMemo } from "react";
 import { useRef } from "react";
 import { useEffect } from "react";
 import { useState } from "react";
@@ -69,15 +70,12 @@ export default function AddItem(props) {
     const AddForm = () => {
         const { formatMultiPrice, calculateTotalSupporterPays } = PriceFormat();
         const { global_currency } = usePage().props;
-        const [isVat, setIsVat] = useState(
-            auth && auth.user && auth.user.vat_amount_percentage ? true : false,
-        );
-        const [vatpercent, setvatpercent] = useState(
-            (auth && auth?.user?.vat_amount_percentage) || "",
-        );
-        const [passClose, setSassClose] = useState(false);
         const [categories, setCategories] = useState([]);
         const [fetchingCats, setFetchingCats] = useState(false);
+        const real_category = useMemo(
+            () => item?.real_category ?? [],
+            [item?.real_category],
+        );
         const [thumb, setThumb] = useState(null);
         const [thumbEditable, setIsThumbEditable] = useState(false);
         const [rewardfile, setrewardfile] = useState(null);
@@ -112,9 +110,6 @@ export default function AddItem(props) {
             (item && item.success_page_value) || "",
         );
         const [checkboxes, setCheckboxes] = useState([]);
-        const [real_category, setreal_category] = useState(
-            item && item.real_category,
-        );
         const [shopItem, setShopItem] = useState({
             type: product_type || "Digital Products",
             name: pre_title || "",
@@ -167,13 +162,19 @@ export default function AddItem(props) {
         };
 
         useEffect(() => {
-            let arr = [];
-            item &&
-                item.real_category.forEach((element) => {
-                    arr.push(element.uuid);
-                });
-            setCheckboxes(arr);
-        }, [item && item.category]);
+            const arr = real_category
+                .map((element) => element?.uuid)
+                .filter(Boolean);
+            setCheckboxes((prev) => {
+                if (
+                    prev.length === arr.length &&
+                    prev.every((v, idx) => v === arr[idx])
+                ) {
+                    return prev;
+                }
+                return arr;
+            });
+        }, [real_category]);
 
         const [isChecked, setIsChecked] = useState(false);
         const [adding, setAdding] = useState(false);
@@ -342,10 +343,6 @@ export default function AddItem(props) {
                 errorAlert("Please add at least one shipping method or select a profile");
                 return false;
             }
-            if (physical && vars.length < 1) {
-                errorAlert("Please add at least one variant");
-                return false;
-            }
 
             const data = {
                 ...shopItem,
@@ -376,6 +373,7 @@ export default function AddItem(props) {
                         resetUploader();
                         setOpen(false);
                         window.dispatchEvent(new Event("closeAddOptions"));
+                        window.dispatchEvent(new Event("shop:item-changed"));
                         setTimeout(() => {
                             successAlert(res.data.msg || "Item Added !!");
                             setOpen();
@@ -448,6 +446,7 @@ export default function AddItem(props) {
                     if (res.data.status) {
                         resetUploader();
                         window.dispatchEvent(new Event("closeAddOptions"));
+                        window.dispatchEvent(new Event("shop:item-changed"));
                         setTimeout(() => {
                             successAlert(res.data.msg || "Item Added !!");
                             setOpen();
@@ -973,7 +972,7 @@ export default function AddItem(props) {
                                                     sendFile={getRewardFile}
                                                     options={st.shopreward}
                                                 />
-                                                <div className="flex justify-center">
+                                                {/* <div className="flex justify-center">
                                                     <div>
                                                         <h2 className="text-center text-gray-400 py-3">
                                                             Or
@@ -982,7 +981,7 @@ export default function AddItem(props) {
                                                             update={getAIImage}
                                                         />
                                                     </div>
-                                                </div>
+                                                </div> */}
                                             </div>
                                         </div>
                                     ) : (
@@ -1011,20 +1010,14 @@ export default function AddItem(props) {
                                 <div className="categories-lists grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 success-page-types">
                                     {categories &&
                                         categories.map((c, i) => {
-                                            const filteritem =
-                                                real_category &&
-                                                real_category.filter(
-                                                    (item) =>
-                                                        item?.category
-                                                            .category ==
-                                                        c?.category,
-                                                );
-                                            const isCategory =
-                                                filteritem && filteritem[0]
-                                                    ? true
-                                                    : null;
+                                            const isCategory = (
+                                                item?.real_category ?? []
+                                            ).some((rc) => rc?.uuid === c?.uuid);
                                             return (
-                                                <div className="flex items-center mb-2">
+                                                <div
+                                                    key={c.uuid ?? i}
+                                                    className="flex items-center mb-2"
+                                                >
                                                     <input
                                                         onChange={catValue}
                                                         defaultChecked={

@@ -1368,8 +1368,7 @@ class StripeController extends Controller
             $totalApplicationFee = 0;
             $totalCreatorNet = 0;
                 
-                // Fetch creator risk metrics for reserve calculation
-                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $owner_id]);
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $owner_id);
                 $reserveRate = $metrics->reserve_percent ?? 0;
                 
                 foreach ($getdata as $dd) {
@@ -1614,8 +1613,7 @@ class StripeController extends Controller
                 $totalCreatorNet = 0;
                 $currency = $cart[0]->wish->currency ?? 'USD';
                 
-                // Fetch creator risk metrics for reserve calculation
-                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $cart[0]->owner_id]);
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $cart[0]->owner_id);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 foreach ($cart as $value) {
@@ -1944,8 +1942,8 @@ class StripeController extends Controller
                 'anonymous' => $request->anonymous ?? 0
             ]);
 
-            Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
-            $sub->save();
+             Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
+             $sub->save();
 
             $connectedAccountId = $wish->user->account_id;
 
@@ -2626,9 +2624,9 @@ class StripeController extends Controller
                         // Check if wish item has content to deliver
                         if (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward)) {
 
-                            // Fetch creator risk metrics for reserve calculation
-                            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $wishSubscription->wish_item->user_id]);
-                            $reserveRate = $metrics->reserve_percent ?? 0;
+                            $creatorUuid = $wishSubscription->wish_item && $wishSubscription->wish_item->user ? $wishSubscription->wish_item->user->uuid : null;
+                            $metrics = $creatorUuid ? app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creatorUuid) : null;
+                            $reserveRate = $metrics ? ($metrics->reserve_percent ?? 0) : 0;
 
                             // Use consistent fee calculation for creator net amount
                             $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate);
@@ -2822,9 +2820,9 @@ class StripeController extends Controller
             // If wish item has content to deliver for renewals, create deliverable
             if ($wishSubscription->wish_item && (!empty($wishSubscription->wish_item->content_file) || !empty($wishSubscription->wish_item->reward))) {
 
-                // Fetch creator risk metrics for reserve calculation
-                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $wishSubscription->wish_item->user_id]);
-                $reserveRate = $metrics->reserve_percent ?? 0;
+                $creatorUuid = $wishSubscription->wish_item && $wishSubscription->wish_item->user ? $wishSubscription->wish_item->user->uuid : null;
+                $metrics = $creatorUuid ? app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creatorUuid) : null;
+                $reserveRate = $metrics ? ($metrics->reserve_percent ?? 0) : 0;
 
                 // Use consistent fee calculation for creator net amount
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($wishSubscription->amount, $wishSubscription->currency, $reserveRate);
@@ -3156,7 +3154,7 @@ class StripeController extends Controller
             ]);
 
             Helpers::applyDigitalWaiver($pay, (bool) $request->digital_waiver);
-            $pay->save();
+             $pay->save();
 
             // Use destination charges pattern like createCheckout - create line items that sum to total charge
             // Single line item hiding all fees
@@ -3237,7 +3235,7 @@ class StripeController extends Controller
                         'risk_identity_id' => $riskData['risk_identity_id'],
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $unitAmount, (string) strtoupper($creator->default_currency)),
                         'reserve_amount_minor' => (function () use ($creator, $unitAmount) {
-                            $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid]);
+                            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
                             $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                             if ($reservePercent <= 0) return 0;
                             $reserveMinor = (int) round(((int) $unitAmount * $reservePercent) / 100);
@@ -3455,10 +3453,6 @@ class StripeController extends Controller
      */
     public function payMonthlyCharge(Request $request)
     {
-        $request->validate([
-            'digital_waiver' => ['required', 'accepted'],
-        ]);
-
         $user = User::where('id', Auth::id())->first();
         if (!$user) {
             return back()->with('error', 'Subscription not allowed for this user.');
@@ -3504,10 +3498,8 @@ class StripeController extends Controller
             'currency'  =>  "GBP",
             'amount'    =>  $price,
             'tax'       =>  $tax,
+            'digital_waiver_confirmed_at' => now(), // Auto-confirm since it's not required to be clicked
         ]);
-
-        Helpers::applyDigitalWaiver($sub, (bool) $request->digital_waiver);
-        $sub->save();
 
         $amount = $finalTotalAmount;
         // Get currency metadata to handle zero-decimal currencies properly

@@ -480,7 +480,7 @@ export default function TipInner({classes, idd}) {
                               className="w-5 h-5 text-pink-600 border-gray-300 rounded focus:ring-pink-500 transition-all cursor-pointer"
                               checked={data.digital_waiver}
                               required
-                          />
+                            />
                       </div>
                       <span className="ml-3 text-sm text-gray-700 font-medium leading-relaxed group-hover:text-black transition-colors">
                           I request that my content is made available immediately. I understand that by proceeding I lose my 14-day right to cancel.

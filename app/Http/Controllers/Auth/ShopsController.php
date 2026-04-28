@@ -244,8 +244,7 @@ class ShopsController extends Controller
 
         $listedPriceToGrossUp = $request->price + $taxAmount + $vatAmount;
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $metrics = app(RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $currency, $reserveRate);
@@ -530,16 +529,22 @@ class ShopsController extends Controller
         ]);
     }
 
-    public function singleShopList($uuid, $session_id = null)
+    public function singleShopList($slug, $uuid, $session_id = null)
     {
         $shop = Shop::where('uuid', $uuid)->with(['user', 'shop_varients'])->first();
+
+        if (!$shop) {
+            abort(404);
+        }
 
         $opened = null;
         if (!empty($session_id)) {
             $payments = ShopPayment::where('session_id', $session_id)->first();
-            $opened = $payments->opened;
-            $payments->opened = 1;
-            $payments->save();
+            if ($payments) {
+                $opened = $payments->opened;
+                $payments->opened = 1;
+                $payments->save();
+            }
         }
 
         if (Auth::check()) {
@@ -586,15 +591,35 @@ class ShopsController extends Controller
     {
         $shop = Shop::where('uuid', $shop_id)->first();
         $shipping_price = 0;
-        if ($shop->type == 'physical') {
+        if ($shop && $shop->type == 'physical') {
             $country = request()->query('country');
             if (!empty($country)) {
-                $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
+                if (!empty($shop->shipping_profile_id)) {
+                    $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
+                        ->where('country', $country)
+                        ->first();
+                    if (empty($shipping)) {
+                        $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
+                            ->where('country', 'all')
+                            ->first();
+                    }
+                } else {
+                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', $country)->first();
+                    if (empty($shipping)) {
+                        $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
+                    }
+                }
             }
             if (empty($shipping) || empty($country)) {
-                $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
+                if (!empty($shop->shipping_profile_id)) {
+                    $shipping = ShippingProfileZone::where('shipping_profile_id', $shop->shipping_profile_id)
+                        ->where('country', 'all')
+                        ->first();
+                } else {
+                    $shipping = ShopShippingInfo::where('shop_id', $shop->id)->where('country', 'all')->first();
+                }
             }
-            $shipping_price = !empty($shipping) ? $shipping->shipping_price : 0;
+            $shipping_price = !empty($shipping) ? (float) $shipping->shipping_price : 0;
         }
 
         return response()->json([
@@ -883,8 +908,8 @@ class ShopsController extends Controller
         ]);
 
         // Apply digital waiver confirmation
-        Helpers::applyDigitalWaiver($shopPaymentDetail, (bool) $request->digital_waiver);
-        $shopPaymentDetail->save();
+         Helpers::applyDigitalWaiver($shopPaymentDetail, (bool) $request->digital_waiver);
+         $shopPaymentDetail->save();
         $shopPaymentDetail->refresh();
 
         $sessionCreate = null;

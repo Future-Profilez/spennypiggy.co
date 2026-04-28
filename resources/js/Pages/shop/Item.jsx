@@ -1,5 +1,5 @@
 import Guest from '@/Layouts/GuestLayout'
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import BuyShopItem from './BuyShopItem';
 import { RiDiscountPercentFill } from "react-icons/ri";
 import { useState } from 'react';
@@ -79,8 +79,9 @@ export default function ShopDetailItem(props) {
    const isOwner = auth?.user?.id === shop?.user_id;
    const vatPercentage = shop?.user?.vat_amount_percentage || 0;
 
-   const [price, setPrice] = useState(shop.price);
-   const [selectedVarient, setSelectedVarient] = useState(shop && shop.shop_varients[0] && shop.shop_varients[0].id);
+  const hasVariants = shop?.type === 'physical' && shop?.shop_varients && shop.shop_varients.length > 0;
+  const [price, setPrice] = useState(hasVariants ? shop.shop_varients[0].price : shop.price);
+  const [selectedVarient, setSelectedVarient] = useState(hasVariants ? shop.shop_varients[0].id : 'no_varient');
    const handleVarient = (e) => {
       const varient = shop.shop_varients.find(v => v.id == e.target.value);
       setPrice(varient.price);
@@ -89,15 +90,18 @@ export default function ShopDetailItem(props) {
 
    const [currentCountry, setCurrentCountry] = useState();
    const getIp = async () => {
-      await axios.get(`https://ipapi.co/json/`).then((resp)=>{
-         if(resp.data && resp.data.country_code){
-            setCurrentCountry(resp.data.country_code);
-            getShippingPrice(resp.data.country_code);
+      try {
+         const resp = await axios.get('/api/user-country');
+         const code = resp.data?.country_code;
+         if (code) {
+            setCurrentCountry(code);
+            getShippingPrice(code);
          }
-      }).catch((err)=>{
-         console.error("api err", err)
-      });
-  };
+      } catch (err) {
+         // Silently fall back — shipping price will use default
+         getShippingPrice('GB');
+      }
+   };
 
 
   const [shippingPrice, setShippingPrice] = useState(0);
@@ -111,7 +115,7 @@ export default function ShopDetailItem(props) {
 
   useEffect(()=>{
    getIp();
-  },[shop]);
+  },[]); // run once on mount — shop.uuid won't change after render
 
 
 
@@ -240,7 +244,7 @@ export default function ShopDetailItem(props) {
                         </ul>
                      </div>
 
-                     {shop.type === 'physical' ?
+                     {shop.type === 'physical' && hasVariants ?
                         <>
                         <h2 className='text-lg mb-2'>Select Varient</h2>
                         <select onChange={handleVarient} className='bg-white rounded-[30px]  text-lg capitalize px-4 py-2.5 mb-3 w-full border-0'>

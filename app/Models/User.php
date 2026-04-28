@@ -82,6 +82,8 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
         'followers_count',
         'following_count',
         'subscription_status',
+        'is_site_subscription_active',
+        'display_subscription_status',
         'grace_period_started_at',
         'grace_period_ends_at',
         'is_in_grace_period',
@@ -184,7 +186,7 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             }
 
             if (!$subscription) {
-                return 0;
+                return 3; // INACTIVE / NEVER SUBSCRIBED
             }
 
             // Use the same logic as account settings route
@@ -279,6 +281,36 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
             return $this->gifterCardVerification ? 1 : 0;
         }
         return 'Unknown';
+    }
+
+    /**
+     * Check if site subscription is active (either status 1 or 2)
+     */
+    public function getIsSiteSubscriptionActiveAttribute()
+    {
+        $status = $this->subscription_status;
+        return ($status === 1 || $status === 2) ? 1 : 0;
+    }
+
+    /**
+     * Get a unified subscription status for display purposes
+     */
+    public function getDisplaySubscriptionStatusAttribute()
+    {
+        $status = $this->subscription_status;
+
+        $displayMap = [
+            1 => 'Active Subscription',
+            2 => 'Free Trial',
+            0 => 'Subscription Expired',
+            3 => 'Not Subscribed',
+        ];
+
+        if ($this->role == 0) {
+            return $status == 1 ? 'Card Verified' : 'Not Verified';
+        }
+
+        return $displayMap[$status] ?? 'Unknown Status';
     }
 
     // ───────────────────────

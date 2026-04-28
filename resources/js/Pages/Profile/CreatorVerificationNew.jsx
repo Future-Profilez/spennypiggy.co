@@ -51,7 +51,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
     const validateStep = (step) => {
         const validations = {
             subscription: {
-                isValid: auth?.user?.subscription_status >= 1,
+                isValid: auth?.user?.subscription_status === 1 || auth?.user?.subscription_status === 2,
                 message: "Active subscription required to proceed",
                 requirements: ["Start your 3-day free trial", "No charges until trial ends"]
             },
@@ -115,7 +115,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
             id: 'subscription',
             title: 'Start 3-Days Free Trial',
             description: 'Unlock full access with a Free Trial subscription of £8.99 + VAT / month. No charges until the trial period ends.',
-            isCompleted: auth?.user?.subscription_status >= 1,
+            isCompleted: auth?.user?.subscription_status === 1 || auth?.user?.subscription_status === 2,
             isRequired: true,
             order: 1,
             category: 'basic'
@@ -187,7 +187,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         if (step.isCompleted) return 'completed';
         if (step.isRejected) return 'error';
         if (step.isPending) return 'pending';
-        if (step.id === 'identity' && (auth?.user?.subscription_status ?? 0) < 1) return 'locked';
+        if (step.id === 'identity' && (auth?.user?.subscription_status !== 1 && auth?.user?.subscription_status !== 2)) return 'locked';
         if (step.requiresApproval && auth?.user?.profile_status_lock != 2) return 'locked';
         return 'todo';
     };
@@ -697,7 +697,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
                                         {/* Action Buttons */}
                                         <div className="ml-6">
                                             {step.id === 'identity' && !step.isCompleted && auth?.user?.profile_status_lock == 2 && (
-                                                auth?.user?.subscription_status >= 1 ? (
+                                                (auth?.user?.subscription_status === 1 || auth?.user?.subscription_status === 2) ? (
                                                     <Link
                                                         className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-[30px]   hover:from-purple-700 hover:to-purple-800 transition-all font-medium whitespace-nowrap shadow-lg"
                                                         href="/stripe/identity-verification"

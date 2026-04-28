@@ -1621,8 +1621,8 @@ class WishitemController extends Controller
             $ryeProductPayment->shipping_address = $addressJson;
             $ryeProductPayment->customer_email = $orderDetails->user->email;
             $ryeProductPayment->anonymous = $request->is_anonymous ?? false;
-            Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
-            $ryeProductPayment->save();
+             Helpers::applyDigitalWaiver($ryeProductPayment, (bool) $request->digital_waiver);
+             $ryeProductPayment->save();
 
             $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET_KEY'));
 

@@ -2,7 +2,6 @@
 
 namespace App\Services\Risk;
 
-use App\Models\AuditLog;
 use App\Models\CreatorMetric;
 use App\Models\Payment;
 use App\Models\PlatformRiskState;
@@ -38,7 +37,11 @@ class PayoutService
             if (!$creator) continue;
 
             // Fetch Metrics
-            $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
+            try {
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics($creatorId);
+            } catch (\Throwable) {
+                $metrics = CreatorMetric::firstOrCreate(['creator_id' => $creatorId]);
+            }
             
             $delayDays = 0;
             if (in_array($state, ['THROTTLE', 'FREEZE'], true)) {
@@ -188,19 +191,23 @@ class PayoutService
             if (!$creator || !$creator->account_id) continue;
 
             try {
+                $currency = 'gbp';
+                $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
+                $amountMajor = $isZeroDecimal ? (int) $amount : ((float) $amount / 100);
+
                 // Transfer funds from Platform to Creator Connected Account
                 \App\StripeControl::transferToConnectedAccount(
                     $creator->account_id, 
-                    $amount, 
-                    $creator->default_currency ?? 'gbp'
+                    $amountMajor, 
+                    $currency
                 );
                 
                 $releasedTotal += $amount;
                 
                 // Notify Creator via PWA/Email
-                $currencySymbol = \App\Helpers::getCurrency($creator->default_currency ?? 'gbp');
+                $currencySymbol = \App\Helpers::getCurrency($currency);
                 $title = "💰 Reserve Released";
-                $content = "Your held reserve of {$currencySymbol}{$amount} has been released to your balance.";
+                $content = "Your held reserve of {$currencySymbol}{$amountMajor} has been released to your balance.";
                 
                 // Send PWA Notification
                 \App\Helpers::sendNotification($title, $content, $creator->email);
@@ -220,7 +227,9 @@ class PayoutService
     }
 
     /**
-     * Execute Payouts (Mark as Paid)
+     * Execute Payouts — marks records and triggers Stripe transfers for platform-held funds.
+     * Payments created via the risk engine (platform_holds_funds = true) stay on the platform
+     * account until this method transfers the net amount to each creator's connected account.
      */
     public function executePayouts($previewData, $runId = null)
     {
@@ -242,7 +251,6 @@ class PayoutService
             }
 
             foreach ($previewData['payouts'] as $creatorId => $data) {
-                // Mark payments as paid
                 Payment::whereIn('id', $data['payment_ids'])
                     ->update(['payout_run_id' => $run->id]);
 
@@ -257,67 +265,58 @@ class PayoutService
                         'updated_at' => now(),
                     ]);
                 }
-                
-                // TODO: Trigger Stripe Transfer (if not Direct Charge)
-                // If Direct Charge, money is already there?
-                // Spec says: "Project now strictly uses Stripe Connect Direct Charges (creator-owned)."
-                // "Legacy Destination Charges... removed."
-                // Wait. Spec 2: "Recommended approach (destination charge pattern)".
-                // Contradiction in memory vs spec input?
-                // User Input Spec (Section 2): "Recommended approach (destination charge pattern)".
-                // Memory says "Project now strictly uses Stripe Connect Direct Charges".
-                // User Spec trumps memory? "This is the full detailed build document... Use destination charge pattern".
-                // So money IS on platform account. We need to Transfer it.
-                // Or if using `transfer_data` in PaymentIntent, it went to Connected Account immediately (minus fee).
-                // If `transfer_data` was used, funds are ALREADY in connected account.
-                // THEN "Payout Engine" is just for reporting/accounting? Or releasing reserves?
-                // If funds are already transferred, we can't "hold" them easily unless we use "transfer_data[hold_delay]".
-                // Or we use "Separate Charges and Transfers" to hold funds.
-                // Destination Charge with `transfer_data` moves funds immediately upon success.
-                // Unless we set `transfer_group` and transfer later.
-                // Spec 2 says: "createPI... transfer_data: { destination: connectedAccountId }".
-                // This means funds move AUTOMATICALLY.
-                // So "Friday Payout Engine" might be a misnomer or implies we control when they hit the bank?
-                // OR the spec implies we STOP using automatic transfers and switch to manual?
-                // Re-read Spec 15: "Automate weekly payouts... exclude review_hold, apply reserves... Avoid platform cash loss."
-                // This implies we MUST HOLD funds on platform first.
-                // So `transfer_data` in `createPaymentIntent` should NOT be set if we want to control payout?
-                // OR we use `on_behalf_of`?
-                // If we use `transfer_data`, Stripe moves money. We can't stop it easily.
-                // CORRECT APPROACH for "Friday Payout":
-                // 1. PaymentIntent on Platform (no transfer_data destination initially, or transfer_group).
-                // 2. Money stays on Platform.
-                // 3. Friday: Calculate Net Payout.
-                // 4. Create a "Transfer" to Connected Account.
-                
-                // I need to adjust `RiskController` to NOT set `transfer_data` if we want full payout control.
-                // BUT Spec 2 code example explicitly shows `transfer_data`.
-                // "const pi = await stripe.paymentIntents.create({ ... transfer_data: { destination: ... } })"
-                // If so, the Payout Engine is purely "accounting" or controls "Payouts from Stripe to Bank"?
-                // Stripe Connect allows "Manual Payouts" setting on connected accounts.
-                // Maybe that's what it means.
-                // But "apply reserves" implies we keep money.
-                // If `transfer_data` sent 100% (minus fee) to creator, we can't apply reserve later (unless we claw back).
-                // INTERPRETATION:
-                // The spec might be inconsistent or implies "Flow B" (Separate Charges/Transfers) but showed "Flow A" code.
-                // OR "transfer_data" is used but we want to switch to manual transfers.
-                // Given the strict requirement "Friday Payout Engine... apply reserves", 
-                // we SHOULD NOT send money immediately to creator.
-                // So `RiskController` should probably NOT set `transfer_data` immediately, 
-                // OR we accept that we can't enforce reserves on those payments.
-                
-                // For now, I will implement "Execute" as "Mark as Paid".
-                // Actual money movement depends on if we already sent it.
-                // If we follow Spec 2 code, money is gone.
-                // I will assume for this task I just implement the Engine Logic (Calculation + State Update).
-                // Adjusting the money flow to match (stopping auto-transfer) is a key architectural change.
-                // I'll stick to the Spec 2 code (transfer_data) as requested in "Stripe Foundation", 
-                // but note the conflict.
-                // Actually, maybe `transfer_data` is used with a `transfer_schedule`? No.
-                
-                // Let's assume the "Payout Engine" generates a report and maybe initiates a "Top-up" or "Transfer" 
-                // if we were holding funds.
-                // For this code, I'll just mark records.
+
+                $netPayout = (int) ($data['net_payout'] ?? 0);
+                if ($netPayout <= 0) {
+                    continue;
+                }
+
+                // Only transfer if at least one of the included payments has platform_holds_funds.
+                // Payments using transfer_data already moved money to the creator directly.
+                $needsTransfer = Payment::whereIn('id', $data['payment_ids'])
+                    ->where('platform_holds_funds', true)
+                    ->exists();
+
+                if (!$needsTransfer) {
+                    continue;
+                }
+
+                $creator = User::where('uuid', $creatorId)->first();
+                if (!$creator || !$creator->account_id) {
+                    Log::warning("Payout: creator {$creatorId} has no connected account — skipping transfer.");
+                    continue;
+                }
+
+                try {
+                    $currency = $creator->default_currency ?? 'gbp';
+                    $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
+                    $amountMajor = $isZeroDecimal ? $netPayout : round($netPayout / 100, 2);
+
+                    $transfer = \App\StripeControl::transferToConnectedAccount(
+                        $creator->account_id,
+                        $amountMajor,
+                        $currency
+                    );
+
+                    // Store transfer ID on the most recent payment in the batch for traceability
+                    Payment::whereIn('id', $data['payment_ids'])
+                        ->where('platform_holds_funds', true)
+                        ->orderByDesc('created_at')
+                        ->limit(1)
+                        ->update(['stripe_transfer_id' => $transfer->id]);
+
+                    Log::info("Payout transfer executed for creator {$creatorId}: {$netPayout} {$currency} — transfer {$transfer->id}");
+
+                    $currencySymbol = \App\Helpers::getCurrency($currency);
+                    \App\Helpers::sendNotification(
+                        '💰 Payout Sent',
+                        "Your payout of {$currencySymbol}{$amountMajor} has been sent to your account.",
+                        $creator->email
+                    );
+                } catch (\Exception $e) {
+                    Log::error("Payout transfer failed for creator {$creatorId}: " . $e->getMessage());
+                    // Continue with remaining creators rather than rolling back everything
+                }
             }
 
             DB::commit();
@@ -449,17 +448,21 @@ class PayoutService
             throw new \Exception("Creator not found or not connected to Stripe.");
         }
 
+        $currency = $creator->default_currency ?? 'gbp';
+        $isZeroDecimal = \App\Helpers::isZeroDecimalCurrency($currency);
+        $amountMajor = $isZeroDecimal ? (int) $amount : ((float) $amount / 100);
+
         // Transfer funds
         \App\StripeControl::transferToConnectedAccount(
             $creator->account_id, 
-            $amount, 
-            $creator->default_currency ?? 'gbp'
+            $amountMajor, 
+            $currency
         );
         
         // Notify
-        $currencySymbol = \App\Helpers::getCurrency($creator->default_currency ?? 'gbp');
+        $currencySymbol = \App\Helpers::getCurrency($currency);
         $title = "💰 Reserve Released";
-        $content = "Your held reserve of {$currencySymbol}{$amount} has been manually released to your balance.";
+        $content = "Your held reserve of {$currencySymbol}{$amountMajor} has been manually released to your balance.";
         
         \App\Helpers::sendNotification($title, $content, $creator->email);
         

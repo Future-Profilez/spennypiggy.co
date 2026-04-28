@@ -69,7 +69,6 @@ export default function Userprofile({ IsloggedIn }) {
                             className="rounded-[30px] !border-[3px] !border-black bg-white !h-[120px] !w-[120px] min-w-[120px] !min-h-[120px] md:!h-[140px] md:!w-[140px] md:min-w-[140px] md:!min-h-[140px] object-cover shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                         />
 
-                        {/* Waiting for approval (ORANGE) */}
                         {IsloggedIn && auth && auth?.user?.avatar && auth?.user?.avatar_approved === 0 && (
                                 <div className="absolute approvetag top-3 mx-auto">
                                     <button className="tooltipbtn">
@@ -120,7 +119,7 @@ export default function Userprofile({ IsloggedIn }) {
                             )}
                     </div>
 
-                    <div className="md:ps-[20px] md:pe-[20px] pt-[20px] lg:pt-[0px] lg:mt-0">
+                    <div className="md:ps-[20px] md:pe-[20px] pt-[20px] lg:pt-[0px] lg:mt-0 lg:text-start">
                         <h1 className="font-gulfs uppercase !text-2xl md:!text-2xl inline-flex items-center justify-center lg:justify-start  text-center lg:text-left !text-black ">
                             <p  className="line-clamp-1">{user?.name} </p>
                             {(user?.role == 1 &&

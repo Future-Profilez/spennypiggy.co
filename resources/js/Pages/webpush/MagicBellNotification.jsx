@@ -169,6 +169,7 @@ const BrowserNotificationBanner = ({ onEnable, onHide }) => (
 const MagicBellNotification = () => {
   const { auth } = usePage().props;
   const [showBanner, setShowBanner] = useState(false);
+  const serverURL = typeof window !== 'undefined' ? `${window.location.origin}/magicbell` : undefined;
 
   useEffect(() => {
     const isSubscribed = localStorage.getItem('isSubscribed');
@@ -217,6 +218,8 @@ const MagicBellNotification = () => {
         className='magicbell' 
         onNewNotification={notificationRecieve} 
         closeOnClickOutside={true}
+        serverURL={serverURL}
+        network={{ maxRetries: 0 }}
         apiKey={'515ceed31a4ba4c745b165a12e3a523dc9e93db4'}
         userEmail={auth?.user?.email} 
       >

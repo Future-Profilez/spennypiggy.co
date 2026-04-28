@@ -66,35 +66,45 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
 
     // Determine alert style based on status
     const getAlertStyle = () => {
-        switch (status.status) {
-            case 'no_subscription':
+        const subStatus = status?.subscription_status;
+        
+        // Status Codes: 1=ACTIVE, 2=FREE_TRIAL, 3=INACTIVE, 0=EXPIRED
+        if (subStatus === 1) return null; // No alert for active
+        
+        if (subStatus === 2) {
+            if (status.action_required) {
                 return {
-                    bgColor: 'bg-red-50',
-                    borderColor: 'border-red-200',
-                    textColor: 'text-red-800',
-                    iconColor: 'text-red-600',
-                    buttonColor: 'bg-red-600 hover:bg-red-700'
+                    bgColor: 'bg-yellow-50',
+                    borderColor: 'border-yellow-200',
+                    textColor: 'text-yellow-800',
+                    iconColor: 'text-yellow-600',
+                    buttonColor: 'bg-yellow-600 hover:bg-yellow-700'
                 };
-            case 'trial_active':
-                if (status.action_required) {
-                    return {
-                        bgColor: 'bg-yellow-50',
-                        borderColor: 'border-yellow-200',
-                        textColor: 'text-yellow-800',
-                        iconColor: 'text-yellow-600',
-                        buttonColor: 'bg-yellow-600 hover:bg-yellow-700'
-                    };
-                }
-                return null; // Don't show for normal trial
-            default:
-                return {
-                    bgColor: 'bg-orange-50',
-                    borderColor: 'border-orange-200',
-                    textColor: 'text-orange-800',
-                    iconColor: 'text-orange-600',
-                    buttonColor: 'bg-orange-600 hover:bg-orange-700'
-                };
+            }
+            return null; // No alert for normal trial
         }
+
+        if (subStatus === 0) {
+            return {
+                bgColor: 'bg-red-50',
+                borderColor: 'border-red-200',
+                textColor: 'text-red-800',
+                iconColor: 'text-red-600',
+                buttonColor: 'bg-red-600 hover:bg-red-700'
+            };
+        }
+
+        if (subStatus === 3) {
+            return {
+                bgColor: 'bg-orange-50',
+                borderColor: 'border-orange-200',
+                textColor: 'text-orange-800',
+                iconColor: 'text-orange-600',
+                buttonColor: 'bg-orange-600 hover:bg-orange-700'
+            };
+        }
+
+        return null;
     };
 
     const alertStyle = getAlertStyle();
@@ -177,9 +187,10 @@ export default function CreatorSubscriptionWidget({ className = '', onStatusChan
                     <div className="flex items-center justify-between text-xs">
                         <span className={alertStyle.textColor}>Subscription Status</span>
                         <span className={`font-medium ${alertStyle.textColor}`}>
-                            {status.subscription_status === 0 ? 'Inactive' : 
+                            {status.subscription_status === 0 ? 'Expired' : 
                              status.subscription_status === 1 ? 'Active' : 
-                             status.subscription_status === 2 ? 'Trial' : 'Unknown'}
+                             status.subscription_status === 2 ? 'Trial' : 
+                             status.subscription_status === 3 ? 'Inactive' : 'Unknown'}
                         </span>
                     </div>
                     <div className="mt-1 w-full bg-white bg-opacity-50 rounded-full h-2">

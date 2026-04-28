@@ -12,8 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Fix invalid datetime values in shops table before adding constraint
-        DB::table('shops')->where('deleted_at', '0000-00-00 00:00:00')->update(['deleted_at' => null]);
+        if (Schema::hasTable('shops')) {
+            DB::table('shops')->where('deleted_at', '0000-00-00 00:00:00')->update(['deleted_at' => null]);
+        }
 
         if (!Schema::hasTable('shipping_profiles')) {
             Schema::create('shipping_profiles', function (Blueprint $table) {
@@ -34,9 +35,21 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('shops', 'shipping_profile_id')) {
-            Schema::table('shops', function (Blueprint $table) {
-                $table->foreignId('shipping_profile_id')->nullable()->after('type')->constrained()->onDelete('set null');
+        if (Schema::hasTable('shops') && !Schema::hasColumn('shops', 'shipping_profile_id')) {
+            $afterColumn = null;
+            foreach (['type', 'thumbnail', 'approved', 'description', 'name'] as $candidate) {
+                if (Schema::hasColumn('shops', $candidate)) {
+                    $afterColumn = $candidate;
+                    break;
+                }
+            }
+
+            Schema::table('shops', function (Blueprint $table) use ($afterColumn) {
+                $column = $table->foreignId('shipping_profile_id')->nullable();
+                if ($afterColumn) {
+                    $column->after($afterColumn);
+                }
+                $column->constrained()->onDelete('set null');
             });
         }
     }

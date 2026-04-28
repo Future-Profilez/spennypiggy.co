@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CreatorFinancialProfile;
+use App\Models\CreatorMetric;
 use App\Models\FinancialTransaction;
 use App\Models\UkTaxSetting;
 use App\Services\FinancialService;
+use App\Services\Risk\PayoutService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -14,10 +16,12 @@ use Illuminate\Support\Facades\Artisan;
 class CreatorFinancialController extends Controller
 {
     protected $financialService;
+    protected $payoutService;
 
-    public function __construct(FinancialService $financialService)
+    public function __construct(FinancialService $financialService, PayoutService $payoutService)
     {
         $this->financialService = $financialService;
+        $this->payoutService = $payoutService;
     }
 
     public function index(Request $request)
@@ -203,6 +207,24 @@ class CreatorFinancialController extends Controller
             ->take(5)
             ->values();
 
+        // Reserve breakdown with release dates
+        $reserveBreakdown = $this->payoutService->getHeldReserves($user->uuid);
+
+        // Creator risk level for reserve messaging
+        $creatorMetric = CreatorMetric::where('creator_id', $user->uuid)->first();
+        $reserveReason = null;
+        if ($creatorMetric) {
+            if ($creatorMetric->risk_level === 'high') {
+                $reserveReason = 'High risk level detected on your account.';
+            } elseif ($creatorMetric->risk_level === 'medium') {
+                $reserveReason = 'Medium risk level applied to your account.';
+            } elseif ($creatorMetric->creator && $creatorMetric->creator->created_at?->diffInDays(now()) < 30) {
+                $reserveReason = 'New creator reserve (first 30 days).';
+            } else {
+                $reserveReason = 'Standard rolling reserve for platform safety.';
+            }
+        }
+
         return Inertia::render('Creator/Financial/Dashboard', [
             'summary' => $summary,
             'tax_estimate' => $estimatedTax,
@@ -215,7 +237,9 @@ class CreatorFinancialController extends Controller
             'analytics' => [
                 'monthly' => $monthlyStats,
                 'tribute_types' => $tributeTypes
-            ]
+            ],
+            'reserve_breakdown' => $reserveBreakdown['breakdown'] ?? [],
+            'reserve_reason' => $reserveReason,
         ]);
     }
 
