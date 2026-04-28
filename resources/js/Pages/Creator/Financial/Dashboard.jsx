@@ -177,6 +177,41 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                 </div>
                             </div>
                         </div>
+
+                        {/* Reserves & Payout Status (New Section) */}
+                        <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl lg:col-span-2">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <ShieldCheck size={80} className="text-blue-500" />
+                            </div>
+                            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                        Held Reserves
+                                    </div>
+                                    <div className="text-2xl md:text-3xl font-bold text-blue-400 mt-2">{formatCurrency(summary.held_reserves, displayCurrency)}</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Rolling reserve held for platform safety.</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                        Review Holds
+                                    </div>
+                                    <div className="text-2xl md:text-3xl font-bold text-purple-400 mt-2">{formatCurrency(summary.review_holds, displayCurrency)}</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Payments currently being verified.</div>
+                                </div>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
+                                <div>
+                                    <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
+                                    <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Status</div>
+                                    <div className="bg-green-500/10 text-green-400 text-[10px] font-bold px-2 py-1 rounded-md uppercase">Healthy</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Tax Year Progress & Savings Tip */}

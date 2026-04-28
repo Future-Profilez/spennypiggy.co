@@ -48,10 +48,10 @@ class MonthlyCharge extends Model
     }
     
     /**
-     * Get user relationship excluding UK users (for backwards compatibility)
+     * Get user relationship (for backwards compatibility)
      */
     public function nonUkUser()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

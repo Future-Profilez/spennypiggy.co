@@ -445,10 +445,10 @@ class EmailService
         }
     }
 
-    public static function sendMembershipMailToUser($mem, $amountWithcurrency)
+    public static function sendMembershipMailToUser($mem, $amountWithcurrency, $deliverable = null)
     {
         try {
-            Mail::to($mem->guest_email)->send(new MemberMailToUser($mem, $amountWithcurrency));
+            Mail::to($mem->guest_email)->send(new MemberMailToUser($mem, $amountWithcurrency, $deliverable));
         } catch (TransportException $e) {
             AppService::setStatus('email', 0, $e->getMessage());
         }

@@ -38,7 +38,12 @@
                                  <li>Direct Support to {{ $mem->membership->user->name }}</li>
                              </ul>
                              <div style="text-align: center;">
-                                 <a href="{{ env('APP_URL') . '/' . $mem->membership->user->username }}" 
+                                 @php
+                                     $accessUrl = isset($deliverable->uuid) 
+                                        ? route('deliverable.access', $deliverable->uuid) 
+                                        : env('APP_URL') . '/' . $mem->membership->user->username;
+                                 @endphp
+                                 <a href="{{ $accessUrl }}" 
                                     style="display: inline-block; padding: 10px 20px; background-color: #8C52FF; color: white; text-decoration: none; border-radius: 25px; font-family: Arial; font-size: 14px; font-weight: bold;"
                                     target="_blank">🔓 Access Creator Profile</a>
                              </div>

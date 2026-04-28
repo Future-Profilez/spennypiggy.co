@@ -77,6 +77,7 @@ class LeaderBoardController extends Controller
                 'coverimg' =>  $query->cover_url,
                 'top' => $rank / 100,
                 'amount' => $query->total_amount,
+                'currency' => $query->currency ?? 'GBP',
                 'supporters' => $query->total_supporters ?? 0,
                 'engagement' => $query->engagement_score ?? 0
             ];
@@ -121,7 +122,6 @@ class LeaderBoardController extends Controller
 
         $users = User::where('stripe_details_submitted', 1)
             ->where('suspended_account', 0)
-            ->where('is_uk', 0)
             ->withCount(['followers as followers_count', 'following as following_count'])
             ->withCount([
                 'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
@@ -201,12 +201,12 @@ class LeaderBoardController extends Controller
 
         $users->map(function ($user) {
             // Calculate monetary metrics (for backward compatibility)
-            $user->total_payments = Helpers::priceFormat($user->default_currency, $user->total_payments, 'USD');
-            $user->total_subscriptions = Helpers::priceFormat($user->default_currency, $user->total_subscriptions, 'USD');
-            $user->total_tips = Helpers::priceFormat($user->default_currency, $user->total_tips, 'USD');
-            $user->total_member = Helpers::priceFormat($user->default_currency, $user->total_member, 'USD');
-            $user->total_bill = Helpers::priceFormat($user->default_currency, $user->total_bill, 'USD');
-            $user->total_shop = Helpers::priceFormat($user->default_currency, $user->total_shop, 'USD');
+            $user->total_payments = $user->total_payments;
+            $user->total_subscriptions = $user->total_subscriptions;
+            $user->total_tips = $user->total_tips;
+            $user->total_member = $user->total_member;
+            $user->total_bill = $user->total_bill;
+            $user->total_shop = $user->total_shop;
 
             // Calculate total monetary amount (legacy metric) with NaN protection
             $amounts = [
@@ -224,6 +224,9 @@ class LeaderBoardController extends Controller
             });
 
             $user->total_amount = array_sum($validAmounts);
+            
+            // ✅ Ensure we return a consistent currency code (uppercase)
+            $user->currency = strtoupper($user->default_currency ?? 'GBP');
 
             // Calculate social engagement metrics
             $user->total_supporters = $user->followers_count;
@@ -258,10 +261,8 @@ class LeaderBoardController extends Controller
             $currentWeekEndDate = Carbon::now()->endOfWeek();
             $currentDate = Carbon::today();
 
-            $users = User::where('is_uk', 0)
-                // where(function ($q) {
-                //     $q->whereNot('country', 'GB')->orWhereNull('country');
-                // })
+            $users = User::where('stripe_details_submitted', 1)
+                ->where('suspended_account', 0)
                 ->with(['paymentitems', 'subscriptions', 'tip_goal_payment'])
                 ->withCount([
                     'paymentitems as total_payments' => function ($query) use ($type, $currentMonth, $currentYear, $currentWeekStartDate, $currentWeekEndDate, $currentDate) {
@@ -564,76 +565,56 @@ class LeaderBoardController extends Controller
                     $lasthour = Carbon::now()->subHour(1);
                     $wishes = StripePaymentItems::whereHas('wish', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid');
                     })->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                     $tips = TipGoalsPayment::whereHas('creator', function ($q) {
-                        $q->where(function ($s) {
-                            $s->whereNot('country', 'GB')->orWhereNull('country');
-                        });
+                        // Restriction removed
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
 
                     $members = MembershipPayment::whereHas('membership', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                     $bills = BillPayment::whereHas('bill', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $lasthour)->get();
                 } else {
                     $last24hour = Carbon::now()->subHour(24);
                     $wishes = StripePaymentItems::whereHas('wish', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid');
                     })->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                     $subscriptions = WishItemSubscription::whereHas('wish_item', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                     $tips = TipGoalsPayment::whereHas('creator', function ($q) {
-                        $q->where(function ($s) {
-                            $s->whereNot('country', 'GB')->orWhereNull('country');
-                        });
+                        // Restriction removed
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
 
                     $members = MembershipPayment::whereHas('membership', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                     $bills = BillPayment::whereHas('bill', function ($q) {
                         $q->whereHas('user', function ($query) {
-                            $query->where(function ($s) {
-                                $s->whereNot('country', 'GB')->orWhereNull('country');
-                            });
+                            // Restriction removed
                         });
                     })->where('status', 'paid')->orderBy('amount', 'DESC')->where('created_at', '>', $last24hour)->get();
                 }
@@ -950,6 +931,7 @@ class LeaderBoardController extends Controller
                 'coverimg' =>  $query->cover_url,
                 'top' => $rank / 100,
                 'amount' => $query->total_amount,
+                'currency' => $query->currency ?? 'GBP',
                 'supporters' => $periodFollowers > 0 ? $periodFollowers : $query->total_supporters ?? 0,
                 'engagement' => $query->engagement_score ?? 0,
                 'combined_score' => $query->combined_score ?? $query->total_amount,
@@ -1453,7 +1435,7 @@ class LeaderBoardController extends Controller
 
     public function topWishes($type = 'all')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
         $pay = StripePaymentItems::whereBetween('created_at', [$start, $end])
@@ -1485,7 +1467,7 @@ class LeaderBoardController extends Controller
 
     public function topSubscription($type = 'all')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
         $pay = WishItemSubscription::whereBetween('created_at', [$start, $end])
@@ -1515,7 +1497,7 @@ class LeaderBoardController extends Controller
 
     public function topPaidTask($type = 'all')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
         $taskPurchase = TaskPurchase::whereBetween('created_at', [$start, $end])
@@ -1545,7 +1527,7 @@ class LeaderBoardController extends Controller
 
     public function topBill($type = 'all')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
         $pay = BillPayment::whereBetween('created_at', [$start, $end])
@@ -1575,7 +1557,7 @@ class LeaderBoardController extends Controller
 
     public function topShop($type = 'all')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
         $pay = ShopPayment::whereBetween('created_at', [$start, $end])
@@ -1605,7 +1587,7 @@ class LeaderBoardController extends Controller
 
     public function topPiggyBank($type = 'all')
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         [$start, $end] = $this->getRange($type);
 
         $pay = TipGoalsPayment::whereBetween('created_at', [$start, $end])
@@ -1648,7 +1630,6 @@ class LeaderBoardController extends Controller
             // Get wishes leaders - focus on creators who received payments for their wishes
             $wishesLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->whereHas('paymentitems', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->whereHas('payment', function ($q) {
                         $q->where('payment_status', 'paid');
@@ -1682,17 +1663,16 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => $user->total_payments,
+                        'total_amount' => (float)$user->total_payments,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => 'USD'
+                        'currency' => strtoupper($user->default_currency ?? 'GBP')
                     ];
                 });
 
             // Get subscriptions leaders - query creators who have received subscription payments
             $subscriptionsLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->whereHas('subscriptions', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('wish_item_subscriptions.status', 'paid')
                         ->whereBetween('wish_item_subscriptions.created_at', [$threeMonthsAgo, $currentDate]);
@@ -1720,17 +1700,16 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => $user->total_subscriptions,
+                        'total_amount' => (float)$user->total_subscriptions,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => 'USD'
+                        'currency' => strtoupper($user->default_currency ?? 'GBP')
                     ];
                 });
 
             // Get tips/piggy bank leaders - Query creators who received tips, not who paid them
             $tipsLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->whereHas('tip_goal_payment', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('status', 'paid')
                         ->whereBetween('created_at', [$threeMonthsAgo, $currentDate]);
@@ -1758,17 +1737,16 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => $user->total_tips,
+                        'total_amount' => (float)$user->total_tips,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => 'USD'
+                        'currency' => strtoupper($user->default_currency ?? 'GBP')
                     ];
                 });
 
             // Get memberships leaders
             $membershipsLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->whereHas('membership_payments', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('membership_payments.status', 'paid')
                         ->whereBetween('membership_payments.created_at', [$threeMonthsAgo, $currentDate]);
@@ -1796,17 +1774,16 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => $user->total_memberships,
+                        'total_amount' => (float)$user->total_memberships,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => 'USD'
+                        'currency' => strtoupper($user->default_currency ?? 'GBP')
                     ];
                 });
 
             // Get bills leaders
             $billsLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->whereHas('bill_payments', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('bill_payments.status', 'paid')
                         ->whereBetween('bill_payments.created_at', [$threeMonthsAgo, $currentDate]);
@@ -1834,17 +1811,16 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => $user->total_bills,
+                        'total_amount' => (float)$user->total_bills,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => 'USD'
+                        'currency' => strtoupper($user->default_currency ?? 'GBP')
                     ];
                 });
 
             // Get shop leaders
             $shopLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->whereHas('shop_payments', function ($query) use ($threeMonthsAgo, $currentDate) {
                     $query->where('shop_payments.payment_status', 'paid')
                         ->whereBetween('shop_payments.created_at', [$threeMonthsAgo, $currentDate]);
@@ -1872,10 +1848,10 @@ class LeaderBoardController extends Controller
                         'avatar_url' => $user->avatar_url,
                         'profile_status_lock' => $user->profile_status_lock,
                         'role' => $user->role,
-                        'total_amount' => $user->total_shop,
+                        'total_amount' => (float)$user->total_shop,
                         'total_count' => $user->total_count,
                         'supporters_count' => $user->supporters_count,
-                        'currency' => 'USD'
+                        'currency' => strtoupper($user->default_currency ?? 'GBP')
                     ];
                 });
 
@@ -2054,7 +2030,7 @@ class LeaderBoardController extends Controller
                 $user = $purchase->user;
                 $creator = $purchase->shop->user ?? null;
                 if ($user && $creator) {
-                    $addSupporterData($supporters, $user, $purchase->amount, $purchase->currency ?? 'USD', 'shop', $purchase->created_at);
+                    $addSupporterData($supporters, $user, $purchase->amount, $purchase->currency ?? 'GBP', 'shop', $purchase->created_at);
                     if (!in_array($creator->id, $supporters[$user->username]['creators_supported'] ?? [])) {
                         $supporters[$user->username]['creators_supported'][] = $creator->id;
                     }
@@ -2141,13 +2117,11 @@ class LeaderBoardController extends Controller
             // Get total active creators
             $totalCreators = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->count();
 
             // Get creators with recent growth in followers
             $fastestGrowingCreators = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->withCount(['followers as followers_count'])
                 ->having('followers_count', '>', 0)
                 ->orderBy('followers_count', 'desc')
@@ -2164,14 +2138,13 @@ class LeaderBoardController extends Controller
                         'supporters' => $user->followers_count,
                         'growth_percentage' => rand(5, 50), // Mock growth percentage
                         'current_amount' => 0,
-                        'currency' => 'USD'
+                        'currency' => $user->default_currency ?? 'GBP'
                     ];
                 });
 
             // Get momentum leaders (weekly active creators)
             $momentumLeaders = User::where('stripe_details_submitted', 1)
                 ->where('suspended_account', 0)
-                ->where('is_uk', 0)
                 ->where('updated_at', '>=', $currentWeekStartDate)
                 ->withCount(['followers as followers_count'])
                 ->orderBy('updated_at', 'desc')
@@ -2188,7 +2161,7 @@ class LeaderBoardController extends Controller
                         'supporters' => $user->followers_count,
                         'growth_percentage' => rand(10, 35), // Mock growth percentage
                         'current_amount' => 0,
-                        'currency' => 'USD'
+                        'currency' => $user->default_currency ?? 'GBP'
                     ];
                 });
 

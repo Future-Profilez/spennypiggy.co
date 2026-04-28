@@ -89,7 +89,7 @@ class MembershipController extends Controller
         $rewards = json_encode($request->rewards);
 
         $price = $request->month_price;
-        $currency = $user->default_currency ?? 'USD';
+        $currency = $user->default_currency ?? 'GBP';
 
         // Calculate VAT in Creator's Currency
         $vatPercent = $user->vat_amount_percentage ?? 0;

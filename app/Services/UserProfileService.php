@@ -14,9 +14,12 @@ use App\Models\MembershipPayment;
 use App\Models\StripePaymentDetail;
 use App\Models\WishItemSubscription;
 use App\Models\Notification;
+use App\Models\MonthlyCharge;
+use App\StripeControl;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class UserProfileService
@@ -39,7 +42,7 @@ class UserProfileService
                     'avatar', 'avatar_approved', 'cover', 'suspended_account',
                     'social_image', 'account_id', 'stripe_details_submitted',
                     'default_currency', 'country', 'creator_category', 'identity_status','edit_bio_reason',
-                    'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'is_uk', 'vat_amount_percentage'
+                    'profile_status_lock', 'is_subscribed', 'is_founder', 'show_piggy_bank', 'created_at', 'vat_amount_percentage'
                 ])
                 ->with([
                     'social_links:id,user_id,instagram,twitter,twitch,facebook,youtube,tumblr,reddit,discord,other',
@@ -521,6 +524,20 @@ class UserProfileService
             return [];
         }
 
+        // 🛡️ Sync mandatory subscription if user is viewing their own profile and status is not active
+        if (Auth::check() && Auth::id() === $user->id && $user->stripe_id) {
+            if ($user->subscription_status == 0) { // 0 = EXPIRED/NONE
+                $this->syncUserSubscription($user);
+                // Refresh user model after sync
+                $user = $user->fresh();
+                $user->load([
+                    'social_links',
+                    'user_categories',
+                    'intro'
+                ]);
+            }
+        }
+
         // Preload all data in parallel using promises or similar
         $data = [
             'user' => $user,
@@ -534,5 +551,82 @@ class UserProfileService
         }
 
         return $data;
+    }
+
+    /**
+     * Sync user subscription status from Stripe API
+     * This prevents duplicate subscriptions and ensures local records are accurate.
+     */
+    public function syncUserSubscription(User $user)
+    {
+        if (!$user->stripe_id) {
+            return;
+        }
+
+        try {
+            $stripeSubscription = StripeControl::getActiveSubscriptionByCustomer($user->stripe_id);
+            
+            if (!$stripeSubscription) {
+                // If no active sub in Stripe, but local says subscribed, fix it
+                if ($user->is_subscribed) {
+                    $user->is_subscribed = 0;
+                    $user->save();
+                }
+                return;
+            }
+
+            // Extract period dates from Stripe
+            $currentPeriodStart = Carbon::createFromTimestamp($stripeSubscription->current_period_start);
+            $currentPeriodEnd = Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+            $trialStart = $stripeSubscription->trial_start ? Carbon::createFromTimestamp($stripeSubscription->trial_start) : null;
+            $trialEnd = $stripeSubscription->trial_end ? Carbon::createFromTimestamp($stripeSubscription->trial_end) : null;
+            $status = $stripeSubscription->status;
+
+            // Find if we already have a record for this period
+            $charge = MonthlyCharge::where('user_id', $user->id)
+                ->where('stripe_id', $stripeSubscription->id)
+                ->where(function($q) use ($currentPeriodStart) {
+                    $q->whereDate('current_start_subscription_date', $currentPeriodStart)
+                      ->orWhereDate('current_start_trial_date', $currentPeriodStart);
+                })
+                ->first();
+
+            if (!$charge) {
+                // Create a new record for history if not found
+                $charge = new MonthlyCharge();
+                $charge->user_id = $user->id;
+                $charge->stripe_id = $stripeSubscription->id;
+                $charge->email = $user->email;
+                $charge->name = $user->name;
+                $charge->currency = strtoupper($stripeSubscription->currency);
+                $charge->amount = $stripeSubscription->plan->amount / 100;
+                $charge->tax = 0; // Default or calculate if needed
+            }
+
+            // Update record with latest data from Stripe
+            $charge->status = $status === 'active' ? 'paid' : $status;
+            $charge->current_start_trial_date = $trialStart;
+            $charge->current_end_trial_date = $trialEnd;
+            $charge->current_start_subscription_date = $currentPeriodStart;
+            $charge->current_end_subscription_date = $currentPeriodEnd;
+            $charge->upcoming_payment = $currentPeriodEnd;
+            $charge->save();
+
+            // Update user status
+            if (in_array($status, ['active', 'trialing'])) {
+                $user->is_subscribed = 1;
+                $user->save();
+            }
+
+            Log::info("Synced subscription for user {$user->id} from Stripe API.", [
+                'subscription_id' => $stripeSubscription->id,
+                'status' => $status
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Failed to sync user subscription: " . $e->getMessage(), [
+                'user_id' => $user->id
+            ]);
+        }
     }
 }

@@ -210,6 +210,14 @@ class Deliverable extends Model
     }
 
     /**
+     * Get metadata as object
+     */
+    public function getMetadataJsonAttribute()
+    {
+        return (object) ($this->metadata ?? []);
+    }
+
+    /**
      * Get human-readable deliverable type
      */
     public function getDeliverableTypeDisplayAttribute(): string

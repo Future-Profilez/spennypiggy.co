@@ -43,7 +43,7 @@ export default function TopEarners({ creators, periodLabel }) {
                 // link={c.username}
               />
               <div className="text-right">
-                <div className="font-bold text-white group-hover:text-pink-400 transition-colors">{formatMultiPrice(c.total_amount, c.currency || 'USD')}</div>
+                <div className="font-bold text-white group-hover:text-pink-400 transition-colors">{formatMultiPrice(c.total_amount, c.currency || 'GBP')}</div>
                 {periodLabel ? <div className="text-xs text-gray-400">{periodLabel} total</div> : ''}
               </div>
             </div>

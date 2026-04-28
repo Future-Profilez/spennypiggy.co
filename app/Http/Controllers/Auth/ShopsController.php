@@ -58,7 +58,7 @@ class ShopsController extends Controller
 
         $shops = Shop::where('user_id', $user->id)
             ->where('approved', 1)
-            ->where('deactive', 0)
+            ->where('status', 1)
             ->orderBy('id', 'desc')
             ->get();
 
@@ -111,9 +111,6 @@ class ShopsController extends Controller
                 "category" => [
                     "sometimes",
                     "nullable"
-                ],
-                "vat_applicable" => [
-                    'required'
                 ]
             ]
         );
@@ -172,7 +169,6 @@ class ShopsController extends Controller
                 'slot_limitation' => $request->slot_limitation ?? null,
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
-                'vat_applicable' => $request->vat_applicable
             ]);
         } else {
             $shop = Shop::create([
@@ -191,7 +187,6 @@ class ShopsController extends Controller
                 'slot_limitation' => $request->slot_limitation ?? null,
                 'special_member_price' => $request->special_member_price ?? null,
                 'quantity_allow' => $request->quantity_allow ?? null,
-                'vat_applicable' => $request->vat_applicable,
                 'shipping_profile_id' => $request->shipping_profile_id ?? null,
                 'shipping_information' => $request->shipping_info ?? null
             ]);
@@ -358,7 +353,6 @@ class ShopsController extends Controller
                     'slot_limitation' => $request->slot_limitation ?? null,
                     'special_member_price' => $request->special_member_price ?? null,
                     'quantity_allow' => $request->quantity_allow ?? null,
-                    'vat_applicable' => $request->vat_applicable,
                     'shipping_profile_id' => $request->shipping_profile_id ?? null,
                     'shipping_information' => $request->shipping_info ?? null
                 ]);
@@ -573,7 +567,7 @@ class ShopsController extends Controller
         $tax = round(($amount * config('app.shop_tax', 20) / 100), 2, PHP_ROUND_HALF_UP);
 
         $vat_percentage_amount = 0;
-        if ($shop->vat_applicable == 1) {
+        if (!empty($shop->user->vat_amount_percentage)) {
             $vat_percentage_amount = ($amount + $tax) * $shop->user->vat_amount_percentage / 100;
         }
 
@@ -813,7 +807,7 @@ class ShopsController extends Controller
         
         // Add VAT if applicable
         $vatAmount = 0;
-        if ($shop->vat_applicable == 1 && !empty($shop->user->vat_amount_percentage)) {
+        if (!empty($shop->user->vat_amount_percentage)) {
             $vatAmount = ($amount + $taxAmount) * $shop->user->vat_amount_percentage / 100;
         }
 
@@ -824,7 +818,7 @@ class ShopsController extends Controller
             $request,
             $shop->user,
             $listedPriceToGrossUp,
-            $shop->user->default_currency ?? 'USD',
+            $shop->user->default_currency ?? 'GBP',
             'shop',
             true // JSON response expected
         );
@@ -835,7 +829,7 @@ class ShopsController extends Controller
         }
 
         $currency = !empty(request()->cookie('currency')) ? strtolower(request()->cookie('currency')) : 'gbp';
-        $chargeCurrency = $shop->user->default_currency ?? 'USD';
+        $chargeCurrency = $shop->user->default_currency ?? 'GBP';
         
         // Fetch creator risk metrics for reserve calculation
         $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shop->user->uuid]);
@@ -1074,36 +1068,38 @@ class ShopsController extends Controller
 
                 // Create deliverable record for shop item
                 try {
-                    \App\Models\Deliverable::create([
-                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
-                        'product_id' => $stripeid->shop->stripe_product_id ?? 'shop_' . $stripeid->shop->id,
-                        'price_id' => $stripeid->shop->price_id,
-                        'item_id' => $stripeid->shop->id,
-                        'creator_id' => $stripeid->shop->user_id,
-                        'gifter_id' => $stripeid->user_id,
-                        'session_id' => $stripeid->session_id,
-                        'deliverable_type' => $stripeid->shop->type == 'physical' ? 'shipping' : 'digital_file',
-                        'product_type' => 'shop_item',
-                        'transaction_amount' => $stripeid->amount,
-                        'deliverable_url' => $stripeid->shop->reward_file_url,
-                        'customer_email' => $stripeid->email ?? ($stripeid->user->email ?? null),
-                        'customer_name' => $stripeid->name ?? ($stripeid->user->name ?? null),
-                        'payment_status' => 'paid',
-                        'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
-                        'anonymous' => $stripeid->anonymous ?? false,
-                        'message' => $stripeid->message,
-                        'status' => $stripeid->shop->type == 'physical' ? 'pending' : 'delivered',
-                        'delivered_at' => $stripeid->shop->type == 'physical' ? null : now(),
-                        'metadata' => json_encode([
-                            'shop_item_id' => $stripeid->shop->id,
-                            'shop_item_name' => $stripeid->shop->name,
-                            'type' => $stripeid->shop->type,
-                            'amount' => $stripeid->amount,
-                            'currency' => $stripeid->currency,
-                            'creator_net_amount' => $creatorNetAmount
-                        ])
-                    ]);
-                    Log::info('ShopsController: Deliverable record created for shop item', ['shop_id' => $stripeid->shop->id]);
+                    if (!\App\Models\Deliverable::where('session_id', $stripeid->session_id)->exists()) {
+                        \App\Models\Deliverable::create([
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'product_id' => $stripeid->shop->stripe_product_id ?? 'shop_' . $stripeid->shop->id,
+                            'price_id' => $stripeid->shop->price_id,
+                            'item_id' => $stripeid->shop->id,
+                            'creator_id' => $stripeid->shop->user_id,
+                            'gifter_id' => $stripeid->user_id,
+                            'session_id' => $stripeid->session_id,
+                            'deliverable_type' => $stripeid->shop->type == 'physical' ? 'shipping' : 'digital_file',
+                            'product_type' => 'shop_item',
+                            'transaction_amount' => $stripeid->amount,
+                            'deliverable_url' => $stripeid->shop->reward_file_url,
+                            'customer_email' => $stripeid->email ?? ($stripeid->user->email ?? null),
+                            'customer_name' => $stripeid->name ?? ($stripeid->user->name ?? null),
+                            'payment_status' => 'paid',
+                            'payment_currency' => strtoupper($stripeid->currency ?? 'GBP'),
+                            'anonymous' => $stripeid->anonymous ?? false,
+                            'message' => $stripeid->message,
+                            'status' => $stripeid->shop->type == 'physical' ? 'pending' : 'delivered',
+                            'delivered_at' => $stripeid->shop->type == 'physical' ? null : now(),
+                            'metadata' => json_encode([
+                                'shop_item_id' => $stripeid->shop->id,
+                                'shop_item_name' => $stripeid->shop->name,
+                                'type' => $stripeid->shop->type,
+                                'amount' => $stripeid->amount,
+                                'currency' => $stripeid->currency,
+                                'creator_net_amount' => $creatorNetAmount
+                            ])
+                        ]);
+                        Log::info('ShopsController: Deliverable record created for shop item', ['shop_id' => $stripeid->shop->id]);
+                    }
                 } catch (\Exception $e) {
                     Log::error('ShopsController: Failed to create deliverable record', ['error' => $e->getMessage()]);
                 }
@@ -1128,17 +1124,22 @@ class ShopsController extends Controller
 
                 /****************************SHOP**PWA**ENDS****************************************************/
 
-                $userPayment = new UserPayment();
-                $userPayment->from_user_id = $stripeid->user_id ?? null;
-                $userPayment->to_user_id = $stripeid->shop->user_id;
-                $userPayment->product_type = 'shop';
-                $userPayment->amount = $stripeid->amount;
-                $userPayment->currency = $stripeid->currency;
-                $userPayment->payment_method = 'stripe';
-                $userPayment->payment_details = json_encode($stripeid->session_id, true);
-                $userPayment->paid_at = Carbon::now();
-                $userPayment->status = 'paid';
-                $userPayment->save();
+                // Idempotency check for UserPayment
+                $existingUserPayment = UserPayment::where('payment_details', json_encode($stripeid->session_id, true))->exists();
+                
+                if (!$existingUserPayment) {
+                    $userPayment = new UserPayment();
+                    $userPayment->from_user_id = $stripeid->user_id ?? null;
+                    $userPayment->to_user_id = $stripeid->shop->user_id;
+                    $userPayment->product_type = 'shop';
+                    $userPayment->amount = $stripeid->amount;
+                    $userPayment->currency = $stripeid->currency;
+                    $userPayment->payment_method = 'stripe';
+                    $userPayment->payment_details = json_encode($stripeid->session_id, true);
+                    $userPayment->paid_at = Carbon::now();
+                    $userPayment->status = 'paid';
+                    $userPayment->save();
+                }
 
                 // Clear user caches
                 app(UserProfileService::class)->clearUserCaches($stripeid->shop->user->username, $stripeid->shop->user->id);
@@ -1206,6 +1207,12 @@ class ShopsController extends Controller
                 $title = "🚚 Your order has been shipped!";
                 $content = "Great news! $creatorName has shipped your order. Tracking: " . ($request->tracking_id ?? 'Available soon');
                 Helpers::sendNotification($title, $content, $deliverable->customer_email);
+                
+                // Send Email Notification
+                \Illuminate\Support\Facades\Mail::to($deliverable->customer_email)
+                    ->send(new \App\Mail\ShopShippedMail($deliverable, Auth::user()));
+                
+                Log::info('Fulfillment: Shipping notifications (PWA & Email) sent', ['deliverable_id' => $deliverable->id]);
             } catch (\Exception $e) {
                 Log::error('Fulfillment: Failed to send shipping notification', ['error' => $e->getMessage()]);
             }

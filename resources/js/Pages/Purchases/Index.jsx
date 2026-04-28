@@ -119,6 +119,11 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
             } else {
                 itemprice = deliverable.transaction_amount || metadata.amount;
             }
+        } else if (deliverable.product_type === 'shop_item') {
+            // For shop items
+            itemName = metadata.shop_item_name || 'Shop Item';
+            itemImage = deliverable.deliverable_url || null; // Reward file or image
+            itemprice = deliverable.transaction_amount || metadata.amount;
         } else if (metadata.bill_name) {
             // Fallback to metadata bill_name if relationship not loaded
             itemName = metadata.bill_name;
@@ -258,6 +263,25 @@ export default function Index({ auth, sentDeliverables, receivedDeliverables, ac
                                                         <li className='flex items-center flex-wrap'>
                                                             <a target='_blank' href={deliverable.certificate_url} 
                                                             className="ml-2 text-[15px] text-green-600 hover:underline" >📜 Download Certificate</a>
+                                                        </li>
+                                                    )}
+
+                                                    {deliverable.tracking_id && (
+                                                        <li className='mt-2 p-3 bg-blue-50 rounded-[20px] border border-blue-100 w-full'>
+                                                            <p className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                                                                <FiPackage /> Shipping Information
+                                                            </p>
+                                                            <p className="text-xs text-blue-600 mt-1">
+                                                                <strong>Courier:</strong> {deliverable.courier_name || 'Standard Shipping'}
+                                                            </p>
+                                                            <p className="text-xs text-blue-600">
+                                                                <strong>Tracking ID:</strong> <span className="font-mono bg-white px-1 rounded">{deliverable.tracking_id}</span>
+                                                            </p>
+                                                            {deliverable.shipped_at && (
+                                                                <p className="text-[10px] text-blue-400 mt-1">
+                                                                    Shipped on {new Date(deliverable.shipped_at).toLocaleDateString()}
+                                                                </p>
+                                                            )}
                                                         </li>
                                                     )}
                                                 </ul>

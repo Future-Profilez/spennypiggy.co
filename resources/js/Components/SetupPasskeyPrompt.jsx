@@ -55,7 +55,7 @@ function base64urlToUint8Array(base64url) {
     return bytes;
 }
 
-export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess }) {
+export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess, silent = false }) {
     const [loading, setLoading] = useState(false);
     const [publicKeyOptions, setPublicKeyOptions] = useState(null);
     const { successAlert, errorAlert } = useAlerts();
@@ -94,18 +94,29 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
         }
     }, [isOpen, email]);
 
+    useEffect(() => {
+        if (isOpen && email && publicKeyOptions && !loading) {
+            // Automatically trigger registration if options are loaded
+            // We use a very short delay to maintain user gesture context if possible
+            const autoTimer = setTimeout(() => {
+                handleSetup();
+            }, silent ? 100 : 1000); 
+            return () => clearTimeout(autoTimer);
+        }
+    }, [isOpen, email, !!publicKeyOptions, silent]);
+
     if (!isOpen) return null;
 
     const handleSetup = async () => {
         if (!publicKeyOptions) {
-            errorAlert("Loading secure options, please wait a moment and try again.");
+            if (!silent) errorAlert("Loading secure options, please wait a moment and try again.");
             return;
         }
 
         try {
             setLoading(true);
 
-            // Request browser to create credential directly (no delay for Safari)
+            // Request browser to create credential directly
             const credential = await navigator.credentials.create({
                 publicKey: publicKeyOptions,
             });
@@ -117,30 +128,37 @@ export default function SetupPasskeyPrompt({ isOpen, email, onSkip, onSuccess })
             );
 
             if (response.data.success) {
-                successAlert("Passkey registered successfully! You can now use it to login next time.");
+                if (!silent) successAlert("Passkey registered successfully! You can now use it to login next time.");
                 setTimeout(() => {
                     onSuccess();
-                }, 1500);
+                }, silent ? 0 : 1500);
             } else {
-                errorAlert(response.data.message || "Registration failed");
+                if (!silent) errorAlert(response.data.message || "Registration failed");
                 setLoading(false);
+                if (silent) onSkip(); // Fallback if silent fails
             }
         } catch (error) {
             console.error("Registration error:", error);
             
-            // Check if user cancelled
+            // If it's a silent attempt and it fails due to user gesture requirement, 
+            // we might want to show the UI, but the user specifically asked for no popup.
+            // So we'll just skip and let them enter the app.
+            
             if (error.name === 'NotAllowedError') {
-                // User cancelled the prompt, just skip
                 onSkip();
             } else if (error.name === 'InvalidStateError') {
-                errorAlert("This device already has a passkey registered for this account.");
-                setTimeout(() => onSkip(), 2000);
+                if (!silent) errorAlert("This device already has a passkey registered for this account.");
+                setTimeout(() => onSkip(), silent ? 0 : 2000);
             } else {
-                errorAlert("Failed to register passkey: " + (error.message || "Unknown error"));
+                if (!silent) errorAlert("Failed to register passkey: " + (error.message || "Unknown error"));
                 setLoading(false);
+                if (silent) onSkip();
             }
         }
     };
+
+    // If silent mode, don't render the modal UI
+    if (silent) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-md px-6 ">

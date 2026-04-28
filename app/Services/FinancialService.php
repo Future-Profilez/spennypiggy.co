@@ -46,6 +46,16 @@ class FinancialService
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->get(['gross_amount', 'net_amount', 'platform_fee', 'stripe_fee', 'vat_amount', 'currency']);
 
+        // Fetch Reserves and Review Holds from PayoutService
+        $payoutService = app(\App\Services\Risk\PayoutService::class);
+        $reserves = $payoutService->getHeldReserves($user->uuid);
+        $heldReservesAmount = $reserves['total_held'] ?? 0;
+
+        // Review Holds are payments with status 'review_hold'
+        $reviewHoldsAmount = \App\Models\Payment::where('creator_id', $user->uuid)
+            ->where('status', 'review_hold')
+            ->sum('amount');
+
         $grossDisplay = 0;
         $feesDisplay = 0;
         $vatDisplay = 0;
@@ -129,6 +139,10 @@ class FinancialService
             $expensesGbp += $from === 'GBP' ? $amount : ($convert($from, $amount, 'GBP') ?? $amount);
         }
 
+        // Convert reserves and review holds to display currency
+        $heldReservesDisplay = $convert('GBP', $heldReservesAmount / 100, $displayCurrency) ?? ($heldReservesAmount / 100);
+        $reviewHoldsDisplay = $convert('GBP', $reviewHoldsAmount / 100, $displayCurrency) ?? ($reviewHoldsAmount / 100);
+
         return [
             'currency' => $displayCurrency,
             'gross_income' => $grossDisplay,
@@ -137,6 +151,9 @@ class FinancialService
             'net_income' => $netDisplay,
             'expenses' => $expensesDisplay,
             'profit' => $netDisplay - $expensesDisplay,
+            'held_reserves' => $heldReservesDisplay,
+            'review_holds' => $reviewHoldsDisplay,
+            'payoutable_balance' => max(0, $netDisplay - $heldReservesDisplay - $reviewHoldsDisplay),
 
             'gross_income_gbp' => $grossGbp,
             'fees_gbp' => $feesGbp,
@@ -144,6 +161,8 @@ class FinancialService
             'net_income_gbp' => $netGbp,
             'expenses_gbp' => $expensesGbp,
             'profit_gbp' => $netGbp - $expensesGbp,
+            'held_reserves_gbp' => $heldReservesAmount / 100,
+            'review_holds_gbp' => $reviewHoldsAmount / 100,
         ];
     }
 

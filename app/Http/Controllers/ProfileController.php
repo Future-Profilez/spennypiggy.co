@@ -682,7 +682,7 @@ class ProfileController extends Controller
 
     public function gifterWishitems($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -742,7 +742,7 @@ class ProfileController extends Controller
 
     public function gifterSubs($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_subs = WishItemSubscription::where('user_id', $user->id)->with(['wish_item', 'wish_item.user'])->paginate(30);
         $trackData = [];
@@ -789,7 +789,7 @@ class ProfileController extends Controller
 
     public function gifterTips($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_tips = TipGoalsPayment::where('user_id', $user->id)->with('tipGoal')->paginate(30);
 
@@ -832,7 +832,7 @@ class ProfileController extends Controller
 
     public function gifterMemberships($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_member = MembershipPayment::where('user_id', $user->id)->with(['membership', 'membership.user'])->paginate(30);
 
@@ -875,7 +875,7 @@ class ProfileController extends Controller
 
     public function gifterBills($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $billPayments = BillPayment::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
@@ -925,7 +925,7 @@ class ProfileController extends Controller
 
     public function gifterContentFiles($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
         // 1) Wish purchases (StripePaymentItems) -> prefer content_file_url, then reward_url, else message_url
         $wishPurchases = \App\Models\StripePaymentItems::whereHas('payment', function ($q) use ($user) {
             $q->where('user_id', $user->id);
@@ -1051,7 +1051,7 @@ class ProfileController extends Controller
 
     public function gifterThanksMessages($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $wishes = StripePaymentItems::whereHas('payment', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -1097,7 +1097,7 @@ class ProfileController extends Controller
 
     public function gifterAccessPosts($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $data = [];
         // Get user IDs from active subscriptions for post access
@@ -1180,7 +1180,7 @@ class ProfileController extends Controller
 
     public function gifterMedia($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $categorizedPayments = [];
 
@@ -1218,7 +1218,7 @@ class ProfileController extends Controller
 
     public function gifterSubscription($username)
     {
-        $user = User::where('username', $username)->where('is_uk', 0)->first();
+        $user = User::where('username', $username)->first();
 
         $user_subs = WishItemSubscription::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)->orWhere('guest_email', $user->email);
@@ -1263,8 +1263,8 @@ class ProfileController extends Controller
 
     public function supportStory($creatorUsername, $gifterUsername)
     {
-        $creator = User::where('username', $creatorUsername)->where('is_uk', 0)->firstOrFail();
-        $gifter = User::where('username', $gifterUsername)->where('is_uk', 0)->firstOrFail();
+        $creator = User::where('username', $creatorUsername)->firstOrFail();
+        $gifter = User::where('username', $gifterUsername)->firstOrFail();
 
         if (!Auth::check() || (Auth::id() !== $gifter->id && Auth::id() !== $creator->id)) {
             throw new AuthorizationException('Unauthorized');
@@ -2047,7 +2047,7 @@ class ProfileController extends Controller
 
     public function profileStepsStatus()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $memPost = Post::where('user_id', $user->id)->where('for_module', 'membership')->first();
         $subPost = Post::where('user_id', $user->id)->where('for_module', 'subscription')->first();
         $supPost = Post::where('user_id', $user->id)->where('for_module', 'support')->first();
@@ -2124,7 +2124,7 @@ class ProfileController extends Controller
      */
     public function getNotifications()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $notifications = Notification::where('notifiable_id', $user->id)->with('user')->orderBy('created_at', 'DESC')->paginate(30);
         return response()->json([
@@ -2139,7 +2139,7 @@ class ProfileController extends Controller
 
     public function markRead()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         Notification::where('notifiable_id', $user->id)->where('is_read', 0)->update(['is_read' => 1]);
 
@@ -2151,7 +2151,7 @@ class ProfileController extends Controller
 
     public function deleteAllNotifications()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         Notification::where('notifiable_id', $user->id)->delete();
 
@@ -2163,7 +2163,7 @@ class ProfileController extends Controller
 
     public function piggyBankSetting()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         if ($user->show_piggy_bank == 0) {
             $user->show_piggy_bank = 1;
@@ -2247,7 +2247,7 @@ class ProfileController extends Controller
 
     public function show2faQR()
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
         $qrCode = null;
 
         if (empty($user->tfa_key)) {
@@ -2265,7 +2265,7 @@ class ProfileController extends Controller
 
     public function verification2FA(Request $request)
     {
-        $user = User::where('id', Auth::id())->where('is_uk', 0)->first();
+        $user = User::where('id', Auth::id())->first();
 
         $valid = false;
         if (!empty($request->otp)) {

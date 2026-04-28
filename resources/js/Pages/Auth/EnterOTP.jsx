@@ -79,10 +79,16 @@ export default function EnterOTP({ user, action, hasPasskey, onSuccess }) {
     useEffect(() => {
         if (action === "open") {
             setOpen(true);
+            // Automatically trigger passkey if available
+            if (hasPasskey) {
+                setTimeout(() => {
+                    handlePasskeyAction();
+                }, 100); // Shorter delay to preserve user gesture context
+            }
         } else {
             setOpen();
         }
-    }, [action]);
+    }, [action, hasPasskey]);
     const { successAlert, errorAlert, errorsHandling } = useAlerts();
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",

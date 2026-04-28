@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Stripe\Exception\SignatureVerificationException;
 use App\Jobs\SendRenewMail;
 use App\Jobs\ShopBuyed;
@@ -957,8 +958,8 @@ class StripeWebhookController extends Controller
         if (isset($metadata->user_id)) {
             $payment = \App\Models\StripePaymentDetail::where('session_id', $session->id)->first();
             if ($payment) {
-                // Check if user exists and has is_uk = 0 (to match the relationship constraint)
-                $user = \App\Models\User::where('id', $metadata->user_id)->where('is_uk', 0)->first();
+                // Check if user exists
+                $user = \App\Models\User::where('id', $metadata->user_id)->first();
 
                 if ($user) {
                     $currency = \App\Models\Currency::where('iso', strtoupper($session->currency))->first();
@@ -973,7 +974,7 @@ class StripeWebhookController extends Controller
                     // \App\Jobs\CheckoutMailToUser::dispatch($payment, $currencySymbol);
                     // NOTE: Disabled to prevent duplicate emails - checkout controller handles this
                 } else {
-                    Log::info('User not eligible for email (is_uk != 0 or user not found)', [
+                    Log::info('User not eligible for email (user not found)', [
                         'user_id' => $metadata->user_id
                     ]);
                 }
@@ -2210,12 +2211,12 @@ class StripeWebhookController extends Controller
         try {
             // Step 1: Create the product
             $product = $client->products->create([
-                'name' => 'Creator Monthly Subscription 8.99 GBP Product',
+                'name' => 'Creator Monthly Subscription £8.99 + VAT Product',
             ]);
 
-            // Step 2: Create the recurring price
+            // Step 2: Create the recurring price (£10.79 total)
             $price = $client->prices->create([
-                'unit_amount' => 899, // 8.99 GBP = 899 pence
+                'unit_amount' => 1079, // £8.99 + £1.80 VAT = £10.79
                 'currency' => 'gbp',
                 'recurring' => [
                     'interval' => 'month', // monthly plan
@@ -2981,17 +2982,20 @@ class StripeWebhookController extends Controller
 
                 // 10. Record UserPayment
                 try {
-                    UserPayment::create([
-                        'from_user_id' => $shopPayment->user_id ?? null,
-                        'to_user_id' => $shopPayment->shop->user_id,
-                        'product_type' => 'shop',
-                        'amount' => $shopPayment->amount,
-                        'currency' => $shopPayment->currency,
-                        'payment_method' => 'stripe',
-                        'payment_details' => json_encode($session->id, true),
-                        'paid_at' => Carbon::now(),
-                        'status' => 'paid',
-                    ]);
+                    $existingUserPayment = UserPayment::where('payment_details', json_encode($session->id, true))->exists();
+                    if (!$existingUserPayment) {
+                        UserPayment::create([
+                            'from_user_id' => $shopPayment->user_id ?? null,
+                            'to_user_id' => $shopPayment->shop->user_id,
+                            'product_type' => 'shop',
+                            'amount' => $shopPayment->amount,
+                            'currency' => $shopPayment->currency,
+                            'payment_method' => 'stripe',
+                            'payment_details' => json_encode($session->id, true),
+                            'paid_at' => Carbon::now(),
+                            'status' => 'paid',
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     Log::error('StripeWebhookController: Failed to record UserPayment for shop', ['error' => $e->getMessage()]);
                 }

@@ -8,7 +8,6 @@ import st from "../../../css/uploader.module.css";
 import UploadcareEditor from "@/uploadcare/UploadcareEditor";
 import GlobalUploader from "@/uploadcare/Uploader";
 import Popup from "@/Components/Popup";
-import ChangeVat from "../account/ChangeVat";
 import { AiOutlineShop } from "react-icons/ai";
 import Select from "react-select";
 import CountriesShipping from "./CountriesShipping";
@@ -257,32 +256,6 @@ export default function AddItem(props) {
             setHaveQty(!haveQty);
         };
 
-        const [haveVat, sethaveVat] = useState(
-            item && item.vat_applicable ? 1 : 0,
-        );
-
-        const handleVat = () => {
-            if (!isVat && haveVat == 0) {
-                setSassClose(false);
-                setTimeout(() => {
-                    setSassClose(true);
-                }, 100);
-                return false;
-            } else {
-                if (haveVat == 0) {
-                    sethaveVat(1);
-                } else {
-                    sethaveVat(0);
-                }
-            }
-        };
-
-        const updatevat = (e) => {
-            sethaveVat(1);
-            setIsVat(true);
-            setSassClose(false);
-        };
-
         const handleSuccessPageType = (e) => {
             setPageType(e.target.value);
             setpageUrl("");
@@ -391,7 +364,6 @@ export default function AddItem(props) {
                 shipping_profile_id: selectedProfile,
                 shipping_info: shipping_info,
                 varients: vars && vars.length ? JSON.stringify(vars) : "",
-                vat_applicable: haveVat,
                 image: thumb,
                 ai_generated: IsAiImage ? 1 : 0,
                 price: vars.length > 0 ? vars[0].value : shopItem.price,
@@ -467,7 +439,6 @@ export default function AddItem(props) {
                 shipping_info: shipping_info,
                 varients: vars && vars.length ? JSON.stringify(vars) : "",
                 image: thumb,
-                vat_applicable: haveVat,
                 success_page_type: pagetype,
                 ai_generated: IsAiImage ? 1 : 0,
             };
@@ -1096,43 +1067,6 @@ export default function AddItem(props) {
                                 <summary className="text-lg font-bold cursor-pointer">
                                     Advanced Settings
                                 </summary>
-
-                                <div className="ad-setting my-2">
-                                    <div className="inline-flex items-center cursor-pointer">
-                                        <div
-                                            onClick={handleVat}
-                                            className={` cursor-pointer relative w-11 h-6
-                                        peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300  rounded-full peer
-                                        peer-checked:after:border-white after:content-['']
-                                        after:absolute after:top-[2px] after:start-[2px] after:bg-white
-                                        after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
-                                        ${haveVat == "1" ? "after:transition-all after:translate-x-full bg-blue-600" : "bg-gray-200"}`}
-                                        ></div>
-                                        <span className="ml-3 text-base font-medium text-gray-900">
-                                            Vat Applicable
-                                            <button className="tooltipbtn">
-                                                ?
-                                                <p>
-                                                    Enable vat for this item of your
-                                                    chosen percentage.
-                                                </p>
-                                            </button>
-                                        </span>
-                                    </div>
-
-                                    <Popup
-                                        action={passClose}
-                                        space="4"
-                                        modalclass="pinkmodal"
-                                    >
-                                        <div className="addvat">
-                                            <ChangeVat
-                                                defaultvalue={vatpercent}
-                                                updatevat={updatevat}
-                                            />
-                                        </div>
-                                    </Popup>
-                                </div>
 
                                 <div className="ad-setting my-2">
                                     <div className="inline-flex items-center cursor-pointer">

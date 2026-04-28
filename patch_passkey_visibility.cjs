@@ -20,6 +20,13 @@ const passkeyCheckCode = `
                 try {
                     const res = await axios.post('/webauthn/check', { email: userEmail });
                     setHasPasskey(res.data.has_passkey);
+                    
+                    // Automatically trigger passkey if available
+                    if (res.data.has_passkey && typeof showStepUp !== 'undefined' && showStepUp) {
+                        setTimeout(() => {
+                            handlePasskeyStepUp();
+                        }, 100); // Shorter delay to preserve user gesture context
+                    }
                 } catch (e) {
                     setHasPasskey(false);
                 }

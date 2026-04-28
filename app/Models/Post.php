@@ -55,7 +55,7 @@ class Post extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0)->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id')->where('suspended_account', 0);
     }
 
     public function getImageUrlAttribute()

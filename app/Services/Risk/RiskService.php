@@ -303,6 +303,20 @@ class RiskService
         $newReservePercent = $consequences['low_reserve_percent'];
         $newPayoutDelay = $consequences['low_payout_delay'];
         
+        // --- RULE 0: New Creator Reserve (10% Floor) ---
+        $creatorRules = RiskSetting::get('creator_rules', []);
+        $newCreatorAgeDays = (int)($creatorRules['new_creator_age_days'] ?? 30);
+        
+        $isNewCreator = false;
+        if ($metric->creator) {
+            $isNewCreator = $metric->creator->created_at->diffInDays(now()) < $newCreatorAgeDays;
+        }
+
+        if ($isNewCreator) {
+            // Apply 10% floor for new creators if low risk
+            $newReservePercent = max($newReservePercent, 10);
+        }
+
         // --- RULE 1: High Dispute Rate ---
         if ($metric->dispute_rate_30d > $thresholds['high_dispute_rate'] && $metric->tx_30d >= $thresholds['min_tx_count']) {
             $newRiskLevel = 'high';

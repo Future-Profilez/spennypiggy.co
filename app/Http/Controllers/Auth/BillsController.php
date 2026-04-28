@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers;
 use App\Http\Controllers\Controller;
-use App\Jobs\BillPayMail;
+use App\Jobs\BillPayMail; 
 use App\Jobs\BillPayToUser;
 use App\Jobs\BillContentDeliveryMail;
 use App\Jobs\ProcessWishItemDeliverable;
@@ -66,7 +66,7 @@ class BillsController extends Controller
         $user = User::where('id', Auth::id())->first();
 
         // 🔴 DEBUGGING: Log user found
-        Log::info('👤 User found', ['user_id' => $user->id ?? null, 'is_uk' => $user->is_uk ?? null]);
+        Log::info('👤 User found', ['user_id' => $user->id ?? null]);
 
         $media = $request->thumbnail;
         $price = $request->price;

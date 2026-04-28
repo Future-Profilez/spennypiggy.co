@@ -5,41 +5,35 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class MemberMailToUser extends Mailable
+class ShopShippedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $mem;
-    public $amountWithcurrency;
     public $deliverable;
+    public $creator;
 
     /**
      * Create a new message instance.
-     *
-     * @return void
      */
-    public function __construct($mem, $amountWithcurrency, $deliverable = null)
+    public function __construct($deliverable, $creator)
     {
-        $this->mem = $mem;
-        $this->amountWithcurrency = $amountWithcurrency;
         $this->deliverable = $deliverable;
+        $this->creator = $creator;
     }
 
     /**
      * Build the message.
-     *
-     * @return $this
      */
     public function build()
     {
-        try {
-            $subject = 'Membership Granted on Spenny Piggy!';
-            return $this->view('email.membership_to_user')
+        $subject = "Your order from " . $this->creator->name . " has been shipped!";
+        
+        return $this->view('email.shop-shipped')
             ->from(env('MAIL_FROM_ADDRESS', 'noreply@spennypiggy.co'), env('MAIL_FROM_NAME', 'Spenny Piggy'))
             ->subject($subject);
-        } catch (\Exception $e) {
-        }
     }
 }

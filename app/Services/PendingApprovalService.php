@@ -167,7 +167,6 @@ class PendingApprovalService
     {
         // Match admin counter logic for profile verification
         $creatorQuery = User::where('role', 1)
-        ->where('is_uk', 0)
         ->where('suspended_account', 0)
         ->where('profile_status_lock', 1) // Pending approval
         ->where('is_subscribed', 1)
@@ -178,7 +177,6 @@ class PendingApprovalService
         });
 
         $gifterQuery = User::where('role', 0)
-            ->where('is_uk', 0)
             ->where('suspended_account', 0)
             ->where('profile_status_lock', 1) // Pending approval
             ->where('is_subscribed', 1)

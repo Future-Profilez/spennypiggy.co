@@ -32,7 +32,6 @@ class VerifyEmailController extends Controller
     {
         try {
             $user = User::where('uuid', $uuid)
-                ->where('is_uk', 0)
                 ->firstOrFail(); // Use firstOrFail to catch non-existing user
 
             $user->email_verified_at = Carbon::now();

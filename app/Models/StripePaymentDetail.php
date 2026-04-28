@@ -60,12 +60,12 @@ class StripePaymentDetail extends Model
 
     public function owner()
     {
-        return $this->belongsTo(User::class, 'owner_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('is_uk', 0);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function stripePaymentItems()
