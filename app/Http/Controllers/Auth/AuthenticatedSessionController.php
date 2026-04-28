@@ -286,6 +286,7 @@ class AuthenticatedSessionController extends Controller
                 ...$pageData
             ];
         };
+        // dd($getData());
 
         if (Auth::check()) {
             $data = $getData();

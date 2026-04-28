@@ -25,9 +25,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
 
     const gotologin = () => {
         errorAlert("Larger payments more than £50 need you to log in.");
-        router.visit(
-            `/login?redirect=${url}&message=Larger payments more than £50 need to login.`
-        );
+        router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
     };
 
     const itemPriceGbp = convertUsdToGbp(item.price);
