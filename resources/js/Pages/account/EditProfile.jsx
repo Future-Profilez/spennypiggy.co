@@ -15,8 +15,6 @@ import { Link } from '@inertiajs/react';
 import ManagePasskey from '@/Components/ManagePasskey';
 
 export default function EditProfile({ profilepage, user, text, classes, updateProfileSteps, global_currency }) {
-
-    console.log(user);
     
     // utils/checkName.js
     function hasFullName(name) {

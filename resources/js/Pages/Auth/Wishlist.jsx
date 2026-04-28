@@ -94,7 +94,6 @@ export default function Wishlist(props) {
 
     const AddCategory = async () => {
         
-console.log("Function triggered");
         const value = inputRef.current.value;
         setAdding(true);
         axios

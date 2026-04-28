@@ -2,31 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class AuditLog extends Model
 {
-    public $incrementing = false;
-    protected $keyType = 'string';
-    protected $primaryKey = 'id';
-    
-    protected $table = 'audit_logs';
-    
+    use HasFactory, HasUuids;
+
+    public $timestamps = false;
+
     protected $fillable = [
-        'id',
         'actor',
         'action_type',
         'reference_id',
         'metadata_json',
-        'created_at',
     ];
-    
-    public $timestamps = false;
-    
+
     protected $casts = [
         'metadata_json' => 'array',
-        'created_at' => 'datetime',
     ];
 
     protected static function booted(): void

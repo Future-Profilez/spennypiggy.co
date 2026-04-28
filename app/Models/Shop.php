@@ -42,7 +42,7 @@ class Shop extends Model
 
     protected $hidden   =   [
         'id',
-        'user_id',
+        // 'user_id',
         'stripe_product_id',
         'image',
         'created_at',

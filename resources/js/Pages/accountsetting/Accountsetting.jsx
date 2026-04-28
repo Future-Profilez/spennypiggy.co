@@ -592,7 +592,7 @@ export default function Accountsetting(props) {
                             icon={History}
                             title="Activity Logs"
                             subtitle="View your audit trail and filter activity entries"
-                            onClick={() => router.get(route("creator.activity.logs"))}
+                            onClick={() => router.get(route("activity.logs"))}
                         />
                     </div>
 

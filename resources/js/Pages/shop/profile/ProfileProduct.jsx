@@ -15,6 +15,7 @@ export default function ProfileProduct({ item, IsloggedIn }) {
 
     const url = `/shop/item/${slug(item.name)}/${item.uuid}`;
 
+<<<<<<< HEAD
     const isOwner = auth?.user?.id === item?.user_id;
     const variants = item?.shop_varients || [];
     const basePrice = variants.length ? Math.min(...variants.map(v => parseFloat(v.price || 0))) : parseFloat(item?.price || 0);
@@ -24,6 +25,21 @@ export default function ProfileProduct({ item, IsloggedIn }) {
     const vatAmount = (basePrice + taxAmount) * (parseFloat(vatPercent || 0) / 100);
     const listedPriceToGrossUp = basePrice + taxAmount + vatAmount;
     const supporterPays = calculateTotalSupporterPays(listedPriceToGrossUp, item?.currency || "GBP")?.total_supporter_pays ?? listedPriceToGrossUp;
+=======
+    const convertUsdToGbp = (usdAmount) => {
+        const usdRate = rates["USD"] || 1;
+        const gbpRate = rates["GBP"] || 1;
+        return (usdAmount * gbpRate) / usdRate;
+    };
+
+    const gotologin = () => {
+        errorAlert("Larger payments more than £50 need you to log in.");
+        router.visit(`/login?redirect=${url}&message=Larger payments more than £50 need to login.`);
+    };
+
+    const itemPriceGbp = convertUsdToGbp(item.price);
+
+>>>>>>> 74e228cf539d6a11e0ad585ded15dc9f05554541
     return (
         <article className="max-w-sm w-full bg-white border-[3px] border-black rounded-[20px] md:rounded-[30px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all overflow-hidden flex flex-col justify-between">
             <div className="p-3 md:p-4">
