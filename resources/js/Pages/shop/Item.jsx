@@ -50,11 +50,12 @@ export default function ShopDetailItem(props) {
    };
 
    // Calculate total price including all fees (Gross-Up Logic matching Helpers.php)
-   const calculateTotalSupporterPays = (price, curr, vatPercent = 0) => {
-       const listedPrice = parseFloat(price || 0);
+   const calculateTotalSupporterPays = (basePrice, curr, vatPercent = 0, shopTaxRate = 20, shipping = 0) => {
+       const price = parseFloat(basePrice || 0);
        const isZeroDecimal = isZeroDecimalCurrency(curr);
-       const vatAmount = listedPrice * (vatPercent || 0) / 100;
-       const priceWithVat = listedPrice + vatAmount;
+       const taxAmount = price * ((shopTaxRate || 20) / 100);
+       const vatAmount = (price + taxAmount) * (vatPercent || 0) / 100;
+       const listedPriceToGrossUp = price + taxAmount + vatAmount + (parseFloat(shipping || 0) || 0);
 
        // Constants must match backend configuration (Helpers.php)
        const stripeFeeRate = 0.029;
@@ -64,9 +65,9 @@ export default function ShopDetailItem(props) {
        const adminFee = adminFeeInCurrency(curr); 
        const totalDeductionRate = stripeFeeRate + platformFeeRate + complianceFeeRate;
        
-       if (totalDeductionRate >= 1) return priceWithVat;
+       if (totalDeductionRate >= 1) return listedPriceToGrossUp;
 
-       const totalSupporterPays = (priceWithVat + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
+       const totalSupporterPays = (listedPriceToGrossUp + stripeFixedFee + adminFee) / (1 - totalDeductionRate);
        
        // Rounding logic to match backend (Helpers.php)
        if (!isZeroDecimal) {
@@ -262,17 +263,17 @@ export default function ShopDetailItem(props) {
                                        formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP')
                                     ) : (
                                        formatMultiPrice(
-                                          calculateTotalSupporterPays(shop.special_member_price, shop?.currency || 'GBP', vatPercentage),
+                                          calculateTotalSupporterPays(shop.special_member_price, shop?.currency || 'GBP', vatPercentage, 20, shop.type === 'physical' ? shippingPrice : 0),
                                           shop?.currency || 'GBP'
                                        )
-                                    )} <span className='line-through text-gray-400 text-xl ml-2' >{price > 0 ? (isOwner ? formatMultiPrice(price, shop?.currency || 'GBP') : formatMultiPrice(calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage), shop?.currency || 'GBP')) : "FREE"}</span>
+                                    )} <span className='line-through text-gray-400 text-xl ml-2' >{price > 0 ? (isOwner ? formatMultiPrice(price, shop?.currency || 'GBP') : formatMultiPrice(calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage, 20, shop.type === 'physical' ? shippingPrice : 0), shop?.currency || 'GBP')) : "FREE"}</span>
                                  </>
                                  : price > 0 ? (
                                     isOwner ? (
                                        formatMultiPrice(price, shop?.currency || 'GBP')
                                     ) : (
                                        formatMultiPrice(
-                                          calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage),
+                                          calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage, 20, shop.type === 'physical' ? shippingPrice : 0),
                                           shop?.currency || 'GBP'
                                        )
                                     )

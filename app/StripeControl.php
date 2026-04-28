@@ -125,6 +125,45 @@ class StripeControl
         return self::$client;
     }
 
+    public static function getStripeFeeMinorForPaymentIntent(string $paymentIntentId, ?string $connectedAccountId = null): int
+    {
+        self::setClient();
+        try {
+            $params = [
+                'expand' => ['charges.data.balance_transaction'],
+            ];
+            $opts = [];
+            if (!empty($connectedAccountId)) {
+                $opts['stripe_account'] = $connectedAccountId;
+            }
+
+            $pi = self::$client->paymentIntents->retrieve($paymentIntentId, $params, $opts);
+            $charge = $pi->charges->data[0] ?? null;
+            if (!$charge) {
+                return 0;
+            }
+
+            $balanceTx = $charge->balance_transaction ?? null;
+            if (!$balanceTx) {
+                return 0;
+            }
+
+            if (is_string($balanceTx)) {
+                $balanceTx = self::$client->balanceTransactions->retrieve($balanceTx, [], $opts);
+            }
+
+            $fee = $balanceTx->fee ?? 0;
+            return is_numeric($fee) ? (int) $fee : 0;
+        } catch (\Throwable $e) {
+            Log::error('Failed to fetch Stripe fee for payment intent', [
+                'payment_intent_id' => $paymentIntentId,
+                'connected_account_id' => $connectedAccountId,
+                'error' => $e->getMessage(),
+            ]);
+            return 0;
+        }
+    }
+
     /**
      * Check if connected account has card_payments capability active
      * This determines whether the account can accept direct charges
@@ -160,6 +199,20 @@ class StripeControl
             return true;
         }
         // });
+    }
+
+    public static function hasTransfersCapability(string $accountId): bool
+    {
+        self::setClient();
+        try {
+            $account = self::$client->accounts->retrieve($accountId);
+            return ($account->capabilities->transfers ?? null) === 'active';
+        } catch (\Exception $e) {
+            Log::error("Failed to check transfers capability: " . $e->getMessage(), [
+                'account_id' => $accountId
+            ]);
+            return true;
+        }
     }
 
     // ✅   Add a check in your class to validate capabilities
