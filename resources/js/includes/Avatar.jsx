@@ -74,7 +74,7 @@ export default function Avatar({ imgclass,hidename, namecolor, src, role, profil
               <img
                 src={imageSrc || src || defaultAvatar}
                 alt="image-avatar"
-                className="img-fluid bg-gray-200 rounded-[17px]" 
+                className="img-fluid bg-gray-200 !rounded-[17px]" 
                 loading="lazy"
                 decoding="async"
                 style={{

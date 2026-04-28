@@ -130,12 +130,38 @@ class StripeWebhookController extends Controller
                     'last_error' => null,
                 ]);
             } else {
-                $webhookStatus = \App\Models\StripeWebhookStatus::create([
-                    'event_id' => $event->id,
-                    'event_type' => $event->type,
-                    'data' => json_encode($event->data->object),
-                    'status' => 'processing',
-                ]);
+                try {
+                    $webhookStatus = \App\Models\StripeWebhookStatus::create([
+                        'event_id' => $event->id,
+                        'event_type' => $event->type,
+                        'data' => json_encode($event->data->object),
+                        'status' => 'processing',
+                    ]);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    $webhookStatus = \App\Models\StripeWebhookStatus::where('event_id', $event->id)->first();
+
+                    if ($webhookStatus && ($webhookStatus->status === 'processed' || $webhookStatus->processed_at)) {
+                        Log::info("Stripe Webhook: Event already processed", ['event_id' => $event->id]);
+                        return response()->json(['status' => 'success', 'message' => 'Already processed']);
+                    }
+
+                    if ($webhookStatus && $webhookStatus->status === 'processing' && $webhookStatus->updated_at && $webhookStatus->updated_at->gt(now()->subMinutes(5))) {
+                        Log::info("Stripe Webhook: Event already processing", ['event_id' => $event->id]);
+                        return response()->json(['status' => 'success', 'message' => 'Already processing']);
+                    }
+
+                    if ($webhookStatus) {
+                        $webhookStatus->update([
+                            'event_type' => $event->type,
+                            'data' => json_encode($event->data->object),
+                            'status' => 'processing',
+                            'processed_at' => null,
+                            'last_error' => null,
+                        ]);
+                    } else {
+                        throw $e;
+                    }
+                }
             }
         }
 
@@ -193,6 +219,12 @@ class StripeWebhookController extends Controller
 
             case 'charge.dispute.created':
                 $this->handleChargeDisputeCreated($data);
+                break;
+
+            case 'charge.dispute.updated':
+            case 'charge.dispute.funds_withdrawn':
+            case 'charge.dispute.funds_reinstated':
+                $this->handleChargeDisputeUpdated($data);
                 break;
 
             case 'charge.dispute.closed':
@@ -866,6 +898,11 @@ class StripeWebhookController extends Controller
      */
     private function processWishItemDeliverable($session, $metadata)
     {
+        if (\App\Models\Deliverable::where('session_id', $session->id)->exists()) {
+            Log::info("Deliverable already exists for session", ['session_id' => $session->id]);
+            return;
+        }
+
         // Get wish item to check for content file
         $wishItem = null;
         $deliverableType = $metadata->deliverable_type ?? 'media_bundle';
@@ -1311,6 +1348,37 @@ class StripeWebhookController extends Controller
             $purchase->dispute_status = 'open';
             $purchase->save();
             Log::info("Dispute opened for TaskPurchase", ['id' => $purchase->id]);
+        }
+    }
+
+    private function handleChargeDisputeUpdated($dispute)
+    {
+        try {
+            $riskDispute = \App\Models\Dispute::where('stripe_dispute_id', $dispute->id)->first();
+
+            if (!$riskDispute) {
+                $this->handleChargeDisputeCreated($dispute);
+                return;
+            }
+
+            $riskDispute->update([
+                'amount' => $dispute->amount,
+                'currency' => $dispute->currency,
+                'reason' => $dispute->reason ?? $riskDispute->reason,
+                'status' => $dispute->status ?? $riskDispute->status,
+                'evidence_due_by' => isset($dispute->evidence_details->due_by)
+                    ? Carbon::createFromTimestamp($dispute->evidence_details->due_by)
+                    : $riskDispute->evidence_due_by,
+            ]);
+
+            if (!empty($dispute->payment_intent)) {
+                $payment = \App\Models\Payment::where('stripe_payment_intent_id', $dispute->payment_intent)->first();
+                if ($payment && $payment->status !== 'disputed' && !in_array($payment->status, ['refunded', 'failed', 'blocked'], true)) {
+                    $payment->update(['status' => 'disputed']);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Risk Engine: Failed to update dispute: " . $e->getMessage(), ['stripe_dispute_id' => $dispute->id ?? null]);
         }
     }
 
@@ -2920,8 +2988,7 @@ class StripeWebhookController extends Controller
                 // Calculate creator net amount using the SAME logic as ShopsController
                 $listedPriceToGrossUp = $shopPayment->amount + $shopPayment->tax_amount + $shopPayment->vat_tax_amount + ($shopPayment->shipping_amount ?? 0);
                 
-                // Fetch creator risk metrics for reserve calculation
-                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $shopPayment->shop->user->uuid]);
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $shopPayment->shop->user->uuid);
                 $reserveRate = $metrics->reserve_percent ?? 0;
                 
                 $breakdown = Helpers::calculateStripeDirectChargeFlow($listedPriceToGrossUp, $shopPayment->currency, $reserveRate);

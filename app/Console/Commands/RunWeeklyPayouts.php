@@ -35,6 +35,10 @@ class RunWeeklyPayouts extends Command
         }
 
         try {
+            $this->info('Releasing eligible reserves...');
+            $release = $payoutService->releaseReserves();
+            Log::info('Reserve release executed in weekly payout run', $release);
+
             // 1. Calculate Payouts (Preview)
             $this->info('Calculating payouts...');
             $preview = $payoutService->calculatePayouts();

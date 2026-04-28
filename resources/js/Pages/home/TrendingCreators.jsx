@@ -28,6 +28,7 @@ Shows what users are actively exploring right now.</p>
                   role={c.role}
                   profile_status_lock={c.profile_status_lock}
                   nolink={true}
+                  imgclass="!rounded-[17px]"
                 />
                 <div className="mt-4 flex items-center justify-between text-sm text-gray-400 group-hover:text-white transition-colors border-t border-gray-800 pt-3">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> 24h clicks: <span className="text-white font-bold">{c.clicks_24h}</span></span>

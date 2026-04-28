@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shop_payments', function (Blueprint $table) {
-            $table->decimal('shipping_amount', 15, 2)->default(0)->after('vat_tax_amount');
-        });
+        if (Schema::hasTable('shop_payments') && !Schema::hasColumn('shop_payments', 'shipping_amount')) {
+            Schema::table('shop_payments', function (Blueprint $table) {
+                $table->decimal('shipping_amount', 15, 2)->default(0)->after('vat_tax_amount');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('shop_payments', function (Blueprint $table) {
-            $table->dropColumn('shipping_amount');
-        });
+        if (Schema::hasTable('shop_payments') && Schema::hasColumn('shop_payments', 'shipping_amount')) {
+            Schema::table('shop_payments', function (Blueprint $table) {
+                $table->dropColumn('shipping_amount');
+            });
+        }
     }
 };

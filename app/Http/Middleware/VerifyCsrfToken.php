@@ -18,6 +18,7 @@ class VerifyCsrfToken extends Middleware
         '/webhook/payment',
         '/webhook/connect',
         '/subs-status',
+        '/magicbell/*',
         'webauthn/*',
     ];
 }

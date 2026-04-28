@@ -353,8 +353,7 @@ export default function Accountsetting(props) {
                                         icon={Gift}
                                         title="Platform Subscription"
                                         subtitle={
-                                            site_subscription?.status ===
-                                            "ACTIVE"
+                                            site_subscription?.subscription_status_code === 1 || site_subscription?.subscription_status_code === 2
                                                 ? "Active Subscription"
                                                 : "Manage Subscription"
                                         }

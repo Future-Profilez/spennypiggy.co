@@ -280,19 +280,19 @@ export default function Dashboard(props) {
                         ><b className="text-2xl md:text-3xl px-4  !leading-[8px] top-[4px] relative">+</b></div>
                         {showAdd ? (
                             <div className="bg-[#00000088] backdrop-blur-sm fixed shadow-lg z-[99999999999999999999999] flex justify-center items-center top-0 left-0 w-full h-full">
-                                <div className="w-full max-w-[550px]  px-3">
+                                <div className="w-full max-w-[550px] px-3 !overflow-hidden">
                                     <Suspense fallback={"Loading.."}>
-                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-10 rounded-3xl z-10 max-h-[70vh] overflow-y-auto">
-                                            <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-4 text-center m-auto ">
+                                        <div className="bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] w-full p-6 md:p-8 rounded-3xl z-10 max-h-[71vh] ">
+                                            <h2 className="text-black font-anton tracking-wider uppercase text-2xl md:text-3xl mb-2 text-center m-auto ">
                                                 Fund your Lifestyle
                                             </h2>
                                            
                                                 {AuthUserStripeConnected !== 1 ?
-                                                     <p className="!mb-6">
+                                                     <p className="!mb-2 text-center">
                                                      Please complete your Stripe account setup to add your wishlist.
                                                     </p>
                                                     : ""} 
-                                            <div className="!max-h-[40vh] p-4 overflow-auto">
+                                            <div className="!max-h-[35vh] p-4 !pt-2 overflow-auto">
                                                 {wishOptions ? (
                                                     <div>
                                                         <Wishlist
@@ -586,7 +586,7 @@ export default function Dashboard(props) {
                                                                         ""
                                                                     )}
                                                                     {IsloggedIn && auth?.user && auth?.user?.role == 1 && 
-                                                                    auth?.user?.subscription_status == 0 ? (
+                                                                    (auth?.user?.subscription_status === 0 || auth?.user?.subscription_status === 3) ? (
                                                                         <SiteSubscription 
                                                                             auth={auth}
                                                                             subscription_status={auth?.user?.subscription_status}

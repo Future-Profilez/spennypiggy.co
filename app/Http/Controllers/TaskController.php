@@ -562,7 +562,7 @@ class TaskController extends Controller
         $session = StripeControl::createCheckoutSession($payload, $connectedAccountId, $force3DS, $creator->username);
 
         try {
-            Payment::firstOrCreate(
+            $payment = Payment::firstOrCreate(
                 ['stripe_session_id' => $session->id],
                 [
                     'creator_id' => $creator->uuid,
@@ -574,6 +574,9 @@ class TaskController extends Controller
                     'reason_codes' => $riskData['reason_codes'] ?? [],
                 ]
             );
+
+            Helpers::applyDigitalWaiver($payment, (bool) $request->digital_waiver);
+            $payment->save();
         } catch (\Exception $e) {
             Log::warning('Risk Ledger: Failed to record task purchase payment', [
                 'session_id' => $session->id,

@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->integer('suspended_account')->default(0)->after('charges_enabled');
-        });
+        if (!Schema::hasColumn('users', 'suspended_account')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->integer('suspended_account')->default(0)->after('charges_enabled');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('suspended_account');
-        });
+        if (Schema::hasColumn('users', 'suspended_account')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('suspended_account');
+            });
+        }
     }
 };

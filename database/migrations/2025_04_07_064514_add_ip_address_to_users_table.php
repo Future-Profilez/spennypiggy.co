@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('ip_address')->nullable()->after('remember_token');
-        });
+        if (!Schema::hasColumn('users', 'ip_address')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('ip_address')->nullable()->after('remember_token');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('users', 'ip_address')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('ip_address');
+            });
+        }
     }
 };

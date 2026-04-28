@@ -34,7 +34,7 @@ import {
     Area
 } from 'recharts';
 
-export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters }) {
+export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_band_label, display_currency, profile, recent_transactions, analytics, top_supporters, reserve_breakdown = [], reserve_reason }) {
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     const { post: refreshPost, processing: refreshProcessing } = useForm({});
@@ -178,7 +178,7 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                             </div>
                         </div>
 
-                        {/* Reserves & Payout Status (New Section) */}
+                        {/* Reserves & Payout Status */}
                         <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 md:p-6 rounded-[25px] md:rounded-[30px] border border-gray-700/50 relative overflow-hidden group hover:border-blue-500/30 transition-colors shadow-xl lg:col-span-2">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <ShieldCheck size={80} className="text-blue-500" />
@@ -190,7 +190,32 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                         Held Reserves
                                     </div>
                                     <div className="text-2xl md:text-3xl font-bold text-blue-400 mt-2">{formatCurrency(summary.held_reserves, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Rolling reserve held for platform safety.</div>
+                                    <div className="text-[12px] text-gray-500 mt-2">
+                                        {reserve_reason || 'Rolling reserve held for platform safety.'}
+                                    </div>
+                                    {reserve_breakdown.length > 0 && (
+                                        <div className="mt-3 space-y-1">
+                                            {reserve_breakdown.map((r, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-gray-800/60 rounded-lg px-3 py-2 text-[12px]">
+                                                    <span className="text-gray-400">
+                                                        Held from {r.run_date}
+                                                    </span>
+                                                    <span className="text-blue-300 font-bold">
+                                                        {formatCurrency(r.amount, displayCurrency)}
+                                                    </span>
+                                                    <span className="text-green-400">
+                                                        Releases {r.release_date}
+                                                        {r.days_remaining > 0 && ` (${r.days_remaining}d)`}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {reserve_breakdown.length === 0 && summary.held_reserves > 0 && (
+                                        <div className="mt-2 text-[11px] text-gray-600 italic">
+                                            Reserves are released automatically after 90 days.
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <div className="text-gray-400 text-normal font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
@@ -198,13 +223,14 @@ export default function Dashboard({ auth, summary, tax_estimate, tax_year, tax_b
                                         Review Holds
                                     </div>
                                     <div className="text-2xl md:text-3xl font-bold text-purple-400 mt-2">{formatCurrency(summary.review_holds, displayCurrency)}</div>
-                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Payments currently being verified.</div>
+                                    <div className="text-[12px] text-gray-500 mt-2 font-bold">Payments currently being verified by our team.</div>
                                 </div>
                             </div>
                             <div className="mt-4 pt-4 border-t border-gray-700/50 flex justify-between items-center">
                                 <div>
                                     <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Expected Next Payout</div>
                                     <div className="text-xl font-bold text-white">{formatCurrency(summary.payoutable_balance, displayCurrency)}</div>
+                                    <div className="text-[10px] text-gray-600 mt-1">Paid out every Friday. Excludes reserves &amp; review holds.</div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Status</div>

@@ -128,7 +128,8 @@ trait RiskEnforcement
                         'amount' => app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']),
                         'reserve_amount_minor' => (function () use ($creator, $context) {
                             $amountGbp = app(\App\Services\Risk\MoneyNormalizer::class)->toGbpMinor((int) $context['amount'], $context['currency']);
-                            $reservePercent = (int) (\App\Models\CreatorMetric::firstOrCreate(['creator_id' => $creator->uuid])->reserve_percent ?? 0);
+                            $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $creator->uuid);
+                            $reservePercent = (int) ($metrics->reserve_percent ?? 0);
                             return $reservePercent > 0 ? (int) round(($amountGbp * $reservePercent) / 100) : 0;
                         })(),
                         'currency' => 'gbp',

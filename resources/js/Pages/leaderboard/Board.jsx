@@ -196,89 +196,81 @@ export default function Board(props) {
     return (
         <Authenticated auth={auth && auth.user}>
             <Head title={"Leaderboard"} />
-            <div className="bg-white pt-4  min-h-screen ">
-                <div className="containerbox pb-5 pt-2 ">
+            <div className="bg-white pt-4 min-h-screen">
+                <div className="containerbox pb-5 pt-2">
                     <h1 className="text-bl font-GillSans text-center xl:!text-left text-3xl lg:text-4xl my-6 uppercase text-black ">
                     Leaderboard
                 </h1>
-                <div className="flex flex-wrap items-start -mx-4">
-                    <div className="w-full xl:w-2/3 px-4 mb-4">
-                        <div className=" ">
-                            <div className="p-2  md:!p-6 pinkbg rounded-[30px]  mb-6">
-                                <div className="pt-4 md:pt-0  mt-6   mb-4 pb-4">
-                                    <h1 className="btn-shadow text-center font-GillSans  text-2xl md:text-3xl  mb-3 uppercase text-white ">
+                    <div className="flex flex-wrap items-start -mx-4">
+                        <div className="w-full xl:w-2/3 px-4 mb-4">
+                            <div className="p-2 md:!p-6 pinkbg rounded-[30px] mb-6">
+                                <div className="pt-4 md:pt-0 mt-6 mb-4 pb-4">
+                                    <h1 className="btn-shadow text-center font-GillSans text-2xl md:text-3xl mb-3 uppercase text-white ">
                                         Top Creators Getting <br></br> the Most Love
                                     </h1>
-                                        <p className="text-center text-white text-sm opacity-90 mb-4">
-                                            Ranked by community support and engagement
-                                        </p>
-                                        <div className="changePeriod w-full">
-                                            <button className={` !text-sm md:!text-[18px] ${period == "all" ? "active text-white":""}`}
+                                    <p className="text-center text-white text-sm opacity-90 mb-4">
+                                        Ranked by community support and engagement
+                                    </p>
+                                    <div className="changePeriod w-full">
+                                        <button
+                                            className={` !text-sm md:!text-[18px] ${period == "all" ? "active text-white" : ""}`}
                                             onClick={() => switchTime("all")}
-                                            > All Time </button>
-                                            <button className={` !text-sm md:!text-[18px] ${period == "monthly" ? "active text-white":""}`}
+                                        >
+                                            All Time
+                                        </button>
+                                        <button
+                                            className={` !text-sm md:!text-[18px] ${period == "monthly" ? "active text-white" : ""}`}
                                             onClick={() => switchTime("monthly")}
-                                            > Monthly </button>
-                                            <button className={` !text-sm md:!text-[18px] ${period == "weekly" ? "active text-white":""}`}
+                                        >
+                                            Monthly
+                                        </button>
+                                        <button
+                                            className={` !text-sm md:!text-[18px] ${period == "weekly" ? "active text-white" : ""}`}
                                             onClick={() => switchTime("weekly")}
-                                            > Weekly </button>
-                                            {is_daily == 1 ? ( <button className={` !text-sm md:!text-[18px] ${period == "daily" ? "active text-white":""}`}
-                                            onClick={() => switchTime("daily")}
-                                            > Daily </button> ):( "" )}
-
-                                        </div>
-                                        {error && (
-                                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-4 mb-3" role="alert">
+                                        >
+                                            Weekly
+                                        </button>
+                                        {is_daily == 1 ? (
+                                            <button
+                                                className={` !text-sm md:!text-[18px] ${period == "daily" ? "active text-white" : ""}`}
+                                                onClick={() => switchTime("daily")}
+                                            >
+                                                Daily
+                                            </button>
+                                        ) : (
+                                            ""
+                                        )}
+                                    </div>
+                                    {error && (
+                                        <div
+                                            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-4 mb-3"
+                                            role="alert"
+                                        >
                                             <div className="flex justify-between items-center">
                                                 <span>{error}</span>
-                                                <button 
-                                                    className="ml-2 font-bold" 
-                                                    onClick={() => setError(null)}
-                                                >
+                                                <button className="ml-2 font-bold" onClick={() => setError(null)}>
                                                     ✕
                                                 </button>
                                             </div>
                                         </div>
                                     )}
-                                    </div>
+                                </div>
+                                <div
+                                    className={`${
+                                        loading ? "opacity-50 pointer-events-none" : ""
+                                    }  postions grid grid-cols-3 !gap-1 md:!gap-4 pt-[10px] md:pt-[50px] `}
+                                >
+                                    {positions && positions[1] ? <Position position={2} p={positions && positions[1]} /> : ""}
+                                    {positions && positions[0] ? <Position position={1} p={positions && positions[0]} /> : ""}
+                                    {positions && positions[2] ? <Position position={3} p={positions && positions[2]} /> : ""}
+                                </div>
+                            </div>
+                                {ranks && ranks.length ? (
                                     <div
                                         className={`${
                                             loading ? "opacity-50 pointer-events-none" : ""
-                                        }  postions grid grid-cols-3 !gap-1 md:!gap-4 pt-[10px] md:pt-[50px] `}
-                                    >
-                                        {positions && positions[1] ? (
-                                            <Position
-                                                position={2}
-                                                p={positions && positions[1]}
-                                            />
-                                        ) : (
-                                            ""
-                                        )}
-                                        {positions && positions[0] ? (
-                                            <Position
-                                                position={1}
-                                                p={positions && positions[0]}
-                                            />
-                                        ) : (
-                                            ""
-                                        )}
-                                        {positions && positions[2] ? (
-                                            <Position
-                                                position={3}
-                                                p={positions && positions[2]}
-                                            />
-                                        ) : (
-                                            ""
-                                        )}
-                                    </div>
-                                </div>
-
-                                {ranks && ranks.length ? (
-                                    <div
-                                    className={`${
-                                        loading ? "opacity-50 pointer-events-none" : ""
                                         }  rank_lists bg-gray-100 p-3 md:p-4  rounded-[30px]  `}
-                                        >
+                                    >
                                         <h2 className=" font-GillSans text-left text-2xl uppercase text-gray-900 ">🔥 Rising Creators</h2>
                                         <p className="mb-6">New creators gaining support fast</p>
                                         {ranks.map((r, i) => {
@@ -288,20 +280,16 @@ export default function Board(props) {
                                 ) : (
                                     ""
                                 )}
-                            </div>
                             <CategoryLeaders />
-                    </div>
-                    <div className="w-full xl:w-1/3 px-4 sticky top-24 z-10">
-                        <div>
-                            <RecentSupporters />
-                            <VipSupporters />
-                            {/* <TopSupporters /> */}
-                            <LeaderboardStars />
+                        </div>
+                        <div className="w-full xl:w-1/3 px-4 xl:self-start">
+                            <div className="xl:sticky xl:top-24 z-10">
+                                <RecentSupporters />
+                                <VipSupporters />
+                                <LeaderboardStars />
+                            </div>
                         </div>
                     </div>
-                </div>
-                    
-                    
                 </div>
             </div>
         </Authenticated>

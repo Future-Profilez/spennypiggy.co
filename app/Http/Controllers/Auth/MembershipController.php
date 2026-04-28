@@ -96,8 +96,7 @@ class MembershipController extends Controller
         $vatAmount = $price * $vatPercent / 100;
         $priceWithVat = $price + $vatAmount;
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Use new gross-up flow
@@ -219,8 +218,7 @@ class MembershipController extends Controller
                 $vatAmount = $price * $vatPercent / 100;
                 $priceWithVat = $price + $vatAmount;
 
-                // Fetch creator risk metrics for reserve calculation
-                $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+                $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
                 $reserveRate = $metrics->reserve_percent ?? 0;
 
                 // Use new gross-up flow
@@ -443,8 +441,7 @@ class MembershipController extends Controller
         $vatPercent = $membership->user->vat_amount_percentage ?? 0;
         $priceWithVat = $price + ($price * $vatPercent / 100);
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $membership->user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $membership->user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         // Gross-up calculation in Creator's Currency (No FX conversion)
@@ -475,9 +472,9 @@ class MembershipController extends Controller
             $force3DS = in_array('FORCE_3DS', $riskData['reason_codes'] ?? []);
 
             $request->validate([
-                'name' => ['nullable', 'string', 'max:50'],
+                'name' => ['nullable', 'sometimes', 'string', 'max:50'],
                 'email' => ['required', 'email:dns'],
-                'message' => ['nullable', 'string', 'max:800'],
+                'message' => ['sometimes', 'nullable', 'string', 'max:800'],
                 'digital_waiver' => ['required', 'accepted'],
             ]);
 
@@ -778,8 +775,7 @@ class MembershipController extends Controller
 
         $priceWithVat = $membership->price + $vatAmount;
 
-        // Fetch creator risk metrics for reserve calculation
-        $metrics = \App\Models\CreatorMetric::firstOrCreate(['creator_id' => $membership->user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $membership->user->uuid);
         $reserveRate = $metrics->reserve_percent ?? 0;
 
         $breakdownCreator = Helpers::calculateStripeDirectChargeFlow($priceWithVat, $membership->currency, $reserveRate);

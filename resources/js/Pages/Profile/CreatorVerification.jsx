@@ -38,8 +38,7 @@ export default function CreatorVerification({ IsloggedIn, fetchingLinks }) {
         slinks &&
         Object.values(slinks).some((value) => value !== null && value !== "");
     const hasSubscription =
-        creatorUser?.is_subscribed == 1 ||
-        (creatorUser?.subscription_status ?? 0) >= 1;
+        creatorUser?.subscription_status === 1 || creatorUser?.subscription_status === 2;
     const socialStatus = slinks?.status;
     const isSocialApproved = socialStatus == 1;
     const isSocialPending = hasAnySocialMedia && socialStatus == 0;

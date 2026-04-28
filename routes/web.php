@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\TwitterController;
 use App\Http\Controllers\Auth\WishitemController;
 use App\Http\Controllers\FounderBonusController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\MagicBellProxyController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StripeWebhookController;
@@ -78,6 +79,10 @@ Route::get('/debug/cache-check', function () {
 Route::get('/csrf-cookie', function () {
     return response()->noContent(204);
 })->middleware('web');
+
+Route::match(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], '/magicbell/{path?}', MagicBellProxyController::class)
+    ->where('path', '.*')
+    ->middleware('auth');
 
 
 // Debug route to test subscription status
@@ -718,7 +723,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->group(functio
         }
 
         return Inertia::render('Admin/FeatureSuggestions', [
-            'suggestions' => $query->paginate(20)->withQueryString(),
+            'suggestions' => $query->paginate(20)->appends($request->query()),
             'filters' => $request->only(['status', 'search']),
         ]);
     })->name('admin.feature-suggestions.index');
@@ -803,3 +808,16 @@ Route::get('/test/scheduler/is/running', function () {
         'cache_store' => config('cache.stores.' . config('cache.default') . '.driver'),
     ]);
 });
+
+
+// Country detection — reads Cloudflare CF-IPCountry header, no external API needed
+Route::get('/api/user-country', function (\Illuminate\Http\Request $request) {
+    $country = $request->header('CF-IPCountry')
+        ?? $request->header('X-Country-Code')
+        ?? 'GB';
+    // CF-IPCountry returns 'XX' for unknown — fall back to GB
+    if ($country === 'XX' || strlen($country) !== 2) {
+        $country = 'GB';
+    }
+    return response()->json(['country_code' => strtoupper($country)]);
+})->name('api.user-country');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CreatorMetric;
 use App\Models\EarlyFraudWarning;
+use App\Models\Payment;
 use App\Models\PlatformRiskState;
 use Illuminate\Http\Request;
 
@@ -22,10 +23,18 @@ class CreatorRiskController extends Controller
         }
 
         $banners = [];
-        $metrics = CreatorMetric::firstOrCreate(['creator_id' => $user->uuid]);
+        $metrics = app(\App\Services\Risk\RiskService::class)->recalculateMetrics((string) $user->uuid);
+        $creatorRules = \App\Models\RiskSetting::get('creator_rules', []);
+        $newCreatorAgeDays = (int) ($creatorRules['new_creator_age_days'] ?? 30);
+        $isNewCreator = $user->created_at?->diffInDays(now()) < $newCreatorAgeDays;
+        $hasNoTransactions = ((int) ($metrics->tx_30d ?? 0)) === 0;
+        $isStripeConnected = ((int) ($user->stripe_details_submitted ?? 0)) === 1;
+        $hasAnyEarnings = Payment::where('creator_id', (string) $user->uuid)
+            ->whereIn('status', ['succeeded', 'review_hold', 'disputed', 'refunded'])
+            ->exists();
 
         // 1. RESERVE_APPLIED
-        if ($metrics->reserve_percent > 0) {
+        if ($metrics->reserve_percent > 0 && $isStripeConnected && $hasAnyEarnings) {
             $banners[] = [
                 'key' => 'RESERVE_APPLIED',
                 'type' => 'warning',
@@ -42,6 +51,8 @@ class CreatorRiskController extends Controller
         // 2. PAYOUT_DELAYED
         if (
             $metrics->payout_delay_days > 0
+            && $isStripeConnected
+            && $hasAnyEarnings
             && (
                 ($metrics->risk_level && $metrics->risk_level !== 'low')
                 || ($metrics->reserve_percent > 0)
@@ -88,7 +99,7 @@ class CreatorRiskController extends Controller
             ->where('created_at', '>=', now()->subHours(48))
             ->exists();
 
-        if ($recentEFW) {
+        if ($recentEFW && $isStripeConnected && $hasAnyEarnings) {
              $banners[] = [
                 'key' => 'REFUND_RECOMMENDED',
                 'type' => 'action_required',
@@ -102,7 +113,7 @@ class CreatorRiskController extends Controller
         }
         
         // 5. CONCENTRATION_RISK (Top Buyer)
-        if ($metrics->top_buyer_percent >= 40.0) {
+        if ($metrics->top_buyer_percent >= 40.0 && $isStripeConnected && $hasAnyEarnings) {
              $banners[] = [
                 'key' => 'GROWTH_PACING_ACTIVE',
                 'type' => 'info',

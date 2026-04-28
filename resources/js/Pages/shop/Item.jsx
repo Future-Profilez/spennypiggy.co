@@ -1,6 +1,6 @@
-import Guest from "@/Layouts/GuestLayout";
-import { Head, Link, usePage } from "@inertiajs/react";
-import BuyShopItem from "./BuyShopItem";
+import Guest from '@/Layouts/GuestLayout'
+import { Head, Link, usePage } from '@inertiajs/react';
+import BuyShopItem from './BuyShopItem';
 import { RiDiscountPercentFill } from "react-icons/ri";
 import { useState } from "react";
 import PriceFormat from "@/includes/PriceFormat";
@@ -91,11 +91,29 @@ export default function ShopDetailItem(props) {
         const totalDeductionRate =
             stripeFeeRate + platformFeeRate + complianceFeeRate;
 
-        if (totalDeductionRate >= 1) return priceWithVat;
+  const hasVariants = shop?.type === 'physical' && shop?.shop_varients && shop.shop_varients.length > 0;
+  const [price, setPrice] = useState(hasVariants ? shop.shop_varients[0].price : shop.price);
+  const [selectedVarient, setSelectedVarient] = useState(hasVariants ? shop.shop_varients[0].id : 'no_varient');
+   const handleVarient = (e) => {
+      const varient = shop.shop_varients.find(v => v.id == e.target.value);
+      setPrice(varient.price);
+      setSelectedVarient(varient.id);
+   }
 
-        const totalSupporterPays =
-            (priceWithVat + stripeFixedFee + adminFee) /
-            (1 - totalDeductionRate);
+   const [currentCountry, setCurrentCountry] = useState();
+   const getIp = async () => {
+      try {
+         const resp = await axios.get('/api/user-country');
+         const code = resp.data?.country_code;
+         if (code) {
+            setCurrentCountry(code);
+            getShippingPrice(code);
+         }
+      } catch (err) {
+         // Silently fall back — shipping price will use default
+         getShippingPrice('GB');
+      }
+   };
 
         // Rounding logic to match backend (Helpers.php)
         if (!isZeroDecimal) {
@@ -108,10 +126,9 @@ export default function ShopDetailItem(props) {
     const isOwner = auth?.user?.id === shop?.user_id;
     const vatPercentage = shop?.user?.vat_amount_percentage || 0;
 
-    const [price, setPrice] = useState(shop?.price || 0); // Added null check
-    const [selectedVarient, setSelectedVarient] = useState(
-        shop?.shop_varients?.[0]?.id || null,
-    ); // Added optional chaining
+  useEffect(()=>{
+   getIp();
+  },[]); // run once on mount — shop.uuid won't change after render
 
     const handleVarient = (e) => {
         const varient = shop?.shop_varients?.find(
@@ -488,9 +505,141 @@ export default function ShopDetailItem(props) {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </Guest>
-        </>
-    );
+                        <div className='w-full pr-4 discount-text sm:flex items-center justify-between' >
+                           <div className='pr-3'>
+                              <h2 className='font-bold text-base' >Only {formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP')} for members</h2>
+                              <p className='mb-1 font-normal text-[13px]' >Become a member to get a discount and other exclusive benefits.</p>
+                           </div>
+                           <div className='py-2 ' >
+                              <Link href={`/${shop.user && shop.user.username}`} className="button sm Join whitespace-nowrap" >Join Membership</Link>
+                           </div>
+                        </div>
+                     </div> : ''}
+
+
+                     <div className="w-full">
+                        <div className="mb-1 mt-4 font-medium text-gray-500">Social</div>
+                        <ul className="mb-4 -ml-2 flex md:order-1 md:mb-0">
+                           <li>
+                              <a
+                              href={`https://twitter.com/intent/tweet?url=${url}`} target="_blank"
+                               className=" break-words text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                 aria-label="Twitter" ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                    strokeLinejoin="round" className="h-7 w-7">
+                                    <path
+                                          d="M22 4.01c-1 .49 -1.98 .689 -3 .99c-1.121 -1.265 -2.783 -1.335 -4.38 -.737s-2.643 2.06 -2.62 3.737v1c-3.245 .083 -6.135 -1.395 -8 -4c0 0 -4.182 7.433 4 11c-1.872 1.247 -3.739 2.088 -6 2c3.308 1.803 6.913 2.423 10.034 1.517c3.58 -1.04 6.522 -3.723 7.651 -7.742a13.84 13.84 0 0 0 .497 -3.753c0 -.249 1.51 -2.772 1.818 -4.013z">
+                                    </path>
+                                 </svg>
+                              </a>
+                           </li>
+
+                           <li>
+                              <div onClick={instashare}
+                               className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                 aria-label="Instagram"  ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                    strokeLinejoin="round" className="h-7 w-7">
+                                    <path d="M4 4m0 4a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z"></path>
+                                    <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"></path>
+                                    <path d="M16.5 7.5l0 .01"></path>
+                                 </svg>
+                              </div>
+                           </li>
+
+                           <li>
+                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                    aria-label="Facebook"
+                                     onClick={fbShare}
+                                     ><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                       strokeLinejoin="round" className="h-7 w-7">
+                                       <path d="M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3"></path>
+                                    </svg>
+                              </div>
+                           </li>
+
+                           <li>
+                              <div className="cursor-pointer text-gray-500 inline-flex items-center rounded-[30px]   p-2.5 text-sm hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-200"
+                                 aria-label="RSS" onClick={rssShare}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                    strokeLinejoin="round" className="h-7 w-7">
+                                    <path d="M5 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
+                                    <path d="M4 4a16 16 0 0 1 16 16"></path>
+                                    <path d="M4 11a9 9 0 0 1 9 9"></path>
+                                 </svg>
+                              </div>
+                           </li>
+                        </ul>
+                     </div>
+
+                     {shop.type === 'physical' && hasVariants ?
+                        <>
+                        <h2 className='text-lg mb-2'>Select Varient</h2>
+                        <select onChange={handleVarient} className='bg-white rounded-[30px]  text-lg capitalize px-4 py-2.5 mb-3 w-full border-0'>
+                           {shop.shop_varients && shop.shop_varients.map((varient) => <option value={varient.id}>{varient.name}</option>)}
+                        </select>
+                        </> : ""
+                     }
+
+                     <div className='sm:flex items-center justify-between' >
+                        <div className=' mb-3'>
+                           <h3 className='text-3xl font-bold flex flex-col' >
+                              <div className="flex items-baseline">
+                                 {shop && shop.is_member == 1 && shop.special_member_price ? <>
+                                    {isOwner ? (
+                                       formatMultiPrice(shop.special_member_price, shop?.currency || 'GBP')
+                                    ) : (
+                                       formatMultiPrice(
+                                          calculateTotalSupporterPays(shop.special_member_price, shop?.currency || 'GBP', vatPercentage),
+                                          shop?.currency || 'GBP'
+                                       )
+                                    )} <span className='line-through text-gray-400 text-xl ml-2' >{price > 0 ? (isOwner ? formatMultiPrice(price, shop?.currency || 'GBP') : formatMultiPrice(calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage), shop?.currency || 'GBP')) : "FREE"}</span>
+                                 </>
+                                 : price > 0 ? (
+                                    isOwner ? (
+                                       formatMultiPrice(price, shop?.currency || 'GBP')
+                                    ) : (
+                                       formatMultiPrice(
+                                          calculateTotalSupporterPays(price, shop?.currency || 'GBP', vatPercentage),
+                                          shop?.currency || 'GBP'
+                                       )
+                                    )
+                                 ) : "Free"
+                                 }
+                                 {shop.slot_limitation ? <span className='ml-3 text-pink text-lg font-light ' >Only {shop.slot_limitation - shop.total_sold} Left</span> :""}
+                              </div>
+                              {!isOwner && price > 0 && (
+                                 <span className="text-[10px] text-gray-500 font-normal mt-1 leading-tight">
+                                    * Includes all applicable fees
+                                 </span>
+                              )}
+                           </h3>
+                           {shop.type === 'physical' ? <h2 className='mt-1'>
+                              Shipping Price : {formatMultiPrice(shippingPrice, shop?.currency || 'GBP')}</h2>
+                           : ''}
+                        </div>
+
+                        { IsloggedIn ?
+                           ""
+                           :
+                           <>
+                              {(shop.slot_limitation && (shop.slot_limitation - shop.total_sold) === 0 ) ?
+                                 <button className='btn-pink sm disabled w-full sm:w-auto' >SOLD</button>
+                                 :
+                              <>
+                                 <BuyShopItem card_capabilities={card_capabilities} shippingPrice={shippingPrice} country={currentCountry} selectedVarient={selectedVarient} vat_percent={vat_percent} opened={props.opened} isPaid={props.payment_id} open={open} s={shop} text={'Get This'} classes="w-full sm:w-auto btn-pink font-light md  mb-3" />
+                              </>
+                              }
+                           </>
+                        }
+                     </div>
+
+                  </div>
+            </div>
+            </div>
+         </div>
+      </Guest>
+    </>
+  )
 }

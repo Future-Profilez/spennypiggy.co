@@ -44,6 +44,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use PragmaRX\Google2FALaravel\Google2FA;
@@ -169,8 +170,15 @@ class AuthenticatedSessionController extends Controller
 
     public function verifyUser(Request $request)
     {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $user = User::where('email', $request->email)->first();
+        $email = Str::lower(trim((string) $validated['email']));
+        $user = User::withTrashed()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
 
         if (empty($user)) {
             return response()->json([
@@ -179,9 +187,16 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        if (method_exists($user, 'trashed') && $user->trashed()) {
+            return response()->json([
+                'status' => false,
+                'msg' => "This account is deactivated. Please contact support."
+            ]);
+        }
+
         $is_2fa = false;
         if ($user->is_2fa) {
-            if (!Hash::check($request->password, $user->password)) {
+            if (!Hash::check($validated['password'], $user->password)) {
                 return response()->json([
                     'status' => false,
                     'msg' => "Either email or password is wrong."
@@ -955,9 +970,10 @@ class AuthenticatedSessionController extends Controller
         $contract->sign = $sign;
         $contract->save();
 
-        if (class_exists('Mccarlosen\LaravelMpdf\Facades\LaravelMpdf')) {
-            $pdf = \Mccarlosen\LaravelMpdf\Facades\LaravelMpdf::loadView('pdf.creator-contract', [
-                'contract' => $contract
+        $mpdfFacade = 'Mccarlosen\\LaravelMpdf\\Facades\\LaravelMpdf';
+        if (class_exists($mpdfFacade)) {
+            $pdf = call_user_func([$mpdfFacade, 'loadView'], 'pdf.creator-contract', [
+                'contract' => $contract,
             ]);
 
             $pdfContent = $pdf->output();

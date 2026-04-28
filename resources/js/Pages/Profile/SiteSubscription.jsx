@@ -9,7 +9,9 @@ export default function SiteSubscription({ children, auth, subscription_status, 
             ? "ACTIVE"
             : subscription_status === 2
                 ? "FREE_TRIAL"
-                : "EXPIRED");
+                : subscription_status === 3
+                    ? "INACTIVE"
+                    : "EXPIRED");
 
 
     const isActive = resolvedStatus === "ACTIVE";
