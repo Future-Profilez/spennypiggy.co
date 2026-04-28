@@ -463,8 +463,6 @@ export default function Dashboard(props) {
         setAuthUserStripeConnected((auth && auth?.user && auth?.user?.stripe_details_submitted == 1) ? 1 : 0);
     }, [auth?.user?.stripe_details_submitted]);
 
-    console.log(user);
-
     return (
             <>
                 <Guest auth={auth.user} user={user} className='bg-[#A2E4B8]'>

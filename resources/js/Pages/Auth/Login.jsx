@@ -397,8 +397,6 @@ export default function Login({ status, canResetPassword }) {
         }
     };
 
-    console.log("hasPasskey:", isWebAuthnSupported());
-
     return (
         <GuestLayout className="bg-[#A2E4B8]">
             <Head title="Log in" description="Log in to your account" />
