@@ -398,11 +398,11 @@ if (app()->environment('local')) {
     Route::post('/magicbell/send-notification', [NotificationController::class, 'sendNotification']);
     Route::get('/test-push', [NotificationController::class, 'testSendNotification']);
 
-    Route::get('activity/logs', [\App\Http\Controllers\CreatorActivityController::class, 'logs'])->name('activity.logs');
-    
     // Debug: Test support image generation end-to-end (Node + PHP fallback)
     Route::get('/debug/test-support-image', [\App\Http\Controllers\Debug\SupportImageTestController::class, 'run'])
-        ->name('debug.test-support-image');
+    ->name('debug.test-support-image');
+
+    Route::get('activity/logs', [\App\Http\Controllers\CreatorActivityController::class, 'logs'])->name('activity.logs');
 }
 
 // Creator Activity Routes

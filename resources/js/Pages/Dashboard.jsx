@@ -490,7 +490,7 @@ export default function Dashboard(props) {
                                         height={400}
                                         width={1200}
                                         className="w-full h-[190px] cover md:h-[300px] lg:h-[350px] object-cover "
-                                        src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_approved === 1 ? user?.cover_url : wishlistbannerimg}
+                                        src={IsloggedIn ? user?.cover_url || wishlistbannerimg : user?.cover_url ? user?.cover_url : wishlistbannerimg}
                                         loading="eager"
                                         fetchpriority="high"
                                     />
